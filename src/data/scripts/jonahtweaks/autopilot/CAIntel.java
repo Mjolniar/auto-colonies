@@ -145,6 +145,10 @@ public class CAIntel extends BaseIntelPlugin {
             try { CAAugments.renderEmpire(t, data, s); }
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment section failed", e); t.addPara("Station augment info unavailable; see starsector.log.", gray, 6f); }
         }
+        if (Global.getSettings().getModManager().isModEnabled(CAContracts.MOD) && s.contractMode != 2) {
+            t.addSectionHeading("Trade contracts (Ashes of the Domain)", Alignment.MID, 16f);
+            CAContracts.render(t, data, s);
+        }
 
         t.addSectionHeading("Settings", Alignment.MID, 16f);
         if (!s.setupDone) t.addPara("First-time setup hasn't run yet; it opens when you first switch a colony to Approve or Auto.", gray, 6f);
@@ -192,6 +196,11 @@ public class CAIntel extends BaseIntelPlugin {
             if (Global.getSettings().getModManager().isModEnabled(CASettlement.MOD)) {
                 try { CASettlement.handle(a[1], a[2], d, d.settings); }
                 catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "settlement action failed", t); CALog.add("Settlement: that failed; see starsector.log", true); }
+            }
+        } else if (buttonId instanceof String[] && "contract".equals(((String[]) buttonId)[0])) {
+            if (Global.getSettings().getModManager().isModEnabled(CAContracts.MOD)) {
+                String err = CAContracts.accept(((String[]) buttonId)[2], "you");
+                if (err != null) CALog.add("Trade contract: " + err, true);
             }
         } else if (buttonId instanceof String[] && "aug".equals(((String[]) buttonId)[0])) {
             MarketAPI m = CAAuto.market(((String[]) buttonId)[2]);

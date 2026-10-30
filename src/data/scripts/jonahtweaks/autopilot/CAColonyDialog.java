@@ -215,6 +215,15 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             }
         }
 
+        if (Global.getSettings().getModManager().isModEnabled(CASynergies.MOD) && c.mode != CAData.Mode.OFF) {
+            t.addSectionHeading("Industry synergies (Ashes of the Domain)", Alignment.MID, 12f);
+            try { CASynergies.render(t, market); }
+            catch (Throwable e) {
+                CADiagnostics.LOG.warn(CADiagnostics.TAG + "industry synergy section failed at " + market.getName(), e);
+                t.addPara("Synergy info unavailable; see starsector.log.", gray, 6f);
+            }
+        }
+
         t.addSectionHeading("Locks", Alignment.MID, 12f);
         t.addPara("A locked building is never upgraded, replaced or removed by Autopilot.", gray, 6f);
         for (Industry ind : market.getIndustries()) {

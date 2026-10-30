@@ -114,6 +114,7 @@ public class CAEngine {
         int slotsFree = Misc.getMaxIndustries(m) - Misc.getNumIndustries(m);
         boolean bmo = CAAotD.enabled();
         Set<String> hidden = CAAotD.hidden(m);
+        CASynergies.Ctx syn = Global.getSettings().getModManager().isModEnabled(CASynergies.MOD) ? CASynergies.context(m, deficit) : null;
 
         for (IndustrySpecAPI spec : Global.getSettings().getAllIndustrySpecs()) {
             String id = spec.getId();
@@ -137,6 +138,7 @@ public class CAEngine {
                 p.cost = inst.getBuildCost(); p.days = inst.getBuildTime();
                 if (measuredFx != null) { p.measured = true; CASimulator.apply(m, measuredFx, null, p, deficit); }
                 else effects(m, id, p, deficit);
+                CASynergies.score(syn, p);
                 upkeep(m, spec, null, p);
                 if (!finish(m, p, profile, minStability, plan)) continue;
                 if (inst.isIndustry() && slotsFree <= 0) r.noSlot(p);
@@ -173,6 +175,7 @@ public class CAEngine {
                         p.measured = true;
                         CASimulator.apply(m, to, from, p, deficit);
                     } else effects(m, up, p, deficit);
+                    CASynergies.score(syn, p);
                     upkeep(m, upSpec, ind.getSpec(), p);
                     if (!finish(m, p, profile, minStability, plan)) continue;
                     if (needsSlot) r.noSlot(p);
@@ -321,7 +324,7 @@ public class CAEngine {
         return true;
     }
 
-    /** Unmet demand per commodity across all player colonies. */
+    /** Unmet demand per commodity across all player colonies, plus what held trade contracts (AotD) are short of. */
     public static Map<String, Integer> empireDeficits() {
         Map<String, Integer> out = new HashMap<String, Integer>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
@@ -332,6 +335,9 @@ public class CAEngine {
                     out.put(c.getId(), (cur == null ? 0 : cur) + d);
                 }
             }
+        }
+        if (Global.getSettings().getModManager().isModEnabled(CAContracts.MOD)) {
+            for (Map.Entry<String, Integer> e : CAContracts.shortfalls().entrySet()) if (!out.containsKey(e.getKey())) out.put(e.getKey(), 1);
         }
         return out;
     }
