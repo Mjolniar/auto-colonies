@@ -1,0 +1,108 @@
+package data.scripts.jonahtweaks.autopilot;
+
+import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.comm.IntelInfoPlugin;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.impl.campaign.intel.punitive.PunitiveExpeditionIntel;
+import com.fs.starfarer.api.util.Misc;
+
+import java.util.List;
+
+/**
+ * Colony policies for Auto colonies: hazard pay and free port, switched on and off by profile, budget, stability,
+ * threat and emergencies (negative income, punitive expeditions). Minimum time between changes avoids flip-flopping.
+ */
+public class CAPolicies {
+    static final float HAZARD_PAY_MIN_DAYS = 30f, FREE_PORT_MIN_DAYS = 90f;
+
+    static boolean punitiveActive() {
+        try {
+            for (IntelInfoPlugin i : Global.getSector().getIntelManager().getIntel(PunitiveExpeditionIntel.class)) {
+                if (!i.isEnded() && !i.isEnding()) return true;
+            }
+        } catch (Throwable ignored) { }
+        return false;
+    }
+
+    static boolean canChange(long last, float minDays) {
+        return last <= 0L || Global.getSector().getClock().getElapsedDaysSince(last) >= minDays;
+    }
+
+    public static void run(List<MarketAPI> auto) {
+        CAData d = CAData.get();
+        CASettings s = d.settings;
+        boolean emergency = CABudget.paused(s);
+        boolean punitive = punitiveActive();
+        long now = Global.getSector().getClock().getTimestamp();
+        float hpCap = s.hazardPayEmpireShare * Math.max(0f, CABudget.netIncome(s));
+        float hpTotal = 0f;
+        for (MarketAPI m : auto) if (m.isImmigrationIncentivesOn()) hpTotal += m.getImmigrationIncentivesCost();
+        for (MarketAPI m : auto) {
+            CAData.Colony c = d.colony(m.getId());
+            boolean threat = CAThreat.isHigh(m);
+            CAData.Profile prof = threat ? CAData.Profile.SECURITY : c.profile;
+            float stab = m.getStabilityValue();
+
+            // ---- hazard pay: buys growth with credits ----
+            if (s.hazardPayMode == 0) {
+                boolean on = m.isImmigrationIncentivesOn();
+                boolean atMax = m.getSize() >= Misc.getMaxMarketSize(m);
+                float cost = m.getImmigrationIncentivesCost();
+                CAData.Profile own = c.profile;
+                boolean growthWanted = own != CAData.Profile.WAR || prof == CAData.Profile.GROWTH;
+                boolean unused = prof == CAData.Profile.GROWTH || prof == CAData.Profile.BALANCED || prof == CAData.Profile.INCOME || prof == CAData.Profile.SELF;
+                float colonyNet = Math.max(0f, m.getNetIncome() + (on ? cost : 0f));   // judge against income before hazard pay
+                boolean affordable = cost <= s.hazardPayColonyShare * colonyNet;
+                boolean fitsEmpire = on || hpTotal + cost <= hpCap;
+                boolean want = growthWanted && !atMax && affordable && !emergency && fitsEmpire;
+                String why = atMax ? "max size" : emergency ? "net income is negative" : !fitsEmpire ? "all colonies together would pass " + Math.round(s.hazardPayEmpireShare * 100f) + "% of empire net income" : !affordable ? Misc.getDGSCredits(cost) + "/month is over " + Math.round(s.hazardPayColonyShare * 100f) + "% of its net income" : !growthWanted ? "profile doesn't need growth" : "";
+                if (want != on && (canChange(c.lastHazardPay, HAZARD_PAY_MIN_DAYS) || (on && (emergency || atMax)))) {
+                    m.setImmigrationIncentivesOn(want);
+                    hpTotal += want ? cost : -cost;
+                    c.lastHazardPay = now;
+                    CALog.add(m.getName() + ": hazard pay " + (want ? "on (" + Misc.getDGSCredits(cost) + "/month for faster growth)" : "off (" + why + ")"), true);
+                }
+            }
+
+            // ---- free port: accessibility and growth for stability and punitive-expedition risk ----
+            if (s.freePortMode == 0) {
+                boolean on = m.isFreePort();
+                boolean luddic = m.hasCondition("luddic_majority");
+                boolean profileFits = prof == CAData.Profile.INCOME || prof == CAData.Profile.GROWTH || prof == CAData.Profile.BALANCED || prof == CAData.Profile.SELF;
+                float margin = on ? 0f : 3f;   // free port costs up to 3 stability
+                boolean stableEnough = stab - margin >= d.minStability + 1f;
+                boolean want = profileFits && stableEnough && !luddic && !threat && !punitive && !emergency;
+                String why = punitive ? "punitive expedition under way" : threat ? "threat is high" : luddic ? "Luddic majority" : !stableEnough ? "stability too low" : emergency ? "net income is negative" : !profileFits ? "profile is " + prof.label : "";
+                boolean urgentOff = on && (punitive || threat || stab < d.minStability);
+                if (want != on && (urgentOff || canChange(c.lastFreePort, FREE_PORT_MIN_DAYS))) {
+                    m.setFreePort(want);
+                    m.reapplyConditions();
+                    c.lastFreePort = now;
+                    CALog.add(m.getName() + ": free port " + (want ? "on (accessibility and growth build up over a year; up to -3 stability)" : "off (" + why + ")"), true);
+                }
+            }
+        }
+        if (s.hazardPayMode == 0) enforceEmpireCap(auto, s, now);
+    }
+
+    /** Keeps total hazard pay under the empire share of net income, dropping the costliest first. */
+    static void enforceEmpireCap(List<MarketAPI> auto, CASettings s, long now) {
+        float cap = s.hazardPayEmpireShare * Math.max(0f, CABudget.netIncome(s));
+        java.util.List<MarketAPI> paying = new java.util.ArrayList<MarketAPI>();
+        float total = 0f;
+        for (MarketAPI m : auto) if (m.isImmigrationIncentivesOn()) { paying.add(m); total += m.getImmigrationIncentivesCost(); }
+        if (total <= cap) return;
+        java.util.Collections.sort(paying, new java.util.Comparator<MarketAPI>() {
+            public int compare(MarketAPI a, MarketAPI b) { return Float.compare(b.getImmigrationIncentivesCost(), a.getImmigrationIncentivesCost()); }
+        });
+        for (MarketAPI m : paying) {
+            if (total <= cap) break;
+            float cost = m.getImmigrationIncentivesCost();
+            m.setImmigrationIncentivesOn(false);
+            CAData.get().colony(m.getId()).lastHazardPay = now;
+            total -= cost;
+            CALog.add(m.getName() + ": hazard pay off (all colonies together were over " + Math.round(s.hazardPayEmpireShare * 100f)
+                    + "% of empire net income; this was the costliest at " + Misc.getDGSCredits(cost) + "/month)", true);
+        }
+    }
+}

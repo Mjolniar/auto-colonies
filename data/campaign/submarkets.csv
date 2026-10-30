@@ -1,0 +1,3 @@
+id,name,faction,desc,script,icon,order
+jt_ca_storage,"Autopilot
+Storage",player,"Colony items and AI cores you leave here can be used by Colony Autopilot. This storage is shared across all your colonies, and anything the autopilot removes from a building comes back here.",data.scripts.jonahtweaks.autopilot.CAStoragePlugin,graphics/factions/storage.png,1100
