@@ -133,7 +133,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         float threat = CAThreat.estimate(market);
         CAData.Profile planWith = (c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO) ? CAThreat.effective(market, c.profile) : c.profile;
         t.addPara("Threat estimate: %s" + (planWith != c.profile ? " (planning with Security until it drops below "
-                        + Math.round(CAThreat.CLEAR * 100f) + "%, at least " + Math.round(CAThreat.MIN_DAYS) + " days)" : ""), 4f,
+                        + Math.round(CAThreat.CLEAR * 100f) + "%%, at least " + Math.round(CAThreat.MIN_DAYS) + " days)" : ""), 4f,
                 threat >= CAThreat.THRESHOLD || c.threatHigh ? Misc.getNegativeHighlightColor() : hl, Math.round(threat * 100f) + "%");
         Industry imp = CAStory.bestImprovement(market, c);
         if (imp != null) t.addPara("Best story point improvement: %s" + (s.storyPointRule == 0 ? " (you improve it; Story points is set to Player only)" : ""), 4f, hl, imp.getCurrentName());
