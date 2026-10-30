@@ -92,7 +92,10 @@ public class CAEngine {
         public int unsupportedBuildable = 0;
         public int noSlot = 0;
         public int locked = 0;   // supported buildings the build menu locks here (Ashes of the Domain research)
+        public Pick bestNoSlot = null;   // the best of the noSlot ones, scored as if a slot were free
         public String blocked = null;
+
+        void noSlot(Pick p) { noSlot++; if (bestNoSlot == null || p.score > bestNoSlot.score) bestNoSlot = p; }
     }
 
     public static Result evaluate(MarketAPI m, CAData.Profile profile, float minStability) {
@@ -129,14 +132,15 @@ public class CAEngine {
                 if (!supported && measuredFx == null) { r.unsupportedBuildable++; continue; }
                 if ((id.equals("IndEvo_AdAssem") || id.equals("IndEvo_AdManuf") || id.equals("IndEvo_ComForge")) && !CAItems.storageHasVPC()) continue;
                 if (id.equals("IndEvo_PrivatePort") && !courierPortSpot(m)) continue;
-                if (inst.isIndustry() && slotsFree <= 0) { r.noSlot++; continue; }
                 Pick p = new Pick();
                 p.id = id; p.name = spec.getName(); p.verb = "Build"; p.upgrade = false;
                 p.cost = inst.getBuildCost(); p.days = inst.getBuildTime();
                 if (measuredFx != null) { p.measured = true; CASimulator.apply(m, measuredFx, null, p, deficit); }
                 else effects(m, id, p, deficit);
                 upkeep(m, spec, null, p);
-                if (finish(m, p, profile, minStability, plan)) r.picks.add(p);
+                if (!finish(m, p, profile, minStability, plan)) continue;
+                if (inst.isIndustry() && slotsFree <= 0) r.noSlot(p);
+                else r.picks.add(p);
             } catch (Throwable t) {
                 CADiagnostics.quarantine(id, "build check at " + m.getName(), t);
             }
@@ -157,7 +161,7 @@ public class CAEngine {
                     Industry upInst = upSpec.getNewPluginInstance(m);
                     if (up.equals(vanillaUp) ? !ind.canUpgrade() : !upInst.isAvailableToBuild()) continue;
                     if (bmo && !CAAotD.allows(up, m, hidden)) continue;
-                    if (upInst.isIndustry() && !ind.isIndustry() && slotsFree <= 0) { r.noSlot++; continue; }
+                    boolean needsSlot = upInst.isIndustry() && !ind.isIndustry() && slotsFree <= 0;
                     if (!up.equals(vanillaUp) && upSpec.hasTag("consumes") && ind.getSpecialItem() != null) continue;   // the menu would discard the item
                     Pick p = new Pick();
                     p.id = up; p.name = upSpec.getName(); p.verb = "Upgrade to"; p.upgrade = true; p.existing = ind;
@@ -170,7 +174,9 @@ public class CAEngine {
                         CASimulator.apply(m, to, from, p, deficit);
                     } else effects(m, up, p, deficit);
                     upkeep(m, upSpec, ind.getSpec(), p);
-                    if (finish(m, p, profile, minStability, plan)) r.picks.add(p);
+                    if (!finish(m, p, profile, minStability, plan)) continue;
+                    if (needsSlot) r.noSlot(p);
+                    else r.picks.add(p);
                 } catch (Throwable t) {
                     CADiagnostics.quarantine(up, "upgrade check at " + m.getName(), t);
                 }

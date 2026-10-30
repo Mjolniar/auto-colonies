@@ -1,5 +1,6 @@
 package data.scripts.jonahtweaks.autopilot;
 
+import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.BaseCustomDialogDelegate;
 import com.fs.starfarer.api.campaign.BaseCustomUIPanelPlugin;
 import com.fs.starfarer.api.campaign.CustomUIPanelPlugin;
@@ -19,6 +20,7 @@ import java.util.List;
 public class CAColonyDialog extends BaseCustomDialogDelegate {
     public static final float W = 860f, H = 620f;
     static final String APPROVE = "ca:approve", REJECT = "ca:reject", SAVE_SETUP = "ca:savesetup", BACK = "ca:back";
+    static final String AUG_APPLY = "ca:aug:apply", AUG_UNSKIP = "ca:aug:unskip";
     final MarketAPI market;
     CustomPanelAPI root, content;
     String message = null;
@@ -72,6 +74,15 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         else if (BACK.equals(id)) { setupPage = false; message = null; }
         else if (APPROVE.equals(id)) { String err = CAAuto.approve(market); message = err == null ? "Approved and started" : err; }
         else if (REJECT.equals(id)) { CAAuto.reject(market); message = "Rejected; it won't propose again for 30 days"; }
+        else if ((AUG_APPLY.equals(id) || AUG_UNSKIP.equals(id)) && Global.getSettings().getModManager().isModEnabled(CAAugments.MOD)) {
+            try {
+                if (AUG_UNSKIP.equals(id)) { CAAugments.unskip(market); message = "Autopilot may add those augments again"; }
+                else { String err = CAAugments.applyNow(market); message = err == null ? "Station augments updated" : err; }
+            } catch (Throwable e) {
+                CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment action failed at " + market.getName(), e);
+                message = "That failed; see starsector.log";
+            }
+        }
         else if (id instanceof String && ((String) id).startsWith("ca:lock:")) {
             String ind = ((String) id).substring("ca:lock:".length());
             if (!c.locks.remove(ind)) c.locks.add(ind);
@@ -193,6 +204,15 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             if (r.locked > 0) t.addPara(r.locked + " supported buildings are locked here until researched (Ashes of the Domain).", gray, 6f);
             if (r.unsupportedBuildable > 0) t.addPara(r.unsupportedBuildable
                     + " buildings from mods could be built here but aren't supported yet; see Diagnostics in the Intel screen.", gray, 6f);
+        }
+
+        if (Global.getSettings().getModManager().isModEnabled(CAAugments.MOD) && s.augmentMode != 2 && c.mode != CAData.Mode.OFF) {
+            t.addSectionHeading("Station augments", Alignment.MID, 12f);
+            try { CAAugments.renderColony(t, market, c, s, planWith); }
+            catch (Throwable e) {
+                CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment section failed at " + market.getName(), e);
+                t.addPara("Station augment info unavailable; see starsector.log.", gray, 6f);
+            }
         }
 
         t.addSectionHeading("Locks", Alignment.MID, 12f);

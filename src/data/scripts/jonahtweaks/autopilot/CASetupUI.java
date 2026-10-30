@@ -83,7 +83,7 @@ public class CASetupUI {
     }
 
     /** Opens every group (the first-time setup popup shows all options). */
-    public static void openAll() { open.addAll(java.util.Arrays.asList("budget", "build", "items", "people", "policy", "industry", "settle")); }
+    public static void openAll() { open.addAll(java.util.Arrays.asList("budget", "build", "items", "people", "policy", "industry", "settle", "augments")); }
 
     public static void render(TooltipMakerAPI t, CASettings s, float width) {
         String budget = s.budgetPercentMode ? Math.round(s.budgetPercent * 100f) + "% of net income (" + Misc.getDGSCredits(CABudget.limit(s)) + " now)"
@@ -156,6 +156,10 @@ public class CASetupUI {
                 + ", found at " + Misc.getDGSCredits(s.settlementMinIncome) + "/month")) {
             row(t, "Settlement mode", CASettings.SETTLE_NAMES[Math.max(0, Math.min(3, s.settlementMode))], "Advisor", "settle", true);
             row(t, "Found when a site makes at least", Misc.getDGSCredits(s.settlementMinIncome) + " per month", "20,000", "settleinc", false);
+        }
+        if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAAugments.MOD)
+                && group(t, "augments", "Station augments (Station Augments)", CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.augmentMode))].toLowerCase())) {
+            row(t, "Station augments", CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.augmentMode))], "Follow colony mode", "aug", true);
         }
         ButtonAPI rec = t.addButton("Use recommended settings", PREFIX + "recommend:x", Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
                 Alignment.MID, CutStyle.ALL, 260f, 24f, 14f);
@@ -232,6 +236,7 @@ public class CASetupUI {
         else if (k.equals("freeport")) s.freePortMode = s.freePortMode == 0 ? 1 : 0;
         else if (k.equals("settle")) s.settlementMode = (Math.max(0, Math.min(3, s.settlementMode)) + 1) % 4;
         else if (k.equals("measured")) s.measuredMode = (Math.max(0, Math.min(2, s.measuredMode)) + 1) % 3;
+        else if (k.equals("aug")) s.augmentMode = (Math.max(0, Math.min(2, s.augmentMode)) + 1) % 3;
         else if (k.equals("settleinc")) s.settlementMinIncome = Math.max(5000f, s.settlementMinIncome + 5000f * dir);
         return true;
     }

@@ -140,6 +140,11 @@ public class CAIntel extends BaseIntelPlugin {
             try { CASettlement.render(t, data, s); }
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "settlement section failed", e); t.addPara("Settlement info unavailable; see starsector.log.", gray, 6f); }
         }
+        if (Global.getSettings().getModManager().isModEnabled(CAAugments.MOD) && s.augmentMode != 2) {
+            t.addSectionHeading("Station augments", Alignment.MID, 16f);
+            try { CAAugments.renderEmpire(t, data, s); }
+            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment section failed", e); t.addPara("Station augment info unavailable; see starsector.log.", gray, 6f); }
+        }
 
         t.addSectionHeading("Settings", Alignment.MID, 16f);
         if (!s.setupDone) t.addPara("First-time setup hasn't run yet; it opens when you first switch a colony to Approve or Auto.", gray, 6f);
@@ -187,6 +192,12 @@ public class CAIntel extends BaseIntelPlugin {
             if (Global.getSettings().getModManager().isModEnabled(CASettlement.MOD)) {
                 try { CASettlement.handle(a[1], a[2], d, d.settings); }
                 catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "settlement action failed", t); CALog.add("Settlement: that failed; see starsector.log", true); }
+            }
+        } else if (buttonId instanceof String[] && "aug".equals(((String[]) buttonId)[0])) {
+            MarketAPI m = CAAuto.market(((String[]) buttonId)[2]);
+            if (m != null && Global.getSettings().getModManager().isModEnabled(CAAugments.MOD)) {
+                try { String err = CAAugments.applyNow(m); if (err != null) CALog.add(m.getName() + ": station augments: " + err); }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment action failed", t); CALog.add(m.getName() + ": station augments: that failed; see starsector.log", true); }
             }
         } else if (buttonId instanceof String[]) {
             String[] a = (String[]) buttonId;
