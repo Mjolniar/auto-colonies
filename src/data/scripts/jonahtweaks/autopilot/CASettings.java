@@ -55,6 +55,9 @@ public class CASettings {
     // mod buildings scored from probe-colony measurements: 0 build like any other (default), 1 recommend only, 2 ignore
     public int measuredMode = 0;
     public static final String[] MEASURED_NAMES = {"Build when best", "Recommend only", "Ignore"};
+    // Station Augments: 0 follow each colony's mode (Auto applies, Approve logs a recommendation), 1 recommend only, 2 off
+    public int augmentMode = 0;
+    public static final String[] AUGMENT_NAMES = {"Follow colony mode", "Recommend only", "Off"};
 
     // this month
     public int month = -1;

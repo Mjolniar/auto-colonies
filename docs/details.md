@@ -5,7 +5,7 @@ Colony management automation for Starsector 0.98a, plus sticky combat autopilot.
 ## Install
 
 1. Put the `Jonah Tweaks` folder in `Starsector/mods/`.
-2. Enable **Jonah Tweaks** in the launcher. No required dependencies. Optional integrations load only when their mod is enabled: Terraforming Made Easy, Industrial Evolution, Nexerelin, Emergent Threats, Ashes of the Domain (through Building Menu Overhaul), Random Assortment of Things (Frontiers settlement). Any combination works; see "Building from source".
+2. Enable **Jonah Tweaks** in the launcher. No required dependencies. Optional integrations load only when their mod is enabled: Terraforming Made Easy, Industrial Evolution, Nexerelin, Emergent Threats, Ashes of the Domain (through Building Menu Overhaul), Random Assortment of Things (Frontiers settlement), Station Augments. Any combination works; see "Building from source".
 3. Defaults for new saves are in `data/config/colony_autopilot.json`. Every option can also be changed in-game.
 4. Don't remove the mod from a save that has used it: Autopilot Storage is a market tab in your colonies.
 
@@ -45,6 +45,12 @@ Colony management automation for Starsector 0.98a, plus sticky combat autopilot.
   - Founds the settlement on the best surveyed site once it makes at least the threshold (default 20,000 per month), the same way RAT's "Establish the settlement" option does. Only unclaimed planets and your own colonies; a faction's world can revoke access.
   - Builds Refining and Trading Post when they pay back within 2 years. Other facilities change how you play, so they're yours to pick.
   - Founding and facilities use the same budget, per-project cap and fees as colonies.
+- **Station augments (Station Augments):** installing costs nothing and can be undone, so the manager picks the set of known augments worth the most within each station's augment points (AP).
+  - Scored with the colony's goal weights, like buildings: accessibility (Command Center, Logistics Drones, Jump Engine), upkeep (Efficiency Overhaul; Sanctified Station only with an active Luddic majority), output (Hydroponics, only above what the colony already makes), ground defense (ECM Package) and the mod's own combat rating for the rest. Economy Conversion is valued as the best industry waiting for a slot.
+  - Setting **Station augments**: Follow colony mode (default: Auto colonies apply it within a week, Approve colonies get the recommendation in the log once), Recommend only, Off. Every managed colony's panel shows the recommendation with an Apply button; the empire panel lists each station.
+  - Augments you installed are never changed. One Autopilot added that you remove isn't added back to that colony ("Allow again" in its panel).
+  - Installed augments are only replaced when the new set is worth at least 10% (and 300 per month) more, so wobbling estimates don't swap them back and forth.
+  - Left to you: augments that use up an item (Shrouded, Threat), ones that give AP back for a drawback (Extreme or Special Modifications), and Economy Conversion while the colony plans for Security. Economy Conversion is never removed once added, since its industry slot may be in use.
 - **Unsupported content:** mod content the manager can't support or measure is never acted on. It's analyzed and reported (see Diagnostics).
 
 ## Diagnostics
@@ -66,9 +72,9 @@ jar cf jars/jonahtweaks.jar -C build data
 ```
 
 
-`CATerraform`, `CAIndEvo`, `CACourier`, `CADefense` and `CASettlement` reference optional mods. They're only called when that mod is enabled, so the mod runs without them. `CASettlement` also needs RAT's Kotlin runtime (LazyLib) and LunaLib on the compile classpath.
+`CATerraform`, `CAIndEvo`, `CACourier`, `CADefense`, `CASettlement` and `CAAugments` reference optional mods. They're only called when that mod is enabled, so the mod runs without them. `CASettlement` and `CAAugments` also need the Kotlin runtime (LazyLib) and LunaLib on the compile classpath.
 
-The author's build checks prove any combination works: jdeps shows only those classes reference each optional mod, every caller checks `isModEnabled`, and the jar links under `-Xverify:all` against all 16 combinations of the compiled-in optional mods. `CAAotD` reaches Building Menu Overhaul through reflection only, so it needs no jar at compile time.
+The author's build checks prove any combination works: jdeps shows only those classes reference each optional mod, every caller checks `isModEnabled`, and the jar links under `-Xverify:all` against all 32 combinations of the compiled-in optional mods. An offline check covers the augment choice (knapsack against brute force, swap margin, shrunk budget, incompatible pairs). `CAAotD` reaches Building Menu Overhaul through reflection only, so it needs no jar at compile time.
 
 ## Test steps
 
@@ -82,3 +88,4 @@ The author's build checks prove any combination works: jdeps shows only those cl
 8. With Ashes of the Domain: open a colony's panel. Recommended builds should include its starter buildings (e.g. Smelting), never a building its build menu locks; locked plan steps show "(locked: ...)". After a starter finishes, the next pick should be its upgrade (e.g. Upgrade to Refining) once researched. `starsector.log` should have no "can't read Building Menu Overhaul's build rules" line.
 9. Diagnostics: after a load, the scan line in `starsector.log` reports how many buildings were measured. Measured entries in the empire panel list what was read (e.g. "+3 metals, needs 2 ore"). Check that no "registered scripts or intel on the probe colony" warning repeats for the same building.
 10. With Random Assortment of Things: the empire panel's Settlement section lists the 3 best surveyed sites. In Advisor mode, "Found on ..." founds it; the settlement should appear in RAT's intel with a Landing Pad and the chosen resource. Next, Refining (on a refinable resource) is offered.
+11. With Station Augments: open the panel of a colony with an orbital station. The Station augments section shows AP used and the recommended changes. Click Apply; the station's augment menu (dock, station, augments) should list them, and the log says "you set station augments: added ...". Remove one in the augment menu, advance a day: the log says Autopilot won't add it there again, and the panel offers "Allow again".

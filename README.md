@@ -1,5 +1,11 @@
 # Jonah Tweaks: Colony Autopilot
 
+> [!WARNING]
+> **AI-generated.** Mod, docs and build checks written by AI coding agents. Compiled and checked offline (bytecode
+> verification against every combination of the optional mods); the newest features aren't tested in game yet. Expect
+> bugs. Report them as [issues](https://github.com/Mjolniar/starsector-colony-autopilot/issues) with
+> `starsector-core/starsector.log` and `saves/common/colony_autopilot_diagnostics.json.data`.
+
 Colony management automation for Starsector 0.98a-RC8. Works alone or with any mix of the supported mods.
 
 ## Features
@@ -28,6 +34,7 @@ All optional. Each loads only when its mod is enabled.
 | Emergent Threats | Antimatter Stabilizer conversion |
 | Ashes of the Domain | Research locks, upgrade paths, starter buildings |
 | Random Assortment of Things | Frontiers settlement: found and develop |
+| Station Augments | Best augment loadout per station, within its AP |
 
 ## Install
 
@@ -54,4 +61,4 @@ javac --release 17 -cp "<core jars>;<optional mod jars>" -d build <all .java fil
 jar cf jars/jonahtweaks.jar -C build data
 ```
 
-Core jars: `starfarer.api.jar`, `starfarer_obf.jar`, `fs.common_obf.jar`, `log4j-1.2.9.jar`, `json.jar`, `lwjgl.jar`, `lwjgl_util.jar`. Optional: Terraforming Made Easy, Industrial Evolution, Nexerelin, Random Assortment of Things (plus LazyLib's Kotlin runtime and LunaLib).
+Core jars: `starfarer.api.jar`, `starfarer_obf.jar`, `fs.common_obf.jar`, `log4j-1.2.9.jar`, `json.jar`, `lwjgl.jar`, `lwjgl_util.jar`. Optional: Terraforming Made Easy, Industrial Evolution, Nexerelin, Random Assortment of Things, Station Augments (plus LazyLib's Kotlin runtime and LunaLib).

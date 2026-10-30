@@ -103,6 +103,10 @@ public class CAAuto {
             try { CASettlement.run(d, s); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "settlement step failed", t); }
         }
+        if (Global.getSettings().getModManager().isModEnabled(CAAugments.MOD)) {
+            try { CAAugments.run(d, s, now); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment step failed", t); }
+        }
     }
 
     static void propose(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String why) {

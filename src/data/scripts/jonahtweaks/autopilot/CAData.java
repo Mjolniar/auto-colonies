@@ -35,6 +35,11 @@ public class CAData {
         public long lastHazardPay = 0L, lastFreePort = 0L;
         public boolean threatHigh = false;
         public long threatSince = 0L;
+        // Station Augments: ids Autopilot installed here, and ids you removed that it won't add back
+        public Set<String> augAuto, augSkip;
+
+        public Set<String> augAuto() { if (augAuto == null) augAuto = new HashSet<String>(); return augAuto; }
+        public Set<String> augSkip() { if (augSkip == null) augSkip = new HashSet<String>(); return augSkip; }
     }
 
     public Map<String, Colony> colonies = new HashMap<String, Colony>();
