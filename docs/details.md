@@ -5,7 +5,7 @@ Colony management automation for Starsector 0.98a, plus sticky combat autopilot.
 ## Install
 
 1. Put the `Jonah Tweaks` folder in `Starsector/mods/`.
-2. Enable **Jonah Tweaks** in the launcher. No required dependencies. Optional integrations load only when their mod is enabled: Terraforming Made Easy, Industrial Evolution, Nexerelin, Emergent Threats, Ashes of the Domain (through Building Menu Overhaul), Random Assortment of Things (Frontiers settlement), Station Augments. Any combination works; see "Building from source".
+2. Enable **Jonah Tweaks** in the launcher. No required dependencies. Optional integrations load only when their mod is enabled: Terraforming Made Easy, Industrial Evolution, Nexerelin, Emergent Threats, Ashes of the Domain (Building Menu Overhaul, Vaults of Knowledge synergies, Theory of Toolbox trade contracts), Random Assortment of Things (Frontiers settlement), Station Augments. Any combination works; see "Building from source".
 3. Defaults for new saves are in `data/config/colony_autopilot.json`. Every option can also be changed in-game.
 4. Don't remove the mod from a save that has used it: Autopilot Storage is a market tab in your colonies.
 
@@ -37,6 +37,15 @@ Colony management automation for Starsector 0.98a, plus sticky combat autopilot.
   - Buildings the Unification Center checks by exact id aren't upgraded into AotD versions while that plan is open.
   - Plan steps that are still locked show what they need, e.g. "(locked: ...)".
   - AI cores go to AotD versions of a building type with the same priority as the vanilla building.
+- **Industry synergies (Ashes of the Domain, Vaults of Knowledge):** building combinations on one colony (Ore-To-Core: Refining with Mining; Defensive Network: star fortress, Heavy Batteries and High Command; Rapid Transportation: Spaceport with Waystation; and 16 more).
+  - A build's estimated value includes the synergies it starts or ends, and for Spaceport, Waystation, Maglev and Daedalus Array the efficiency they add to synergies already running.
+  - Effects are modelled from VoK 5.0.7's code. Most apply in full whatever the efficiency (+2 metals, x1.5 ground defense); only some scale with it (accessibility, Resort Center income, ship quality, Syndicate Line income). Pather interest counts as a small stability effect.
+  - Only synergies researched at that colony count. The colony panel shows its efficiency, the active synergies and those one building away.
+- **Trade contracts (Ashes of the Domain, Theory of Toolbox):** monthly deliveries from your surplus, paid at 2-5x the export cut. Three missed months end a contract and cost merchant renown. Mode Advisor (default), Auto or Off.
+  - An offer is only taken when ToT's own figures (your production against your demand plus every contract you hold) leave 15% to spare, and it pays more than the exports those goods would have earned. Up to 3 per day in Auto, best gain first.
+  - The empire panel lists held contracts, what they're short of, and the month's offers with pay, gain over exporting and rewards; Advisor gives each fillable offer an Accept button.
+  - Commodities held contracts are short of count as shortages when scoring buildings, so colonies that would make them score higher. A missed delivery is logged.
+  - Programs you issue yourself, freezing and terminating are left to you.
 - **Mod buildings:** a building with no formula or estimate is measured: it's built on a throwaway probe colony (your colony's size and vanilla deposits, no planet or location) and the difference is read: commodities supplied and demanded, stability, accessibility, income and upkeep multipliers, ground defense, fleet size and patrols, ship quality. It's then scored like any other building. Upgrades measure both buildings on the same probe and score the difference.
   - Effects that only happen over time (monthly items, spawned fleets) aren't seen, so measured buildings score low rather than high.
   - A building whose code fails on the probe, or that registers scripts or intel when built, is "can't be measured" and never acted on; anything it added is removed.
@@ -74,7 +83,7 @@ jar cf jars/jonahtweaks.jar -C build data
 
 `CATerraform`, `CAIndEvo`, `CACourier`, `CADefense`, `CASettlement` and `CAAugments` reference optional mods. They're only called when that mod is enabled, so the mod runs without them. `CASettlement` and `CAAugments` also need the Kotlin runtime (LazyLib) and LunaLib on the compile classpath.
 
-The author's build checks prove any combination works: jdeps shows only those classes reference each optional mod, every caller checks `isModEnabled`, and the jar links under `-Xverify:all` against all 32 combinations of the compiled-in optional mods. An offline check covers the augment choice (knapsack against brute force, swap margin, shrunk budget, incompatible pairs). `CAAotD` reaches Building Menu Overhaul through reflection only, so it needs no jar at compile time.
+The author's build checks prove any combination works: jdeps shows only those classes reference each optional mod, every caller checks `isModEnabled`, and the jar links under `-Xverify:all` against all 32 combinations of the compiled-in optional mods. `CASynergies` and `CAContracts` reach Vaults of Knowledge and Theory of Toolbox through reflection only, like `CAAotD`; if a name can't be found they're left out and the log says why. An offline check covers the augment choice (knapsack against brute force, swap margin, shrunk budget, incompatible pairs). `CAAotD` reaches Building Menu Overhaul through reflection only, so it needs no jar at compile time.
 
 ## Test steps
 
@@ -89,3 +98,5 @@ The author's build checks prove any combination works: jdeps shows only those cl
 9. Diagnostics: after a load, the scan line in `starsector.log` reports how many buildings were measured. Measured entries in the empire panel list what was read (e.g. "+3 metals, needs 2 ore"). Check that no "registered scripts or intel on the probe colony" warning repeats for the same building.
 10. With Random Assortment of Things: the empire panel's Settlement section lists the 3 best surveyed sites. In Advisor mode, "Found on ..." founds it; the settlement should appear in RAT's intel with a Landing Pad and the chosen resource. Next, Refining (on a refinable resource) is offered.
 11. With Station Augments: open the panel of a colony with an orbital station. The Station augments section shows AP used and the recommended changes. Click Apply; the station's augment menu (dock, station, augments) should list them, and the log says "you set station augments: added ...". Remove one in the augment menu, advance a day: the log says Autopilot won't add it there again, and the panel offers "Allow again".
+12. With Vaults of Knowledge: a colony panel's Industry synergies section shows the efficiency and the active synergies, matching VoK's own synergy screen. A recommended build that completes one says "Starts the ... synergy".
+13. With Theory of Toolbox, after a month has passed: the empire panel's Trade contracts section lists the month's offers. Accept one in Advisor; it should appear in ToT's contract screen as active. `starsector.log` should have no "can't read Theory of Toolbox's trade contracts" or "can't read Vaults of Knowledge's industry synergies" line.

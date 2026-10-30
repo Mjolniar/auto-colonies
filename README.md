@@ -32,7 +32,7 @@ All optional. Each loads only when its mod is enabled.
 | Industrial Evolution | Ambassadors, edicts, VPC chips, courier shipping |
 | Nexerelin | Emergency defense fleets |
 | Emergent Threats | Antimatter Stabilizer conversion |
-| Ashes of the Domain | Research locks, upgrade paths, starter buildings |
+| Ashes of the Domain | Research locks, upgrade paths, starter buildings, industry synergies, trade contracts |
 | Random Assortment of Things | Frontiers settlement: found and develop |
 | Station Augments | Best augment loadout per station, within its AP |
 

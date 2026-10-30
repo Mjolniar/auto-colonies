@@ -58,6 +58,9 @@ public class CASettings {
     // Station Augments: 0 follow each colony's mode (Auto applies, Approve logs a recommendation), 1 recommend only, 2 off
     public int augmentMode = 0;
     public static final String[] AUGMENT_NAMES = {"Follow colony mode", "Recommend only", "Off"};
+    // Ashes of the Domain trade contracts: 0 Advisor (default), 1 Auto, 2 Off
+    public int contractMode = 0;
+    public static final String[] CONTRACT_NAMES = {"Advisor", "Auto", "Off"};
 
     // this month
     public int month = -1;

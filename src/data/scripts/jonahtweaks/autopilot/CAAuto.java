@@ -107,6 +107,10 @@ public class CAAuto {
             try { CAAugments.run(d, s, now); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment step failed", t); }
         }
+        if (Global.getSettings().getModManager().isModEnabled(CAContracts.MOD)) {
+            try { CAContracts.run(d, s); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "trade contract step failed", t); }
+        }
     }
 
     static void propose(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String why) {
