@@ -1,0 +1,8 @@
+{
+	"minBattleSize":2000,
+	"defaultBattleSize":2000,
+	"maxBattleSize":2000,
+	"plugins":{
+		"jt_StickyAutopilot":"data.scripts.jonahtweaks.JTStickyAutopilot"
+	}
+}

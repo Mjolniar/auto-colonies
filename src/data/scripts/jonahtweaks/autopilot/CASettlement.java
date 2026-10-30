@@ -1,0 +1,403 @@
+package data.scripts.jonahtweaks.autopilot;
+
+import assortment_of_things.frontiers.FrontiersUtils;
+import assortment_of_things.frontiers.SettlementData;
+import assortment_of_things.frontiers.SettlementManager;
+import assortment_of_things.frontiers.data.SettlementFacilitySlot;
+import assortment_of_things.frontiers.data.SettlementModifierSpec;
+import assortment_of_things.frontiers.data.SiteData;
+import assortment_of_things.frontiers.intel.SettlementIntel;
+import assortment_of_things.frontiers.plugins.facilities.BaseSettlementFacility;
+import assortment_of_things.frontiers.plugins.modifiers.BaseSettlementModifier;
+import assortment_of_things.misc.RATSettings;
+import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.PlanetAPI;
+import com.fs.starfarer.api.campaign.RepLevel;
+import com.fs.starfarer.api.campaign.SectorEntityToken;
+import com.fs.starfarer.api.campaign.StarSystemAPI;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.campaign.econ.MarketConditionAPI;
+import com.fs.starfarer.api.combat.MutableStat;
+import com.fs.starfarer.api.impl.campaign.ids.Factions;
+import com.fs.starfarer.api.impl.campaign.ids.Industries;
+import com.fs.starfarer.api.impl.campaign.ids.Stats;
+import com.fs.starfarer.api.impl.campaign.ids.Tags;
+import com.fs.starfarer.api.impl.campaign.submarkets.StoragePlugin;
+import com.fs.starfarer.api.util.Misc;
+
+import java.util.*;
+
+/**
+ * Random Assortment of Things "Frontiers" settlement (one per save). Founds it on the best surveyed site once that
+ * site's income clears the threshold, then builds the facilities that raise its income (Refining, Trading Post) when
+ * they pay for themselves within two years. Founding repeats what RAT's own "Establish the settlement" option does.
+ * Utility facilities (shipyard, training, beacons, ...) change how you play, so they're left to you.
+ * Only called when RAT is enabled (check CASettlement.MOD first; the constant is inlined, so it doesn't load this class).
+ */
+public class CASettlement {
+    public static final String MOD = "assortment_of_things";
+    static final float BASE_COST = 350000f;         // RAT's founding cost before its cost multiplier
+    static final float PAD_INCOME = 5000f;          // RAT's Landing Pad, built with every settlement
+    static final float PAYBACK_MONTHS = 24f;
+    static final String[] INCOME_FACILITIES = {"refinery", "trade_post"};
+    static final float[] INCOME_PERCENT = {75f, 20f};
+
+    /** The best place for the settlement on one planet: its best resource and the monthly income before facilities. */
+    public static class Site {
+        public String planetId, planetName, systemName, resource, resourceName;
+        public float income, refinedIncome, distanceLY;
+        public boolean refinable;
+    }
+
+    static List<Site> cache = null;
+    static float cachedAt = -999f;
+
+    static FrontiersUtils fu() { return FrontiersUtils.INSTANCE; }
+
+    /** RAT is enabled and Frontiers is on for this save. */
+    public static boolean active() { return fu().isFrontiersActive(); }
+
+    static float costMult() { Float f = RATSettings.INSTANCE.getFrontiersCostMult(); return f == null ? 1f : f; }
+    static float incomeMult() { Float f = RATSettings.INSTANCE.getFrontiersIncomeMult(); return f == null ? 1f : f; }
+    public static float foundingCost() { return BASE_COST * costMult(); }
+
+    static SettlementData settlement() { return fu().getFrontiersData().getActiveSettlement(); }
+
+    static float days() { return Global.getSector().getClock().getElapsedDaysSince(0L); }
+
+    // ---------------- sites ----------------
+
+    /** RAT's own rules for offering "Establish a new Settlement", plus: surveyed, and unclaimed or your own planet. */
+    static boolean eligible(PlanetAPI p) {
+        if (p == null || p.isStar() || p.isGasGiant() || p.hasTag("gas_giant") || p.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER)) return false;
+        StarSystemAPI sys = p.getStarSystem();
+        if (sys == null || sys.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER)) return false;
+        MarketAPI m = p.getMarket();
+        if (m == null || m.getSurveyLevel() != MarketAPI.SurveyLevel.FULL) return false;
+        if (p.getFaction() == null || !p.getFaction().getRelToPlayer().isAtWorst(RepLevel.INHOSPITABLE)) return false;
+        // a faction's world can revoke access if relations sour, so only unclaimed planets and your own colonies
+        return m.isPlanetConditionMarketOnly() || m.isPlayerOwned() || p.getFaction().isNeutralFaction();
+    }
+
+    /** Monthly income RAT would pay for this resource on this planet, before and after Refining. */
+    static Site evaluate(PlanetAPI p) {
+        List<MarketConditionAPI> conds = p.getMarket().getConditions();
+        Site best = null;
+        for (SettlementModifierSpec spec : fu().getModifierSpecs()) {
+            if (!spec.isResource()) continue;
+            BaseSettlementModifier plugin = fu().getModifierPlugin(spec);
+            boolean present = false;
+            for (MarketConditionAPI c : conds) if (plugin.includeForCondition(c.getId()) && spec.getConditions().containsKey(c.getId())) present = true;
+            if (!present) continue;
+            int base = spec.getIncomeForCondition(conds);
+            if (base <= 0) continue;
+            MutableStat stat = new MutableStat(base);
+            stat.modifyFlat("jt_pad", PAD_INCOME);
+            float plain = stat.getModifiedValue() * incomeMult();
+            stat.modifyPercent("jt_refinery", 75f);
+            float refined = stat.getModifiedValue() * incomeMult();
+            if (best != null && plain <= best.income) continue;
+            best = new Site();
+            best.planetId = p.getId(); best.planetName = p.getName(); best.systemName = p.getStarSystem().getNameWithLowercaseTypeShort();
+            best.resource = spec.getId(); best.resourceName = spec.getName();
+            best.income = plain; best.refinable = spec.getCanBeRefined(); best.refinedIncome = spec.getCanBeRefined() ? refined : plain;
+        }
+        return best;
+    }
+
+    /** Surveyed sites ranked by income, nearest to your colonies first on ties. Rescanned every 30 days or on request. */
+    public static List<Site> sites(boolean refresh) {
+        float now = days();
+        if (!refresh && cache != null && now - cachedAt < 30f) return cache;
+        List<MarketAPI> mine = Misc.getPlayerMarkets(false);
+        List<Site> out = new ArrayList<Site>();
+        for (StarSystemAPI sys : Global.getSector().getStarSystems()) {
+            for (PlanetAPI p : sys.getPlanets()) {
+                try {
+                    if (!eligible(p)) continue;
+                    Site s = evaluate(p);
+                    if (s == null) continue;
+                    s.distanceLY = 999f;
+                    for (MarketAPI m : mine) s.distanceLY = Math.min(s.distanceLY, Misc.getDistanceLY(p, m.getPrimaryEntity()));
+                    out.add(s);
+                } catch (Throwable t) {
+                    CADiagnostics.LOG.warn(CADiagnostics.TAG + "settlement site check failed at " + p.getName(), t);
+                }
+            }
+        }
+        Collections.sort(out, new Comparator<Site>() {
+            public int compare(Site a, Site b) {
+                int c = Float.compare(b.refinedIncome, a.refinedIncome);
+                return c != 0 ? c : Float.compare(a.distanceLY, b.distanceLY);
+            }
+        });
+        cache = out; cachedAt = now;
+        return out;
+    }
+
+    // ---------------- founding ----------------
+
+    /** Founds the settlement on this planet's best site, exactly as RAT's dialog does. Returns null on success. */
+    public static String found(String planetId) {
+        if (settlement() != null) return "You already have a settlement";
+        SectorEntityToken e = Global.getSector().getEntityById(planetId);
+        if (!(e instanceof PlanetAPI) || !eligible((PlanetAPI) e)) return "That planet can't host a settlement any more";
+        PlanetAPI planet = (PlanetAPI) e;
+        Site want = evaluate(planet);
+        if (want == null) return "No resource site on " + planet.getName();
+        float cost = foundingCost();
+        if (CABuild.credits() < cost) return "Not enough credits (" + Misc.getDGSCredits(cost) + " needed)";
+
+        // pick the site holding that resource (RAT puts every resource the planet has on at least one site)
+        List<SiteData> sites = fu().getSiteData(planet);
+        if (sites == null || sites.isEmpty()) sites = fu().generateNewSites(planet);
+        SiteData site = null;
+        for (SiteData sd : sites) if (sd.getModifierIDs().contains(want.resource)) { site = sd; break; }
+        if (site == null) return "No site on " + planet.getName() + " has its " + want.resourceName;
+        // every modifier must match a planet condition, or RAT's own code would fail; check before paying
+        List<BaseSettlementModifier> mods = new ArrayList<BaseSettlementModifier>();
+        for (String id : site.getModifierIDs()) {
+            SettlementModifierSpec spec = fu().getModifierByID(id);
+            String cond = null;
+            for (MarketConditionAPI c : planet.getMarket().getConditions()) if (spec.getConditions().containsKey(c.getId())) { cond = c.getId(); break; }
+            if (cond == null) return "Site modifier " + spec.getName() + " has no matching condition on " + planet.getName();
+            BaseSettlementModifier plugin = fu().getModifierPlugin(spec);
+            plugin.setConditionId(cond);
+            mods.add(plugin);
+        }
+
+        Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(cost);
+        SectorEntityToken ent = planet.getStarSystem().addCustomEntity("rat_frontiers_settlement_" + Misc.genUID(), planet.getName() + " Settlement",
+                "rat_frontiers_settlement", Factions.PLAYER);
+        ent.setCircularOrbitPointingDown(planet, 1f, 1f, 360f);
+        ent.getMemoryWithoutUpdate().set("$abandonedStation", true);
+        MarketAPI market = Global.getFactory().createMarket("rat_station_commander_market", ent.getName(), 3);
+        market.setSurveyLevel(MarketAPI.SurveyLevel.FULL);
+        market.setPrimaryEntity(ent);
+        market.setFactionId(Factions.PLAYER);
+        market.addIndustry(Industries.SPACEPORT);
+        market.addSubmarket("rat_settlement_storage");
+        ((StoragePlugin) market.getSubmarket("rat_settlement_storage").getPlugin()).setPlayerPaidToUnlock(true);
+        market.setPlanetConditionMarketOnly(false);
+        ent.setMarket(market);
+        ent.getMemoryWithoutUpdate().unset("$tradeMode");
+        market.getStability().modifyFlat("rat_base", 10f);
+        market.getAccessibilityMod().modifyFlat("rat_base", 0.40f);
+        market.getStats().getDynamic().getMod(Stats.GROUND_DEFENSES_MOD).modifyFlat("rat_base", 200f);
+
+        SettlementData data = new SettlementData(planet, ent);
+        data.setLocation(site.getLocation());
+        data.setAngleFromCenter(site.getAngleFromCenter());
+        data.setDistanceFromCenteer(site.getDistanceFromCenter());
+        fu().getFrontiersData().setActiveSettlement(data);
+        for (int i = 0; i < 6; i++) {
+            SettlementFacilitySlot slot = new SettlementFacilitySlot(data);
+            if (i == 0) slot.installNewFacility("landing_pad");
+            data.getFacilitySlots().add(slot);
+        }
+        for (BaseSettlementModifier plugin : mods) {
+            plugin.setSettlement(data);
+            data.getModifiers().add(plugin);
+            if (plugin.getSpec().isResource()) data.getStats().getIncome().setBaseValue(plugin.getSpec().getIncomeForCondition(planet.getMarket().getConditions()));
+            else data.getStats().getIncome().setBaseValue(0f);
+            plugin.apply();
+        }
+        SettlementManager manager = new SettlementManager(data);
+        Global.getSector().addScript(manager);
+        Global.getSector().getListenerManager().addListener(manager);
+        data.setMananger(manager);
+        SettlementIntel intel = new SettlementIntel(data);
+        data.setIntel(intel);
+        Global.getSector().getIntelManager().addIntel(intel);
+        cache = null;
+        CADiagnostics.LOG.info(CADiagnostics.TAG + "founded settlement on " + planet.getName() + " (" + want.resourceName + ") for " + Misc.getDGSCredits(cost));
+        return null;
+    }
+
+    // ---------------- facilities ----------------
+
+    /** An income facility worth building now: id, name, cost and the monthly income it adds. */
+    public static class Facility { public String id, name; public float cost, gain; }
+
+    /** The income facility with the shortest payback that's buildable now, or null. */
+    public static Facility nextFacility() {
+        SettlementData data = settlement();
+        if (data == null) return null;
+        boolean freeSlot = false;
+        for (SettlementFacilitySlot slot : data.getFacilitySlots()) if (slot.getFacilityID().isEmpty()) freeSlot = true;
+        if (!freeSlot) return null;
+        Facility best = null;
+        for (int i = 0; i < INCOME_FACILITIES.length; i++) {
+            String id = INCOME_FACILITIES[i];
+            boolean has = false;
+            for (SettlementFacilitySlot slot : data.getFacilitySlots()) if (id.equals(slot.getFacilityID())) has = true;
+            if (has) continue;
+            BaseSettlementFacility plugin = null;
+            for (BaseSettlementFacility f : fu().getAllFacilityPlugins()) if (id.equals(f.getID())) plugin = f;
+            if (plugin == null || !plugin.canBeBuild()) continue;
+            MutableStat income = data.getStats().getIncome();
+            float before = income.getModifiedValue();
+            income.modifyPercent("jt_probe", INCOME_PERCENT[i]);
+            float gain = (income.getModifiedValue() - before) * incomeMult();
+            income.unmodify("jt_probe");
+            Facility f = new Facility();
+            f.id = id; f.name = plugin.getName(); f.cost = plugin.getCost() * costMult(); f.gain = gain;
+            if (gain <= 0f || f.cost / gain > PAYBACK_MONTHS) continue;
+            if (best == null || f.cost / f.gain < best.cost / best.gain) best = f;
+        }
+        return best;
+    }
+
+    /** Builds an income facility in a free slot, paying RAT's price the way its management screen does. */
+    public static String buildFacility(String id) {
+        SettlementData data = settlement();
+        if (data == null) return "No settlement";
+        Facility f = nextFacility();
+        if (f == null || !f.id.equals(id)) return "That facility isn't the one to build now";
+        if (CABuild.credits() < f.cost) return "Not enough credits (" + Misc.getDGSCredits(f.cost) + " needed)";
+        for (SettlementFacilitySlot slot : data.getFacilitySlots()) {
+            if (!slot.getFacilityID().isEmpty()) continue;
+            Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(f.cost);
+            slot.installNewFacility(id);
+            CADiagnostics.LOG.info(CADiagnostics.TAG + "settlement facility " + id + " for " + Misc.getDGSCredits(f.cost));
+            return null;
+        }
+        return "No free facility slot";
+    }
+
+    // ---------------- daily pass ----------------
+
+    public static void run(CAData d, CASettings s) {
+        if (!active() || s.settlementMode == 3) return;
+        SettlementData data = settlement();
+        // a proposal goes stale when you found or build it yourself first
+        if ("found".equals(d.settlePendingKind) && data != null) clearPending(d);
+        if ("facility".equals(d.settlePendingKind)) { Facility f = data == null ? null : nextFacility(); if (f == null || !f.id.equals(d.settlePendingId)) clearPending(d); }
+        boolean approve = s.settlementMode == 1, auto = s.settlementMode == 2;
+        if (!approve && !auto) return;   // Advisor: the empire panel shows the recommendation and a button
+        String kind, id, name; float cost;
+        if (data == null) {
+            List<Site> list = sites(false);
+            if (list.isEmpty()) return;
+            Site best = list.get(0);
+            if (best.income < s.settlementMinIncome) return;
+            kind = "found"; id = best.planetId; cost = foundingCost();
+            name = "Found a settlement on " + best.planetName + " (" + best.resourceName + ", about " + Misc.getDGSCredits(best.income) + "/month)";
+        } else {
+            Facility f = nextFacility();
+            if (f == null) return;
+            kind = "facility"; id = f.id; cost = f.cost;
+            name = "Build " + f.name + " at the settlement (+" + Misc.getDGSCredits(f.gain) + "/month)";
+        }
+        if (approve || cost > s.perProjectCap) { propose(d, kind, id, name, cost, approve ? "waiting for your approval" : "over the per-project cap, needs your approval"); return; }
+        float total = cost + CABudget.constructionFee(s, cost);
+        if (total > CABudget.available(s)) {
+            if (CALog.once("settle:" + kind + ":" + id)) CALog.add("Settlement: " + name + " waits for budget (" + Misc.getDGSCredits(total) + " needed, "
+                    + Misc.getDGSCredits(CABudget.available(s)) + " left this month)");
+            return;
+        }
+        execute(d, s, kind, id, name, "Auto");
+    }
+
+    static void propose(CAData d, String kind, String id, String name, float cost, String why) {
+        if (id.equals(d.settlePendingId) && kind.equals(d.settlePendingKind)) return;
+        d.settlePendingKind = kind; d.settlePendingId = id; d.settlePendingName = name; d.settlePendingCost = cost;
+        CALog.add("Settlement: proposes " + name + " for " + Misc.getDGSCredits(cost) + ", " + why, true);
+    }
+
+    /** Pays the fee and starts the founding or facility. Returns null on success. */
+    public static String execute(CAData d, CASettings s, String kind, String id, String name, String who) {
+        float cost = "found".equals(kind) ? foundingCost() : facilityCost(id);
+        float fee = CABudget.constructionFee(s, cost);
+        if (CABuild.credits() < cost + fee) return "Not enough credits for it plus the " + Misc.getDGSCredits(fee) + " fee";
+        String err = "found".equals(kind) ? found(id) : buildFacility(id);
+        if (err != null) { CALog.add("Settlement: could not start " + name + ": " + err); return err; }
+        CABudget.charge(s, cost, fee, 0f);
+        CALog.forget("settle:" + kind + ":" + id);
+        if (kind.equals(d.settlePendingKind) && id.equals(d.settlePendingId)) clearPending(d);
+        CALog.add("Settlement: " + who + " " + name.substring(0, 1).toLowerCase() + name.substring(1) + " for " + Misc.getDGSCredits(cost)
+                + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : ""), true);
+        return null;
+    }
+
+    static float facilityCost(String id) {
+        for (BaseSettlementFacility f : fu().getAllFacilityPlugins()) if (id.equals(f.getID())) return f.getCost() * costMult();
+        return 0f;
+    }
+
+    public static void clearPending(CAData d) {
+        d.settlePendingKind = null; d.settlePendingId = null; d.settlePendingName = null; d.settlePendingCost = 0f;
+    }
+
+    // ---------------- empire panel ----------------
+
+    public static void render(com.fs.starfarer.api.ui.TooltipMakerAPI t, CAData d, CASettings s) {
+        java.awt.Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
+        if (!active()) { t.addPara("Frontiers is off for this save (Random Assortment of Things setting).", gray, 6f); return; }
+        t.addPara("Mode: %s. Founds a settlement when a surveyed site makes at least %s per month; builds Refining and Trading Post when they pay "
+                + "for themselves within 2 years. Other facilities are yours to pick.", 6f, hl, CASettings.SETTLE_NAMES[Math.max(0, Math.min(3, s.settlementMode))],
+                Misc.getDGSCredits(s.settlementMinIncome));
+        if (d.settlePendingKind != null) {
+            t.addPara("Waiting for your approval: %s for %s", 8f, hl, d.settlePendingName, Misc.getDGSCredits(d.settlePendingCost));
+            com.fs.starfarer.api.ui.ButtonAPI a = t.addButton("Approve", new String[]{"settle", "approve", ""}, hl, dark, com.fs.starfarer.api.ui.Alignment.MID, com.fs.starfarer.api.ui.CutStyle.ALL, 120f, 22f, 4f);
+            com.fs.starfarer.api.ui.ButtonAPI r = t.addButton("Reject", new String[]{"settle", "reject", ""}, base, dark, com.fs.starfarer.api.ui.Alignment.MID, com.fs.starfarer.api.ui.CutStyle.ALL, 120f, 22f, 0f);
+            r.getPosition().rightOfTop(a, 6f);
+            CALog.endRow(t, a);
+        }
+        SettlementData data = settlement();
+        if (data != null) {
+            float income = data.getStats().getIncome().getModifiedValue() * incomeMult();
+            StringBuilder fac = new StringBuilder();
+            for (SettlementFacilitySlot slot : data.getFacilitySlots()) {
+                if (slot.getFacilityID().isEmpty()) continue;
+                if (fac.length() > 0) fac.append(", ");
+                fac.append(slot.getPlugin() == null ? slot.getFacilityID() : slot.getPlugin().getName()).append(slot.isBuilding() ? " (building)" : "");
+            }
+            t.addPara("Settlement on %s: about %s per month. Facilities: %s.", 8f, hl, data.getPrimaryPlanet().getName(), Misc.getDGSCredits(income), fac.toString());
+            Facility f = nextFacility();
+            if (f == null) t.addPara("No income facility left to build (or no free slot).", gray, 4f);
+            else {
+                t.addPara("Next: %s for %s, +%s per month (pays back in %s months).", 4f, hl, f.name, Misc.getDGSCredits(f.cost), Misc.getDGSCredits(f.gain), "" + Math.round(f.cost / f.gain));
+                if (s.settlementMode == 0) {
+                    com.fs.starfarer.api.ui.ButtonAPI b = t.addButton("Build " + f.name + " (" + Misc.getDGSCredits(f.cost) + ")", new String[]{"settle", "facility", f.id}, base, dark,
+                            com.fs.starfarer.api.ui.Alignment.MID, com.fs.starfarer.api.ui.CutStyle.ALL, 260f, 22f, 4f);
+                    b.setEnabled(CABuild.credits() >= f.cost);
+                }
+            }
+            return;
+        }
+        List<Site> list = sites(false);
+        if (list.isEmpty()) { t.addPara("No surveyed site can host a settlement yet. Survey unclaimed planets to find one.", gray, 6f); return; }
+        t.addPara("Best surveyed sites (founding costs %s):", 8f, hl, Misc.getDGSCredits(foundingCost()));
+        for (int i = 0; i < Math.min(3, list.size()); i++) {
+            Site st = list.get(i);
+            t.addPara("%s. %s, %s: %s, about %s per month" + (st.refinable ? " (%s with Refining)" : "%s") + ", %s ly from your nearest colony", 4f, hl,
+                    "" + (i + 1), st.planetName, st.systemName, st.resourceName, Misc.getDGSCredits(st.income),
+                    st.refinable ? Misc.getDGSCredits(st.refinedIncome) : "", st.distanceLY >= 999f ? "-" : "" + Math.round(st.distanceLY));
+            if (s.settlementMode == 0 && i == 0) {
+                com.fs.starfarer.api.ui.ButtonAPI b = t.addButton("Found on " + st.planetName + " (" + Misc.getDGSCredits(foundingCost()) + ")", new String[]{"settle", "found", st.planetId}, base, dark,
+                        com.fs.starfarer.api.ui.Alignment.MID, com.fs.starfarer.api.ui.CutStyle.ALL, 260f, 22f, 4f);
+                b.setEnabled(CABuild.credits() >= foundingCost());
+            }
+        }
+        if (list.get(0).income < s.settlementMinIncome) t.addPara("None reaches your threshold yet.", gray, 4f);
+    }
+
+    /** Empire panel buttons: {"settle", action, id}. Returns a message for the log, or null. */
+    public static void handle(String action, String id, CAData d, CASettings s) {
+        if ("reject".equals(action)) { if (d.settlePendingName != null) CALog.add("Settlement: rejected " + d.settlePendingName); clearPending(d); return; }
+        if ("approve".equals(action)) {
+            if (d.settlePendingKind == null) return;
+            execute(d, s, d.settlePendingKind, d.settlePendingId, d.settlePendingName, "Approved:");
+            return;
+        }
+        if ("found".equals(action)) {
+            Site st = null;
+            for (Site x : sites(false)) if (x.planetId.equals(id)) st = x;
+            execute(d, s, "found", id, "Found a settlement on " + (st == null ? id : st.planetName), "You");
+        } else if ("facility".equals(action)) {
+            Facility f = nextFacility();
+            execute(d, s, "facility", id, "Build " + (f == null ? id : f.name) + " at the settlement", "You");
+        }
+    }
+}
