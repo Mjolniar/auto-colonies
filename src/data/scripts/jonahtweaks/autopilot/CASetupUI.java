@@ -187,7 +187,8 @@ public class CASetupUI {
                 row(t, "Agents to keep", s.spyKeep == 0 ? "Auto (1, or 2 with offense)" : "" + s.spyKeep, "Auto", "spykeep", true);
                 t.addPara("Defense: counter-insurgency, Pather cells, pirate bases, and raising relations with factions running operations "
                         + "against you. Offense only targets factions already at war with you. Costs come out of the monthly budget; "
-                        + "Nexerelin pays salaries. Only agents Autopilot hired are given orders.", Misc.getGrayColor(), 6f);
+                        + "Nexerelin pays salaries. Only agents Autopilot hired, or you hand over on the Agents page, are given orders, "
+                        + "and only operations their type can run.", Misc.getGrayColor(), 6f);
             }
         }
         if (group(t, "industry", "Industry automation", "specialties " + (s.disableSpecialties ? "off" : "on") + ", VPC chips " + (s.disableVPC ? "off" : "on")
