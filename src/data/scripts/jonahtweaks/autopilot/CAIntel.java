@@ -142,6 +142,10 @@ public class CAIntel extends BaseIntelPlugin {
             try { CASettlement.render(t, data, s); }
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "settlement section failed", e); t.addPara("Settlement info unavailable; see starsector.log.", gray, 6f); }
         }
+        if (Global.getSettings().getModManager().isModEnabled("nexerelin")) {
+            try { CASpies.render(t, data, s); }
+            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "agent section failed", e); t.addPara("Agent info unavailable; see starsector.log.", gray, 6f); }
+        }
         if (Global.getSettings().getModManager().isModEnabled(CAAugments.MOD) && s.augmentMode != 2) {
             t.addSectionHeading("Station augments", Alignment.MID, 16f);
             try { CAAugments.renderEmpire(t, data, s); }

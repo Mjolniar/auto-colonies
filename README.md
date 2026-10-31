@@ -35,7 +35,7 @@ All optional. Each loads only when its mod is enabled.
 |---|---|
 | Terraforming Made Easy | Special-world plans, terraforming |
 | Industrial Evolution | Ambassadors, edicts, VPC chips, courier shipping |
-| Nexerelin | Emergency defense fleets |
+| Nexerelin | Emergency defense fleets; agents (off by default): defense against rebellions, Pather cells, pirate bases and enemy operations, optional sabotage of factions at war with you, auto-hiring |
 | Emergent Threats | Antimatter Stabilizer conversion |
 | Ashes of the Domain | Research choices, research locks, upgrade paths, starter buildings, industry synergies, management styles, trade contracts, megastructures (Coronal Hypershunt, Pluto, Nidavelir), AotD colony items |
 | Random Assortment of Things | Frontiers settlement: found and develop |

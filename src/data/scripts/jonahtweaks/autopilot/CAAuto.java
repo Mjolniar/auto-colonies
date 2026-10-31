@@ -105,6 +105,12 @@ public class CAAuto {
             for (MarketAPI m : Misc.getPlayerMarkets(false)) if (d.colony(m.getId()).mode != CAData.Mode.OFF) managed.add(m);
             try { CADefense.run(managed); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "emergency defense step failed", t); }
+            if (CABreaker.allowed(CASpies.MOD + ":agents")) {
+                boolean ok = true;
+                try { CASpies.run(d, s); }
+                catch (Throwable t) { ok = false; CADiagnostics.LOG.warn(CADiagnostics.TAG + "agent step failed", t); }
+                CABreaker.check(CASpies.MOD + ":agents", ok, "Nexerelin agents");
+            }
         }
         try { CAPolicies.run(auto); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony policy step failed", t); }
