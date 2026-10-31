@@ -6,7 +6,8 @@
 > bugs. Report them as [issues](https://github.com/Mjolniar/jonahs-colony-manager/issues) with
 > `starsector-core/starsector.log` and `saves/common/colony_autopilot_diagnostics.json.data`.
 
-Colony management automation (Colony Autopilot) for Starsector 0.98a-RC8. Works alone or with any mix of the supported mods.
+This is a mod I had Claude Code create for me due to always liking to have tons of colonies with lots of buildings, limits off, etc, but always getting way in over my head with management. 
+The goal of the mod is to let you simply flick the automatic switch on colonies and have them take care of themselves, so long as you have the cash to keep them improving. There's several modes to choose from, tons of options involving governors, buildings, how you want the colony to develop, and so on!
 
 ## Features
 
