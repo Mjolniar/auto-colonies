@@ -11,8 +11,8 @@ Colony management automation (Colony Autopilot) for Starsector 0.98a. No balance
 
 ## Using it
 
-- **Colony panel:** the **Colony Autopilot** button on the colony screen, or right-click **Population & Infrastructure**, then **Colony Autopilot...** The button finds a free spot near the building grid and doesn't appear if there's none; setting **Button on the colony screen** turns it off.
-- **Empire panel:** Intel screen, the **Colony Autopilot** filter (its own tag). Budget, approvals, every colony, storage, settings, log, diagnostics.
+- **Colony panel:** the **Colony Autopilot** button on the colony screen, or right-click **Population & Infrastructure**, then **Colony Autopilot...** The button finds a free spot near the building grid and doesn't appear if there's none; setting **Button on the colony screen** turns it off. Pages listed on the left: Overview (stats, approval, goal, mode, fast buildout), Plan and builds, Locks, and one per mod feature that applies to the colony.
+- **Empire panel:** Intel screen, the **Colony Autopilot** filter (its own tag). Pages listed on the left: Colonies (budget, approvals, every colony), Autopilot Storage, one per mod feature in use, Settings, Log, Diagnostics. Settings groups open one at a time.
 - **Modes per colony:** Off, Advisor (default: recommends, you click Build), Approve (one-click proposals), Auto (builds within your budget).
 - **Goals:** Balanced, Money, Security, War production, Rapid growth, Self-sufficiency. Each colony gets a plan from its planet, hazards and resources. With Terraforming Made Easy, that includes a reachable special world (Forge, Fortress, Paradise, Hive, Death, Waste) resolved from TME's own requirements.
 - **Fast buildout:** after the first colony is founded, a popup offers to build it up fast: Auto, starting the fastest-paying builds (value per credit) daily with everything above a credit floor (100k, 250k, 500k or 1M; 50k-2M in the colony panel). It ranks by money only (the Money goal's weights with ground defense, fleets and ship quality worth nothing, and no plan or upgrade bonus), whatever the colony's goal and even while the threat is high, so it never builds defenses, patrols or stations. The monthly budget, per-project cap, pause on loss and new-upkeep cap don't apply; fees, the stability floor, locks and the measured-building approval do. It ends after 30 days in a row of positive colony net income, leaving the colony in Auto with its own goal. The colony panel can stop it, change the floor, or start one for any colony that loses money.
@@ -162,8 +162,8 @@ The colony-mod integrations (`CATasc`, `CAGrand`, `CABrewery`, `CAMods`) use lit
 ## Test steps
 
 1. Start or load a save with at least one colony. In `starsector.log`, check for the `[ColonyAutopilot] scan done` line and no `[ColonyAutopilot]` warnings.
-2. Open the colony panel. Check that the profile, mode, plan and top 3 picks render, and that clicking a setting keeps the scroll position.
-3. Switch one colony to **Auto**. The setup popup should open with all groups expanded and a station line item. Save it.
+2. Open the colony panel. It opens on Overview with the page list on the left. Check that goal and mode render on Overview, and the plan and top 3 picks on Plan and builds, and that clicking a button keeps that page and its scroll position.
+3. Switch one colony to **Auto**. The setup popup should open with Budget and spending open (with a station line item) and the other groups as one-line summaries; opening a group closes the open one. Save it.
 4. Deposit a colony item in **Autopilot Storage**, then advance time a few days. The log should show it being installed, and the budget should count the fee.
 5. Open Intel, the Colony Autopilot filter. Check the budget numbers, the log entries and the Diagnostics list.
 6. Optional: with Terraforming Made Easy, build a terraforming structure at an Auto colony, then check that a plan step starts on it within a few days.
@@ -192,3 +192,4 @@ The colony-mod integrations (`CATasc`, `CAGrand`, `CABrewery`, `CAMods`) use lit
 29. With a Nexerelin outpost: its panel says it's left alone, it has no plan or builds, and the empire panel lists it as "Nexerelin outpost, left alone".
 30. With Industrial Evolution: open Command, Income and click each column header. Nothing crashes, and the log has "named N monthly report rows another mod left unnamed" once.
 31. A colony on fast buildout with the threat at 70% or more: its panel says defenses wait, Recommended builds are ranked "for fast buildout (money only)", and no Ground Defenses, Heavy Batteries, Patrol HQ or station is started.
+32. Empire panel: the page list on the left shows Colonies, Autopilot Storage, a page for each mod feature in use (none for mods that aren't enabled), Settings, Log and Diagnostics; only the chosen page shows on the right. Colonies shows "(N to approve)" while a proposal waits.

@@ -99,7 +99,7 @@ public class CABuildout {
         if (!d.settings.setupDone) {
             CASetupUI.applyRecommended(d.settings);
             d.settings.setupDone = true;
-            CALog.add("Recommended settings applied; review them in the Settings section", true);
+            CALog.add("Recommended settings applied; review them on the Settings page of the Colony Autopilot intel", true);
         }
         c.mode = CAData.Mode.AUTO;
         c.buildout = true;

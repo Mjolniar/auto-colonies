@@ -14,13 +14,15 @@ import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * The empire panel: every colony's profile, mode and top pick, plus Diagnostics. It has its own filter in the Intel
+ * The empire panel: every colony's profile, mode and top pick, Autopilot Storage, one page per mod feature in use,
+ * settings, the log and Diagnostics, one page at a time from the list on the left (CANav). It has its own filter in the Intel
  * screen, "Colony Autopilot" (a tag of its own, as mods like Treasure Hunt do), rather than sitting among colony threats
  * or important intel.
  */
@@ -62,132 +64,181 @@ public class CAIntel extends BaseIntelPlugin {
                 "" + (CADiagnostics.count(CADiagnostics.Level.ANALYZED) + CADiagnostics.count(CADiagnostics.Level.QUARANTINED)));
     }
 
+    /** The page shown (UI state only, not saved). */
+    static String page = "colonies";
+    transient String lastPage;
+
+    /** The pages in the list on the left: always Colonies, Storage, Settings, Log and Diagnostics, plus one per mod feature in use. */
+    static List<String[]> pages(CAData data, CASettings s, List<MarketAPI> markets) {
+        List<String[]> p = new ArrayList<String[]>();
+        int pending = 0;
+        boolean anyShunt = false, anyMega = false;
+        for (MarketAPI m : markets) {
+            if (data.colony(m.getId()).pendingId != null) pending++;
+            if (CAHypershunt.is(m)) anyShunt = true;
+            if (CAMegastructures.has(m)) anyMega = true;
+        }
+        p.add(new String[]{"colonies", pending > 0 ? "Colonies (" + pending + " to approve)" : "Colonies"});
+        p.add(new String[]{"storage", "Autopilot Storage"});
+        List<String[]> mods = new ArrayList<String[]>();
+        com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
+        if (mm.isModEnabled(CASettlement.MOD)) mods.add(new String[]{"settle", "Settlement"});
+        if (mm.isModEnabled("nexerelin")) mods.add(new String[]{"agents", "Agents"});
+        if (mm.isModEnabled(CAAugments.MOD) && s.augmentMode != 2) mods.add(new String[]{"augments", "Station augments"});
+        if (mm.isModEnabled(CAContracts.MOD) && s.contractMode != 2) mods.add(new String[]{"contracts", "Trade contracts"});
+        if (mm.isModEnabled(CAResearch.MOD) && s.researchMode != 2) mods.add(new String[]{"research", "Research"});
+        if (anyMega && mm.isModEnabled(CAHypershunt.MOD) && s.hypershuntMode != 2) mods.add(new String[]{"mega", "Pluto and Nidavelir"});
+        if (anyShunt && mm.isModEnabled(CAHypershunt.MOD) && s.hypershuntMode != 2) mods.add(new String[]{"shunt", "Coronal Hypershunt"});
+        if (!mods.isEmpty()) { p.add(new String[]{null, "Mod features"}); p.addAll(mods); }
+        int issues = CADiagnostics.count(CADiagnostics.Level.ANALYZED) + CADiagnostics.count(CADiagnostics.Level.QUARANTINED);
+        p.add(new String[]{null, "Autopilot"});
+        p.add(new String[]{"settings", "Settings"});
+        p.add(new String[]{"log", "Log"});
+        p.add(new String[]{"diag", issues > 0 ? "Diagnostics (" + issues + ")" : "Diagnostics"});
+        return p;
+    }
+
     @Override
     public void createLargeDescription(CustomPanelAPI panel, float width, float height) {
-        float scrollY = 0f;
-        try { if (lastTooltip != null && lastTooltip.getExternalScroller() != null) scrollY = lastTooltip.getExternalScroller().getYOffset(); }
-        catch (Throwable ignored) { }
-        TooltipMakerAPI t = panel.createUIElement(width, height, true);
         CAData data = CAData.get();
         CASettings s = data.settings;
         CABudget.rollMonth(s);
+        List<MarketAPI> markets = Misc.getPlayerMarkets(false);
+        List<String[]> pages = pages(data, s, markets);
+        page = CANav.valid(pages, page);
+        float scrollY = 0f;
+        try { if (page.equals(lastPage) && lastTooltip != null && lastTooltip.getExternalScroller() != null) scrollY = lastTooltip.getExternalScroller().getYOffset(); }
+        catch (Throwable ignored) { }
+
+        TooltipMakerAPI nav = panel.createUIElement(CANav.W, height, false);
+        nav.addTitle("Colony Autopilot");
+        CANav.render(nav, pages, page);
+        panel.addUIElement(nav).inTL(0f, 0f);
+
+        TooltipMakerAPI t = panel.createUIElement(width - CANav.W - CANav.GAP, height, true);
+        try { renderPage(t, data, s, markets, width - CANav.W - CANav.GAP); }
+        catch (Throwable e) {
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "empire panel page " + page + " failed", e);
+            t.addPara("This page couldn't be shown; see starsector.log.", Misc.getGrayColor(), 6f);
+        }
+        panel.addUIElement(t).inTL(CANav.W + CANav.GAP, 0f);
+        try { if (t.getExternalScroller() != null) t.getExternalScroller().setYOffset(scrollY); } catch (Throwable ignored) { }
+        lastTooltip = t;
+        lastPage = page;
+    }
+
+    void renderPage(TooltipMakerAPI t, CAData data, CASettings s, List<MarketAPI> markets, float width) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
 
-        t.addTitle("Colony Autopilot");
-        t.addPara("Every colony starts in Advisor mode. Open a colony's own panel with the Colony Autopilot button on its colony "
-                + "screen, or by right-clicking its Population & Infrastructure.", gray, 6f);
+        if (page.equals("colonies")) {
+            t.addPara("Every colony starts in Advisor mode. Open a colony's own panel with the Colony Autopilot button on its colony "
+                    + "screen, or by right-clicking its Population & Infrastructure.", gray, 0f);
+            t.addSectionHeading("Budget", Alignment.MID, 12f);
+            t.addPara("This month: %s of %s spent (%s in fees), %s available. Never spends below %s.", 6f, hl,
+                    Misc.getDGSCredits(s.spent), Misc.getDGSCredits(CABudget.limit(s)), Misc.getDGSCredits(s.fees),
+                    Misc.getDGSCredits(CABudget.available(s)), Misc.getDGSCredits(s.reserve));
+            if (CABudget.paused(s)) t.addPara("Spending is paused: net income is negative.", Misc.getNegativeHighlightColor(), 4f);
 
-        t.addSectionHeading("Budget", Alignment.MID, 12f);
-        t.addPara("This month: %s of %s spent (%s in fees), %s available. Never spends below %s.", 6f, hl,
-                Misc.getDGSCredits(s.spent), Misc.getDGSCredits(CABudget.limit(s)), Misc.getDGSCredits(s.fees),
-                Misc.getDGSCredits(CABudget.available(s)), Misc.getDGSCredits(s.reserve));
-        if (CABudget.paused(s)) t.addPara("Spending is paused: net income is negative.", Misc.getNegativeHighlightColor(), 4f);
+            boolean anyPending = false;
+            for (MarketAPI m : markets) if (data.colony(m.getId()).pendingId != null) anyPending = true;
+            if (anyPending) {
+                t.addSectionHeading("Waiting for your approval", Alignment.MID, 12f);
+                for (MarketAPI m : markets) {
+                    CAData.Colony c = data.colony(m.getId());
+                    if (c.pendingId == null) continue;
+                    t.addPara("%s: %s for %s", 8f, hl, m.getName(), c.pendingName, Misc.getDGSCredits(c.pendingCost));
+                    ButtonAPI a = t.addButton("Approve", new String[]{"approve", m.getId()}, hl, dark, Alignment.MID, CutStyle.ALL, 120f, 22f, 4f);
+                    ButtonAPI r = t.addButton("Reject", new String[]{"reject", m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 120f, 22f, 0f);
+                    r.getPosition().rightOfTop(a, 6f);
+                    CALog.endRow(t, a);
+                }
+            }
 
-        List<MarketAPI> markets = Misc.getPlayerMarkets(false);
-        boolean anyPending = false;
-        for (MarketAPI m : markets) if (data.colony(m.getId()).pendingId != null) anyPending = true;
-        if (anyPending) {
-            t.addSectionHeading("Waiting for your approval", Alignment.MID, 12f);
+            t.addSectionHeading("Colonies", Alignment.MID, 12f);
+            if (markets.isEmpty()) t.addPara("You have no colonies yet.", gray, 8f);
             for (MarketAPI m : markets) {
                 CAData.Colony c = data.colony(m.getId());
-                if (c.pendingId == null) continue;
-                t.addPara("%s: %s for %s", 8f, hl, m.getName(), c.pendingName, Misc.getDGSCredits(c.pendingCost));
-                ButtonAPI a = t.addButton("Approve", new String[]{"approve", m.getId()}, hl, dark, Alignment.MID, CutStyle.ALL, 120f, 22f, 4f);
-                ButtonAPI r = t.addButton("Reject", new String[]{"reject", m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 120f, 22f, 0f);
-                r.getPosition().rightOfTop(a, 6f);
-                CALog.endRow(t, a);
-            }
-        }
-
-        t.addSectionHeading("Colonies", Alignment.MID, 12f);
-        if (markets.isEmpty()) t.addPara("You have no colonies yet.", gray, 8f);
-        for (MarketAPI m : markets) {
-            CAData.Colony c = data.colony(m.getId());
-            String top = "nothing buildable";
-            try {
-                if (CAEngine.isOutpost(m)) top = "Nexerelin outpost, left alone";
-                else if (c.mode == CAData.Mode.OFF) top = "autopilot off";
-                else if (CAHypershunt.is(m)) top = CAHypershunt.summary(m);
-                else {
-                    CAEngine.Result r = c.buildout && c.mode == CAData.Mode.AUTO ? CAEngine.evaluateForProfit(m, data.minStability)
-                            : CAEngine.evaluate(m, c.profile, data.minStability);
-                    CAEngine.Pick p = null;
-                    for (CAEngine.Pick q : r.picks) if (CAEngine.worthwhile(q)) { p = q; break; }
-                    if (p != null) top = p.verb + " " + p.name + " (" + CAEngine.signed(p.fx[0]) + " a month after upkeep)";
-                    else if (!r.picks.isEmpty()) top = "nothing pays for itself yet";
-                    if (r.blocked != null) top = r.blocked.toLowerCase() + "; next: " + top;
+                String top = "nothing buildable";
+                try {
+                    if (CAEngine.isOutpost(m)) top = "Nexerelin outpost, left alone";
+                    else if (c.mode == CAData.Mode.OFF) top = "autopilot off";
+                    else if (CAHypershunt.is(m)) top = CAHypershunt.summary(m);
+                    else {
+                        CAEngine.Result r = c.buildout && c.mode == CAData.Mode.AUTO ? CAEngine.evaluateForProfit(m, data.minStability)
+                                : CAEngine.evaluate(m, c.profile, data.minStability);
+                        CAEngine.Pick p = null;
+                        for (CAEngine.Pick q : r.picks) if (CAEngine.worthwhile(q)) { p = q; break; }
+                        if (p != null) top = p.verb + " " + p.name + " (" + CAEngine.signed(p.fx[0]) + " a month after upkeep)";
+                        else if (!r.picks.isEmpty()) top = "nothing pays for itself yet";
+                        if (r.blocked != null) top = r.blocked.toLowerCase() + "; next: " + top;
+                    }
+                } catch (Throwable e) {
+                    CADiagnostics.LOG.warn(CADiagnostics.TAG + "evaluate failed for " + m.getName(), e);
+                    top = "error, see Diagnostics";
                 }
-            } catch (Throwable e) {
-                CADiagnostics.LOG.warn(CADiagnostics.TAG + "evaluate failed for " + m.getName(), e);
-                top = "error, see Diagnostics";
+                String flags = (c.buildout ? ", fast buildout" : "") + (c.threatHigh ? ", threatened" : "");
+                t.addPara("%s (size %s): %s, %s" + CALog.esc(flags), 12f, hl, m.getName(), "" + m.getSize(), c.profile.label, c.mode.label);
+                t.addPara("Next: " + CALog.esc(top), gray, 2f);
+                ButtonAPI b1 = t.addButton("Next goal", new String[]{"profile", m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 140f, 22f, 4f);
+                ButtonAPI b2 = t.addButton("Next mode", new String[]{"mode", m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 140f, 22f, 0f);
+                b2.getPosition().rightOfTop(b1, 6f);
+                CALog.endRow(t, b1);
             }
-            CAPlan.Plan plan = CAPlan.build(m, c.profile);
-            String flags = (c.buildout ? ", fast buildout" : "") + (c.threatHigh ? ", threatened" : "");
-            t.addPara("%s (size %s): %s, %s" + CALog.esc(flags), 12f, hl, m.getName(), "" + m.getSize(), c.profile.label, c.mode.label);
-            if (CAEngine.isOutpost(m)) t.addPara("Nexerelin outpost: a forward base outside your trade economy, left alone", gray, 2f);
-            ButtonAPI b1 = t.addButton("Next goal", new String[]{"profile", m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 140f, 22f, 4f);
-            ButtonAPI b2 = t.addButton("Next mode", new String[]{"mode", m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 140f, 22f, 0f);
-            b2.getPosition().rightOfTop(b1, 6f);
-            CALog.endRow(t, b1);
-        }
-
-        t.addSectionHeading("Autopilot Storage", Alignment.MID, 16f);
-        t.addPara("Dock at any of your colonies and open the Autopilot Storage tab to deposit colony items and AI cores. "
-                + "Only Auto-mode colonies draw from it; nothing in your cargo or normal storage is ever used.", 6f);
-        com.fs.starfarer.api.campaign.CargoAPI st = data.storage();
-        if (st.isEmpty()) t.addPara("Empty.", gray, 4f);
-        for (com.fs.starfarer.api.campaign.CargoStackAPI stack : st.getStacksCopy()) {
-            t.addPara("%s x%s", 3f, hl, CALog.esc(stack.getDisplayName()), "" + (int) stack.getSize());
-        }
-        MarketAPI fort = CAItems.fortress(CAItems.autoMarkets());
-        t.addPara("AI cores: %s. Next Hegemony inspection strength: %s fleet points. Fortress world: %s.", 6f, hl,
-                s.useAICores ? "used" : "not used", "" + (int) CAItems.nextInspectionFP(),
-                fort == null ? "none strong enough (cores capped at 7 points per colony)" : fort.getName() + " (" + (int) CAItems.defenseFP(fort) + " estimated)");
-
-        if (Global.getSettings().getModManager().isModEnabled(CASettlement.MOD)) {
-            t.addSectionHeading("Settlement (Random Assortment of Things)", Alignment.MID, 16f);
-            try { CASettlement.render(t, data, s); }
-            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "settlement section failed", e); t.addPara("Settlement info unavailable; see starsector.log.", gray, 6f); }
-        }
-        if (Global.getSettings().getModManager().isModEnabled("nexerelin")) {
-            try { CASpies.render(t, data, s); }
-            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "agent section failed", e); t.addPara("Agent info unavailable; see starsector.log.", gray, 6f); }
-        }
-        if (Global.getSettings().getModManager().isModEnabled(CAAugments.MOD) && s.augmentMode != 2) {
-            t.addSectionHeading("Station augments", Alignment.MID, 16f);
-            try { CAAugments.renderEmpire(t, data, s); }
-            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment section failed", e); t.addPara("Station augment info unavailable; see starsector.log.", gray, 6f); }
-        }
-        if (Global.getSettings().getModManager().isModEnabled(CAContracts.MOD) && s.contractMode != 2) {
-            t.addSectionHeading("Trade contracts (Ashes of the Domain)", Alignment.MID, 16f);
+        } else if (page.equals("storage")) {
+            t.addSectionHeading("Autopilot Storage", Alignment.MID, 0f);
+            t.addPara("Dock at any of your colonies and open the Autopilot Storage tab to deposit colony items and AI cores. "
+                    + "Only Auto-mode colonies draw from it; nothing in your cargo or normal storage is ever used.", 6f);
+            com.fs.starfarer.api.campaign.CargoAPI st = data.storage();
+            if (st.isEmpty()) t.addPara("Empty.", gray, 4f);
+            for (com.fs.starfarer.api.campaign.CargoStackAPI stack : st.getStacksCopy()) {
+                t.addPara("%s x%s", 3f, hl, CALog.esc(stack.getDisplayName()), "" + (int) stack.getSize());
+            }
+            MarketAPI fort = CAItems.fortress(CAItems.autoMarkets());
+            t.addPara("AI cores: %s. Next Hegemony inspection strength: %s fleet points. Fortress world: %s.", 6f, hl,
+                    s.useAICores ? "used" : "not used", "" + (int) CAItems.nextInspectionFP(),
+                    fort == null ? "none strong enough (cores capped at 7 points per colony)" : fort.getName() + " (" + (int) CAItems.defenseFP(fort) + " estimated)");
+        } else if (page.equals("settle")) {
+            t.addSectionHeading("Settlement (Random Assortment of Things)", Alignment.MID, 0f);
+            CASettlement.render(t, data, s);
+        } else if (page.equals("agents")) {
+            if (s.spyMode == 0) {
+                t.addSectionHeading("Agents (Nexerelin)", Alignment.MID, 0f);
+                t.addPara("Agents are off. Turn them on in Settings, under Agents (Nexerelin). Enemy operations against your colonies "
+                        + "are listed here either way.", gray, 6f);
+            }
+            CASpies.render(t, data, s);
+        } else if (page.equals("augments")) {
+            t.addSectionHeading("Station augments", Alignment.MID, 0f);
+            CAAugments.renderEmpire(t, data, s);
+        } else if (page.equals("contracts")) {
+            t.addSectionHeading("Trade contracts (Ashes of the Domain)", Alignment.MID, 0f);
             CAContracts.render(t, data, s);
-        }
-        if (Global.getSettings().getModManager().isModEnabled(CAResearch.MOD) && s.researchMode != 2) {
-            t.addSectionHeading("Research (Ashes of the Domain)", Alignment.MID, 16f);
+        } else if (page.equals("research")) {
+            t.addSectionHeading("Research (Ashes of the Domain)", Alignment.MID, 0f);
             CAResearch.render(t, data, s);
+        } else if (page.equals("mega")) {
+            t.addSectionHeading("Pluto and Nidavelir (Ashes of the Domain)", Alignment.MID, 0f);
+            CAMegastructures.renderEmpire(t, data, s);
+        } else if (page.equals("shunt")) {
+            t.addSectionHeading("Coronal Hypershunt (Ashes of the Domain)", Alignment.MID, 0f);
+            CAHypershunt.renderEmpire(t, data, s);
+        } else if (page.equals("settings")) {
+            t.addSectionHeading("Settings", Alignment.MID, 0f);
+            if (!s.setupDone) t.addPara("First-time setup hasn't run yet; it opens when you first switch a colony to Approve or Auto.", gray, 6f);
+            t.addPara("Click a group to open it.", gray, 6f);
+            CASetupUI.render(t, s, width);
+        } else if (page.equals("log")) {
+            t.addSectionHeading("Log", Alignment.MID, 0f);
+            if (s.log.isEmpty()) t.addPara("Nothing yet.", gray, 6f);
+            for (int i = 0; i < Math.min(40, s.log.size()); i++) t.addPara(CALog.esc(s.log.get(i)), gray, 3f);
+        } else if (page.equals("diag")) {
+            renderDiagnostics(t);
         }
-        boolean anyShunt = false, anyMega = false;
-        for (MarketAPI m : markets) { if (CAHypershunt.is(m)) anyShunt = true; if (CAMegastructures.has(m)) anyMega = true; }
-        if (anyMega && Global.getSettings().getModManager().isModEnabled(CAHypershunt.MOD) && s.hypershuntMode != 2) {
-            t.addSectionHeading("Pluto and Nidavelir (Ashes of the Domain)", Alignment.MID, 16f);
-            try { CAMegastructures.renderEmpire(t, data, s); }
-            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "megastructure section failed", e); t.addPara("Megastructure info unavailable; see starsector.log.", gray, 6f); }
-        }
-        if (anyShunt && Global.getSettings().getModManager().isModEnabled(CAHypershunt.MOD) && s.hypershuntMode != 2) {
-            t.addSectionHeading("Coronal Hypershunt (Ashes of the Domain)", Alignment.MID, 16f);
-            try { CAHypershunt.renderEmpire(t, data, s); }
-            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "hypershunt section failed", e); t.addPara("Hypershunt info unavailable; see starsector.log.", gray, 6f); }
-        }
+    }
 
-        t.addSectionHeading("Settings", Alignment.MID, 16f);
-        if (!s.setupDone) t.addPara("First-time setup hasn't run yet; it opens when you first switch a colony to Approve or Auto.", gray, 6f);
-        CASetupUI.render(t, s, width);
-
-        t.addSectionHeading("Log", Alignment.MID, 16f);
-        if (s.log.isEmpty()) t.addPara("Nothing yet.", gray, 6f);
-        for (int i = 0; i < Math.min(20, s.log.size()); i++) t.addPara(CALog.esc(s.log.get(i)), gray, 3f);
-
-        t.addSectionHeading("Diagnostics", Alignment.MID, 16f);
+    static void renderDiagnostics(TooltipMakerAPI t) {
+        Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
+        t.addSectionHeading("Diagnostics", Alignment.MID, 0f);
         t.addPara("Last scan: %s. Supported content is planned with; %s mod buildings were measured on a probe colony and are scored "
                         + "from those measurements; %s analyzed and %s quarantined entries are never acted on. "
                         + "Full report: saves/common/" + CADiagnostics.REPORT + ".data", 8f, hl,
@@ -224,16 +275,14 @@ public class CAIntel extends BaseIntelPlugin {
         }
         int total = CADiagnostics.getIssues().size();
         if (total > shown) t.addPara((total - shown) + " more in the report file.", gray, 6f);
-
-        panel.addUIElement(t).inTL(0f, 0f);
-        try { if (t.getExternalScroller() != null) t.getExternalScroller().setYOffset(scrollY); } catch (Throwable ignored) { }
-        lastTooltip = t;
     }
 
     @Override
     public void buttonPressConfirmed(Object buttonId, IntelUIAPI ui) {
         CAData d = CAData.get();
-        if (RESCAN.equals(buttonId)) {
+        if (CANav.page(buttonId) != null) {
+            page = CANav.page(buttonId);
+        } else if (RESCAN.equals(buttonId)) {
             CADiagnostics.runScan();
         } else if (CASetupUI.handle(buttonId, d.settings)) {
             if (!String.valueOf(buttonId).contains(":group:")) d.settings.setupDone = true;
@@ -279,7 +328,7 @@ public class CAIntel extends BaseIntelPlugin {
                 if ((c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO) && !d.settings.setupDone) {
                     CASetupUI.applyRecommended(d.settings);
                     d.settings.setupDone = true;
-                    CALog.add("Recommended settings applied; review them in the Settings section", true);
+                    CALog.add("Recommended settings applied; review them on the Settings page of the Colony Autopilot intel", true);
                 }
             } else if ("approve".equals(a[0]) && m != null) {
                 String err = CAAuto.approve(m);
