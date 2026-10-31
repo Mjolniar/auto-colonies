@@ -66,6 +66,10 @@ public class CADiagnostics {
     public static void runScan() {
         industries.clear(); conditions.clear(); items.clear(); issues.clear(); issueKeys.clear();
         CASimulator.reset();
+        CAConst.reset();
+        CABreaker.reset();   // a reload tries paused actions again
+        try { CACompat.check(); }   // which mod integrations still find what they rely on
+        catch (Throwable t) { LOG.warn(TAG + "integration health check failed", t); }
         List<MarketAPI> mine = Global.getSector() == null ? new ArrayList<MarketAPI>() : Misc.getPlayerMarkets(false);
         MarketAPI template = mine.isEmpty() ? null : mine.get(0);   // measurements use your first colony's size and deposits
         MarketAPI probe = null;

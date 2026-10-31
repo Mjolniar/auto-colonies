@@ -13,8 +13,6 @@ import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 
 import java.awt.Color;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -34,6 +32,7 @@ public class CAResearch {
     static final String R = "data.kaysaar.aotd.vok.scripts.research.";
     static final String KEY = "$aotd_vok_manager", SUBMARKET = "researchfacil", DATABANK = "research_databank";
     static final float DATABANK_VALUE = 5000f, TIER_UPKEEP = 10000f;
+    static final String START = "starting research";
     /** Vanilla buildings VoK locks through Building Menu Overhaul, and the Bifrost Control Center, by tech. */
     static final String[][] GATES = {{"aotd_tech_rudimentary_eq", "aquaculture"}, {"aotd_tech_agriculture", "farming"},
             {"aotd_tech_exoskeletons", "mining"}, {"aotd_tech_nanometal", "refining"}, {"aotd_tech_nanometal", "lightindustry"},
@@ -41,8 +40,8 @@ public class CAResearch {
             {"aotd_tech_antimatter_production", "fuelprod"}, {"aotd_tech_dual_trade_system", "commerce"},
             {"aotd_tech_spaceport_expansion", "megaport"}, {"aotd_tech_bifrost_gate", "aotd_bfc_ind"}};
 
-    static Method instance, player, forPlayer, repo, canResearch, allReq, itemsOk, itemCount, facilities, focus, setFocus, pay, queue, queued, councilAdvance, daysFor;
-    static Field fId, fName, fTier, fReq, fItems, fRewards, fDone, fDaysSpent, fOther, fOtherMet, fHead, fCouncil;
+    static Object instance, player, forPlayer, repo, canResearch, allReq, itemsOk, itemCount, facilities, focus, setFocus, pay, queue, queued, councilAdvance, daysFor;
+    static Object fId, fName, fTier, fReq, fItems, fRewards, fDone, fDaysSpent, fOther, fOtherMet, fHead, fCouncil;
     static boolean linked = false, broken = false;
 
     static boolean link() {
@@ -52,18 +51,18 @@ public class CAResearch {
             Class<?> main = Class.forName(R + "AoTDMainResearchManager", true, cl), fac = Class.forName(R + "AoTDFactionResearchManager", true, cl);
             Class<?> opt = Class.forName(R + "models.ResearchOption", true, cl), q = Class.forName(R + "ResearchQueueManager", true, cl);
             Class<?> util = Class.forName("data.kaysaar.aotd.vok.plugins.AoDUtilis", true, cl);
-            instance = main.getMethod("getInstance"); player = main.getMethod("getManagerForPlayer"); forPlayer = main.getMethod("isResearchedForPlayer", String.class);
-            repo = fac.getMethod("getResearchRepoOfFaction"); canResearch = fac.getMethod("canResearch", String.class, boolean.class);
-            allReq = fac.getMethod("haveResearchedAllReq", String.class); itemsOk = fac.getMethod("haveMetReqForItems", String.class);
-            itemCount = fac.getMethod("retrieveAmountOfItems", String.class); facilities = fac.getMethod("getAmountOfResearchFacilities");
-            focus = fac.getMethod("getCurrentFocus"); setFocus = fac.getMethod("setCurrentFocus", String.class); pay = fac.getMethod("payForResearch", String.class);
-            queue = fac.getMethod("getQueueManager"); queued = q.getMethod("getQueuedResearchOptions");
-            councilAdvance = fac.getMethod("executeResearchCouncilAdvance", float.class);
-            daysFor = util.getMethod("getDaysFromResearch", opt);
-            fId = opt.getField("Id"); fName = opt.getField("Name"); fTier = opt.getField("Tier"); fReq = opt.getField("ReqTechsToResearchFirst");
-            fItems = opt.getField("ReqItemsToResearchFirst"); fRewards = opt.getField("Rewards"); fDone = opt.getField("isResearched");
-            fDaysSpent = opt.getField("daysSpentOnResearching"); fOther = opt.getField("otherReq"); fOtherMet = opt.getField("metOtherReq");
-            fHead = fac.getField("currentHeadOfCouncil"); fCouncil = fac.getField("researchCouncil");
+            instance = CARefl.method(main, "getInstance"); player = CARefl.method(main, "getManagerForPlayer"); forPlayer = CARefl.method(main, "isResearchedForPlayer", String.class);
+            repo = CARefl.method(fac, "getResearchRepoOfFaction"); canResearch = CARefl.method(fac, "canResearch", String.class, boolean.class);
+            allReq = CARefl.method(fac, "haveResearchedAllReq", String.class); itemsOk = CARefl.method(fac, "haveMetReqForItems", String.class);
+            itemCount = CARefl.method(fac, "retrieveAmountOfItems", String.class); facilities = CARefl.method(fac, "getAmountOfResearchFacilities");
+            focus = CARefl.method(fac, "getCurrentFocus"); setFocus = CARefl.method(fac, "setCurrentFocus", String.class); pay = CARefl.method(fac, "payForResearch", String.class);
+            queue = CARefl.method(fac, "getQueueManager"); queued = CARefl.method(q, "getQueuedResearchOptions");
+            councilAdvance = CARefl.method(fac, "executeResearchCouncilAdvance", float.class);
+            daysFor = CARefl.method(util, "getDaysFromResearch", opt);
+            fId = CARefl.field(opt, "Id"); fName = CARefl.field(opt, "Name"); fTier = CARefl.field(opt, "Tier"); fReq = CARefl.field(opt, "ReqTechsToResearchFirst");
+            fItems = CARefl.field(opt, "ReqItemsToResearchFirst"); fRewards = CARefl.field(opt, "Rewards"); fDone = CARefl.field(opt, "isResearched");
+            fDaysSpent = CARefl.field(opt, "daysSpentOnResearching"); fOther = CARefl.field(opt, "otherReq"); fOtherMet = CARefl.field(opt, "metOtherReq");
+            fHead = CARefl.field(fac, "currentHeadOfCouncil"); fCouncil = CARefl.field(fac, "researchCouncil");
             linked = true;
         } catch (Throwable t) {
             broken = true;
@@ -75,12 +74,12 @@ public class CAResearch {
     /** The player's research manager, or null before VoK has made one (a new game's first frames). */
     static Object mgr() throws Exception {
         if (!link() || Global.getSector().getPersistentData().get(KEY) == null) return null;
-        Object main = instance.invoke(null);
-        return main == null ? null : player.invoke(main);
+        Object main = CARefl.invoke(instance, null);
+        return main == null ? null : CARefl.invoke(player, main);
     }
 
     static boolean forPlayer(String id) {
-        try { Object main = instance.invoke(null); return main != null && Boolean.TRUE.equals(forPlayer.invoke(main, id)); }
+        try { Object main = CARefl.invoke(instance, null); return main != null && Boolean.TRUE.equals(CARefl.invoke(forPlayer, main, id)); }
         catch (Throwable t) { return false; }
     }
 
@@ -106,24 +105,24 @@ public class CAResearch {
     static Tech tech(Object mgr, Object o) throws Exception {
         Tech t = new Tech();
         t.raw = o;
-        t.id = String.valueOf(fId.get(o));
-        t.name = String.valueOf(fName.get(o));
-        Object tier = fTier.get(o);
+        t.id = String.valueOf(CARefl.get(fId, o));
+        t.name = String.valueOf(CARefl.get(fName, o));
+        Object tier = CARefl.get(fTier, o);
         t.tier = tier instanceof Enum ? ((Enum<?>) tier).ordinal() : 0;
-        t.days = ((Number) daysFor.invoke(null, o)).floatValue();
-        t.spent = fDaysSpent.getFloat(o);
-        Map<String, Integer> it = (Map<String, Integer>) fItems.get(o);
+        t.days = ((Number) CARefl.invoke(daysFor, null, o)).floatValue();
+        t.spent = CARefl.getFloat(fDaysSpent, o);
+        Map<String, Integer> it = (Map<String, Integer>) CARefl.get(fItems, o);
         if (it != null) for (Map.Entry<String, Integer> e : it.entrySet()) if (e.getValue() != null && e.getValue() > 0) t.items.put(e.getKey(), e.getValue());
-        List<String> req = (List<String>) fReq.get(o);
+        List<String> req = (List<String>) CARefl.get(fReq, o);
         if (req != null) t.prereqs.addAll(req);
-        Map<String, Object> rw = (Map<String, Object>) fRewards.get(o);
+        Map<String, Object> rw = (Map<String, Object>) CARefl.get(fRewards, o);
         if (rw != null) for (Map.Entry<String, Object> e : rw.entrySet()) {
             if (e.getValue() instanceof Enum && "INDUSTRY".equals(((Enum<?>) e.getValue()).name()) && Global.getSettings().getIndustrySpec(e.getKey()) != null) t.industries.add(e.getKey());
         }
         for (String[] g : GATES) if (g[0].equals(t.id)) t.industries.add(g[1]);
-        boolean flagOk = fOther.get(o) == null || fOtherMet.getBoolean(o);
-        t.available = Boolean.TRUE.equals(canResearch.invoke(mgr, t.id, false));
-        t.needsItems = !t.available && flagOk && Boolean.TRUE.equals(allReq.invoke(mgr, t.id)) && !Boolean.TRUE.equals(itemsOk.invoke(mgr, t.id));
+        boolean flagOk = CARefl.get(fOther, o) == null || CARefl.getBoolean(fOtherMet, o);
+        t.available = Boolean.TRUE.equals(CARefl.invoke(canResearch, mgr, t.id, false));
+        t.needsItems = !t.available && flagOk && Boolean.TRUE.equals(CARefl.invoke(allReq, mgr, t.id)) && !Boolean.TRUE.equals(CARefl.invoke(itemsOk, mgr, t.id));
         t.unlockedByCommission = forPlayer(t.id);
         return t;
     }
@@ -156,20 +155,20 @@ public class CAResearch {
         if (mgr == null) return out;
         Set<String> done = new HashSet<String>();
         Map<String, Object> all = new LinkedHashMap<String, Object>();
-        for (Object o : (List<Object>) repo.invoke(mgr)) {
-            all.put(String.valueOf(fId.get(o)), o);
-            if (fDone.getBoolean(o)) done.add(String.valueOf(fId.get(o)));
+        for (Object o : (List<Object>) CARefl.invoke(repo, mgr)) {
+            all.put(String.valueOf(CARefl.get(fId, o)), o);
+            if (CARefl.getBoolean(fDone, o)) done.add(String.valueOf(CARefl.get(fId, o)));
         }
         List<Tech> cands = new ArrayList<Tech>();
         Map<String, Tech> children = new LinkedHashMap<String, Tech>();
         for (Object o : all.values()) {
-            if (fDone.getBoolean(o)) continue;
+            if (CARefl.getBoolean(fDone, o)) continue;
             Tech t = tech(mgr, o);
             if (t.available || t.needsItems) cands.add(t);
         }
         // techs one step past a candidate, for the "leads to" share
         for (Object o : all.values()) {
-            if (fDone.getBoolean(o)) continue;
+            if (CARefl.getBoolean(fDone, o)) continue;
             Tech t = tech(mgr, o);
             if (t.available || t.needsItems) continue;
             for (Tech c : cands) {
@@ -182,7 +181,7 @@ public class CAResearch {
         scored.addAll(children.values());
         valueBuildings(scored);
         for (Tech t : scored) t.own += effects(t);
-        int fac = Math.max(1, ((Number) facilities.invoke(mgr)).intValue());
+        int fac = Math.max(1, ((Number) CARefl.invoke(facilities, mgr)).intValue());
         for (Tech c : cands) {
             Tech bestChild = null;
             for (Tech ch : children.values()) {
@@ -218,7 +217,7 @@ public class CAResearch {
         Map<Tech, Float> total = new HashMap<Tech, Float>();
         Map<Tech, String> where = new HashMap<Tech, String>();
         try {
-            for (Tech t : techs) { was.put(t.raw, fDone.getBoolean(t.raw)); fDone.setBoolean(t.raw, true); }
+            for (Tech t : techs) { was.put(t.raw, CARefl.getBoolean(fDone, t.raw)); CARefl.set(fDone, t.raw, true); }
             CAEngine.noProbe = true;
             for (MarketAPI m : Misc.getPlayerMarkets(false)) {
                 if (CAHypershunt.is(m)) continue;
@@ -246,7 +245,7 @@ public class CAResearch {
         } finally {
             CAEngine.noProbe = false;
             for (Map.Entry<Object, Boolean> e : was.entrySet()) {
-                try { fDone.setBoolean(e.getKey(), e.getValue()); } catch (Throwable ignored) { }
+                try { CARefl.set(fDone, e.getKey(), e.getValue()); } catch (Throwable ignored) { }
             }
         }
         for (Map.Entry<Tech, Float> e : total.entrySet()) {
@@ -312,15 +311,18 @@ public class CAResearch {
         try {
             Object mgr = mgr();
             if (mgr == null) return "Research isn't running yet";
-            if (focus.invoke(mgr) != null) return "Something is already being researched";
+            if (CARefl.invoke(focus, mgr) != null) return "Something is already being researched";
             sophiaFirst(mgr, t);
-            if (!Boolean.TRUE.equals(canResearch.invoke(mgr, t.id, false))) {
+            if (!Boolean.TRUE.equals(CARefl.invoke(canResearch, mgr, t.id, false))) {
                 String moved = topUp(mgr, t);
-                if (!Boolean.TRUE.equals(canResearch.invoke(mgr, t.id, false))) return "Not enough in the Research Facility tab (" + itemsText(t) + " needed)" + (moved == null ? "" : "; " + moved);
+                if (!Boolean.TRUE.equals(CARefl.invoke(canResearch, mgr, t.id, false))) return "Not enough in the Research Facility tab (" + itemsText(t) + " needed)" + (moved == null ? "" : "; " + moved);
             }
-            pay.invoke(mgr, t.id);
-            setFocus.invoke(mgr, t.id);
+            if (!CABreaker.allowed(START)) return "Paused for this session: starting research didn't take effect three times";
+            CARefl.invoke(pay, mgr, t.id);
+            CARefl.invoke(setFocus, mgr, t.id);
             cached = null;
+            Object f = CARefl.invoke(focus, mgr);
+            if (!CABreaker.check(START, f != null && t.id.equals(String.valueOf(CARefl.get(fId, f))), "research")) return "VoK didn't start it";
             CALog.add("Research: " + who + " started " + t.name + " (" + Math.round(Math.max(1f, t.days - t.spent)) + " days, " + itemsText(t)
                     + (t.tier > 0 ? ", +" + Misc.getDGSCredits(t.tier * TIER_UPKEEP) + " a month per facility while it runs" : "") + ")", true);
             return null;
@@ -334,12 +336,12 @@ public class CAResearch {
     @SuppressWarnings("unchecked")
     static void sophiaFirst(Object mgr, Tech t) throws Exception {
         if (t.databanks() <= 0) return;
-        List<Object> council = (List<Object>) fCouncil.get(mgr);
+        List<Object> council = (List<Object>) CARefl.get(fCouncil, mgr);
         if (council == null) return;
         for (Object s : council) {
-            if (s == null || !s.getClass().getSimpleName().equals("SophiaAnderson") || s == fHead.get(mgr)) continue;
-            fHead.set(mgr, s);
-            councilAdvance.invoke(mgr, 0f);
+            if (s == null || !s.getClass().getSimpleName().equals("SophiaAnderson") || s == CARefl.get(fHead, mgr)) continue;
+            CARefl.set(fHead, mgr, s);
+            CARefl.invoke(councilAdvance, mgr, 0f);
             CALog.add("Research: made Sophia Anderson head of R&D (one databank less per tech)");
             return;
         }
@@ -347,7 +349,7 @@ public class CAResearch {
 
     /** Moves research databanks from Autopilot Storage to the Research Facility tab that holds the most already. */
     static String topUp(Object mgr, Tech t) throws Exception {
-        int need = t.databanks() - (int) ((Number) itemCount.invoke(mgr, DATABANK)).floatValue();
+        int need = t.databanks() - (int) ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue();
         if (need <= 0) return null;
         CargoAPI st = CAData.get().storage();
         if (st.getCommodityQuantity(DATABANK) < need) return null;
@@ -368,8 +370,8 @@ public class CAResearch {
 
     @SuppressWarnings("unchecked")
     static boolean idle(Object mgr) throws Exception {
-        if (focus.invoke(mgr) != null) return false;
-        List<Object> q = (List<Object>) queued.invoke(queue.invoke(mgr));
+        if (CARefl.invoke(focus, mgr) != null) return false;
+        List<Object> q = (List<Object>) CARefl.invoke(queued, CARefl.invoke(queue, mgr));
         return q == null || q.isEmpty();
     }
 
@@ -379,13 +381,13 @@ public class CAResearch {
         try {
             Object mgr = mgr();
             if (mgr == null || !idle(mgr)) return;
-            if (((Number) facilities.invoke(mgr)).intValue() <= 0) {
+            if (((Number) CARefl.invoke(facilities, mgr)).intValue() <= 0) {
                 if (CALog.once("research:nofacility")) CALog.add("Research: no working Research Facility, so nothing can be researched");
                 return;
             }
             CALog.forget("research:nofacility");
             if (CABudget.paused(s)) return;
-            int fac = ((Number) facilities.invoke(mgr)).intValue();
+            int fac = ((Number) CARefl.invoke(facilities, mgr)).intValue();
             for (Tech t : ranked()) {
                 if (t.rank <= 0f) break;
                 if (!t.databanksOnly()) continue;
@@ -394,7 +396,7 @@ public class CAResearch {
                     if (CALog.once("research:upkeep:" + t.id)) CALog.add("Research: " + t.name + " waits for next month (new upkeep cap reached)");
                     return;
                 }
-                if (t.needsItems && CAData.get().storage().getCommodityQuantity(DATABANK) + ((Number) itemCount.invoke(mgr, DATABANK)).floatValue() < t.databanks()) continue;
+                if (t.needsItems && CAData.get().storage().getCommodityQuantity(DATABANK) + ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue() < t.databanks()) continue;
                 if (start(t, "Auto") == null) { CABudget.charge(s, 0f, 0f, upkeep); return; }
             }
         } catch (Throwable t) {
@@ -423,15 +425,15 @@ public class CAResearch {
         try {
             Object mgr = mgr();
             if (mgr == null) { t.addPara("Vaults of Knowledge's research hasn't started in this save yet.", gray, 6f); return; }
-            int fac = ((Number) facilities.invoke(mgr)).intValue();
-            Object cur = focus.invoke(mgr);
+            int fac = ((Number) CARefl.invoke(facilities, mgr)).intValue();
+            Object cur = CARefl.invoke(focus, mgr);
             if (cur != null) {
                 Tech c = tech(mgr, cur);
                 t.addPara("Researching %s: %s of %s days.", 6f, hl, c.name, "" + Math.round(c.spent), "" + Math.round(c.days));
             } else t.addPara("Nothing is being researched.", 6f);
             if (fac <= 0) t.addPara("No working Research Facility, so research doesn't advance.", Misc.getNegativeHighlightColor(), 4f);
             else t.addPara("%s research facilities. Databanks in their storage: %s; in Autopilot Storage: %s.", 4f, hl, "" + fac,
-                    "" + (int) ((Number) itemCount.invoke(mgr, DATABANK)).floatValue(), "" + (int) d.storage().getCommodityQuantity(DATABANK));
+                    "" + (int) ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue(), "" + (int) d.storage().getCommodityQuantity(DATABANK));
             boolean idle = idle(mgr);
             int shown = 0;
             for (Tech x : ranked()) {

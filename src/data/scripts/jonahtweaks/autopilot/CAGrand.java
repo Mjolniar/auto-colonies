@@ -4,7 +4,6 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
-import java.lang.reflect.Method;
 
 /**
  * How many buildings a colony can hold. The vanilla colony screen shows 12 tiles, and a 13th building is built but
@@ -16,23 +15,23 @@ import java.lang.reflect.Method;
 public class CAGrand {
     public static final String MOD = "GrandColonies";
     static final int SCREEN = 12;
-    static Method lunaBool, lunaInt, lunaFloat;
+    static Object lunaBool, lunaInt, lunaFloat;
     static boolean linked = false, broken = false;
 
     static boolean link() {
         if (linked || broken) return linked;
         try {
             Class<?> l = Class.forName("lunalib.lunaSettings.LunaSettings", true, Global.getSettings().getScriptClassLoader());
-            lunaBool = l.getMethod("getBoolean", String.class, String.class);
-            lunaInt = l.getMethod("getInt", String.class, String.class);
-            lunaFloat = l.getMethod("getFloat", String.class, String.class);
+            lunaBool = CARefl.method(l, "getBoolean", String.class, String.class);
+            lunaInt = CARefl.method(l, "getInt", String.class, String.class);
+            lunaFloat = CARefl.method(l, "getFloat", String.class, String.class);
             linked = true;
         } catch (Throwable t) { broken = true; }
         return linked;
     }
 
-    static Object luna(Method m, String key) {
-        try { return link() ? m.invoke(null, MOD, key) : null; } catch (Throwable t) { return null; }
+    static Object luna(Object m, String key) {
+        try { return link() ? CARefl.invoke(m, null, MOD, key) : null; } catch (Throwable t) { return null; }
     }
 
     public static boolean enabled() { return Global.getSettings().getModManager().isModEnabled(MOD); }

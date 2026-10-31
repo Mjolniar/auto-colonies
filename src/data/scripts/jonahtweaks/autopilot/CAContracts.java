@@ -8,7 +8,6 @@ import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 
 import java.awt.Color;
-import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -23,10 +22,11 @@ public class CAContracts {
     static final String PKG = "data.kaysaar.aotd.tot.";
     static final float MARGIN = 0.15f;
     static final int MAX_PER_DAY = 3;
+    static final String ACCEPT = "accepting trade contracts";
 
-    static Method mgrInstance, browser, activeMap, addContract, tradeInstance, tradeData;
-    static Method cId, cName, cSub, cMonths, cData, cRewards, cPlayer, cExpired, cTerminated, cFrozen, cMissed, cAllowed, cTaken, cSetTaken;
-    static Method dCom, dReq, dCut, prod, demand, outside, exportCut;
+    static Object mgrInstance, browser, activeMap, addContract, tradeInstance, tradeData;
+    static Object cId, cName, cSub, cMonths, cData, cRewards, cPlayer, cExpired, cTerminated, cFrozen, cMissed, cAllowed, cTaken, cSetTaken;
+    static Object dCom, dReq, dCut, prod, demand, outside, exportCut;
     static boolean linked = false, broken = false;
 
     static boolean link() {
@@ -39,22 +39,22 @@ public class CAContracts {
             Class<?> u = Class.forName(PKG + "scripts.economy.AoTDSectorProductionDemandDataUtils", true, cl);
             Class<?> e = Class.forName(PKG + "plugins.AoTDCommodityEconSpecManager", true, cl);
             Class<?> tm = Class.forName(PKG + "scripts.trade.manager.AoTDTradeManager", true, cl);
-            mgrInstance = mgr.getMethod("getInstance");
-            browser = mgr.getMethod("getCurrentlyGeneratedInBrowser");
-            activeMap = mgr.getMethod("getActiveContracts");
-            addContract = mgr.getMethod("addContract", c);
-            tradeInstance = tm.getMethod("getInstance");
-            tradeData = tm.getMethod("getFactionTradeData", String.class);
-            cId = c.getMethod("getId"); cName = c.getMethod("getNameOfContract"); cSub = c.getMethod("getSubTypeOfContractString");
-            cMonths = c.getMethod("getMonthsRemaining"); cData = c.getMethod("getContractData"); cRewards = c.getMethod("getRewards");
-            cPlayer = c.getMethod("isIssuedByPlayer"); cExpired = c.getMethod("isExpired"); cTerminated = c.getMethod("isTerminated");
-            cFrozen = c.getMethod("isContractFrozen"); cMissed = c.getMethod("getMissedTimes"); cAllowed = c.getMethod("getAllowedMissedTimes");
-            cTaken = c.getMethod("itWasTaken"); cSetTaken = c.getMethod("setWasTaken", boolean.class);
-            dCom = d.getMethod("getCommodityId"); dReq = d.getMethod("getReqMonthly"); dCut = d.getMethod("getCutFromBasePrice");
-            prod = u.getMethod("getTotalProductionFromFaction", String.class, String.class);
-            demand = u.getMethod("getTotalDemandFromFaction", String.class, String.class);
-            outside = u.getMethod("getTotalEffectiveDemandFromSectorOutsideFromFactionIgnoreContracts", String.class, String.class);
-            exportCut = e.getMethod("getCutForCommodity", String.class, boolean.class);
+            mgrInstance = CARefl.method(mgr, "getInstance");
+            browser = CARefl.method(mgr, "getCurrentlyGeneratedInBrowser");
+            activeMap = CARefl.method(mgr, "getActiveContracts");
+            addContract = CARefl.method(mgr, "addContract", c);
+            tradeInstance = CARefl.method(tm, "getInstance");
+            tradeData = CARefl.method(tm, "getFactionTradeData", String.class);
+            cId = CARefl.method(c, "getId"); cName = CARefl.method(c, "getNameOfContract"); cSub = CARefl.method(c, "getSubTypeOfContractString");
+            cMonths = CARefl.method(c, "getMonthsRemaining"); cData = CARefl.method(c, "getContractData"); cRewards = CARefl.method(c, "getRewards");
+            cPlayer = CARefl.method(c, "isIssuedByPlayer"); cExpired = CARefl.method(c, "isExpired"); cTerminated = CARefl.method(c, "isTerminated");
+            cFrozen = CARefl.method(c, "isContractFrozen"); cMissed = CARefl.method(c, "getMissedTimes"); cAllowed = CARefl.method(c, "getAllowedMissedTimes");
+            cTaken = CARefl.method(c, "itWasTaken"); cSetTaken = CARefl.method(c, "setWasTaken", boolean.class);
+            dCom = CARefl.method(d, "getCommodityId"); dReq = CARefl.method(d, "getReqMonthly"); dCut = CARefl.method(d, "getCutFromBasePrice");
+            prod = CARefl.method(u, "getTotalProductionFromFaction", String.class, String.class);
+            demand = CARefl.method(u, "getTotalDemandFromFaction", String.class, String.class);
+            outside = CARefl.method(u, "getTotalEffectiveDemandFromSectorOutsideFromFactionIgnoreContracts", String.class, String.class);
+            exportCut = CARefl.method(e, "getCutForCommodity", String.class, boolean.class);
             linked = true;
         } catch (Throwable t) {
             broken = true;
@@ -63,18 +63,18 @@ public class CAContracts {
         return linked;
     }
 
-    static Object mgr() throws Exception { return mgrInstance.invoke(null); }
+    static Object mgr() throws Exception { return CARefl.invoke(mgrInstance, null); }
 
     /** ToT's trade economy has data for your faction (it does once you have a colony and a month has run). */
     public static boolean active() {
         if (!link()) return false;
-        try { Object tm = tradeInstance.invoke(null); return tm != null && tradeData.invoke(tm, "player") != null; }
+        try { Object tm = CARefl.invoke(tradeInstance, null); return tm != null && CARefl.invoke(tradeData, tm, "player") != null; }
         catch (Throwable t) { return false; }
     }
 
-    static int i(Method m, Object... a) throws Exception { return ((Number) m.invoke(null, a)).intValue(); }
+    static int i(Object m, Object... a) throws Exception { return ((Number) CARefl.invoke(m, null, a)).intValue(); }
 
-    static Method workers, barrier;
+    static Object workers, barrier;
     static boolean workersLinked = false, workersBroken = false;
 
     /** True while ToT's background economy threads are reading markets or a save is under way; market changes should wait. */
@@ -83,12 +83,12 @@ public class CAContracts {
         if (!workersLinked && !workersBroken) {
             try {
                 Class<?> w = Class.forName(PKG + "scripts.economy.AoTDWorkerManager", true, Global.getSettings().getScriptClassLoader());
-                workers = w.getMethod("getRunningWorkers"); barrier = w.getMethod("isSaveBarrierActive");
+                workers = CARefl.method(w, "getRunningWorkers"); barrier = CARefl.method(w, "isSaveBarrierActive");
                 workersLinked = true;
             } catch (Throwable t) { workersBroken = true; }
         }
         if (!workersLinked) return false;
-        try { return ((Number) workers.invoke(null)).intValue() > 0 || Boolean.TRUE.equals(barrier.invoke(null)); }
+        try { return ((Number) CARefl.invoke(workers, null)).intValue() > 0 || Boolean.TRUE.equals(CARefl.invoke(barrier, null)); }
         catch (Throwable t) { return false; }
     }
 
@@ -104,7 +104,7 @@ public class CAContracts {
     }
 
     static boolean live(Object c) throws Exception {
-        return !Boolean.TRUE.equals(cExpired.invoke(c)) && !Boolean.TRUE.equals(cTerminated.invoke(c)) && !Boolean.TRUE.equals(cFrozen.invoke(c));
+        return !Boolean.TRUE.equals(CARefl.invoke(cExpired, c)) && !Boolean.TRUE.equals(CARefl.invoke(cTerminated, c)) && !Boolean.TRUE.equals(CARefl.invoke(cFrozen, c));
     }
 
     // ---------------- offers ----------------
@@ -133,19 +133,19 @@ public class CAContracts {
     @SuppressWarnings("unchecked")
     static Offer evaluate(Object c) throws Exception {
         Offer o = new Offer();
-        o.id = String.valueOf(cId.invoke(c));
-        Object sub = cSub.invoke(c);
-        o.name = cName.invoke(c) + (sub != null ? " (" + sub + ")" : "");
-        o.months = ((Number) cMonths.invoke(c)).intValue();
-        for (Object d : ((Map<String, Object>) cData.invoke(c)).values()) {
-            String com = String.valueOf(dCom.invoke(d));
-            int need = ((Number) dReq.invoke(d)).intValue();
+        o.id = String.valueOf(CARefl.invoke(cId, c));
+        Object sub = CARefl.invoke(cSub, c);
+        o.name = CARefl.invoke(cName, c) + (sub != null ? " (" + sub + ")" : "");
+        o.months = ((Number) CARefl.invoke(cMonths, c)).intValue();
+        for (Object d : ((Map<String, Object>) CARefl.invoke(cData, c)).values()) {
+            String com = String.valueOf(CARefl.invoke(dCom, d));
+            int need = ((Number) CARefl.invoke(dReq, d)).intValue();
             if (need <= 0) continue;
             float base = Global.getSettings().getCommoditySpec(com).getBasePrice();
             int spare = i(prod, com, "player") - i(demand, com, "player");
             int out = Math.max(0, i(outside, com, "player"));
-            float cut = ((Number) exportCut.invoke(null, com, false)).floatValue();
-            o.pay += need * base * ((Number) dCut.invoke(d)).floatValue();
+            float cut = ((Number) CARefl.invoke(exportCut, null, com, false)).floatValue();
+            o.pay += need * base * ((Number) CARefl.invoke(dCut, d)).floatValue();
             o.lost += (Math.min(Math.max(0, spare), out) - Math.min(Math.max(0, spare - need), out)) * base * cut;
             o.lines.add(need + " " + commodityName(com) + " (" + Math.max(0, spare) + " spare)");
             if (spare - need < Math.ceil(MARGIN * need)) {
@@ -154,7 +154,7 @@ public class CAContracts {
             }
         }
         o.gain = o.pay - o.lost;
-        for (Object r : ((Map<String, Object>) cRewards.invoke(c)).values()) { String n = rewardName(r); if (n != null && !o.rewards.contains(n)) o.rewards.add(n); }
+        for (Object r : ((Map<String, Object>) CARefl.invoke(cRewards, c)).values()) { String n = rewardName(r); if (n != null && !o.rewards.contains(n)) o.rewards.add(n); }
         return o;
     }
 
@@ -162,8 +162,8 @@ public class CAContracts {
     @SuppressWarnings("unchecked")
     public static List<Offer> offers() throws Exception {
         List<Offer> out = new ArrayList<Offer>();
-        for (Object c : ((Map<String, Object>) browser.invoke(mgr())).values()) {
-            if (c == null || Boolean.TRUE.equals(cTaken.invoke(c)) || Boolean.TRUE.equals(cPlayer.invoke(c))) continue;
+        for (Object c : ((Map<String, Object>) CARefl.invoke(browser, mgr())).values()) {
+            if (c == null || Boolean.TRUE.equals(CARefl.invoke(cTaken, c)) || Boolean.TRUE.equals(CARefl.invoke(cPlayer, c))) continue;
             try { out.add(evaluate(c)); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "trade contract offer could not be scored", t); }
         }
@@ -176,14 +176,16 @@ public class CAContracts {
     public static String accept(String id, String who) {
         if (!active()) return "Theory of Toolbox's trade economy isn't running yet";
         try {
-            Map<String, Object> b = (Map<String, Object>) browser.invoke(mgr());
+            Map<String, Object> b = (Map<String, Object>) CARefl.invoke(browser, mgr());
             Object c = b.get(id);
             if (c == null) return "That offer is gone";
             Offer o = evaluate(c);
             if (!o.feasible) return "Can't fill it: " + o.why;
+            if (!CABreaker.allowed(ACCEPT)) return "Paused for this session: accepting contracts didn't take effect three times";
             b.remove(id);
-            cSetTaken.invoke(c, true);
-            addContract.invoke(mgr(), c);
+            CARefl.invoke(cSetTaken, c, true);
+            CARefl.invoke(addContract, mgr(), c);
+            if (!CABreaker.check(ACCEPT, ((Map<String, Object>) CARefl.invoke(activeMap, mgr())).containsKey(id), "trade contracts")) return "ToT didn't take the contract";
             CALog.add("Trade contract: " + who + " accepted " + o.name + ": " + join(o.lines) + " per month for " + o.months + " months, "
                     + Misc.getDGSCredits(o.pay) + " per month (" + Misc.getDGSCredits(o.gain) + " over exporting)"
                     + (o.rewards.isEmpty() ? "" : "; rewards: " + join(o.rewards)), true);
@@ -215,9 +217,9 @@ public class CAContracts {
         if (active()) {
             try {
                 Set<String> coms = new HashSet<String>();
-                for (Object c : ((Map<String, Object>) activeMap.invoke(mgr())).values()) {
+                for (Object c : ((Map<String, Object>) CARefl.invoke(activeMap, mgr())).values()) {
                     if (c == null || !live(c)) continue;
-                    for (Object d : ((Map<String, Object>) cData.invoke(c)).values()) coms.add(String.valueOf(dCom.invoke(d)));
+                    for (Object d : ((Map<String, Object>) CARefl.invoke(cData, c)).values()) coms.add(String.valueOf(CARefl.invoke(dCom, d)));
                 }
                 for (String com : coms) {
                     int gap = i(demand, com, "player") - i(prod, com, "player");
@@ -238,11 +240,11 @@ public class CAContracts {
     public static void run(CAData d, CASettings s) {
         if (s.contractMode == 2 || !active()) return;
         try {
-            for (Object c : ((Map<String, Object>) activeMap.invoke(mgr())).values()) {
-                if (c == null || Boolean.TRUE.equals(cPlayer.invoke(c)) || !live(c)) continue;
-                int missed = ((Number) cMissed.invoke(c)).intValue();
-                if (missed > 0 && CALog.once("contract:" + cId.invoke(c) + ":" + missed)) {
-                    CALog.add("Trade contract with " + cName.invoke(c) + " missed a delivery (" + missed + " of " + cAllowed.invoke(c)
+            for (Object c : ((Map<String, Object>) CARefl.invoke(activeMap, mgr())).values()) {
+                if (c == null || Boolean.TRUE.equals(CARefl.invoke(cPlayer, c)) || !live(c)) continue;
+                int missed = ((Number) CARefl.invoke(cMissed, c)).intValue();
+                if (missed > 0 && CALog.once("contract:" + CARefl.invoke(cId, c) + ":" + missed)) {
+                    CALog.add("Trade contract with " + CARefl.invoke(cName, c) + " missed a delivery (" + missed + " of " + CARefl.invoke(cAllowed, c)
                             + " allowed); colonies that make what it needs now score higher", true);
                 }
             }
@@ -267,18 +269,18 @@ public class CAContracts {
         if (!active()) { t.addPara("Theory of Toolbox's trade economy has no data for your colonies yet (it runs at month end).", gray, 6f); return; }
         try {
             int held = 0;
-            for (Object c : ((Map<String, Object>) activeMap.invoke(mgr())).values()) {
+            for (Object c : ((Map<String, Object>) CARefl.invoke(activeMap, mgr())).values()) {
                 if (c == null || !live(c)) continue;
                 held++;
-                int missed = ((Number) cMissed.invoke(c)).intValue();
+                int missed = ((Number) CARefl.invoke(cMissed, c)).intValue();
                 List<String> needs = new ArrayList<String>();
-                for (Object x : ((Map<String, Object>) cData.invoke(c)).values()) needs.add(dReq.invoke(x) + " " + commodityName(String.valueOf(dCom.invoke(x))));
+                for (Object x : ((Map<String, Object>) CARefl.invoke(cData, c)).values()) needs.add(CARefl.invoke(dReq, x) + " " + commodityName(String.valueOf(CARefl.invoke(dCom, x))));
                 // the format and its values are built together so they can't disagree
                 String fmt = "%s: %s per month, ";
-                List<String> args = new ArrayList<String>(Arrays.asList(String.valueOf(cName.invoke(c)), join(needs)));
-                if (Boolean.TRUE.equals(cPlayer.invoke(c))) fmt += "ongoing";
-                else { fmt += "%s months left"; args.add("" + cMonths.invoke(c)); }
-                if (missed > 0) { fmt += ", missed %s"; args.add(missed + " of " + cAllowed.invoke(c)); }
+                List<String> args = new ArrayList<String>(Arrays.asList(String.valueOf(CARefl.invoke(cName, c)), join(needs)));
+                if (Boolean.TRUE.equals(CARefl.invoke(cPlayer, c))) fmt += "ongoing";
+                else { fmt += "%s months left"; args.add("" + CARefl.invoke(cMonths, c)); }
+                if (missed > 0) { fmt += ", missed %s"; args.add(missed + " of " + CARefl.invoke(cAllowed, c)); }
                 t.addPara(fmt, 4f, missed > 0 ? bad : hl, args.toArray(new String[0]));
             }
             if (held == 0) t.addPara("No contracts held.", gray, 4f);

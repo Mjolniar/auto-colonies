@@ -13,8 +13,6 @@ import java.awt.Color;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -42,12 +40,13 @@ public class CATasc {
     static final List<String> DOMED_SUPPRESSES = Arrays.asList("no_atmosphere", "thin_atmosphere", "dense_atmosphere", "toxic_atmosphere",
             "extreme_weather", "inimical_biosphere");
     static final float MIN_PROJECT = 1000f;
+    static final String START = "starting TASC terraforming projects";
 
     // boggledTools names an optional mod's class (Illustrated Entities) in one signature, so plain reflection on it fails
     // without that mod; method handles resolve just the method asked for
     static MethodHandle projects, isStation, setting, controllerOf;
-    static Method reqs, reqsMet, start, daysLeft, projName, after, current;
-    static Field reqText, reqMet;
+    static Object reqs, reqsMet, start, daysLeft, projName, after, current;
+    static Object reqText, reqMet;
     static boolean linked = false, broken = false;
 
     public static boolean enabled() { return Global.getSettings().getModManager().isModEnabled(MOD); }
@@ -65,15 +64,15 @@ public class CATasc {
             isStation = lk.findStatic(tools, "marketIsStation", MethodType.methodType(boolean.class, MarketAPI.class));
             setting = lk.findStatic(tools, "getBooleanSetting", MethodType.methodType(boolean.class, String.class));
             controllerOf = lk.findStatic(tools, "getTerraformingControllerFromMarket", MethodType.methodType(ctl, MarketAPI.class));
-            reqs = proj.getMethod("getProjectRequirements");
-            reqsMet = proj.getMethod("requirementsMet", ArrayList.class);
-            start = proj.getMethod("startThisProject");
-            daysLeft = proj.getMethod("getDaysRemaining");
-            projName = proj.getMethod("getProjectName");
-            after = proj.getMethod("constructConditionsListAfterProjectCompletion");
-            current = ctl.getMethod("getCurrentProject");
-            reqText = req.getField("tooltipDisplayText");
-            reqMet = req.getField("requirementMet");
+            reqs = CARefl.method(proj, "getProjectRequirements");
+            reqsMet = CARefl.method(proj, "requirementsMet", ArrayList.class);
+            start = CARefl.method(proj, "startThisProject");
+            daysLeft = CARefl.method(proj, "getDaysRemaining");
+            projName = CARefl.method(proj, "getProjectName");
+            after = CARefl.method(proj, "constructConditionsListAfterProjectCompletion");
+            current = CARefl.method(ctl, "getCurrentProject");
+            reqText = CARefl.field(req, "tooltipDisplayText");
+            reqMet = CARefl.field(req, "requirementMet");
             linked = true;
         } catch (Throwable t) {
             broken = true;
@@ -240,18 +239,18 @@ public class CATasc {
                     try {
                         Proj p = new Proj();
                         p.raw = raw;
-                        p.name = String.valueOf(projName.invoke(raw));
-                        p.days = ((Number) daysLeft.invoke(raw)).floatValue();
-                        ArrayList<Object> rs = (ArrayList<Object>) reqs.invoke(raw);
-                        p.startable = Boolean.TRUE.equals(reqsMet.invoke(raw, rs));
+                        p.name = String.valueOf(CARefl.invoke(projName, raw));
+                        p.days = ((Number) CARefl.invoke(daysLeft, raw)).floatValue();
+                        ArrayList<Object> rs = (ArrayList<Object>) CARefl.invoke(reqs, raw);
+                        p.startable = Boolean.TRUE.equals(CARefl.invoke(reqsMet, raw, rs));
                         if (!p.startable) {
                             List<String> unmet = new ArrayList<String>();
-                            for (Object r : rs) if (!reqMet.getBoolean(r)) unmet.add(String.valueOf(reqText.get(r)));
+                            for (Object r : rs) if (!CARefl.getBoolean(reqMet, r)) unmet.add(String.valueOf(CARefl.get(reqText, r)));
                             if (unmet.size() == 1 && unmet.get(0).endsWith("has an atmosphere processor")) p.blockedBy = PROCESSOR;
                             else if (unmet.size() == 1 && unmet.get(0).endsWith("has a stellar reflector array")) p.blockedBy = REFLECTOR;
                             else continue;   // blocked by something Autopilot doesn't build
                         }
-                        p.value = CAConditions.change(m, (Collection<String>) after.invoke(raw), prof, p.lines);
+                        p.value = CAConditions.change(m, (Collection<String>) CARefl.invoke(after, raw), prof, p.lines);
                         if (p.value > 0f) out.add(p);
                     } catch (Throwable t) {
                         CADiagnostics.LOG.warn(CADiagnostics.TAG + "a TASC project could not be read at " + m.getName(), t);
@@ -278,20 +277,22 @@ public class CATasc {
         if (!link() || !m.hasCondition("terraforming_controller")) return null;
         try {
             Object ctl = controllerOf.invokeWithArguments(m);
-            Object cur = ctl == null ? null : current.invoke(ctl);
+            Object cur = ctl == null ? null : CARefl.invoke(current, ctl);
             if (cur == null) return null;
-            return projName.invoke(cur) + " (" + daysLeft.invoke(cur) + " days left)";
+            return CARefl.invoke(projName, cur) + " (" + CARefl.invoke(daysLeft, cur) + " days left)";
         } catch (Throwable t) { return null; }
     }
 
     static String startProject(MarketAPI m, Proj p, String who) {
         if (running(m) != null) return "A TASC project is already running here";
-        try { start.invoke(p.raw); }
+        if (!CABreaker.allowed(START)) return "Paused for this session: starting TASC projects didn't take effect three times";
+        try { CARefl.invoke(start, p.raw); }
         catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "starting TASC project failed at " + m.getName(), t);
             return "That failed; see starsector.log";
         }
         cache.remove(m.getId());
+        if (!CABreaker.check(START, running(m) != null, m.getName())) return "TASC didn't start it";
         CALog.add(m.getName() + ": " + who + " started TASC's " + p.name + " (" + Math.round(p.days) + " days, " + CAEngine.valueText(p.value) + " once done)", true);
         return null;
     }

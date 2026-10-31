@@ -23,6 +23,8 @@ public class CAAuto {
         CAData d = CAData.get();
         CASettings s = d.settings;
         CABudget.rollMonth(s);
+        try { CACalibrate.run(now); }   // weekly: compare estimates with what your buildings really do
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "calibration failed", t); }
         List<Cand> cands = new ArrayList<Cand>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             CAData.Colony c = d.colony(m.getId());
@@ -64,6 +66,10 @@ public class CAAuto {
         for (Cand k : cands) {
             if (k.p.cost > s.perProjectCap) { propose(k.m, k.c, k.p, "over the per-project cap, needs your approval"); continue; }
             if (k.p.measured && s.measuredMode == 1) { propose(k.m, k.c, k.p, "a mod building scored from measurements, needs your approval"); continue; }
+            if (k.p.confidence < 0.9f && k.p.cost > 0.5f * s.perProjectCap) {
+                propose(k.m, k.c, k.p, "scored from an estimate rather than a game formula and over half the per-project cap, needs your approval");
+                continue;
+            }
             String key = k.m.getId() + ":" + k.p.id;
             if (k.total > CABudget.available(s)) {
                 if (CALog.once(key)) CALog.add(k.m.getName() + ": " + k.p.name + " waits for budget ("

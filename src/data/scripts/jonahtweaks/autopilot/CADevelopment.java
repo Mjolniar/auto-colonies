@@ -8,8 +8,6 @@ import com.fs.starfarer.api.loading.IndustrySpecAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -42,8 +40,8 @@ public class CADevelopment {
             "aotd_subsidised_farming", "aquaculture", "aotd_fishing_harbour", "aotd_extractive_operation", "mining", "aotd_plasma_harvester",
             "aotd_mining_megaplex", "aotd_garden_of_elysium"));
 
-    static Method planOf;
-    static Field extractiveField;
+    static Object planOf;
+    static Object extractiveField;
     static boolean linked = false, broken = false;
 
     static boolean link() {
@@ -51,8 +49,8 @@ public class CADevelopment {
         if (!Global.getSettings().getModManager().isModEnabled(MOD)) return false;
         try {
             ClassLoader cl = Global.getSettings().getScriptClassLoader();
-            planOf = Class.forName(PKG + "models.ColonyDevelopmentManager", true, cl).getMethod("getColonyDevPlanIfPresent", MarketAPI.class);
-            extractiveField = Class.forName(PKG + "impl.DistributedRegionalNetwork", true, cl).getField("extractiveOperationIndustries");
+            planOf = CARefl.method(Class.forName(PKG + "models.ColonyDevelopmentManager", true, cl), "getColonyDevPlanIfPresent", MarketAPI.class);
+            extractiveField = CARefl.field(Class.forName(PKG + "impl.DistributedRegionalNetwork", true, cl), "extractiveOperationIndustries");
             linked = true;
         } catch (Throwable t) {
             broken = true;
@@ -64,7 +62,7 @@ public class CADevelopment {
     /** The colony's management style id; "standard" when VoK isn't running or has none recorded. */
     public static String id(MarketAPI m) {
         if (!link()) return "standard";
-        try { Object o = planOf.invoke(null, m); return o == null ? "standard" : String.valueOf(o); }
+        try { Object o = CARefl.invoke(planOf, null, m); return o == null ? "standard" : String.valueOf(o); }
         catch (Throwable t) { return "standard"; }
     }
 
@@ -73,7 +71,7 @@ public class CADevelopment {
     @SuppressWarnings("unchecked")
     static boolean extractive(String industryId) {
         try {
-            Set<String> s = extractiveField == null ? null : (Set<String>) extractiveField.get(null);
+            Set<String> s = extractiveField == null ? null : (Set<String>) CARefl.get(extractiveField, null);
             if (s != null && !s.isEmpty()) return s.contains(industryId);
         } catch (Throwable ignored) { }
         return EXTRACTIVE.contains(industryId);
