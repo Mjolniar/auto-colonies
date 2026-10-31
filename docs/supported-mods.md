@@ -39,6 +39,7 @@ Back to [Getting started](getting-started.md). The full rules are in [details.md
   - The Agents section of that page lists every agent you have, plus the enemy operations running against your colonies, which the game doesn't show anywhere else.
 - **Emergency autonomy** (Auto in the recommended settings, off before setup; **Settings**, then **Emergency autonomy (Nexerelin)**): in a money emergency (net income below zero, under 3 months of it left above the credit reserve) or a colony-limit one (more colonies governed by you than your limit, one below stability 5), the colony whose autonomy saves the most is made autonomous the way Nexerelin's Grant autonomy does it. You get 25% of its profit or loss and it stops counting against your colony limit. It's taken back once the emergency is over and you can afford it; Nexerelin adds 2 unrest. Recommend only logs it; the Mod features page has **Grant autonomy** and **Take it back now**. Colonies you made autonomous yourself are left alone.
 - **Threat estimate.** Raids, invasions, rebellions and hostile neighbors raise a colony's threat; at 70% it's planned as Security.
+- **Sieges.** Nexerelin's blockades, raids and invasions headed for a colony put it under siege: only defenses are built there until they're over.
 
 ## Emergent Threats (IX Revival)
 
@@ -57,7 +58,7 @@ Covers Building Menu Overhaul, Vaults of Knowledge and Theory of Toolbox.
 - **Research** (Advisor, Auto or Off; Auto in the recommended settings). Each tech is valued by what it unlocks and ranked by value per research day; the empire panel lists the best six.
   - Auto starts the best databank-only tech and makes Sophia Anderson head of R&D if you have her. Starting a tech (Auto or Start) moves whatever the Research Facility tab is short of from Autopilot Storage, and databanks from your fleet's cargo after that. The Research section is on the empire panel's Autopilot Storage page.
   - Your research queue is never touched.
-- **Trade contracts** (Advisor, Auto or Off; Auto in the recommended settings). It takes offers only when ToT's own figures leave 15% to spare, and only when they pay more than exporting would. Shortfalls count as shortages when scoring buildings.
+- **Trade contracts** (Advisor, Auto or Off; Auto in the recommended settings). It takes offers only when ToT's own figures leave 15% to spare, and only when they pay more than exporting would. Goods at a colony that can't deliver (no spaceport, no accessibility, or under siege) don't count, since ToT can't ship them. Shortfalls count as shortages when scoring buildings.
 - **Coronal Hypershunt colony.** Nothing is built there; AotD allows no buildings. The wormhole range is kept at the smallest that reaches your receivers. The Coronal Collector and Wormhole are restored when every resource is in surplus and the cost fits your budget. The empire panel lists where a receiver would pay off.
 - **Pluto Mining Station.** The laser runs at full strength and ore goes to your restored forges. Sections are restored in order.
 - **Nidavelir Complex.** Manpower goes into the Nexus Core one point at a time while its inputs are supplied. The Nexus Core is restored.

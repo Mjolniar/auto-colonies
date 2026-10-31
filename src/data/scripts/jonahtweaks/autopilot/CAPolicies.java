@@ -43,6 +43,7 @@ public class CAPolicies {
             boolean threat = CAThreat.isHigh(m);
             CAData.Profile prof = threat ? CAData.Profile.SECURITY : c.profile;
             float stab = m.getStabilityValue();
+            boolean siege = CASiege.held(m);   // its income is off while it lasts, so only urgent switch-offs
 
             // ---- hazard pay: buys growth with credits ----
             if (s.hazardPayMode == 0) {
@@ -58,7 +59,7 @@ public class CAPolicies {
                 boolean fitsEmpire = on || hpTotal + cost <= hpCap;
                 boolean want = growthWanted && !atMax && affordable && !emergency && fitsEmpire;
                 String why = atMax ? "max size" : emergency ? "net income is negative" : !fitsEmpire ? "all colonies together would pass " + Math.round(s.hazardPayEmpireShare * 100f) + "% of empire net income" : !affordable ? Misc.getDGSCredits(cost) + "/month is over " + Math.round(s.hazardPayColonyShare * 100f) + "% of its net income" : unsafe ? "Astral Ascension can't grow a colony without a planet past size 10" : !growthWanted ? "profile doesn't need growth" : "";
-                if (want != on && (canChange(c.lastHazardPay, HAZARD_PAY_MIN_DAYS) || (on && (emergency || atMax)))) {
+                if (want != on && ((!siege && canChange(c.lastHazardPay, HAZARD_PAY_MIN_DAYS)) || (on && (emergency || atMax)))) {
                     m.setImmigrationIncentivesOn(want);
                     hpTotal += want ? cost : -cost;
                     c.lastHazardPay = now;
@@ -78,7 +79,7 @@ public class CAPolicies {
                 boolean want = profileFits && stableEnough && !luddic && !threat && !punitive && !emergency && !shield;
                 String why = punitive ? "punitive expedition under way" : threat ? "threat is high" : luddic ? "Luddic majority" : !stableEnough ? "stability too low" : emergency ? "net income is negative" : shield ? "the planetary shield keeps Pather cells out only while the port is closed" : !profileFits ? "profile is " + prof.label : "";
                 boolean urgentOff = on && (punitive || threat || stab < d.minStability);
-                if (want != on && (urgentOff || canChange(c.lastFreePort, FREE_PORT_MIN_DAYS))) {
+                if (want != on && (urgentOff || (!siege && canChange(c.lastFreePort, FREE_PORT_MIN_DAYS)))) {
                     m.setFreePort(want);
                     m.reapplyConditions();
                     c.lastFreePort = now;

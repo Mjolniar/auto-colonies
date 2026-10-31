@@ -25,6 +25,8 @@ public class CAAuto {
         CABudget.rollMonth(s);
         try { CACalibrate.run(now); }   // weekly: compare estimates with what your buildings really do
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "calibration failed", t); }
+        try { CASiege.update(d); }
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "siege check failed", t); }
         List<Cand> cands = new ArrayList<Cand>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             CAData.Colony c = d.colony(m.getId());
@@ -35,19 +37,25 @@ public class CAAuto {
             Float next = nextPass.get(m.getId());
             boolean justFinished = was != null && was;
             if (!justFinished && next != null && now < next) continue;
-            nextPass.put(m.getId(), now + 7f);
+            boolean siege = CASiege.held(m);
+            nextPass.put(m.getId(), now + (siege ? 1f : 7f));   // under siege, look daily so it carries on as soon as it ends
             if (c.buildout && c.mode == CAData.Mode.AUTO) {
+                if (siege) continue;   // a buildout builds no defenses, so it waits out the siege
                 try { if (CABuildout.pass(m, c, now, building)) continue; }
                 catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "fast buildout pass failed at " + m.getName(), t); continue; }
             }
             CAEngine.Result r;
-            try { r = CAEngine.evaluate(m, CAThreat.effective(m, c.profile), d.minStability); }
+            try {
+                CAData.Profile prof = CAThreat.effective(m, c.profile);   // keeps the threat state current
+                r = CAEngine.evaluate(m, siege ? CAData.Profile.SECURITY : prof, d.minStability);
+            }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "pass failed at " + m.getName(), t); continue; }
             if (r.picks.isEmpty()) continue;
             // upgrades run alongside new construction, so take the best of each
             CAEngine.Pick bestUp = null, bestNew = null;
             for (CAEngine.Pick q : r.picks) {
                 if (!CAEngine.worthwhile(q)) continue;   // never the least-bad option: only what pays for itself
+                if (siege && !CASiege.defensive(q)) continue;   // under siege only defenses are built
                 if (q.upgrade && bestUp == null) bestUp = q;
                 if (!q.upgrade && bestNew == null && !building) bestNew = q;
             }
@@ -88,9 +96,10 @@ public class CAAuto {
             }
             execute(k.m, k.c, k.p, "Auto");
         }
-        try { CAItems.ensureStorageTabs(); CAItems.run(); }
+        List<MarketAPI> allAuto = CAItems.autoMarkets();
+        List<MarketAPI> auto = CASiege.free(allAuto);   // colonies under siege are left as they are
+        try { CAItems.ensureStorageTabs(); CAItems.run(auto); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "item, core or administrator placement failed", t); }
-        List<MarketAPI> auto = CAItems.autoMarkets();
         if (!auto.isEmpty() && Global.getSettings().getModManager().isModEnabled("terraformingmadeeasy")) {
             try { CATerraform.run(auto); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "terraforming planner failed", t); }
@@ -115,7 +124,7 @@ public class CAAuto {
             try { CAAutonomy.run(d, s); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "emergency autonomy step failed", t); }
         }
-        try { CAPolicies.run(auto); }
+        try { CAPolicies.run(allAuto); }   // holds changes under siege itself, but still switches off in an emergency
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony policy step failed", t); }
         try { CAStory.run(auto); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story point step failed", t); }
@@ -144,7 +153,7 @@ public class CAAuto {
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "research step failed", t); }
         }
         if (CATasc.enabled()) {
-            try { CATasc.run(Misc.getPlayerMarkets(false)); }
+            try { CATasc.run(CASiege.free(Misc.getPlayerMarkets(false))); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "TASC terraforming step failed", t); }
         }
     }

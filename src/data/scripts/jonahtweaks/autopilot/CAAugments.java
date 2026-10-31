@@ -371,6 +371,7 @@ public class CAAugments {
             try {
                 sync(m, c);
                 if (!(hasStation(m))) continue;
+                if (CASiege.held(m)) continue;   // a station in a fight can't be refitted, and the loadout waits for the siege to end
                 String sig = signature(m);
                 Float next = nextRun.get(m.getId());
                 if (sig.equals(lastSig.get(m.getId())) && next != null && now < next) continue;

@@ -1,6 +1,7 @@
 package data.scripts.jonahtweaks.autopilot;
 
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.ui.Alignment;
 import com.fs.starfarer.api.ui.ButtonAPI;
 import com.fs.starfarer.api.ui.CutStyle;
@@ -16,6 +17,8 @@ import java.util.*;
  * figures (your production against your demand plus every contract you hold) show 15% to spare, and it pays more than
  * the exports those goods would have earned. Accepting repeats what ToT's contract browser does. Programs you issue
  * yourself are left to you. Reflection only; if ToT can't be read, nothing is accepted.
+ * ToT delivers only from colonies with a spaceport and accessibility above 0 (a blockade takes up to 60% off), so the
+ * surplus of a colony that can't deliver, or is under siege (CASiege), doesn't count as spare.
  */
 public class CAContracts {
     public static final String MOD = "aotd_theory_of_toolbox";
@@ -26,7 +29,7 @@ public class CAContracts {
 
     static Object mgrInstance, browser, activeMap, addContract, tradeInstance, tradeData;
     static Object cId, cName, cSub, cMonths, cData, cRewards, cPlayer, cExpired, cTerminated, cFrozen, cMissed, cAllowed, cTaken, cSetTaken;
-    static Object dCom, dReq, dCut, prod, demand, outside, exportCut;
+    static Object dCom, dReq, dCut, prod, demand, outside, exportCut, comOn, sdData, sdNet;
     static boolean linked = false, broken = false;
 
     static boolean link() {
@@ -55,6 +58,11 @@ public class CAContracts {
             demand = CARefl.method(u, "getTotalDemandFromFaction", String.class, String.class);
             outside = CARefl.method(u, "getTotalEffectiveDemandFromSectorOutsideFromFactionIgnoreContracts", String.class, String.class);
             exportCut = CARefl.method(e, "getCutForCommodity", String.class, boolean.class);
+            Class<?> com = Class.forName(PKG + "scripts.commoditydata.AoTDCommodityOnMarket", true, cl);
+            Class<?> sd = Class.forName(PKG + "scripts.commoditydata.AoTDSupplyDemandData", true, cl);
+            comOn = CARefl.method(com, "getComMarketInstanceSave", MarketAPI.class, String.class);
+            sdData = CARefl.method(com, "getSupplyDemandData");
+            sdNet = CARefl.method(sd, "getRawNetExport");
             linked = true;
         } catch (Throwable t) {
             broken = true;
@@ -97,6 +105,23 @@ public class CAContracts {
         if (!active()) return null;
         try { return i(prod, com, "player") - i(demand, com, "player"); }
         catch (Throwable t) { return null; }
+    }
+
+    /** ToT delivers from a colony only with a spaceport and accessibility above 0; one under siege may lose it any day. */
+    static boolean delivers(MarketAPI m) {
+        return m.hasSpaceport() && m.getAccessibilityMod().computeEffective(0f) > 0f && !CASiege.held(m);
+    }
+
+    /** Surplus of the commodity at your colonies that can't deliver it (ToT counts your markets by faction id, as here). */
+    static int stuck(String com) throws Exception {
+        int n = 0;
+        for (MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) {
+            if (!"player".equals(m.getFactionId()) || delivers(m)) continue;
+            Object on = CARefl.invoke(comOn, null, m, com);
+            if (on == null) continue;
+            n += Math.max(0, ((Number) CARefl.invoke(sdNet, CARefl.invoke(sdData, on))).intValue());
+        }
+        return n;
     }
 
     static String commodityName(String id) {
@@ -142,7 +167,8 @@ public class CAContracts {
             int need = ((Number) CARefl.invoke(dReq, d)).intValue();
             if (need <= 0) continue;
             float base = Global.getSettings().getCommoditySpec(com).getBasePrice();
-            int spare = i(prod, com, "player") - i(demand, com, "player");
+            int held = stuck(com);
+            int spare = i(prod, com, "player") - i(demand, com, "player") - held;
             int out = Math.max(0, i(outside, com, "player"));
             float cut = ((Number) CARefl.invoke(exportCut, null, com, false)).floatValue();
             o.pay += need * base * ((Number) CARefl.invoke(dCut, d)).floatValue();
@@ -150,7 +176,8 @@ public class CAContracts {
             o.lines.add(need + " " + commodityName(com) + " (" + Math.max(0, spare) + " spare)");
             if (spare - need < Math.ceil(MARGIN * need)) {
                 o.feasible = false;
-                o.why = "not enough spare " + commodityName(com) + " (" + Math.max(0, spare) + " of " + (int) Math.ceil(need * (1f + MARGIN)) + " needed)";
+                o.why = "not enough spare " + commodityName(com) + " (" + Math.max(0, spare) + " of " + (int) Math.ceil(need * (1f + MARGIN)) + " needed"
+                        + (held > 0 ? "; " + held + " more is at colonies under siege or without accessibility, which can't deliver" : "") + ")";
             }
         }
         o.gain = o.pay - o.lost;

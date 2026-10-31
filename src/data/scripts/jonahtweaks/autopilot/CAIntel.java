@@ -206,7 +206,7 @@ public class CAIntel extends BaseIntelPlugin {
                     CADiagnostics.LOG.warn(CADiagnostics.TAG + "evaluate failed for " + m.getName(), e);
                     top = "error, see Diagnostics";
                 }
-                String flags = (c.buildout ? ", fast buildout" : "") + (c.threatHigh ? ", threatened" : "");
+                String flags = (c.buildout ? ", fast buildout" : "") + (c.threatHigh ? ", threatened" : "") + (CASiege.held(m) ? ", under siege" : "");
                 t.addPara("%s (size %s): %s, %s" + CALog.esc(flags), 12f, hl, m.getName(), "" + m.getSize(), c.profile.label, c.mode.label);
                 t.addPara("Next: " + CALog.esc(top), gray, 2f);
                 ButtonAPI b1 = t.addButton("Next goal", new String[]{"profile", m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 140f, 22f, 4f);
