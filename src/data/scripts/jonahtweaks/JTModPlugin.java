@@ -10,6 +10,7 @@ public class JTModPlugin extends BaseModPlugin {
         Global.getSector().addTransientScript(new JTCampaignScript());
         try {
             data.scripts.jonahtweaks.autopilot.CAData.get();
+            data.scripts.jonahtweaks.autopilot.CAAttacks.apply(data.scripts.jonahtweaks.autopilot.CAData.settings());   // per save: puts the game's own values back for a save without them
             data.scripts.jonahtweaks.autopilot.CACalibrate.migrate();
             data.scripts.jonahtweaks.autopilot.CADiagnostics.runScan();
             data.scripts.jonahtweaks.autopilot.CAOptionProvider.register();

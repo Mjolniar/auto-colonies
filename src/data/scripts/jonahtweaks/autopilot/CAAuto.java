@@ -27,6 +27,7 @@ public class CAAuto {
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "calibration failed", t); }
         try { CASiege.update(d); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "siege check failed", t); }
+        CAAttacks.apply(s);
         List<Cand> cands = new ArrayList<Cand>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             CAData.Colony c = d.colony(m.getId());
