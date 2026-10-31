@@ -11,6 +11,8 @@ The goal of the mod is to let you simply flick the automatic switch on colonies 
 
 By default, most of the settings will try to optimize your colonies to protect them and make them profitable, for a small convenience fee per building placed and action taken. I highly suggest editing all options to your taste, and they're editable on the fly from the colony threat tab in the intel screen.
 
+This mod is currently working with most of the colony mods I could find on the main star sector mod page, but if you would like one added to it's functionality please put it into the issues tab and I'll do it asap.
+
 ## Features
 
 - **Modes per colony:** Off, Advisor, Approve, Auto. Auto builds within your budget.
