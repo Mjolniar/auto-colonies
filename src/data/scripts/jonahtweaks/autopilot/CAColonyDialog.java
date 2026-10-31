@@ -165,7 +165,8 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         boolean managed = c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO;
         float threat = CAThreat.estimate(market);
         boolean threatened = threat >= CAThreat.THRESHOLD || c.threatHigh;
-        CAData.Profile planWith = managed ? CAThreat.effective(market, c.profile) : c.profile;
+        boolean buildout = c.buildout && c.mode == CAData.Mode.AUTO;   // fast buildout ranks by money only (CABuildout)
+        CAData.Profile planWith = buildout ? CAData.Profile.INCOME : managed ? CAThreat.effective(market, c.profile) : c.profile;
         float cell = (W - 30f) / 4f;
         t.beginGrid(cell, 4);
         t.addToGrid(0, 0, "Size", "" + market.getSize());
@@ -182,7 +183,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                     Misc.getDGSCredits(CABudget.limit(s)), Misc.getDGSCredits(CABudget.available(s)), CASettings.FEE_NAMES[s.feeLevel].toLowerCase());
             if (CABudget.paused(s)) t.addPara("Spending is paused: net income is negative.", Misc.getNegativeHighlightColor(), 4f);
         }
-        if (planWith != c.profile) t.addPara("Planning with Security until the threat drops below %s and has been high for %s days.", 4f,
+        if (!buildout && planWith != c.profile) t.addPara("Planning with Security until the threat drops below %s and has been high for %s days.", 4f,
                 Misc.getNegativeHighlightColor(), Math.round(CAThreat.CLEAR * 100f) + "%", "" + Math.round(CAThreat.MIN_DAYS));
         if (Global.getSettings().getModManager().isModEnabled(CADevelopment.MOD) && !CAHypershunt.is(market)) {
             try { CADevelopment.render(t, market); }
@@ -246,7 +247,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         else if (c.mode == CAData.Mode.OFF) {
             t.addPara("Autopilot is off for this colony.", gray, 8f);
         } else {
-            CAEngine.Result r = CAEngine.evaluate(market, planWith, data.minStability);
+            CAEngine.Result r = buildout ? CAEngine.evaluateForProfit(market, data.minStability) : CAEngine.evaluate(market, planWith, data.minStability);
             if (r.blocked != null) t.addPara(CALog.esc(r.blocked) + (r.picks.isEmpty() ? "." : "; new buildings wait for it, but upgrades can start now."), hl, 8f);
             List<CAEngine.Pick> picks = r.picks;
             if (picks.isEmpty()) t.addPara("Nothing can be built here right now: every option is already built, blocked by the game, or has no free industry slot.", 8f);
@@ -256,7 +257,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 Color money = p.fx[0] < 0f ? Misc.getNegativeHighlightColor() : hl;
                 t.addPara("%s. %s %s: %s a month after upkeep, costs %s, %s days" + (p.upgrade ? " (runs alongside other construction)" : ""), 12f,
                         new Color[]{hl, hl, hl, money, hl, hl}, "" + (i + 1), p.verb, p.name, CAEngine.signed(p.fx[0]), Misc.getDGSCredits(p.cost), "" + (int) p.days);
-                t.addPara("    Ranked %s: money and other effects worth %s for the " + CALog.esc(planWith.label) + " goal"
+                t.addPara("    Ranked %s: money and other effects worth %s for " + CALog.esc(buildout ? "fast buildout (money only)" : "the " + planWith.label + " goal")
                                 + (p.planBonus > 0f ? ", plan step +%s" : "%s") + (p.followThrough > 0f ? ", upgrade +%s" : "%s")
                                 + ", minus %s a month for the build cost over 3 years", 2f, gray,
                         CAEngine.signed(p.score), CAEngine.signed(p.worth), p.planBonus > 0f ? Misc.getDGSCredits(p.planBonus) : "",

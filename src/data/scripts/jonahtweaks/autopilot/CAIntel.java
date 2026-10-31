@@ -109,7 +109,8 @@ public class CAIntel extends BaseIntelPlugin {
                 else if (c.mode == CAData.Mode.OFF) top = "autopilot off";
                 else if (CAHypershunt.is(m)) top = CAHypershunt.summary(m);
                 else {
-                    CAEngine.Result r = CAEngine.evaluate(m, c.profile, data.minStability);
+                    CAEngine.Result r = c.buildout && c.mode == CAData.Mode.AUTO ? CAEngine.evaluateForProfit(m, data.minStability)
+                            : CAEngine.evaluate(m, c.profile, data.minStability);
                     CAEngine.Pick p = null;
                     for (CAEngine.Pick q : r.picks) if (CAEngine.worthwhile(q)) { p = q; break; }
                     if (p != null) top = p.verb + " " + p.name + " (" + CAEngine.signed(p.fx[0]) + " a month after upkeep)";

@@ -21,8 +21,10 @@ import java.util.Map;
 
 /**
  * Fast buildout. Once your first colony is founded, a dialog offers to build it up fast: the colony goes to Auto, and
- * until it has earned money for 30 days in a row it's planned for Money and builds what pays back fastest (value per
- * credit), paid from everything you hold above a credit floor you pick. The monthly budget, per-project cap, pause on
+ * until it has earned money for 30 days in a row it builds what pays back fastest (value per credit), paid from
+ * everything you hold above a credit floor you pick. It ranks by money only (CAEngine.evaluateForProfit): its own goal
+ * and a high threat are ignored, and defenses, fleets and ship quality count for nothing, since they only add upkeep
+ * to a colony that's losing money. The monthly budget, per-project cap, pause on
  * loss and new-upkeep cap don't apply to it; fees, the stability floor, locks and the measured-building approval do.
  * Any colony that loses money can start one from its colony panel. When it ends the colony stays in Auto under the
  * normal budget, with its own goal.
@@ -134,7 +136,7 @@ public class CABuildout {
         CAData d = CAData.get();
         CASettings s = d.settings;
         CAAuto.nextPass.put(m.getId(), now + 1f);
-        CAEngine.Result r = CAEngine.evaluate(m, CAThreat.effective(m, CAData.Profile.INCOME), d.minStability);
+        CAEngine.Result r = CAEngine.evaluateForProfit(m, d.minStability);
         CAEngine.Pick bestUp = null, bestNew = null;
         float upRatio = 0f, newRatio = 0f;
         for (CAEngine.Pick q : r.picks) {
@@ -174,9 +176,12 @@ public class CABuildout {
             return;
         }
         float days = c.buildoutProfitSince == 0L ? 0f : Global.getSector().getClock().getElapsedDaysSince(c.buildoutProfitSince);
-        t.addPara("Spending everything above %s on the buildings that pay back fastest (planned for Money). Net income %s a month"
+        t.addPara("Spending everything above %s on the buildings that pay back fastest, ranked by money only: no defenses or "
+                        + "fleets, whatever the goal. Net income %s a month"
                         + (days > 0f ? "; earning money for %s of 30 days." : "; it ends after 30 days of earning money."), 6f,
                 Misc.getHighlightColor(), Misc.getDGSCredits(floor(c)), Misc.getDGSCredits(m.getNetIncome()), "" + (int) days);
+        if (CAThreat.isHigh(m)) t.addPara("The threat is high. Defenses wait until the buildout ends; then the colony plans for Security.",
+                Misc.getNegativeHighlightColor(), 4f);
         ButtonAPI first = CAColonyDialog.rowButton(t, null, "Lower floor", PREFIX + "down", false, 140f);
         ButtonAPI prev = CAColonyDialog.rowButton(t, first, "Raise floor", PREFIX + "up", false, 140f);
         CAColonyDialog.rowButton(t, prev, "Stop buildout", PREFIX + "stop", false, 140f);

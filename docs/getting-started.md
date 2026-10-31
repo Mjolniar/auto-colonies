@@ -63,7 +63,8 @@ They're chosen so that switching colonies to Auto and doing nothing else works o
 Once the founding dialog closes, Colony Autopilot asks whether to build the colony up fast, and how many credits to keep: 250,000, 100,000, 500,000 or 1,000,000. If you say yes:
 
 - the colony switches to Auto, with recommended settings if setup hasn't run yet;
-- every day it's planned for Money and starts the buildings that pay back fastest (value per credit), paid from everything you hold above the floor;
+- every day it starts the buildings that pay back fastest (value per credit), paid from everything you hold above the floor;
+- it ranks by money only, whatever the colony's goal or threat: defenses, patrols, stations and ship quality count for nothing, so it never adds their upkeep. A threatened colony plans for Security once the buildout ends;
 - the monthly budget, per-project cap, pause on loss and new-upkeep cap don't apply to it, but fees, the stability floor and locks do;
 - it ends once the colony has earned money for 30 days in a row. The colony then stays in Auto with its own goal and the normal budget.
 
