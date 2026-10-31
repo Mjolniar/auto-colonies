@@ -29,7 +29,7 @@ This mod is currently working with most of the colony mods I could find on the m
 
 ## Integrations
 
-All optional. Each loads only when its mod is enabled.
+All optional. Each loads only when its mod is enabled. **[What each supported mod adds](docs/supported-mods.md)** explains each one in plain terms.
 
 | Mod | Adds |
 |---|---|
@@ -56,7 +56,7 @@ All optional. Each loads only when its mod is enabled.
 
 ## Use
 
-**New here? Read [Getting started](docs/getting-started.md)**: the panels, your first colony step by step, and the first-colony budget trap.
+**New here? Read [Getting started](docs/getting-started.md)**: the panels, your first colony step by step (including the fast buildout popup), agents, and the first-colony budget trap. Then [What each supported mod adds](docs/supported-mods.md).
 
 - **Colony:** colony screen, right-click Population & Infrastructure, **Colony Autopilot...**
 - **Empire:** Intel, Colonies, **Colony Autopilot**.
