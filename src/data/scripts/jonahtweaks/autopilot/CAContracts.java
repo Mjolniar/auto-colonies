@@ -74,6 +74,31 @@ public class CAContracts {
 
     static int i(Method m, Object... a) throws Exception { return ((Number) m.invoke(null, a)).intValue(); }
 
+    static Method workers, barrier;
+    static boolean workersLinked = false, workersBroken = false;
+
+    /** True while ToT's background economy threads are reading markets or a save is under way; market changes should wait. */
+    public static boolean busy() {
+        if (!Global.getSettings().getModManager().isModEnabled(MOD)) return false;
+        if (!workersLinked && !workersBroken) {
+            try {
+                Class<?> w = Class.forName(PKG + "scripts.economy.AoTDWorkerManager", true, Global.getSettings().getScriptClassLoader());
+                workers = w.getMethod("getRunningWorkers"); barrier = w.getMethod("isSaveBarrierActive");
+                workersLinked = true;
+            } catch (Throwable t) { workersBroken = true; }
+        }
+        if (!workersLinked) return false;
+        try { return ((Number) workers.invoke(null)).intValue() > 0 || Boolean.TRUE.equals(barrier.invoke(null)); }
+        catch (Throwable t) { return false; }
+    }
+
+    /** Your production minus your demand (every contract you hold counted) by ToT's figures, or null when ToT can't say. */
+    public static Integer spare(String com) {
+        if (!active()) return null;
+        try { return i(prod, com, "player") - i(demand, com, "player"); }
+        catch (Throwable t) { return null; }
+    }
+
     static String commodityName(String id) {
         try { return Global.getSettings().getCommoditySpec(id).getName(); } catch (Throwable t) { return id; }
     }

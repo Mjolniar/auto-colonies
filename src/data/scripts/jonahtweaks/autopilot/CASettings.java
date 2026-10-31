@@ -61,6 +61,10 @@ public class CASettings {
     // Ashes of the Domain trade contracts: 0 Advisor (default), 1 Auto, 2 Off
     public int contractMode = 0;
     public static final String[] CONTRACT_NAMES = {"Advisor", "Auto", "Off"};
+    // Ashes of the Domain Coronal Hypershunt range and restoration: same choices as station augments
+    public int hypershuntMode = 0;
+    // Ashes of the Domain research: 0 Advisor (default), 1 Auto, 2 Off (names as CONTRACT_NAMES)
+    public int researchMode = 0;
 
     // this month
     public int month = -1;

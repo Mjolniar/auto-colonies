@@ -83,7 +83,7 @@ public class CASetupUI {
     }
 
     /** Opens every group (the first-time setup popup shows all options). */
-    public static void openAll() { open.addAll(java.util.Arrays.asList("budget", "build", "items", "people", "policy", "industry", "settle", "augments", "contracts")); }
+    public static void openAll() { open.addAll(java.util.Arrays.asList("budget", "build", "items", "people", "policy", "industry", "settle", "augments", "aotd")); }
 
     public static void render(TooltipMakerAPI t, CASettings s, float width) {
         String budget = s.budgetPercentMode ? Math.round(s.budgetPercent * 100f) + "% of net income (" + Misc.getDGSCredits(CABudget.limit(s)) + " now)"
@@ -161,9 +161,14 @@ public class CASetupUI {
                 && group(t, "augments", "Station augments (Station Augments)", CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.augmentMode))].toLowerCase())) {
             row(t, "Station augments", CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.augmentMode))], "Follow colony mode", "aug", true);
         }
-        if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAContracts.MOD)
-                && group(t, "contracts", "Trade contracts (Ashes of the Domain)", CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.contractMode))].toLowerCase())) {
-            row(t, "Trade contracts", CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.contractMode))], "Advisor", "contract", true);
+        boolean tot = com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAContracts.MOD);
+        boolean vok = com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAHypershunt.MOD);
+        if ((tot || vok) && group(t, "aotd", "Ashes of the Domain", (tot ? "contracts " + CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.contractMode))].toLowerCase() : "")
+                + (tot && vok ? ", " : "") + (vok ? "research " + CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.researchMode))].toLowerCase()
+                + ", hypershunt " + CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.hypershuntMode))].toLowerCase() : ""))) {
+            if (tot) row(t, "Trade contracts", CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.contractMode))], "Advisor", "contract", true);
+            if (vok) row(t, "Research", CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.researchMode))], "Advisor", "research", true);
+            if (vok) row(t, "Megastructures (Hypershunt, Pluto, Nidavelir)", CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.hypershuntMode))], "Follow colony mode", "hs", true);
         }
         ButtonAPI rec = t.addButton("Use recommended settings", PREFIX + "recommend:x", Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
                 Alignment.MID, CutStyle.ALL, 260f, 24f, 14f);
@@ -242,6 +247,8 @@ public class CASetupUI {
         else if (k.equals("measured")) s.measuredMode = (Math.max(0, Math.min(2, s.measuredMode)) + 1) % 3;
         else if (k.equals("aug")) s.augmentMode = (Math.max(0, Math.min(2, s.augmentMode)) + 1) % 3;
         else if (k.equals("contract")) s.contractMode = (Math.max(0, Math.min(2, s.contractMode)) + 1) % 3;
+        else if (k.equals("hs")) s.hypershuntMode = (Math.max(0, Math.min(2, s.hypershuntMode)) + 1) % 3;
+        else if (k.equals("research")) s.researchMode = (Math.max(0, Math.min(2, s.researchMode)) + 1) % 3;
         else if (k.equals("settleinc")) s.settlementMinIncome = Math.max(5000f, s.settlementMinIncome + 5000f * dir);
         return true;
     }

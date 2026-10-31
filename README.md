@@ -32,7 +32,7 @@ All optional. Each loads only when its mod is enabled.
 | Industrial Evolution | Ambassadors, edicts, VPC chips, courier shipping |
 | Nexerelin | Emergency defense fleets |
 | Emergent Threats | Antimatter Stabilizer conversion |
-| Ashes of the Domain | Research locks, upgrade paths, starter buildings, industry synergies, trade contracts |
+| Ashes of the Domain | Research choices, research locks, upgrade paths, starter buildings, industry synergies, management styles, trade contracts, megastructures (Coronal Hypershunt, Pluto, Nidavelir), AotD colony items |
 | Random Assortment of Things | Frontiers settlement: found and develop |
 | Station Augments | Best augment loadout per station, within its AP |
 

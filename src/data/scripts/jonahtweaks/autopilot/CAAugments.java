@@ -95,6 +95,12 @@ public class CAAugments {
         return r;
     }
 
+    /** A station you can see and manage (megastructure colonies such as the Coronal Hypershunt hide theirs). */
+    static boolean hasStation(MarketAPI m) {
+        Industry ind = Misc.getStationIndustry(m);
+        return ind instanceof OrbitalStation && !ind.isHidden();
+    }
+
     /** Station upkeep before any augment's upkeep multiplier. */
     static float baseUpkeep(Industry station) {
         MutableStat u = station.getUpkeep();
@@ -237,6 +243,7 @@ public class CAAugments {
         Plan pl = new Plan();
         Industry ind = Misc.getStationIndustry(m);
         if (!(ind instanceof OrbitalStation)) { pl.note = "No orbital station."; return pl; }
+        if (ind.isHidden()) { pl.note = "This colony's station is built in and hidden, so its augments are left to you."; return pl; }
         pl.station = ind.getCurrentName();
         pl.budget = MarketUtils.getAugmentBudget((OrbitalStation) ind);
         pl.used = MarketUtils.getUsedAugmentBudget(m);
@@ -301,7 +308,7 @@ public class CAAugments {
     static void sync(MarketAPI m, CAData.Colony c) {
         Set<String> mine = c.augAuto();
         if (mine.isEmpty()) return;
-        boolean station = Misc.getStationIndustry(m) instanceof OrbitalStation;
+        boolean station = hasStation(m);
         for (String id : new ArrayList<String>(mine)) {
             if (MarketUtils.hasStationAugment(m, id)) continue;
             mine.remove(id);
@@ -363,7 +370,7 @@ public class CAAugments {
             if (c.mode != CAData.Mode.APPROVE && c.mode != CAData.Mode.AUTO) continue;
             try {
                 sync(m, c);
-                if (!(Misc.getStationIndustry(m) instanceof OrbitalStation)) continue;
+                if (!(hasStation(m))) continue;
                 String sig = signature(m);
                 Float next = nextRun.get(m.getId());
                 if (sig.equals(lastSig.get(m.getId())) && next != null && now < next) continue;
@@ -439,7 +446,7 @@ public class CAAugments {
         int shown = 0;
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             CAData.Colony c = d.colony(m.getId());
-            if (c.mode == CAData.Mode.OFF || !(Misc.getStationIndustry(m) instanceof OrbitalStation)) continue;
+            if (c.mode == CAData.Mode.OFF || !(hasStation(m))) continue;
             shown++;
             Plan pl;
             try { pl = plan(m, c, profileFor(m, c)); }
