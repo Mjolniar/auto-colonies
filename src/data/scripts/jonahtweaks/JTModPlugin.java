@@ -33,10 +33,10 @@ public class JTModPlugin extends BaseModPlugin {
             double base; boolean intLike;
             if (o instanceof Number) { base = ((Number) o).doubleValue(); intLike = (o instanceof Integer || o instanceof Long); }
             else if (o instanceof String) { base = Double.parseDouble(((String) o).trim()); intLike = !((String) o).contains("."); }
-            else { Global.getLogger(JTModPlugin.class).warn("Tweaks: setting missing " + key + " (" + o + ")"); return; }
+            else { Global.getLogger(JTModPlugin.class).warn("Auto Colonies: setting missing " + key + " (" + o + ")"); return; }
             double v = base * mult;
             if (intLike) js.put(key, (int) Math.round(v)); else js.put(key, v);
-            Global.getLogger(JTModPlugin.class).info("Tweaks: " + key + " = " + Global.getSettings().getFloat(key));
-        } catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("Tweaks: failed " + key, t); }
+            Global.getLogger(JTModPlugin.class).info("Auto Colonies: " + key + " = " + Global.getSettings().getFloat(key));
+        } catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("Auto Colonies: failed " + key, t); }
     }
 }

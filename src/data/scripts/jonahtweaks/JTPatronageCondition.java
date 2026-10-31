@@ -6,7 +6,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Stats;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 
-/** Tweaks: boosts every player-owned colony. */
+/** Auto Colonies: boosts every player-owned colony. */
 public class JTPatronageCondition extends BaseMarketConditionPlugin {
     public static final String ID = "jt_patronage";
     public static final float MULT = 2.5f;

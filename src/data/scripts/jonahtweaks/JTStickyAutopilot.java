@@ -11,7 +11,7 @@ import java.util.List;
 import org.lwjgl.input.Keyboard;
 
 /**
- * Tweaks: sticky autopilot. Pressing U sets what you want; while it is ON,
+ * Auto Colonies: sticky autopilot. Pressing U sets what you want; while it is ON,
  * autopilot is forced back on every frame (ship switches, Zero Day hacks, taking manual control).
  * Only another U press turns it off.
  */
@@ -69,6 +69,6 @@ public class JTStickyAutopilot extends BaseEveryFrameCombatPlugin {
             if (ui instanceof CombatState) { ((CombatState) ui).setAutopilot(on); return; }
             Object st = com.fs.state.AppDriver.getInstance().getCurrentState();
             if (st instanceof CombatState) ((CombatState) st).setAutopilot(on);
-        } catch (Throwable t) { Global.getLogger(JTStickyAutopilot.class).warn("Tweaks: sticky autopilot failed", t); }
+        } catch (Throwable t) { Global.getLogger(JTStickyAutopilot.class).warn("Auto Colonies: sticky autopilot failed", t); }
     }
 }
