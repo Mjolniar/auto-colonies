@@ -67,7 +67,7 @@ public class CASetupUI {
         s.noScreenButton = false;
     }
 
-    /** Which groups are expanded (UI state only, not saved). Budget starts open. */
+    /** Which group is expanded (UI state only, not saved); at most one. Budget starts open. */
     static final java.util.Set<String> open = new java.util.HashSet<String>(java.util.Arrays.asList("budget"));
 
     static boolean group(TooltipMakerAPI t, String id, String title, String summary) {
@@ -112,9 +112,6 @@ public class CASetupUI {
         }
         return total;
     }
-
-    /** Opens every group (the first-time setup popup shows all options). */
-    public static void openAll() { open.addAll(java.util.Arrays.asList("budget", "build", "items", "people", "policy", "spies", "industry", "settle", "augments", "aotd", "interface")); }
 
     public static void render(TooltipMakerAPI t, CASettings s, float width) {
         String budget = s.budgetAuto ? Misc.getDGSCredits(CABudget.limit(s)) + " this month"
@@ -252,7 +249,13 @@ public class CASetupUI {
         String[] a = ((String) id).substring(PREFIX.length()).split(":");
         String k = a[0], op = a.length > 1 ? a[1] : "next";
         float dir = "-".equals(op) ? -1f : 1f;
-        if (k.equals("group")) { String g = a.length > 1 ? a[1] : ""; if (!open.remove(g)) open.add(g); return true; }
+        if (k.equals("group")) {   // one group open at a time, so the list stays short
+            String g = a.length > 1 ? a[1] : "";
+            boolean was = open.contains(g);
+            open.clear();
+            if (!was) open.add(g);
+            return true;
+        }
         if (k.equals("recommend")) applyRecommended(s);
         else if (k.equals("type")) {   // Automatic -> Share of net income -> Fixed amount -> Automatic
             if (s.budgetAuto) { s.budgetAuto = false; s.budgetPercentMode = true; }

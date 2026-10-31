@@ -16,14 +16,16 @@ Nothing is built automatically after install. Every colony starts in **Advisor**
 
 | Panel | How to open | What it's for |
 |---|---|---|
-| Colony panel | The **Colony Autopilot** button on the colony screen, or right-click **Population & Infrastructure**, then **Colony Autopilot...** | One colony: goal, mode, plan, recommended builds, approvals, locks |
-| Empire panel | Intel screen, the **Colony Autopilot** filter | Budget, approvals, every colony, Autopilot Storage, settings, log, diagnostics |
+| Colony panel | The **Colony Autopilot** button on the colony screen, or right-click **Population & Infrastructure**, then **Colony Autopilot...** | One colony. Pages: **Overview** (stats, approval, goal, mode, fast buildout), **Plan and builds**, **Locks**, and one per mod feature that applies |
+| Empire panel | Intel screen, the **Colony Autopilot** filter | Pages: **Colonies** (budget, approvals, every colony), **Autopilot Storage**, one per mod feature in use, **Settings**, **Log**, **Diagnostics** |
+
+Both panels list their pages down the left side; click one to show it. In **Settings**, click a group to open it; one is open at a time.
 
 ## Your first colony
 
 1. **Found the colony** the usual way. When the founding dialog closes, Colony Autopilot offers a **fast buildout**. Say yes and pick a credit floor to have the colony built up hands-off until it makes money (see [Fast buildout](#fast-buildout-offered-when-you-found-your-first-colony)), or say no and follow the steps below.
-2. **Open its colony panel.** The top lines show size, stability, hazard, accessibility, industry slots, your credits, and this month's budget.
-3. **Pick a goal** under **Goal profile**:
+2. **Open its colony panel.** It opens on **Overview**: size, stability, hazard, accessibility, industry slots, your credits, and this month's budget.
+3. **Pick a goal** under **Goal**:
 
    | Goal | Weights toward |
    |---|---|
@@ -87,7 +89,7 @@ All three are under **Settings**, **Budget and spending**, in the empire panel; 
 
 ### Keeping control
 
-- **Locks:** the colony panel lists your buildings. A locked building is never upgraded, replaced or removed.
+- **Locks:** the colony panel's **Locks** page lists your buildings. A locked building is never upgraded, replaced or removed.
 - **Removals:** buildings are only removed during terraforming, unless you turn on **Allow removals**.
 - **Story points:** never spent unless you change **Story points** away from Player only.
 - **Fees:** Approve and Auto add a convenience fee to each project they start (at Standard, 5% of the cost, at least 5,000). Moving items and hiring cost a small fee too. **Convenience fees** can be Off, Low, Standard or High.
