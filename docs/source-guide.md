@@ -230,7 +230,7 @@ Rules that keep saves working:
 | [CAOptionProvider](../src/data/scripts/jonahtweaks/autopilot/CAOptionProvider.java) | Adds **Colony Autopilot...** to the right-click menu of Population & Infrastructure |
 | [CAColonyDialog](../src/data/scripts/jonahtweaks/autopilot/CAColonyDialog.java) | The colony panel, a custom dialog: goal and mode, approvals, plan, recommended builds, fast buildout, integration sections and locks. `build()` redraws it after every button; `handle(id)` routes button ids (`ca:lock:...`, `ca:hs:...`, `ca:bo:...`, a `Pick`, a goal, a mode). The first switch to Approve or Auto shows the setup page. |
 | [CAIntel](../src/data/scripts/jonahtweaks/autopilot/CAIntel.java) | The empire panel, an intel item under Colonies: budget, approvals, every colony, Autopilot Storage, each integration's section, settings, log and diagnostics |
-| [CASetupUI](../src/data/scripts/jonahtweaks/autopilot/CASetupUI.java) | The settings rows, shared by the setup page and the empire panel. Each row shows its value and the recommendation. `applyRecommended` fills in the recommendations. |
+| [CASetupUI](../src/data/scripts/jonahtweaks/autopilot/CASetupUI.java) | The settings rows, shared by the setup page and the empire panel. Each row shows its value and the recommendation. `applyRecommended` fills in the recommendations, which are chosen so that switching colonies to Auto and nothing else works out well; its comments give the reason for each. |
 | `CABuildout.Offer` | The first-colony offer, an interaction dialog with the game's own option list |
 | [CAStoragePlugin](../src/data/scripts/jonahtweaks/autopilot/CAStoragePlugin.java) | The Autopilot Storage tab: accepts only colony items and AI cores |
 
@@ -250,7 +250,7 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
 | [CAPlan](../src/data/scripts/jonahtweaks/autopilot/CAPlan.java) | Target layouts and the plan bonus |
 | [CAThreat](../src/data/scripts/jonahtweaks/autopilot/CAThreat.java) | Threat estimate per colony, with the 70% / 65% / 60-day hysteresis |
 | [CABuild](../src/data/scripts/jonahtweaks/autopilot/CABuild.java) | Starts a build or upgrade like the build menu |
-| [CABudget](../src/data/scripts/jonahtweaks/autopilot/CABudget.java) | Monthly budget, reserve, pause on loss, convenience fees |
+| [CABudget](../src/data/scripts/jonahtweaks/autopilot/CABudget.java) | Monthly budget (Automatic: half of net income plus 15% of the credits above the reserve at the month's start; share of income; fixed), reserve, pause on loss, convenience fees |
 | [CABuildout](../src/data/scripts/jonahtweaks/autopilot/CABuildout.java) | Fast buildout: the offer, the daily pass, the panel section |
 | [CAItems](../src/data/scripts/jonahtweaks/autopilot/CAItems.java) | Colony items, AI cores (stacked on the best-defended world, inspection-aware), administrators, the Antimatter Stabilizer conversion |
 | [CAPolicies](../src/data/scripts/jonahtweaks/autopilot/CAPolicies.java) | Hazard pay and free port, with minimum time between changes |

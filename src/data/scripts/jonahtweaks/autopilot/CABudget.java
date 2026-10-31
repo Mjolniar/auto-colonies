@@ -16,6 +16,7 @@ public class CABudget {
         boolean first = s.month < 0;
         s.month = m;
         s.spent = 0f; s.fees = 0f; s.upkeepAdded = 0f; s.terraSpent = 0f; s.spMonth = 0;
+        s.monthCredits = CABuild.credits();
         try {
             MonthlyReport prev = SharedData.getData().getPreviousReport();
             if (prev != null && prev.getRoot() != null) {
@@ -39,8 +40,16 @@ public class CABudget {
     }
 
     public static float limit(CASettings s) {
+        if (s.budgetAuto) return Math.max(0f, netIncome(s) * s.budgetPercent) + fromSavings(s);
         if (!s.budgetPercentMode) return s.budgetFixed;
         return Math.max(0f, netIncome(s) * s.budgetPercent);
+    }
+
+    /** The Automatic budget's share of savings: savingsShare of the credits above the reserve at the start of the month. */
+    public static float fromSavings(CASettings s) {
+        float start = s.monthCredits > 0f ? s.monthCredits : CABuild.credits();
+        float share = s.savingsShare > 0f ? s.savingsShare : 0.15f;
+        return Math.max(0f, start - s.reserve) * share;
     }
 
     public static boolean paused(CASettings s) { return s.pauseOnLoss && netIncome(s) < 0f; }

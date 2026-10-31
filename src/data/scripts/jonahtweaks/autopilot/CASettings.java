@@ -9,6 +9,12 @@ public class CASettings {
 
     // budget
     public boolean budgetPercentMode = true;
+    // Automatic budget (recommended): budgetPercent of net income plus savingsShare of the credits above the reserve at the
+    // start of the month (monthCredits), so a young colony that loses money still gets built and spending tapers as savings
+    // fall. Overrides budgetPercentMode; off in older saves until setup or "Use recommended settings" turns it on.
+    public boolean budgetAuto = false;
+    public float savingsShare = 0.15f;
+    public float monthCredits = -1f;
     public float budgetPercent = 0.5f;
     public float budgetFixed = 1000000f;
     public float perProjectCap = 2000000f;

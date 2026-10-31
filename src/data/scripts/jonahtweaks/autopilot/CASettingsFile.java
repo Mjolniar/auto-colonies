@@ -12,6 +12,8 @@ public class CASettingsFile {
         try {
             JSONObject j = Global.getSettings().loadJSON(PATH, "jonah_tweaks");
             s.budgetPercentMode = j.optBoolean("budgetPercentMode", s.budgetPercentMode);
+            s.budgetAuto = j.optBoolean("budgetAuto", s.budgetAuto);
+            s.savingsShare = (float) j.optDouble("savingsShare", s.savingsShare);
             s.budgetPercent = (float) j.optDouble("budgetPercent", s.budgetPercent);
             s.budgetFixed = (float) j.optDouble("budgetFixed", s.budgetFixed);
             s.perProjectCap = (float) j.optDouble("perProjectCap", s.perProjectCap);

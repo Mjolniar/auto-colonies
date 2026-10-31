@@ -30,7 +30,7 @@ Back to [Getting started](getting-started.md). The full rules are in [details.md
 ## Nexerelin
 
 - **Emergency defense fleets.** When an Auto colony's system is targeted by a hostile raid, invasion or crisis fleet, or hostile fleets there outweigh its defenses, it requests a Defense fleet the way Nexerelin's fleet request dialog does. This may go over the monthly budget, since it's an emergency, but never under the credit reserve.
-- **Agents** (off by default; **Settings**, then **Agents (Nexerelin)**):
+- **Agents** (Defense in the recommended settings, off before setup; **Settings**, then **Agents (Nexerelin)**):
   - **Defense:** Counter-Insurgency on a rebellion, Infiltrate Cell on an active Pather cell, and Find Pirate Base for a hidden base, at the closest colony that needs it. Then Raise Relations with a faction running operations against your colonies while not at war with you. Above Neutral, its AI can't start new operations and drops the running ones.
   - **Defense and offense:** adds sabotage of military industries. It starts with the market an invasion or raid against you comes from. It only targets factions already at war with you; never allies, factions in a ceasefire, or your commissioner, because a detected operation can start a war. It needs 60% estimated success or better and runs one operation per enemy faction.
   - **Hiring:** a level-1 agent for 12,000, only while there's work for one, up to **Agents to keep** and Nexerelin's own limit. Hybrid first, then a Saboteur when offense is on. Nexerelin pays the salary.
@@ -51,10 +51,10 @@ Covers Building Menu Overhaul, Vaults of Knowledge and Theory of Toolbox.
 - **Starter buildings.** Monoculture Plots, Extractive Operation, Smelting, Light Production and Trade Outpost are scored with estimated effects.
 - **Industry synergies.** A build's value includes the synergies it starts or ends (Ore-To-Core, Defensive Network, Rapid Transportation and 16 more), modelled from VoK's code. The colony panel shows active synergies and those one building away.
 - **Management styles** (Colony Development). New buildings are scored with the style's real effects: Centralized Urban Core, Distributed Regional Network, Bore City, Archeo-Site, Floating City. On a Floating City, nothing is built while fuel would run short. The style itself is never changed.
-- **Research** (Advisor, Auto or Off). Each tech is valued by what it unlocks and ranked by value per research day; the empire panel lists the best six.
+- **Research** (Advisor, Auto or Off; Auto in the recommended settings). Each tech is valued by what it unlocks and ranked by value per research day; the empire panel lists the best six.
   - Auto starts the best databank-only tech, moves databanks from Autopilot Storage, and makes Sophia Anderson head of R&D if you have her.
   - Your research queue is never touched.
-- **Trade contracts** (Advisor, Auto or Off). It takes offers only when ToT's own figures leave 15% to spare, and only when they pay more than exporting would. Shortfalls count as shortages when scoring buildings.
+- **Trade contracts** (Advisor, Auto or Off; Auto in the recommended settings). It takes offers only when ToT's own figures leave 15% to spare, and only when they pay more than exporting would. Shortfalls count as shortages when scoring buildings.
 - **Coronal Hypershunt colony.** Nothing is built there; AotD allows no buildings. The wormhole range is kept at the smallest that reaches your receivers. The Coronal Collector and Wormhole are restored when every resource is in surplus and the cost fits your budget. The empire panel lists where a receiver would pay off.
 - **Pluto Mining Station.** The laser runs at full strength and ore goes to your restored forges. Sections are restored in order.
 - **Nidavelir Complex.** Manpower goes into the Nexus Core one point at a time while its inputs are supplied. The Nexus Core is restored.
@@ -65,7 +65,7 @@ Covers Building Menu Overhaul, Vaults of Knowledge and Theory of Toolbox.
 
 ## Random Assortment of Things (Frontiers)
 
-- **Settlement** (Advisor, Approve, Auto or Off). Founds your one settlement on the best surveyed site once it makes at least the threshold (default 20,000 a month), the way RAT's own option does.
+- **Settlement** (Advisor, Approve, Auto or Off; Auto in the recommended settings). Founds your one settlement on the best surveyed site once it makes at least the threshold (default 20,000 a month), the way RAT's own option does.
 - Builds Refining and Trading Post when they pay back within 2 years. The other facilities change how you play, so they're yours.
 
 ## Station Augments
