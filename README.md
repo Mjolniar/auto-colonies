@@ -8,7 +8,7 @@
 This is a mod I had Claude Code create for me due to always liking to have tons of colonies with lots of buildings, limits off, etc, but always getting way in over my head with management. 
 The goal of the mod is to let you simply flick the automatic switch on colonies (right click population and infrastructure, top left card in colony, and it's the bottom option) and have them take care of themselves, so long as you have the cash to keep them improving. There's several modes to choose from, tons of options involving governors, buildings, how you want the colony to develop, and so on!
 
-By default, most of the settings will try to optimize your colonies to protect them and make them profitable, for a small convenience fee per building placed and action taken. To have it add items to your colonies, there is a colony storage you can access at any of your owned colonies where you can put all colony augment items (nanoforge, ai cores, etc.) - this has extensive modded support as well. The manager will automatically pick an optimal planet goal according to what you settle to "optimize" the planet, but that can freely be changed according to what you want. I highly suggest editing all options to your taste, and they're editable on the fly from the colony threat tab in the intel screen.
+By default, most of the settings will try to optimize your colonies to protect them and make them profitable, for a small convenience fee per building placed and action taken. To have it add items to your colonies, there is a colony storage you can access at any of your owned colonies where you can put all colony augment items (nanoforge, ai cores, etc.) - this has extensive modded support as well. The manager will automatically pick an optimal planet goal according to what you settle to "optimize" the planet, but that can freely be changed according to what you want. I highly suggest editing all options to your taste, and they're editable on the fly from the Colony Autopilot tab in the intel screen.
 
 This mod is currently working with most of the colony mods I could find on the main star sector mod page, but if you would like one added to its functionality please put it into the issues tab and I'll do it asap.
 
@@ -77,7 +77,7 @@ All optional. Each loads only when its mod is enabled. **[What each supported mo
 **New here? Read [Getting started](docs/getting-started.md)**: the panels, your first colony step by step (including the fast buildout popup), agents, and the first-colony budget trap. Then [What each supported mod adds](docs/supported-mods.md).
 
 - **Colony:** the **Colony Autopilot** button on the colony screen, or right-click Population & Infrastructure, **Colony Autopilot...**
-- **Empire:** Intel, **Colony threats** (or Important), **Colony Autopilot**.
+- **Empire:** Intel screen, the **Colony Autopilot** filter.
 
 Quick start: pick a goal in the colony panel and build from **Recommended builds** in Advisor. Then switch to Approve or Auto; the first switch opens setup with recommended settings. For a new colony, say yes to the fast buildout popup. Otherwise, if Auto builds nothing on a young colony, check the budget line: a negative net income or a credit reserve above your bank balance stops spending (see the guide).
 

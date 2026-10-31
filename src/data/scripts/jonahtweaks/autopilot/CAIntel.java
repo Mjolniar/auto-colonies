@@ -3,7 +3,6 @@ package data.scripts.jonahtweaks.autopilot;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.comm.IntelInfoPlugin;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
-import com.fs.starfarer.api.impl.campaign.ids.Tags;
 import com.fs.starfarer.api.impl.campaign.intel.BaseIntelPlugin;
 import com.fs.starfarer.api.ui.Alignment;
 import com.fs.starfarer.api.ui.ButtonAPI;
@@ -20,18 +19,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** The empire panel: every colony's profile, mode and top pick, plus Diagnostics. Lives in the Intel screen under Colony threats (the game's name for the colonies tag), and under Important. */
+/**
+ * The empire panel: every colony's profile, mode and top pick, plus Diagnostics. It has its own filter in the Intel
+ * screen, "Colony Autopilot" (a tag of its own, as mods like Treasure Hunt do), rather than sitting among colony threats
+ * or important intel.
+ */
 public class CAIntel extends BaseIntelPlugin {
     static final String RESCAN = "jt_ca_rescan";
+    public static final String TAG = "Colony Autopilot";
     /** UI handles are never saved with the game. */
     transient TooltipMakerAPI lastTooltip;
 
     public static void ensure() {
-        if (!Global.getSector().getIntelManager().hasIntelOfClass(CAIntel.class)) {
-            CAIntel i = new CAIntel();
-            Global.getSector().getIntelManager().addIntel(i, true);
-            i.setImportant(true);
-        }
+        com.fs.starfarer.api.campaign.comm.IntelManagerAPI mgr = Global.getSector().getIntelManager();
+        if (!mgr.hasIntelOfClass(CAIntel.class)) mgr.addIntel(new CAIntel(), true);
+        // before 2.8.0 it was marked important; it has its own filter now
+        com.fs.starfarer.api.campaign.comm.IntelInfoPlugin i = mgr.getFirstIntel(CAIntel.class);
+        if (i != null && i.isImportant()) i.setImportant(false);
     }
 
     @Override protected String getName() { return "Colony Autopilot"; }
@@ -45,7 +49,7 @@ public class CAIntel extends BaseIntelPlugin {
     @Override
     public Set<String> getIntelTags(SectorMapAPI map) {
         Set<String> tags = new LinkedHashSet<String>();
-        tags.add(Tags.INTEL_COLONIES);
+        tags.add(TAG);
         return tags;
     }
 

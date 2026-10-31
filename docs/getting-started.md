@@ -17,7 +17,7 @@ Nothing is built automatically after install. Every colony starts in **Advisor**
 | Panel | How to open | What it's for |
 |---|---|---|
 | Colony panel | The **Colony Autopilot** button on the colony screen, or right-click **Population & Infrastructure**, then **Colony Autopilot...** | One colony: goal, mode, plan, recommended builds, approvals, locks |
-| Empire panel | Intel screen, **Colony threats** filter (also under **Important**), then **Colony Autopilot** | Budget, approvals, every colony, Autopilot Storage, settings, log, diagnostics |
+| Empire panel | Intel screen, the **Colony Autopilot** filter | Budget, approvals, every colony, Autopilot Storage, settings, log, diagnostics |
 
 ## Your first colony
 
