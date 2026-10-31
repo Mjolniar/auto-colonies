@@ -19,8 +19,16 @@ public class JTModPlugin extends BaseModPlugin {
             Global.getSector().addTransientScript(new data.scripts.jonahtweaks.autopilot.CAScript());
             Global.getSector().addTransientScript(new data.scripts.jonahtweaks.autopilot.CAScreenButton());
             Global.getSector().addTransientScript(new data.scripts.jonahtweaks.autopilot.CAReportFix());
+            data.scripts.jonahtweaks.autopilot.CAStockpile.reset();
+            Global.getSector().addTransientScript(new data.scripts.jonahtweaks.autopilot.CAStockpile());
         } catch (Throwable t) {
             Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] startup failed", t);
         }
+    }
+
+    /** The storage stockpile's supply bonus is worked out every frame; it never goes into a save. */
+    public void beforeGameSave() {
+        try { data.scripts.jonahtweaks.autopilot.CAStockpile.clear(); }
+        catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] clearing the storage stockpile before saving failed", t); }
     }
 }

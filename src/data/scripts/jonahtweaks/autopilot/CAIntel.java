@@ -98,7 +98,6 @@ public class CAIntel extends BaseIntelPlugin {
         if (mm.isModEnabled(CAAutonomy.MOD) && (s.autonomyMode != 0 || !CAData.get().autonomous().isEmpty())) l.add("autonomy");
         if (mm.isModEnabled(CAAugments.MOD) && s.augmentMode != 2) l.add("augments");
         if (mm.isModEnabled(CAContracts.MOD) && s.contractMode != 2) l.add("contracts");
-        if (mm.isModEnabled(CAResearch.MOD) && s.researchMode != 2) l.add("research");
         if (anyMega && mm.isModEnabled(CAHypershunt.MOD) && s.hypershuntMode != 2) l.add("mega");
         if (anyShunt && mm.isModEnabled(CAHypershunt.MOD) && s.hypershuntMode != 2) l.add("shunt");
         return l;
@@ -120,9 +119,6 @@ public class CAIntel extends BaseIntelPlugin {
         } else if (id.equals("contracts") && mm.isModEnabled(CAContracts.MOD)) {
             t.addSectionHeading("Trade contracts (Ashes of the Domain)", Alignment.MID, 0f);
             CAContracts.render(t, data, s);
-        } else if (id.equals("research") && mm.isModEnabled(CAResearch.MOD)) {
-            t.addSectionHeading("Research (Ashes of the Domain)", Alignment.MID, 0f);
-            CAResearch.render(t, data, s);
         } else if (id.equals("mega") && mm.isModEnabled(CAHypershunt.MOD)) {
             t.addSectionHeading("Pluto and Nidavelir (Ashes of the Domain)", Alignment.MID, 0f);
             CAMegastructures.renderEmpire(t, data, s);
@@ -220,8 +216,9 @@ public class CAIntel extends BaseIntelPlugin {
             }
         } else if (page.equals("storage")) {
             t.addSectionHeading("Autopilot Storage", Alignment.MID, 0f);
-            t.addPara("Dock at any of your colonies and open the Autopilot Storage tab to deposit colony items and AI cores. "
-                    + "Only Auto-mode colonies draw from it; nothing in your cargo or normal storage is ever used.", 6f);
+            t.addPara("Dock at any of your colonies and open the Autopilot Storage tab to deposit colony items, AI cores and research "
+                    + "databanks" + (s.storageCheat ? " (anything, with the storage cheat on)" : "") + ". Auto-mode colonies take items and cores "
+                    + "from it, and research takes what a tech needs. Nothing in your normal storage is used.", 6f);
             com.fs.starfarer.api.campaign.CargoAPI st = data.storage();
             if (st.isEmpty()) t.addPara("Empty.", gray, 4f);
             for (com.fs.starfarer.api.campaign.CargoStackAPI stack : st.getStacksCopy()) {
@@ -243,6 +240,20 @@ public class CAIntel extends BaseIntelPlugin {
                         : none == null && s.coreRisk == 0 ? "no limit, defended (" + (int) CAItems.defenseFP(m) + " fleet points estimated)" : "no limit";
                 t.addPara("%s: %s inspection points, %s", 3f, coming || pts > lim ? Misc.getNegativeHighlightColor() : hl,
                         CALog.esc(m.getName()), "" + pts, why);
+            }
+            if (s.storageCheat) {
+                java.util.List<String> cov = CAStockpile.covering();
+                t.addPara("Storage cheat on: colonies draw their shortages from here. " + (cov.isEmpty() ? "No shortage it can cover right now."
+                        : "Covering " + CALog.esc(CAContracts.join(cov)) + "."), 6f);
+            }
+            if (Global.getSettings().getModManager().isModEnabled(CAResearch.MOD) && s.researchMode != 2) {
+                t.addSpacer(16f);
+                t.addSectionHeading("Research (Ashes of the Domain)", Alignment.MID, 0f);
+                try { CAResearch.render(t, data, s); }
+                catch (Throwable e) {
+                    CADiagnostics.LOG.warn(CADiagnostics.TAG + "research section failed", e);
+                    t.addPara("This section couldn't be shown; see starsector.log.", gray, 6f);
+                }
             }
         } else if (page.equals("mods")) {
             boolean first = true;

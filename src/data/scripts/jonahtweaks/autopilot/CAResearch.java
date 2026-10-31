@@ -2,6 +2,7 @@ package data.scripts.jonahtweaks.autopilot;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CargoAPI;
+import com.fs.starfarer.api.campaign.SpecialItemData;
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.econ.MutableCommodityQuantity;
@@ -24,7 +25,9 @@ import java.util.*;
  * VoK's buildings, synergies) answer as they would afterwards, then put back. Known non-building effects (output +1,
  * hazard -10%, upkeep x0.9) are added, plus half the best tech each one leads to.
  * Auto starts the best tech whenever nothing is running or queued, only for techs that cost databanks alone (AI cores
- * and colony items are left to you), moving databanks into the Research Facility tab when it's short: from Autopilot Storage first, then your fleet's cargo.
+ * and colony items are left to you). Autopilot Storage is research's storage too: whatever a tech is short of when it
+ * starts (Auto or the Start button) is moved from there into the Research Facility tab, and databanks from your fleet's
+ * cargo after that. The section is on the empire panel's Autopilot Storage page.
  * Reflection only; if VoK can't be read, research is left to you.
  */
 public class CAResearch {
@@ -358,18 +361,52 @@ public class CAResearch {
         return ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue() + CAData.get().storage().getCommodityQuantity(DATABANK) + fleetDatabanks();
     }
 
+    static boolean isCommodity(String id) {
+        try { return Global.getSettings().getCommoditySpec(id) != null; } catch (Throwable t) { return false; }
+    }
+
+    /** How many of item id a cargo holds: a commodity, or a special item such as a colony item. */
+    static float count(CargoAPI c, String id) {
+        if (c == null) return 0f;
+        return isCommodity(id) ? c.getCommodityQuantity(id) : c.getQuantity(CargoAPI.CargoItemType.SPECIAL, new SpecialItemData(id, null));
+    }
+
+    static void move(CargoAPI from, CargoAPI to, String id, int n) {
+        if (n <= 0) return;
+        if (isCommodity(id)) { from.removeCommodity(id, n); to.addCommodity(id, n); return; }
+        SpecialItemData data = new SpecialItemData(id, null);
+        from.removeItems(CargoAPI.CargoItemType.SPECIAL, data, n);
+        to.addSpecial(data, n);
+    }
+
+    /** Whether the Research Facility tabs, Autopilot Storage and (databanks only) your fleet's cargo hold everything t needs. */
+    static boolean covered(Object mgr, Tech t) throws Exception {
+        CargoAPI st = CAData.get().storage();
+        for (Map.Entry<String, Integer> e : t.items.entrySet()) {
+            float have = ((Number) CARefl.invoke(itemCount, mgr, e.getKey())).floatValue() + count(st, e.getKey())
+                    + (DATABANK.equals(e.getKey()) ? fleetDatabanks() : 0f);
+            if (have < e.getValue()) return false;
+        }
+        return true;
+    }
+
     /**
-     * Moves the research databanks a tech is short of into the Research Facility tab that holds the most already: from
-     * Autopilot Storage first, then your fleet's cargo. Nothing moves unless the two together cover the whole shortfall.
+     * Moves everything a tech is short of into the Research Facility tab that holds the most databanks already: from
+     * Autopilot Storage first, then databanks from your fleet's cargo. Nothing moves unless the whole shortfall is covered.
      */
     static String topUp(Object mgr, Tech t) throws Exception {
-        int need = t.databanks() - (int) ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue();
-        if (need <= 0) return null;
         CargoAPI st = CAData.get().storage();
         com.fs.starfarer.api.campaign.CampaignFleetAPI fleet = Global.getSector().getPlayerFleet();
-        int fromStorage = (int) Math.min(need, st.getCommodityQuantity(DATABANK));
-        int fromFleet = need - fromStorage;
-        if (fromFleet > 0 && (fleet == null || fleet.getCargo() == null || fleetDatabanks() < fromFleet)) return null;
+        Map<String, int[]> plan = new LinkedHashMap<String, int[]>();   // item -> {from storage, from your fleet's cargo}
+        for (Map.Entry<String, Integer> e : t.items.entrySet()) {
+            int need = e.getValue() - (int) ((Number) CARefl.invoke(itemCount, mgr, e.getKey())).floatValue();
+            if (need <= 0) continue;
+            int fromStorage = (int) Math.min(need, count(st, e.getKey()));
+            int fromFleet = need - fromStorage;
+            if (fromFleet > 0 && (!DATABANK.equals(e.getKey()) || fleet == null || fleet.getCargo() == null || fleetDatabanks() < fromFleet)) return null;
+            plan.put(e.getKey(), new int[]{fromStorage, fromFleet});
+        }
+        if (plan.isEmpty()) return null;
         SubmarketAPI best = null; float bestHas = -1f;
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             SubmarketAPI sm = m.getSubmarket(SUBMARKET);
@@ -378,13 +415,17 @@ public class CAResearch {
             if (has > bestHas) { bestHas = has; best = sm; }
         }
         if (best == null) return null;
-        if (fromStorage > 0) st.removeCommodity(DATABANK, fromStorage);
-        if (fromFleet > 0) fleet.getCargo().removeCommodity(DATABANK, fromFleet);
-        best.getCargo().addCommodity(DATABANK, need);
-        String from = fromStorage > 0 && fromFleet > 0 ? fromStorage + " from Autopilot Storage and " + fromFleet + " from your fleet's cargo"
-                : fromFleet > 0 ? "from your fleet's cargo" : "from Autopilot Storage";
-        String msg = "moved " + need + " research databanks " + (fromStorage > 0 && fromFleet > 0 ? "(" + from + ")" : from) + " to "
-                + best.getMarket().getName() + "'s Research Facility tab";
+        List<String> what = new ArrayList<String>();
+        boolean anyStorage = false, anyFleet = false;
+        for (Map.Entry<String, int[]> e : plan.entrySet()) {
+            int fromStorage = e.getValue()[0], fromFleet = e.getValue()[1];
+            move(st, best.getCargo(), e.getKey(), fromStorage);
+            if (fromFleet > 0) move(fleet.getCargo(), best.getCargo(), e.getKey(), fromFleet);
+            anyStorage |= fromStorage > 0; anyFleet |= fromFleet > 0;
+            what.add((fromStorage + fromFleet) + " " + commodityName(e.getKey()) + (fromStorage > 0 && fromFleet > 0 ? " (" + fromFleet + " from your fleet's cargo)" : ""));
+        }
+        String from = anyStorage && anyFleet ? "from Autopilot Storage and your fleet's cargo" : anyFleet ? "from your fleet's cargo" : "from Autopilot Storage";
+        String msg = "moved " + CAContracts.join(what) + " " + from + " to " + best.getMarket().getName() + "'s Research Facility tab";
         CALog.add("Research: " + msg);
         return msg;
     }
@@ -442,7 +483,8 @@ public class CAResearch {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         t.addPara("Mode: %s. Values each tech by the buildings it unlocks at your colonies (scored like any build), its other effects and "
                 + "what it leads to, against its databanks and the facility upkeep it adds. Auto starts the best one when nothing is running "
-                + "or queued, only if it costs databanks alone.", 6f, hl, CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.researchMode))]);
+                + "or queued, only if it costs databanks alone. Starting a tech, by Auto or with Start, moves whatever it's short of from "
+                + "Autopilot Storage into the Research Facility tab (databanks also from your fleet's cargo).", 6f, hl, CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.researchMode))]);
         try {
             Object mgr = mgr();
             if (mgr == null) { t.addPara("Vaults of Knowledge's research hasn't started in this save yet.", gray, 6f); return; }
@@ -456,12 +498,11 @@ public class CAResearch {
             else t.addPara("%s research facilities. Databanks in their storage: %s; in Autopilot Storage: %s; in your fleet's cargo: %s.", 4f, hl, "" + fac,
                     "" + (int) ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue(), "" + (int) d.storage().getCommodityQuantity(DATABANK),
                     "" + (int) fleetDatabanks());
-            float onHand = databanksOnHand(mgr);
             boolean idle = idle(mgr);
             int shown = 0;
             for (Tech x : ranked()) {
                 if (shown++ >= 6) break;
-                t.addPara("%s (%s days, %s): %s a month" + (x.needsItems ? (x.databanksOnly() && onHand >= x.databanks() ? ", databanks moved in from Autopilot Storage or your cargo" : ", not enough databanks on hand") : "") + (!x.databanksOnly() ? ", uses items Auto won't spend" : ""),
+                t.addPara("%s (%s days, %s): %s a month" + (x.needsItems ? (covered(mgr, x) ? ", moved in from Autopilot Storage when started" : ", not enough on hand") : "") + (!x.databanksOnly() ? ", uses items Auto won't spend" : ""),
                         8f, x.rank > 0f ? hl : gray, x.name, "" + Math.round(Math.max(1f, x.days - x.spent)), itemsText(x), CAEngine.signed(x.value));
                 for (int j = 0; j < Math.min(3, x.lines.size()); j++) t.addPara("    " + CALog.esc(x.lines.get(j)), gray, 2f);
                 if (idle && s.researchMode != 2) {

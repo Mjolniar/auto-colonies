@@ -41,6 +41,7 @@ public class CASetupUI {
         s.useAICores = true;
         s.alphaMode = 0;
         s.coreRisk = 0;
+        s.storageCheat = false;    // cheats are never recommended
         s.disableStabilizers = false;
         s.adminHiring = true;
         s.adminOptimal = true;
@@ -245,6 +246,12 @@ public class CASetupUI {
             row(t, "Button on the colony screen", s.noScreenButton ? "Off" : "On", "On", "screenbtn", true);
             t.addPara("Opens this panel from your colony's own screen. Right-clicking Population & Infrastructure works either way.", Misc.getGrayColor(), 6f);
         }
+        if (group(t, "cheats", "Cheats", "storage cheat " + (s.storageCheat ? "on" : "off"))) {
+            row(t, "Store anything, colonies draw shortages from it (cheat)", s.storageCheat ? "On (cheat)" : "Off", "Off", "storecheat", true);
+            t.addPara("Autopilot Storage takes anything but ships and ambassadors, and you can take it out at any colony. Every colony "
+                    + "that uses stockpiles for shortages draws from it, for free, before its own stockpile: a colony short of a commodity "
+                    + "in storage gets the missing amount, and the storage is drawn down at the game's stockpile rate.", Misc.getGrayColor(), 6f);
+        }
         ButtonAPI rec = t.addButton("Use recommended settings", PREFIX + "recommend:x", Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
                 Alignment.MID, CutStyle.ALL, 260f, 24f, 14f);
     }
@@ -303,6 +310,7 @@ public class CASetupUI {
             s.stationLine = CASettings.STATION_IDS[(i + 1) % CASettings.STATION_IDS.length];
         }
         else if (k.equals("cores")) s.useAICores = !s.useAICores;
+        else if (k.equals("storecheat")) s.storageCheat = !s.storageCheat;
         else if (k.equals("removals")) s.allowRemovals = !s.allowRemovals;
         else if (k.equals("alpha")) s.alphaMode = (Math.max(0, Math.min(2, s.alphaMode)) + 1) % 3;
         else if (k.equals("corerisk")) s.coreRisk = (Math.max(0, Math.min(2, s.coreRisk)) + 1) % 3;
