@@ -29,8 +29,9 @@ import java.util.*;
  * campaign UI's public getCore() (getCoreUI() on an open interaction dialog), the core's getCurrentTab(), and each
  * panel's getChildrenCopy(), all through CARefl.
  *
- * The building grid is the game's IndustryListPanel (its name isn't obfuscated); getWidgets() gives the building tiles,
- * and the colony is read from the panel's fields by type. The button opens the colony panel in the same dialog the
+ * The building tiles are the elements with a public getIndustryPanel(), which returns the game's IndustryListPanel (the
+ * grid; its name isn't obfuscated). The grid isn't always in the child tree above its tiles, so it's found that way. The
+ * colony is read from the grid's fields by type. The button opens the colony panel in the same dialog the
  * right-click menu uses: in 0.98a, ui.newui.super(width, height, delegate, core.getDialogParent(), listener).show(0.3,
  * 0.2), reached by name through method handles, with the grid as the listener (it ignores dismissals of dialogs it
  * didn't open). If that can't be built the log says so and the right-click option still works.
@@ -50,7 +51,7 @@ public class CAScreenButton implements EveryFrameScript {
     static final Object NONE = new Object();
     static boolean noSpotLogged = false, placedLogged = false;
 
-    private final Map<Class<?>, Object> childrenMethod = new HashMap<Class<?>, Object>();
+    private final Map<String, Object> methods = new HashMap<String, Object>();
     private boolean broken = false;
     private float timer = 0f;
     private CustomPanelAPI button;
@@ -98,11 +99,20 @@ public class CAScreenButton implements EveryFrameScript {
             s.tab = tab instanceof UIPanelAPI ? (UIPanelAPI) tab : (UIPanelAPI) core;
             if (!(tab instanceof UIPanelAPI)) s.note = "no current tab, searched the whole core UI";
             collect(s.tab, s, 0);
-            for (UIComponentAPI c : s.all) if (c.getClass().getName().equals(GRID_CLASS)) { s.grid = c; break; }
+            // the building tiles are the elements with a public getIndustryPanel(), which returns the grid they belong to;
+            // the grid itself isn't always in the child tree above them
+            for (UIComponentAPI c : s.all) {
+                if (c == button) continue;
+                Object m = method(c.getClass(), "getIndustryPanel");
+                if (m == NONE) continue;
+                Object grid = null;
+                try { grid = CARefl.invoke(m, c); } catch (Throwable ignored) { }
+                if (grid == null) continue;
+                s.tiles.add(c);
+                if (s.grid == null) s.grid = grid;
+            }
+            if (s.grid == null) for (UIComponentAPI c : s.all) if (c.getClass().getName().equals(GRID_CLASS)) { s.grid = c; s.tiles.add(c); break; }   // an empty grid
             if (s.grid != null) {
-                Object widgets = tryCall(s.grid, "getWidgets");
-                if (widgets instanceof List) for (Object w : (List<?>) widgets) if (w instanceof UIComponentAPI) s.tiles.add((UIComponentAPI) w);
-                if (s.tiles.isEmpty()) s.tiles.add((UIComponentAPI) s.grid);   // an empty grid still marks the spot
                 s.market = marketOf(s.grid);
                 for (int i = 0; s.market == null && i < s.tiles.size(); i++) s.market = marketOf(s.tiles.get(i));
             }
@@ -119,13 +129,20 @@ public class CAScreenButton implements EveryFrameScript {
         try { return CARefl.call(target, name); } catch (Throwable t) { return null; }
     }
 
+    /** A public no-argument method of a class, cached (NONE when it has none). */
+    Object method(Class<?> cls, String name) {
+        String key = cls.getName() + "#" + name;
+        Object m = methods.get(key);
+        if (m == null) {
+            try { m = CARefl.method(cls, name); } catch (Throwable t) { m = NONE; }
+            methods.put(key, m);
+        }
+        return m;
+    }
+
     void collect(UIComponentAPI c, Screen s, int depth) throws Exception {
         s.all.add(c);
-        Object m = childrenMethod.get(c.getClass());
-        if (m == null) {
-            try { m = CARefl.method(c.getClass(), "getChildrenCopy"); } catch (Throwable t) { m = NONE; }
-            childrenMethod.put(c.getClass(), m);
-        }
+        Object m = method(c.getClass(), "getChildrenCopy");
         Object kids = m == NONE || depth > 16 ? null : CARefl.invoke(m, c);
         boolean any = false;
         if (kids instanceof List) for (Object o : (List<?>) kids) if (o instanceof UIComponentAPI) { any = true; collect((UIComponentAPI) o, s, depth + 1); }
@@ -148,11 +165,14 @@ public class CAScreenButton implements EveryFrameScript {
 
     void report(CampaignUIAPI ui, InteractionDialogAPI dialog, Screen s) {
         if (reports >= 8 || (s != null && button != null && parent == s.tab)) return;
-        StringBuilder b = new StringBuilder("colony screen button: core tab ").append(ui.getCurrentCoreTab())
+        // only screens a colony could be on: the colonies tab, or a docked market's screens
+        com.fs.starfarer.api.campaign.CoreUITabId tab = ui.getCurrentCoreTab();
+        if (tab != com.fs.starfarer.api.campaign.CoreUITabId.OUTPOSTS && tab != com.fs.starfarer.api.campaign.CoreUITabId.CARGO && (s == null || s.grid == null)) return;
+        StringBuilder b = new StringBuilder("colony screen button: core tab ").append(tab)
                 .append(dialog != null ? ", dialog open" : ", no dialog");
         if (s == null) b.append(", no core UI found");
         else b.append(", searched ").append(s.tab.getClass().getName()).append(s.note != null ? " (" + s.note + ")" : "")
-                .append(": ").append(s.all.size()).append(" elements, building grid ").append(s.grid != null ? "found with " + s.tiles.size() + " tiles" : "not found")
+                .append(": building grid ").append(s.grid != null ? "found with " + s.tiles.size() + " tiles" : "not found")
                 .append(", colony ").append(s.market == null ? "not found" : s.market.getName() + (s.market.isPlayerOwned() ? "" : " (not yours)"));
         String r = b.toString();
         if (r.equals(lastReport)) return;
