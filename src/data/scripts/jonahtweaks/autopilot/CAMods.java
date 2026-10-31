@@ -67,6 +67,7 @@ public class CAMods {
     static void shield(MarketAPI m, CAEngine.Pick p) {
         p.fx[3] += 1.5f;
         if (!m.isFreePort()) p.fx[1] += 0.5f;
+        p.confidence = 0.85f;   // an estimate of the mod's flat bonus, not a formula
         p.lines.add("Planetary Shield (Access Control): +300 ground defense; Pather interest -4 while free port is off");
     }
 
@@ -91,20 +92,28 @@ public class CAMods {
         for (int i = 0; i < vol.length; i++) BONUS.put("volatiles_" + vol[i], i - 1);
     }
 
+    static final String DSI = "roiderUnion.econ.DivesSupplyInteractor", DI = "roiderUnion.econ.DivesInteractor";
+
+    /** Roider's own tables when it exposes them (read live, so a rebalance is followed), these copies otherwise. */
+    static int base(String com) { return CAConst.mapInt(DSI, "BASE_SUPPLY", com, BASE.get(com)); }
+    static Integer bonus(String com, String cond) { Integer b = BONUS.get(cond); return b == null ? null : CAConst.mapInt(DSI, "BONUS_SUPPLY", com + cond, b); }
+    static float divesRange() { return CAConst.num(DI, "DIVES_RANGE", 1f); }
+    static float hqRange() { return divesRange() + CAConst.num(DI, "HQ_RANGE_BONUS", 5f); }
+
     public static boolean roiderHas(String id) { return (id.equals("roider_dives") || id.equals("roider_union_hq")) && on(ROIDER); }
 
     /** Best deposit Roider miners reach for this commodity: the colony's own, or a system's void resource within range. */
     static Integer bestBonus(MarketAPI m, String com, float range) {
         Integer best = null;
         for (MarketConditionAPI c : m.getConditions()) {
-            Integer b = BONUS.get(c.getId());
-            if (b != null && c.getId().startsWith(com + "_") && !(com.equals("ore") && c.getId().startsWith("rare_ore")) && (best == null || b > best)) best = b;
+            Integer b = c.getId().startsWith(com + "_") ? bonus(com, c.getId()) : null;
+            if (b != null && !(com.equals("ore") && c.getId().startsWith("rare_ore")) && (best == null || b > best)) best = b;
         }
         if (m.getLocationInHyperspace() == null) return best;
         for (StarSystemAPI s : Global.getSector().getStarSystems()) {
             if (Misc.getDistanceLY(s.getLocation(), m.getLocationInHyperspace()) > range) continue;
             Object v = s.getMemoryWithoutUpdate().get("$roider_voidResource_" + com);
-            Integer b = v == null ? null : BONUS.get(String.valueOf(v));
+            Integer b = v == null ? null : bonus(com, String.valueOf(v));
             if (b != null && (best == null || b > best)) best = b;
         }
         return best;
@@ -115,7 +124,7 @@ public class CAMods {
         for (String com : MINED) {
             Integer b = bestBonus(m, com, range);
             if (b == null) continue;
-            int u = Math.max(0, BASE.get(com) + b);
+            int u = Math.max(0, base(com) + b);
             total += u;
             if (add && u > 0) CAEngine.supply(p, com, u, deficit);
         }
@@ -126,17 +135,17 @@ public class CAMods {
     static boolean roiderApply(MarketAPI m, String id, CAEngine.Pick p, Map<String, Integer> deficit) {
         int s = m.getSize();
         if (id.equals("roider_dives")) {
-            if (output(m, 1f, p, deficit, true) <= 0) return false;
+            if (output(m, divesRange(), p, deficit, true) <= 0) return false;
             CAEngine.supply(p, "crew", 3, deficit);
             CAEngine.demand(p, "heavy_machinery", 1, deficit); CAEngine.demand(p, "drugs", 3, deficit); CAEngine.demand(p, "supplies", 2, deficit);
             p.lines.add("Roider miners work deposits within 1 light-year");
             return true;
         }
         Map<String, Integer> was = new HashMap<String, Integer>();
-        for (String com : MINED) { Integer b = bestBonus(m, com, 1f); was.put(com, b == null ? 0 : Math.max(0, BASE.get(com) + b)); }
+        for (String com : MINED) { Integer b = bestBonus(m, com, divesRange()); was.put(com, b == null ? 0 : Math.max(0, base(com) + b)); }
         for (String com : MINED) {
-            Integer b = bestBonus(m, com, 6f);
-            int u = b == null ? 0 : Math.max(0, BASE.get(com) + b);
+            Integer b = bestBonus(m, com, hqRange());
+            int u = b == null ? 0 : Math.max(0, base(com) + b);
             if (u > was.get(com)) CAEngine.supply(p, com, u - was.get(com), deficit);
         }
         CAEngine.supply(p, "crew", Math.max(0, s - 3), deficit);
@@ -151,7 +160,10 @@ public class CAMods {
     /** Unknown Skies' Luminescent Clouds and What We Left Behind's Fractured World add to Mining directly (not through the deposit tables). */
     static void miningExtras(MarketAPI m, CAEngine.Pick p, Map<String, Integer> deficit) {
         if (m.hasCondition("US_fluorescent")) CAEngine.supply(p, "volatiles", 3, deficit);
-        if (m.hasCondition("MPC_fracturedWorld")) { CAEngine.supply(p, "ore", 5, deficit); CAEngine.supply(p, "rare_ore", 5, deficit); }
+        if (m.hasCondition("MPC_fracturedWorld")) {
+            int ore = Math.round(CAConst.num("data.scripts.campaign.singularity.MPC_fracturedWorld", "TOTAL_ORE_BONUS", 5f));
+            CAEngine.supply(p, "ore", ore, deficit); CAEngine.supply(p, "rare_ore", ore, deficit);
+        }
     }
 
     // ---------------- Astral Ascension ----------------

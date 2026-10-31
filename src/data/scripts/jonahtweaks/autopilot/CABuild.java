@@ -20,6 +20,8 @@ public class CABuild {
         if (!p.upgrade && Misc.getCurrentlyBeingConstructed(m) != null) return "A new building is already under construction here (upgrades can still run)";
         if (credits() < p.cost) return "Not enough credits (" + Misc.getDGSCredits(p.cost) + " needed)";
         if (!CADiagnostics.usable(p.id)) return "Not supported by Colony Autopilot";
+        String action = "building " + p.name;
+        if (!CABreaker.allowed(action)) return "Paused for this session: it didn't take effect three times (see Diagnostics)";
         try {
             if (p.upgrade) {
                 Industry ex = p.existing;
@@ -41,6 +43,8 @@ public class CABuild {
                 if (ind == null) return "The game refused to add that building";
                 ind.startBuilding();
             }
+            Industry now = p.upgrade ? p.existing : m.getIndustry(p.id);
+            CABreaker.check(action, now != null && (p.upgrade ? now.isUpgrading() : now.isBuilding()), m.getName());
             Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(p.cost);
             CADiagnostics.LOG.info(CADiagnostics.TAG + (p.upgrade ? "upgrade to " : "build ") + p.id + " at " + m.getName()
                     + " for " + Misc.getDGSCredits(p.cost));

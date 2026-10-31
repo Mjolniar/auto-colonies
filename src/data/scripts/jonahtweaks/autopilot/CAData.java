@@ -52,6 +52,13 @@ public class CAData {
     }
 
     public Map<String, Colony> colonies = new HashMap<String, Colony>();
+    // calibration against your colonies (CACalibrate): building id -> smoothed actual/predicted ratio, and readings taken
+    public Map<String, Float> calOut, calUp;
+    public Map<String, Integer> calOutN, calUpN;
+    public Map<String, Float> calOut() { if (calOut == null) calOut = new HashMap<String, Float>(); return calOut; }
+    public Map<String, Float> calUp() { if (calUp == null) calUp = new HashMap<String, Float>(); return calUp; }
+    public Map<String, Integer> calOutN() { if (calOutN == null) calOutN = new HashMap<String, Integer>(); return calOutN; }
+    public Map<String, Integer> calUpN() { if (calUpN == null) calUpN = new HashMap<String, Integer>(); return calUpN; }
     public float minStability = 5f;
     public CASettings settings;
     public com.fs.starfarer.api.campaign.CargoAPI storage;

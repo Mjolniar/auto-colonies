@@ -14,8 +14,6 @@ import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 
 import java.awt.Color;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -35,12 +33,16 @@ public class CAHypershunt {
     static final String TECH_RESTORE = "aotd_tech_megastructure_analysis", TECH_RECEIVER = "aotd_tech_hp_distribution";
     static final float STEP_UPKEEP = 20000f, CONTRACT_CUT = 0.1f;
     static final int STEP_PTM = 2;
+    static final String RESTORE = "starting megastructure restorations";
 
-    static Method scriptOf, sections, research, researched, techSpec, techName;
-    static Method sStart, sName, sDays, sProgress, sNeeds, sCan, sUpkeep, sRestored, wEffective;
-    static Field sId, sRestoring, wRange, wMult, wMax;
+    static Object scriptOf, sections, research, researched, techSpec, techName;
+    static Object sStart, sName, sDays, sProgress, sNeeds, sCan, sUpkeep, sRestored, wEffective;
+    static Object sId, sRestoring, wRange, wMult, wMax;
     static Class<?> wormholeClass;
     static boolean linked = false, broken = false;
+
+    /** What a restoration contract bills, as a share of base price: VoK's own constant when readable. */
+    static float cut() { return CAConst.num("data.kaysaar.aotd.vok.campaign.econ.megastructures.tradecontracts.BaseRestorationContract", "MARGIN_OF_COMMODITY_PRICE", CONTRACT_CUT); }
 
     /** A Coronal Hypershunt colony: AotD tags its market and gives it this condition. Needs nothing from VoK. */
     public static boolean is(MarketAPI m) {
@@ -56,18 +58,18 @@ public class CAHypershunt {
             wormholeClass = Class.forName(PKG + "campaign.econ.megastructures.impl.sections.hypershunt.WormholeGenerator", true, cl);
             Class<?> rm = Class.forName(PKG + "scripts.research.AoTDMainResearchManager", true, cl);
             Class<?> spec = Class.forName(PKG + "scripts.research.models.ResearchOptionSpec", true, cl);
-            scriptOf = script.getMethod("getInstanceOfScriptFromEntityIfPresent", SectorEntityToken.class, String.class);
-            sections = script.getMethod("getMegaStructureSections");
-            research = rm.getMethod("getInstance");
-            researched = rm.getMethod("isResearchedForPlayer", String.class);
-            techSpec = rm.getMethod("getSpecForSpecificResearch", String.class);
-            techName = spec.getMethod("getName");
-            sStart = sec.getMethod("startRestoration"); sName = sec.getMethod("getName"); sDays = sec.getMethod("getDaysLeft");
-            sProgress = sec.getMethod("getProgressOfRestoration"); sNeeds = sec.getMethod("getMonthlyResNeeded");
-            sCan = sec.getMethod("canRestoreSection"); sUpkeep = sec.getMethod("getUpkeepOfSection"); sRestored = sec.getMethod("isRestored");
-            sId = sec.getField("specID"); sRestoring = sec.getField("isRestoring");
-            wRange = wormholeClass.getField("range"); wMult = wormholeClass.getField("mult"); wMax = wormholeClass.getField("sections");
-            wEffective = wormholeClass.getMethod("getEffectiveRange");
+            scriptOf = CARefl.method(script, "getInstanceOfScriptFromEntityIfPresent", SectorEntityToken.class, String.class);
+            sections = CARefl.method(script, "getMegaStructureSections");
+            research = CARefl.method(rm, "getInstance");
+            researched = CARefl.method(rm, "isResearchedForPlayer", String.class);
+            techSpec = CARefl.method(rm, "getSpecForSpecificResearch", String.class);
+            techName = CARefl.method(spec, "getName");
+            sStart = CARefl.method(sec, "startRestoration"); sName = CARefl.method(sec, "getName"); sDays = CARefl.method(sec, "getDaysLeft");
+            sProgress = CARefl.method(sec, "getProgressOfRestoration"); sNeeds = CARefl.method(sec, "getMonthlyResNeeded");
+            sCan = CARefl.method(sec, "canRestoreSection"); sUpkeep = CARefl.method(sec, "getUpkeepOfSection"); sRestored = CARefl.method(sec, "isRestored");
+            sId = CARefl.field(sec, "specID"); sRestoring = CARefl.field(sec, "isRestoring");
+            wRange = CARefl.field(wormholeClass, "range"); wMult = CARefl.field(wormholeClass, "mult"); wMax = CARefl.field(wormholeClass, "sections");
+            wEffective = CARefl.method(wormholeClass, "getEffectiveRange");
             linked = true;
         } catch (Throwable t) {
             broken = true;
@@ -78,15 +80,15 @@ public class CAHypershunt {
 
     static boolean researched(String tech) {
         if (!link()) return false;
-        try { Object r = research.invoke(null); return r != null && Boolean.TRUE.equals(researched.invoke(r, tech)); }
+        try { Object r = CARefl.invoke(research, null); return r != null && Boolean.TRUE.equals(CARefl.invoke(researched, r, tech)); }
         catch (Throwable t) { return false; }
     }
 
     static String techName(String tech) {
         try {
-            Object r = link() ? research.invoke(null) : null;
-            Object s = r == null ? null : techSpec.invoke(r, tech);
-            if (s != null) return String.valueOf(techName.invoke(s));
+            Object r = link() ? CARefl.invoke(research, null) : null;
+            Object s = r == null ? null : CARefl.invoke(techSpec, r, tech);
+            if (s != null) return String.valueOf(CARefl.invoke(techName, s));
         } catch (Throwable ignored) { }
         return tech;
     }
@@ -127,20 +129,20 @@ public class CAHypershunt {
     static Section section(Object raw) throws Exception {
         Section s = new Section();
         s.raw = raw;
-        s.id = String.valueOf(sId.get(raw));
-        s.name = String.valueOf(sName.invoke(raw));
-        s.restored = Boolean.TRUE.equals(sRestored.invoke(raw));
-        s.restoring = sRestoring.getBoolean(raw);
-        s.canStart = Boolean.TRUE.equals(sCan.invoke(raw));
-        s.progress = ((Number) sProgress.invoke(raw)).floatValue();
-        s.daysLeft = ((Number) sDays.invoke(raw)).floatValue();
-        s.upkeep = ((Number) sUpkeep.invoke(raw)).floatValue();
-        Map<String, Integer> needs = (Map<String, Integer>) sNeeds.invoke(raw);
+        s.id = String.valueOf(CARefl.get(sId, raw));
+        s.name = String.valueOf(CARefl.invoke(sName, raw));
+        s.restored = Boolean.TRUE.equals(CARefl.invoke(sRestored, raw));
+        s.restoring = CARefl.getBoolean(sRestoring, raw);
+        s.canStart = Boolean.TRUE.equals(CARefl.invoke(sCan, raw));
+        s.progress = ((Number) CARefl.invoke(sProgress, raw)).floatValue();
+        s.daysLeft = ((Number) CARefl.invoke(sDays, raw)).floatValue();
+        s.upkeep = ((Number) CARefl.invoke(sUpkeep, raw)).floatValue();
+        Map<String, Integer> needs = (Map<String, Integer>) CARefl.invoke(sNeeds, raw);
         if (needs != null) for (Map.Entry<String, Integer> e : needs.entrySet()) {
             CommoditySpecAPI c = Global.getSettings().getCommoditySpec(e.getKey());
             if (e.getValue() == null || e.getValue() <= 0 || c == null) continue;
             s.monthly.put(e.getKey(), e.getValue());
-            s.monthlyCredits += c.getBasePrice() * e.getValue() * CONTRACT_CUT;
+            s.monthlyCredits += c.getBasePrice() * e.getValue() * cut();
         }
         return s;
     }
@@ -148,11 +150,11 @@ public class CAHypershunt {
     @SuppressWarnings("unchecked")
     static Shunt read(MarketAPI m) throws Exception {
         if (!link() || m.getPrimaryEntity() == null) return null;
-        Object script = scriptOf.invoke(null, m.getPrimaryEntity(), MEGA);
+        Object script = CARefl.invoke(scriptOf, null, m.getPrimaryEntity(), MEGA);
         if (script == null) return null;
         Shunt h = new Shunt();
         h.m = m;
-        for (Object raw : (List<Object>) sections.invoke(script)) {
+        for (Object raw : (List<Object>) CARefl.invoke(sections, script)) {
             if (raw == null) continue;
             Section s = section(raw);
             if (COLLECTOR.equals(s.id)) h.collector = s;
@@ -160,10 +162,10 @@ public class CAHypershunt {
                 h.wormhole = s;
                 if (wormholeClass.isInstance(raw)) {
                     h.wormholeRaw = raw;
-                    h.range = wRange.getInt(raw);
-                    h.mult = Math.max(1, wMult.getInt(raw));
-                    h.steps = Math.max(1, wMax.getInt(raw));
-                    h.effective = Math.max(1, ((Number) wEffective.invoke(raw)).intValue());
+                    h.range = CARefl.getInt(wRange, raw);
+                    h.mult = Math.max(1, CARefl.getInt(wMult, raw));
+                    h.steps = Math.max(1, CARefl.getInt(wMax, raw));
+                    h.effective = Math.max(1, ((Number) CARefl.invoke(wEffective, raw)).intValue());
                 }
             }
         }
@@ -260,8 +262,10 @@ public class CAHypershunt {
         if (s.restoring) return s.name + " is already being restored";
         if (!researched(TECH_RESTORE)) return "Needs " + techName(TECH_RESTORE) + " researched";
         if (!s.canStart) return s.name + " can't be restored yet (another section comes first)";
+        if (!CABreaker.allowed(RESTORE)) return "Paused for this session: restorations didn't start three times";
         try {
-            sStart.invoke(s.raw);
+            CARefl.invoke(sStart, s.raw);
+            if (!CABreaker.check(RESTORE, CARefl.getBoolean(sRestoring, s.raw), m.getName())) return "VoK didn't start the restoration";
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "starting megastructure restoration failed at " + m.getName(), t);
             return "That failed; see starsector.log";
@@ -279,8 +283,9 @@ public class CAHypershunt {
         n = Math.max(1, Math.min(h.steps, n));
         if (n == h.range) return "The range is already " + n * h.mult + " light-years";
         try {
-            wRange.setInt(h.wormholeRaw, n);
+            CARefl.set(wRange, h.wormholeRaw, n);
             h.m.reapplyIndustries();
+            if (!CABreaker.check("setting the hypershunt range", CARefl.getInt(wRange, h.wormholeRaw) == n, h.m.getName())) return "The range didn't take";
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "setting hypershunt range failed at " + h.m.getName(), t);
             return "That failed; see starsector.log";

@@ -5,7 +5,6 @@ import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.loading.IndustrySpecAPI;
 
-import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -15,7 +14,7 @@ import java.util.*;
  * is built or upgraded while it's enabled (fails closed) and the reason is logged once.
  */
 public class CAAotD {
-    static Method reqInstance, reqSet, metCriteria, reason, affected, hiddenSet;
+    static Object reqInstance, reqSet, metCriteria, reason, affected, hiddenSet;
     static boolean linked = false, broken = false;
 
     public static boolean enabled() { return Global.getSettings().getModManager().isModEnabled("bmo"); }
@@ -27,12 +26,12 @@ public class CAAotD {
             Class<?> mgr = Class.forName("kaysaar.bmo.buildingmenu.additionalreq.AdditionalReqManager", true, cl);
             Class<?> req = Class.forName("kaysaar.bmo.buildingmenu.additionalreq.BaseAdditionalReq", true, cl);
             Class<?> listener = Class.forName("kaysaar.bmo.BmoListener", true, cl);
-            reqInstance = mgr.getMethod("getInstance");
-            reqSet = mgr.getMethod("getReqLinkedHashMap");
-            metCriteria = req.getMethod("metCriteria", MarketAPI.class, String.class);
-            reason = req.getMethod("getReason", MarketAPI.class, String.class);
-            affected = req.getMethod("getIndustriesAffected");
-            hiddenSet = listener.getMethod("aboutToCreateBuildingMenu", MarketAPI.class);
+            reqInstance = CARefl.method(mgr, "getInstance");
+            reqSet = CARefl.method(mgr, "getReqLinkedHashMap");
+            metCriteria = CARefl.method(req, "metCriteria", MarketAPI.class, String.class);
+            reason = CARefl.method(req, "getReason", MarketAPI.class, String.class);
+            affected = CARefl.method(req, "getIndustriesAffected");
+            hiddenSet = CARefl.method(listener, "aboutToCreateBuildingMenu", MarketAPI.class);
             linked = true;
         } catch (Throwable t) {
             broken = true;
@@ -44,9 +43,9 @@ public class CAAotD {
     /** BMO requirements (AotD research and others) that cover this building and aren't met at this colony. */
     static List<Object> unmet(String id, MarketAPI m) throws Exception {
         List<Object> out = new ArrayList<Object>();
-        for (Object r : (Collection<?>) reqSet.invoke(reqInstance.invoke(null))) {
-            Collection<?> ids = (Collection<?>) affected.invoke(r);
-            if (ids != null && ids.contains(id) && !Boolean.TRUE.equals(metCriteria.invoke(r, m, id))) out.add(r);
+        for (Object r : (Collection<?>) CARefl.invoke(reqSet, CARefl.invoke(reqInstance, null))) {
+            Collection<?> ids = (Collection<?>) CARefl.invoke(affected, r);
+            if (ids != null && ids.contains(id) && !Boolean.TRUE.equals(CARefl.invoke(metCriteria, r, m, id))) out.add(r);
         }
         return out;
     }
@@ -56,7 +55,7 @@ public class CAAotD {
     public static Set<String> hidden(MarketAPI m) {
         if (!enabled() || !link()) return Collections.emptySet();
         try {
-            Object s = hiddenSet.invoke(null, m);
+            Object s = CARefl.invoke(hiddenSet, null, m);
             return s == null ? Collections.<String>emptySet() : new HashSet<String>((Collection<String>) s);
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "Building Menu Overhaul's hidden-building check failed at " + m.getName(), t);
@@ -85,7 +84,7 @@ public class CAAotD {
         try {
             List<String> why = new ArrayList<String>();
             for (Object r : unmet(id, m)) {
-                Object text = reason.invoke(r, m, id);
+                Object text = CARefl.invoke(reason, r, m, id);
                 if (text != null && !String.valueOf(text).trim().isEmpty()) why.add(String.valueOf(text).trim());
             }
             if (!why.isEmpty()) return join(why);

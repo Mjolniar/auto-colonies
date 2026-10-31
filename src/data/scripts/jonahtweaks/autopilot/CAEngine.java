@@ -91,6 +91,38 @@ public class CAEngine {
         /** The building's own output lines, recorded while its effects are read, so a management style can adjust them. */
         public Map<String, Integer> supplied = new LinkedHashMap<String, Integer>();
         boolean recording;
+        float suppliedValue;   // value of those lines, for calibration
+        /** How sure the value is: 1 for the game's own formulas, less for measurements and estimates (see finish()). */
+        public float confidence = 1f;
+    }
+
+    /** Buildings scored from Autopilot's own estimates rather than the game's formulas or a probe measurement. */
+    static boolean estimated(String id) { return CATasc.has(id) || CABrewery.has(id) || CAMods.has(id) || CAEstimates.has(id); }
+
+    /** Effects of an estimated building; false when it isn't worth building here. */
+    static boolean estimate(MarketAPI m, String id, Pick p, Map<String, Integer> deficit) {
+        if (CATasc.has(id)) return CATasc.apply(m, id, p, deficit);   // TASC: scored here, never test-built
+        if (CABrewery.has(id)) return CABrewery.apply(m, p, deficit);   // Substance.Abuse: only with a recipe on hand
+        if (CAMods.has(id)) return CAMods.apply(m, id, p, deficit);   // VIC treatment, Roider Dives and Union HQ
+        if (CAEstimates.has(id)) { CAEstimates.apply(m, id, p, deficit); return true; }
+        return false;
+    }
+
+    /**
+     * How far to trust a pick: estimates 0.85 (0.92 once checked against your colonies), measurements 0.9, a mod
+     * version the integration wasn't written for 0.05 less. Estimated output is scaled by what your colonies showed.
+     */
+    static void trust(IndustrySpecAPI spec, Pick p, boolean measured) {
+        String id = spec.getId();
+        if (estimated(id)) {
+            p.confidence = CACalibrate.calibrated(id) ? 0.92f : 0.85f;
+            float f = CACalibrate.outputFactor(id);
+            if (Math.abs(f - 1f) > 0.01f && p.suppliedValue != 0f) {
+                p.fx[0] += (f - 1f) * p.suppliedValue;
+                p.lines.add("Output corrected from your colonies (x" + String.format(Locale.ROOT, "%.2f", f) + ")");
+            }
+        } else if (measured) p.confidence = 0.9f;
+        if (spec.getSourceMod() != null && CACompat.untested(spec.getSourceMod().getId())) p.confidence -= 0.05f;
     }
 
     public static class Result {
@@ -154,13 +186,12 @@ public class CAEngine {
                 p.cost = inst.getBuildCost(); p.days = inst.getBuildTime();
                 p.recording = true;
                 boolean worth = true;
-                if (CATasc.has(id)) worth = CATasc.apply(m, id, p, deficit);   // TASC: scored here, never test-built
-                else if (CABrewery.has(id)) worth = CABrewery.apply(m, p, deficit);   // Substance.Abuse: only with a recipe on hand
-                else if (CAMods.has(id)) worth = CAMods.apply(m, id, p, deficit);   // VIC treatment, Roider Dives
+                if (estimated(id) && !CAEstimates.has(id)) worth = estimate(m, id, p, deficit);
                 else if (measuredFx != null) { p.measured = true; CASimulator.apply(m, measuredFx, null, p, deficit); }
-                else effects(m, id, p, deficit);
+                else effects(m, id, p, deficit);   // vanilla formulas, and CAEstimates' at the end
                 p.recording = false;
                 if (!worth) continue;
+                trust(spec, p, p.measured);
                 if (!CADevelopment.adjust(m, p, inst, deficit)) continue;   // AotD management style
                 CASynergies.score(syn, p);
                 upkeep(m, spec, null, p);
@@ -194,6 +225,7 @@ public class CAEngine {
                     Pick p = new Pick();
                     p.id = up; p.name = upSpec.getName(); p.verb = "Upgrade to"; p.upgrade = true; p.existing = ind;
                     p.cost = upInst.getBuildCost(); p.days = upInst.getBuildTime();
+                    p.recording = true;
                     if (CAMods.has(up)) {
                         if (!CAMods.apply(m, up, p, deficit)) continue;   // VIC treatment, Roider Union HQ
                     } else if (upMeasured) {
@@ -203,6 +235,8 @@ public class CAEngine {
                         p.measured = true;
                         CASimulator.apply(m, to, from, p, deficit);
                     } else effects(m, up, p, deficit);
+                    p.recording = false;
+                    trust(upSpec, p, p.measured);
                     CASynergies.score(syn, p);
                     upkeep(m, upSpec, ind.getSpec(), p);
                     if (!finish(m, p, profile, minStability, plan)) continue;
@@ -225,6 +259,11 @@ public class CAEngine {
         float[] w = WEIGHTS[profile.ordinal()];
         float value = 0f;
         for (int i = 0; i < 7; i++) value += w[i] * p.fx[i];
+        // an uncertain gain must beat a known one by a margin (an estimate at 0.85 needs about 18% more to win)
+        if (value > 0f && p.confidence < 1f) {
+            value *= p.confidence;
+            p.lines.add("Estimate rather than a game formula: counted at " + Math.round(p.confidence * 100f) + "%");
+        }
         if (p.pollution) {
             value -= profile == CAData.Profile.WAR ? 5000f : 30000f;
             p.lines.add("Pollutes this habitable world (permanent after 90 days)");
@@ -237,13 +276,19 @@ public class CAEngine {
         return true;   // always rank every option: the best available pick is always offered
     }
 
-    static void upkeep(MarketAPI m, IndustrySpecAPI spec, IndustrySpecAPI replaced, Pick p) {
+    /** The engine's own upkeep prediction for a building here, before calibration (CACalibrate compares it with real upkeep). */
+    static float baseUpkeep(MarketAPI m, IndustrySpecAPI spec) {
         float sizeMult = (CATasc.fixedUpkeep(spec.getId()) ? 1 : Math.max(1, m.getSize() - 2)) * 500f * m.getUpkeepMult().getModifiedValue();
-        float u = spec.getUpkeep() * sizeMult * CADevelopment.upkeepMult(m, spec);
-        if (replaced != null) u -= replaced.getUpkeep() * sizeMult * CADevelopment.upkeepMult(m, replaced);
+        return spec.getUpkeep() * sizeMult * CADevelopment.upkeepMult(m, spec);
+    }
+
+    static void upkeep(MarketAPI m, IndustrySpecAPI spec, IndustrySpecAPI replaced, Pick p) {
+        float f = CACalibrate.upkeepFactor(spec.getId());
+        float u = baseUpkeep(m, spec) * f;
+        if (replaced != null) u -= baseUpkeep(m, replaced) * CACalibrate.upkeepFactor(replaced.getId());
         p.fx[0] -= u;
         p.upkeep = u;
-        if (u > 0) p.lines.add("Upkeep about " + Misc.getDGSCredits(u) + " per month");
+        if (u > 0) p.lines.add("Upkeep about " + Misc.getDGSCredits(u) + " per month" + (Math.abs(f - 1f) > 0.05f ? " (corrected from your colonies)" : ""));
     }
 
     static void supply(Pick p, String com, int units, Map<String, Integer> deficit) {
@@ -253,7 +298,7 @@ public class CAEngine {
         float mult = (d != null && d > 0) ? 1.5f : 1f;
         float v = base * unitValue * units * mult;
         p.fx[0] += v;
-        if (p.recording) { Integer was = p.supplied.get(com); p.supplied.put(com, (was == null ? 0 : was) + units); }
+        if (p.recording) { Integer was = p.supplied.get(com); p.supplied.put(com, (was == null ? 0 : was) + units); p.suppliedValue += v; }
         p.lines.add("+" + units + " " + Global.getSettings().getCommoditySpec(com).getName()
                 + (mult > 1f ? " (your colonies are short)" : "") + ": about " + Misc.getDGSCredits(v) + " per month");
     }

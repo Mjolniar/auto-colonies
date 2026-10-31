@@ -10,8 +10,6 @@ import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 
 import java.awt.Color;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -34,8 +32,8 @@ public class CAMegastructures {
     static final String[] INPUTS = {"metals", "rare_metals", "refined_metal", "purified_rare_metal"};
     static final int MAX_NEXUS = 20;
 
-    static Method ocnMax, ocnSet, forgeRes, forgeSet, nidAvail, setManpower;
-    static Field ocnMag, manpower, automated;
+    static Object ocnMax, ocnSet, forgeRes, forgeSet, nidAvail, setManpower;
+    static Object ocnMag, manpower, automated;
     static Class<?> ocnC, forgeC, nidSecC, nidC;
     static boolean linked = false, broken = false;
 
@@ -48,11 +46,11 @@ public class CAMegastructures {
             forgeC = Class.forName(PKG + "impl.sections.pluto.PlutoForgeSection", true, cl);
             nidSecC = Class.forName(PKG + "impl.sections.nidavelir.BaseNidavelirSection", true, cl);
             nidC = Class.forName(PKG + "impl.scripts.NidavelirMegastructure", true, cl);
-            ocnMax = ocnC.getMethod("getMaxMagnitude"); ocnSet = ocnC.getMethod("setCurrentMagnitude", int.class); ocnMag = ocnC.getField("currentMagnitude");
-            forgeRes = forgeC.getMethod("getRes"); forgeSet = forgeC.getMethod("updateResourceDesignated", String.class, Integer.class);
-            nidAvail = nidC.getMethod("getAvailableManpower");
-            setManpower = nidSecC.getMethod("setAssignedManpower", int.class);
-            manpower = nidSecC.getField("assignedManpower"); automated = nidSecC.getField("isAutomated");
+            ocnMax = CARefl.method(ocnC, "getMaxMagnitude"); ocnSet = CARefl.method(ocnC, "setCurrentMagnitude", int.class); ocnMag = CARefl.field(ocnC, "currentMagnitude");
+            forgeRes = CARefl.method(forgeC, "getRes"); forgeSet = CARefl.method(forgeC, "updateResourceDesignated", String.class, Integer.class);
+            nidAvail = CARefl.method(nidC, "getAvailableManpower");
+            setManpower = CARefl.method(nidSecC, "setAssignedManpower", int.class);
+            manpower = CARefl.field(nidSecC, "assignedManpower"); automated = CARefl.field(nidSecC, "isAutomated");
             linked = true;
         } catch (Throwable t) {
             broken = true;
@@ -73,12 +71,12 @@ public class CAMegastructures {
         SectorEntityToken e = m.getPrimaryEntity();
         if (e == null || !link()) return null;
         for (String kind : new String[]{PLUTO, NIDAVELIR}) {
-            Object script = CAHypershunt.scriptOf.invoke(null, e, kind);
+            Object script = CARefl.invoke(CAHypershunt.scriptOf, null, e, kind);
             if (script == null) continue;
             Mega g = new Mega();
             g.m = m; g.kind = kind; g.script = script;
             g.name = kind.equals(PLUTO) ? "Pluto Mining Station" : "Nidavelir Complex";
-            for (Object raw : (List<Object>) CAHypershunt.sections.invoke(script)) if (raw != null) { CAHypershunt.Section s = CAHypershunt.section(raw); g.sections.put(s.id, s); }
+            for (Object raw : (List<Object>) CARefl.invoke(CAHypershunt.sections, script)) if (raw != null) { CAHypershunt.Section s = CAHypershunt.section(raw); g.sections.put(s.id, s); }
             return g;
         }
         return null;
@@ -106,7 +104,7 @@ public class CAMegastructures {
         Map<String, Integer> t = new LinkedHashMap<String, Integer>();
         if (!up(g, OCN)) return t;
         Object ocn = g.sections.get(OCN).raw;
-        int mag = ((Number) ocnMax.invoke(ocn)).intValue();
+        int mag = ((Number) CARefl.invoke(ocnMax, ocn)).intValue();
         t.put("laser", mag);
         boolean ff = up(g, FF), pc = up(g, PC);
         if (!ff && !pc) return t;
@@ -130,10 +128,10 @@ public class CAMegastructures {
     static Map<String, Integer> plutoNow(Mega g) throws Exception {
         Map<String, Integer> n = new LinkedHashMap<String, Integer>();
         if (!up(g, OCN)) return n;
-        n.put("laser", ocnMag.getInt(g.sections.get(OCN).raw));
+        n.put("laser", CARefl.getInt(ocnMag, g.sections.get(OCN).raw));
         for (String f : new String[]{FF, PC}) {
             if (!up(g, f)) continue;
-            Map<String, Integer> res = (Map<String, Integer>) forgeRes.invoke(g.sections.get(f).raw);
+            Map<String, Integer> res = (Map<String, Integer>) CARefl.invoke(forgeRes, g.sections.get(f).raw);
             String k = f.equals(FF) ? "ff" : "pc";
             n.put(k + ":ore", res == null || res.get("ore") == null ? 0 : res.get("ore"));
             n.put(k + ":rare_ore", res == null || res.get("rare_ore") == null ? 0 : res.get("rare_ore"));
@@ -143,11 +141,11 @@ public class CAMegastructures {
 
     static void plutoApply(Mega g, Map<String, Integer> t) throws Exception {
         Integer laser = t.get("laser");
-        if (laser != null && laser != ocnMag.getInt(g.sections.get(OCN).raw)) ocnSet.invoke(g.sections.get(OCN).raw, laser);   // lowering it clears the forges
+        if (laser != null && laser != CARefl.getInt(ocnMag, g.sections.get(OCN).raw)) CARefl.invoke(ocnSet, g.sections.get(OCN).raw, laser);   // lowering it clears the forges
         for (Map.Entry<String, Integer> e : t.entrySet()) {
             if (e.getKey().equals("laser")) continue;
             String[] k = e.getKey().split(":");
-            forgeSet.invoke(g.sections.get(k[0].equals("ff") ? FF : PC).raw, k[1], e.getValue());
+            CARefl.invoke(forgeSet, g.sections.get(k[0].equals("ff") ? FF : PC).raw, k[1], e.getValue());
         }
         g.m.reapplyIndustries();
     }
@@ -158,9 +156,9 @@ public class CAMegastructures {
     static Map<String, Integer> nidTarget(Mega g, Map<String, Integer> now, CAData.Colony c) throws Exception {
         Map<String, Integer> t = new LinkedHashMap<String, Integer>();
         CAHypershunt.Section nx = g.sections.get(NEXUS);
-        if (nx == null || !nx.restored || automated.getBoolean(nx.raw)) return t;
+        if (nx == null || !nx.restored || CARefl.getBoolean(automated, nx.raw)) return t;
         int cur = now.containsKey("nexus") ? now.get("nexus") : 0;
-        int pool = cur + ((Number) nidAvail.invoke(g.script)).intValue();
+        int pool = cur + ((Number) CARefl.invoke(nidAvail, g.script)).intValue();
         int worst = 0;
         int[] perPoint = {5, 12, 6, 3};
         for (int i = 0; i < INPUTS.length; i++) {
@@ -178,13 +176,13 @@ public class CAMegastructures {
     static Map<String, Integer> nidNow(Mega g) throws Exception {
         Map<String, Integer> n = new LinkedHashMap<String, Integer>();
         CAHypershunt.Section nx = g.sections.get(NEXUS);
-        if (nx != null && nx.restored && !automated.getBoolean(nx.raw)) n.put("nexus", manpower.getInt(nx.raw));
+        if (nx != null && nx.restored && !CARefl.getBoolean(automated, nx.raw)) n.put("nexus", CARefl.getInt(manpower, nx.raw));
         return n;
     }
 
     static void nidApply(Mega g, Map<String, Integer> t) throws Exception {
         Integer n = t.get("nexus");
-        if (n != null) setManpower.invoke(g.sections.get(NEXUS).raw, n);
+        if (n != null) CARefl.invoke(setManpower, g.sections.get(NEXUS).raw, n);
         g.m.reapplyIndustries();
     }
 

@@ -9,8 +9,6 @@ import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 
 import java.awt.Color;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -26,8 +24,9 @@ public class CASynergies {
     static final String PKG = "data.kaysaar.aotd.vok.campaign.econ.synergies.";
     static final float PATHER = 0.03f;   // stability effect per point of Pather interest
 
-    static Method mgrInstance, calcEff, canShow, metReq, synName, srcEff, tree;
-    static Field scripts, sources, srcBase;
+    static Object mgrInstance, calcEff, canShow, metReq, synName, srcEff, tree;
+    static Object scripts, sources, srcBase;
+    static Class<?> srcClass;
     static boolean linked = false, broken = false;
     static Map<String, List<Set<String>>> groups;
 
@@ -39,16 +38,17 @@ public class CASynergies {
             Class<?> syn = Class.forName(PKG + "models.BaseIndustrySynergy", true, cl);
             Class<?> src = Class.forName(PKG + "impl.sources.BaseIndustrySynergySource", true, cl);
             Class<?> misc = Class.forName(PKG + "IndustrySynergiesMisc", true, cl);
-            mgrInstance = mgr.getMethod("getInstance");
-            calcEff = mgr.getMethod("calculateEfficiency", MarketAPI.class);
-            scripts = mgr.getField("synergyScripts");
-            sources = mgr.getField("sourcesOfSynergy");
-            canShow = syn.getMethod("canShowSynergyInUI", MarketAPI.class);
-            metReq = syn.getMethod("doesSynergyMetReq", MarketAPI.class);
-            synName = syn.getMethod("getSynergyName");
-            srcBase = src.getField("baseEfficiency");
-            srcEff = src.getMethod("calculateEfficiencyFromIndustry", Industry.class, boolean.class);
-            tree = misc.getMethod("getIdsOfTreeFromIndustry", String.class);
+            mgrInstance = CARefl.method(mgr, "getInstance");
+            calcEff = CARefl.method(mgr, "calculateEfficiency", MarketAPI.class);
+            scripts = CARefl.field(mgr, "synergyScripts");
+            sources = CARefl.field(mgr, "sourcesOfSynergy");
+            canShow = CARefl.method(syn, "canShowSynergyInUI", MarketAPI.class);
+            metReq = CARefl.method(syn, "doesSynergyMetReq", MarketAPI.class);
+            synName = CARefl.method(syn, "getSynergyName");
+            srcClass = src;
+            srcBase = CARefl.field(src, "baseEfficiency");
+            srcEff = CARefl.method(src, "calculateEfficiencyFromIndustry", Industry.class, boolean.class);
+            tree = CARefl.method(misc, "getIdsOfTreeFromIndustry", String.class);
             linked = true;
         } catch (Throwable t) {
             broken = true;
@@ -63,7 +63,7 @@ public class CASynergies {
     static Set<String> tree(String root) {
         Set<String> out = new LinkedHashSet<String>();
         out.add(root);
-        try { out.addAll((Collection<String>) tree.invoke(null, root)); } catch (Throwable ignored) { }
+        try { out.addAll((Collection<String>) CARefl.invoke(tree, null, root)); } catch (Throwable ignored) { }
         return out;
     }
 
@@ -249,17 +249,17 @@ public class CASynergies {
     public static Ctx context(MarketAPI m, Map<String, Integer> deficit) {
         if (!link()) return null;
         try {
-            Object mgr = mgrInstance.invoke(null);
+            Object mgr = CARefl.invoke(mgrInstance, null);
             Ctx c = new Ctx();
             c.m = m; c.deficit = deficit;
             for (Industry ind : m.getIndustries()) c.have.add(ind.getId());
-            c.eff = Math.max(0f, ((Number) calcEff.invoke(mgr, m)).floatValue());
-            Map<String, Object> all = (Map<String, Object>) scripts.get(mgr);
+            c.eff = Math.max(0f, ((Number) CARefl.invoke(calcEff, mgr, m)).floatValue());
+            Map<String, Object> all = (Map<String, Object>) CARefl.get(scripts, mgr);
             if (all == null) return c;
             for (Map.Entry<String, Object> e : all.entrySet()) {
                 if (!groups().containsKey(e.getKey())) continue;   // a synergy this version doesn't model
-                c.names.put(e.getKey(), String.valueOf(synName.invoke(e.getValue())));
-                if (!Boolean.TRUE.equals(canShow.invoke(e.getValue(), m))) { c.locked++; continue; }
+                c.names.put(e.getKey(), String.valueOf(CARefl.invoke(synName, e.getValue())));
+                if (!Boolean.TRUE.equals(CARefl.invoke(canShow, e.getValue(), m))) { c.locked++; continue; }
                 if (!extra(e.getKey(), m)) continue;
                 c.open.put(e.getKey(), e.getValue());
                 if (met(e.getKey(), c.have)) { CAEngine.Pick p = new CAEngine.Pick(); effects(e.getKey(), m, c.have, c.eff, p, deficit); c.now.put(e.getKey(), p); }
@@ -273,7 +273,7 @@ public class CASynergies {
 
     @SuppressWarnings("unchecked")
     static Object source(String industryId) throws Exception {
-        Map<String, Object> s = (Map<String, Object>) sources.get(mgrInstance.invoke(null));
+        Map<String, Object> s = (Map<String, Object>) CARefl.get(sources, CARefl.invoke(mgrInstance, null));
         return s == null ? null : s.get(industryId);
     }
 
@@ -283,10 +283,10 @@ public class CASynergies {
         try {
             if (p.upgrade && p.existing != null) {
                 Object s = source(p.existing.getId());
-                if (s != null && srcEff.getDeclaringClass().isInstance(s)) e -= ((Number) srcEff.invoke(s, p.existing, true)).floatValue();
+                if (s != null && srcClass.isInstance(s)) e -= ((Number) CARefl.invoke(srcEff, s, p.existing, true)).floatValue();
             }
             Object s = source(p.id);
-            if (s != null && srcBase.getDeclaringClass().isInstance(s)) e += srcBase.getFloat(s);
+            if (s != null && srcClass.isInstance(s)) e += CARefl.getFloat(srcBase, s);
         } catch (Throwable ignored) { }
         return Math.max(0f, e);
     }
@@ -330,7 +330,7 @@ public class CASynergies {
         List<String> active = new ArrayList<String>(), near = new ArrayList<String>();
         try {
             for (Map.Entry<String, Object> e : c.open.entrySet()) {
-                if (Boolean.TRUE.equals(metReq.invoke(e.getValue(), m))) { active.add(c.names.get(e.getKey())); continue; }
+                if (Boolean.TRUE.equals(CARefl.invoke(metReq, e.getValue(), m))) { active.add(c.names.get(e.getKey())); continue; }
                 Set<String> missing = null;
                 int unmet = 0;
                 for (Set<String> g : groups().get(e.getKey())) if (Collections.disjoint(g, c.have)) { unmet++; missing = g; }

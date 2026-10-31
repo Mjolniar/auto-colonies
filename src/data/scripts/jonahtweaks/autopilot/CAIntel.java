@@ -17,6 +17,7 @@ import com.fs.starfarer.api.util.Misc;
 import java.awt.Color;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /** The empire panel: every colony's profile, mode and top pick, plus Diagnostics. Lives under Colonies in the Intel screen. */
@@ -182,6 +183,23 @@ public class CAIntel extends BaseIntelPlugin {
                 CADiagnostics.getLastScan(), "" + CADiagnostics.count(CADiagnostics.Level.MEASURED),
                 "" + CADiagnostics.count(CADiagnostics.Level.ANALYZED), "" + CADiagnostics.count(CADiagnostics.Level.QUARANTINED));
         t.addButton("Rescan now", RESCAN, base, dark, Alignment.MID, CutStyle.ALL, 140f, 22f, 6f);
+        // mod integrations: does each still find what it relies on after mod updates
+        List<CACompat.Entry> ints = CACompat.installed();
+        if (!ints.isEmpty()) {
+            int ok = 0;
+            for (CACompat.Entry e : ints) if (e.status == CACompat.Status.OK) ok++;
+            t.addPara("Mod integrations: %s of %s exactly as written for; the rest below.", 8f, hl, "" + ok, "" + ints.size());
+            for (CACompat.Entry e : ints) {
+                if (e.status == CACompat.Status.OK) continue;
+                Color lc = e.status == CACompat.Status.NEWER ? hl : Misc.getNegativeHighlightColor();
+                t.addPara("%s " + CALog.esc(e.version) + ": " + CALog.esc(CACompat.describe(e)), 4f, lc, e.name);
+            }
+        }
+        for (Map.Entry<String, String> e : CABreaker.tripped().entrySet())
+            t.addPara("Paused this session: %s (didn't take effect three times; last at " + CALog.esc(e.getValue()) + ")", 4f, Misc.getNegativeHighlightColor(), e.getKey());
+        if (!CAConst.drift.isEmpty()) t.addPara("Mod values that changed since Autopilot was written (the new ones are used): " + CALog.esc(String.join("; ", CAConst.drift)), gray, 4f);
+        List<String> cal = CACalibrate.notable();
+        if (!cal.isEmpty()) t.addPara("Corrected from your colonies: " + CALog.esc(String.join(", ", cal.subList(0, Math.min(12, cal.size())))), gray, 4f);
         int shown = 0;
         for (CADiagnostics.Level lvl : new CADiagnostics.Level[]{CADiagnostics.Level.QUARANTINED, CADiagnostics.Level.MEASURED, CADiagnostics.Level.ANALYZED}) {
             for (CADiagnostics.Issue i : CADiagnostics.getIssues()) {

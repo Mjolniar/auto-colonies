@@ -6,7 +6,6 @@ import com.fs.starfarer.api.campaign.SpecialItemData;
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
-import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -41,8 +40,8 @@ public class CABrewery {
     public static int minSize(SpecialItemData data) {
         if (!BOOK.equals(data.getId())) return 0;
         try {
-            Method m = data.getClass().getMethod("getBaseList");
-            Object l = m.invoke(data);
+            Object m = CARefl.method(data.getClass(), "getBaseList");
+            Object l = CARefl.invoke(m, data);
             return l instanceof List ? Math.max(1, ((List<?>) l).size()) : -1;
         } catch (Throwable t) { return -1; }
     }

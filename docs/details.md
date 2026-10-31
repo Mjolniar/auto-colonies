@@ -118,6 +118,20 @@ Colony management automation (Colony Autopilot) for Starsector 0.98a, plus stick
   - `[ColonyAutopilot]` lines in `starsector-core/starsector.log`
   - `saves/common/colony_autopilot_diagnostics.json.data` (full report with probe results and errors)
 
+## Staying working through mod updates
+
+So many mods are covered that some will update. These five safeguards keep an update from quietly breaking Autopilot:
+
+1. **Health check at load.** Each integration knows its mod, the version it was written against, the ids it relies on and the names it reads. Diagnostics shows each one's status:
+   - **OK**
+   - **Newer version, all found:** it keeps working, and its estimates are trusted a little less.
+   - **Partly off:** the parts whose ids are gone can't act.
+   - **Off:** its code can't be read, so it does nothing.
+2. **Mod values read live.** Where a mod exposes its numbers (Roider's mining tables and ranges, What We Left Behind's ore bonus, AotD's restoration rate), Autopilot uses the mod's own values. Its copies are only a fallback. A value that changed is logged once and listed in Diagnostics.
+3. **Calibration from your colonies.** Once a week, every plain building you have (working, with no AI core, item or improvement) is compared with Autopilot's prediction: upkeep for every building type, and output for buildings scored from estimates. The ratio is smoothed (70% old, 30% new), capped at 0.5x to 2x, used once a type has two readings, and kept in the save. Estimates follow a mod's rebalance this way.
+4. **Margins for uncertain picks.** The game's own formulas count in full. Probe measurements count at 90%, and estimates at 85% (92% once calibrated), minus 5% on a mod version an integration wasn't written for. So an estimate must beat a known option by about 18% to be picked. In Auto, a pick scored from an estimate that costs over half the per-project cap waits for your approval.
+5. **Stopping actions that don't work.** After each action that reaches into the game or another mod (a build, an item install, a research or terraforming start, a megastructure setting, a restoration, a contract), Autopilot checks that it took effect. Three failures in a row pause that action for the session, with a log line and a Diagnostics entry. Reloading tries again.
+
 ## Building from source
 
 Source is in `src/`. It compiles against the game and optional mod jars with JDK 17:
@@ -128,9 +142,11 @@ jar cf jars/jonahtweaks.jar -C build data
 ```
 
 
+The game's script class loader refuses any mod class that names `java.lang.reflect` or file classes ("File access and reflection are not allowed to scripts"), and desktop checks don't see that. All reflection goes through `CARefl`, which reaches `getMethod`, `invoke`, `getField`, `get` and `set` through method handles and never names the reflection classes. `check_banned.ps1` fails the build if any class refers to a class the game's loader bans. `JTLoaderCheck` loads every class under that loader and runs `CARefl`.
+
 `CATerraform`, `CAIndEvo`, `CACourier`, `CADefense`, `CASettlement` and `CAAugments` reference optional mods. They're only called when that mod is enabled, so the mod runs without them. `CASettlement` and `CAAugments` also need the Kotlin runtime (LazyLib) and LunaLib on the compile classpath.
 
-The author's build checks prove any combination works: jdeps shows only those classes reference each optional mod, every caller checks `isModEnabled`, and the jar links under `-Xverify:all` against all 32 combinations of the compiled-in optional mods. `CASynergies`, `CAContracts`, `CAHypershunt`, `CAMegastructures`, `CAResearch` and `CADevelopment` reach Vaults of Knowledge and Theory of Toolbox through reflection only, like `CAAotD`; if a name can't be found they're left out and the log says why. `JTAotDEconLinkCheck.java` checks those names; run it with `-XX:+UnlockDiagnosticVMOptions -XX:-BytecodeVerificationRemote` like the game's own launch flags, since some VoK classes refer to Sins of the Past classes that aren't installed. An offline check covers the augment choice (knapsack against brute force, swap margin, shrunk budget, incompatible pairs). `CAAotD` reaches Building Menu Overhaul through reflection only, so it needs no jar at compile time.
+The author's build checks prove any combination works: jdeps shows only those classes reference each optional mod, every caller checks `isModEnabled`, and the jar links under `-Xverify:all` against all 32 combinations of the compiled-in optional mods. `CASynergies`, `CAContracts`, `CAHypershunt`, `CAMegastructures`, `CAResearch` and `CADevelopment` reach Vaults of Knowledge and Theory of Toolbox through reflection only (via `CARefl`), like `CAAotD`; if a name can't be found they're left out and the log says why. `JTAotDEconLinkCheck.java` checks those names; run it with `-XX:+UnlockDiagnosticVMOptions -XX:-BytecodeVerificationRemote` like the game's own launch flags, since some VoK classes refer to Sins of the Past classes that aren't installed. An offline check covers the augment choice (knapsack against brute force, swap margin, shrunk budget, incompatible pairs). `CAAotD` reaches Building Menu Overhaul through reflection only, so it needs no jar at compile time.
 
 The colony-mod integrations (`CATasc`, `CAGrand`, `CABrewery`, `CAMods`) use literal ids, reflection or method handles only, so no jar is needed. TASC is reached through `MethodHandles.findStatic`, because plain reflection on its `boggledTools` needs Illustrated Entities' classes. `JTColonyModsLinkCheck.java` checks those names against the TASC and LunaLib jars.
 
