@@ -106,8 +106,10 @@ Off until setup runs; the recommended settings turn on **Defense**. Change it in
 
 - **Defense:** an agent is hired (12,000) when there's work for one. It handles rebellions, Pather cells and hidden pirate bases. It also raises relations with factions that run operations against your colonies while not at war with you.
 - **Offense:** adds a Saboteur that sabotages the military of factions already at war with you, starting with whoever is invading or raiding you.
-- Costs come out of the monthly budget; Nexerelin pays salaries. Agents you hired yourself are never given orders.
-- The empire panel lists your agents and the enemy operations running against your colonies, which the game doesn't show anywhere else.
+- Costs come out of the monthly budget; Nexerelin pays salaries.
+- **Your own agents:** the empire panel's **Agents** page lists every agent you have, with its type (Negotiator, Saboteur or Hybrid). Yours get no orders until you click **Let Autopilot use it**; **Take it back** returns one. While one of yours sits idle, Autopilot doesn't hire another and says so in the log.
+- **Types:** each agent only gets what its type can do. Negotiators and Hybrids raise relations, Saboteurs sabotage industry, and any type handles rebellions, Pather cells and pirate bases.
+- The Agents page also lists the enemy operations running against your colonies, which the game doesn't show anywhere else.
 
 ## When something looks wrong
 

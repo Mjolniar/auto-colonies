@@ -33,7 +33,10 @@ import exerelin.utilities.NexFactionConfig;
 import java.util.*;
 
 /**
- * Nexerelin agents (setting "Agents", off by default). Only agents Autopilot hired are given orders; yours are left alone.
+ * Nexerelin agents (setting "Agents", off by default). Only agents Autopilot hired, or ones you hand over on the empire
+ * panel's Agents page, are given orders; the rest are left alone, and you can take any of them back. Each agent only
+ * gets operations its type can run (Nexerelin's agentConfig: Raise Relations needs a Negotiator or Hybrid, Sabotage
+ * Industry a Saboteur; the defensive operations any type).
  * Nexerelin has no counter-intelligence and no bonus for an agent parked at a colony, so defense means running the
  * operations Nexerelin's own automatic mode runs, in the same order: Counter-Insurgency on a rebellion, Infiltrate Cell
  * on an active Pather cell, Find Pirate Base for hidden bases. After those, Raise Relations with a faction that has
@@ -44,7 +47,8 @@ import java.util.*;
  * military sabotage pick, at 60% estimated success or better, alert 0.2 or lower, one operation per enemy faction.
  * Operation costs and hiring come out of the monthly budget and never the credit reserve; Nexerelin pays salaries
  * itself. Hiring makes a level-1 agent for 12,000 (Nexerelin's own price for a chosen specialization), Hybrid first, a
- * Saboteur with offense on, never past "Agents to keep" or Nexerelin's agent limit, and only while there's work for one.
+ * Saboteur with offense on, never past "Agents to keep" or Nexerelin's agent limit, and only while there's work for one
+ * that none of your own idle agents of a suitable type could do (it says so in the log instead).
  * Only person ids are saved, so the save loads without Nexerelin.
  */
 public class CASpies {
@@ -70,16 +74,45 @@ public class CASpies {
         }
     }
 
-    /** Autopilot's agents that still serve; drops the ids of dismissed ones. */
+    /** Every agent you have that still serves, whoever hired it. */
+    static List<AgentIntel> agents(CovertOpsManager mgr) {
+        List<AgentIntel> out = new ArrayList<AgentIntel>();
+        for (AgentIntel a : mgr.getAgents()) if (!a.isDeadOrDismissed() && a.getAgent() != null) out.add(a);
+        return out;
+    }
+
+    /** The agents Autopilot gives orders to (hired by it or handed over); drops the ids of dismissed ones. */
     static List<AgentIntel> managed(CAData d, CovertOpsManager mgr) {
         List<AgentIntel> out = new ArrayList<AgentIntel>();
         Set<String> alive = new HashSet<String>();
-        for (AgentIntel a : mgr.getAgents()) {
-            if (a.isDeadOrDismissed() || a.getAgent() == null) continue;
+        for (AgentIntel a : agents(mgr)) {
             if (d.spyAgents().contains(a.getAgent().getId())) { out.add(a); alive.add(a.getAgent().getId()); }
         }
         d.spyAgents().retainAll(alive);
         return out;
+    }
+
+    /** The agent's types as Nexerelin names them ("Negotiator", "Saboteur/Hybrid"), or "agent" without specializations. */
+    static String types(AgentIntel a) {
+        List<String> n = a.getSpecializationNames();
+        return n == null || n.isEmpty() ? "agent" : String.join("/", n);
+    }
+
+    /** Empire panel buttons: "use" hands one of your agents to Autopilot, "back" takes one back. */
+    static void handle(CAData d, String action, String personId) {
+        CovertOpsManager mgr = CovertOpsManager.getManager();
+        if (mgr == null) return;
+        for (AgentIntel a : agents(mgr)) {
+            if (!a.getAgent().getId().equals(personId)) continue;
+            if ("use".equals(action)) {
+                d.spyAgents().add(personId);
+                CALog.forget("spy:yours");
+                CALog.add("Agent " + name(a) + " (" + types(a) + ") handed to Autopilot; it gets orders once it's idle", true);
+            } else {
+                d.spyAgents().remove(personId);
+                CALog.add("Agent " + name(a) + " is yours again; Autopilot won't give it orders", true);
+            }
+        }
     }
 
     /** True while the agent is travelling, injured or running an operation. */
@@ -301,6 +334,17 @@ public class CASpies {
     static void hire(CAData d, CASettings s, CovertOpsManager mgr, List<AgentIntel> mine) {
         if (s.spyNoHiring || mine.size() >= keep(s)) return;
         if (!work(mgr, s, mine)) return;
+        AgentIntel.Specialization spec = s.spyMode == 2 && has(mine, AgentIntel.Specialization.HYBRID) && !has(mine, AgentIntel.Specialization.SABOTEUR)
+                ? AgentIntel.Specialization.SABOTEUR : AgentIntel.Specialization.HYBRID;
+        // one of your own idle agents could do this: don't pay for another, say how to hand it over
+        boolean saboteurWork = spec == AgentIntel.Specialization.SABOTEUR;
+        for (AgentIntel a : agents(mgr)) {
+            if (mine.contains(a) || busy(mgr, a)) continue;
+            if (saboteurWork && NexConfig.useAgentSpecializations && !a.getSpecializationsCopy().contains(AgentIntel.Specialization.SABOTEUR)) continue;
+            if (CALog.once("spy:yours")) CALog.add("Agents: your agent " + name(a) + " (" + types(a) + ") is idle, so Autopilot doesn't hire one. "
+                    + "To have Autopilot use it, click Let Autopilot use it on the Colony Autopilot intel's Agents page", true);
+            return;
+        }
         if (mgr.getAgents().size() >= mgr.getMaxAgents().getModifiedInt()) {
             if (CALog.once("spy:max")) CALog.add("Agents: Nexerelin's agent limit is reached, so no agent was hired (Officer Training and Officer Management raise it)");
             return;
@@ -312,8 +356,6 @@ public class CASpies {
         MarketAPI home = null;
         for (MarketAPI m : Misc.getPlayerMarkets(false)) if (!CAEngine.isOutpost(m) && (home == null || m.getSize() > home.getSize())) home = m;
         if (home == null) return;
-        AgentIntel.Specialization spec = s.spyMode == 2 && has(mine, AgentIntel.Specialization.HYBRID) && !has(mine, AgentIntel.Specialization.SABOTEUR)
-                ? AgentIntel.Specialization.SABOTEUR : AgentIntel.Specialization.HYBRID;
         FactionAPI pf = Global.getSector().getPlayerFaction();
         PersonAPI p = pf.createRandomPerson();
         p.setRankId(Ranks.AGENT);
@@ -326,25 +368,29 @@ public class CASpies {
         Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(HIRE_FEE);
         CABudget.charge(s, HIRE_FEE, 0f, 0f);
         d.spyAgents().add(p.getId());
-        CALog.forget("spy:max"); CALog.forget("spy:hirebudget");
+        CALog.forget("spy:max"); CALog.forget("spy:hirebudget"); CALog.forget("spy:yours");
         CALog.add("Hired agent " + p.getNameString() + " (" + spec.getName() + ", level 1) at " + home.getName() + " for "
                 + Misc.getDGSCredits(HIRE_FEE) + "; Nexerelin pays " + Misc.getDGSCredits(AgentIntel.getSalary(1)) + " a month in salary", true);
     }
 
     // ---- empire panel
 
+    /** The empire panel's Agents page: every agent you have, by type, with who gives it orders, and enemy operations. */
     static void render(TooltipMakerAPI t, CAData d, CASettings s) {
-        CovertOpsManager mgr = CovertOpsManager.getManager();
-        if (mgr == null) return;
-        List<CovertActionIntel> enemy = enemyOps(mgr);
-        if (s.spyMode == 0 && enemy.isEmpty()) return;
         java.awt.Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor();
-        t.addSectionHeading("Agents (Nexerelin)", Alignment.MID, 16f);
-        t.addPara("Mode: %s. Hiring: %s, keeping %s.", 6f, hl, CASettings.SPY_NAMES[Math.max(0, Math.min(2, s.spyMode))],
+        java.awt.Color base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
+        t.addSectionHeading("Agents (Nexerelin)", Alignment.MID, 0f);
+        CovertOpsManager mgr = CovertOpsManager.getManager();
+        if (mgr == null) { t.addPara("Nexerelin's agents aren't running in this save.", gray, 6f); return; }
+        if (s.spyMode == 0) t.addPara("Agents are off: Autopilot gives no orders and hires no one. Turn them on in Settings, under Agents (Nexerelin).", gray, 6f);
+        else t.addPara("Mode: %s. Hiring: %s, keeping %s.", 6f, hl, CASettings.SPY_NAMES[Math.max(0, Math.min(2, s.spyMode))],
                 s.spyNoHiring ? "off" : "on", "" + keep(s));
-        List<AgentIntel> mine = managed(d, mgr);
-        if (s.spyMode != 0 && mine.isEmpty()) t.addPara("No agents hired by Autopilot yet; one is hired when there's work for it.", gray, 4f);
-        for (AgentIntel a : mine) {
+        t.addPara("Autopilot only gives orders to agents it hired or you hand over, and only operations the agent's type can run: "
+                + "Negotiators and Hybrids raise relations, Saboteurs sabotage industry, any type handles rebellions, Pather cells and pirate bases.", gray, 4f);
+        List<AgentIntel> all = agents(mgr), mine = managed(d, mgr);
+        if (all.isEmpty()) t.addPara(s.spyMode != 0 && !s.spyNoHiring ? "You have no agents; Autopilot hires one when there's work for it." : "You have no agents.", gray, 6f);
+        for (AgentIntel a : all) {
+            boolean auto = mine.contains(a);
             String doing = "idle";
             for (CovertActionIntel op : mgr.getOngoingCovertActionsOfType(CovertActionIntel.class)) {
                 if (op.getAgent() == a && !op.isEnded() && !op.isEnding() && op.getResult() == null) {
@@ -352,9 +398,14 @@ public class CASpies {
                     break;
                 }
             }
-            t.addPara("%s, level %s " + CALog.esc(String.join("/", a.getSpecializationNames())) + ": " + CALog.esc(doing)
-                    + (a.getMarket() != null ? " (at " + CALog.esc(a.getMarket().getName()) + ")" : ""), 3f, hl, CALog.esc(name(a)), "" + a.getLevel());
+            t.addPara("%s, level %s %s: " + CALog.esc(doing) + (a.getMarket() != null ? " (at " + CALog.esc(a.getMarket().getName()) + ")" : "")
+                    + ". %s", 8f, new java.awt.Color[]{hl, hl, hl, auto ? hl : gray},
+                    CALog.esc(name(a)), "" + a.getLevel(), CALog.esc(types(a)), auto ? "Autopilot gives its orders" : "Yours; Autopilot leaves it alone");
+            t.addButton(auto ? "Take it back" : "Let Autopilot use it", new String[]{"agent", auto ? "back" : "use", a.getAgent().getId()},
+                    base, dark, Alignment.MID, com.fs.starfarer.api.ui.CutStyle.ALL, 180f, 22f, 4f);
         }
+        List<CovertActionIntel> enemy = enemyOps(mgr);
+        t.addSectionHeading("Enemy operations", Alignment.MID, 12f);
         if (enemy.isEmpty()) t.addPara("No enemy operations against your colonies right now.", gray, 6f);
         else {
             t.addPara("Enemy operations against your colonies (the game doesn't show these):", 6f);

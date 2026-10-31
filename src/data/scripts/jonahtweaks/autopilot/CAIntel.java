@@ -129,6 +129,8 @@ public class CAIntel extends BaseIntelPlugin {
 
     void renderPage(TooltipMakerAPI t, CAData data, CASettings s, List<MarketAPI> markets, float width) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
+        // pages() only lists a mod's page while it's enabled; checked again here so no optional class loads without its mod
+        com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
 
         if (page.equals("colonies")) {
             t.addPara("Every colony starts in Advisor mode. Open a colony's own panel with the Colony Autopilot button on its colony "
@@ -197,29 +199,24 @@ public class CAIntel extends BaseIntelPlugin {
             t.addPara("AI cores: %s. Next Hegemony inspection strength: %s fleet points. Fortress world: %s.", 6f, hl,
                     s.useAICores ? "used" : "not used", "" + (int) CAItems.nextInspectionFP(),
                     fort == null ? "none strong enough (cores capped at 7 points per colony)" : fort.getName() + " (" + (int) CAItems.defenseFP(fort) + " estimated)");
-        } else if (page.equals("settle")) {
+        } else if (page.equals("settle") && mm.isModEnabled(CASettlement.MOD)) {
             t.addSectionHeading("Settlement (Random Assortment of Things)", Alignment.MID, 0f);
             CASettlement.render(t, data, s);
-        } else if (page.equals("agents")) {
-            if (s.spyMode == 0) {
-                t.addSectionHeading("Agents (Nexerelin)", Alignment.MID, 0f);
-                t.addPara("Agents are off. Turn them on in Settings, under Agents (Nexerelin). Enemy operations against your colonies "
-                        + "are listed here either way.", gray, 6f);
-            }
+        } else if (page.equals("agents") && mm.isModEnabled(CASpies.MOD)) {
             CASpies.render(t, data, s);
-        } else if (page.equals("augments")) {
+        } else if (page.equals("augments") && mm.isModEnabled(CAAugments.MOD)) {
             t.addSectionHeading("Station augments", Alignment.MID, 0f);
             CAAugments.renderEmpire(t, data, s);
-        } else if (page.equals("contracts")) {
+        } else if (page.equals("contracts") && mm.isModEnabled(CAContracts.MOD)) {
             t.addSectionHeading("Trade contracts (Ashes of the Domain)", Alignment.MID, 0f);
             CAContracts.render(t, data, s);
-        } else if (page.equals("research")) {
+        } else if (page.equals("research") && mm.isModEnabled(CAResearch.MOD)) {
             t.addSectionHeading("Research (Ashes of the Domain)", Alignment.MID, 0f);
             CAResearch.render(t, data, s);
-        } else if (page.equals("mega")) {
+        } else if (page.equals("mega") && mm.isModEnabled(CAHypershunt.MOD)) {
             t.addSectionHeading("Pluto and Nidavelir (Ashes of the Domain)", Alignment.MID, 0f);
             CAMegastructures.renderEmpire(t, data, s);
-        } else if (page.equals("shunt")) {
+        } else if (page.equals("shunt") && mm.isModEnabled(CAHypershunt.MOD)) {
             t.addSectionHeading("Coronal Hypershunt (Ashes of the Domain)", Alignment.MID, 0f);
             CAHypershunt.renderEmpire(t, data, s);
         } else if (page.equals("settings")) {
@@ -286,6 +283,12 @@ public class CAIntel extends BaseIntelPlugin {
             CADiagnostics.runScan();
         } else if (CASetupUI.handle(buttonId, d.settings)) {
             if (!String.valueOf(buttonId).contains(":group:")) d.settings.setupDone = true;
+        } else if (buttonId instanceof String[] && "agent".equals(((String[]) buttonId)[0])) {
+            String[] a = (String[]) buttonId;
+            if (Global.getSettings().getModManager().isModEnabled(CASpies.MOD)) {
+                try { CASpies.handle(d, a[1], a[2]); }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "agent action failed", t); CALog.add("Agents: that failed; see starsector.log", true); }
+            }
         } else if (buttonId instanceof String[] && "settle".equals(((String[]) buttonId)[0])) {
             String[] a = (String[]) buttonId;
             if (Global.getSettings().getModManager().isModEnabled(CASettlement.MOD)) {

@@ -35,7 +35,8 @@ Back to [Getting started](getting-started.md). The full rules are in [details.md
   - **Defense:** Counter-Insurgency on a rebellion, Infiltrate Cell on an active Pather cell, and Find Pirate Base for a hidden base, at the closest colony that needs it. Then Raise Relations with a faction running operations against your colonies while not at war with you. Above Neutral, its AI can't start new operations and drops the running ones.
   - **Defense and offense:** adds sabotage of military industries. It starts with the market an invasion or raid against you comes from. It only targets factions already at war with you; never allies, factions in a ceasefire, or your commissioner, because a detected operation can start a war. It needs 60% estimated success or better and runs one operation per enemy faction.
   - **Hiring:** a level-1 agent for 12,000, only while there's work for one, up to **Agents to keep** and Nexerelin's own limit. Hybrid first, then a Saboteur when offense is on. Nexerelin pays the salary.
-  - Only agents the manager hired get orders. The empire panel lists them, plus the enemy operations running against your colonies, which the game doesn't show anywhere else.
+  - Only agents the manager hired, or ones you hand over on the empire panel's Agents page, get orders, and only operations their type can run (Negotiator, Saboteur, Hybrid). While one of your own agents is idle, none is hired.
+  - The Agents page lists every agent you have, plus the enemy operations running against your colonies, which the game doesn't show anywhere else.
 - **Threat estimate.** Raids, invasions, rebellions and hostile neighbors raise a colony's threat; at 70% it's planned as Security.
 
 ## Emergent Threats (IX Revival)
