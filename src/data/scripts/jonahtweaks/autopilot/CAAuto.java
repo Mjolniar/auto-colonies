@@ -28,6 +28,7 @@ public class CAAuto {
         List<Cand> cands = new ArrayList<Cand>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             CAData.Colony c = d.colony(m.getId());
+            if (c.buildout && c.mode != CAData.Mode.AUTO) CABuildout.stop(m, c, "the colony left Auto");
             if (c.mode != CAData.Mode.APPROVE && c.mode != CAData.Mode.AUTO) continue;
             boolean building = Misc.getCurrentlyBeingConstructed(m) != null;
             Boolean was = wasBuilding.put(m.getId(), building);
@@ -35,6 +36,10 @@ public class CAAuto {
             boolean justFinished = was != null && was;
             if (!justFinished && next != null && now < next) continue;
             nextPass.put(m.getId(), now + 7f);
+            if (c.buildout && c.mode == CAData.Mode.AUTO) {
+                try { if (CABuildout.pass(m, c, now, building)) continue; }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "fast buildout pass failed at " + m.getName(), t); continue; }
+            }
             CAEngine.Result r;
             try { r = CAEngine.evaluate(m, CAThreat.effective(m, c.profile), d.minStability); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "pass failed at " + m.getName(), t); continue; }

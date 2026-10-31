@@ -39,15 +39,26 @@ Nothing is built automatically after install. Every colony starts in **Advisor**
 
    The first switch to Approve or Auto opens **first-time setup**. Every setting is pre-filled with a recommendation based on your income. Click **Use recommended settings** or change them, then click **Save and switch to ...**.
 
+### Fast buildout (offered when you found your first colony)
+
+Once the founding dialog closes, Colony Autopilot asks whether to build the colony up fast, and how many credits to keep: 250,000, 100,000, 500,000 or 1,000,000. If you say yes:
+
+- the colony switches to Auto, with recommended settings if setup hasn't run yet;
+- every day it's planned for Money and starts the buildings that pay back fastest (value per credit), paid from everything you hold above the floor;
+- the monthly budget, per-project cap, pause on loss and new-upkeep cap don't apply to it, but fees, the stability floor and locks do;
+- it ends once the colony has earned money for 30 days in a row. The colony then stays in Auto with its own goal and the normal budget.
+
+While it runs, the colony panel's **Fast buildout** section shows the floor and net income, with **Lower floor**, **Raise floor** and **Stop buildout** buttons. Any colony that loses money gets a **Start fast buildout** button there, so you can start one later, or for another colony.
+
 ### First-colony budget trap
 
-A young colony usually loses money, so Auto may build nothing at first. Three settings cause this:
+Without fast buildout, a young colony usually loses money, so Auto may build nothing at first. Three settings cause this:
 
 - **Monthly budget** defaults to 50% of last month's net income for your whole empire, including fleet upkeep. While that number is negative, the budget is zero.
 - **Pause on loss** (on) stops all spending while net income is negative.
 - **Credit reserve** (500,000) is never spent. With less than that in the bank, nothing is built.
 
-To let Auto build while the colony is still unprofitable, open **Settings** in the empire panel, under **Budget and spending**:
+Fast buildout gets around all three. To let normal Auto build while the colony is still unprofitable, open **Settings** in the empire panel, under **Budget and spending**:
 
 - set **Budget type** to **Fixed amount** with a monthly budget you can afford;
 - turn **Pause on loss** off;

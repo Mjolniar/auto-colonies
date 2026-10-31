@@ -94,6 +94,9 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 message = "That failed; see starsector.log";
             }
         }
+        else if (id instanceof String && ((String) id).startsWith(CABuildout.PREFIX)) {
+            message = CABuildout.handle(market, ((String) id).substring(CABuildout.PREFIX.length()));
+        }
         else if (id instanceof String && ((String) id).startsWith(TASC)) {
             String err = CATasc.handle(market, ((String) id).substring(TASC.length()));
             message = err == null ? "Terraforming project started" : err;
@@ -193,6 +196,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         CALog.endRow(t, first);
         t.addPara("Advisor recommends and you click Build. Approve proposes one project at a time for one click. "
                 + "Auto builds within your budget.", gray, 6f);
+        CABuildout.render(t, market, c);
 
         CAPlan.Plan plan = CAPlan.build(market, planWith);
         t.addSectionHeading("Plan: " + plan.name + " (" + plan.doneCount(market) + " of " + plan.steps.size() + " done)", Alignment.MID, 12f);
