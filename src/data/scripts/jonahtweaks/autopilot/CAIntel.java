@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** The empire panel: every colony's profile, mode and top pick, plus Diagnostics. Lives under Colonies in the Intel screen. */
+/** The empire panel: every colony's profile, mode and top pick, plus Diagnostics. Lives in the Intel screen under Colony threats (the game's name for the colonies tag), and under Important. */
 public class CAIntel extends BaseIntelPlugin {
     static final String RESCAN = "jt_ca_rescan";
     /** UI handles are never saved with the game. */
@@ -119,7 +119,7 @@ public class CAIntel extends BaseIntelPlugin {
             CAPlan.Plan plan = CAPlan.build(m, c.profile);
             String flags = (c.buildout ? ", fast buildout" : "") + (c.threatHigh ? ", threatened" : "");
             t.addPara("%s (size %s): %s, %s" + CALog.esc(flags), 12f, hl, m.getName(), "" + m.getSize(), c.profile.label, c.mode.label);
-            t.addPara("Plan %s: %s of %s done. Next: " + CALog.esc(top), 2f, gray, hl, plan.name, "" + plan.doneCount(m), "" + plan.steps.size());
+            if (CAEngine.isOutpost(m)) t.addPara("Nexerelin outpost: a forward base outside your trade economy, left alone", gray, 2f);
             ButtonAPI b1 = t.addButton("Next goal", new String[]{"profile", m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 140f, 22f, 4f);
             ButtonAPI b2 = t.addButton("Next mode", new String[]{"mode", m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 140f, 22f, 0f);
             b2.getPosition().rightOfTop(b1, 6f);

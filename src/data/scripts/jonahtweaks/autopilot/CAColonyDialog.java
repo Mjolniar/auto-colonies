@@ -145,7 +145,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         if (setupPage) {
             t.addTitle("Colony Autopilot: first-time setup");
             t.addPara("Every setting below is pre-filled with a recommendation from your current income. "
-                    + "All of them can be changed later in Colony Autopilot under Colonies in the Intel screen.", 6f);
+                    + "All of them can be changed later in the Intel screen: Colony Autopilot, under Colony threats.", 6f);
             t.addSectionHeading("Settings", Alignment.MID, 10f);
             CASetupUI.render(t, s, W);
             ButtonAPI save = t.addButton("Save and switch to " + (setupMode == null ? "Auto" : setupMode.label), SAVE_SETUP, hl, dark,
