@@ -2,8 +2,7 @@
 
 > [!WARNING]
 > **AI-generated.** Mod, docs and build checks written by AI coding agents. Compiled and checked offline (bytecode
-> verification against every combination of the optional mods); the newest features aren't tested in game yet. Expect
-> bugs. Report them as [issues](https://github.com/Mjolniar/jonahs-colony-manager/issues) with
+> verification against every combination of the optional mods) Expect bugs. Report them as [issues](https://github.com/Mjolniar/jonahs-colony-manager/issues) with
 > `starsector-core/starsector.log` and `saves/common/colony_autopilot_diagnostics.json.data`.
 
 This is a mod I had Claude Code create for me due to always liking to have tons of colonies with lots of buildings, limits off, etc, but always getting way in over my head with management. 
