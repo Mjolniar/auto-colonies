@@ -11,7 +11,7 @@ The goal of the mod is to let you simply flick the automatic switch on colonies 
 
 By default, most of the settings will try to optimize your colonies to protect them and make them profitable, for a small convenience fee per building placed and action taken. To have it add items to your colonies, there is a colony storage you can access at any of your owned colonies where you can put all colony augment items (nanoforge, ai cores, etc.) - this has extensive modded support as well. The manager will automatically pick an optimal planet goal according to what you settle to "optimize" the planet, but that can freely be changed according to what you want. I highly suggest editing all options to your taste, and they're editable on the fly from the colony threat tab in the intel screen.
 
-This mod is currently working with most of the colony mods I could find on the main star sector mod page, but if you would like one added to it's functionality please put it into the issues tab and I'll do it asap.
+This mod is currently working with most of the colony mods I could find on the main star sector mod page, but if you would like one added to its functionality please put it into the issues tab and I'll do it asap.
 
 ## Features
 
