@@ -212,7 +212,13 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         t.addPara(MODE_TEXT[c.mode.ordinal()], gray, 6f);
         CABuildout.render(t, market, c);
 
+        boolean outpost = CAEngine.isOutpost(market);
+        if (outpost) {
+            t.addSectionHeading("Nexerelin outpost", Alignment.MID, 12f);
+            t.addPara(CAEngine.OUTPOST_TEXT + ". Items, cores, policies and fast buildout skip it too, and its shortages don't count as your colonies'.", gray, 6f);
+        }
         CAPlan.Plan plan = CAPlan.build(market, planWith);
+        if (!outpost) {
         t.addSectionHeading("Plan: " + plan.name + " (" + plan.doneCount(market) + " of " + plan.steps.size() + " done)", Alignment.MID, 12f);
         List<String> doneSteps = new java.util.ArrayList<String>();
         boolean nextShown = false;
@@ -225,6 +231,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         }
         if (!nextShown) t.addPara("Every step is done.", hl, 4f);
         if (!doneSteps.isEmpty()) t.addPara(CALog.esc("Done: " + String.join(", ", doneSteps)), gray, 4f);
+        }
 
         boolean shunt = CAHypershunt.is(market);
         if (shunt) {
@@ -234,19 +241,27 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "hypershunt section failed at " + market.getName(), e);
                 t.addPara("Hypershunt info unavailable; see starsector.log.", gray, 6f);
             }
-        } else t.addSectionHeading("Recommended builds", Alignment.MID, 12f);
-        if (shunt) { /* nothing can be built */ }
+        } else if (!outpost) t.addSectionHeading("Recommended builds", Alignment.MID, 12f);
+        if (shunt || outpost) { /* nothing is built here */ }
         else if (c.mode == CAData.Mode.OFF) {
             t.addPara("Autopilot is off for this colony.", gray, 8f);
         } else {
             CAEngine.Result r = CAEngine.evaluate(market, planWith, data.minStability);
-            if (r.blocked != null) t.addPara(CALog.esc(r.blocked) + "; new buildings wait for it, but upgrades can start now.", hl, 8f);
+            if (r.blocked != null) t.addPara(CALog.esc(r.blocked) + (r.picks.isEmpty() ? "." : "; new buildings wait for it, but upgrades can start now."), hl, 8f);
             List<CAEngine.Pick> picks = r.picks;
             if (picks.isEmpty()) t.addPara("Nothing can be built here right now: every option is already built, blocked by the game, or has no free industry slot.", 8f);
+            else if (!CAEngine.worthwhile(picks.get(0))) t.addPara("Nothing here pays for itself right now, so Approve and Auto wait. The best options are listed anyway.", hl, 8f);
             for (int i = 0; i < Math.min(3, picks.size()); i++) {
                 CAEngine.Pick p = picks.get(i);
-                t.addPara("%s. %s %s: worth about %s, costs %s, %s days" + (p.upgrade ? " (runs alongside other construction)" : ""), 12f, hl,
-                        "" + (i + 1), p.verb, p.name, CAEngine.valueText(p.score), Misc.getDGSCredits(p.cost), "" + (int) p.days);
+                Color money = p.fx[0] < 0f ? Misc.getNegativeHighlightColor() : hl;
+                t.addPara("%s. %s %s: %s a month after upkeep, costs %s, %s days" + (p.upgrade ? " (runs alongside other construction)" : ""), 12f,
+                        new Color[]{hl, hl, hl, money, hl, hl}, "" + (i + 1), p.verb, p.name, CAEngine.signed(p.fx[0]), Misc.getDGSCredits(p.cost), "" + (int) p.days);
+                t.addPara("    Ranked %s: money and other effects worth %s for the " + CALog.esc(planWith.label) + " goal"
+                                + (p.planBonus > 0f ? ", plan step +%s" : "%s") + (p.followThrough > 0f ? ", upgrade +%s" : "%s")
+                                + ", minus %s a month for the build cost over 3 years", 2f, gray,
+                        CAEngine.signed(p.score), CAEngine.signed(p.worth), p.planBonus > 0f ? Misc.getDGSCredits(p.planBonus) : "",
+                        p.followThrough > 0f ? Misc.getDGSCredits(p.followThrough) : "", Misc.getDGSCredits(p.buildCost));
+                if (!CAEngine.worthwhile(p)) t.addPara("    Not worth building now: it doesn't pay for itself within 3 years. Approve and Auto skip it.", Misc.getNegativeHighlightColor(), 2f);
                 int shown = Math.min(3, p.lines.size());
                 for (int j = 0; j < shown; j++) t.addPara("    " + CALog.esc(p.lines.get(j)), gray, 2f);
                 if (p.lines.size() > shown) t.addPara("    and " + (p.lines.size() - shown) + " more effects", gray, 2f);

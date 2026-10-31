@@ -43,7 +43,8 @@ public class CABuildout {
         checkTimer = 1f;
         CAData d = CAData.get();
         if (d.buildoutOffered) return;
-        List<MarketAPI> mine = Misc.getPlayerMarkets(false);
+        List<MarketAPI> mine = new java.util.ArrayList<MarketAPI>();
+        for (MarketAPI x : Misc.getPlayerMarkets(false)) if (!CAEngine.isOutpost(x)) mine.add(x);   // Nexerelin outposts aren't colonies
         if (mine.isEmpty()) return;   // no colony yet: wait for the first
         MarketAPI m = mine.get(0);
         // not a newly founded first colony (a save from before this feature, or several colonies): never offer
@@ -160,7 +161,7 @@ public class CABuildout {
 
     /** The colony panel's section: status and controls while it runs, a start button while the colony loses money. */
     static void render(TooltipMakerAPI t, MarketAPI m, CAData.Colony c) {
-        if (CAHypershunt.is(m)) return;
+        if (CAHypershunt.is(m) || CAEngine.isOutpost(m)) return;
         boolean losing = m.getNetIncome() < 0f;
         if (!c.buildout && !losing) return;
         t.addSectionHeading("Fast buildout", Alignment.MID, 12f);

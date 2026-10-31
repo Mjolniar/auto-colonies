@@ -50,7 +50,7 @@ public class CAItems {
 
     public static List<MarketAPI> autoMarkets() {
         List<MarketAPI> out = new ArrayList<MarketAPI>();
-        for (MarketAPI m : Misc.getPlayerMarkets(false)) if (CAData.get().colony(m.getId()).mode == CAData.Mode.AUTO) out.add(m);
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) if (CAData.get().colony(m.getId()).mode == CAData.Mode.AUTO && !CAEngine.isOutpost(m)) out.add(m);
         return out;
     }
 

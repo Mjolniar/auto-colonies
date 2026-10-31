@@ -84,6 +84,9 @@ public class CAEngine {
         public boolean upgrade;
         public Industry existing;
         public float cost, days, score, upkeep;
+        /** How score is made up (finish()): the effects valued with the goal's weights, the plan bonus, and the build cost
+         *  and time spread over three years. score = worth + planBonus + followThrough - buildCost. */
+        public float worth, planBonus, followThrough, buildCost;
         public float[] fx = new float[7];
         public List<String> lines = new ArrayList<String>();
         public boolean pollution;
@@ -147,6 +150,7 @@ public class CAEngine {
             r.blocked = CAHypershunt.is(m) ? "Coronal Hypershunt: Ashes of the Domain allows no buildings here" : "This colony allows no buildings";
             return r;
         }
+        if (isOutpost(m)) { r.blocked = OUTPOST_TEXT; return r; }
         calibrate();
         CAPlan.Plan plan = CAPlan.build(m, profile);
         Industry building = Misc.getCurrentlyBeingConstructed(m);
@@ -268,17 +272,22 @@ public class CAEngine {
             value -= profile == CAData.Profile.WAR ? 5000f : 30000f;
             p.lines.add("Pollutes this habitable world (permanent after 90 days)");
         }
-        float planBonus = CAPlan.bonusFor(m, plan, p.id);
+        // the plan only orders buildings that are worth something on their own; it never makes a money-losing one look good
+        float planBonus = value > 0f ? CAPlan.bonusFor(m, plan, p.id) : 0f;
         if (planBonus > 0f) p.lines.add(0, "Next step of this colony's " + plan.name + " plan");
-        float followThrough = p.upgrade ? 15000f : 0f;
-        if (p.upgrade) p.lines.add("Follow-through: upgrades what's already built");
-        p.score = value + planBonus + followThrough - p.cost / 36f - p.days * 10f;
-        return true;   // always rank every option: the best available pick is always offered
+        float followThrough = p.upgrade && value > 0f ? 15000f : 0f;
+        if (followThrough > 0f) p.lines.add("Follow-through: upgrades what's already built");
+        p.worth = value; p.planBonus = planBonus; p.followThrough = followThrough;
+        p.buildCost = p.cost / 36f + p.days * 10f;   // the price spread over three years, plus a little for the wait
+        p.score = value + planBonus + followThrough - p.buildCost;
+        return true;   // every option is ranked and shown; Approve and Auto only act on a positive score (worthwhile())
     }
 
     /** The engine's own upkeep prediction for a building here, before calibration (CACalibrate compares it with real upkeep). */
     static float baseUpkeep(MarketAPI m, IndustrySpecAPI spec) {
-        float sizeMult = (CATasc.fixedUpkeep(spec.getId()) ? 1 : Math.max(1, m.getSize() - 2)) * 500f * m.getUpkeepMult().getModifiedValue();
+        // as BaseIndustry.applyIncomeAndUpkeep: the spec's upkeep (already in credits: the game multiplies the CSV value by 500
+        // when it loads) times max(1, size - 2) times the colony's upkeep multiplier
+        float sizeMult = (CATasc.fixedUpkeep(spec.getId()) ? 1 : Math.max(1, m.getSize() - 2)) * m.getUpkeepMult().getModifiedValue();
         return spec.getUpkeep() * sizeMult * CADevelopment.upkeepMult(m, spec);
     }
 
@@ -431,6 +440,7 @@ public class CAEngine {
     public static Map<String, Integer> empireDeficits() {
         Map<String, Integer> out = new HashMap<String, Integer>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            if (isOutpost(m)) continue;   // its own economy: your colonies can't supply it anyway
             for (CommodityOnMarketAPI c : m.getAllCommodities()) {
                 int d = c.getDeficitQuantity();
                 if (d > 0 && !CABrewery.isDrink(c.getId())) {   // Substance.Abuse drinks: other colonies' demand has no penalty
@@ -447,4 +457,25 @@ public class CAEngine {
 
     /** Credit-equivalent value per month, for display. */
     public static String valueText(float v) { return (v >= 0 ? "+" : "") + Misc.getDGSCredits(v) + "/month"; }
+
+    /** Worth building now: it pays for itself within about three years, with the goal's weights. Approve and Auto need this. */
+    public static boolean worthwhile(Pick p) { return p != null && p.score > 0f; }
+
+    /**
+     * A Nexerelin player outpost: a size-2 forward base Nexerelin builds on a station, with a Spaceport and Waystation and a
+     * flat upkeep it charges itself, in an economy group of its own, so nothing built there can export or earn. It's for
+     * resupply and storage, not income, so Autopilot leaves it alone: nothing is built, upgraded, placed or switched there,
+     * and its shortages aren't counted as your colonies'. Read from Nexerelin's own market flag and entity tag (literal ids,
+     * so this works without Nexerelin).
+     */
+    public static boolean isOutpost(MarketAPI m) {
+        if (m == null) return false;
+        if (m.getMemoryWithoutUpdate().contains("$nex_playerOutpost")) return true;
+        return m.getPrimaryEntity() != null && m.getPrimaryEntity().hasTag("nex_playerOutpost");
+    }
+
+    public static final String OUTPOST_TEXT = "Nexerelin outpost: a forward base for resupply and storage, outside your trade economy, so Autopilot doesn't build or change anything here";
+
+
+    public static String signed(float v) { return (v >= 0 ? "+" : "-") + Misc.getDGSCredits(Math.abs(v)); }
 }

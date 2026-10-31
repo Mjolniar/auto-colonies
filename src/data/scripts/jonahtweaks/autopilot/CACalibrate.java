@@ -28,6 +28,19 @@ public class CACalibrate {
         n.put(id, Math.min(100, (k == null ? 0 : k) + 1));
     }
 
+    /**
+     * Before 2.8.0 the engine's upkeep prediction was 500x too high (it multiplied the spec's upkeep, already in credits,
+     * by 500 again), so every upkeep correction in older saves sits at the 0.5 floor. Clears them once; they're re-read
+     * from your colonies within a couple of weeks.
+     */
+    public static void migrate() {
+        CAData d = CAData.get();
+        if (d.calVersion >= 1) return;
+        d.calUp().clear();
+        d.calUpN().clear();
+        d.calVersion = 1;
+    }
+
     /** Weekly: reads every clean building at every colony. */
     public static void run(float now) {
         if (now - last < 7f) return;
@@ -35,7 +48,7 @@ public class CACalibrate {
         CAData d = CAData.get();
         Map<String, Integer> deficit = CAEngine.empireDeficits();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
-            if (CAHypershunt.is(m)) continue;
+            if (CAHypershunt.is(m) || CAEngine.isOutpost(m)) continue;
             for (Industry ind : m.getIndustries()) {
                 try {
                     if (ind.isHidden() || !ind.isFunctional() || ind.isBuilding() || ind.isUpgrading()

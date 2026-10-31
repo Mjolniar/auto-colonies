@@ -101,14 +101,15 @@ public class CAIntel extends BaseIntelPlugin {
             CAData.Colony c = data.colony(m.getId());
             String top = "nothing buildable";
             try {
-                if (c.mode == CAData.Mode.OFF) top = "autopilot off";
+                if (CAEngine.isOutpost(m)) top = "Nexerelin outpost, left alone";
+                else if (c.mode == CAData.Mode.OFF) top = "autopilot off";
                 else if (CAHypershunt.is(m)) top = CAHypershunt.summary(m);
                 else {
                     CAEngine.Result r = CAEngine.evaluate(m, c.profile, data.minStability);
-                    if (!r.picks.isEmpty()) {
-                        CAEngine.Pick p = r.picks.get(0);
-                        top = p.verb + " " + p.name + " (" + CAEngine.valueText(p.score) + ")";
-                    }
+                    CAEngine.Pick p = null;
+                    for (CAEngine.Pick q : r.picks) if (CAEngine.worthwhile(q)) { p = q; break; }
+                    if (p != null) top = p.verb + " " + p.name + " (" + CAEngine.signed(p.fx[0]) + " a month after upkeep)";
+                    else if (!r.picks.isEmpty()) top = "nothing pays for itself yet";
                     if (r.blocked != null) top = r.blocked.toLowerCase() + "; next: " + top;
                 }
             } catch (Throwable e) {
