@@ -55,7 +55,7 @@ After those, any integration class can be read on its own.
 1. **Month and calibration.** `CABudget.rollMonth` starts a new month's budget when the month changes. `CACalibrate.run` compares predictions with your real buildings once a week.
 2. **Each colony in Approve or Auto:**
    - A colony is re-planned every 7 days, or as soon as a build finishes.
-   - **Fast buildout:** a colony with one running goes to `CABuildout.pass` instead. That pass plans for Money, picks by value per credit, pays from credits above the floor, and repeats daily.
+   - **Fast buildout:** a colony with one running goes to `CABuildout.pass` instead. That pass ranks with `CAEngine.evaluateForProfit`: the Money goal whatever the colony's goal or threat, with the `PROFIT` weights (defense, fleets and ship quality worth nothing) and no plan or upgrade bonus. It picks by value per credit, pays from credits above the floor, and repeats daily.
    - **Scoring:** `CAEngine.evaluate(market, CAThreat.effective(market, goal), minStability)` returns the scored picks. `CAThreat.effective` swaps in Security while the colony's threat estimate is high.
    - **Approve:** the best pick becomes a proposal (`CAAuto.propose`), and the player approves or rejects it in a panel.
    - **Auto:** the best new build and the best upgrade become candidates.

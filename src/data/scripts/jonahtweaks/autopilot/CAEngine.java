@@ -78,6 +78,8 @@ public class CAEngine {
             /* WAR      */ {0.8f, 2500f, 10000f, 4000f, 10000f, 30000f, 500f},
             /* GROWTH   */ {0.6f, 3500f, 30000f, 1500f, 1000f, 1000f, 6000f},
             /* SELF     */ {1.0f, 3000f, 20000f, 3000f, 4000f, 10000f, 1500f}};
+    /** Fast buildout's weights: the Money goal's, with ground defense, fleets and ship quality worth nothing, since they earn nothing and add upkeep. */
+    static final float[] PROFIT = {1.6f, 2500f, 30000f, 0f, 0f, 0f, 1000f};
 
     public static class Pick {
         public String id, name, verb;
@@ -141,6 +143,18 @@ public class CAEngine {
 
     /** Set while CAResearch values techs: no probe-colony measurements under a what-if research state. */
     static boolean noProbe = false;
+    /** Set while evaluateForProfit runs. */
+    static boolean profitOnly = false;
+
+    /**
+     * Fast buildout's ranking: the Money goal whatever the colony's goal or threat, with PROFIT's weights and no plan or
+     * upgrade bonus, so only what raises income scores above zero, ranked by what it earns.
+     */
+    public static Result evaluateForProfit(MarketAPI m, float minStability) {
+        profitOnly = true;
+        try { return evaluate(m, CAData.Profile.INCOME, minStability); }
+        finally { profitOnly = false; }
+    }
 
     public static Result evaluate(MarketAPI m, CAData.Profile profile, float minStability) {
         CAData.Colony col = CAData.get().colony(m.getId());
@@ -260,7 +274,7 @@ public class CAEngine {
     /** Combines effects with profile weights; false when the pick breaks a rule or isn't worth building. */
     static boolean finish(MarketAPI m, Pick p, CAData.Profile profile, float minStability, CAPlan.Plan plan) {
         if (p.fx[1] < 0 && m.getStabilityValue() + p.fx[1] < minStability) return false;
-        float[] w = WEIGHTS[profile.ordinal()];
+        float[] w = profitOnly ? PROFIT : WEIGHTS[profile.ordinal()];
         float value = 0f;
         for (int i = 0; i < 7; i++) value += w[i] * p.fx[i];
         // an uncertain gain must beat a known one by a margin (an estimate at 0.85 needs about 18% more to win)
@@ -273,9 +287,9 @@ public class CAEngine {
             p.lines.add("Pollutes this habitable world (permanent after 90 days)");
         }
         // the plan only orders buildings that are worth something on their own; it never makes a money-losing one look good
-        float planBonus = value > 0f ? CAPlan.bonusFor(m, plan, p.id) : 0f;
+        float planBonus = value > 0f && !profitOnly ? CAPlan.bonusFor(m, plan, p.id) : 0f;
         if (planBonus > 0f) p.lines.add(0, "Next step of this colony's " + plan.name + " plan");
-        float followThrough = p.upgrade && value > 0f ? 15000f : 0f;
+        float followThrough = p.upgrade && value > 0f && !profitOnly ? 15000f : 0f;
         if (followThrough > 0f) p.lines.add("Follow-through: upgrades what's already built");
         p.worth = value; p.planBonus = planBonus; p.followThrough = followThrough;
         p.buildCost = p.cost / 36f + p.days * 10f;   // the price spread over three years, plus a little for the wait
