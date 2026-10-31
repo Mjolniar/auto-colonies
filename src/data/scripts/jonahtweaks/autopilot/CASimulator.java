@@ -67,7 +67,13 @@ public class CASimulator {
             for (MarketConditionAPI c : colony.getConditions()) {
                 MarketConditionSpecAPI spec = Global.getSettings().getMarketConditionSpec(c.getId());
                 if (spec == null || spec.getSourceMod() != null) continue;   // vanilla deposits and hazards only; mod conditions may touch the sector
-                try { p.addCondition(c.getId()); } catch (Throwable ignored) { }
+                // some vanilla conditions only work with the intel they were added with (Pather cells, pirate activity, a
+                // blockade); copied without it they fail on every apply, and every measurement with them, so they're left off
+                String token = null;
+                try { token = p.addCondition(c.getId()); p.reapplyCondition(token); }
+                catch (Throwable t) {
+                    if (token != null) try { p.removeSpecificCondition(token); } catch (Throwable ignored) { }
+                }
             }
         }
         p.reapplyConditions();

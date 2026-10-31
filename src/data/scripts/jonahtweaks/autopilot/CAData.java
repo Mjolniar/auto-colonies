@@ -77,6 +77,10 @@ public class CAData {
     // Nexerelin agents Autopilot hired (person ids); only these are given orders
     public Set<String> spyAgents;
     public Set<String> spyAgents() { if (spyAgents == null) spyAgents = new HashSet<String>(); return spyAgents; }
+    // colonies Autopilot made autonomous in an emergency (Nexerelin): market id to the timestamp; only these are taken back
+    public Map<String, Long> autonomous;
+    public long lastAutonomyChange;
+    public Map<String, Long> autonomous() { if (autonomous == null) autonomous = new HashMap<String, Long>(); return autonomous; }
 
     /** Keys of log messages already written once (waits, unavailable edicts), so a reload doesn't repeat them. */
     public Set<String> noted() {

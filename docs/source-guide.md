@@ -2,7 +2,7 @@
 
 A tour of the code for anyone who wants to read it: how it's laid out, what happens each day in game, how a building gets its score, how the optional mod integrations stay optional, what goes in the save, and what every file does.
 
-All the code is Java 17, compiled against Starsector 0.98a-RC8's `starfarer.api.jar`. It's about 9,600 lines in 52 files. Every class opens with a comment saying what it does and why; this page links them together. For what the mod does as a player sees it, read [Getting started](getting-started.md), [What each supported mod adds](supported-mods.md) and [details.md](details.md).
+All the code is Java 17, compiled against Starsector 0.98a-RC8's `starfarer.api.jar`. It's about 10,800 lines in 55 files. Every class opens with a comment saying what it does and why; this page links them together. For what the mod does as a player sees it, read [Getting started](getting-started.md), [What each supported mod adds](supported-mods.md) and [details.md](details.md).
 
 > The code was written by AI coding agents (see the README's warning). It's compiled and checked offline (see [Building and checking](#building-and-checking)), and parts are confirmed in game, but not all of it.
 
@@ -74,7 +74,7 @@ After those, any integration class can be read on its own.
    | Items, AI cores and administrators | `CAItems.run` |
    | Terraforming Made Easy projects | `CATerraform.run` |
    | Industrial Evolution, then Courier Port shipping | `CAIndEvo.run`, `CACourier.run` |
-   | Nexerelin emergency fleets, then agents | `CADefense.run`, `CASpies.run` |
+   | Nexerelin emergency fleets, agents, then emergency autonomy | `CADefense.run`, `CASpies.run`, `CAAutonomy.run` |
    | Hazard pay and free port | `CAPolicies.run` |
    | Story points | `CAStory.run` |
    | RAT settlement | `CASettlement.run` |
@@ -150,7 +150,7 @@ Any exception thrown by a building's code during scoring quarantines that buildi
 
 ## Mod buildings: the probe colony and diagnostics
 
-**The probe colony.** [CASimulator](../src/data/scripts/jonahtweaks/autopilot/CASimulator.java) builds the mod building on a probe market. The probe has the colony's size and its vanilla conditions, but no planet or location, so the building's code can't place anything in the sector. The simulator reads:
+**The probe colony.** [CASimulator](../src/data/scripts/jonahtweaks/autopilot/CASimulator.java) builds the mod building on a probe market. The probe has the colony's size and its vanilla conditions, but no planet or location, so the building's code can't place anything in the sector. A copied condition that fails without the intel it was added with (Pather cells, pirate activity, a blockade) is left off. The simulator reads:
 - the building's own supply and demand;
 - the market-level changes: stability, accessibility, income and upkeep multipliers, ground defense, fleet size and patrols, ship quality.
 
@@ -228,8 +228,8 @@ Rules that keep saves working:
 | Class | What it does |
 |---|---|
 | [CAOptionProvider](../src/data/scripts/jonahtweaks/autopilot/CAOptionProvider.java) | Adds **Colony Autopilot...** to the right-click menu of Population & Infrastructure |
-| [CAColonyDialog](../src/data/scripts/jonahtweaks/autopilot/CAColonyDialog.java) | The colony panel, a custom dialog with a page list on the left (`pages()`): Overview (stats, approval, goal, mode, fast buildout), Plan and builds, Locks, and a page per integration that applies. `build()` redraws the current page after every button; `handle(id)` routes button ids (`ca:page:...`, `ca:lock:...`, `ca:hs:...`, `ca:bo:...`, a `Pick`, a goal, a mode). The first switch to Approve or Auto shows the setup page. |
-| [CAIntel](../src/data/scripts/jonahtweaks/autopilot/CAIntel.java) | The empire panel, an intel item with its own **Colony Autopilot** filter (a tag of its own; older saves have its "important" flag cleared). Pages (`pages()`): Colonies (budget, approvals, every colony with its next build), Autopilot Storage, one per integration in use, Settings, Log and Diagnostics |
+| [CAColonyDialog](../src/data/scripts/jonahtweaks/autopilot/CAColonyDialog.java) | The colony panel, a custom dialog with a page list on the left (`pages()`): Overview (stats, approval, goal, mode, fast buildout), Plan and builds, Locks, and Mod features, one page with a section per integration that applies (`modSections()`, `renderMod()`). `build()` redraws the current page after every button; `handle(id)` routes button ids (`ca:page:...`, `ca:lock:...`, `ca:hs:...`, `ca:bo:...`, a `Pick`, a goal, a mode). The first switch to Approve or Auto shows the setup page. |
+| [CAIntel](../src/data/scripts/jonahtweaks/autopilot/CAIntel.java) | The empire panel, an intel item with its own **Colony Autopilot** filter (a tag of its own; older saves have its "important" flag cleared). Pages (`pages()`): Colonies (budget, approvals, every colony with its next build), Autopilot Storage, Mod features (a section per integration in use: `modSections()`, `renderMod()`), Settings, Log and Diagnostics |
 | [CANav](../src/data/scripts/jonahtweaks/autopilot/CANav.java) | The page list both panels draw on the left, so one section shows at a time instead of one long scroll |
 | [CASetupUI](../src/data/scripts/jonahtweaks/autopilot/CASetupUI.java) | The settings rows, shared by the setup page and the empire panel, in groups that open one at a time. Each row shows its value and the recommendation. `applyRecommended` fills in the recommendations, which are chosen so that switching colonies to Auto and nothing else works out well; its comments give the reason for each. |
 | `CABuildout.Offer` | The first-colony offer, an interaction dialog with the game's own option list |
@@ -253,7 +253,7 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
 | [CABuild](../src/data/scripts/jonahtweaks/autopilot/CABuild.java) | Starts a build or upgrade like the build menu |
 | [CABudget](../src/data/scripts/jonahtweaks/autopilot/CABudget.java) | Monthly budget (Automatic: half of net income plus 15% of the credits above the reserve at the month's start; share of income; fixed), reserve, pause on loss, convenience fees |
 | [CABuildout](../src/data/scripts/jonahtweaks/autopilot/CABuildout.java) | Fast buildout: the offer, the daily pass, the panel section |
-| [CAItems](../src/data/scripts/jonahtweaks/autopilot/CAItems.java) | Colony items, AI cores (stacked on the best-defended world, inspection-aware), administrators, the Antimatter Stabilizer conversion |
+| [CAItems](../src/data/scripts/jonahtweaks/autopilot/CAItems.java) | Colony items, AI cores (placed, upgraded, moved and pulled back by `coreValue`, what each core does in a building with the colony's goal weights less `POINT_COST` a point, within `coreLimit`: the Hegemony's 7-point threshold, or no limit where `defended`, with No limit, or when `noInspections`; colonies in `inspected` are left alone), administrators (hired, placed and moved only where `adminWorth`, Industrial Planning output plus colony-limit stability valued by `stabilityWorth`, beats the salary), the Antimatter Stabilizer conversion |
 | [CAPolicies](../src/data/scripts/jonahtweaks/autopilot/CAPolicies.java) | Hazard pay and free port, with minimum time between changes |
 | [CAStory](../src/data/scripts/jonahtweaks/autopilot/CAStory.java) | Story point improvements under the chosen rule |
 | [CALog](../src/data/scripts/jonahtweaks/autopilot/CALog.java) | The action log; `once`/`forget` log a message once per save; `esc` makes dynamic text safe in format strings |
@@ -275,7 +275,7 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
 |---|---|---|
 | [CATerraform](../src/data/scripts/jonahtweaks/autopilot/CATerraform.java), [CAWorldPlanner](../src/data/scripts/jonahtweaks/autopilot/CAWorldPlanner.java) | Terraforming Made Easy | Terraforming projects; special-world plans |
 | [CAIndEvo](../src/data/scripts/jonahtweaks/autopilot/CAIndEvo.java), [CACourier](../src/data/scripts/jonahtweaks/autopilot/CACourier.java) | Industrial Evolution | Ambassadors, edicts, VPC chips, specialties; Courier Port shipping |
-| [CADefense](../src/data/scripts/jonahtweaks/autopilot/CADefense.java), [CASpies](../src/data/scripts/jonahtweaks/autopilot/CASpies.java) | Nexerelin | Emergency defense fleets; agents |
+| [CADefense](../src/data/scripts/jonahtweaks/autopilot/CADefense.java), [CASpies](../src/data/scripts/jonahtweaks/autopilot/CASpies.java), [CAAutonomy](../src/data/scripts/jonahtweaks/autopilot/CAAutonomy.java) | Nexerelin | Emergency defense fleets; agents; emergency autonomy (`Nex_GrantAutonomy`) |
 | [CAAotD](../src/data/scripts/jonahtweaks/autopilot/CAAotD.java) | AotD: Building Menu Overhaul | Research locks, hidden buildings, upgrade paths |
 | [CASynergies](../src/data/scripts/jonahtweaks/autopilot/CASynergies.java) | AotD: Vaults of Knowledge | Industry synergies in scoring |
 | [CADevelopment](../src/data/scripts/jonahtweaks/autopilot/CADevelopment.java) | AotD: Vaults of Knowledge | Management styles; Floating City fuel guard |

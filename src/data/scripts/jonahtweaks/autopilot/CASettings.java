@@ -28,6 +28,7 @@ public class CASettings {
     public String stationLine = "score";  // score, low, mid, high
     public boolean useAICores = false;
     public int alphaMode = 0;             // 0 only where removable (default), 1 anywhere, 2 never
+    public int coreRisk = 0;              // 0 more where defenses beat the next inspection (default), 1 never inspected, 2 no limit
     public boolean allowRemovals = false;
     public int storyPointRule = 0;        // 0 player only, 1 one per colony, 2 monthly cap
     public int storyPointMonthlyCap = 2;
@@ -76,6 +77,9 @@ public class CASettings {
     public boolean spyNoHiring = false;
     public int spyKeep = 0;
     public static final String[] SPY_NAMES = {"Off", "Defense", "Defense and offense"};
+    // Nexerelin emergency autonomy (CAAutonomy): 0 off (default, so older saves load as off), 1 recommend, 2 auto
+    public int autonomyMode = 0;
+    public static final String[] AUTONOMY_NAMES = {"Off", "Recommend", "Auto"};
     // the Colony Autopilot button on your colony's screen (CAScreenButton); on unless this is set
     public boolean noScreenButton = false;
 
@@ -92,6 +96,7 @@ public class CASettings {
     public static final float[] FEE_MULT = {0f, 0.5f, 1f, 2f};
     public static final String[] SP_NAMES = {"Player only", "One per colony", "Monthly cap"};
     public static final String[] ALPHA_NAMES = {"Only where removable", "Anywhere", "Never"};
+    public static final String[] CORE_RISK_NAMES = {"More where defended", "Never inspected", "No limit"};
     public static final String[] STATION_IDS = {"score", "low", "mid", "high"};
     public static final String[] STATION_NAMES = {"Pick by score", "Low tech", "Midline", "High tech"};
 

@@ -140,21 +140,43 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         return b;
     }
 
-    /** The pages in the list on the left: Overview, Plan and builds, Locks, plus one per mod feature that applies here. */
+    /** The pages in the list on the left: Overview, Plan and builds, Locks, plus Mod features when one applies here. */
     List<String[]> pages(CAData.Colony c, CASettings s, boolean shunt, boolean outpost) {
         List<String[]> p = new ArrayList<String[]>();
         p.add(new String[]{"overview", c.pendingId != null ? "Overview (approval)" : "Overview"});
         if (!outpost) p.add(new String[]{"builds", shunt ? "Coronal Hypershunt" : "Plan and builds"});
         p.add(new String[]{"locks", "Locks"});
-        boolean on = c.mode != CAData.Mode.OFF;
-        com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
-        List<String[]> mods = new ArrayList<String[]>();
-        if (CATasc.enabled() && !shunt && on) mods.add(new String[]{"tasc", "Terraforming"});
-        if (mm.isModEnabled(CAHypershunt.MOD) && CAMegastructures.has(market) && on) mods.add(new String[]{"mega", "Megastructure"});
-        if (mm.isModEnabled(CAAugments.MOD) && s.augmentMode != 2 && on && !shunt) mods.add(new String[]{"augments", "Station augments"});
-        if (mm.isModEnabled(CASynergies.MOD) && on && !shunt) mods.add(new String[]{"synergies", "Industry synergies"});
-        if (!mods.isEmpty()) { p.add(new String[]{null, "Mod features"}); p.addAll(mods); }
+        if (!modSections(c, s, shunt).isEmpty()) p.add(new String[]{"mods", "Mod features"});
         return p;
+    }
+
+    /** The mod features that apply to this colony, in the order the Mod features page shows them. */
+    List<String> modSections(CAData.Colony c, CASettings s, boolean shunt) {
+        List<String> l = new ArrayList<String>();
+        if (c.mode == CAData.Mode.OFF) return l;
+        com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
+        if (CATasc.enabled() && !shunt) l.add("tasc");
+        if (mm.isModEnabled(CAHypershunt.MOD) && CAMegastructures.has(market)) l.add("mega");
+        if (mm.isModEnabled(CAAugments.MOD) && s.augmentMode != 2 && !shunt) l.add("augments");
+        if (mm.isModEnabled(CASynergies.MOD) && !shunt) l.add("synergies");
+        return l;
+    }
+
+    /** One section of the Mod features page; a section that fails leaves the others on the page. */
+    void renderMod(TooltipMakerAPI t, String id, CAData.Colony c, CASettings s, CAData.Profile planWith, float pad) {
+        com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
+        String title = id.equals("tasc") ? "Terraforming (Terraforming & Station Construction)" : id.equals("mega") ? "Megastructure (Ashes of the Domain)"
+                : id.equals("augments") ? "Station augments" : "Industry synergies (Ashes of the Domain)";
+        t.addSectionHeading(title, Alignment.MID, pad);
+        try {
+            if (id.equals("tasc")) CATasc.renderColony(t, market, c);
+            else if (id.equals("mega") && mm.isModEnabled(CAHypershunt.MOD)) CAMegastructures.renderColony(t, market, c, s);
+            else if (id.equals("augments") && mm.isModEnabled(CAAugments.MOD)) CAAugments.renderColony(t, market, c, s, planWith);
+            else if (id.equals("synergies") && mm.isModEnabled(CASynergies.MOD)) CASynergies.render(t, market);
+        } catch (Throwable e) {
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + id + " section failed at " + market.getName(), e);
+            t.addPara("This section couldn't be shown; see starsector.log.", Misc.getGrayColor(), 6f);
+        }
     }
 
     void build() {
@@ -222,6 +244,23 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             }
             if (!buildout && planWith != c.profile) t.addPara("Planning with Security until the threat drops below %s and has been high for %s days.", 4f,
                     Misc.getNegativeHighlightColor(), Math.round(CAThreat.CLEAR * 100f) + "%", "" + Math.round(CAThreat.MIN_DAYS));
+            com.fs.starfarer.api.characters.AdminData ad = CAItems.adminAt(market);
+            if (ad != null && ad.getPerson() != null && !ad.getPerson().isAICore()) {
+                float salary = Misc.getAdminSalary(ad.getPerson()), worth = CAItems.adminWorth(market, ad.getPerson());
+                t.addPara("Administrator %s: salary %s a month, adds about %s a month here.", 4f, worth < salary ? Misc.getNegativeHighlightColor() : hl,
+                        ad.getPerson().getNameString(), Misc.getDGSCredits(salary), Misc.getDGSCredits(worth));
+            }
+            if (c.mode == CAData.Mode.AUTO && s.useAICores && !CAEngine.isOutpost(market)) {
+                String none = CAItems.noInspections();
+                int pts = CAItems.aiPoints(market), lim = CAItems.coreLimit(s, market, none);
+                boolean coming = CAItems.inspected().contains(market);
+                String why = coming ? "an inspection is coming, so its cores are left as they are"
+                        : lim != Integer.MAX_VALUE ? "limit " + lim + ", which the Hegemony ignores"
+                        : none != null ? "no limit: " + none
+                        : s.coreRisk == 2 ? "no limit (Inspection risk: No limit)"
+                        : "no limit: its defenses (about " + (int) CAItems.defenseFP(market) + " fleet points) beat the next inspection's " + (int) CAItems.nextInspectionFP();
+                t.addPara("AI cores: %s inspection points, %s.", 4f, coming || pts > lim ? Misc.getNegativeHighlightColor() : hl, "" + pts, why);
+            }
             if (Global.getSettings().getModManager().isModEnabled(CADevelopment.MOD) && !shunt) {
                 try { CADevelopment.render(t, market); }
                 catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "management style line failed at " + market.getName(), e); }
@@ -303,33 +342,11 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             if (lockFirst != null) CALog.endRow(t, lockFirst);
             List<String> odd = CADiagnostics.unsupportedConditions(market);
             if (!odd.isEmpty() && !shunt) t.addPara(CALog.esc("Unmapped conditions on this colony (scores may be off): " + odd), gray, 10f);
-        } else if (page.equals("tasc")) {
-            t.addSectionHeading("Terraforming (Terraforming & Station Construction)", Alignment.MID, message != null ? 8f : 0f);
-            try { CATasc.renderColony(t, market, c); }
-            catch (Throwable e) {
-                CADiagnostics.LOG.warn(CADiagnostics.TAG + "TASC section failed at " + market.getName(), e);
-                t.addPara("Terraforming info unavailable; see starsector.log.", gray, 6f);
-            }
-        } else if (page.equals("mega")) {
-            t.addSectionHeading("Megastructure (Ashes of the Domain)", Alignment.MID, message != null ? 8f : 0f);
-            try { CAMegastructures.renderColony(t, market, c, s); }
-            catch (Throwable e) {
-                CADiagnostics.LOG.warn(CADiagnostics.TAG + "megastructure section failed at " + market.getName(), e);
-                t.addPara("Megastructure info unavailable; see starsector.log.", gray, 6f);
-            }
-        } else if (page.equals("augments")) {
-            t.addSectionHeading("Station augments", Alignment.MID, message != null ? 8f : 0f);
-            try { CAAugments.renderColony(t, market, c, s, planWith); }
-            catch (Throwable e) {
-                CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment section failed at " + market.getName(), e);
-                t.addPara("Station augment info unavailable; see starsector.log.", gray, 6f);
-            }
-        } else if (page.equals("synergies")) {
-            t.addSectionHeading("Industry synergies (Ashes of the Domain)", Alignment.MID, message != null ? 8f : 0f);
-            try { CASynergies.render(t, market); }
-            catch (Throwable e) {
-                CADiagnostics.LOG.warn(CADiagnostics.TAG + "industry synergy section failed at " + market.getName(), e);
-                t.addPara("Synergy info unavailable; see starsector.log.", gray, 6f);
+        } else if (page.equals("mods")) {
+            float pad = message != null ? 8f : 0f;
+            for (String id : modSections(c, s, shunt)) {
+                renderMod(t, id, c, s, planWith, pad);
+                pad = 16f;
             }
         }
 

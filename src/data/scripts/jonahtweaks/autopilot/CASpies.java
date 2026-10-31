@@ -34,7 +34,7 @@ import java.util.*;
 
 /**
  * Nexerelin agents (setting "Agents", off by default). Only agents Autopilot hired, or ones you hand over on the empire
- * panel's Agents page, are given orders; the rest are left alone, and you can take any of them back. Each agent only
+ * panel's Mod features page, are given orders; the rest are left alone, and you can take any of them back. Each agent only
  * gets operations its type can run (Nexerelin's agentConfig: Raise Relations needs a Negotiator or Hybrid, Sabotage
  * Industry a Saboteur; the defensive operations any type).
  * Nexerelin has no counter-intelligence and no bonus for an agent parked at a colony, so defense means running the
@@ -342,7 +342,7 @@ public class CASpies {
             if (mine.contains(a) || busy(mgr, a)) continue;
             if (saboteurWork && NexConfig.useAgentSpecializations && !a.getSpecializationsCopy().contains(AgentIntel.Specialization.SABOTEUR)) continue;
             if (CALog.once("spy:yours")) CALog.add("Agents: your agent " + name(a) + " (" + types(a) + ") is idle, so Autopilot doesn't hire one. "
-                    + "To have Autopilot use it, click Let Autopilot use it on the Colony Autopilot intel's Agents page", true);
+                    + "To have Autopilot use it, click Let Autopilot use it on the Colony Autopilot intel's Mod features page, under Agents", true);
             return;
         }
         if (mgr.getAgents().size() >= mgr.getMaxAgents().getModifiedInt()) {
@@ -375,7 +375,7 @@ public class CASpies {
 
     // ---- empire panel
 
-    /** The empire panel's Agents page: every agent you have, by type, with who gives it orders, and enemy operations. */
+    /** The Agents section of the empire panel's Mod features page: every agent you have, by type, with who gives it orders, and enemy operations. */
     static void render(TooltipMakerAPI t, CAData d, CASettings s) {
         java.awt.Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor();
         java.awt.Color base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();

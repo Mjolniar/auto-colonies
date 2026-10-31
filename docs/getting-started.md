@@ -16,8 +16,8 @@ Nothing is built automatically after install. Every colony starts in **Advisor**
 
 | Panel | How to open | What it's for |
 |---|---|---|
-| Colony panel | The **Colony Autopilot** button on the colony screen, or right-click **Population & Infrastructure**, then **Colony Autopilot...** | One colony. Pages: **Overview** (stats, approval, goal, mode, fast buildout), **Plan and builds**, **Locks**, and one per mod feature that applies |
-| Empire panel | Intel screen, the **Colony Autopilot** filter | Pages: **Colonies** (budget, approvals, every colony), **Autopilot Storage**, one per mod feature in use, **Settings**, **Log**, **Diagnostics** |
+| Colony panel | The **Colony Autopilot** button on the colony screen, or right-click **Population & Infrastructure**, then **Colony Autopilot...** | One colony. Pages: **Overview** (stats, approval, goal, mode, fast buildout), **Plan and builds**, **Locks**, and **Mod features** (every mod feature that applies, on one page) |
+| Empire panel | Intel screen, the **Colony Autopilot** filter | Pages: **Colonies** (budget, approvals, every colony), **Autopilot Storage**, **Mod features** (every mod feature in use, on one page), **Settings**, **Log**, **Diagnostics** |
 
 Both panels list their pages down the left side; click one to show it. In **Settings**, click a group to open it; one is open at a time.
 
@@ -54,9 +54,10 @@ They're chosen so that switching colonies to Auto and doing nothing else works o
 | Budget | **Automatic**: half of last month's net income, plus 15% of your credits above the reserve each month. A young colony that loses money still gets built, and spending slows as savings fall. |
 | Credit reserve | A quarter of your credits at setup, between 50,000 and 500,000; never spent |
 | Pause on loss | Off (the Automatic budget already slows down) |
-| AI cores, administrators | Used and hired (only cores you put in Autopilot Storage; within Hegemony inspection limits) |
+| AI cores, administrators | Used and hired (only cores you put in Autopilot Storage, where they add most; up to 7 inspection points per colony, more where its defenses beat the next inspection; an administrator only where they add more than their salary) |
 | Research, trade contracts, settlement | Auto, each only when it pays (Ashes of the Domain, Random Assortment of Things) |
 | Agents | Defense: hired only when there's a rebellion, Pather cell, pirate base or enemy operation (Nexerelin) |
+| Emergency autonomy | Auto: in a money or colony-limit emergency, a colony is made autonomous, then taken back once it's over (Nexerelin) |
 | Policies, edicts, IndEvo automation, defense fleets | On |
 | Removals, story points, offense | Off: these are your calls |
 
@@ -84,8 +85,8 @@ All three are under **Settings**, **Budget and spending**, in the empire panel; 
 
 ### Items, AI cores and administrators
 
-- **Colony items and AI cores:** dock at any of your colonies, open the **Autopilot Storage** tab, and deposit them there. The manager uses only items in that storage, and only for colonies in Auto mode; it never takes from your cargo or normal storage. AI cores are used with the recommended settings (**Use AI cores**).
-- **Administrators:** in Auto mode, idle administrators are assigned where they help most. With the recommended settings it also hires one when a colony has none (**Administrator hiring**).
+- **Colony items and AI cores:** dock at any of your colonies, open the **Autopilot Storage** tab, and deposit them there. The manager uses only items in that storage, and only for colonies in Auto mode; it never takes from your cargo or normal storage. AI cores are used with the recommended settings (**Use AI cores**). Each core goes where it adds most for the colony's goal: an Alpha where its +1 output (or a structure's bonus) is worth most, a Beta where upkeep is highest, a Gamma only where an input is short. A better core replaces a lesser one, which goes back to storage. **Inspection risk** decides how many inspection points a colony may hold: 7 or less (the Hegemony ignores those), more where its defenses beat the next inspection (**More where defended**, recommended), or **No limit**. A colony over its limit sends cores back to storage one a day, and a colony an inspection is coming for is left as it is. Autopilot Storage lists each colony's points and limit.
+- **Administrators:** in Auto mode, an administrator is hired, placed or moved only where they add more than they cost: their +1 output (worth most at a big, productive colony) and the stability from your colony limit, against their salary (2,500 or 20,000 a month) and the hiring cost. The colony panel's Overview shows what its administrator costs and adds. Hiring is **Administrator hiring**, on in the recommended settings.
 
 ### Keeping control
 
@@ -107,9 +108,18 @@ Off until setup runs; the recommended settings turn on **Defense**. Change it in
 - **Defense:** an agent is hired (12,000) when there's work for one. It handles rebellions, Pather cells and hidden pirate bases. It also raises relations with factions that run operations against your colonies while not at war with you.
 - **Offense:** adds a Saboteur that sabotages the military of factions already at war with you, starting with whoever is invading or raiding you.
 - Costs come out of the monthly budget; Nexerelin pays salaries.
-- **Your own agents:** the empire panel's **Agents** page lists every agent you have, with its type (Negotiator, Saboteur or Hybrid). Yours get no orders until you click **Let Autopilot use it**; **Take it back** returns one. While one of yours sits idle, Autopilot doesn't hire another and says so in the log.
+- **Your own agents:** the **Agents** section of the empire panel's **Mod features** page lists every agent you have, with its type (Negotiator, Saboteur or Hybrid). Yours get no orders until you click **Let Autopilot use it**; **Take it back** returns one. While one of yours sits idle, Autopilot doesn't hire another and says so in the log.
 - **Types:** each agent only gets what its type can do. Negotiators and Hybrids raise relations, Saboteurs sabotage industry, and any type handles rebellions, Pather cells and pirate bases.
-- The Agents page also lists the enemy operations running against your colonies, which the game doesn't show anywhere else.
+- The Agents section also lists the enemy operations running against your colonies, which the game doesn't show anywhere else.
+
+## Emergency autonomy (Nexerelin)
+
+Off until setup runs; the recommended settings turn on **Auto**. Change it in the empire panel's **Settings**, under **Emergency autonomy (Nexerelin)**: **Off**, **Recommend** or **Auto**.
+
+- **An emergency** is net income below zero with under 3 months of it left above the credit reserve, or more colonies governed by you than your limit with one of them below stability 5.
+- **What it does:** the colony whose autonomy saves the most is made autonomous, as with Nexerelin's **Grant autonomy**. You get 25% of its profit or loss, and it no longer counts against your colony limit. Recommend only logs it.
+- **Taking it back:** once the emergency is over and net income stays positive with the colony, it's taken back. Nexerelin adds 2 unrest for that.
+- The Mod features page shows the emergency and the best choice with **Grant autonomy**, and each colony Autopilot made autonomous with **Take it back now**. Colonies you made autonomous yourself are left alone.
 
 ## When something looks wrong
 
