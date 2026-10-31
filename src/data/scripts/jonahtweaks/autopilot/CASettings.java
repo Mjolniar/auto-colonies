@@ -65,6 +65,11 @@ public class CASettings {
     public int hypershuntMode = 0;
     // Ashes of the Domain research: 0 Advisor (default), 1 Auto, 2 Off (names as CONTRACT_NAMES)
     public int researchMode = 0;
+    // Nexerelin agents (CASpies): 0 off (default), 1 defense, 2 defense and offense; hiring on unless spyNoHiring; agents to keep, 0 = auto
+    public int spyMode = 0;
+    public boolean spyNoHiring = false;
+    public int spyKeep = 0;
+    public static final String[] SPY_NAMES = {"Off", "Defense", "Defense and offense"};
 
     // this month
     public int month = -1;

@@ -83,7 +83,7 @@ public class CASetupUI {
     }
 
     /** Opens every group (the first-time setup popup shows all options). */
-    public static void openAll() { open.addAll(java.util.Arrays.asList("budget", "build", "items", "people", "policy", "industry", "settle", "augments", "aotd")); }
+    public static void openAll() { open.addAll(java.util.Arrays.asList("budget", "build", "items", "people", "policy", "spies", "industry", "settle", "augments", "aotd")); }
 
     public static void render(TooltipMakerAPI t, CASettings s, float width) {
         String budget = s.budgetPercentMode ? Math.round(s.budgetPercent * 100f) + "% of net income (" + Misc.getDGSCredits(CABudget.limit(s)) + " now)"
@@ -143,6 +143,18 @@ public class CASetupUI {
             row(t, "Free port", CASettings.POLICY_NAMES[Math.max(0, Math.min(1, s.freePortMode))], "Auto", "freeport", true);
             row(t, "Senate edicts", s.disableEdicts ? "Off" : "Enact", "Enact", "edicts", true);
             row(t, "Emergency defense fleets (Nexerelin)", s.disableDefenseFleets ? "Off" : "Send when threatened", "Send when threatened", "defense", true);
+        }
+        if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("nexerelin")
+                && group(t, "spies", "Agents (Nexerelin)", CASettings.SPY_NAMES[Math.max(0, Math.min(2, s.spyMode))].toLowerCase()
+                + (s.spyMode == 0 ? "" : ", hiring " + (s.spyNoHiring ? "off" : "on")))) {
+            row(t, "Agents", CASettings.SPY_NAMES[Math.max(0, Math.min(2, s.spyMode))], "Off", "spy", true);
+            if (s.spyMode != 0) {
+                row(t, "Hire agents", s.spyNoHiring ? "Off" : "On, 12,000 each", "On", "spyhire", true);
+                row(t, "Agents to keep", s.spyKeep == 0 ? "Auto (1, or 2 with offense)" : "" + s.spyKeep, "Auto", "spykeep", true);
+                t.addPara("Defense: counter-insurgency, Pather cells, pirate bases, and raising relations with factions running operations "
+                        + "against you. Offense only targets factions already at war with you. Costs come out of the monthly budget; "
+                        + "Nexerelin pays salaries. Only agents Autopilot hired are given orders.", Misc.getGrayColor(), 6f);
+            }
         }
         if (group(t, "industry", "Industry automation", "specialties " + (s.disableSpecialties ? "off" : "on") + ", VPC chips " + (s.disableVPC ? "off" : "on")
                 + ", shipping " + (s.disableShipping ? "off" : "on"))) {
@@ -249,6 +261,9 @@ public class CASetupUI {
         else if (k.equals("contract")) s.contractMode = (Math.max(0, Math.min(2, s.contractMode)) + 1) % 3;
         else if (k.equals("hs")) s.hypershuntMode = (Math.max(0, Math.min(2, s.hypershuntMode)) + 1) % 3;
         else if (k.equals("research")) s.researchMode = (Math.max(0, Math.min(2, s.researchMode)) + 1) % 3;
+        else if (k.equals("spy")) s.spyMode = (Math.max(0, Math.min(2, s.spyMode)) + 1) % 3;
+        else if (k.equals("spyhire")) s.spyNoHiring = !s.spyNoHiring;
+        else if (k.equals("spykeep")) s.spyKeep = (Math.max(0, Math.min(4, s.spyKeep)) + 1) % 5;
         else if (k.equals("settleinc")) s.settlementMinIncome = Math.max(5000f, s.settlementMinIncome + 5000f * dir);
         return true;
     }

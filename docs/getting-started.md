@@ -84,6 +84,15 @@ Each new colony starts as Balanced and Advisor. Set its goal and mode in its col
 
 A colony whose threat estimate reaches 70% (hostile neighbors, crises, raids, Pather cells) is planned as Security on its own. It goes back to its own goal below 65%, after at least 60 days.
 
+## Agents (Nexerelin)
+
+Off by default. To turn them on, open the empire panel's **Settings**, then **Agents (Nexerelin)**, and set **Agents** to **Defense** or **Defense and offense**.
+
+- **Defense:** an agent is hired (12,000) when there's work for one. It handles rebellions, Pather cells and hidden pirate bases. It also raises relations with factions that run operations against your colonies while not at war with you.
+- **Offense:** adds a Saboteur that sabotages the military of factions already at war with you, starting with whoever is invading or raiding you.
+- Costs come out of the monthly budget; Nexerelin pays salaries. Agents you hired yourself are never given orders.
+- The empire panel lists your agents and the enemy operations running against your colonies, which the game doesn't show anywhere else.
+
 ## When something looks wrong
 
 - The empire panel's **Log** says why things wait: budget, next month, locked by research, and so on.

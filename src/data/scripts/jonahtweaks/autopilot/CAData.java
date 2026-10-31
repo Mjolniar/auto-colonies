@@ -73,6 +73,9 @@ public class CAData {
     // Random Assortment of Things settlement proposal waiting for approval: kind "found" (planet id) or "facility" (facility id)
     public String settlePendingKind, settlePendingId, settlePendingName;
     public float settlePendingCost;
+    // Nexerelin agents Autopilot hired (person ids); only these are given orders
+    public Set<String> spyAgents;
+    public Set<String> spyAgents() { if (spyAgents == null) spyAgents = new HashSet<String>(); return spyAgents; }
 
     /** Keys of log messages already written once (waits, unavailable edicts), so a reload doesn't repeat them. */
     public Set<String> noted() {
