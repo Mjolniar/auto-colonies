@@ -1,8 +1,8 @@
 {
   "id": "jonah_tweaks",
-  "name": "Jonah Tweaks",
+  "name": "Jonah's Colony Manager",
   "author": "Mjolniar",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "Colony Autopilot (colony management automation), sticky combat autopilot, battle size 2000.",
   "gameVersion": "0.98a-RC8",
   "utility": false,

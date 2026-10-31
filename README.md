@@ -1,12 +1,12 @@
-# Jonah Tweaks: Colony Autopilot
+# Jonah's Colony Manager
 
 > [!WARNING]
 > **AI-generated.** Mod, docs and build checks written by AI coding agents. Compiled and checked offline (bytecode
 > verification against every combination of the optional mods); the newest features aren't tested in game yet. Expect
-> bugs. Report them as [issues](https://github.com/Mjolniar/starsector-colony-autopilot/issues) with
+> bugs. Report them as [issues](https://github.com/Mjolniar/jonahs-colony-manager/issues) with
 > `starsector-core/starsector.log` and `saves/common/colony_autopilot_diagnostics.json.data`.
 
-Colony management automation for Starsector 0.98a-RC8. Works alone or with any mix of the supported mods.
+Colony management automation (Colony Autopilot) for Starsector 0.98a-RC8. Works alone or with any mix of the supported mods.
 
 ## Features
 
@@ -39,7 +39,7 @@ All optional. Each loads only when its mod is enabled.
 ## Install
 
 1. Download and extract into `Starsector/mods/`.
-2. Enable **Jonah Tweaks** in the launcher. No required mods.
+2. Enable **Jonah's Colony Manager** in the launcher. No required mods. (Formerly Jonah Tweaks; same mod id, so existing saves keep working.)
 
 ## Use
 

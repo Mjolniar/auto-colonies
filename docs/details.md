@@ -1,11 +1,11 @@
-# Jonah Tweaks: Colony Autopilot
+# Jonah's Colony Manager
 
-Colony management automation for Starsector 0.98a, plus sticky combat autopilot. Battle size is fixed at 2000 (`data/config/settings.json`); no other balance changes.
+Colony management automation (Colony Autopilot) for Starsector 0.98a, plus sticky combat autopilot. Battle size is fixed at 2000 (`data/config/settings.json`); no other balance changes.
 
 ## Install
 
-1. Put the `Jonah Tweaks` folder in `Starsector/mods/`.
-2. Enable **Jonah Tweaks** in the launcher. No required dependencies. Optional integrations load only when their mod is enabled: Terraforming Made Easy, Industrial Evolution, Nexerelin, Emergent Threats, Ashes of the Domain (Building Menu Overhaul; Vaults of Knowledge research, synergies, management styles, megastructures and items; Theory of Toolbox trade contracts), Random Assortment of Things (Frontiers settlement), Station Augments. Any combination works; see "Building from source".
+1. Put the `Jonah's Colony Manager` folder in `Starsector/mods/`.
+2. Enable **Jonah's Colony Manager** in the launcher. Its mod id is still `jonah_tweaks`, so saves that used the old name keep working. No required dependencies. Optional integrations load only when their mod is enabled: Terraforming Made Easy, Industrial Evolution, Nexerelin, Emergent Threats, Ashes of the Domain (Building Menu Overhaul; Vaults of Knowledge research, synergies, management styles, megastructures and items; Theory of Toolbox trade contracts), Random Assortment of Things (Frontiers settlement), Station Augments. Any combination works; see "Building from source".
 3. Defaults for new saves are in `data/config/colony_autopilot.json`. Every option can also be changed in-game.
 4. Don't remove the mod from a save that has used it: Autopilot Storage is a market tab in your colonies.
 
