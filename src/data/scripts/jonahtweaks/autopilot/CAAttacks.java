@@ -8,8 +8,11 @@ import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import com.fs.starfarer.api.util.Misc;
 
 /**
- * Attacks on your colonies (settings group of the same name; both off unless you pick them, since they change the game's
- * difficulty rather than run your colonies):
+ * Attacks on your colonies, only in a Nexerelin Derelict Empire start ($nex_scenarioId in sector memory is
+ * derelict_empire or derelict_empire_v2; V2 runs V1's setup outside Corvus mode). That start hands every faction 0.8 of
+ * an invasion's points on day 0, and a blockade needs only 0.75, so blockades start within weeks while the colony
+ * is new. In any other game both settings are ignored and the game's own values stay. The recommended settings turn
+ * them on in that start. Settings group of the same name:
  * - Pirate and crisis fleets: the game keeps up to maxHostileActivityFleetsPerSystem (11) Hostile Activity fleets in a
  *   system with your colonies, more the bigger and less stable they are. This lowers that cap. The value is the game's
  *   settings value read live by DisposableHostileActivityFleetManager; the game's own value is kept and put back when
@@ -22,7 +25,18 @@ import com.fs.starfarer.api.util.Misc;
 public class CAAttacks {
     static final String HA_KEY = "maxHostileActivityFleetsPerSystem";
     static final String NEX_COOLDOWN = "$nex_recentlyTargetedMilitary";   // InvasionFleetManager.MEM_KEY_FACTION_TARGET_COOLDOWN
+    static final String SCENARIO = "$nex_scenarioId";   // ScenarioManager.MEMORY_KEY_SCENARIO
+    public static final int REC_CAP = 4, REC_GAP = 90;
     static Float haOwn, haSet;
+
+    /** This game is a Nexerelin Derelict Empire start. */
+    public static boolean forThisStart() {
+        try {
+            if (!Global.getSettings().getModManager().isModEnabled("nexerelin")) return false;
+            Object id = Global.getSector().getMemoryWithoutUpdate().get(SCENARIO);
+            return "derelict_empire".equals(id) || "derelict_empire_v2".equals(id);
+        } catch (Throwable t) { return false; }
+    }
 
     /** Daily and on load. */
     public static void apply(CASettings s) {
@@ -44,13 +58,13 @@ public class CAAttacks {
         SettingsAPI g = Global.getSettings();
         float cur = g.getFloat(HA_KEY);
         if (haSet == null || cur != haSet) haOwn = cur;   // not ours: the game's (or another mod's) value
-        float want = s.haFleetCap > 0 ? Math.min(haOwn, s.haFleetCap) : haOwn;
+        float want = s.haFleetCap > 0 && forThisStart() ? Math.min(haOwn, s.haFleetCap) : haOwn;
         if (cur != want) g.setFloat(HA_KEY, want);
         haSet = want;
     }
 
     static void nexGap(CASettings s) {
-        if (s.nexAttackGap <= 0 || !attackUnderWay()) return;
+        if (s.nexAttackGap <= 0 || !forThisStart() || !attackUnderWay()) return;
         MemoryAPI mem = Global.getSector().getPlayerFaction().getMemoryWithoutUpdate();
         float left = mem.contains(NEX_COOLDOWN) ? mem.getExpire(NEX_COOLDOWN) : 0f;
         if (left >= 0f && left < s.nexAttackGap) mem.set(NEX_COOLDOWN, true, s.nexAttackGap);   // never shortens Nexerelin's own

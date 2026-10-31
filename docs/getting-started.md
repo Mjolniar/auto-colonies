@@ -103,7 +103,7 @@ A colony whose threat estimate reaches 70% (hostile neighbors, crises, raids, Pa
 
 A colony under siege (blockaded, hostile fleets at the planet, hostiles in the system that outweigh its defenses, or a raid, invasion or blockade on its way) only gets defenses until it's over. Its items, AI cores, policies and station augments are left alone, and trade contracts don't count on its goods. The log says when a siege starts and ends.
 
-If attacks pile up, the settings group **Attacks on your colonies** can cap the pirate and crisis fleets in a system (the game allows 11) and, with Nexerelin, make its invasions, raids and blockades of your colonies come one at a time with a gap of 30 to 180 days. Both are off unless you pick them.
+In a Nexerelin **Derelict Empire** start, every faction has enough points for a blockade or raid on day 0. Only in that start, the settings group **Attacks on your colonies** caps the pirate and crisis fleets in a system (the game allows 11) and makes Nexerelin's invasions, raids and blockades of your colonies come one at a time with a gap of 30 to 180 days. The recommended settings turn both on there (at most 4, 90 days apart).
 
 ## Agents (Nexerelin)
 

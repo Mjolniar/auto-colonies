@@ -68,7 +68,8 @@ public class CASetupUI {
         s.spyKeep = 0;
         s.autonomyMode = 2;     // Auto: only in an emergency, and taken back once it's over
         s.noScreenButton = false;
-        // attacks on your colonies change the game's difficulty, so they're left as you set them
+        // attacks on your colonies: only a Derelict Empire start needs them (attacks from the first weeks)
+        if (CAAttacks.forThisStart()) { s.haFleetCap = CAAttacks.REC_CAP; s.nexAttackGap = CAAttacks.REC_GAP; }
     }
 
     /** Which group is expanded (UI state only, not saved); at most one. Budget starts open. */
@@ -243,21 +244,20 @@ public class CASetupUI {
             if (vok) row(t, "Research", CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.researchMode))], "Auto", "research", true);
             if (vok) row(t, "Megastructures (Hypershunt, Pluto, Nidavelir)", CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.hypershuntMode))], "Follow colony mode", "hs", true);
         }
-        boolean nex = com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("nexerelin");
-        if (group(t, "attacks", "Attacks on your colonies", "pirate and crisis fleets: " + CAAttacks.capName(s).toLowerCase()
-                + (nex ? ", Nexerelin attacks: " + CAAttacks.gapName(s).toLowerCase() : ""))) {
-            row(t, "Pirate and crisis fleets per system", CAAttacks.capName(s), "Game's own", "hacap", true);
+        if (CAAttacks.forThisStart() && group(t, "attacks", "Attacks on your colonies (Derelict Empire start)", "pirate and crisis fleets: "
+                + CAAttacks.capName(s).toLowerCase() + ", Nexerelin attacks: " + CAAttacks.gapName(s).toLowerCase())) {
+            t.addPara("Only in this start: Nexerelin's Derelict Empire gives every faction enough points for a blockade or raid on day 0, "
+                    + "so they come within weeks while your colony is new.", Misc.getGrayColor(), 6f);
+            row(t, "Pirate and crisis fleets per system", CAAttacks.capName(s), "At most " + CAAttacks.REC_CAP, "hacap", true);
             t.addPara("Hostile Activity keeps up to this many pirate, Pather and other crisis fleets in a system with your colonies; "
                     + "a big colony at low stability gets the most. Fewer means smaller swarms.", Misc.getGrayColor(), 6f);
-            if (nex) {
-                row(t, "Nexerelin invasions, raids and blockades", CAAttacks.gapName(s), "Game's own", "nexgap", true);
-                t.addPara("Nexerelin waits only 60 days between attacks on you, and a blockade lasts 120, so they can stack up. One at a "
-                        + "time stops a new invasion, raid or blockade of your colonies while one is on its way or under way, and for the "
-                        + "chosen days after it ends. Not in Nexerelin's hard mode, which ignores it."
-                        + (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("EmergentThreats_IX_Revival")
-                        ? " IX Revival's blockades come through Nexerelin, so this covers them; IX's own difficulty is in its LunaLib menu." : ""),
-                        Misc.getGrayColor(), 6f);
-            }
+            row(t, "Nexerelin invasions, raids and blockades", CAAttacks.gapName(s), "One at a time, " + CAAttacks.REC_GAP + " days apart", "nexgap", true);
+            t.addPara("Nexerelin waits only 60 days between attacks on you, and a blockade lasts 120, so they can stack up. One at a "
+                    + "time stops a new invasion, raid or blockade of your colonies while one is on its way or under way, and for the "
+                    + "chosen days after it ends. Not in Nexerelin's hard mode, which ignores it."
+                    + (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("EmergentThreats_IX_Revival")
+                    ? " IX Revival's blockades come through Nexerelin, so this covers them; IX's own difficulty is in its LunaLib menu." : ""),
+                    Misc.getGrayColor(), 6f);
         }
         if (group(t, "interface", "Interface", "colony screen button " + (s.noScreenButton ? "off" : "on"))) {
             row(t, "Button on the colony screen", s.noScreenButton ? "Off" : "On", "On", "screenbtn", true);
