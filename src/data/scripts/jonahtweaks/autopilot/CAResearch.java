@@ -279,7 +279,8 @@ public class CAResearch {
     static float upkeep(boolean waterOnly, float hazardCut) {
         float v = 0f;
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
-            if (waterOnly && (m.getPlanetEntity() == null || !m.getPlanetEntity().getTypeId().contains("water"))) continue;
+            // the game's own water-world list (Unknown Skies and others add their types to it)
+            if (waterOnly && (m.getPlanetEntity() == null || !com.fs.starfarer.api.impl.campaign.econ.impl.Farming.AQUA_PLANETS.contains(m.getPlanetEntity().getTypeId()))) continue;
             float u = 0f;
             for (Industry ind : m.getIndustries()) u += ind.getUpkeep().getModifiedValue();
             v += hazardCut > 0f ? u * hazardCut / Math.max(0.25f, m.getHazardValue()) : u;

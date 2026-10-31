@@ -123,6 +123,10 @@ public class CAAuto {
             try { CAResearch.run(d, s); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "research step failed", t); }
         }
+        if (CATasc.enabled()) {
+            try { CATasc.run(Misc.getPlayerMarkets(false)); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "TASC terraforming step failed", t); }
+        }
     }
 
     static void propose(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String why) {

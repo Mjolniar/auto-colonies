@@ -35,6 +35,14 @@ All optional. Each loads only when its mod is enabled.
 | Ashes of the Domain | Research choices, research locks, upgrade paths, starter buildings, industry synergies, management styles, trade contracts, megastructures (Coronal Hypershunt, Pluto, Nidavelir), AotD colony items |
 | Random Assortment of Things | Frontiers settlement: found and develop |
 | Station Augments | Best augment loadout per station, within its AP |
+| Terraforming & Station Construction | Terraforming projects, prerequisite buildings, building estimates |
+| Grand.Colonies | Cramped-upkeep cost on builds past the limit |
+| Substance.Abuse | Brewery built for recipes in storage |
+| Volkov Industrial Conglomerate | Viral contamination treatment, soil nanites |
+| Roider Union | Dives and Union HQ remote mining |
+| Planetary Shield: Access Control | Shield value, closed-port rule |
+| Unknown Skies, What We Left Behind, Astral Ascension | Mining bonuses, water worlds, growth limit |
+| Any mod | Deposit conditions and colony items through the game's own tables; 12-building screen limit |
 
 ## Install
 

@@ -38,7 +38,8 @@ public class CAItems {
     }
     /** Items this placer never installs: Ashes of the Domain blanks the Coronal Hypershunt Tap's buildings (it builds receivers),
      *  the AquaOrb has no effect so the game can't install it, and the Hyperdimensional Processor is for research. */
-    static final Set<String> NEVER = new HashSet<String>(Arrays.asList("coronal_portal", "aotd_aquaorb", "omega_processor"));
+    static final Set<String> NEVER = new HashSet<String>(Arrays.asList("coronal_portal", "aotd_aquaorb", "omega_processor",
+            "planetkiller", "jdp_lobster_eggs"));   // JaydeePiracy: a story item, and +1 lobster for +8 Pather interest
 
     /** True when Autopilot Storage holds an Industrial Evolution VPC chip. */
     public static boolean storageHasVPC() {
@@ -64,9 +65,25 @@ public class CAItems {
         return fee <= 0f || (fee <= CABudget.available(s) && CABuild.credits() >= fee);
     }
 
+    /**
+     * Value of an item with no entry above: any mod's item that registers an effect in the game's own item table (the
+     * same table the install menu checks). An output booster is worth what its extra output suggests next to the vanilla
+     * ones (Catalytic Core: +3 for 50); anything else gets a small value, so it's still used rather than left in storage.
+     */
+    static float modItemValue(String id) {
+        InstallableItemEffect e = ItemEffectsRepo.ITEM_EFFECTS.get(id);
+        if (e == null) return 0f;
+        if (e instanceof com.fs.starfarer.api.impl.campaign.econ.impl.BoostIndustryInstallableItemEffect) {
+            int up = ((com.fs.starfarer.api.impl.campaign.econ.impl.BoostIndustryInstallableItemEffect) e).getSupplyIncrease();
+            if (up > 0) return 15f * up + 5f;
+        }
+        return 20f;
+    }
+
     static float itemScore(String id, MarketAPI m, CAData.Profile p) {
         Float v = ITEM_VALUE.get(id);
-        if (v == null) return 0f;
+        if (v == null) v = modItemValue(id);
+        if (v <= 0f) return 0f;
         float mult = 1f;
         boolean war = p == CAData.Profile.WAR, sec = p == CAData.Profile.SECURITY, inc = p == CAData.Profile.INCOME;
         if (war && (id.endsWith("nanoforge") || id.equals("cryoarithmetic_engine"))) mult = 2f;
@@ -95,15 +112,18 @@ public class CAItems {
             SpecialItemSpecAPI spec = stack.getSpecialItemSpecIfSpecial();
             SpecialItemData data = stack.getSpecialDataIfSpecial();
             if (spec == null || data == null || NEVER.contains(spec.getId())) continue;
-            if (spec.getSourceMod() != null && !"aotd_vok".equals(spec.getSourceMod().getId())) continue;   // vanilla and AotD items only
-            InstallableItemEffect effect = ItemEffectsRepo.ITEM_EFFECTS.get(spec.getId());
+            if (CADiagnostics.itemLevel(spec.getId()) == CADiagnostics.Level.QUARANTINED) continue;   // its code failed before
+            InstallableItemEffect effect = ItemEffectsRepo.ITEM_EFFECTS.get(spec.getId());   // any mod's item, if it registers an effect
             String params = spec.getParams();
             if (effect == null || params == null) continue;
             Set<String> targets = new HashSet<String>();
             for (String p : params.split(",")) targets.add(p.trim());
+            int minSize = CABrewery.minSize(data);   // Substance.Abuse's Recipe Book makes nothing below its recipe count
+            if (minSize < 0) continue;
             Industry best = null; float bestScore = 0f; MarketAPI bestM = null;
             for (MarketAPI m : markets) {
-                if (CAHypershunt.is(m)) continue;   // no buildings allowed there, so an extra slot or output is wasted
+                if (CAHypershunt.is(m) || m.getSize() < minSize) continue;   // hypershunt: no buildings allowed, so an extra slot or output is wasted
+                if (!CAMods.itemFits(spec.getId(), m)) continue;   // VIC's nanites: vanilla farmland and genetech only
                 CAData.Colony c = d.colony(m.getId());
                 for (Industry ind : m.getIndustries()) {
                     if (!targets.contains(ind.getId()) || ind.getSpecialItem() != null || !ind.isFunctional() || ind.isHidden()) continue;
@@ -119,7 +139,9 @@ public class CAItems {
             float fee = CABudget.fee(s, STANDARD_MOVE_FEE);
             if (!canPay(s, fee)) return false;
             try {
-                best.setSpecialItem(new SpecialItemData(data.getId(), data.getData()));
+                // the stack's own object: some mods keep state in a SpecialItemData subclass (a copy of Substance.Abuse's
+                // Recipe Book loses its recipes and crashes the colony on every update)
+                best.setSpecialItem(data);
                 st.removeItems(CargoAPI.CargoItemType.SPECIAL, data, 1f);
                 bestM.reapplyIndustries();   // the item's effect otherwise waits for the next economy update
                 CABudget.charge(s, 0f, fee, 0f);

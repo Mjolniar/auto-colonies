@@ -5,7 +5,7 @@ Colony management automation (Colony Autopilot) for Starsector 0.98a, plus stick
 ## Install
 
 1. Put the `Jonah's Colony Manager` folder in `Starsector/mods/`.
-2. Enable **Jonah's Colony Manager** in the launcher. Its mod id is still `jonah_tweaks`, so saves that used the old name keep working. No required dependencies. Optional integrations load only when their mod is enabled: Terraforming Made Easy, Industrial Evolution, Nexerelin, Emergent Threats, Ashes of the Domain (Building Menu Overhaul; Vaults of Knowledge research, synergies, management styles, megastructures and items; Theory of Toolbox trade contracts), Random Assortment of Things (Frontiers settlement), Station Augments. Any combination works; see "Building from source".
+2. Enable **Jonah's Colony Manager** in the launcher. Its mod id is still `jonah_tweaks`, so saves that used the old name keep working. No required dependencies. Optional integrations load only when their mod is enabled: Terraforming Made Easy, Industrial Evolution, Nexerelin, Emergent Threats, Ashes of the Domain (Building Menu Overhaul; Vaults of Knowledge research, synergies, management styles, megastructures and items; Theory of Toolbox trade contracts), Random Assortment of Things (Frontiers settlement), Station Augments, Terraforming & Station Construction, Grand.Colonies, Substance.Abuse, Volkov Industrial Conglomerate, Roider Union, Planetary Shield: Access Control, Unknown Skies, What We Left Behind, Astral Ascension. Any combination works; see "Building from source".
 3. Defaults for new saves are in `data/config/colony_autopilot.json`. Every option can also be changed in-game.
 4. Don't remove the mod from a save that has used it: Autopilot Storage is a market tab in your colonies.
 
@@ -71,6 +71,27 @@ Colony management automation (Colony Autopilot) for Starsector 0.98a, plus stick
 - **Underworld (AotD):** it only works on a free port, so a colony with one keeps its free port, unless stability, a punitive expedition or high threat says otherwise.
 - **Theory of Toolbox's economy threads:** the daily pass waits while ToT's background workers are reading markets, or a save is under way, for at most a day.
 - **Left to you (AotD):** Bifrost gates (where to put them is a strategic call, and at default weights a gate rarely pays its 20,000 a month), Grand Wonders (one-off choices; Elysium deletes items and cores when it finishes), black-site projects and custom production (ships and items you pick), and changing a management style.
+- **Any mod (generic):**
+  - Deposit conditions a mod registers in the game's own deposit tables are scored like vanilla ones, for Mining, Farming and any other deposit industry.
+  - Any mod's colony item that registers an effect in the game's item table is placed from Autopilot Storage. It's moved as the exact stack object, since some mods keep state in it. Items without a known value are valued by the output they add.
+  - Never placed: the Coronal Hypershunt Tap and AquaOrb (AotD), the Hyperdimensional Processor, and JaydeePiracy's Planetkiller and Lobster Eggs (+1 lobster for +8 Pather interest).
+  - Without Grand.Colonies, nothing new is built past 12 buildings, because the colony screen can't show a 13th.
+  - Tech-Mining's value falls as its ruins deplete.
+- **Terraforming & Station Construction (Boggled):** terraforming projects cost only time (200 days, or 400 for a planet type change), so each one TASC offers is valued by the conditions it leaves (hazard, deposits, habitability, as for Terraforming Made Easy).
+  - Auto starts the best project when none is running; Approve logs it once; the colony panel lists the best four with Start. A running project is never cancelled.
+  - The Atmosphere Processor and Stellar Reflector Array are built when a worthwhile project waits only for them. The Reflector is also valued for its solar array; Autopilot never demolishes one, since that removes the array for good.
+  - Estimates for Domed Cities (hazards suppressed, ground defense x0.05), Genelab (pollution removal, lobster pens), CHAMELEON (decivilization removal), Mesozoic Park and the Kletka Simulator (AI cores).
+  - Plain output buildings (Hydroponics, Cloning, Cryosanctum, Domain Archaeology, Harmonic Damper) are measured like other mod buildings. The rest is never test-built on the probe colony, because some of it spawns entities, removes itself, or fails without a planet, so it's left to you.
+  - Station construction needs your fleet on site, so it's yours too. TASC's build checks are cached for a day, since with AotD on each one writes three log lines.
+- **Grand.Colonies:** past its threshold (default 12 buildings), each new building multiplies all of the colony's upkeep by 1.1 (its setting, read from LunaLib). That cost is added to each such build.
+- **Substance.Abuse:** a Brewery makes nothing without a recipe, so one is built only when Autopilot Storage holds a recipe, or a Recipe Book the colony is big enough for, and no Brewery stands idle. The item placer then installs the recipe.
+  - Drinks are valued at a quarter of base price, since few factions buy them. Other colonies' demand for drinks has no penalty, so it isn't counted as a shortage.
+- **Volkov Industrial Conglomerate:** viral contamination (from Nexerelin bombardments) shrinks a colony until it's lost. The anti-EVC treatment comes first: tier 1, then tier 2 to stop the shrinking, then tier 3 at +25 relations with VIC to cancel it. VIC's soil nanites go only where farmland is vanilla (other farmland crashes them) and genetech arrives.
+- **Planetary Shield: Access Control:** its shield is valued as +300 ground defense and -4 Pather interest. A colony with a working shield and Pather cells keeps its port closed, because the shield only works that way.
+- **Roider Union:** Dives and Union HQ mine deposits within 1 or 6 light-years (each system's void resource and the colony's own deposits), which a probe colony can't see.
+- **Unknown Skies and What We Left Behind:** Luminescent Clouds (+3 volatiles) and Fractured World (+5 ore and transplutonic ore) add straight to Mining. Water worlds are read from the game's own list, which these mods extend.
+- **Astral Ascension:** a colony without a planet crashes past size 10 with it, so hazard pay never pushes one there.
+- **Checked, nothing to add:** Better Colonies (its slot works through the game's slot count), Underworld, Supply Forging, LOST_SECTOR, Kon's Player Faction Bundles, Galactic Constellate, Tri-Tachyon Expansion, Luddic Enhancement, Knights of Ludd, Interstellar Imperium, Hillock, Hazard Mining (the probe covers its building), Hiver Swarm and Adversary (their attacks come through the colony crisis and expeditions the threat estimate already counts).
 - **Hidden buildings:** a building the game hides (megastructure defenses, the hypershunt's port) is never upgraded, improved or given an item or AI core, and isn't listed under Locks. A hidden station's augments are left to you.
 - **Mod buildings:** a building with no formula or estimate is measured: it's built on a throwaway probe colony (your colony's size and vanilla deposits, no planet or location) and the difference is read: commodities supplied and demanded, stability, accessibility, income and upkeep multipliers, ground defense, fleet size and patrols, ship quality. It's then scored like any other building. Upgrades measure both buildings on the same probe and score the difference.
   - Effects that only happen over time (monthly items, spawned fleets) aren't seen, so measured buildings score low rather than high.
@@ -111,6 +132,8 @@ jar cf jars/jonahtweaks.jar -C build data
 
 The author's build checks prove any combination works: jdeps shows only those classes reference each optional mod, every caller checks `isModEnabled`, and the jar links under `-Xverify:all` against all 32 combinations of the compiled-in optional mods. `CASynergies`, `CAContracts`, `CAHypershunt`, `CAMegastructures`, `CAResearch` and `CADevelopment` reach Vaults of Knowledge and Theory of Toolbox through reflection only, like `CAAotD`; if a name can't be found they're left out and the log says why. `JTAotDEconLinkCheck.java` checks those names; run it with `-XX:+UnlockDiagnosticVMOptions -XX:-BytecodeVerificationRemote` like the game's own launch flags, since some VoK classes refer to Sins of the Past classes that aren't installed. An offline check covers the augment choice (knapsack against brute force, swap margin, shrunk budget, incompatible pairs). `CAAotD` reaches Building Menu Overhaul through reflection only, so it needs no jar at compile time.
 
+The colony-mod integrations (`CATasc`, `CAGrand`, `CABrewery`, `CAMods`) use literal ids, reflection or method handles only, so no jar is needed. TASC is reached through `MethodHandles.findStatic`, because plain reflection on its `boggledTools` needs Illustrated Entities' classes. `JTColonyModsLinkCheck.java` checks those names against the TASC and LunaLib jars.
+
 ## Test steps
 
 1. Start or load a save with at least one colony. In `starsector.log`, check for the `[ColonyAutopilot] scan done` line and no `[ColonyAutopilot]` warnings.
@@ -131,3 +154,7 @@ The author's build checks prove any combination works: jdeps shows only those cl
 16. Management styles: a colony panel names the colony's style. On a Centralized or Distributed colony, a recommended Mining or Refining shows a "from Centralized Urban Core" (or Distributed) line changing its output.
 17. With a Pluto or Nidavelir colony: its panel has a Megastructure section with sections, current and best settings, and Apply. After Apply, VoK's megastructure screen shows the same laser, ore or manpower numbers. Change one there and advance a day: the log says Autopilot leaves it to you.
 18. `starsector.log` has no "can't read Vaults of Knowledge's research", "colony management styles" or "Pluto and Nidavelir" line.
+19. With Terraforming & Station Construction: a planet colony's panel has a Terraforming section with valued projects. In Auto, with nothing running, TASC's own terraforming screen shows a project started by Autopilot. A colony that only needs an Atmosphere Processor gets one recommended.
+20. Without Grand.Colonies, a colony with 12 buildings shows "The colony screen shows at most 12 buildings" and offers upgrades only. With it, the 13th build shows the extra upkeep line.
+21. Deposit a mod's colony item (for example a Substance.Abuse recipe) in Autopilot Storage. With a Brewery-less colony and a free slot, a Brewery is recommended; once built, the recipe is installed.
+22. `starsector.log` has no "can't read Terraforming & Station Construction" line, and diagnostics list TASC's self-removing buildings as "left to you".
