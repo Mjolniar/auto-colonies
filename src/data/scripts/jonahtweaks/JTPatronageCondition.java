@@ -4,25 +4,18 @@ import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.impl.campaign.econ.BaseMarketConditionPlugin;
 import com.fs.starfarer.api.impl.campaign.ids.Stats;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
-import com.fs.starfarer.api.util.Misc;
 
-/** Jonah's Colony Manager: boosts every player-owned colony. */
+/**
+ * Retired colony condition from Jonah Tweaks 1.x ("Expanded Infrastructure"). It has no effect now. It stays registered
+ * (data/campaign/market_conditions.csv) only so saves that still reference jt_patronage load, and JTCampaignScript
+ * removes it from every market it finds.
+ */
 public class JTPatronageCondition extends BaseMarketConditionPlugin {
     public static final String ID = "jt_patronage";
-    public static final float MULT = 2.5f;
-    public static final float STABILITY = 3f;
-    public static final float ACCESS = 0.3f;
-    public static final float HAZARD = -0.5f;
-    public static final float UPKEEP = 0.5f;
-    public static final float QUALITY = 0.25f;
-    public static final float SUPPLY_UNITS = 2f;
-    public static final float EXTRA_INDUSTRIES = 3f;
-    static final String DESC = "Expanded Infrastructure";
 
-    public void apply(String id) {
-        // Sector Patronage bonuses removed at the player's request; only the +3 industry limit remains.
-        // Retired: no effects. Kept only so saves that still reference jt_patronage load; JTCampaignScript removes it.
-    }
+    public void apply(String id) { }
+
+    /** Clears every modifier the old version could have applied, so removing it leaves the market exactly vanilla. */
     public void unapply(String id) {
         market.getIncomeMult().unmodify(id);
         market.getUpkeepMult().unmodify(id);

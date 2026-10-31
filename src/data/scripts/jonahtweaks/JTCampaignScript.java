@@ -4,7 +4,7 @@ import com.fs.starfarer.api.EveryFrameScript;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
-/** Jonah's Colony Manager: only cleans up the retired colony condition. All balance changes were removed. */
+/** Removes the retired jt_patronage condition (JTPatronageCondition) from any market that still has it, every 5 seconds. */
 public class JTCampaignScript implements EveryFrameScript {
     private float timer = 0f;
 
