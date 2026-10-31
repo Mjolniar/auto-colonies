@@ -9,7 +9,7 @@
 This is a mod I had Claude Code create for me due to always liking to have tons of colonies with lots of buildings, limits off, etc, but always getting way in over my head with management. 
 The goal of the mod is to let you simply flick the automatic switch on colonies and have them take care of themselves, so long as you have the cash to keep them improving. There's several modes to choose from, tons of options involving governors, buildings, how you want the colony to develop, and so on!
 
-By default, most of the settings will try to optimize your colonies to protect them and make them profitable, for a small convenience fee per building placed and action taken. I highly suggest editing all options to your taste, and they're editable on the fly from the colony threat tab in the intel screen.
+By default, most of the settings will try to optimize your colonies to protect them and make them profitable, for a small convenience fee per building placed and action taken. To have it add items to your colonies, there is a colony storage you can access at any of your owned colonies where you can put all colony augment items (nanoforge, ai cores, etc.) - this has extensive modded support as well. The manager will automatically pick an optimal planet goal according to what you settle to "optimize" the planet, but that can freely be changed according to what you want. I highly suggest editing all options to your taste, and they're editable on the fly from the colony threat tab in the intel screen.
 
 This mod is currently working with most of the colony mods I could find on the main star sector mod page, but if you would like one added to it's functionality please put it into the issues tab and I'll do it asap.
 
