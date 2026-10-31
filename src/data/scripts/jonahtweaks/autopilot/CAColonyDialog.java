@@ -10,6 +10,7 @@ import com.fs.starfarer.api.ui.Alignment;
 import com.fs.starfarer.api.ui.ButtonAPI;
 import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.CutStyle;
+import com.fs.starfarer.api.ui.LabelAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 
@@ -118,6 +119,12 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         dirty = true;
     }
 
+    static final String[] MODE_TEXT = {
+            "Off: Autopilot does nothing at this colony.",
+            "Advisor: recommends builds below; you click Build.",
+            "Approve: proposes one project at a time; you approve or reject it.",
+            "Auto: builds, places items and runs policies within your budget."};
+
     static ButtonAPI rowButton(TooltipMakerAPI t, ButtonAPI prev, String label, Object id, boolean on, float w) {
         Color hl = Misc.getHighlightColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         ButtonAPI b = t.addButton(label, id, on ? hl : base, dark, Alignment.MID, CutStyle.ALL, w, 24f, prev == null ? 8f : 0f);
@@ -153,28 +160,36 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         }
 
         t.addTitle("Colony Autopilot: " + market.getName());
-        t.addPara("Size %s, stability %s, hazard %s, accessibility %s, industries %s of %s. Credits: %s.", 6f, hl,
-                "" + market.getSize(), "" + (int) market.getStabilityValue(),
-                Math.round(market.getHazardValue() * 100f) + "%",
-                Math.round(market.getAccessibilityMod().computeEffective(0f) * 100f) + "%",
-                "" + Misc.getNumIndustries(market), "" + Misc.getMaxIndustries(market), Misc.getDGSCredits(CABuild.credits()));
-        if (c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO) {
-            t.addPara("Budget this month: %s spent of %s, %s available. Fees: %s.", 4f, hl, Misc.getDGSCredits(s.spent),
-                    Misc.getDGSCredits(CABudget.limit(s)), Misc.getDGSCredits(CABudget.available(s)), CASettings.FEE_NAMES[s.feeLevel]);
+        if (message != null) t.addPara(CALog.esc(message), hl, 4f);
+
+        boolean managed = c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO;
+        float threat = CAThreat.estimate(market);
+        boolean threatened = threat >= CAThreat.THRESHOLD || c.threatHigh;
+        CAData.Profile planWith = managed ? CAThreat.effective(market, c.profile) : c.profile;
+        float cell = (W - 30f) / 4f;
+        t.beginGrid(cell, 4);
+        t.addToGrid(0, 0, "Size", "" + market.getSize());
+        t.addToGrid(1, 0, "Stability", "" + (int) market.getStabilityValue(), market.getStabilityValue() < data.minStability ? Misc.getNegativeHighlightColor() : hl);
+        t.addToGrid(2, 0, "Hazard", Math.round(market.getHazardValue() * 100f) + "%");
+        t.addToGrid(3, 0, "Accessibility", Math.round(market.getAccessibilityMod().computeEffective(0f) * 100f) + "%");
+        t.addToGrid(0, 1, "Industries", Misc.getNumIndustries(market) + " of " + Misc.getMaxIndustries(market));
+        t.addToGrid(1, 1, "Net income", Misc.getDGSCredits(market.getNetIncome()), market.getNetIncome() < 0f ? Misc.getNegativeHighlightColor() : hl);
+        t.addToGrid(2, 1, "Threat", Math.round(threat * 100f) + "%", threatened ? Misc.getNegativeHighlightColor() : hl);
+        t.addToGrid(3, 1, "Credits", Misc.getDGSCredits(CABuild.credits()));
+        t.addGrid(8f);
+        if (managed) {
+            t.addPara("Budget this month: %s of %s spent, %s available (fees %s).", 6f, hl, Misc.getDGSCredits(s.spent),
+                    Misc.getDGSCredits(CABudget.limit(s)), Misc.getDGSCredits(CABudget.available(s)), CASettings.FEE_NAMES[s.feeLevel].toLowerCase());
             if (CABudget.paused(s)) t.addPara("Spending is paused: net income is negative.", Misc.getNegativeHighlightColor(), 4f);
         }
-        float threat = CAThreat.estimate(market);
-        CAData.Profile planWith = (c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO) ? CAThreat.effective(market, c.profile) : c.profile;
-        t.addPara("Threat estimate: %s" + (planWith != c.profile ? " (planning with Security until it drops below "
-                        + Math.round(CAThreat.CLEAR * 100f) + "%%, at least " + Math.round(CAThreat.MIN_DAYS) + " days)" : ""), 4f,
-                threat >= CAThreat.THRESHOLD || c.threatHigh ? Misc.getNegativeHighlightColor() : hl, Math.round(threat * 100f) + "%");
+        if (planWith != c.profile) t.addPara("Planning with Security until the threat drops below %s and has been high for %s days.", 4f,
+                Misc.getNegativeHighlightColor(), Math.round(CAThreat.CLEAR * 100f) + "%", "" + Math.round(CAThreat.MIN_DAYS));
         if (Global.getSettings().getModManager().isModEnabled(CADevelopment.MOD) && !CAHypershunt.is(market)) {
             try { CADevelopment.render(t, market); }
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "management style line failed at " + market.getName(), e); }
         }
         Industry imp = CAStory.bestImprovement(market, c);
-        if (imp != null) t.addPara("Best story point improvement: %s" + (s.storyPointRule == 0 ? " (you improve it; Story points is set to Player only)" : ""), 4f, hl, imp.getCurrentName());
-        if (message != null) t.addPara(CALog.esc(message), hl, 6f);
+        if (imp != null) t.addPara("Best story point improvement: %s" + (s.storyPointRule == 0 ? " (yours to do: story points are set to Player only)" : ""), 4f, hl, imp.getCurrentName());
 
         if (c.pendingId != null) {
             t.addSectionHeading("Waiting for your approval", Alignment.MID, 10f);
@@ -194,20 +209,22 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         prev = null; first = null;
         for (CAData.Mode mo : CAData.Mode.values()) { prev = rowButton(t, prev, mo.label, mo, mo == c.mode, 132f); if (first == null) first = prev; }
         CALog.endRow(t, first);
-        t.addPara("Advisor recommends and you click Build. Approve proposes one project at a time for one click. "
-                + "Auto builds within your budget.", gray, 6f);
+        t.addPara(MODE_TEXT[c.mode.ordinal()], gray, 6f);
         CABuildout.render(t, market, c);
 
         CAPlan.Plan plan = CAPlan.build(market, planWith);
         t.addSectionHeading("Plan: " + plan.name + " (" + plan.doneCount(market) + " of " + plan.steps.size() + " done)", Alignment.MID, 12f);
+        List<String> doneSteps = new java.util.ArrayList<String>();
         boolean nextShown = false;
         for (CAPlan.Step st : plan.steps) {
-            boolean done = st.done(market);
-            String tag = done ? "Done" : (!nextShown ? "Next" : "Planned");
-            if (!done && !nextShown) nextShown = true;
-            String lock = !done && st.kind == CAPlan.Kind.BUILD ? CAAotD.lockReason(st.id, market) : null;
-            t.addPara("%s  " + CALog.esc(st.label + (lock != null ? " (locked: " + lock + ")" : "")), 2f, done ? gray : (tag.equals("Next") ? hl : base), tag);
+            if (st.done(market)) { doneSteps.add(st.label); continue; }
+            String tag = !nextShown ? "Next" : "Planned";
+            nextShown = true;
+            String lock = st.kind == CAPlan.Kind.BUILD ? CAAotD.lockReason(st.id, market) : null;
+            t.addPara("%s  " + CALog.esc(st.label + (lock != null ? " (locked: " + lock + ")" : "")), 2f, tag.equals("Next") ? hl : base, tag);
         }
+        if (!nextShown) t.addPara("Every step is done.", hl, 4f);
+        if (!doneSteps.isEmpty()) t.addPara(CALog.esc("Done: " + String.join(", ", doneSteps)), gray, 4f);
 
         boolean shunt = CAHypershunt.is(market);
         if (shunt) {
@@ -228,13 +245,20 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             if (picks.isEmpty()) t.addPara("Nothing can be built here right now: every option is already built, blocked by the game, or has no free industry slot.", 8f);
             for (int i = 0; i < Math.min(3, picks.size()); i++) {
                 CAEngine.Pick p = picks.get(i);
-                t.addPara("%s. %s %s: estimated value %s, cost %s, %s days", 12f, hl, "" + (i + 1), p.verb, p.name,
-                        CAEngine.valueText(p.score), Misc.getDGSCredits(p.cost), "" + (int) p.days);
-                for (int j = 0; j < Math.min(5, p.lines.size()); j++) t.addPara("    " + CALog.esc(p.lines.get(j)), gray, 2f);
+                t.addPara("%s. %s %s: worth about %s, costs %s, %s days" + (p.upgrade ? " (runs alongside other construction)" : ""), 12f, hl,
+                        "" + (i + 1), p.verb, p.name, CAEngine.valueText(p.score), Misc.getDGSCredits(p.cost), "" + (int) p.days);
+                int shown = Math.min(3, p.lines.size());
+                for (int j = 0; j < shown; j++) t.addPara("    " + CALog.esc(p.lines.get(j)), gray, 2f);
+                if (p.lines.size() > shown) t.addPara("    and " + (p.lines.size() - shown) + " more effects", gray, 2f);
+                boolean waits = !p.upgrade && r.blocked != null, poor = CABuild.credits() < p.cost;
                 ButtonAPI b = t.addButton(p.verb + " (" + Misc.getDGSCredits(p.cost) + ")", p, base, dark,
                         Alignment.MID, CutStyle.ALL, 240f, 24f, 6f);
-                b.setEnabled((p.upgrade || r.blocked == null) && CABuild.credits() >= p.cost);
-                if (p.upgrade) t.addPara("    Runs alongside other construction", gray, 2f);
+                b.setEnabled(!waits && !poor);
+                if (waits || poor) {
+                    LabelAPI why = t.addPara(waits ? "Waits for the current construction" : "Not enough credits", gray, 0f);
+                    why.getPosition().rightOfMid(b, 10f);
+                    CALog.endRow(t, b);
+                }
             }
             if (r.noSlot > 0) t.addPara(r.noSlot + " more industries could be built if an industry slot were free.", gray, 10f);
             if (r.locked > 0) t.addPara(r.locked + " supported buildings are locked here until researched (Ashes of the Domain).", gray, 6f);
@@ -279,13 +303,19 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         }
 
         t.addSectionHeading("Locks", Alignment.MID, 12f);
-        t.addPara("A locked building is never upgraded, replaced or removed by Autopilot.", gray, 6f);
+        t.addPara("Click a building to lock it (highlighted): Autopilot never upgrades, replaces or removes a locked building.", gray, 6f);
+        ButtonAPI lockPrev = null, lockFirst = null;
+        int inRow = 0;
+        float lockW = (W - 40f) / 4f;
         for (Industry ind : market.getIndustries()) {
             if (ind.isHidden()) continue;   // never touched anyway
             boolean locked = c.locks.contains(ind.getId());
-            t.addPara("%s: %s", 6f, locked ? hl : gray, ind.getCurrentName(), locked ? "locked" : "unlocked");
-            t.addButton(locked ? "Unlock" : "Lock", "ca:lock:" + ind.getId(), base, dark, Alignment.MID, CutStyle.ALL, 100f, 20f, 2f);
+            if (inRow == 4) { CALog.endRow(t, lockFirst); lockPrev = null; lockFirst = null; inRow = 0; }
+            lockPrev = rowButton(t, lockPrev, (locked ? "Locked: " : "") + ind.getCurrentName(), "ca:lock:" + ind.getId(), locked, lockW);
+            if (lockFirst == null) lockFirst = lockPrev;
+            inRow++;
         }
+        if (lockFirst != null) CALog.endRow(t, lockFirst);
 
         List<String> odd = CADiagnostics.unsupportedConditions(market);
         if (!odd.isEmpty() && !shunt) t.addPara(CALog.esc("Unmapped conditions on this colony (scores may be off): " + odd), gray, 10f);

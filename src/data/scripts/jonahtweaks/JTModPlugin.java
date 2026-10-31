@@ -16,6 +16,7 @@ public class JTModPlugin extends BaseModPlugin {
             data.scripts.jonahtweaks.autopilot.CAAuto.reset();
             data.scripts.jonahtweaks.autopilot.CAItems.ensureStorageTabs();
             Global.getSector().addTransientScript(new data.scripts.jonahtweaks.autopilot.CAScript());
+            Global.getSector().addTransientScript(new data.scripts.jonahtweaks.autopilot.CAScreenButton());
         } catch (Throwable t) {
             Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] startup failed", t);
         }

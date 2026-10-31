@@ -70,6 +70,8 @@ public class CASettings {
     public boolean spyNoHiring = false;
     public int spyKeep = 0;
     public static final String[] SPY_NAMES = {"Off", "Defense", "Defense and offense"};
+    // the Colony Autopilot button on your colony's screen (CAScreenButton); on unless this is set
+    public boolean noScreenButton = false;
 
     // this month
     public int month = -1;

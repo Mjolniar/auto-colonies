@@ -83,7 +83,7 @@ public class CASetupUI {
     }
 
     /** Opens every group (the first-time setup popup shows all options). */
-    public static void openAll() { open.addAll(java.util.Arrays.asList("budget", "build", "items", "people", "policy", "spies", "industry", "settle", "augments", "aotd")); }
+    public static void openAll() { open.addAll(java.util.Arrays.asList("budget", "build", "items", "people", "policy", "spies", "industry", "settle", "augments", "aotd", "interface")); }
 
     public static void render(TooltipMakerAPI t, CASettings s, float width) {
         String budget = s.budgetPercentMode ? Math.round(s.budgetPercent * 100f) + "% of net income (" + Misc.getDGSCredits(CABudget.limit(s)) + " now)"
@@ -182,6 +182,10 @@ public class CASetupUI {
             if (vok) row(t, "Research", CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.researchMode))], "Advisor", "research", true);
             if (vok) row(t, "Megastructures (Hypershunt, Pluto, Nidavelir)", CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.hypershuntMode))], "Follow colony mode", "hs", true);
         }
+        if (group(t, "interface", "Interface", "colony screen button " + (s.noScreenButton ? "off" : "on"))) {
+            row(t, "Button on the colony screen", s.noScreenButton ? "Off" : "On", "On", "screenbtn", true);
+            t.addPara("Opens this panel from your colony's own screen. Right-clicking Population & Infrastructure works either way.", Misc.getGrayColor(), 6f);
+        }
         ButtonAPI rec = t.addButton("Use recommended settings", PREFIX + "recommend:x", Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
                 Alignment.MID, CutStyle.ALL, 260f, 24f, 14f);
     }
@@ -261,6 +265,7 @@ public class CASetupUI {
         else if (k.equals("contract")) s.contractMode = (Math.max(0, Math.min(2, s.contractMode)) + 1) % 3;
         else if (k.equals("hs")) s.hypershuntMode = (Math.max(0, Math.min(2, s.hypershuntMode)) + 1) % 3;
         else if (k.equals("research")) s.researchMode = (Math.max(0, Math.min(2, s.researchMode)) + 1) % 3;
+        else if (k.equals("screenbtn")) s.noScreenButton = !s.noScreenButton;
         else if (k.equals("spy")) s.spyMode = (Math.max(0, Math.min(2, s.spyMode)) + 1) % 3;
         else if (k.equals("spyhire")) s.spyNoHiring = !s.spyNoHiring;
         else if (k.equals("spykeep")) s.spyKeep = (Math.max(0, Math.min(4, s.spyKeep)) + 1) % 5;

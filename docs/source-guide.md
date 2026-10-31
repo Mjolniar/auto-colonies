@@ -2,7 +2,7 @@
 
 A tour of the code for anyone who wants to read it: how it's laid out, what happens each day in game, how a building gets its score, how the optional mod integrations stay optional, what goes in the save, and what every file does.
 
-All the code is Java 17, compiled against Starsector 0.98a-RC8's `starfarer.api.jar`. It's about 9,300 lines in 51 files. Every class opens with a comment saying what it does and why; this page links them together. For what the mod does as a player sees it, read [Getting started](getting-started.md), [What each supported mod adds](supported-mods.md) and [details.md](details.md).
+All the code is Java 17, compiled against Starsector 0.98a-RC8's `starfarer.api.jar`. It's about 9,600 lines in 52 files. Every class opens with a comment saying what it does and why; this page links them together. For what the mod does as a player sees it, read [Getting started](getting-started.md), [What each supported mod adds](supported-mods.md) and [details.md](details.md).
 
 > The code was written by AI coding agents (see the README's warning). It's compiled and checked offline (see [Building and checking](#building-and-checking)), and parts are confirmed in game, but not all of it.
 
@@ -182,7 +182,7 @@ No other mod is required, and any mix works. Three patterns make that true.
 - **On failure:** if a name can't be found, they fail closed. They do nothing, and the reason is logged once. `CAAotD` goes further: if it can't read Building Menu Overhaul's rules, nothing is built at all while BMO is enabled, since anything built might be locked.
 
 **Why `CARefl` exists.** Starsector loads mod code through its own class loader, which refuses any class that refers to `java.lang.reflect` (or file classes) with "File access and reflection are not allowed to scripts". Plain reflection therefore compiles and passes every desktop test, then fails in game. [CARefl](../src/data/scripts/jonahtweaks/autopilot/CARefl.java) gets the same results through `java.lang.invoke` method handles:
-- It holds `Method` and `Field` as plain `Object`s.
+- It holds `Method` and `Field` as plain `Object`s. `fieldValues` reads every field of a game object, private ones included, for objects whose field names are obfuscated; callers pick the value by type.
 - It loads the reflection classes by name from the boot class loader.
 - It uses a full-privilege `MethodHandles.lookup()`, because `getMethod`, `invoke`, `get` and `set` are caller-sensitive and `publicLookup()` refuses them.
 
@@ -293,7 +293,7 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
 
 | File | What it does |
 |---|---|
-| [CAOptionProvider](../src/data/scripts/jonahtweaks/autopilot/CAOptionProvider.java), [CAColonyDialog](../src/data/scripts/jonahtweaks/autopilot/CAColonyDialog.java), [CAIntel](../src/data/scripts/jonahtweaks/autopilot/CAIntel.java), [CASetupUI](../src/data/scripts/jonahtweaks/autopilot/CASetupUI.java), [CAStoragePlugin](../src/data/scripts/jonahtweaks/autopilot/CAStoragePlugin.java) | See [The panels](#the-panels) |
+| [CAOptionProvider](../src/data/scripts/jonahtweaks/autopilot/CAOptionProvider.java), [CAScreenButton](../src/data/scripts/jonahtweaks/autopilot/CAScreenButton.java), [CAColonyDialog](../src/data/scripts/jonahtweaks/autopilot/CAColonyDialog.java), [CAIntel](../src/data/scripts/jonahtweaks/autopilot/CAIntel.java), [CASetupUI](../src/data/scripts/jonahtweaks/autopilot/CASetupUI.java), [CAStoragePlugin](../src/data/scripts/jonahtweaks/autopilot/CAStoragePlugin.java) | See [The panels](#the-panels) |
 | [JTCampaignScript](../src/data/scripts/jonahtweaks/JTCampaignScript.java), [JTPatronageCondition](../src/data/scripts/jonahtweaks/JTPatronageCondition.java) | Remove the retired `jt_patronage` condition from old saves; it has no effect |
 
 ## Conventions
@@ -328,4 +328,4 @@ Before each release the author's build checks (local scripts, not in this repo) 
 4. **Loader check:** the jar is loaded through Starsector's own script class loader, every class's members are resolved, and `CARefl` is exercised.
 5. **Combination audit:** shows that only the expected classes reference each optional mod, and that every caller checks `isModEnabled`. It then links the jar against all 32 combinations of the compiled-against mods.
 6. **Name checks:** every reflected name is checked against the AotD, TASC and LunaLib jars.
-7. **Offline tests:** the augment knapsack against brute force, synergy effects, and management-style math.
+7. **Offline tests:** the augment knapsack against brute force, synergy effects, management-style math, and the colony screen button's placement (against fake screen layouts).

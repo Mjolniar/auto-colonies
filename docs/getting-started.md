@@ -16,7 +16,7 @@ Nothing is built automatically after install. Every colony starts in **Advisor**
 
 | Panel | How to open | What it's for |
 |---|---|---|
-| Colony panel | Colony screen, right-click **Population & Infrastructure**, then **Colony Autopilot...** | One colony: goal, mode, plan, recommended builds, approvals, locks |
+| Colony panel | The **Colony Autopilot** button on the colony screen, or right-click **Population & Infrastructure**, then **Colony Autopilot...** | One colony: goal, mode, plan, recommended builds, approvals, locks |
 | Empire panel | Intel screen, **Colonies** tab, then **Colony Autopilot** | Budget, approvals, every colony, Autopilot Storage, settings, log, diagnostics |
 
 ## Your first colony
@@ -84,7 +84,7 @@ The colony panel's budget line shows how much can be spent this month. **Spendin
 
 ## More colonies
 
-Each new colony starts as Balanced and Advisor. Set its goal and mode in its colony panel, or use **Next profile** and **Next mode** in the empire panel's **Colonies** list.
+Each new colony starts as Balanced and Advisor. Set its goal and mode in its colony panel, or use **Next goal** and **Next mode** in the empire panel's **Colonies** list.
 
 A colony whose threat estimate reaches 70% (hostile neighbors, crises, raids, Pather cells) is planned as Security on its own. It goes back to its own goal below 65%, after at least 60 days.
 
