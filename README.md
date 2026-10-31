@@ -9,6 +9,8 @@
 This is a mod I had Claude Code create for me due to always liking to have tons of colonies with lots of buildings, limits off, etc, but always getting way in over my head with management. 
 The goal of the mod is to let you simply flick the automatic switch on colonies and have them take care of themselves, so long as you have the cash to keep them improving. There's several modes to choose from, tons of options involving governors, buildings, how you want the colony to develop, and so on!
 
+By default, most of the settings will try to optimize your colonies to protect them and make them profitable, for a small convenience fee per building placed and action taken. I highly suggest editing all options to your taste, and they're editable on the fly from the colony threat tab in the intel screen.
+
 ## Features
 
 - **Modes per colony:** Off, Advisor, Approve, Auto. Auto builds within your budget.
