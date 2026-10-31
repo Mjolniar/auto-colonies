@@ -2,7 +2,7 @@
   "id": "jonah_tweaks",
   "name": "Jonah's Colony Manager",
   "author": "Mjolniar",
-  "version": "2.12.0",
+  "version": "2.13.0",
   "description": "Colony Autopilot: colony management automation. Balance changes and sticky combat autopilot are in Jonah's Easy Sector.",
   "gameVersion": "0.98a-RC8",
   "utility": false,

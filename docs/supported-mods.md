@@ -40,6 +40,7 @@ Back to [Getting started](getting-started.md). The full rules are in [details.md
 - **Emergency autonomy** (Auto in the recommended settings, off before setup; **Settings**, then **Emergency autonomy (Nexerelin)**): in a money emergency (net income below zero, under 3 months of it left above the credit reserve) or a colony-limit one (more colonies governed by you than your limit, one below stability 5), the colony whose autonomy saves the most is made autonomous the way Nexerelin's Grant autonomy does it. You get 25% of its profit or loss and it stops counting against your colony limit. It's taken back once the emergency is over and you can afford it; Nexerelin adds 2 unrest. Recommend only logs it; the Mod features page has **Grant autonomy** and **Take it back now**. Colonies you made autonomous yourself are left alone.
 - **Threat estimate.** Raids, invasions, rebellions and hostile neighbors raise a colony's threat; at 70% it's planned as Security.
 - **Sieges.** Nexerelin's blockades, raids and invasions headed for a colony put it under siege: only defenses are built there until they're over.
+- **Attacks one at a time** (optional setting). Nexerelin waits only 60 days between attacks on you while a blockade lasts 120, so they can overlap. This holds Nexerelin's own cooldown while one is on its way or under way, and for 30 to 180 days after. IX Revival's blockades come through Nexerelin, so they're covered too.
 
 ## Emergent Threats (IX Revival)
 
