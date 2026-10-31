@@ -12,7 +12,7 @@ Colony management automation (Colony Autopilot) for Starsector 0.98a. No balance
 ## Using it
 
 - **Colony panel:** the **Colony Autopilot** button on the colony screen, or right-click **Population & Infrastructure**, then **Colony Autopilot...** The button finds a free spot near the building grid and doesn't appear if there's none; setting **Button on the colony screen** turns it off.
-- **Empire panel:** Intel screen, **Colony threats** filter (the game's name for the colonies tag; also under **Important**), **Colony Autopilot**. Budget, approvals, every colony, storage, settings, log, diagnostics.
+- **Empire panel:** Intel screen, the **Colony Autopilot** filter (its own tag). Budget, approvals, every colony, storage, settings, log, diagnostics.
 - **Modes per colony:** Off, Advisor (default: recommends, you click Build), Approve (one-click proposals), Auto (builds within your budget).
 - **Goals:** Balanced, Money, Security, War production, Rapid growth, Self-sufficiency. Each colony gets a plan from its planet, hazards and resources. With Terraforming Made Easy, that includes a reachable special world (Forge, Fortress, Paradise, Hive, Death, Waste) resolved from TME's own requirements.
 - **Fast buildout:** after the first colony is founded, a popup offers to build it up fast: Auto, planned for Money, starting the fastest-paying builds (value per credit) daily with everything above a credit floor (100k, 250k, 500k or 1M; 50k-2M in the colony panel). The monthly budget, per-project cap, pause on loss and new-upkeep cap don't apply; fees, the stability floor, locks and the measured-building approval do. It ends after 30 days in a row of positive colony net income, leaving the colony in Auto with its own goal. The colony panel can stop it, change the floor, or start one for any colony that loses money.
@@ -164,7 +164,7 @@ The colony-mod integrations (`CATasc`, `CAGrand`, `CABrewery`, `CAMods`) use lit
 2. Open the colony panel. Check that the profile, mode, plan and top 3 picks render, and that clicking a setting keeps the scroll position.
 3. Switch one colony to **Auto**. The setup popup should open with all groups expanded and a station line item. Save it.
 4. Deposit a colony item in **Autopilot Storage**, then advance time a few days. The log should show it being installed, and the budget should count the fee.
-5. Open Intel, Colony threats, Colony Autopilot. Check the budget numbers, the log entries and the Diagnostics list.
+5. Open Intel, the Colony Autopilot filter. Check the budget numbers, the log entries and the Diagnostics list.
 6. Optional: with Terraforming Made Easy, build a terraforming structure at an Auto colony, then check that a plan step starts on it within a few days.
 7. Save and reload. The log should not repeat "threat is high", "waits for next month" or "Edict ... unavailable" lines from before the reload.
 8. With Ashes of the Domain: open a colony's panel. Recommended builds should include its starter buildings (e.g. Smelting), never a building its build menu locks; locked plan steps show "(locked: ...)". After a starter finishes, the next pick should be its upgrade (e.g. Upgrade to Refining) once researched. `starsector.log` should have no "can't read Building Menu Overhaul's build rules" line.

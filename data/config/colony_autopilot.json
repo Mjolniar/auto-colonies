@@ -1,5 +1,5 @@
 # Colony Autopilot defaults (Jonah's Colony Manager). Read once, when a save first creates its Colony Autopilot settings.
-# Everything here can be changed in-game: Intel screen > Colony threats > Colony Autopilot > Settings.
+# Everything here can be changed in-game: Intel screen > Colony Autopilot filter > Settings.
 # The first switch of a colony to Approve or Auto opens setup, pre-filled with recommendations scaled to your income and
 # credits (the values below where they match). Agents, research, contracts and the settlement stay off until then.
 {
