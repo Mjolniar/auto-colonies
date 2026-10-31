@@ -83,8 +83,8 @@ public class CASettings {
     public static final String[] AUTONOMY_NAMES = {"Off", "Recommend", "Auto"};
     // the Colony Autopilot button on your colony's screen (CAScreenButton); on unless this is set
     public boolean noScreenButton = false;
-    // attacks on your colonies (CAAttacks), never in the recommended settings: Hostile Activity fleets per system (0 = the
-    // game's own) and, with Nexerelin, days between its invasions, raids and blockades of yours (0 = the game's own)
+    // attacks on your colonies (CAAttacks), only used in a Nexerelin Derelict Empire start: Hostile Activity fleets per
+    // system (0 = the game's own) and days between Nexerelin's invasions, raids and blockades of yours (0 = the game's own)
     public int haFleetCap = 0, nexAttackGap = 0;
     public static final int[] HA_CAPS = {0, 8, 6, 4, 2};
     public static final int[] NEX_GAPS = {0, 30, 60, 90, 180};
