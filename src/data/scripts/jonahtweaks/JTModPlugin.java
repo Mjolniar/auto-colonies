@@ -10,6 +10,7 @@ public class JTModPlugin extends BaseModPlugin {
         Global.getSector().addTransientScript(new JTCampaignScript());
         try {
             data.scripts.jonahtweaks.autopilot.CAData.get();
+            data.scripts.jonahtweaks.autopilot.CACalibrate.migrate();
             data.scripts.jonahtweaks.autopilot.CADiagnostics.runScan();
             data.scripts.jonahtweaks.autopilot.CAOptionProvider.register();
             data.scripts.jonahtweaks.autopilot.CAIntel.ensure();

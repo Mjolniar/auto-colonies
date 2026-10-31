@@ -310,7 +310,7 @@ public class CASpies {
             return;
         }
         MarketAPI home = null;
-        for (MarketAPI m : Misc.getPlayerMarkets(false)) if (home == null || m.getSize() > home.getSize()) home = m;
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) if (!CAEngine.isOutpost(m) && (home == null || m.getSize() > home.getSize())) home = m;
         if (home == null) return;
         AgentIntel.Specialization spec = s.spyMode == 2 && has(mine, AgentIntel.Specialization.HYBRID) && !has(mine, AgentIntel.Specialization.SABOTEUR)
                 ? AgentIntel.Specialization.SABOTEUR : AgentIntel.Specialization.HYBRID;

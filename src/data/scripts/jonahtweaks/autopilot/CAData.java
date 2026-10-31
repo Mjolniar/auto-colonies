@@ -59,6 +59,7 @@ public class CAData {
     // calibration against your colonies (CACalibrate): building id -> smoothed actual/predicted ratio, and readings taken
     public Map<String, Float> calOut, calUp;
     public Map<String, Integer> calOutN, calUpN;
+    public int calVersion;   // 1: upkeep corrections measured against the fixed prediction (CACalibrate.migrate)
     public Map<String, Float> calOut() { if (calOut == null) calOut = new HashMap<String, Float>(); return calOut; }
     public Map<String, Float> calUp() { if (calUp == null) calUp = new HashMap<String, Float>(); return calUp; }
     public Map<String, Integer> calOutN() { if (calOutN == null) calOutN = new HashMap<String, Integer>(); return calOutN; }

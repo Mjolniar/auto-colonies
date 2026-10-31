@@ -47,6 +47,7 @@ public class CAAuto {
             // upgrades run alongside new construction, so take the best of each
             CAEngine.Pick bestUp = null, bestNew = null;
             for (CAEngine.Pick q : r.picks) {
+                if (!CAEngine.worthwhile(q)) continue;   // never the least-bad option: only what pays for itself
                 if (q.upgrade && bestUp == null) bestUp = q;
                 if (!q.upgrade && bestNew == null && !building) bestNew = q;
             }

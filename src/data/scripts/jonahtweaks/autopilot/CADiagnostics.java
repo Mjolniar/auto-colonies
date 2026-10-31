@@ -132,7 +132,7 @@ public class CADiagnostics {
         StringBuilder sb = new StringBuilder();
         try {
             sb.append("cost ").append(Misc.getDGSCredits(spec.getCost())).append(", ")
-              .append((int) spec.getBuildTime()).append(" days, upkeep x").append(spec.getUpkeep())
+              .append((int) spec.getBuildTime()).append(" days, base upkeep ").append(Misc.getDGSCredits(spec.getUpkeep())).append(" (times size - 2)")
               .append(", tags ").append(spec.getTags());
             if (probe != null) {
                 Industry ind = spec.getNewPluginInstance(probe);

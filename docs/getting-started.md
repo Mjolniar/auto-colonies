@@ -36,7 +36,7 @@ Nothing is built automatically after install. Every colony starts in **Advisor**
 
    For a first colony, Money or Balanced is usually right. Use Security for a colony next to pirates or a hostile faction.
 4. **Read the plan.** **Plan: ...** is the target layout for this planet and goal. Each step is marked Done, Next or Planned, and a step that's still locked shows what it needs.
-5. **Build by hand at first.** In Advisor mode, **Recommended builds** lists the best options with their estimated effects. The button shows the price; click it to build.
+5. **Build by hand at first.** In Advisor mode, **Recommended builds** lists the best options. Each shows the money it makes or costs a month after upkeep, and a **Ranked** line: its money and other effects (stability, accessibility and so on, weighted for your goal), plus a bonus if it's the next plan step, minus its build cost spread over 3 years. Options that don't pay for themselves are marked, and Approve and Auto never start them. The button shows the price; click it to build.
 6. **Hand it over when you trust it.** Under **Mode**:
    - **Approve:** one proposal at a time, shown under **Waiting for your approval** in both panels. Click Approve or Reject.
    - **Auto:** builds by itself, within your budget.

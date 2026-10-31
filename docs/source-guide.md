@@ -91,7 +91,7 @@ Nothing in the pass spends below the credit reserve. Emergency defense fleets ar
 
 `CAEngine.evaluate` builds a list of `Pick`s, one for each building the colony could start now and each upgrade of a building it has.
 
-**Candidates.** Every industry spec in the game is considered. These are skipped:
+**Outposts first.** A Nexerelin player outpost (`CAEngine.isOutpost`: Nexerelin's `$nex_playerOutpost` market flag or entity tag) is in an economy of its own, so `evaluate` returns nothing for it, and the item placer, fast buildout, calibration and shortages skip it. These are skipped:
 - the colony already has it, or something upgraded from it (`CAPlan.hasOrBetter`);
 - population, hidden or menu-less buildings;
 - upgrade-only targets;
@@ -120,14 +120,14 @@ Nothing in the pass spends below the credit reserve. Emergency defense fleets ar
 
 Positive value is scaled by confidence, so an uncertain gain has to beat a known one by a margin.
 
-**Upkeep.** `CAEngine.upkeep` predicts the building's upkeep (`baseUpkeep`), times the calibration factor from `CACalibrate`.
+**Upkeep.** `CAEngine.upkeep` predicts the building's upkeep the way the game's `BaseIndustry.applyIncomeAndUpkeep` does: the spec's upkeep (already in credits, since the game multiplies the CSV value by 500 when it loads), times max(1, size - 2), times the colony's upkeep multiplier. That's then multiplied by the calibration factor from `CACalibrate`. (Before 2.8.0 it multiplied by 500 a second time; `CACalibrate.migrate` clears the corrections older saves learned from that.)
 
 **Weights.** `CAEngine.finish` combines `fx` with the goal's weights (the `WEIGHTS` table, one row per goal: Balanced, Money, Security, War production, Rapid growth, Self-sufficiency). It then applies:
 - the stability floor;
 - a pollution penalty (smaller for War production);
-- the plan bonus from `CAPlan.bonusFor`.
+- the plan bonus from `CAPlan.bonusFor`, only for picks worth something on their own, so the plan orders good buildings but never makes a money-losing one look good;
 
-A pick that breaks a rule or isn't worth building is dropped.
+A pick that breaks a rule (such as the stability floor) is dropped; everything else is ranked and shown, worthwhile or not.
 
 **The result.** `Result` holds:
 - the sorted picks;
