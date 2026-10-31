@@ -21,6 +21,8 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     public static final float W = 860f, H = 620f;
     static final String APPROVE = "ca:approve", REJECT = "ca:reject", SAVE_SETUP = "ca:savesetup", BACK = "ca:back";
     static final String AUG_APPLY = "ca:aug:apply", AUG_UNSKIP = "ca:aug:unskip";
+    static final String HS = "ca:hs:";   // Coronal Hypershunt actions: ca:hs:<action>:<arg>
+    static final String MEGA = "ca:mega:";   // Pluto / Nidavelir actions: ca:mega:<action>:<arg>
     final MarketAPI market;
     CustomPanelAPI root, content;
     String message = null;
@@ -82,6 +84,18 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment action failed at " + market.getName(), e);
                 message = "That failed; see starsector.log";
             }
+        }
+        else if (id instanceof String && ((String) id).startsWith(HS)) {
+            String[] a = ((String) id).substring(HS.length()).split(":", 2);
+            try { message = CAHypershunt.handle(market, a[0], a.length > 1 ? a[1] : ""); }
+            catch (Throwable e) {
+                CADiagnostics.LOG.warn(CADiagnostics.TAG + "hypershunt action failed at " + market.getName(), e);
+                message = "That failed; see starsector.log";
+            }
+        }
+        else if (id instanceof String && ((String) id).startsWith(MEGA)) {
+            String[] a = ((String) id).substring(MEGA.length()).split(":", 2);
+            message = CAMegastructures.handle(market, a[0], a.length > 1 ? a[1] : "");
         }
         else if (id instanceof String && ((String) id).startsWith("ca:lock:")) {
             String ind = ((String) id).substring("ca:lock:".length());
@@ -146,6 +160,10 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         t.addPara("Threat estimate: %s" + (planWith != c.profile ? " (planning with Security until it drops below "
                         + Math.round(CAThreat.CLEAR * 100f) + "%%, at least " + Math.round(CAThreat.MIN_DAYS) + " days)" : ""), 4f,
                 threat >= CAThreat.THRESHOLD || c.threatHigh ? Misc.getNegativeHighlightColor() : hl, Math.round(threat * 100f) + "%");
+        if (Global.getSettings().getModManager().isModEnabled(CADevelopment.MOD) && !CAHypershunt.is(market)) {
+            try { CADevelopment.render(t, market); }
+            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "management style line failed at " + market.getName(), e); }
+        }
         Industry imp = CAStory.bestImprovement(market, c);
         if (imp != null) t.addPara("Best story point improvement: %s" + (s.storyPointRule == 0 ? " (you improve it; Story points is set to Player only)" : ""), 4f, hl, imp.getCurrentName());
         if (message != null) t.addPara(CALog.esc(message), hl, 6f);
@@ -182,8 +200,17 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             t.addPara("%s  " + CALog.esc(st.label + (lock != null ? " (locked: " + lock + ")" : "")), 2f, done ? gray : (tag.equals("Next") ? hl : base), tag);
         }
 
-        t.addSectionHeading("Recommended builds", Alignment.MID, 12f);
-        if (c.mode == CAData.Mode.OFF) {
+        boolean shunt = CAHypershunt.is(market);
+        if (shunt) {
+            t.addSectionHeading("Coronal Hypershunt (Ashes of the Domain)", Alignment.MID, 12f);
+            try { CAHypershunt.renderColony(t, market, c, s); }
+            catch (Throwable e) {
+                CADiagnostics.LOG.warn(CADiagnostics.TAG + "hypershunt section failed at " + market.getName(), e);
+                t.addPara("Hypershunt info unavailable; see starsector.log.", gray, 6f);
+            }
+        } else t.addSectionHeading("Recommended builds", Alignment.MID, 12f);
+        if (shunt) { /* nothing can be built */ }
+        else if (c.mode == CAData.Mode.OFF) {
             t.addPara("Autopilot is off for this colony.", gray, 8f);
         } else {
             CAEngine.Result r = CAEngine.evaluate(market, planWith, data.minStability);
@@ -206,7 +233,16 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                     + " buildings from mods could be built here but aren't supported yet; see Diagnostics in the Intel screen.", gray, 6f);
         }
 
-        if (Global.getSettings().getModManager().isModEnabled(CAAugments.MOD) && s.augmentMode != 2 && c.mode != CAData.Mode.OFF) {
+        if (Global.getSettings().getModManager().isModEnabled(CAHypershunt.MOD) && CAMegastructures.has(market) && c.mode != CAData.Mode.OFF) {
+            t.addSectionHeading("Megastructure (Ashes of the Domain)", Alignment.MID, 12f);
+            try { CAMegastructures.renderColony(t, market, c, s); }
+            catch (Throwable e) {
+                CADiagnostics.LOG.warn(CADiagnostics.TAG + "megastructure section failed at " + market.getName(), e);
+                t.addPara("Megastructure info unavailable; see starsector.log.", gray, 6f);
+            }
+        }
+
+        if (Global.getSettings().getModManager().isModEnabled(CAAugments.MOD) && s.augmentMode != 2 && c.mode != CAData.Mode.OFF && !shunt) {
             t.addSectionHeading("Station augments", Alignment.MID, 12f);
             try { CAAugments.renderColony(t, market, c, s, planWith); }
             catch (Throwable e) {
@@ -215,7 +251,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             }
         }
 
-        if (Global.getSettings().getModManager().isModEnabled(CASynergies.MOD) && c.mode != CAData.Mode.OFF) {
+        if (Global.getSettings().getModManager().isModEnabled(CASynergies.MOD) && c.mode != CAData.Mode.OFF && !shunt) {
             t.addSectionHeading("Industry synergies (Ashes of the Domain)", Alignment.MID, 12f);
             try { CASynergies.render(t, market); }
             catch (Throwable e) {
@@ -227,13 +263,14 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         t.addSectionHeading("Locks", Alignment.MID, 12f);
         t.addPara("A locked building is never upgraded, replaced or removed by Autopilot.", gray, 6f);
         for (Industry ind : market.getIndustries()) {
+            if (ind.isHidden()) continue;   // never touched anyway
             boolean locked = c.locks.contains(ind.getId());
             t.addPara("%s: %s", 6f, locked ? hl : gray, ind.getCurrentName(), locked ? "locked" : "unlocked");
             t.addButton(locked ? "Unlock" : "Lock", "ca:lock:" + ind.getId(), base, dark, Alignment.MID, CutStyle.ALL, 100f, 20f, 2f);
         }
 
         List<String> odd = CADiagnostics.unsupportedConditions(market);
-        if (!odd.isEmpty()) t.addPara(CALog.esc("Unmapped conditions on this colony (scores may be off): " + odd), gray, 10f);
+        if (!odd.isEmpty() && !shunt) t.addPara(CALog.esc("Unmapped conditions on this colony (scores may be off): " + odd), gray, 10f);
 
         content.addUIElement(t).inTL(0f, 0f);
         root.addComponent(content).inTL(0f, 0f);

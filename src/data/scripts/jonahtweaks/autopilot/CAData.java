@@ -37,6 +37,15 @@ public class CAData {
         public long threatSince = 0L;
         // Station Augments: ids Autopilot installed here, and ids you removed that it won't add back
         public Set<String> augAuto, augSkip;
+        // Coronal Hypershunt (AotD): the range Autopilot last set, and whether you set it yourself since
+        public Integer hsRange;
+        public boolean hsManual;
+        // Pluto / Nidavelir (AotD): the settings Autopilot last set, whether you've changed them since, and when Nexus manpower last backed off
+        public Map<String, Integer> megaSet;
+        public boolean megaManual;
+        public long megaHold;
+
+        public Map<String, Integer> megaSet() { if (megaSet == null) megaSet = new HashMap<String, Integer>(); return megaSet; }
 
         public Set<String> augAuto() { if (augAuto == null) augAuto = new HashSet<String>(); return augAuto; }
         public Set<String> augSkip() { if (augSkip == null) augSkip = new HashSet<String>(); return augSkip; }

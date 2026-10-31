@@ -38,6 +38,7 @@ public class CAPolicies {
         float hpTotal = 0f;
         for (MarketAPI m : auto) if (m.isImmigrationIncentivesOn()) hpTotal += m.getImmigrationIncentivesCost();
         for (MarketAPI m : auto) {
+            if (CAHypershunt.is(m)) continue;   // fixed at size 2 with no market to open, so neither policy helps
             CAData.Colony c = d.colony(m.getId());
             boolean threat = CAThreat.isHigh(m);
             CAData.Profile prof = threat ? CAData.Profile.SECURITY : c.profile;
@@ -68,7 +69,8 @@ public class CAPolicies {
             if (s.freePortMode == 0) {
                 boolean on = m.isFreePort();
                 boolean luddic = m.hasCondition("luddic_majority");
-                boolean profileFits = prof == CAData.Profile.INCOME || prof == CAData.Profile.GROWTH || prof == CAData.Profile.BALANCED || prof == CAData.Profile.SELF;
+                // AotD's Underworld only works on a free port (it still costs upkeep without one), so it keeps the port open
+                boolean profileFits = m.hasIndustry("aotd_underworld") || prof == CAData.Profile.INCOME || prof == CAData.Profile.GROWTH || prof == CAData.Profile.BALANCED || prof == CAData.Profile.SELF;
                 float margin = on ? 0f : 3f;   // free port costs up to 3 stability
                 boolean stableEnough = stab - margin >= d.minStability + 1f;
                 boolean want = profileFits && stableEnough && !luddic && !threat && !punitive && !emergency;

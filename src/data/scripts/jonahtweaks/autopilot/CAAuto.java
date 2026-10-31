@@ -111,6 +111,18 @@ public class CAAuto {
             try { CAContracts.run(d, s); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "trade contract step failed", t); }
         }
+        if (Global.getSettings().getModManager().isModEnabled(CAHypershunt.MOD)) {
+            try { CAHypershunt.run(d, s); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "hypershunt step failed", t); }
+            try { CAMegastructures.run(d, s); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "megastructure step failed", t); }
+            List<MarketAPI> managed = new ArrayList<MarketAPI>();
+            for (MarketAPI m : Misc.getPlayerMarkets(false)) if (d.colony(m.getId()).mode != CAData.Mode.OFF) managed.add(m);
+            try { CADevelopment.run(managed); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Floating City check failed", t); }
+            try { CAResearch.run(d, s); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "research step failed", t); }
+        }
     }
 
     static void propose(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String why) {

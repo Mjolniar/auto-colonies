@@ -29,7 +29,16 @@ public class CAItems {
         ITEM_VALUE.put("fullerene_spool", 40f); ITEM_VALUE.put("orbital_fusion_lamp", 30f);
         ITEM_VALUE.put("coronal_portal", 80f); ITEM_VALUE.put("cryoarithmetic_engine", 70f);
         ITEM_VALUE.put("drone_replicator", 40f); ITEM_VALUE.put("dealmaker_holosuite", 60f);
+        // Ashes of the Domain's Tenebrian items and Turing Engine (effects from VoK 5.0.7's code)
+        ITEM_VALUE.put("aotd_shrouded_nanoforge", 160f);       // +6 output, +80% quality, no pollution
+        ITEM_VALUE.put("aotd_shrouded_synchrotron", 120f);     // +6 fuel (+4 compound), no atmosphere needed
+        ITEM_VALUE.put("aotd_atmospheric_driver", 70f);        // +3 food, suppresses extreme weather
+        ITEM_VALUE.put("aotd_shrouded_catalytic_core", 50f);   // +3 metals, no atmosphere needed
+        ITEM_VALUE.put("turing_engine", 110f);                 // +6 advanced components
     }
+    /** Items this placer never installs: Ashes of the Domain blanks the Coronal Hypershunt Tap's buildings (it builds receivers),
+     *  the AquaOrb has no effect so the game can't install it, and the Hyperdimensional Processor is for research. */
+    static final Set<String> NEVER = new HashSet<String>(Arrays.asList("coronal_portal", "aotd_aquaorb", "omega_processor"));
 
     /** True when Autopilot Storage holds an Industrial Evolution VPC chip. */
     public static boolean storageHasVPC() {
@@ -85,7 +94,8 @@ public class CAItems {
             if (!stack.isSpecialStack() || stack.getSize() < 1f) continue;
             SpecialItemSpecAPI spec = stack.getSpecialItemSpecIfSpecial();
             SpecialItemData data = stack.getSpecialDataIfSpecial();
-            if (spec == null || data == null || spec.getSourceMod() != null) continue;   // vanilla items only for now
+            if (spec == null || data == null || NEVER.contains(spec.getId())) continue;
+            if (spec.getSourceMod() != null && !"aotd_vok".equals(spec.getSourceMod().getId())) continue;   // vanilla and AotD items only
             InstallableItemEffect effect = ItemEffectsRepo.ITEM_EFFECTS.get(spec.getId());
             String params = spec.getParams();
             if (effect == null || params == null) continue;
@@ -93,9 +103,10 @@ public class CAItems {
             for (String p : params.split(",")) targets.add(p.trim());
             Industry best = null; float bestScore = 0f; MarketAPI bestM = null;
             for (MarketAPI m : markets) {
+                if (CAHypershunt.is(m)) continue;   // no buildings allowed there, so an extra slot or output is wasted
                 CAData.Colony c = d.colony(m.getId());
                 for (Industry ind : m.getIndustries()) {
-                    if (!targets.contains(ind.getId()) || ind.getSpecialItem() != null || !ind.isFunctional()) continue;
+                    if (!targets.contains(ind.getId()) || ind.getSpecialItem() != null || !ind.isFunctional() || ind.isHidden()) continue;
                     if (c.locks.contains(ind.getId())) continue;
                     try {
                         if (!effect.getUnmetRequirements(ind).isEmpty()) continue;
@@ -110,6 +121,7 @@ public class CAItems {
             try {
                 best.setSpecialItem(new SpecialItemData(data.getId(), data.getData()));
                 st.removeItems(CargoAPI.CargoItemType.SPECIAL, data, 1f);
+                bestM.reapplyIndustries();   // the item's effect otherwise waits for the next economy update
                 CABudget.charge(s, 0f, fee, 0f);
                 CALog.add(bestM.getName() + ": installed " + spec.getName() + " in " + best.getCurrentName()
                         + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : ""), true);
@@ -258,7 +270,7 @@ public class CAItems {
                     public int compare(Industry a, Industry b) { return industryPriority(a) - industryPriority(b); }
                 });
                 for (Industry ind : inds) {
-                    if (ind.getAICoreId() != null || !ind.isFunctional() || c.locks.contains(ind.getId())) continue;
+                    if (ind.getAICoreId() != null || !ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId())) continue;
                     if (CADiagnostics.industryLevel(ind.getId()) != CADiagnostics.Level.SUPPORTED && !ind.getSpec().hasTag("population")) continue;
                     if (alpha && s.alphaMode == 0 && !alphaRemovable(ind)) continue;
                     float fee = CABudget.fee(s, STANDARD_MOVE_FEE);

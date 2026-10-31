@@ -87,6 +87,7 @@ public class CAPlan {
     static void n(Plan p, String id, String label) { p.steps.add(new Step(Kind.NOCOND, id, label)); }
 
     public static Plan build(MarketAPI m, CAData.Profile prof) {
+        if (CAHypershunt.is(m)) { Plan h = new Plan(); h.name = "Coronal Hypershunt"; return h; }   // nothing can be built there
         Plan wp = null;
         try { wp = CAWorldPlanner.plan(m, prof); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "world planner failed at " + m.getName(), t); }
         if (wp != null) {

@@ -14,7 +14,7 @@ public class CAStory {
         Industry best = null; int bestP = 99;
         for (Industry ind : m.getIndustries()) {
             try {
-                if (!ind.isFunctional() || ind.isImproved() || !ind.canImprove() || c.locks.contains(ind.getId())) continue;
+                if (ind.isHidden() || !ind.isFunctional() || ind.isImproved() || !ind.canImprove() || c.locks.contains(ind.getId())) continue;
                 int p = CAItems.industryPriority(ind);
                 if (p < bestP) { bestP = p; best = ind; }
             } catch (Throwable t) { CADiagnostics.quarantine(ind.getId(), "improvement check", t); }

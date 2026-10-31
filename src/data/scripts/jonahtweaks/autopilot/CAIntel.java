@@ -101,6 +101,7 @@ public class CAIntel extends BaseIntelPlugin {
             String top = "nothing buildable";
             try {
                 if (c.mode == CAData.Mode.OFF) top = "autopilot off";
+                else if (CAHypershunt.is(m)) top = CAHypershunt.summary(m);
                 else {
                     CAEngine.Result r = CAEngine.evaluate(m, c.profile, data.minStability);
                     if (!r.picks.isEmpty()) {
@@ -148,6 +149,22 @@ public class CAIntel extends BaseIntelPlugin {
         if (Global.getSettings().getModManager().isModEnabled(CAContracts.MOD) && s.contractMode != 2) {
             t.addSectionHeading("Trade contracts (Ashes of the Domain)", Alignment.MID, 16f);
             CAContracts.render(t, data, s);
+        }
+        if (Global.getSettings().getModManager().isModEnabled(CAResearch.MOD) && s.researchMode != 2) {
+            t.addSectionHeading("Research (Ashes of the Domain)", Alignment.MID, 16f);
+            CAResearch.render(t, data, s);
+        }
+        boolean anyShunt = false, anyMega = false;
+        for (MarketAPI m : markets) { if (CAHypershunt.is(m)) anyShunt = true; if (CAMegastructures.has(m)) anyMega = true; }
+        if (anyMega && Global.getSettings().getModManager().isModEnabled(CAHypershunt.MOD) && s.hypershuntMode != 2) {
+            t.addSectionHeading("Pluto and Nidavelir (Ashes of the Domain)", Alignment.MID, 16f);
+            try { CAMegastructures.renderEmpire(t, data, s); }
+            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "megastructure section failed", e); t.addPara("Megastructure info unavailable; see starsector.log.", gray, 6f); }
+        }
+        if (anyShunt && Global.getSettings().getModManager().isModEnabled(CAHypershunt.MOD) && s.hypershuntMode != 2) {
+            t.addSectionHeading("Coronal Hypershunt (Ashes of the Domain)", Alignment.MID, 16f);
+            try { CAHypershunt.renderEmpire(t, data, s); }
+            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "hypershunt section failed", e); t.addPara("Hypershunt info unavailable; see starsector.log.", gray, 6f); }
         }
 
         t.addSectionHeading("Settings", Alignment.MID, 16f);
@@ -201,6 +218,18 @@ public class CAIntel extends BaseIntelPlugin {
             if (Global.getSettings().getModManager().isModEnabled(CAContracts.MOD)) {
                 String err = CAContracts.accept(((String[]) buttonId)[2], "you");
                 if (err != null) CALog.add("Trade contract: " + err, true);
+            }
+        } else if (buttonId instanceof String[] && "research".equals(((String[]) buttonId)[0])) {
+            if (Global.getSettings().getModManager().isModEnabled(CAResearch.MOD)) {
+                String err = CAResearch.handle(((String[]) buttonId)[1], ((String[]) buttonId)[2]);
+                if (err != null) CALog.add("Research: " + err, true);
+            }
+        } else if (buttonId instanceof String[] && "hs".equals(((String[]) buttonId)[0])) {
+            String[] a = (String[]) buttonId;
+            MarketAPI m = CAAuto.market(a[2]);
+            if (m != null && Global.getSettings().getModManager().isModEnabled(CAHypershunt.MOD)) {
+                try { String msg = CAHypershunt.handle(m, a[1], a[3]); CALog.add(m.getName() + ": " + msg); }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "hypershunt action failed", t); CALog.add(m.getName() + ": hypershunt: that failed; see starsector.log", true); }
             }
         } else if (buttonId instanceof String[] && "aug".equals(((String[]) buttonId)[0])) {
             MarketAPI m = CAAuto.market(((String[]) buttonId)[2]);

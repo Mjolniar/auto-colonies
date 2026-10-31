@@ -85,6 +85,9 @@ public class CAEngine {
         public List<String> lines = new ArrayList<String>();
         public boolean pollution;
         public boolean measured;   // a mod building scored from probe-colony measurements (CASimulator)
+        /** The building's own output lines, recorded while its effects are read, so a management style can adjust them. */
+        public Map<String, Integer> supplied = new LinkedHashMap<String, Integer>();
+        boolean recording;
     }
 
     public static class Result {
@@ -98,10 +101,17 @@ public class CAEngine {
         void noSlot(Pick p) { noSlot++; if (bestNoSlot == null || p.score > bestNoSlot.score) bestNoSlot = p; }
     }
 
+    /** Set while CAResearch values techs: no probe-colony measurements under a what-if research state. */
+    static boolean noProbe = false;
+
     public static Result evaluate(MarketAPI m, CAData.Profile profile, float minStability) {
         CAData.Colony col = CAData.get().colony(m.getId());
         String line = CAData.settings().stationLine;
         Result r = new Result();
+        if (CAHypershunt.is(m) || m.hasTag("market_no_industries_allowed")) {
+            r.blocked = CAHypershunt.is(m) ? "Coronal Hypershunt: Ashes of the Domain allows no buildings here" : "This colony allows no buildings";
+            return r;
+        }
         calibrate();
         CAPlan.Plan plan = CAPlan.build(m, profile);
         Industry building = Misc.getCurrentlyBeingConstructed(m);
@@ -123,7 +133,7 @@ public class CAEngine {
             if (spec.hasTag("station") && hasStation) continue;
             if (spec.hasTag("station") && !"score".equals(line) && !stationMatches(id, line)) continue;
             boolean supported = CADiagnostics.industryLevel(id) == CADiagnostics.Level.SUPPORTED;
-            boolean measurable = !supported && CADiagnostics.industryLevel(id) == CADiagnostics.Level.MEASURED && CAData.settings().measuredMode != 2;
+            boolean measurable = !supported && !noProbe && CADiagnostics.industryLevel(id) == CADiagnostics.Level.MEASURED && CAData.settings().measuredMode != 2;
             try {
                 Industry inst = spec.getNewPluginInstance(m);
                 if (!inst.isAvailableToBuild()) continue;
@@ -136,8 +146,11 @@ public class CAEngine {
                 Pick p = new Pick();
                 p.id = id; p.name = spec.getName(); p.verb = "Build"; p.upgrade = false;
                 p.cost = inst.getBuildCost(); p.days = inst.getBuildTime();
+                p.recording = true;
                 if (measuredFx != null) { p.measured = true; CASimulator.apply(m, measuredFx, null, p, deficit); }
                 else effects(m, id, p, deficit);
+                p.recording = false;
+                if (!CADevelopment.adjust(m, p, inst, deficit)) continue;   // AotD management style
                 CASynergies.score(syn, p);
                 upkeep(m, spec, null, p);
                 if (!finish(m, p, profile, minStability, plan)) continue;
@@ -148,7 +161,7 @@ public class CAEngine {
             }
         }
         for (Industry ind : m.getIndustries()) {
-            if (ind.isBuilding() || ind.isUpgrading() || col.locks.contains(ind.getId())) continue;
+            if (ind.isHidden() || ind.isBuilding() || ind.isUpgrading() || col.locks.contains(ind.getId())) continue;   // hidden: you can't see or manage it
             // the vanilla upgrade, plus (with BMO) every building whose downgrade is this one, e.g. AotD's
             // Monoculture Plots -> Farming; never past a building the Unification Center needs by exact id
             String vanillaUp = ind.getSpec().getUpgrade();
@@ -211,8 +224,8 @@ public class CAEngine {
 
     static void upkeep(MarketAPI m, IndustrySpecAPI spec, IndustrySpecAPI replaced, Pick p) {
         float sizeMult = Math.max(1, m.getSize() - 2) * 500f * m.getUpkeepMult().getModifiedValue();
-        float u = spec.getUpkeep() * sizeMult;
-        if (replaced != null) u -= replaced.getUpkeep() * sizeMult;
+        float u = spec.getUpkeep() * sizeMult * CADevelopment.upkeepMult(m, spec);
+        if (replaced != null) u -= replaced.getUpkeep() * sizeMult * CADevelopment.upkeepMult(m, replaced);
         p.fx[0] -= u;
         p.upkeep = u;
         if (u > 0) p.lines.add("Upkeep about " + Misc.getDGSCredits(u) + " per month");
@@ -225,8 +238,20 @@ public class CAEngine {
         float mult = (d != null && d > 0) ? 1.5f : 1f;
         float v = base * unitValue * units * mult;
         p.fx[0] += v;
+        if (p.recording) { Integer was = p.supplied.get(com); p.supplied.put(com, (was == null ? 0 : was) + units); }
         p.lines.add("+" + units + " " + Global.getSettings().getCommoditySpec(com).getName()
                 + (mult > 1f ? " (your colonies are short)" : "") + ": about " + Misc.getDGSCredits(v) + " per month");
+    }
+
+    /** A change to output already counted, e.g. from the colony's management style; delta may be negative. */
+    static void supplyChange(Pick p, String com, int delta, Map<String, Integer> deficit, String why) {
+        if (delta == 0) return;
+        float base = Global.getSettings().getCommoditySpec(com).getBasePrice();
+        Integer d = deficit.get(com);
+        float v = base * unitValue * delta * ((d != null && d > 0) ? 1.5f : 1f);
+        p.fx[0] += v;
+        p.lines.add((delta > 0 ? "+" : "") + delta + " " + Global.getSettings().getCommoditySpec(com).getName() + " from " + why
+                + ": about " + Misc.getDGSCredits(v) + " per month");
     }
 
     static void demand(Pick p, String com, int units, Map<String, Integer> deficit) {
@@ -256,8 +281,9 @@ public class CAEngine {
             demand(p, "drugs", s, deficit);
         } else if (id.equals("techmining")) {
             int r = m.hasCondition("ruins_vast") ? 4 : m.hasCondition("ruins_extensive") ? 3 : m.hasCondition("ruins_widespread") ? 2 : 1;
-            p.fx[0] += 4000f * r;
-            p.lines.add("Salvage from the ruins: about " + Misc.getDGSCredits(4000f * r) + " per month in value");
+            float v = 4000f * r * CADevelopment.techMiningMult(m);   // x1.7 at an AotD Archeo-Site
+            p.fx[0] += v;
+            p.lines.add("Salvage from the ruins: about " + Misc.getDGSCredits(v) + " per month in value");
         } else if (id.equals("refining")) {
             supply(p, "metals", s, deficit); supply(p, "rare_metals", s - 2, deficit);
             demand(p, "ore", s + 2, deficit); demand(p, "rare_ore", s, deficit);
