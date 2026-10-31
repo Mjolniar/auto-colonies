@@ -294,6 +294,7 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
 | File | What it does |
 |---|---|
 | [CAOptionProvider](../src/data/scripts/jonahtweaks/autopilot/CAOptionProvider.java), [CAScreenButton](../src/data/scripts/jonahtweaks/autopilot/CAScreenButton.java), [CAColonyDialog](../src/data/scripts/jonahtweaks/autopilot/CAColonyDialog.java), [CAIntel](../src/data/scripts/jonahtweaks/autopilot/CAIntel.java), [CASetupUI](../src/data/scripts/jonahtweaks/autopilot/CASetupUI.java), [CAStoragePlugin](../src/data/scripts/jonahtweaks/autopilot/CAStoragePlugin.java) | See [The panels](#the-panels) |
+| [CAReportFix](../src/data/scripts/jonahtweaks/autopilot/CAReportFix.java) | Names monthly report rows another mod left unnamed (Industrial Evolution's Pet Storage and Academy rows), since sorting the Income panel by a null name crashes the game |
 | [JTCampaignScript](../src/data/scripts/jonahtweaks/JTCampaignScript.java), [JTPatronageCondition](../src/data/scripts/jonahtweaks/JTPatronageCondition.java) | Remove the retired `jt_patronage` condition from old saves; it has no effect |
 
 ## Conventions
