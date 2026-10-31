@@ -68,34 +68,68 @@ public class CAIntel extends BaseIntelPlugin {
     static String page = "colonies";
     transient String lastPage;
 
-    /** The pages in the list on the left: always Colonies, Storage, Settings, Log and Diagnostics, plus one per mod feature in use. */
+    /** The pages in the list on the left: always Colonies, Storage, Settings, Log and Diagnostics, plus Mod features when one is in use. */
     static List<String[]> pages(CAData data, CASettings s, List<MarketAPI> markets) {
         List<String[]> p = new ArrayList<String[]>();
         int pending = 0;
-        boolean anyShunt = false, anyMega = false;
-        for (MarketAPI m : markets) {
-            if (data.colony(m.getId()).pendingId != null) pending++;
-            if (CAHypershunt.is(m)) anyShunt = true;
-            if (CAMegastructures.has(m)) anyMega = true;
-        }
+        for (MarketAPI m : markets) if (data.colony(m.getId()).pendingId != null) pending++;
         p.add(new String[]{"colonies", pending > 0 ? "Colonies (" + pending + " to approve)" : "Colonies"});
         p.add(new String[]{"storage", "Autopilot Storage"});
-        List<String[]> mods = new ArrayList<String[]>();
-        com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
-        if (mm.isModEnabled(CASettlement.MOD)) mods.add(new String[]{"settle", "Settlement"});
-        if (mm.isModEnabled("nexerelin")) mods.add(new String[]{"agents", "Agents"});
-        if (mm.isModEnabled(CAAugments.MOD) && s.augmentMode != 2) mods.add(new String[]{"augments", "Station augments"});
-        if (mm.isModEnabled(CAContracts.MOD) && s.contractMode != 2) mods.add(new String[]{"contracts", "Trade contracts"});
-        if (mm.isModEnabled(CAResearch.MOD) && s.researchMode != 2) mods.add(new String[]{"research", "Research"});
-        if (anyMega && mm.isModEnabled(CAHypershunt.MOD) && s.hypershuntMode != 2) mods.add(new String[]{"mega", "Pluto and Nidavelir"});
-        if (anyShunt && mm.isModEnabled(CAHypershunt.MOD) && s.hypershuntMode != 2) mods.add(new String[]{"shunt", "Coronal Hypershunt"});
-        if (!mods.isEmpty()) { p.add(new String[]{null, "Mod features"}); p.addAll(mods); }
+        if (!modSections(s, markets).isEmpty()) p.add(new String[]{"mods", "Mod features"});
         int issues = CADiagnostics.count(CADiagnostics.Level.ANALYZED) + CADiagnostics.count(CADiagnostics.Level.QUARANTINED);
         p.add(new String[]{null, "Autopilot"});
         p.add(new String[]{"settings", "Settings"});
         p.add(new String[]{"log", "Log"});
         p.add(new String[]{"diag", issues > 0 ? "Diagnostics (" + issues + ")" : "Diagnostics"});
         return p;
+    }
+
+    /** The mod features in use, in the order the Mod features page shows them. */
+    static List<String> modSections(CASettings s, List<MarketAPI> markets) {
+        boolean anyShunt = false, anyMega = false;
+        for (MarketAPI m : markets) {
+            if (CAHypershunt.is(m)) anyShunt = true;
+            if (CAMegastructures.has(m)) anyMega = true;
+        }
+        List<String> l = new ArrayList<String>();
+        com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
+        if (mm.isModEnabled(CASettlement.MOD)) l.add("settle");
+        if (mm.isModEnabled(CASpies.MOD)) l.add("agents");
+        if (mm.isModEnabled(CAAutonomy.MOD) && (s.autonomyMode != 0 || !CAData.get().autonomous().isEmpty())) l.add("autonomy");
+        if (mm.isModEnabled(CAAugments.MOD) && s.augmentMode != 2) l.add("augments");
+        if (mm.isModEnabled(CAContracts.MOD) && s.contractMode != 2) l.add("contracts");
+        if (mm.isModEnabled(CAResearch.MOD) && s.researchMode != 2) l.add("research");
+        if (anyMega && mm.isModEnabled(CAHypershunt.MOD) && s.hypershuntMode != 2) l.add("mega");
+        if (anyShunt && mm.isModEnabled(CAHypershunt.MOD) && s.hypershuntMode != 2) l.add("shunt");
+        return l;
+    }
+
+    /** One section of the Mod features page. Each checks its mod again so no optional class loads without it. */
+    static void renderMod(TooltipMakerAPI t, String id, CAData data, CASettings s) {
+        com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
+        if (id.equals("settle") && mm.isModEnabled(CASettlement.MOD)) {
+            t.addSectionHeading("Settlement (Random Assortment of Things)", Alignment.MID, 0f);
+            CASettlement.render(t, data, s);
+        } else if (id.equals("agents") && mm.isModEnabled(CASpies.MOD)) {
+            CASpies.render(t, data, s);
+        } else if (id.equals("autonomy") && mm.isModEnabled(CAAutonomy.MOD)) {
+            CAAutonomy.render(t, data, s);
+        } else if (id.equals("augments") && mm.isModEnabled(CAAugments.MOD)) {
+            t.addSectionHeading("Station augments", Alignment.MID, 0f);
+            CAAugments.renderEmpire(t, data, s);
+        } else if (id.equals("contracts") && mm.isModEnabled(CAContracts.MOD)) {
+            t.addSectionHeading("Trade contracts (Ashes of the Domain)", Alignment.MID, 0f);
+            CAContracts.render(t, data, s);
+        } else if (id.equals("research") && mm.isModEnabled(CAResearch.MOD)) {
+            t.addSectionHeading("Research (Ashes of the Domain)", Alignment.MID, 0f);
+            CAResearch.render(t, data, s);
+        } else if (id.equals("mega") && mm.isModEnabled(CAHypershunt.MOD)) {
+            t.addSectionHeading("Pluto and Nidavelir (Ashes of the Domain)", Alignment.MID, 0f);
+            CAMegastructures.renderEmpire(t, data, s);
+        } else if (id.equals("shunt") && mm.isModEnabled(CAHypershunt.MOD)) {
+            t.addSectionHeading("Coronal Hypershunt (Ashes of the Domain)", Alignment.MID, 0f);
+            CAHypershunt.renderEmpire(t, data, s);
+        }
     }
 
     @Override
@@ -129,8 +163,6 @@ public class CAIntel extends BaseIntelPlugin {
 
     void renderPage(TooltipMakerAPI t, CAData data, CASettings s, List<MarketAPI> markets, float width) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
-        // pages() only lists a mod's page while it's enabled; checked again here so no optional class loads without its mod
-        com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
 
         if (page.equals("colonies")) {
             t.addPara("Every colony starts in Advisor mode. Open a colony's own panel with the Colony Autopilot button on its colony "
@@ -195,30 +227,35 @@ public class CAIntel extends BaseIntelPlugin {
             for (com.fs.starfarer.api.campaign.CargoStackAPI stack : st.getStacksCopy()) {
                 t.addPara("%s x%s", 3f, hl, CALog.esc(stack.getDisplayName()), "" + (int) stack.getSize());
             }
-            MarketAPI fort = CAItems.fortress(CAItems.autoMarkets());
-            t.addPara("AI cores: %s. Next Hegemony inspection strength: %s fleet points. Fortress world: %s.", 6f, hl,
-                    s.useAICores ? "used" : "not used", "" + (int) CAItems.nextInspectionFP(),
-                    fort == null ? "none strong enough (cores capped at 7 points per colony)" : fort.getName() + " (" + (int) CAItems.defenseFP(fort) + " estimated)");
-        } else if (page.equals("settle") && mm.isModEnabled(CASettlement.MOD)) {
-            t.addSectionHeading("Settlement (Random Assortment of Things)", Alignment.MID, 0f);
-            CASettlement.render(t, data, s);
-        } else if (page.equals("agents") && mm.isModEnabled(CASpies.MOD)) {
-            CASpies.render(t, data, s);
-        } else if (page.equals("augments") && mm.isModEnabled(CAAugments.MOD)) {
-            t.addSectionHeading("Station augments", Alignment.MID, 0f);
-            CAAugments.renderEmpire(t, data, s);
-        } else if (page.equals("contracts") && mm.isModEnabled(CAContracts.MOD)) {
-            t.addSectionHeading("Trade contracts (Ashes of the Domain)", Alignment.MID, 0f);
-            CAContracts.render(t, data, s);
-        } else if (page.equals("research") && mm.isModEnabled(CAResearch.MOD)) {
-            t.addSectionHeading("Research (Ashes of the Domain)", Alignment.MID, 0f);
-            CAResearch.render(t, data, s);
-        } else if (page.equals("mega") && mm.isModEnabled(CAHypershunt.MOD)) {
-            t.addSectionHeading("Pluto and Nidavelir (Ashes of the Domain)", Alignment.MID, 0f);
-            CAMegastructures.renderEmpire(t, data, s);
-        } else if (page.equals("shunt") && mm.isModEnabled(CAHypershunt.MOD)) {
-            t.addSectionHeading("Coronal Hypershunt (Ashes of the Domain)", Alignment.MID, 0f);
-            CAHypershunt.renderEmpire(t, data, s);
+            t.addPara("AI cores: %s, inspection risk %s.", 6f, hl, s.useAICores ? "used" : "not used",
+                    CASettings.CORE_RISK_NAMES[Math.max(0, Math.min(2, s.coreRisk))].toLowerCase());
+            String none = CAItems.noInspections();
+            if (none != null) t.addPara("No Hegemony inspection can come now: %s. No limit on cores.", 4f, hl, none);
+            else t.addPara("The Hegemony ignores a colony with %s inspection points or less. Next inspection: %s fleet points.", 4f, hl,
+                    "" + CAItems.safePoints(), "" + (int) CAItems.nextInspectionFP());
+            java.util.Set<MarketAPI> inspected = CAItems.inspected();
+            for (MarketAPI m : CAItems.autoMarkets()) {
+                int pts = CAItems.aiPoints(m), lim = CAItems.coreLimit(s, m, none);
+                boolean coming = inspected.contains(m);
+                if (pts <= 0 && !coming) continue;
+                String why = coming ? "inspection coming: left as it is"
+                        : lim != Integer.MAX_VALUE ? "limit " + lim
+                        : none == null && s.coreRisk == 0 ? "no limit, defended (" + (int) CAItems.defenseFP(m) + " fleet points estimated)" : "no limit";
+                t.addPara("%s: %s inspection points, %s", 3f, coming || pts > lim ? Misc.getNegativeHighlightColor() : hl,
+                        CALog.esc(m.getName()), "" + pts, why);
+            }
+        } else if (page.equals("mods")) {
+            boolean first = true;
+            for (String id : modSections(s, markets)) {
+                if (!first) t.addSpacer(16f);
+                first = false;
+                // one section failing leaves the others on the page
+                try { renderMod(t, id, data, s); }
+                catch (Throwable e) {
+                    CADiagnostics.LOG.warn(CADiagnostics.TAG + "mod feature section " + id + " failed", e);
+                    t.addPara("This section couldn't be shown; see starsector.log.", gray, 6f);
+                }
+            }
         } else if (page.equals("settings")) {
             t.addSectionHeading("Settings", Alignment.MID, 0f);
             if (!s.setupDone) t.addPara("First-time setup hasn't run yet; it opens when you first switch a colony to Approve or Auto.", gray, 6f);
@@ -288,6 +325,12 @@ public class CAIntel extends BaseIntelPlugin {
             if (Global.getSettings().getModManager().isModEnabled(CASpies.MOD)) {
                 try { CASpies.handle(d, a[1], a[2]); }
                 catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "agent action failed", t); CALog.add("Agents: that failed; see starsector.log", true); }
+            }
+        } else if (buttonId instanceof String[] && "auton".equals(((String[]) buttonId)[0])) {
+            String[] a = (String[]) buttonId;
+            if (Global.getSettings().getModManager().isModEnabled(CAAutonomy.MOD)) {
+                try { CAAutonomy.handle(d, a[1], a[2]); }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "autonomy action failed", t); CALog.add("Autonomy: that failed; see starsector.log", true); }
             }
         } else if (buttonId instanceof String[] && "settle".equals(((String[]) buttonId)[0])) {
             String[] a = (String[]) buttonId;

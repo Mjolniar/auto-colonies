@@ -112,6 +112,8 @@ public class CAAuto {
                 catch (Throwable t) { ok = false; CADiagnostics.LOG.warn(CADiagnostics.TAG + "agent step failed", t); }
                 CABreaker.check(CASpies.MOD + ":agents", ok, "Nexerelin agents");
             }
+            try { CAAutonomy.run(d, s); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "emergency autonomy step failed", t); }
         }
         try { CAPolicies.run(auto); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony policy step failed", t); }

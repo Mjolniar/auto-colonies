@@ -40,6 +40,7 @@ public class CASetupUI {
         // items and people: only items you put in Autopilot Storage are used; cores are kept within inspection limits
         s.useAICores = true;
         s.alphaMode = 0;
+        s.coreRisk = 0;
         s.disableStabilizers = false;
         s.adminHiring = true;
         s.adminOptimal = true;
@@ -64,6 +65,7 @@ public class CASetupUI {
         s.spyMode = 1;          // Defense: an agent is hired only when there's a rebellion, Pather cell, pirate base or enemy operation
         s.spyNoHiring = false;
         s.spyKeep = 0;
+        s.autonomyMode = 2;     // Auto: only in an emergency, and taken back once it's over
         s.noScreenButton = false;
     }
 
@@ -144,9 +146,19 @@ public class CASetupUI {
             if (s.storyPointRule == 2) row(t, "Story point monthly cap", "" + s.storyPointMonthlyCap, "2", "spcap", false);
         }
         if (group(t, "items", "Items and AI cores", "AI cores " + onOff(s.useAICores).toLowerCase()
-                + (s.useAICores ? ", Alpha: " + CASettings.ALPHA_NAMES[Math.max(0, Math.min(2, s.alphaMode))] : ""))) {
+                + (s.useAICores ? ", Alpha: " + CASettings.ALPHA_NAMES[Math.max(0, Math.min(2, s.alphaMode))]
+                        + ", risk: " + CASettings.CORE_RISK_NAMES[Math.max(0, Math.min(2, s.coreRisk))].toLowerCase() : ""))) {
             row(t, "Use AI cores", onOff(s.useAICores), "On", "cores", true);
-            if (s.useAICores) row(t, "Alpha cores", CASettings.ALPHA_NAMES[Math.max(0, Math.min(2, s.alphaMode))], "Only where removable", "alpha", true);
+            if (s.useAICores) {
+                row(t, "Alpha cores", CASettings.ALPHA_NAMES[Math.max(0, Math.min(2, s.alphaMode))], "Only where removable", "alpha", true);
+                row(t, "Inspection risk", CASettings.CORE_RISK_NAMES[Math.max(0, Math.min(2, s.coreRisk))], "More where defended", "corerisk", true);
+                t.addPara("Each core goes where it adds most for the colony's goal (output, upkeep, shortages, a structure's own bonus), "
+                        + "less a small cost for each inspection point; a better core replaces a lesser one, which goes back to storage. "
+                        + "Colonies stay at " + CAItems.safePoints() + " inspection points or less, which the Hegemony ignores; More where defended "
+                        + "allows more where the defenses beat the next inspection by 1.5 times (2 times while the threat is high). There's no limit "
+                        + "once you've defeated the Hegemony's inspections, while you're in the Persean League, or when the Hegemony holds no colonies. "
+                        + "A colony an inspection is coming for is left as it is.", Misc.getGrayColor(), 6f);
+            }
             row(t, "Antimatter Stabilizers to Advanced Fuel Production", s.disableStabilizers ? "Off" : "Convert", "Convert", "stab", true);
         }
         if (group(t, "people", "Administrators and ambassadors", "hiring " + onOff(s.adminHiring).toLowerCase() + ", ambassadors "
@@ -155,6 +167,9 @@ public class CASetupUI {
             row(t, "Assign administrators optimally", onOff(s.adminOptimal), "On", "adminopt", true);
             row(t, "Ambassadors (Industrial Evolution)", s.disableAmbassadors ? "Off" : "Hire and install", "Hire and install", "amb", true);
             row(t, "Arrival delay", s.adminDelay ? "On (30 days)" : "Off", "On", "admindelay", true);
+            t.addPara("An administrator is hired, placed or moved only where they add more than they cost: Industrial Planning's "
+                    + "+1 output (worth more at a productive colony) and the stability from your colony limit, against their salary "
+                    + "(2,500 or 20,000 a month) and the hiring cost spread over three years.", Misc.getGrayColor(), 6f);
             if (!s.disableAmbassadors) {
                 row(t, "Ambassador focus", CASettings.FOCUS_NAMES[Math.max(0, Math.min(3, s.ambassadorFocus))], "Worst relations first", "ambfocus", true);
                 row(t, "Stop raising a faction at", CASettings.STOP_NAMES[Math.max(0, Math.min(3, s.ambassadorStopAt))], "Cooperative", "ambstop", true);
@@ -187,9 +202,18 @@ public class CASetupUI {
                 row(t, "Agents to keep", s.spyKeep == 0 ? "Auto (1, or 2 with offense)" : "" + s.spyKeep, "Auto", "spykeep", true);
                 t.addPara("Defense: counter-insurgency, Pather cells, pirate bases, and raising relations with factions running operations "
                         + "against you. Offense only targets factions already at war with you. Costs come out of the monthly budget; "
-                        + "Nexerelin pays salaries. Only agents Autopilot hired, or you hand over on the Agents page, are given orders, "
+                        + "Nexerelin pays salaries. Only agents Autopilot hired, or you hand over on the Mod features page, are given orders, "
                         + "and only operations their type can run.", Misc.getGrayColor(), 6f);
             }
+        }
+        if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("nexerelin")
+                && group(t, "autonomy", "Emergency autonomy (Nexerelin)", CASettings.AUTONOMY_NAMES[Math.max(0, Math.min(2, s.autonomyMode))].toLowerCase())) {
+            row(t, "Emergency autonomy", CASettings.AUTONOMY_NAMES[Math.max(0, Math.min(2, s.autonomyMode))], "Auto", "autonomy", true);
+            t.addPara("In an emergency (net income negative with under 3 months of it left above the credit reserve, or more colonies "
+                    + "than you can govern pulling one below stability 5), the colony whose autonomy saves the most is made autonomous: "
+                    + "you get 25 percent of its profit or loss and it doesn't count against your colony limit. It's taken back once the "
+                    + "emergency is over (2 unrest). Auto acts on Auto colonies; Recommend only logs it. Colonies you made autonomous "
+                    + "yourself are never touched.", Misc.getGrayColor(), 6f);
         }
         if (group(t, "industry", "Industry automation", "specialties " + (s.disableSpecialties ? "off" : "on") + ", VPC chips " + (s.disableVPC ? "off" : "on")
                 + ", shipping " + (s.disableShipping ? "off" : "on"))) {
@@ -281,6 +305,7 @@ public class CASetupUI {
         else if (k.equals("cores")) s.useAICores = !s.useAICores;
         else if (k.equals("removals")) s.allowRemovals = !s.allowRemovals;
         else if (k.equals("alpha")) s.alphaMode = (Math.max(0, Math.min(2, s.alphaMode)) + 1) % 3;
+        else if (k.equals("corerisk")) s.coreRisk = (Math.max(0, Math.min(2, s.coreRisk)) + 1) % 3;
         else if (k.equals("sp")) s.storyPointRule = (s.storyPointRule + 1) % 3;
         else if (k.equals("spcap")) s.storyPointMonthlyCap = Math.max(0, s.storyPointMonthlyCap + (int) dir);
         else if (k.equals("admin")) s.adminHiring = !s.adminHiring;
@@ -314,6 +339,7 @@ public class CASetupUI {
         else if (k.equals("screenbtn")) s.noScreenButton = !s.noScreenButton;
         else if (k.equals("spy")) s.spyMode = (Math.max(0, Math.min(2, s.spyMode)) + 1) % 3;
         else if (k.equals("spyhire")) s.spyNoHiring = !s.spyNoHiring;
+        else if (k.equals("autonomy")) s.autonomyMode = (Math.max(0, Math.min(2, s.autonomyMode)) + 1) % 3;
         else if (k.equals("spykeep")) s.spyKeep = (Math.max(0, Math.min(4, s.spyKeep)) + 1) % 5;
         else if (k.equals("settleinc")) s.settlementMinIncome = Math.max(5000f, s.settlementMinIncome + 5000f * dir);
         return true;
