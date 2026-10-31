@@ -69,6 +69,10 @@ Quick start: pick a goal in the colony panel and build from **Recommended builds
 - Don't remove from a save that used it (Autopilot Storage is a market tab).
 - Full rules: [docs/details.md](docs/details.md).
 
+## Source
+
+**[Source guide](docs/source-guide.md)**: how the code is laid out, what happens each day, how buildings are scored, how optional mods stay optional, what's saved, and what every file does.
+
 ## Build
 
 JDK 17, sources in `src/`:
