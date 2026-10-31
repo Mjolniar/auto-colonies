@@ -24,7 +24,7 @@ import java.util.*;
  * VoK's buildings, synergies) answer as they would afterwards, then put back. Known non-building effects (output +1,
  * hazard -10%, upkeep x0.9) are added, plus half the best tech each one leads to.
  * Auto starts the best tech whenever nothing is running or queued, only for techs that cost databanks alone (AI cores
- * and colony items are left to you), moving databanks from Autopilot Storage when the Research Facility tab is short.
+ * and colony items are left to you), moving databanks into the Research Facility tab when it's short: from Autopilot Storage first, then your fleet's cargo.
  * Reflection only; if VoK can't be read, research is left to you.
  */
 public class CAResearch {
@@ -347,12 +347,29 @@ public class CAResearch {
         }
     }
 
-    /** Moves research databanks from Autopilot Storage to the Research Facility tab that holds the most already. */
+    /** Research databanks in your fleet's cargo. */
+    static float fleetDatabanks() {
+        com.fs.starfarer.api.campaign.CampaignFleetAPI f = Global.getSector().getPlayerFleet();
+        return f == null || f.getCargo() == null ? 0f : f.getCargo().getCommodityQuantity(DATABANK);
+    }
+
+    /** Databanks research can use: the Research Facility tabs, Autopilot Storage and your fleet's cargo. */
+    static float databanksOnHand(Object mgr) throws Exception {
+        return ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue() + CAData.get().storage().getCommodityQuantity(DATABANK) + fleetDatabanks();
+    }
+
+    /**
+     * Moves the research databanks a tech is short of into the Research Facility tab that holds the most already: from
+     * Autopilot Storage first, then your fleet's cargo. Nothing moves unless the two together cover the whole shortfall.
+     */
     static String topUp(Object mgr, Tech t) throws Exception {
         int need = t.databanks() - (int) ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue();
         if (need <= 0) return null;
         CargoAPI st = CAData.get().storage();
-        if (st.getCommodityQuantity(DATABANK) < need) return null;
+        com.fs.starfarer.api.campaign.CampaignFleetAPI fleet = Global.getSector().getPlayerFleet();
+        int fromStorage = (int) Math.min(need, st.getCommodityQuantity(DATABANK));
+        int fromFleet = need - fromStorage;
+        if (fromFleet > 0 && (fleet == null || fleet.getCargo() == null || fleetDatabanks() < fromFleet)) return null;
         SubmarketAPI best = null; float bestHas = -1f;
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             SubmarketAPI sm = m.getSubmarket(SUBMARKET);
@@ -361,9 +378,13 @@ public class CAResearch {
             if (has > bestHas) { bestHas = has; best = sm; }
         }
         if (best == null) return null;
-        st.removeCommodity(DATABANK, need);
+        if (fromStorage > 0) st.removeCommodity(DATABANK, fromStorage);
+        if (fromFleet > 0) fleet.getCargo().removeCommodity(DATABANK, fromFleet);
         best.getCargo().addCommodity(DATABANK, need);
-        String msg = "moved " + need + " research databanks from Autopilot Storage to " + best.getMarket().getName() + "'s Research Facility tab";
+        String from = fromStorage > 0 && fromFleet > 0 ? fromStorage + " from Autopilot Storage and " + fromFleet + " from your fleet's cargo"
+                : fromFleet > 0 ? "from your fleet's cargo" : "from Autopilot Storage";
+        String msg = "moved " + need + " research databanks " + (fromStorage > 0 && fromFleet > 0 ? "(" + from + ")" : from) + " to "
+                + best.getMarket().getName() + "'s Research Facility tab";
         CALog.add("Research: " + msg);
         return msg;
     }
@@ -396,7 +417,7 @@ public class CAResearch {
                     if (CALog.once("research:upkeep:" + t.id)) CALog.add("Research: " + t.name + " waits for next month (new upkeep cap reached)");
                     return;
                 }
-                if (t.needsItems && CAData.get().storage().getCommodityQuantity(DATABANK) + ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue() < t.databanks()) continue;
+                if (t.needsItems && databanksOnHand(mgr) < t.databanks()) continue;   // the tab, Autopilot Storage and your cargo together
                 if (start(t, "Auto") == null) { CABudget.charge(s, 0f, 0f, upkeep); return; }
             }
         } catch (Throwable t) {
@@ -432,13 +453,15 @@ public class CAResearch {
                 t.addPara("Researching %s: %s of %s days.", 6f, hl, c.name, "" + Math.round(c.spent), "" + Math.round(c.days));
             } else t.addPara("Nothing is being researched.", 6f);
             if (fac <= 0) t.addPara("No working Research Facility, so research doesn't advance.", Misc.getNegativeHighlightColor(), 4f);
-            else t.addPara("%s research facilities. Databanks in their storage: %s; in Autopilot Storage: %s.", 4f, hl, "" + fac,
-                    "" + (int) ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue(), "" + (int) d.storage().getCommodityQuantity(DATABANK));
+            else t.addPara("%s research facilities. Databanks in their storage: %s; in Autopilot Storage: %s; in your fleet's cargo: %s.", 4f, hl, "" + fac,
+                    "" + (int) ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue(), "" + (int) d.storage().getCommodityQuantity(DATABANK),
+                    "" + (int) fleetDatabanks());
+            float onHand = databanksOnHand(mgr);
             boolean idle = idle(mgr);
             int shown = 0;
             for (Tech x : ranked()) {
                 if (shown++ >= 6) break;
-                t.addPara("%s (%s days, %s): %s a month" + (x.needsItems ? ", needs its items in storage" : "") + (!x.databanksOnly() ? ", uses items Auto won't spend" : ""),
+                t.addPara("%s (%s days, %s): %s a month" + (x.needsItems ? (x.databanksOnly() && onHand >= x.databanks() ? ", databanks moved in from Autopilot Storage or your cargo" : ", not enough databanks on hand") : "") + (!x.databanksOnly() ? ", uses items Auto won't spend" : ""),
                         8f, x.rank > 0f ? hl : gray, x.name, "" + Math.round(Math.max(1f, x.days - x.spent)), itemsText(x), CAEngine.signed(x.value));
                 for (int j = 0; j < Math.min(3, x.lines.size()); j++) t.addPara("    " + CALog.esc(x.lines.get(j)), gray, 2f);
                 if (idle && s.researchMode != 2) {

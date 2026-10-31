@@ -52,7 +52,7 @@ Covers Building Menu Overhaul, Vaults of Knowledge and Theory of Toolbox.
 - **Industry synergies.** A build's value includes the synergies it starts or ends (Ore-To-Core, Defensive Network, Rapid Transportation and 16 more), modelled from VoK's code. The colony panel shows active synergies and those one building away.
 - **Management styles** (Colony Development). New buildings are scored with the style's real effects: Centralized Urban Core, Distributed Regional Network, Bore City, Archeo-Site, Floating City. On a Floating City, nothing is built while fuel would run short. The style itself is never changed.
 - **Research** (Advisor, Auto or Off; Auto in the recommended settings). Each tech is valued by what it unlocks and ranked by value per research day; the empire panel lists the best six.
-  - Auto starts the best databank-only tech, moves databanks from Autopilot Storage, and makes Sophia Anderson head of R&D if you have her.
+  - Auto starts the best databank-only tech, moving databanks into the Research Facility tab from Autopilot Storage first, then your fleet's cargo, and makes Sophia Anderson head of R&D if you have her.
   - Your research queue is never touched.
 - **Trade contracts** (Advisor, Auto or Off; Auto in the recommended settings). It takes offers only when ToT's own figures leave 15% to spare, and only when they pay more than exporting would. Shortfalls count as shortages when scoring buildings.
 - **Coronal Hypershunt colony.** Nothing is built there; AotD allows no buildings. The wormhole range is kept at the smallest that reaches your receivers. The Coronal Collector and Wormhole are restored when every resource is in surplus and the cost fits your budget. The empire panel lists where a receiver would pay off.
