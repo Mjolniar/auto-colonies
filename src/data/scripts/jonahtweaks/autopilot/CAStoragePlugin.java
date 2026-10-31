@@ -7,8 +7,10 @@ import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.impl.campaign.submarkets.BaseSubmarketPlugin;
 
 /**
- * Autopilot Storage: one shared storage shown as a tab at every player colony. Only colony items and AI cores
- * go in; the manager uses only what is here, and returns anything it removes to here.
+ * Autopilot Storage: one shared storage shown as a tab at every player colony. Colony items, AI cores, Antimatter
+ * Stabilizers and research databanks go in; with the storage cheat on, anything but ships and ambassadors does, and
+ * colonies draw their shortages from it (CAStockpile). The manager uses only what is here, and returns anything it
+ * removes to here.
  */
 public class CAStoragePlugin extends BaseSubmarketPlugin {
     public static final String ID = "jt_ca_storage";
@@ -27,8 +29,11 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
     @Override public void updateCargoPrePlayerInteraction() { }
 
     public static boolean allowedCommodity(String id) {
-        return "alpha_core".equals(id) || "beta_core".equals(id) || "gamma_core".equals(id) || "ix_antimatter_stabilizer".equals(id);
+        return cheat() || "alpha_core".equals(id) || "beta_core".equals(id) || "gamma_core".equals(id) || "ix_antimatter_stabilizer".equals(id)
+                || "research_databank".equals(id);   // Vaults of Knowledge research takes them from here
     }
+
+    static boolean cheat() { return CAData.get().settings.storageCheat; }
 
     @Override
     public boolean isIllegalOnSubmarket(String commodityId, TransferAction action) {
@@ -40,14 +45,14 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
         if (action != TransferAction.PLAYER_SELL) return false;
         if (stack.isSpecialStack()) return stack.getSpecialDataIfSpecial() != null && "IndEvo_amb".equals(stack.getSpecialDataIfSpecial().getId());
         if (stack.isCommodityStack()) return !allowedCommodity(stack.getCommodityId());
-        return true;
+        return !cheat();   // weapons and fighter wings
     }
 
     @Override
     public String getIllegalTransferText(CargoStackAPI stack, TransferAction action) {
         if (stack.isSpecialStack() && stack.getSpecialDataIfSpecial() != null && "IndEvo_amb".equals(stack.getSpecialDataIfSpecial().getId()))
             return "Keep ambassadors in a colony's normal Storage; Autopilot installs them from there";
-        return "Only colony items and AI cores can go in Autopilot Storage";
+        return "Only colony items, AI cores and research databanks can go in Autopilot Storage (anything can with the storage cheat in Settings)";
     }
 
     @Override

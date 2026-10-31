@@ -2,7 +2,7 @@
 
 A tour of the code for anyone who wants to read it: how it's laid out, what happens each day in game, how a building gets its score, how the optional mod integrations stay optional, what goes in the save, and what every file does.
 
-All the code is Java 17, compiled against Starsector 0.98a-RC8's `starfarer.api.jar`. It's about 10,800 lines in 55 files. Every class opens with a comment saying what it does and why; this page links them together. For what the mod does as a player sees it, read [Getting started](getting-started.md), [What each supported mod adds](supported-mods.md) and [details.md](details.md).
+All the code is Java 17, compiled against Starsector 0.98a-RC8's `starfarer.api.jar`. It's about 11,000 lines in 56 files. Every class opens with a comment saying what it does and why; this page links them together. For what the mod does as a player sees it, read [Getting started](getting-started.md), [What each supported mod adds](supported-mods.md) and [details.md](details.md).
 
 > The code was written by AI coding agents (see the README's warning). It's compiled and checked offline (see [Building and checking](#building-and-checking)), and parts are confirmed in game, but not all of it.
 
@@ -233,7 +233,8 @@ Rules that keep saves working:
 | [CANav](../src/data/scripts/jonahtweaks/autopilot/CANav.java) | The page list both panels draw on the left, so one section shows at a time instead of one long scroll |
 | [CASetupUI](../src/data/scripts/jonahtweaks/autopilot/CASetupUI.java) | The settings rows, shared by the setup page and the empire panel, in groups that open one at a time. Each row shows its value and the recommendation. `applyRecommended` fills in the recommendations, which are chosen so that switching colonies to Auto and nothing else works out well; its comments give the reason for each. |
 | `CABuildout.Offer` | The first-colony offer, an interaction dialog with the game's own option list |
-| [CAStoragePlugin](../src/data/scripts/jonahtweaks/autopilot/CAStoragePlugin.java) | The Autopilot Storage tab: accepts only colony items and AI cores |
+| [CAStoragePlugin](../src/data/scripts/jonahtweaks/autopilot/CAStoragePlugin.java) | The Autopilot Storage tab: colony items, AI cores, Antimatter Stabilizers and research databanks, or anything but ships with the storage cheat |
+| [CAStockpile](../src/data/scripts/jonahtweaks/autopilot/CAStockpile.java) | Storage cheat: colonies cover shortages from Autopilot Storage the way vanilla's stockpile does, worked out every frame and taken off before every save (`JTModPlugin.beforeGameSave`) |
 
 Everything uses the game's own colors and widgets, so it looks like the base game.
 

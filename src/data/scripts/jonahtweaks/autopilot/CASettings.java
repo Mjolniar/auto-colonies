@@ -28,6 +28,7 @@ public class CASettings {
     public String stationLine = "score";  // score, low, mid, high
     public boolean useAICores = false;
     public int alphaMode = 0;             // 0 only where removable (default), 1 anywhere, 2 never
+    public boolean storageCheat = false;  // cheat: Autopilot Storage takes anything and colonies draw shortages from it
     public int coreRisk = 0;              // 0 more where defenses beat the next inspection (default), 1 never inspected, 2 no limit
     public boolean allowRemovals = false;
     public int storyPointRule = 0;        // 0 player only, 1 one per colony, 2 monthly cap

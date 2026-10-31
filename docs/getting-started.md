@@ -17,7 +17,7 @@ Nothing is built automatically after install. Every colony starts in **Advisor**
 | Panel | How to open | What it's for |
 |---|---|---|
 | Colony panel | The **Colony Autopilot** button on the colony screen, or right-click **Population & Infrastructure**, then **Colony Autopilot...** | One colony. Pages: **Overview** (stats, approval, goal, mode, fast buildout), **Plan and builds**, **Locks**, and **Mod features** (every mod feature that applies, on one page) |
-| Empire panel | Intel screen, the **Colony Autopilot** filter | Pages: **Colonies** (budget, approvals, every colony), **Autopilot Storage**, **Mod features** (every mod feature in use, on one page), **Settings**, **Log**, **Diagnostics** |
+| Empire panel | Intel screen, the **Colony Autopilot** filter | Pages: **Colonies** (budget, approvals, every colony), **Autopilot Storage** (contents, inspection points, research), **Mod features** (every mod feature in use, on one page), **Settings**, **Log**, **Diagnostics** |
 
 Both panels list their pages down the left side; click one to show it. In **Settings**, click a group to open it; one is open at a time.
 
@@ -85,7 +85,7 @@ All three are under **Settings**, **Budget and spending**, in the empire panel; 
 
 ### Items, AI cores and administrators
 
-- **Colony items and AI cores:** dock at any of your colonies, open the **Autopilot Storage** tab, and deposit them there. The manager uses only items in that storage, and only for colonies in Auto mode; it never takes from your cargo or normal storage. AI cores are used with the recommended settings (**Use AI cores**). Each core goes where it adds most for the colony's goal: an Alpha where its +1 output (or a structure's bonus) is worth most, a Beta where upkeep is highest, a Gamma only where an input is short. A better core replaces a lesser one, which goes back to storage. **Inspection risk** decides how many inspection points a colony may hold: 7 or less (the Hegemony ignores those), more where its defenses beat the next inspection (**More where defended**, recommended), or **No limit**. A colony over its limit sends cores back to storage one a day, and a colony an inspection is coming for is left as it is. Autopilot Storage lists each colony's points and limit.
+- **Colony items, AI cores and research databanks:** dock at any of your colonies, open the **Autopilot Storage** tab, and deposit them there. The manager uses only items in that storage, and only for colonies in Auto mode; it never takes from your normal storage. Research (Vaults of Knowledge) takes what a tech needs from it too, and databanks from your fleet's cargo after that. AI cores are used with the recommended settings (**Use AI cores**). Each core goes where it adds most for the colony's goal: an Alpha where its +1 output (or a structure's bonus) is worth most, a Beta where upkeep is highest, a Gamma only where an input is short. A better core replaces a lesser one, which goes back to storage. **Inspection risk** decides how many inspection points a colony may hold: 7 or less (the Hegemony ignores those), more where its defenses beat the next inspection (**More where defended**, recommended), or **No limit**. A colony over its limit sends cores back to storage one a day, and a colony an inspection is coming for is left as it is. Autopilot Storage lists each colony's points and limit.
 - **Administrators:** in Auto mode, an administrator is hired, placed or moved only where they add more than they cost: their +1 output (worth most at a big, productive colony) and the stability from your colony limit, against their salary (2,500 or 20,000 a month) and the hiring cost. The colony panel's Overview shows what its administrator costs and adds. Hiring is **Administrator hiring**, on in the recommended settings.
 
 ### Keeping control
@@ -120,6 +120,10 @@ Off until setup runs; the recommended settings turn on **Auto**. Change it in th
 - **What it does:** the colony whose autonomy saves the most is made autonomous, as with Nexerelin's **Grant autonomy**. You get 25% of its profit or loss, and it no longer counts against your colony limit. Recommend only logs it.
 - **Taking it back:** once the emergency is over and net income stays positive with the colony, it's taken back. Nexerelin adds 2 unrest for that.
 - The Mod features page shows the emergency and the best choice with **Grant autonomy**, and each colony Autopilot made autonomous with **Take it back now**. Colonies you made autonomous yourself are left alone.
+
+## Storage cheat
+
+Off unless you turn it on (**Settings**, **Cheats**); the recommended settings never do. With it on, Autopilot Storage takes anything but ships and ambassadors, and you can take it out at any colony. Every colony that uses stockpiles for shortages draws from it for free, before its own stockpile, at the game's stockpile rate. The Autopilot Storage page lists the shortages it's covering.
 
 ## When something looks wrong
 
