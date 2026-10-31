@@ -11,6 +11,8 @@ public class CAScript implements EveryFrameScript {
     public boolean runWhilePaused() { return false; }
 
     public void advance(float amount) {
+        try { CABuildout.checkOffer(amount); }
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "fast buildout offer failed", t); CAData.get().buildoutOffered = true; }
         float days = Global.getSector().getClock().convertToDays(amount);
         now += days;
         acc += days;

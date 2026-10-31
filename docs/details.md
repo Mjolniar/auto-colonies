@@ -1,6 +1,6 @@
 # Jonah's Colony Manager
 
-Colony management automation (Colony Autopilot) for Starsector 0.98a, plus sticky combat autopilot. Battle size is fixed at 2000 (`data/config/settings.json`); no other balance changes.
+Colony management automation (Colony Autopilot) for Starsector 0.98a. No balance changes. Battle size, sticky combat autopilot and the other balance changes moved to the separate mod Jonah's Easy Sector (2.7.0).
 
 ## Install
 
@@ -15,6 +15,7 @@ Colony management automation (Colony Autopilot) for Starsector 0.98a, plus stick
 - **Empire panel:** Intel screen, **Colonies** tab, **Colony Autopilot**. Budget, approvals, every colony, storage, settings, log, diagnostics.
 - **Modes per colony:** Off, Advisor (default: recommends, you click Build), Approve (one-click proposals), Auto (builds within your budget).
 - **Goals:** Balanced, Money, Security, War production, Rapid growth, Self-sufficiency. Each colony gets a plan from its planet, hazards and resources. With Terraforming Made Easy, that includes a reachable special world (Forge, Fortress, Paradise, Hive, Death, Waste) resolved from TME's own requirements.
+- **Fast buildout:** after the first colony is founded, a popup offers to build it up fast: Auto, planned for Money, starting the fastest-paying builds (value per credit) daily with everything above a credit floor (100k, 250k, 500k or 1M; 50k-2M in the colony panel). The monthly budget, per-project cap, pause on loss and new-upkeep cap don't apply; fees, the stability floor, locks and the measured-building approval do. It ends after 30 days in a row of positive colony net income, leaving the colony in Auto with its own goal. The colony panel can stop it, change the floor, or start one for any colony that loses money.
 - **First switch to Auto** opens the setup popup: all settings, recommended values, and a station line item in the budget.
 - **Autopilot Storage:** a tab at every colony market. Colony items, AI cores and Antimatter Stabilizers deposited there are the only ones the manager uses.
 
@@ -174,3 +175,5 @@ The colony-mod integrations (`CATasc`, `CAGrand`, `CABrewery`, `CAMods`) use lit
 20. Without Grand.Colonies, a colony with 12 buildings shows "The colony screen shows at most 12 buildings" and offers upgrades only. With it, the 13th build shows the extra upkeep line.
 21. Deposit a mod's colony item (for example a Substance.Abuse recipe) in Autopilot Storage. With a Brewery-less colony and a free slot, a Brewery is recommended; once built, the recipe is installed.
 22. `starsector.log` has no "can't read Terraforming & Station Construction" line, and diagnostics list TASC's self-removing buildings as "left to you".
+23. `starsector.log` has no "File access and reflection are not allowed to scripts" line. With Ashes of the Domain, the colony panel shows research locks and synergies instead of "info unavailable".
+24. New game, found the first colony: once the founding dialog closes, the fast buildout dialog appears. Pick 250,000: the colony switches to Auto, the log says "fast buildout started", and builds start daily without taking credits below 250,000. **Stop buildout** in the colony panel ends it; the colony stays in Auto. In a save that already has colonies the dialog never appears.

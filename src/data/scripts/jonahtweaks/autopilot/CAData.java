@@ -44,6 +44,10 @@ public class CAData {
         public Map<String, Integer> megaSet;
         public boolean megaManual;
         public long megaHold;
+        // Fast buildout (CABuildout): running, the credit floor (0 = default), and when net income last turned positive (0 = it isn't)
+        public boolean buildout;
+        public float buildoutFloor;
+        public long buildoutProfitSince;
 
         public Map<String, Integer> megaSet() { if (megaSet == null) megaSet = new HashMap<String, Integer>(); return megaSet; }
 
@@ -60,6 +64,7 @@ public class CAData {
     public Map<String, Integer> calOutN() { if (calOutN == null) calOutN = new HashMap<String, Integer>(); return calOutN; }
     public Map<String, Integer> calUpN() { if (calUpN == null) calUpN = new HashMap<String, Integer>(); return calUpN; }
     public float minStability = 5f;
+    public boolean buildoutOffered;   // the first-colony fast buildout dialog has been shown (or doesn't apply to this save)
     public CASettings settings;
     public com.fs.starfarer.api.campaign.CargoAPI storage;
     public Map<String, Long> ambTransit;

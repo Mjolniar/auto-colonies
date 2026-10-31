@@ -18,14 +18,14 @@ This mod is currently working with most of the colony mods I could find on the m
 - **Goals:** Balanced, Money, Security, War production, Rapid growth, Self-sufficiency.
 - **Plans:** target layout from planet, hazards, resources.
 - **Budget:** monthly limit, per-project cap, credit reserve, convenience fees.
+- **Fast buildout:** after you found your first colony, a popup offers to spend everything above a floor you choose (default 250,000) on the fastest-paying builds until the colony earns money. Any losing colony can start one from its panel.
 - **Threat response:** Security at 70% threat; back below 65% after 60 days.
 - **Items and AI cores:** placed from Autopilot Storage only.
 - **Administrators:** idle ones assigned; hiring optional.
 - **Mod buildings:** measured on a probe colony, then scored like vanilla.
 - **Diagnostics:** every building rated Supported, Measured, Analyzed or Quarantined.
+- **No balance changes.** Battle size, sticky combat autopilot and other easier-game changes are in [Jonah's Easy Sector](https://github.com/Mjolniar/jonahs-easy-sector).
 - **Mod updates:** each integration is health-checked on load; mod values are read live; estimates are calibrated against real results; an action that keeps failing is paused for the session.
-- **Sticky autopilot:** U keeps combat autopilot on.
-- **Battle size:** fixed at 2000.
 
 ## Integrations
 
@@ -61,7 +61,7 @@ All optional. Each loads only when its mod is enabled.
 - **Colony:** colony screen, right-click Population & Infrastructure, **Colony Autopilot...**
 - **Empire:** Intel, Colonies, **Colony Autopilot**.
 
-Quick start: pick a goal in the colony panel and build from **Recommended builds** in Advisor. Then switch to Approve or Auto; the first switch opens setup with recommended settings. If Auto builds nothing on a young colony, check the budget line: a negative net income or a credit reserve above your bank balance stops spending (see the guide).
+Quick start: pick a goal in the colony panel and build from **Recommended builds** in Advisor. Then switch to Approve or Auto; the first switch opens setup with recommended settings. For a new colony, say yes to the fast buildout popup. Otherwise, if Auto builds nothing on a young colony, check the budget line: a negative net income or a credit reserve above your bank balance stops spending (see the guide).
 
 ## Notes
 

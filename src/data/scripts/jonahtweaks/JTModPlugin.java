@@ -2,15 +2,9 @@ package data.scripts.jonahtweaks;
 
 import com.fs.starfarer.api.BaseModPlugin;
 import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.impl.campaign.intel.events.ht.HTPoints;
-import org.json.JSONObject;
 
+/** Starts Colony Autopilot on every save load. Balance changes and sticky autopilot moved to Jonah's Easy Sector. */
 public class JTModPlugin extends BaseModPlugin {
-
-    public static final int TOPO_MULT = 5;
-
-    // runs once per game launch, so values are multiplied exactly once
-    // Balance changes removed for a vanilla-balance game; Colony Autopilot and sticky autopilot stay.
 
     public void onGameLoad(boolean newGame) {
         Global.getSector().addTransientScript(new JTCampaignScript());
@@ -25,18 +19,5 @@ public class JTModPlugin extends BaseModPlugin {
         } catch (Throwable t) {
             Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] startup failed", t);
         }
-    }
-
-    private static void mulSetting(JSONObject js, String key, double mult) {
-        try {
-            Object o = js.opt(key);
-            double base; boolean intLike;
-            if (o instanceof Number) { base = ((Number) o).doubleValue(); intLike = (o instanceof Integer || o instanceof Long); }
-            else if (o instanceof String) { base = Double.parseDouble(((String) o).trim()); intLike = !((String) o).contains("."); }
-            else { Global.getLogger(JTModPlugin.class).warn("Jonah's Colony Manager: setting missing " + key + " (" + o + ")"); return; }
-            double v = base * mult;
-            if (intLike) js.put(key, (int) Math.round(v)); else js.put(key, v);
-            Global.getLogger(JTModPlugin.class).info("Jonah's Colony Manager: " + key + " = " + Global.getSettings().getFloat(key));
-        } catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("Jonah's Colony Manager: failed " + key, t); }
     }
 }
