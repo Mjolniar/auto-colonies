@@ -23,6 +23,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     static final String AUG_APPLY = "ca:aug:apply", AUG_UNSKIP = "ca:aug:unskip";
     static final String HS = "ca:hs:";   // Coronal Hypershunt actions: ca:hs:<action>:<arg>
     static final String MEGA = "ca:mega:";   // Pluto / Nidavelir actions: ca:mega:<action>:<arg>
+    static final String TASC = "ca:tasc:";   // start a TASC terraforming project: ca:tasc:<project name>
     final MarketAPI market;
     CustomPanelAPI root, content;
     String message = null;
@@ -92,6 +93,10 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "hypershunt action failed at " + market.getName(), e);
                 message = "That failed; see starsector.log";
             }
+        }
+        else if (id instanceof String && ((String) id).startsWith(TASC)) {
+            String err = CATasc.handle(market, ((String) id).substring(TASC.length()));
+            message = err == null ? "Terraforming project started" : err;
         }
         else if (id instanceof String && ((String) id).startsWith(MEGA)) {
             String[] a = ((String) id).substring(MEGA.length()).split(":", 2);
@@ -231,6 +236,15 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             if (r.locked > 0) t.addPara(r.locked + " supported buildings are locked here until researched (Ashes of the Domain).", gray, 6f);
             if (r.unsupportedBuildable > 0) t.addPara(r.unsupportedBuildable
                     + " buildings from mods could be built here but aren't supported yet; see Diagnostics in the Intel screen.", gray, 6f);
+        }
+
+        if (CATasc.enabled() && !shunt && c.mode != CAData.Mode.OFF) {
+            t.addSectionHeading("Terraforming (Terraforming & Station Construction)", Alignment.MID, 12f);
+            try { CATasc.renderColony(t, market, c); }
+            catch (Throwable e) {
+                CADiagnostics.LOG.warn(CADiagnostics.TAG + "TASC section failed at " + market.getName(), e);
+                t.addPara("Terraforming info unavailable; see starsector.log.", gray, 6f);
+            }
         }
 
         if (Global.getSettings().getModManager().isModEnabled(CAHypershunt.MOD) && CAMegastructures.has(market) && c.mode != CAData.Mode.OFF) {

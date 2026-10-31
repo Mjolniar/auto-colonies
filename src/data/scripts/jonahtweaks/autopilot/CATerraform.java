@@ -20,54 +20,12 @@ import java.util.*;
 public class CATerraform {
     static final float STANDARD_FEE = 25000f;
 
-    /** Hazard rating change of a condition (from condition_gen_data). */
-    static final Map<String, Float> HAZARD = new HashMap<String, Float>();
-    static {
-        String[] q = {"cold", "hot", "tectonic_activity", "thin_atmosphere", "extreme_weather", "low_gravity",
-                "inimical_biosphere", "water_surface", "poor_light", "pollution", "decivilized", "decivilized_subpop"};
-        String[] h = {"very_cold", "very_hot", "extreme_tectonic_activity", "no_atmosphere", "toxic_atmosphere",
-                "dense_atmosphere", "high_gravity", "irradiated", "dark", "meteor_impacts"};
-        for (String s : q) HAZARD.put(s, 0.25f);
-        for (String s : h) HAZARD.put(s, 0.5f);
-        HAZARD.put("habitable", -0.25f);
-        HAZARD.put("mild_climate", -0.25f);
-    }
-
-    static final Map<String, CAData.Profile[]> WORLD_FITS = new HashMap<String, CAData.Profile[]>();
-    static {
-        WORLD_FITS.put("tme_paradise_world", new CAData.Profile[]{CAData.Profile.INCOME, CAData.Profile.GROWTH, CAData.Profile.BALANCED});
-        WORLD_FITS.put("tme_forge_world", new CAData.Profile[]{CAData.Profile.WAR, CAData.Profile.SELF});
-        WORLD_FITS.put("tme_fortress_world", new CAData.Profile[]{CAData.Profile.SECURITY, CAData.Profile.WAR});
-        WORLD_FITS.put("tme_hive_world", new CAData.Profile[]{CAData.Profile.GROWTH});
-        WORLD_FITS.put("tme_death_world", new CAData.Profile[]{CAData.Profile.SECURITY});
-        WORLD_FITS.put("tme_waste_world", new CAData.Profile[]{CAData.Profile.SELF});
-    }
+    /** Hazard rating change of a condition (shared with TASC's planner in CAConditions). */
+    static final Map<String, Float> HAZARD = CAConditions.HAZARD;
+    static final Map<String, CAData.Profile[]> WORLD_FITS = CAConditions.WORLD_FITS;
 
     /** Credit-equivalent per month of having this condition at this colony (negative = better without it). */
-    static float conditionValue(MarketAPI m, String cond, CAData.Profile p) {
-        float[] w = CAEngine.WEIGHTS[p.ordinal()];
-        float v = 0f;
-        Float hz = HAZARD.get(cond);
-        if (hz != null) {
-            float upkeep = Math.max(0f, m.getGrossIncome() - m.getNetIncome());
-            v -= hz * upkeep;                         // upkeep scales with hazard
-            v -= hz * 10f * w[6] / 2f;                // growth penalty
-        }
-        String com = CAEngine.DEPOSIT.get(cond);
-        if (com != null) {
-            int units = m.getSize() + CAEngine.BASE_MOD.get(com) + CAEngine.DEPOSIT_MOD.get(cond);
-            float price = Global.getSettings().getCommoditySpec(com).getBasePrice();
-            v += Math.max(0, units) * price * CAEngine.unitValue * 0.8f;
-        }
-        if (cond.equals("solar_array")) v += 3000f;
-        if (cond.equals("volturnian_lobster_pens")) v += 6000f;
-        CAData.Profile[] fits = WORLD_FITS.get(cond);
-        if (fits != null) {
-            v += 20000f;
-            for (CAData.Profile f : fits) if (f == p) v += 60000f;
-        }
-        return v;
-    }
+    static float conditionValue(MarketAPI m, String cond, CAData.Profile p) { return CAConditions.value(m, cond, p); }
 
     static float projectCost(MarketAPI m, Utils.ProjectData pd) {
         float mult = m.hasCondition(pd.id) ? Settings.REMOVAL_COST_MULTIPLIER : 1f;

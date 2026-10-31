@@ -50,13 +50,14 @@ public class CAPolicies {
                 boolean atMax = m.getSize() >= Misc.getMaxMarketSize(m);
                 float cost = m.getImmigrationIncentivesCost();
                 CAData.Profile own = c.profile;
-                boolean growthWanted = own != CAData.Profile.WAR || prof == CAData.Profile.GROWTH;
+                boolean unsafe = CAMods.growthUnsafe(m);   // Astral Ascension crashes planetless colonies past size 10
+                boolean growthWanted = !unsafe && (own != CAData.Profile.WAR || prof == CAData.Profile.GROWTH);
                 boolean unused = prof == CAData.Profile.GROWTH || prof == CAData.Profile.BALANCED || prof == CAData.Profile.INCOME || prof == CAData.Profile.SELF;
                 float colonyNet = Math.max(0f, m.getNetIncome() + (on ? cost : 0f));   // judge against income before hazard pay
                 boolean affordable = cost <= s.hazardPayColonyShare * colonyNet;
                 boolean fitsEmpire = on || hpTotal + cost <= hpCap;
                 boolean want = growthWanted && !atMax && affordable && !emergency && fitsEmpire;
-                String why = atMax ? "max size" : emergency ? "net income is negative" : !fitsEmpire ? "all colonies together would pass " + Math.round(s.hazardPayEmpireShare * 100f) + "% of empire net income" : !affordable ? Misc.getDGSCredits(cost) + "/month is over " + Math.round(s.hazardPayColonyShare * 100f) + "% of its net income" : !growthWanted ? "profile doesn't need growth" : "";
+                String why = atMax ? "max size" : emergency ? "net income is negative" : !fitsEmpire ? "all colonies together would pass " + Math.round(s.hazardPayEmpireShare * 100f) + "% of empire net income" : !affordable ? Misc.getDGSCredits(cost) + "/month is over " + Math.round(s.hazardPayColonyShare * 100f) + "% of its net income" : unsafe ? "Astral Ascension can't grow a colony without a planet past size 10" : !growthWanted ? "profile doesn't need growth" : "";
                 if (want != on && (canChange(c.lastHazardPay, HAZARD_PAY_MIN_DAYS) || (on && (emergency || atMax)))) {
                     m.setImmigrationIncentivesOn(want);
                     hpTotal += want ? cost : -cost;
@@ -73,8 +74,9 @@ public class CAPolicies {
                 boolean profileFits = m.hasIndustry("aotd_underworld") || prof == CAData.Profile.INCOME || prof == CAData.Profile.GROWTH || prof == CAData.Profile.BALANCED || prof == CAData.Profile.SELF;
                 float margin = on ? 0f : 3f;   // free port costs up to 3 stability
                 boolean stableEnough = stab - margin >= d.minStability + 1f;
-                boolean want = profileFits && stableEnough && !luddic && !threat && !punitive && !emergency;
-                String why = punitive ? "punitive expedition under way" : threat ? "threat is high" : luddic ? "Luddic majority" : !stableEnough ? "stability too low" : emergency ? "net income is negative" : !profileFits ? "profile is " + prof.label : "";
+                boolean shield = CAMods.shieldWantsClosedPort(m);   // Planetary Shield: Access Control keeps Pathers out only with the port closed
+                boolean want = profileFits && stableEnough && !luddic && !threat && !punitive && !emergency && !shield;
+                String why = punitive ? "punitive expedition under way" : threat ? "threat is high" : luddic ? "Luddic majority" : !stableEnough ? "stability too low" : emergency ? "net income is negative" : shield ? "the planetary shield keeps Pather cells out only while the port is closed" : !profileFits ? "profile is " + prof.label : "";
                 boolean urgentOff = on && (punitive || threat || stab < d.minStability);
                 if (want != on && (urgentOff || canChange(c.lastFreePort, FREE_PORT_MIN_DAYS))) {
                     m.setFreePort(want);

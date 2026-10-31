@@ -51,6 +51,7 @@ public class CADiagnostics {
 
     public static Level industryLevel(String id) { Level l = industries.get(id); return l == null ? Level.QUARANTINED : l; }
     public static Level conditionLevel(String id) { Level l = conditions.get(id); return l == null ? Level.ANALYZED : l; }
+    public static Level itemLevel(String id) { Level l = items.get(id); return l == null ? Level.ANALYZED : l; }
     public static List<Issue> getIssues() { return issues; }
     public static String getLastScan() { return lastScan; }
 
@@ -78,6 +79,11 @@ public class CADiagnostics {
                 continue;
             }
             if (spec.hasTag("parent_item")) { industries.put(spec.getId(), Level.ANALYZED); continue; }
+            if (CATasc.unsafeToProbe(spec)) {   // spawns entities, removes itself, or fails without a planet: never test-built
+                industries.put(spec.getId(), Level.ANALYZED);
+                addIssue("building", spec.getId(), spec.getName(), mod, Level.ANALYZED, "TASC building whose effects need its planet or time; left to you");
+                continue;
+            }
             String detail = probeIndustry(spec, probe);
             Level level = detail.startsWith("ERROR") ? Level.QUARANTINED : Level.ANALYZED;
             if (level == Level.ANALYZED && measurable(spec) && Global.getSector() != null) {
@@ -91,6 +97,12 @@ public class CADiagnostics {
         for (MarketConditionSpecAPI spec : Global.getSettings().getAllMarketConditionSpecs()) {
             ModSpecAPI src = spec.getSourceMod();
             if (src == null || MAPPED_MODS.contains(src.getId())) { conditions.put(spec.getId(), Level.SUPPORTED); continue; }
+            // a deposit registered in the game's own tables is scored like a vanilla one (CAEngine.deposits)
+            if (com.fs.starfarer.api.impl.campaign.econ.ResourceDepositsCondition.COMMODITY.containsKey(spec.getId())
+                    && com.fs.starfarer.api.impl.campaign.econ.ResourceDepositsCondition.MODIFIER.containsKey(spec.getId())) {
+                conditions.put(spec.getId(), Level.SUPPORTED);
+                continue;
+            }
             conditions.put(spec.getId(), Level.ANALYZED);
             addIssue("condition", spec.getId(), spec.getName(), src.getId(), Level.ANALYZED,
                     "Unmapped condition; read only through the colony's live stats");

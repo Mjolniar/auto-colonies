@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.econ.CommodityOnMarketAPI;
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.econ.MarketConditionAPI;
+import com.fs.starfarer.api.impl.campaign.econ.ResourceDepositsCondition;
 import com.fs.starfarer.api.loading.IndustrySpecAPI;
 import com.fs.starfarer.api.util.Misc;
 
@@ -24,7 +25,9 @@ public class CAEngine {
     public static boolean isSupportedVanilla(String id) { return VANILLA.contains(id); }
 
     /** Buildings the engine can score: vanilla formulas plus estimated effects for mapped mod buildings. */
-    public static boolean isSupported(String id) { return VANILLA.contains(id) || CAEstimates.has(id); }
+    public static boolean isSupported(String id) {
+        return VANILLA.contains(id) || CAEstimates.has(id) || CATasc.has(id) || CABrewery.has(id) || CAMods.has(id);
+    }
 
     public static String credits(float v) { return Misc.getDGSCredits(v); }
 
@@ -116,6 +119,8 @@ public class CAEngine {
         CAPlan.Plan plan = CAPlan.build(m, profile);
         Industry building = Misc.getCurrentlyBeingConstructed(m);
         if (building != null) r.blocked = "Already building " + building.getCurrentName();
+        String full = CAGrand.full(m);   // the vanilla colony screen shows 12 buildings; a 13th couldn't be seen or managed
+        if (full != null && r.blocked == null) r.blocked = full;
         Map<String, Integer> deficit = empireDeficits();
         Set<String> upgradeTargets = new HashSet<String>();
         for (IndustrySpecAPI s : Global.getSettings().getAllIndustrySpecs()) if (s.getUpgrade() != null) upgradeTargets.add(s.getUpgrade());
@@ -127,6 +132,7 @@ public class CAEngine {
         CASynergies.Ctx syn = Global.getSettings().getModManager().isModEnabled(CASynergies.MOD) ? CASynergies.context(m, deficit) : null;
 
         for (IndustrySpecAPI spec : Global.getSettings().getAllIndustrySpecs()) {
+            if (full != null) break;
             String id = spec.getId();
             if (CAPlan.hasOrBetter(m, id) || spec.hasTag("parent_item") || spec.hasTag("population")
                     || spec.hasTag("do_not_show_in_build_dialog") || upgradeTargets.contains(id) || CAAotD.upgradeOnly(spec)) continue;
@@ -136,7 +142,7 @@ public class CAEngine {
             boolean measurable = !supported && !noProbe && CADiagnostics.industryLevel(id) == CADiagnostics.Level.MEASURED && CAData.settings().measuredMode != 2;
             try {
                 Industry inst = spec.getNewPluginInstance(m);
-                if (!inst.isAvailableToBuild()) continue;
+                if (!(CATasc.isTasc(spec) ? CATasc.available(m, inst) : inst.isAvailableToBuild())) continue;
                 if (bmo && !CAAotD.allows(id, m, hidden)) { if (supported || measurable) r.locked++; continue; }
                 CASimulator.Effects measuredFx = null;
                 if (measurable) { measuredFx = CASimulator.measure(m, id); if (measuredFx.error != null) measuredFx = null; }
@@ -147,12 +153,19 @@ public class CAEngine {
                 p.id = id; p.name = spec.getName(); p.verb = "Build"; p.upgrade = false;
                 p.cost = inst.getBuildCost(); p.days = inst.getBuildTime();
                 p.recording = true;
-                if (measuredFx != null) { p.measured = true; CASimulator.apply(m, measuredFx, null, p, deficit); }
+                boolean worth = true;
+                if (CATasc.has(id)) worth = CATasc.apply(m, id, p, deficit);   // TASC: scored here, never test-built
+                else if (CABrewery.has(id)) worth = CABrewery.apply(m, p, deficit);   // Substance.Abuse: only with a recipe on hand
+                else if (CAMods.has(id)) worth = CAMods.apply(m, id, p, deficit);   // VIC treatment, Roider Dives
+                else if (measuredFx != null) { p.measured = true; CASimulator.apply(m, measuredFx, null, p, deficit); }
                 else effects(m, id, p, deficit);
                 p.recording = false;
+                if (!worth) continue;
                 if (!CADevelopment.adjust(m, p, inst, deficit)) continue;   // AotD management style
                 CASynergies.score(syn, p);
                 upkeep(m, spec, null, p);
+                float cramped = CAGrand.penalty(m, p.upkeep);
+                if (cramped > 0f) { p.fx[0] -= cramped; p.lines.add("Past Grand.Colonies' building limit: all upkeep here rises, about " + credits(cramped) + " per month"); }
                 if (!finish(m, p, profile, minStability, plan)) continue;
                 if (inst.isIndustry() && slotsFree <= 0) r.noSlot(p);
                 else r.picks.add(p);
@@ -181,7 +194,9 @@ public class CAEngine {
                     Pick p = new Pick();
                     p.id = up; p.name = upSpec.getName(); p.verb = "Upgrade to"; p.upgrade = true; p.existing = ind;
                     p.cost = upInst.getBuildCost(); p.days = upInst.getBuildTime();
-                    if (upMeasured) {
+                    if (CAMods.has(up)) {
+                        if (!CAMods.apply(m, up, p, deficit)) continue;   // VIC treatment, Roider Union HQ
+                    } else if (upMeasured) {
                         // measure both on the same probe colony so the difference is like for like
                         CASimulator.Effects to = CASimulator.measure(m, up), from = CASimulator.measure(m, ind.getId());
                         if (to.error != null || from.error != null) continue;
@@ -223,7 +238,7 @@ public class CAEngine {
     }
 
     static void upkeep(MarketAPI m, IndustrySpecAPI spec, IndustrySpecAPI replaced, Pick p) {
-        float sizeMult = Math.max(1, m.getSize() - 2) * 500f * m.getUpkeepMult().getModifiedValue();
+        float sizeMult = (CATasc.fixedUpkeep(spec.getId()) ? 1 : Math.max(1, m.getSize() - 2)) * 500f * m.getUpkeepMult().getModifiedValue();
         float u = spec.getUpkeep() * sizeMult * CADevelopment.upkeepMult(m, spec);
         if (replaced != null) u -= replaced.getUpkeep() * sizeMult * CADevelopment.upkeepMult(m, replaced);
         p.fx[0] -= u;
@@ -267,21 +282,17 @@ public class CAEngine {
         int s = m.getSize();
         boolean habitable = m.hasCondition("habitable");
         if (id.equals("farming") || id.equals("aquaculture")) {
-            int mod = 0;
-            for (MarketConditionAPI c : m.getConditions()) if ("food".equals(DEPOSIT.get(c.getId()))) mod = DEPOSIT_MOD.get(c.getId());
-            supply(p, "food", s + mod, deficit);
+            deposits(m, "farming", p, deficit);
             demand(p, "heavy_machinery", s - 3, deficit);
         } else if (id.equals("mining")) {
-            for (MarketConditionAPI c : m.getConditions()) {
-                String com = DEPOSIT.get(c.getId());
-                if (com == null || com.equals("food")) continue;
-                supply(p, com, s + BASE_MOD.get(com) + DEPOSIT_MOD.get(c.getId()), deficit);
-            }
+            deposits(m, "mining", p, deficit);
+            CAMods.miningExtras(m, p, deficit);   // Unknown Skies / What We Left Behind conditions that add to Mining directly
             demand(p, "heavy_machinery", s - 3, deficit);
             demand(p, "drugs", s, deficit);
         } else if (id.equals("techmining")) {
             int r = m.hasCondition("ruins_vast") ? 4 : m.hasCondition("ruins_extensive") ? 3 : m.hasCondition("ruins_widespread") ? 2 : 1;
-            float v = 4000f * r * CADevelopment.techMiningMult(m);   // x1.7 at an AotD Archeo-Site
+            float left = m.getMemoryWithoutUpdate().contains("$core_techMiningMult") ? m.getMemoryWithoutUpdate().getFloat("$core_techMiningMult") : 1f;   // ruins deplete 5% a month
+            float v = 4000f * r * left * CADevelopment.techMiningMult(m);   // x1.7 at an AotD Archeo-Site
             p.fx[0] += v;
             p.lines.add("Salvage from the ruins: about " + Misc.getDGSCredits(v) + " per month in value");
         } else if (id.equals("refining")) {
@@ -316,7 +327,8 @@ public class CAEngine {
         } else if (id.equals("heavybatteries")) {
             p.fx[3] += 1f; p.lines.add("Ground defense x3 (from x2)");
         } else if (id.equals("planetaryshield")) {
-            p.fx[3] += 2f; p.lines.add("Ground defense x3; blocks meteor impacts");
+            if (CAMods.psac()) CAMods.shield(m, p);   // Planetary Shield: Access Control's version
+            else { p.fx[3] += 2f; p.lines.add("Ground defense x3; blocks meteor impacts"); }
         } else if (id.startsWith("orbitalstation")) {
             p.fx[3] += 0.5f; p.fx[4] += 0.3f; p.lines.add("Station fleet; ground defense x1.5");
         } else if (id.startsWith("battlestation")) {
@@ -329,6 +341,26 @@ public class CAEngine {
             p.fx[6] += 4f; p.lines.add("Large growth bonus from the in-system cryosleeper");
         } else if (CAEstimates.has(id)) {
             CAEstimates.apply(m, id, p, deficit);
+        }
+    }
+
+    /**
+     * What a deposit industry makes here, by the tables the game's own ResourceDepositsCondition uses (so deposits mods
+     * register there count too), falling back to the vanilla table above.
+     */
+    static void deposits(MarketAPI m, String industry, Pick p, Map<String, Integer> deficit) {
+        for (MarketConditionAPI c : m.getConditions()) {
+            String com = ResourceDepositsCondition.COMMODITY.get(c.getId());
+            Integer mod = ResourceDepositsCondition.MODIFIER.get(c.getId());
+            if (com == null || mod == null) { com = DEPOSIT.get(c.getId()); mod = DEPOSIT_MOD.get(c.getId()); }
+            if (com == null || mod == null || Global.getSettings().getCommoditySpec(com) == null) continue;
+            String by = ResourceDepositsCondition.INDUSTRY.get(com);
+            if (by == null) by = com.equals("food") ? "farming" : "mining";
+            if (!by.equals(industry)) continue;
+            Integer base = ResourceDepositsCondition.BASE_MODIFIER.get(com);
+            if (base == null) base = BASE_MOD.containsKey(com) ? BASE_MOD.get(com) : 0;
+            int size = ResourceDepositsCondition.BASE_ZERO.contains(com) ? 0 : m.getSize();
+            supply(p, com, size + base + mod, deficit);
         }
     }
 
@@ -356,7 +388,7 @@ public class CAEngine {
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             for (CommodityOnMarketAPI c : m.getAllCommodities()) {
                 int d = c.getDeficitQuantity();
-                if (d > 0) {
+                if (d > 0 && !CABrewery.isDrink(c.getId())) {   // Substance.Abuse drinks: other colonies' demand has no penalty
                     Integer cur = out.get(c.getId());
                     out.put(c.getId(), (cur == null ? 0 : cur) + d);
                 }
