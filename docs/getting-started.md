@@ -1,12 +1,16 @@
 # Getting started
 
+Install, the two panels, your first colony, and the settings that matter early. What the manager does with each of your other mods is in [What each supported mod adds](supported-mods.md).
+
 ## Install
 
 1. Download the zip from the latest [release](https://github.com/Mjolniar/jonahs-colony-manager/releases/latest). Extract it into `Starsector/mods/` so you get `Starsector/mods/Jonah's Colony Manager/mod_info.json`.
 2. In the launcher, enable **Jonah's Colony Manager**. No other mods are required. The optional integrations turn on by themselves when their mod is enabled.
 3. Start a new game or load a save. Adding the mod to a running save is fine. Removing it from a save that used it is not: Autopilot Storage is a market tab.
 
-Nothing is built automatically after install. Every colony starts in **Advisor** mode, which only makes recommendations.
+Nothing is built automatically after install. Every colony starts in **Advisor** mode, which only makes recommendations; the one exception is the fast buildout you can accept for your first colony.
+
+**Updating from 2.6.0 or earlier:** battle size 2000 and sticky combat autopilot moved to [Jonah's Easy Sector](https://github.com/Mjolniar/jonahs-easy-sector). Install it too if you want them; sticky autopilot keeps its on/off state.
 
 ## The two panels
 
@@ -17,7 +21,7 @@ Nothing is built automatically after install. Every colony starts in **Advisor**
 
 ## Your first colony
 
-1. **Found the colony** the usual way.
+1. **Found the colony** the usual way. When the founding dialog closes, Colony Autopilot offers a **fast buildout**. Say yes and pick a credit floor to have the colony built up hands-off until it makes money (see [Fast buildout](#fast-buildout-offered-when-you-found-your-first-colony)), or say no and follow the steps below.
 2. **Open its colony panel.** The top lines show size, stability, hazard, accessibility, industry slots, your credits, and this month's budget.
 3. **Pick a goal** under **Goal profile**:
 
@@ -99,4 +103,4 @@ Off by default. To turn them on, open the empire panel's **Settings**, then **Ag
 - **Diagnostics** (empire panel) rates every building Supported, Measured, Analyzed or Quarantined, lists the state of each mod integration, and has **Rescan now**.
 - When reporting a bug, attach `starsector-core/starsector.log` and `saves/common/colony_autopilot_diagnostics.json.data` to an [issue](https://github.com/Mjolniar/jonahs-colony-manager/issues).
 
-All rules in detail: [details.md](details.md).
+Your other mods: [What each supported mod adds](supported-mods.md). All rules in detail: [details.md](details.md).
