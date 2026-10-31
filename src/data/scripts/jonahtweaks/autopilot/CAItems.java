@@ -107,11 +107,10 @@ public class CAItems {
         return v * mult * m.getSize();
     }
 
-    /** One placement per day at most, so each move is visible in the log. */
-    public static void run() {
+    /** One placement per day at most, so each move is visible in the log. Only among the given Auto colonies (those not under siege). */
+    public static void run(List<MarketAPI> markets) {
         CAData d = CAData.get();
         CASettings s = d.settings;
-        List<MarketAPI> markets = autoMarkets();
         if (markets.isEmpty()) return;
         if (placeItem(d, s, markets)) return;
         if (!s.disableStabilizers && s.allowRemovals && convertFuel(d, s, markets)) return;   // replaces a building, so only with Allow removals

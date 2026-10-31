@@ -20,6 +20,7 @@ This mod is currently working with most of the colony mods I could find on the m
 - **Budget:** Automatic by default (half of net income plus 15% of savings above a reserve), per-project cap, convenience fees. The recommended settings are meant to work if you only switch colonies to Auto.
 - **Fast buildout:** after you found your first colony, a popup offers to spend everything above a floor you choose (default 250,000) on the fastest-paying builds until the colony earns money. Any losing colony can start one from its panel.
 - **Threat response:** Security at 70% threat; back below 65% after 60 days.
+- **Sieges:** while a colony is blockaded, has hostiles at the planet, or has a raid or blockade on its way, only defenses are built there, everything else waits, and trade contracts don't count on its goods.
 - **Items and AI cores:** placed from Autopilot Storage only.
 - **Administrators:** idle ones assigned; hiring optional.
 - **Mod buildings:** measured on a probe colony, then scored like vanilla.

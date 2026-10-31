@@ -244,6 +244,10 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             }
             if (!buildout && planWith != c.profile) t.addPara("Planning with Security until the threat drops below %s and has been high for %s days.", 4f,
                     Misc.getNegativeHighlightColor(), Math.round(CAThreat.CLEAR * 100f) + "%", "" + Math.round(CAThreat.MIN_DAYS));
+            String siege = managed ? CASiege.why(market) : null;
+            if (siege != null) t.addPara("Under siege (%s): " + (buildout ? "the buildout waits" : "only defenses are built")
+                    + "; items, AI cores, policies and station augments are left as they are, and trade contracts don't count on its goods.", 4f,
+                    Misc.getNegativeHighlightColor(), siege);
             com.fs.starfarer.api.characters.AdminData ad = CAItems.adminAt(market);
             if (ad != null && ad.getPerson() != null && !ad.getPerson().isAICore()) {
                 float salary = Misc.getAdminSalary(ad.getPerson()), worth = CAItems.adminWorth(market, ad.getPerson());

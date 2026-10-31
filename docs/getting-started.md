@@ -101,6 +101,8 @@ Each new colony starts as Balanced and Advisor. Set its goal and mode in its col
 
 A colony whose threat estimate reaches 70% (hostile neighbors, crises, raids, Pather cells) is planned as Security on its own. It goes back to its own goal below 65%, after at least 60 days.
 
+A colony under siege (blockaded, hostile fleets at the planet, hostiles in the system that outweigh its defenses, or a raid, invasion or blockade on its way) only gets defenses until it's over. Its items, AI cores, policies and station augments are left alone, and trade contracts don't count on its goods. The log says when a siege starts and ends.
+
 ## Agents (Nexerelin)
 
 Off until setup runs; the recommended settings turn on **Defense**. Change it in the empire panel's **Settings**, under **Agents (Nexerelin)**: **Off**, **Defense**, or **Defense and offense**.
