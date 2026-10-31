@@ -12,11 +12,12 @@ import java.lang.invoke.MethodType;
  * The results are the same as plain reflection.
  */
 public final class CARefl {
-    static final MethodHandle GET_METHOD, GET_FIELD, INVOKE, FIELD_GET, FIELD_SET;
+    static final MethodHandle GET_METHOD, GET_FIELD, INVOKE, FIELD_GET, FIELD_SET, DECLARED_FIELDS, SET_ACCESSIBLE;
     static {
         try {
             Class<?> method = Class.forName("java.lang.reflect.Method", false, null);
             Class<?> field = Class.forName("java.lang.reflect.Field", false, null);
+            Class<?> fieldArray = Class.forName("[Ljava.lang.reflect.Field;", false, null);
             // a full lookup: getMethod, invoke, get and set are caller-sensitive, which publicLookup refuses
             MethodHandles.Lookup l = MethodHandles.lookup();
             GET_METHOD = l.findVirtual(Class.class, "getMethod", MethodType.methodType(method, String.class, Class[].class)).asFixedArity();
@@ -24,6 +25,8 @@ public final class CARefl {
             INVOKE = l.findVirtual(method, "invoke", MethodType.methodType(Object.class, Object.class, Object[].class)).asFixedArity();
             FIELD_GET = l.findVirtual(field, "get", MethodType.methodType(Object.class, Object.class));
             FIELD_SET = l.findVirtual(field, "set", MethodType.methodType(void.class, Object.class, Object.class));
+            DECLARED_FIELDS = l.findVirtual(Class.class, "getDeclaredFields", MethodType.methodType(fieldArray));
+            SET_ACCESSIBLE = l.findVirtual(field, "setAccessible", MethodType.methodType(void.class, boolean.class));
         } catch (Throwable t) {
             throw new ExceptionInInitializerError(t);
         }
@@ -58,5 +61,25 @@ public final class CARefl {
     /** Field.set (unboxes into primitive fields). */
     public static void set(Object field, Object target, Object value) throws Exception {
         try { FIELD_SET.invoke(field, target, value); } catch (Throwable t) { throw wrap(t); }
+    }
+
+    /** A public no-argument method by name, e.g. call(panel, "getChildrenCopy"). */
+    public static Object call(Object target, String name) throws Exception { return invoke(method(target.getClass(), name), target); }
+
+    /**
+     * The values of every field declared on the object's class and its superclasses, private ones included. For game
+     * objects whose fields have obfuscated names: callers pick the value by type, not by name. Fields that can't be
+     * opened (JDK classes) are skipped.
+     */
+    public static java.util.List<Object> fieldValues(Object target) {
+        java.util.List<Object> out = new java.util.ArrayList<Object>();
+        for (Class<?> c = target.getClass(); c != null && c != Object.class; c = c.getSuperclass()) {
+            Object[] fields;
+            try { fields = (Object[]) DECLARED_FIELDS.invoke(c); } catch (Throwable t) { continue; }
+            for (Object f : fields) {
+                try { SET_ACCESSIBLE.invoke(f, true); out.add(FIELD_GET.invoke(f, target)); } catch (Throwable ignored) { }
+            }
+        }
+        return out;
     }
 }

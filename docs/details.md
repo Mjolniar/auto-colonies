@@ -11,7 +11,7 @@ Colony management automation (Colony Autopilot) for Starsector 0.98a. No balance
 
 ## Using it
 
-- **Colony panel:** colony screen, right-click **Population & Infrastructure**, then **Colony Autopilot...**
+- **Colony panel:** the **Colony Autopilot** button on the colony screen, or right-click **Population & Infrastructure**, then **Colony Autopilot...** The button finds a free spot near the building grid and doesn't appear if there's none; setting **Button on the colony screen** turns it off.
 - **Empire panel:** Intel screen, **Colonies** tab, **Colony Autopilot**. Budget, approvals, every colony, storage, settings, log, diagnostics.
 - **Modes per colony:** Off, Advisor (default: recommends, you click Build), Approve (one-click proposals), Auto (builds within your budget).
 - **Goals:** Balanced, Money, Security, War production, Rapid growth, Self-sufficiency. Each colony gets a plan from its planet, hazards and resources. With Terraforming Made Easy, that includes a reachable special world (Forge, Fortress, Paradise, Hive, Death, Waste) resolved from TME's own requirements.
@@ -183,3 +183,4 @@ The colony-mod integrations (`CATasc`, `CAGrand`, `CABrewery`, `CAMods`) use lit
 23. `starsector.log` has no "File access and reflection are not allowed to scripts" line. With Ashes of the Domain, the colony panel shows research locks and synergies instead of "info unavailable".
 24. New game, found the first colony: once the founding dialog closes, the fast buildout dialog appears. Pick 250,000: the colony switches to Auto, the log says "fast buildout started", and builds start daily without taking credits below 250,000. **Stop buildout** in the colony panel ends it; the colony stays in Auto. In a save that already has colonies the dialog never appears.
 25. With Nexerelin, set **Agents** to Defense with a Pather cell or rebellion at a colony: within a day an agent is hired (log "Hired agent", 12,000) and sent there. The empire panel's **Agents (Nexerelin)** section lists it and any enemy operations against your colonies. Agents you hired yourself get no orders.
+26. Open one of your colonies from the Command tab: a **Colony Autopilot** button sits near the building grid without covering anything, and opens the colony panel. Docked at the colony, the same. Not on other factions' markets. With **Button on the colony screen** off, it's gone.

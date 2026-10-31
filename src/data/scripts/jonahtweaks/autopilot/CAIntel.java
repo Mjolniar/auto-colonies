@@ -70,11 +70,11 @@ public class CAIntel extends BaseIntelPlugin {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
 
         t.addTitle("Colony Autopilot");
-        t.addPara("Every colony starts in Advisor mode. Open a colony's own panel by right-clicking its Population & Infrastructure "
-                + "on the colony screen.", 6f);
+        t.addPara("Every colony starts in Advisor mode. Open a colony's own panel with the Colony Autopilot button on its colony "
+                + "screen, or by right-clicking its Population & Infrastructure.", gray, 6f);
 
         t.addSectionHeading("Budget", Alignment.MID, 12f);
-        t.addPara("This month: %s spent of %s (%s in fees). Available now: %s. Reserve kept: %s.", 6f, hl,
+        t.addPara("This month: %s of %s spent (%s in fees), %s available. Never spends below %s.", 6f, hl,
                 Misc.getDGSCredits(s.spent), Misc.getDGSCredits(CABudget.limit(s)), Misc.getDGSCredits(s.fees),
                 Misc.getDGSCredits(CABudget.available(s)), Misc.getDGSCredits(s.reserve));
         if (CABudget.paused(s)) t.addPara("Spending is paused: net income is negative.", Misc.getNegativeHighlightColor(), 4f);
@@ -116,9 +116,10 @@ public class CAIntel extends BaseIntelPlugin {
                 top = "error, see Diagnostics";
             }
             CAPlan.Plan plan = CAPlan.build(m, c.profile);
-            t.addPara("%s (size %s): %s, %s. Plan: %s, %s of %s done. Top pick: %s", 10f, hl, m.getName(), "" + m.getSize(),
-                    c.profile.label, c.mode.label, plan.name, "" + plan.doneCount(m), "" + plan.steps.size(), top);
-            ButtonAPI b1 = t.addButton("Next profile", new String[]{"profile", m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 140f, 22f, 4f);
+            String flags = (c.buildout ? ", fast buildout" : "") + (c.threatHigh ? ", threatened" : "");
+            t.addPara("%s (size %s): %s, %s" + CALog.esc(flags), 12f, hl, m.getName(), "" + m.getSize(), c.profile.label, c.mode.label);
+            t.addPara("Plan %s: %s of %s done. Next: " + CALog.esc(top), 2f, gray, hl, plan.name, "" + plan.doneCount(m), "" + plan.steps.size());
+            ButtonAPI b1 = t.addButton("Next goal", new String[]{"profile", m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 140f, 22f, 4f);
             ButtonAPI b2 = t.addButton("Next mode", new String[]{"mode", m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 140f, 22f, 0f);
             b2.getPosition().rightOfTop(b1, 6f);
             CALog.endRow(t, b1);
