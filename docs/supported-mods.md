@@ -26,6 +26,7 @@ Back to [Getting started](getting-started.md). The full rules are in [details.md
 - **Specialized Mining and Refining.** Switches to the specialty worth the most, from the colony's deposits and your empire's shortages.
 - **Supply shipping (Courier Port).** When an Auto colony runs short, it sets up a monthly Courier contract from another colony's stockpile and cancels it once the shortage is gone. IndEvo's normal shipping cost applies.
 - Each part can be switched off in **Settings**.
+- **Income panel crash fix.** IndEvo 4.1.b leaves some report rows for other factions' Pet Storage and Academy without a name, and sorting Command, Income then crashes the game. The manager names those rows, in every save.
 
 ## Nexerelin
 

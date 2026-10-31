@@ -116,6 +116,7 @@ Colony management automation (Colony Autopilot) for Starsector 0.98a. No balance
   - Installed augments are only replaced when the new set is worth at least 10% (and 300 per month) more, so wobbling estimates don't swap them back and forth.
   - Left to you: augments that use up an item (Shrouded, Threat), ones that give AP back for a drawback (Extreme or Special Modifications), and Economy Conversion while the colony plans for Security. Economy Conversion is never removed once added, since its industry slot may be in use.
 - **Unsupported content:** mod content the manager can't support or measure is never acted on. It's analyzed and reported (see Diagnostics).
+- **Unnamed income rows (crash fix):** Industrial Evolution 4.1.b leaves some monthly report rows without a name (Pet Storage and the Academy at other factions' markets), and clicking a column in Command, Income then crashes the game. Twice a second, also while paused, the manager names any such row in this and last month's report, after the building or its id. Only names change. This runs in every save, whatever the colony modes.
 
 ## Diagnostics
 
@@ -189,3 +190,4 @@ The colony-mod integrations (`CATasc`, `CAGrand`, `CABrewery`, `CAMods`) use lit
 27. New save: found a colony, decline the fast buildout, switch the colony to Auto and just click **Save and switch to Auto**. The budget line shows money available even while net income is negative (Automatic budget), and builds start within a few days.
 28. Open a colony panel: each recommended build shows money a month after upkeep (a Waystation is a few thousand, not hundreds of thousands) and a "Ranked" line. Options that don't pay for themselves are marked, and Auto doesn't start them.
 29. With a Nexerelin outpost: its panel says it's left alone, it has no plan or builds, and the empire panel lists it as "Nexerelin outpost, left alone".
+30. With Industrial Evolution: open Command, Income and click each column header. Nothing crashes, and the log has "named N monthly report rows another mod left unnamed" once.
