@@ -1,15 +1,19 @@
 # Colony Autopilot defaults (Jonah's Colony Manager). Read once, when a save first creates its Colony Autopilot settings.
 # Everything here can be changed in-game: Intel screen > Colonies > Colony Autopilot > Settings.
+# The first switch of a colony to Approve or Auto opens setup, pre-filled with recommendations scaled to your income and
+# credits (the values below where they match). Agents, research, contracts and the settlement stay off until then.
 {
 	# Budget
-	"budgetPercentMode":true,      # true: a share of net income; false: the fixed amount below
+	"budgetAuto":true,             # Automatic: budgetPercent of net income plus savingsShare of credits above the reserve
+	"savingsShare":0.15,           # Automatic only: share of savings above the reserve spent per month
+	"budgetPercentMode":true,      # when budgetAuto is false: true a share of net income, false the fixed amount below
 	"budgetPercent":0.5,           # share of last month's net income spent per month
 	"budgetFixed":1000000,
 	"perProjectCap":2000000,       # bigger projects wait for you
-	"reserve":500000,              # never spends your credits below this
+	"reserve":500000,              # never spends your credits below this (setup recommends a quarter of your credits, 50k-500k)
 	"terraformShare":0.4,          # most of the monthly budget terraforming may use
 	"newUpkeepCap":50000,          # most new monthly upkeep added per month
-	"pauseOnLoss":true,            # no spending while net income is negative
+	"pauseOnLoss":false,           # no spending while net income is negative (the Automatic budget already slows down)
 	"feeLevel":2,                  # convenience fees: 0 off, 1 low, 2 standard, 3 high
 
 	# Building and planning
@@ -19,11 +23,11 @@
 	"storyPointMonthlyCap":2,
 
 	# Items and AI cores (only from Autopilot Storage)
-	"useAICores":false,
+	"useAICores":true,             # only cores you put in Autopilot Storage; kept within Hegemony inspection limits
 	"alphaMode":0,                 # 0 only where removable, 1 anywhere, 2 never
 
 	# Administrators
-	"adminHiring":false,
+	"adminHiring":true,
 	"adminOptimal":true,           # place idle administrators first
 	"adminDelay":true,             # 30-day arrival delay for hired administrators and ambassadors
 

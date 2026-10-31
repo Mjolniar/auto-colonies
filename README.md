@@ -17,7 +17,7 @@ This mod is currently working with most of the colony mods I could find on the m
 - **Modes per colony:** Off, Advisor, Approve, Auto. Auto builds within your budget.
 - **Goals:** Balanced, Money, Security, War production, Rapid growth, Self-sufficiency.
 - **Plans:** target layout from planet, hazards, resources.
-- **Budget:** monthly limit, per-project cap, credit reserve, convenience fees.
+- **Budget:** Automatic by default (half of net income plus 15% of savings above a reserve), per-project cap, convenience fees. The recommended settings are meant to work if you only switch colonies to Auto.
 - **Fast buildout:** after you found your first colony, a popup offers to spend everything above a floor you choose (default 250,000) on the fastest-paying builds until the colony earns money. Any losing colony can start one from its panel.
 - **Threat response:** Security at 70% threat; back below 65% after 60 days.
 - **Items and AI cores:** placed from Autopilot Storage only.

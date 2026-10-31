@@ -41,7 +41,22 @@ Nothing is built automatically after install. Every colony starts in **Advisor**
    - **Approve:** one proposal at a time, shown under **Waiting for your approval** in both panels. Click Approve or Reject.
    - **Auto:** builds by itself, within your budget.
 
-   The first switch to Approve or Auto opens **first-time setup**. Every setting is pre-filled with a recommendation based on your income. Click **Use recommended settings** or change them, then click **Save and switch to ...**.
+   The first switch to Approve or Auto opens **first-time setup**, pre-filled with the recommended settings (below). Just click **Save and switch to ...**: the recommendations are meant to work without changes. **Use recommended settings** in the empire panel puts them back any time.
+
+### What the recommended settings do
+
+They're chosen so that switching colonies to Auto and doing nothing else works out well:
+
+| Area | Recommended |
+|---|---|
+| Budget | **Automatic**: half of last month's net income, plus 15% of your credits above the reserve each month. A young colony that loses money still gets built, and spending slows as savings fall. |
+| Credit reserve | A quarter of your credits at setup, between 50,000 and 500,000; never spent |
+| Pause on loss | Off (the Automatic budget already slows down) |
+| AI cores, administrators | Used and hired (only cores you put in Autopilot Storage; within Hegemony inspection limits) |
+| Research, trade contracts, settlement | Auto, each only when it pays (Ashes of the Domain, Random Assortment of Things) |
+| Agents | Defense: hired only when there's a rebellion, Pather cell, pirate base or enemy operation (Nexerelin) |
+| Policies, edicts, IndEvo automation, defense fleets | On |
+| Removals, story points, offense | Off: these are your calls |
 
 ### Fast buildout (offered when you found your first colony)
 
@@ -54,26 +69,20 @@ Once the founding dialog closes, Colony Autopilot asks whether to build the colo
 
 While it runs, the colony panel's **Fast buildout** section shows the floor and net income, with **Lower floor**, **Raise floor** and **Stop buildout** buttons. Any colony that loses money gets a **Start fast buildout** button there, so you can start one later, or for another colony.
 
-### First-colony budget trap
+### If Auto builds nothing
 
-Without fast buildout, a young colony usually loses money, so Auto may build nothing at first. Three settings cause this:
+The colony panel's budget line shows how much can be spent this month. With the recommended settings a young colony still gets money from your savings. If it doesn't:
 
-- **Monthly budget** defaults to 50% of last month's net income for your whole empire, including fleet upkeep. While that number is negative, the budget is zero.
-- **Pause on loss** (on) stops all spending while net income is negative.
-- **Credit reserve** (500,000) is never spent. With less than that in the bank, nothing is built.
+- **Budget type** is **Share of net income** and your empire's net income (fleet upkeep included) is negative, so the budget is zero. Switch to **Automatic**.
+- **Pause on loss** is on: **Spending is paused** shows on the budget line.
+- You have less than the **Credit reserve**, which is never spent.
 
-Fast buildout gets around all three. To let normal Auto build while the colony is still unprofitable, open **Settings** in the empire panel, under **Budget and spending**:
-
-- set **Budget type** to **Fixed amount** with a monthly budget you can afford;
-- turn **Pause on loss** off;
-- lower the **Credit reserve** to what you want to keep.
-
-The colony panel's budget line shows how much can be spent this month. **Spending is paused** means pause on loss is stopping it.
+All three are under **Settings**, **Budget and spending**, in the empire panel; **Use recommended settings** fixes them in one click.
 
 ### Items, AI cores and administrators
 
-- **Colony items and AI cores:** dock at any of your colonies, open the **Autopilot Storage** tab, and deposit them there. The manager uses only items in that storage, and only for colonies in Auto mode; it never takes from your cargo or normal storage. AI cores also need **Use AI cores** turned on in Settings.
-- **Administrators:** in Auto mode, idle administrators are assigned where they help most. Hiring is off by default; turn on **Administrator hiring** to allow it.
+- **Colony items and AI cores:** dock at any of your colonies, open the **Autopilot Storage** tab, and deposit them there. The manager uses only items in that storage, and only for colonies in Auto mode; it never takes from your cargo or normal storage. AI cores are used with the recommended settings (**Use AI cores**).
+- **Administrators:** in Auto mode, idle administrators are assigned where they help most. With the recommended settings it also hires one when a colony has none (**Administrator hiring**).
 
 ### Keeping control
 
@@ -90,7 +99,7 @@ A colony whose threat estimate reaches 70% (hostile neighbors, crises, raids, Pa
 
 ## Agents (Nexerelin)
 
-Off by default. To turn them on, open the empire panel's **Settings**, then **Agents (Nexerelin)**, and set **Agents** to **Defense** or **Defense and offense**.
+Off until setup runs; the recommended settings turn on **Defense**. Change it in the empire panel's **Settings**, under **Agents (Nexerelin)**: **Off**, **Defense**, or **Defense and offense**.
 
 - **Defense:** an agent is hired (12,000) when there's work for one. It handles rebellions, Pather cells and hidden pirate bases. It also raises relations with factions that run operations against your colonies while not at war with you.
 - **Offense:** adds a Saboteur that sabotages the military of factions already at war with you, starting with whoever is invading or raiding you.

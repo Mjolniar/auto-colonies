@@ -14,26 +14,57 @@ public class CASetupUI {
 
     static float round(float v, float step) { return Math.max(step, Math.round(v / step) * step); }
 
-    /** Recommended values from current income; the defaults otherwise. */
+    /**
+     * The recommended settings: what a player who only switches colonies to Auto should get. Everything that pays for
+     * itself and can't hurt is on; choices that are hard to undo or are really the player's (removing buildings, story
+     * points, offense) stay off. Scaled to the empire's income and credits now.
+     */
     public static void applyRecommended(CASettings s) {
-        float net = Math.max(0f, CABudget.netIncome(s));
+        float net = Math.max(0f, CABudget.netIncome(s)), credits = CABuild.credits();
+        // budget: half of net income plus 15% of savings above the reserve each month. A young colony that loses money
+        // still gets built (share-of-income alone is 0 then), and spending slows as savings run down.
+        s.budgetAuto = true;
         s.budgetPercentMode = true;
         s.budgetPercent = 0.5f;
+        s.savingsShare = 0.15f;
+        s.pauseOnLoss = false;   // the Automatic budget already tapers; pausing would stop every early colony
+        s.reserve = Math.min(500000f, round(Math.max(50000f, credits * 0.25f), 50000f));   // a quarter of what you have, 50k-500k
         s.perProjectCap = Math.min(5000000f, round(Math.max(1000000f, net), 250000f));
-        s.reserve = 500000f;
         s.newUpkeepCap = round(Math.max(20000f, net * 0.1f), 10000f);
-        s.pauseOnLoss = true;
+        s.monthCredits = credits;
         s.feeLevel = 2;
         s.stationLine = "score";
-        s.useAICores = false;
+        s.measuredMode = 0;
+        s.allowRemovals = false;   // removing buildings is the player's call
+        s.storyPointRule = 0;      // story points too
+        // items and people: only items you put in Autopilot Storage are used; cores are kept within inspection limits
+        s.useAICores = true;
         s.alphaMode = 0;
-        s.hazardPayColonyShare = 0.25f;
-        s.hazardPayEmpireShare = 0.10f;
-        s.allowRemovals = false;
-        s.storyPointRule = 0;
-        s.adminHiring = false;
+        s.disableStabilizers = false;
+        s.adminHiring = true;
         s.adminOptimal = true;
         s.adminDelay = true;
+        s.disableAmbassadors = false;
+        // policies and mod automation: each one only acts when it pays
+        s.hazardPayMode = 0;
+        s.freePortMode = 0;
+        s.hazardPayColonyShare = 0.25f;
+        s.hazardPayEmpireShare = 0.10f;
+        s.disableEdicts = false;
+        s.disableDefenseFleets = false;
+        s.disableSpecialties = false;
+        s.disableVPC = false;
+        s.disableForgeVPC = false;
+        s.disableShipping = false;
+        s.settlementMode = 2;   // Auto: founds RAT's settlement only once a site clears the income threshold
+        s.augmentMode = 0;
+        s.contractMode = 1;     // Auto: only contracts with 15% to spare that beat exporting
+        s.researchMode = 1;     // Auto: databank-only techs, ranked by what they unlock
+        s.hypershuntMode = 0;
+        s.spyMode = 1;          // Defense: an agent is hired only when there's a rebellion, Pather cell, pirate base or enemy operation
+        s.spyNoHiring = false;
+        s.spyKeep = 0;
+        s.noScreenButton = false;
     }
 
     /** Which groups are expanded (UI state only, not saved). Budget starts open. */
@@ -86,20 +117,26 @@ public class CASetupUI {
     public static void openAll() { open.addAll(java.util.Arrays.asList("budget", "build", "items", "people", "policy", "spies", "industry", "settle", "augments", "aotd", "interface")); }
 
     public static void render(TooltipMakerAPI t, CASettings s, float width) {
-        String budget = s.budgetPercentMode ? Math.round(s.budgetPercent * 100f) + "% of net income (" + Misc.getDGSCredits(CABudget.limit(s)) + " now)"
+        String budget = s.budgetAuto ? Misc.getDGSCredits(CABudget.limit(s)) + " this month"
+                : s.budgetPercentMode ? Math.round(s.budgetPercent * 100f) + "% of net income (" + Misc.getDGSCredits(CABudget.limit(s)) + " now)"
                 : Misc.getDGSCredits(s.budgetFixed);
+        String type = s.budgetAuto ? "Automatic" : s.budgetPercentMode ? "Share of net income" : "Fixed amount";
 
         if (group(t, "budget", "Budget and spending", budget + ", reserve " + Misc.getDGSCredits(s.reserve) + ", fees " + CASettings.FEE_NAMES[s.feeLevel])) {
-            row(t, "Budget type", s.budgetPercentMode ? "Share of net income" : "Fixed amount", "Share of net income", "type", true);
-            row(t, "Monthly budget", budget, "50% of net income", "budget", false);
+            row(t, "Budget type", type, "Automatic", "type", true);
+            if (s.budgetAuto) {
+                row(t, "From net income", Math.round(s.budgetPercent * 100f) + "% of last month's", "50%", "budget", false);
+                row(t, "From savings", Math.round((s.savingsShare > 0f ? s.savingsShare : 0.15f) * 100f) + "% of credits above the reserve, each month ("
+                        + Misc.getDGSCredits(CABudget.fromSavings(s)) + " now)", "15%", "savings", false);
+            } else row(t, "Monthly budget", budget, "use the Automatic type", "budget", false);
             row(t, "Per-project cap", Misc.getDGSCredits(s.perProjectCap), "monthly net income, 1M-5M", "cap", false);
-            row(t, "Credit reserve", Misc.getDGSCredits(s.reserve), "500,000", "reserve", false);
-            row(t, "New upkeep cap per month", Misc.getDGSCredits(s.newUpkeepCap), "10% of net income", "upkeep", false);
-            row(t, "Pause on loss", onOff(s.pauseOnLoss), "On", "pause", true);
+            row(t, "Credit reserve", Misc.getDGSCredits(s.reserve), "a quarter of your credits, 50,000-500,000", "reserve", false);
+            row(t, "New upkeep cap per month", Misc.getDGSCredits(s.newUpkeepCap), "10% of net income, at least 20,000", "upkeep", false);
+            row(t, "Pause on loss", onOff(s.pauseOnLoss), "Off", "pause", true);
             row(t, "Convenience fees", CASettings.FEE_NAMES[s.feeLevel], "Standard", "fees", true);
             float st = stationLineItem(s);
             t.addPara("Station line item: about %s to give each of your colonies its next station tier (" + CALog.esc(stationName(s.stationLine))
-                    + "). Recommended: allow it within 2-3 months of budget.", 8f, Misc.getHighlightColor(), Misc.getDGSCredits(st));
+                    + "), within about 2-3 months of budget.", 8f, Misc.getHighlightColor(), Misc.getDGSCredits(st));
         }
         if (group(t, "build", "Building and planning", "stations: " + stationName(s.stationLine) + ", removals " + onOff(s.allowRemovals).toLowerCase()
                 + ", story points: " + CASettings.SP_NAMES[s.storyPointRule])) {
@@ -111,13 +148,13 @@ public class CASetupUI {
         }
         if (group(t, "items", "Items and AI cores", "AI cores " + onOff(s.useAICores).toLowerCase()
                 + (s.useAICores ? ", Alpha: " + CASettings.ALPHA_NAMES[Math.max(0, Math.min(2, s.alphaMode))] : ""))) {
-            row(t, "Use AI cores", onOff(s.useAICores), "Off", "cores", true);
+            row(t, "Use AI cores", onOff(s.useAICores), "On", "cores", true);
             if (s.useAICores) row(t, "Alpha cores", CASettings.ALPHA_NAMES[Math.max(0, Math.min(2, s.alphaMode))], "Only where removable", "alpha", true);
             row(t, "Antimatter Stabilizers to Advanced Fuel Production", s.disableStabilizers ? "Off" : "Convert", "Convert", "stab", true);
         }
         if (group(t, "people", "Administrators and ambassadors", "hiring " + onOff(s.adminHiring).toLowerCase() + ", ambassadors "
                 + (s.disableAmbassadors ? "off" : "on, " + CASettings.FOCUS_NAMES[Math.max(0, Math.min(3, s.ambassadorFocus))].toLowerCase()) + ", arrival delay " + onOff(s.adminDelay).toLowerCase())) {
-            row(t, "Administrator hiring", onOff(s.adminHiring), "Off", "admin", true);
+            row(t, "Administrator hiring", onOff(s.adminHiring), "On", "admin", true);
             row(t, "Assign administrators optimally", onOff(s.adminOptimal), "On", "adminopt", true);
             row(t, "Ambassadors (Industrial Evolution)", s.disableAmbassadors ? "Off" : "Hire and install", "Hire and install", "amb", true);
             row(t, "Arrival delay", s.adminDelay ? "On (30 days)" : "Off", "On", "admindelay", true);
@@ -147,7 +184,7 @@ public class CASetupUI {
         if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("nexerelin")
                 && group(t, "spies", "Agents (Nexerelin)", CASettings.SPY_NAMES[Math.max(0, Math.min(2, s.spyMode))].toLowerCase()
                 + (s.spyMode == 0 ? "" : ", hiring " + (s.spyNoHiring ? "off" : "on")))) {
-            row(t, "Agents", CASettings.SPY_NAMES[Math.max(0, Math.min(2, s.spyMode))], "Off", "spy", true);
+            row(t, "Agents", CASettings.SPY_NAMES[Math.max(0, Math.min(2, s.spyMode))], "Defense", "spy", true);
             if (s.spyMode != 0) {
                 row(t, "Hire agents", s.spyNoHiring ? "Off" : "On, 12,000 each", "On", "spyhire", true);
                 row(t, "Agents to keep", s.spyKeep == 0 ? "Auto (1, or 2 with offense)" : "" + s.spyKeep, "Auto", "spykeep", true);
@@ -166,7 +203,7 @@ public class CASetupUI {
         if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CASettlement.MOD)
                 && group(t, "settle", "Settlement (Random Assortment of Things)", CASettings.SETTLE_NAMES[Math.max(0, Math.min(3, s.settlementMode))].toLowerCase()
                 + ", found at " + Misc.getDGSCredits(s.settlementMinIncome) + "/month")) {
-            row(t, "Settlement mode", CASettings.SETTLE_NAMES[Math.max(0, Math.min(3, s.settlementMode))], "Advisor", "settle", true);
+            row(t, "Settlement mode", CASettings.SETTLE_NAMES[Math.max(0, Math.min(3, s.settlementMode))], "Auto", "settle", true);
             row(t, "Found when a site makes at least", Misc.getDGSCredits(s.settlementMinIncome) + " per month", "20,000", "settleinc", false);
         }
         if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAAugments.MOD)
@@ -178,8 +215,8 @@ public class CASetupUI {
         if ((tot || vok) && group(t, "aotd", "Ashes of the Domain", (tot ? "contracts " + CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.contractMode))].toLowerCase() : "")
                 + (tot && vok ? ", " : "") + (vok ? "research " + CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.researchMode))].toLowerCase()
                 + ", hypershunt " + CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.hypershuntMode))].toLowerCase() : ""))) {
-            if (tot) row(t, "Trade contracts", CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.contractMode))], "Advisor", "contract", true);
-            if (vok) row(t, "Research", CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.researchMode))], "Advisor", "research", true);
+            if (tot) row(t, "Trade contracts", CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.contractMode))], "Auto", "contract", true);
+            if (vok) row(t, "Research", CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.researchMode))], "Auto", "research", true);
             if (vok) row(t, "Megastructures (Hypershunt, Pluto, Nidavelir)", CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.hypershuntMode))], "Follow colony mode", "hs", true);
         }
         if (group(t, "interface", "Interface", "colony screen button " + (s.noScreenButton ? "off" : "on"))) {
@@ -217,13 +254,18 @@ public class CASetupUI {
         float dir = "-".equals(op) ? -1f : 1f;
         if (k.equals("group")) { String g = a.length > 1 ? a[1] : ""; if (!open.remove(g)) open.add(g); return true; }
         if (k.equals("recommend")) applyRecommended(s);
-        else if (k.equals("type")) s.budgetPercentMode = !s.budgetPercentMode;
+        else if (k.equals("type")) {   // Automatic -> Share of net income -> Fixed amount -> Automatic
+            if (s.budgetAuto) { s.budgetAuto = false; s.budgetPercentMode = true; }
+            else if (s.budgetPercentMode) s.budgetPercentMode = false;
+            else s.budgetAuto = true;
+        }
         else if (k.equals("budget")) {
-            if (s.budgetPercentMode) s.budgetPercent = Math.max(0.1f, Math.min(1f, s.budgetPercent + 0.1f * dir));
+            if (s.budgetAuto || s.budgetPercentMode) s.budgetPercent = Math.max(0.1f, Math.min(1f, s.budgetPercent + 0.1f * dir));
             else s.budgetFixed = Math.max(0f, s.budgetFixed + 250000f * dir);
         }
+        else if (k.equals("savings")) s.savingsShare = Math.max(0.05f, Math.min(0.5f, (s.savingsShare > 0f ? s.savingsShare : 0.15f) + 0.05f * dir));
         else if (k.equals("cap")) s.perProjectCap = Math.max(250000f, s.perProjectCap + 500000f * dir);
-        else if (k.equals("reserve")) s.reserve = Math.max(0f, s.reserve + 250000f * dir);
+        else if (k.equals("reserve")) s.reserve = Math.max(0f, s.reserve + 50000f * dir);
         else if (k.equals("upkeep")) s.newUpkeepCap = Math.max(0f, s.newUpkeepCap + 10000f * dir);
         else if (k.equals("pause")) s.pauseOnLoss = !s.pauseOnLoss;
         else if (k.equals("fees")) s.feeLevel = (s.feeLevel + 1) % 4;
