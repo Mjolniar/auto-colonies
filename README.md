@@ -49,6 +49,24 @@ All optional. Each loads only when its mod is enabled. **[What each supported mo
 | Unknown Skies, What We Left Behind, Astral Ascension | Mining bonuses, water worlds, growth limit |
 | Any mod | Deposit conditions and colony items through the game's own tables; 12-building screen limit |
 
+## Screenshots
+
+**Colony panel:** stats, goal and mode, fast buildout, and the plan with research locks.
+
+![Colony panel](docs/screenshots/colony-panel.jpg)
+
+**Recommended builds:** money a month after upkeep, and how each option's ranking is made up.
+
+![Recommended builds](docs/screenshots/colony-panel-builds.jpg)
+
+**Empire panel:** budget, every colony with its plan and next build, and Autopilot Storage.
+
+![Empire panel](docs/screenshots/empire-panel.jpg)
+
+**Research and settings:** research ranked by what it unlocks, the hypershunt, and settings with their recommendations.
+
+![Research and settings](docs/screenshots/empire-panel-settings.jpg)
+
 ## Install
 
 1. Download the zip from the [latest release](https://github.com/Mjolniar/jonahs-colony-manager/releases/latest) and extract it into `Starsector/mods/`.
@@ -59,7 +77,7 @@ All optional. Each loads only when its mod is enabled. **[What each supported mo
 **New here? Read [Getting started](docs/getting-started.md)**: the panels, your first colony step by step (including the fast buildout popup), agents, and the first-colony budget trap. Then [What each supported mod adds](docs/supported-mods.md).
 
 - **Colony:** the **Colony Autopilot** button on the colony screen, or right-click Population & Infrastructure, **Colony Autopilot...**
-- **Empire:** Intel, Colonies, **Colony Autopilot**.
+- **Empire:** Intel, **Colony threats** (or Important), **Colony Autopilot**.
 
 Quick start: pick a goal in the colony panel and build from **Recommended builds** in Advisor. Then switch to Approve or Auto; the first switch opens setup with recommended settings. For a new colony, say yes to the fast buildout popup. Otherwise, if Auto builds nothing on a young colony, check the budget line: a negative net income or a credit reserve above your bank balance stops spending (see the guide).
 

@@ -439,7 +439,7 @@ public class CAResearch {
             for (Tech x : ranked()) {
                 if (shown++ >= 6) break;
                 t.addPara("%s (%s days, %s): %s a month" + (x.needsItems ? ", needs its items in storage" : "") + (!x.databanksOnly() ? ", uses items Auto won't spend" : ""),
-                        8f, x.rank > 0f ? hl : gray, x.name, "" + Math.round(Math.max(1f, x.days - x.spent)), itemsText(x), CAEngine.valueText(x.value));
+                        8f, x.rank > 0f ? hl : gray, x.name, "" + Math.round(Math.max(1f, x.days - x.spent)), itemsText(x), CAEngine.signed(x.value));
                 for (int j = 0; j < Math.min(3, x.lines.size()); j++) t.addPara("    " + CALog.esc(x.lines.get(j)), gray, 2f);
                 if (idle && s.researchMode != 2) {
                     ButtonAPI b = t.addButton("Start", new String[]{"research", "start", x.id}, base, dark, Alignment.MID, CutStyle.ALL, 120f, 22f, 4f);
