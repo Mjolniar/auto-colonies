@@ -51,8 +51,8 @@ public class CASetupUI {
         // policies and mod automation: each one only acts when it pays
         s.hazardPayMode = 0;
         s.freePortMode = 0;
-        s.hazardPayColonyShare = 0.25f;
-        s.hazardPayEmpireShare = 0.10f;
+        s.hazardPayColonyShare = 0.25f;   // hazard pay where it speeds growth up by at least 25%
+        s.hazardPayEmpireShare = 0.30f;   // all of it within 30% of empire net income: the more you earn, the more colonies get it
         s.disableEdicts = false;
         s.disableDefenseFleets = false;
         s.disableSpecialties = false;
@@ -67,7 +67,7 @@ public class CASetupUI {
         s.spyMode = 1;          // Defense: an agent is hired only when there's a rebellion, Pather cell, pirate base or enemy operation
         s.spyNoHiring = false;
         s.spyKeep = 0;
-        s.autonomyMode = 2;     // Auto: only in an emergency, and taken back once it's over
+        s.autonomyMode = 1;     // Recommend: autonomy is your call; Autopilot only says which colony would help in a money emergency
         s.noScreenButton = false;
         // attacks on your colonies: only a Derelict Empire start needs them (attacks from the first weeks)
         if (CAAttacks.forThisStart()) { s.haFleetCap = CAAttacks.REC_CAP; s.nexAttackGap = CAAttacks.REC_GAP; }
@@ -199,8 +199,11 @@ public class CASetupUI {
                 + ", free port " + CASettings.POLICY_NAMES[Math.max(0, Math.min(1, s.freePortMode))].toLowerCase() + ", edicts " + (s.disableEdicts ? "off" : "on") + ", defense fleets " + (s.disableDefenseFleets ? "off" : "on"))) {
             row(t, "Hazard pay", CASettings.POLICY_NAMES[Math.max(0, Math.min(1, s.hazardPayMode))], "Auto", "hazard", true);
             if (s.hazardPayMode == 0) {
-                row(t, "Hazard pay limit per colony", Math.round(s.hazardPayColonyShare * 100f) + "% of its net income", "25%", "hpcol", false);
-                row(t, "Hazard pay limit, all colonies", Math.round(s.hazardPayEmpireShare * 100f) + "% of empire net income", "10%", "hpemp", false);
+                row(t, "Hazard pay where growth is at least", Math.round(s.hazardPayColonyShare * 100f) + "% faster", "25%", "hpcol", false);
+                row(t, "Hazard pay limit, all colonies", Math.round(s.hazardPayEmpireShare * 100f) + "% of empire net income", "30%", "hpemp", false);
+                t.addPara("Every goal wants growth. Hazard pay goes first to the colonies it speeds up the most (a new colony that barely "
+                        + "grows gains most), until all of it reaches the share of empire net income; the more you earn, the more colonies "
+                        + "get it. Off in a money emergency and at max size.", Misc.getGrayColor(), 6f);
             }
             row(t, "Free port", CASettings.POLICY_NAMES[Math.max(0, Math.min(1, s.freePortMode))], "Auto", "freeport", true);
             row(t, "Senate edicts", s.disableEdicts ? "Off" : "Enact", "Enact", "edicts", true);
@@ -221,12 +224,11 @@ public class CASetupUI {
         }
         if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("nexerelin")
                 && group(t, "autonomy", "Emergency autonomy (Nexerelin)", CASettings.AUTONOMY_NAMES[Math.max(0, Math.min(2, s.autonomyMode))].toLowerCase())) {
-            row(t, "Emergency autonomy", CASettings.AUTONOMY_NAMES[Math.max(0, Math.min(2, s.autonomyMode))], "Auto", "autonomy", true);
-            t.addPara("In an emergency (net income negative with under 3 months of it left above the credit reserve, or more colonies "
-                    + "than you can govern pulling one below stability 5), the colony whose autonomy saves the most is made autonomous: "
-                    + "you get 25 percent of its profit or loss and it doesn't count against your colony limit. It's taken back once the "
-                    + "emergency is over (2 unrest). Auto acts on Auto colonies; Recommend only logs it. Colonies you made autonomous "
-                    + "yourself are never touched.", Misc.getGrayColor(), 6f);
+            row(t, "Emergency autonomy", CASettings.AUTONOMY_NAMES[Math.max(0, Math.min(2, s.autonomyMode))], "Recommend", "autonomy", true);
+            t.addPara("Autonomy is yours to grant: in a money emergency (net income negative with under 3 months of it left above the "
+                    + "credit reserve), Recommend logs which colony a year old or more would save the most, and the Mod features page has "
+                    + "a Grant autonomy button. Colonies you make autonomous are never touched. Colonies an older version of Autopilot made "
+                    + "autonomous are taken back as soon as there's room under your colony limit, without Nexerelin's unrest.", Misc.getGrayColor(), 6f);
         }
         if (group(t, "industry", "Industry automation", "specialties " + (s.disableSpecialties ? "off" : "on") + ", VPC chips " + (s.disableVPC ? "off" : "on")
                 + ", shipping " + (s.disableShipping ? "off" : "on"))) {
@@ -377,7 +379,7 @@ public class CASetupUI {
         else if (k.equals("nexgap")) { s.nexAttackGap = CASettings.next(CASettings.NEX_GAPS, s.nexAttackGap); CAAttacks.apply(s); }
         else if (k.equals("spy")) s.spyMode = (Math.max(0, Math.min(2, s.spyMode)) + 1) % 3;
         else if (k.equals("spyhire")) s.spyNoHiring = !s.spyNoHiring;
-        else if (k.equals("autonomy")) s.autonomyMode = (Math.max(0, Math.min(2, s.autonomyMode)) + 1) % 3;
+        else if (k.equals("autonomy")) s.autonomyMode = s.autonomyMode == 0 ? 1 : 0;
         else if (k.equals("spykeep")) s.spyKeep = (Math.max(0, Math.min(4, s.spyKeep)) + 1) % 5;
         else if (k.equals("settleinc")) s.settlementMinIncome = Math.max(5000f, s.settlementMinIncome + 5000f * dir);
         return true;

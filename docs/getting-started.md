@@ -57,8 +57,8 @@ They're chosen so that switching colonies to Auto and doing nothing else works o
 | AI cores, administrators | Used and hired (only cores you put in Autopilot Storage, where they add most; less the colony crisis progress they add; up to 7 inspection points per colony, so the Hegemony never inspects; an administrator where they add more than their salary, and always one for each colony past your colony limit) |
 | Research, trade contracts, settlement | Auto, each only when it pays (Ashes of the Domain, Random Assortment of Things) |
 | Agents | Defense: hired only when there's a rebellion, Pather cell, pirate base or enemy operation (Nexerelin) |
-| Emergency autonomy | Auto: in a money emergency, a colony a year old or more that loses money is made autonomous, then taken back once it's over (Nexerelin) |
-| Policies, edicts, IndEvo automation, defense fleets | On |
+| Emergency autonomy | Recommend: in a money emergency, names the colony that would help; granting it is yours (Nexerelin) |
+| Policies, edicts, IndEvo automation, defense fleets | On; hazard pay goes to the colonies it speeds up most, within 30% of net income |
 | Removals, story points, offense | Off: these are your calls |
 
 ### Fast buildout (offered when you found your first colony)
@@ -120,12 +120,11 @@ Off until setup runs; the recommended settings turn on **Defense**. Change it in
 
 ## Emergency autonomy (Nexerelin)
 
-Off until setup runs; the recommended settings turn on **Auto**. Change it in the empire panel's **Settings**, under **Emergency autonomy (Nexerelin)**: **Off**, **Recommend** or **Auto**.
+Autonomy is your call: Autopilot never grants it. Off until setup runs; the recommended settings turn on **Recommend**. Change it in the empire panel's **Settings**, under **Emergency autonomy (Nexerelin)**.
 
-- **An emergency** is net income below zero with under 3 months of it left above the credit reserve. Founding colonies past your limit isn't one: that gets an administrator.
-- **What it does:** the colony that loses the most is made autonomous, as with Nexerelin's **Grant autonomy**. You get 25% of its profit or loss, and it no longer counts against your colony limit. Never a colony under a year old, since taking it back costs 2 stability. Recommend only logs it.
-- **Taking it back:** as soon as the emergency is over, taking it back wouldn't start another, and there's room under your colony limit (or an idle administrator, who then governs it), it's taken back. Nexerelin adds 2 unrest for that, which wears off.
-- The Mod features page shows the emergency and the best choice with **Grant autonomy**, and each colony Autopilot made autonomous with **Take it back now**. Colonies you made autonomous yourself are left alone.
+- **In a money emergency** (net income below zero with under 3 months of it left above the credit reserve), Recommend logs the colony a year old or more that loses the most. **Grant autonomy** on the Mod features page does it: you get 25% of its profit or loss, and it no longer counts against your colony limit. Colonies you make autonomous are left alone.
+- **Founding colonies past your limit** isn't an emergency: that gets an administrator.
+- **Colonies an older Autopilot made autonomous** are taken back as soon as there's room under your colony limit (or an idle administrator, who then governs it), without Nexerelin's 2 unrest. The Mod features page lists them with **Take it back now**.
 
 ## Storage cheat
 
