@@ -23,9 +23,10 @@ import java.util.List;
  * NEW_DAYS old, and never for the colony limit: taking a colony back costs it 2 stability, which a new colony can't spare,
  * so going past the limit gets an administrator instead (CAItems.adminsNeeded). Auto acts on Auto colonies; Recommend logs
  * the choice and the Mod features page has a button. Colonies Autopilot made autonomous are taken
- * back once there's no emergency, net income stays positive with them, they fit your colony limit, and they can take the
- * 2 unrest without going below 5. One change every GAP days, and a colony stays autonomous at least HOLD days. Colonies
- * you made autonomous yourself are never touched.
+ * back as soon as there's no emergency, taking one back wouldn't start one, and there's room under your colony limit or
+ * an idle administrator to put there (installed in the same step); CAItems.adminsNeeded hires one for that. Nexerelin adds
+ * 2 unrest, which wears off; waiting for stability to cover it could take forever at a small colony. One change every GAP
+ * days, and a colony stays autonomous at least HOLD days. Colonies you made autonomous yourself are never touched.
  */
 final class CAAutonomy {
     static final String MOD = "nexerelin";
@@ -93,12 +94,11 @@ final class CAAutonomy {
         Long since = d.autonomous().get(m.getId());
         float held = since == null ? HOLD : Global.getSector().getClock().getElapsedDaysSince(since);
         if (held < HOLD) return "autonomous " + (int) held + " of at least " + (int) HOLD + " days";
-        if (emergency(s) != null) return "the emergency isn't over";
+        if (emergency(s) != null) return "the money emergency isn't over";
         float after = CABudget.netIncome(s) + (1f - incomeMult()) * colonyNet(m);
-        if (after < 0f) return "net income would be " + Misc.getDGSCredits(after) + " a month with it";
-        if (CAItems.overLimit() + 1 > 0) return "it would put you over your colony limit (Autopilot hires an administrator to make room)";
-        float floor = Math.max(5f, d.minStability) + REVOKE_UNREST;
-        if (m.getStabilityValue() < floor) return "its stability is under " + (int) floor + " (taking it back adds " + REVOKE_UNREST + " unrest)";
+        if (moneyEmergency(after, CABuild.credits(), s.reserve)) return "net income would be " + Misc.getDGSCredits(after) + " a month with it, a money emergency";
+        if (CAItems.overLimit() + 1 > 0 && CAItems.idleAdmin(d) == null)
+            return "it would put you over your colony limit; Autopilot is getting an administrator to make room";
         return null;
     }
 
@@ -132,9 +132,9 @@ final class CAAutonomy {
         for (String id : new ArrayList<String>(d.autonomous().keySet())) {
             MarketAPI m = Global.getSector().getEconomy().getMarket(id);
             if (m == null || waitReason(d, s, m) != null) continue;
-            if (auto) { reclaim(d, m, "the emergency is over"); return; }
+            if (auto) { reclaim(d, m, "there's room for it"); return; }
             if (CALog.once("autonomy:back:" + id))
-                CALog.add(m.getName() + " can be taken back from autonomy: the emergency is over. Take it back on the Colony Autopilot intel's Mod features page", true);
+                CALog.add(m.getName() + " can be taken back from autonomy. Take it back on the Colony Autopilot intel's Mod features page", true);
         }
     }
 
@@ -162,7 +162,14 @@ final class CAAutonomy {
         d.autonomous().remove(m.getId());
         d.lastAutonomyChange = Global.getSector().getClock().getTimestamp();
         CALog.forget("autonomy:back:" + m.getId());
-        CALog.add(m.getName() + ": taken back from autonomy (" + why + "); Nexerelin adds " + REVOKE_UNREST + " unrest", true);
+        // past the colony limit now: the idle administrator that made room for it governs it
+        AdminData a = CAItems.overLimit() > 0 ? CAItems.idleAdmin(d) : null;
+        if (a != null) {
+            m.setAdmin(a.getPerson());
+            a.setMarket(m);
+        }
+        CALog.add(m.getName() + ": taken back from autonomy (" + why + "); Nexerelin adds " + REVOKE_UNREST + " unrest"
+                + (a != null ? ". Administrator " + a.getPerson().getNameString() + " governs it" : ""), true);
     }
 
     /** Buttons on the Mod features page: grant autonomy to a colony, or take one back now. */
