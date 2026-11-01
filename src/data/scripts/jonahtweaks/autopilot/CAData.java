@@ -37,6 +37,7 @@ public class CAData {
         public long threatSince = 0L;
         // Station Augments: ids Autopilot installed here, and ids you removed that it won't add back
         public Set<String> augAuto, augSkip;
+        public boolean augDefense;   // Autopilot last set its augments for defense while the threat was high
         // Coronal Hypershunt (AotD): the range Autopilot last set, and whether you set it yourself since
         public Integer hsRange;
         public boolean hsManual;

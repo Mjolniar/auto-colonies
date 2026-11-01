@@ -77,6 +77,7 @@ Covers Building Menu Overhaul, Vaults of Knowledge and Theory of Toolbox.
 ## Station Augments
 
 - **Augment loadouts.** Picks the set of augments worth the most within each station's augment points. Installing is free and can be undone. Scored with the colony's goal: accessibility, upkeep, output, ground defense and the mod's combat rating.
+- **Output when calm, defense when threatened.** Hydroponics Basins (+2 food, +1 organics) counts what it adds above the colony's own output, so it goes on stations of colonies without a farm. While a colony's threat is high, combat augments count ten times as much and take its points; when the threat drops, the output augments come back.
 - **Station augments** setting: follow colony mode, recommend only, or off. Each colony panel has an Apply button.
 - Augments you installed are never changed, and one you remove isn't added back.
 - **Left to you:** augments that use up an item, ones that trade a drawback for points, and Economy Conversion while the colony plans for Security.

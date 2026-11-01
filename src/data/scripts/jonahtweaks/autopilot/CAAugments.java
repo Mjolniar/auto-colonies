@@ -26,12 +26,17 @@ import java.util.*;
  * colonies get the loadout applied and the rest see it with an Apply button. Augments you installed are never touched,
  * and one you remove isn't added back to that colony. Augments that use up an item, and ones that give AP back for a
  * drawback, are left to you. Economy Conversion is never removed once added: its extra industry slot may be in use.
+ * Output augments (Hydroponics Basins: +2 food, +1 organics on the station) count only what they add above the colony's
+ * own largest source of each, since a market's supply is its largest single source. While a colony plans with Security
+ * (its threat is high, or that's its goal) combat augments count THREAT_COMBAT times as much, so they take the AP from
+ * output augments; when the threat drops, the output ones come back. A change of plan profile re-plans at once.
  * Only called when Station Augments is enabled (check CAAugments.MOD first; the constant is inlined, so it doesn't load this class).
  */
 public class CAAugments {
     public static final String MOD = "niko_stationAugments";
     static final String CONVERSION = "SA_economyConversion";
     static final float COMBAT = 0.004f;                        // fleet effect per point of the mod's own combat rating
+    static final float THREAT_COMBAT = 10f;                    // ...times this while the colony plans with Security
     static final float SWAP_MARGIN = 1.1f, SWAP_MIN = 300f;    // replacing installed augments must gain this much
 
     /** One augment's worth on one colony. */
@@ -172,8 +177,10 @@ public class CAAugments {
             p.lines.add("Station hull -30%, flux capacity -30%, dissipation -20%");
         }
         if (combat != 0) {
-            p.fx[4] += combat * COMBAT;
-            p.lines.add(combat > 0 ? "Stronger station in combat (Station Augments rates it " + combat + ")" : "Weaker station in combat");
+            boolean defense = profile == CAData.Profile.SECURITY;
+            p.fx[4] += combat * COMBAT * (defense && combat > 0 ? THREAT_COMBAT : 1f);
+            p.lines.add(combat > 0 ? "Stronger station in combat (Station Augments rates it " + combat + ")"
+                    + (defense ? "; counts ten times while the colony plans with Security" : "") : "Weaker station in combat");
         }
         float[] w = CAEngine.WEIGHTS[profile.ordinal()];
         float v = extra;
@@ -353,9 +360,9 @@ public class CAAugments {
     }
 
     /** What decides whether a colony needs re-planning before its weekly turn: station, AP and what's installed or known. */
-    static String signature(MarketAPI m) {
+    static String signature(MarketAPI m, CAData.Profile profile) {
         Industry ind = Misc.getStationIndustry(m);
-        StringBuilder sb = new StringBuilder(ind == null ? "-" : ind.getId()).append('|').append(MarketUtils.getRemainingAugmentBudget(m)).append('|').append(known().size());
+        StringBuilder sb = new StringBuilder(profile.name()).append('|').append(ind == null ? "-" : ind.getId()).append('|').append(MarketUtils.getRemainingAugmentBudget(m)).append('|').append(known().size());
         for (stationAttachment a : MarketUtils.getStationAugments(m)) sb.append('|').append(a.getId());
         return sb.toString();
     }
@@ -372,16 +379,22 @@ public class CAAugments {
                 sync(m, c);
                 if (!(hasStation(m))) continue;
                 if (CASiege.held(m)) continue;   // a station in a fight can't be refitted, and the loadout waits for the siege to end
-                String sig = signature(m);
+                CAData.Profile profile = profileFor(m, c);
+                String sig = signature(m, profile);   // the threat state is in it, so a colony that turns to defense re-plans at once
                 Float next = nextRun.get(m.getId());
                 if (sig.equals(lastSig.get(m.getId())) && next != null && now < next) continue;
                 lastSig.put(m.getId(), sig);
                 nextRun.put(m.getId(), now + 7f);
-                Plan pl = plan(m, c, profileFor(m, c));
+                Plan pl = plan(m, c, profile);
                 if (!pl.changes()) continue;
-                if (c.mode == CAData.Mode.AUTO) apply(m, c, pl, "Auto set");
+                boolean defense = profile == CAData.Profile.SECURITY && c.profile != CAData.Profile.SECURITY;
+                if (c.mode == CAData.Mode.AUTO) {
+                    apply(m, c, pl, "Auto set" + (defense ? " (threat is high: defense first)" : c.augDefense ? " (threat over: output again)" : ""));
+                    c.augDefense = defense;
+                }
                 else if (CALog.once("aug:" + m.getId() + ":" + pl.summary())) {
-                    CALog.add(m.getName() + ": recommends station augments (" + pl.summary() + "); Apply in the colony panel", true);
+                    CALog.add(m.getName() + ": recommends station augments (" + pl.summary() + ")" + (defense ? " for defense while the threat is high" : "")
+                            + "; Apply in the colony panel", true);
                 }
             } catch (Throwable t) {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment step failed at " + m.getName(), t);
@@ -429,6 +442,8 @@ public class CAAugments {
                     : c.mode == CAData.Mode.AUTO ? "Auto applies this within a week." : "Auto colonies apply this by themselves; here it waits for you.";
             t.addPara(when, gray, 4f);
         }
+        if (profile == CAData.Profile.SECURITY) t.addPara(c.profile == CAData.Profile.SECURITY ? "Security goal: combat augments come first." :
+                "The threat is high, so combat augments come first; output augments such as Hydroponics come back once it drops.", gray, 6f);
         if (!c.augSkip().isEmpty()) {
             List<String> names = new ArrayList<String>();
             for (String id : c.augSkip()) { stationAugmentSpec sp = specs().get(id); names.add(sp == null ? id : sp.getName()); }
