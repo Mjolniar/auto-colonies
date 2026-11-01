@@ -82,6 +82,10 @@ public class CAPlan {
         return false;
     }
 
+    /** Structures that only serve a special world (they add its conditions, or run its last project). */
+    static final java.util.Set<String> WORLD_STEPS = new java.util.HashSet<String>(java.util.Arrays.asList("tme_unification_center",
+            "tme_mineral_replicator", "tme_element_synthesizer", "tme_agricultural_laboratory"));
+
     static void b(Plan p, String id, String label) { p.steps.add(new Step(Kind.BUILD, id, label)); }
     static void c(Plan p, String id, String label) { p.steps.add(new Step(Kind.COND, id, label)); }
     static void n(Plan p, String id, String label) { p.steps.add(new Step(Kind.NOCOND, id, label)); }
@@ -163,11 +167,15 @@ public class CAPlan {
             n(p, "high_gravity", "Remove high gravity"); n(p, "extreme_tectonic_activity", "Remove extreme tectonic activity");
         }
         b(p, "grounddefenses", "Ground Defenses");
-        // drop steps that don't apply (conditions that were never present for NOCOND)
+        // drop steps that don't apply (conditions that were never present for NOCOND); and with Terraforming Made Easy on,
+        // the world planner found no world this colony can reach, so the world steps (Unification Center, the structures
+        // that add conditions, the conditions) go too: hazard clean-up stays, since it lets the colony grow
+        boolean tme = Global.getSettings().getModManager().isModEnabled("terraformingmadeeasy");
         List<Step> keep = new ArrayList<Step>();
         java.util.Set<String> seen = new java.util.HashSet<String>();
         for (Step s : p.steps) {
             if (s.kind == Kind.NOCOND && !m.hasCondition(s.id)) continue;
+            if (tme && (s.kind == Kind.COND || WORLD_STEPS.contains(s.id))) continue;
             if (!seen.add(s.kind + ":" + s.id)) continue;
             keep.add(s);
         }
