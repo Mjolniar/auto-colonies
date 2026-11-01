@@ -387,11 +387,16 @@ public class CASpies {
                 s.spyNoHiring ? "off" : "on", "" + keep(s));
         t.addPara("Autopilot only gives orders to agents it hired or you hand over, and only operations the agent's type can run: "
                 + "Negotiators and Hybrids raise relations, Saboteurs sabotage industry, any type handles rebellions, Pather cells and pirate bases.", gray, 4f);
+        t.addPara("Defense does what Nexerelin's Internal security mode does (Counter-Insurgency on a rebellion, Infiltrate Cell on a Pather "
+                + "cell, Find Pirate Base for a hidden base), checked daily and paid from the budget, then Raise Relations with a faction running "
+                + "operations against you. Autopilot's agents don't need that mode switched on, and with nothing of that kind going on they wait "
+                + "at their colony. Nexerelin advises only one agent with Internal security mode on.", gray, 4f);
         List<AgentIntel> all = agents(mgr), mine = managed(d, mgr);
         if (all.isEmpty()) t.addPara(s.spyMode != 0 && !s.spyNoHiring ? "You have no agents; Autopilot hires one when there's work for it." : "You have no agents.", gray, 6f);
         for (AgentIntel a : all) {
             boolean auto = mine.contains(a);
-            String doing = "idle";
+            String doing = auto && s.spyMode != 0 ? "idle: no rebellion, Pather cell, hidden pirate base or enemy operation at your colonies"
+                    + (s.spyMode == 2 ? ", and no enemy military target it can sabotage at 60% or better" : "") : "idle";
             for (CovertActionIntel op : mgr.getOngoingCovertActionsOfType(CovertActionIntel.class)) {
                 if (op.getAgent() == a && !op.isEnded() && !op.isEnding() && op.getResult() == null) {
                     doing = op.getActionName(false) + (op.getMarket() != null ? " at " + op.getMarket().getName() : "");
