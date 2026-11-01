@@ -55,7 +55,7 @@ They're chosen so that switching colonies to Auto and doing nothing else works o
 | Credit reserve | A quarter of your credits at setup, between 50,000 and 500,000; never spent |
 | Pause on loss | Off (the Automatic budget already slows down) |
 | AI cores, administrators | Used and hired (only cores you put in Autopilot Storage, where they add most; less the colony crisis progress they add; up to 7 inspection points per colony, so the Hegemony never inspects; an administrator where they add more than their salary, and always one for each colony past your colony limit) |
-| Research, trade contracts, settlement | Auto, each only when it pays (Ashes of the Domain, Random Assortment of Things) |
+| Research, trade contracts, settlement | Auto, each only when it pays; research follows what the colony plans need (Ashes of the Domain, Random Assortment of Things) |
 | Agents | Defense: hired only when there's a rebellion, Pather cell, pirate base or enemy operation (Nexerelin) |
 | Emergency autonomy | Recommend: in a money emergency, names the colony that would help; granting it is yours (Nexerelin) |
 | Policies, edicts, IndEvo automation, defense fleets | On; hazard pay goes to the colonies it speeds up most, within 30% of net income |

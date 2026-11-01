@@ -24,8 +24,13 @@ import java.util.*;
  * techs are marked researched for one scoring pass over your colonies, so AotD's own gates (Building Menu Overhaul,
  * VoK's buildings, synergies) answer as they would afterwards, then put back. Known non-building effects (output +1,
  * hazard -10%, upkeep x0.9) are added, plus half the best tech each one leads to.
+ * Each colony's plan comes first: every open plan step that research locks (BMO's gates, VoK's rewards, Terraforming Made
+ * Easy's own tech ids) is traced to its tech and the whole chain of techs it still needs, and the step's plan value
+ * (CAPlan.bonusFor) is shared along that chain by research days, so the first tech of a long chain counts too.
  * Auto starts the best tech whenever nothing is running or queued, only for techs that cost databanks alone (AI cores
- * and colony items are left to you). Autopilot Storage is research's storage too: whatever a tech is short of when it
+ * and colony items are left to you). While a plan tech waits for databanks, the ones you have aren't spent on techs no
+ * plan needs; the log says what's needed. Research upkeep is temporary, so plan techs aren't held back by the new-upkeep
+ * cap. Databanks count from the Research Facility tab, Autopilot Storage, your colonies' Storage and your fleet's cargo. Autopilot Storage is research's storage too: whatever a tech is short of when it
  * starts (Auto or the Start button) is moved from there into the Research Facility tab, and databanks from your fleet's
  * cargo after that. The section is on the empire panel's Autopilot Storage page.
  * Reflection only; if VoK can't be read, research is left to you.
@@ -97,6 +102,8 @@ public class CAResearch {
         public List<String> prereqs = new ArrayList<String>();
         public boolean available, needsItems, unlockedByCommission;
         public float own, next, value, cost, rank;
+        public float plan;   // its share of the plan steps whose research chain it's on
+        public List<String> planFor = new ArrayList<String>();
         public List<String> lines = new ArrayList<String>();
         Object raw;
 
@@ -149,6 +156,92 @@ public class CAResearch {
 
     static float now() { return Global.getSector().getClock().getElapsedDaysSince(0L); }
 
+    /** An open plan step that research locks, with the chain of techs it still needs. */
+    public static class Need {
+        public String step, colony;
+        public float value;
+        public List<String> chain = new ArrayList<String>();   // unresearched techs, prerequisites first
+        public int databanks;
+        public float days;
+        public boolean manual;   // a tech on the way needs AI cores or colony items, which Auto leaves to you
+    }
+
+    static List<Need> needs = new ArrayList<Need>();
+
+    /** Terraforming Made Easy's own research gate for one of its structures (BaseDevelopmentIndustry.getAOTDVOKTechId), or null. */
+    static String tmeTech(MarketAPI m, String industryId) {
+        try {
+            com.fs.starfarer.api.loading.IndustrySpecAPI sp = Global.getSettings().getIndustrySpec(industryId);
+            if (sp == null) return null;
+            Object r = CARefl.call(sp.getNewPluginInstance(m), "getAOTDVOKTechId");
+            return r instanceof String && !((String) r).isEmpty() ? (String) r : null;
+        } catch (Throwable t) { return null; }
+    }
+
+    /** The unresearched techs id still needs, prerequisites first, with id last. */
+    static void closure(String id, Map<String, Tech> open, Set<String> seen, List<String> out) {
+        if (!seen.add(id)) return;
+        Tech t = open.get(id);
+        if (t == null) return;   // researched, or unknown
+        for (String p : t.prereqs) closure(p, open, seen, out);
+        out.add(id);
+    }
+
+    /**
+     * Each Approve or Auto colony's open plan steps that research locks: the step building, and the buildings it's
+     * upgraded from, traced to the tech that unlocks each. The step's plan value is shared along the chain by days.
+     */
+    static List<Need> planNeeds(Map<String, Tech> open) {
+        Map<String, String> byIndustry = new HashMap<String, String>();
+        for (Tech t : open.values()) for (String ind : t.industries) if (!t.unlockedByCommission) byIndustry.put(ind, t.id);
+        List<Need> out = new ArrayList<Need>();
+        CAData d = CAData.get();
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            CAData.Colony c = d.colony(m.getId());
+            if ((c.mode != CAData.Mode.APPROVE && c.mode != CAData.Mode.AUTO) || CAEngine.isOutpost(m) || CAHypershunt.is(m)) continue;
+            CAPlan.Plan plan;
+            try { plan = CAPlan.build(m, c.profile); } catch (Throwable e) { continue; }
+            for (CAPlan.Step st : plan.steps) {
+                if (st.kind != CAPlan.Kind.BUILD || st.done(m)) continue;
+                float value = CAPlan.bonusFor(m, plan, st.id);
+                if (value <= 0f) continue;
+                List<String> chain = new ArrayList<String>();
+                Set<String> seen = new HashSet<String>();
+                String cur = st.id;
+                for (int k = 0; k < 6 && cur != null; k++) {   // the step, then what it's upgraded from
+                    if (m.hasIndustry(cur)) break;
+                    String tech = byIndustry.get(cur);
+                    if (tech == null && cur.startsWith("tme_")) tech = tmeTech(m, cur);
+                    if (tech != null) closure(tech, open, seen, chain);
+                    com.fs.starfarer.api.loading.IndustrySpecAPI sp = Global.getSettings().getIndustrySpec(cur);
+                    cur = sp == null ? null : sp.getDowngrade();
+                }
+                if (chain.isEmpty()) continue;
+                Need n = new Need();
+                n.step = st.label; n.colony = m.getName(); n.value = value; n.chain = chain;
+                for (String id : chain) {
+                    Tech t = open.get(id);
+                    n.days += Math.max(1f, t.days - t.spent);
+                    n.databanks += t.databanks();
+                    if (!t.databanksOnly()) n.manual = true;
+                }
+                out.add(n);
+            }
+        }
+        share(out, open);
+        return out;
+    }
+
+    /** Shares each need's value along its chain by research days, and notes on each tech what it's on the way to. */
+    static void share(List<Need> needs, Map<String, Tech> open) {
+        for (Need n : needs) for (String id : n.chain) {
+            Tech t = open.get(id);
+            t.plan += n.value * Math.max(1f, t.days - t.spent) / Math.max(1f, n.days);
+            String what = n.step + " at " + n.colony;
+            if (!t.planFor.contains(what)) t.planFor.add(what);
+        }
+    }
+
     /** Every tech you could start now or once its items are in storage, valued and ranked, best first. Refreshed daily. */
     @SuppressWarnings("unchecked")
     public static List<Tech> ranked() throws Exception {
@@ -164,15 +257,16 @@ public class CAResearch {
         }
         List<Tech> cands = new ArrayList<Tech>();
         Map<String, Tech> children = new LinkedHashMap<String, Tech>();
+        Map<String, Tech> open = new LinkedHashMap<String, Tech>();
         for (Object o : all.values()) {
             if (CARefl.getBoolean(fDone, o)) continue;
             Tech t = tech(mgr, o);
+            open.put(t.id, t);
             if (t.available || t.needsItems) cands.add(t);
         }
+        try { needs = planNeeds(open); } catch (Throwable e) { needs = new ArrayList<Need>(); CADiagnostics.LOG.warn(CADiagnostics.TAG + "research plan needs failed", e); }
         // techs one step past a candidate, for the "leads to" share
-        for (Object o : all.values()) {
-            if (CARefl.getBoolean(fDone, o)) continue;
-            Tech t = tech(mgr, o);
+        for (Tech t : open.values()) {
             if (t.available || t.needsItems) continue;
             for (Tech c : cands) {
                 boolean ok = !t.prereqs.isEmpty();
@@ -184,6 +278,10 @@ public class CAResearch {
         scored.addAll(children.values());
         valueBuildings(scored);
         for (Tech t : scored) t.own += effects(t);
+        for (Tech t : cands) if (t.plan > 0f) {
+            t.own += t.plan;
+            t.lines.add(0, "On the way to " + CAContracts.join(t.planFor) + " (colony plans): " + CAEngine.valueText(t.plan));
+        }
         int fac = Math.max(1, ((Number) CARefl.invoke(facilities, mgr)).intValue());
         for (Tech c : cands) {
             Tech bestChild = null;
@@ -356,9 +454,16 @@ public class CAResearch {
         return f == null || f.getCargo() == null ? 0f : f.getCargo().getCommodityQuantity(DATABANK);
     }
 
-    /** Databanks research can use: the Research Facility tabs, Autopilot Storage and your fleet's cargo. */
+    /** Research databanks in your colonies' Storage tabs (VoK puts a research site's databanks there while the facility is down). */
+    static float colonyDatabanks() {
+        float n = 0f;
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) { CargoAPI c = Misc.getStorageCargo(m); if (c != null) n += c.getCommodityQuantity(DATABANK); }
+        return n;
+    }
+
+    /** Databanks research can use: the Research Facility tabs, Autopilot Storage, your colonies' Storage and your fleet's cargo. */
     static float databanksOnHand(Object mgr) throws Exception {
-        return ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue() + CAData.get().storage().getCommodityQuantity(DATABANK) + fleetDatabanks();
+        return ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue() + CAData.get().storage().getCommodityQuantity(DATABANK) + colonyDatabanks() + fleetDatabanks();
     }
 
     static boolean isCommodity(String id) {
@@ -384,7 +489,7 @@ public class CAResearch {
         CargoAPI st = CAData.get().storage();
         for (Map.Entry<String, Integer> e : t.items.entrySet()) {
             float have = ((Number) CARefl.invoke(itemCount, mgr, e.getKey())).floatValue() + count(st, e.getKey())
-                    + (DATABANK.equals(e.getKey()) ? fleetDatabanks() : 0f);
+                    + (DATABANK.equals(e.getKey()) ? colonyDatabanks() + fleetDatabanks() : 0f);
             if (have < e.getValue()) return false;
         }
         return true;
@@ -392,17 +497,20 @@ public class CAResearch {
 
     /**
      * Moves everything a tech is short of into the Research Facility tab that holds the most databanks already: from
-     * Autopilot Storage first, then databanks from your fleet's cargo. Nothing moves unless the whole shortfall is covered.
+     * Autopilot Storage first, then databanks from your colonies' Storage, then from your fleet's cargo. Nothing moves
+     * unless the whole shortfall is covered.
      */
     static String topUp(Object mgr, Tech t) throws Exception {
         CargoAPI st = CAData.get().storage();
         com.fs.starfarer.api.campaign.CampaignFleetAPI fleet = Global.getSector().getPlayerFleet();
         Map<String, int[]> plan = new LinkedHashMap<String, int[]>();   // item -> {from storage, from your fleet's cargo}
+        int fromColonies = 0;
         for (Map.Entry<String, Integer> e : t.items.entrySet()) {
             int need = e.getValue() - (int) ((Number) CARefl.invoke(itemCount, mgr, e.getKey())).floatValue();
             if (need <= 0) continue;
             int fromStorage = (int) Math.min(need, count(st, e.getKey()));
-            int fromFleet = need - fromStorage;
+            if (DATABANK.equals(e.getKey())) fromColonies = (int) Math.min(need - fromStorage, colonyDatabanks());
+            int fromFleet = need - fromStorage - (DATABANK.equals(e.getKey()) ? fromColonies : 0);
             if (fromFleet > 0 && (!DATABANK.equals(e.getKey()) || fleet == null || fleet.getCargo() == null || fleetDatabanks() < fromFleet)) return null;
             plan.put(e.getKey(), new int[]{fromStorage, fromFleet});
         }
@@ -417,6 +525,16 @@ public class CAResearch {
         if (best == null) return null;
         List<String> what = new ArrayList<String>();
         boolean anyStorage = false, anyFleet = false;
+        int left = fromColonies;
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) {   // databanks from your colonies' Storage
+            CargoAPI c = Misc.getStorageCargo(m);
+            if (left <= 0 || c == null) continue;
+            int n = (int) Math.min(left, c.getCommodityQuantity(DATABANK));
+            if (n <= 0) continue;
+            move(c, best.getCargo(), DATABANK, n);
+            left -= n;
+        }
+        if (fromColonies > 0) what.add(fromColonies + " " + commodityName(DATABANK) + " from your colonies' Storage");
         for (Map.Entry<String, int[]> e : plan.entrySet()) {
             int fromStorage = e.getValue()[0], fromFleet = e.getValue()[1];
             move(st, best.getCargo(), e.getKey(), fromStorage);
@@ -450,17 +568,24 @@ public class CAResearch {
             CALog.forget("research:nofacility");
             if (CABudget.paused(s)) return;
             int fac = ((Number) CARefl.invoke(facilities, mgr)).intValue();
+            Tech waiting = null;   // the best plan tech that's short of databanks: the ones you have are kept for it
+            float have = databanksOnHand(mgr);
             for (Tech t : ranked()) {
                 if (t.rank <= 0f) break;
                 if (!t.databanksOnly()) continue;
+                if (t.needsItems && have < t.databanks()) { if (waiting == null && t.plan > 0f) waiting = t; continue; }
+                if (waiting != null && t.plan <= 0f) continue;   // no plan needs it; keep the databanks
                 float upkeep = t.tier * TIER_UPKEEP * fac;
-                if (s.upkeepAdded + upkeep > s.newUpkeepCap) {
+                if (t.plan <= 0f && s.upkeepAdded + upkeep > s.newUpkeepCap) {   // research upkeep ends with the tech; plan techs go anyway
                     if (CALog.once("research:upkeep:" + t.id)) CALog.add("Research: " + t.name + " waits for next month (new upkeep cap reached)");
-                    return;
+                    continue;
                 }
-                if (t.needsItems && databanksOnHand(mgr) < t.databanks()) continue;   // the tab, Autopilot Storage and your cargo together
                 if (start(t, "Auto") == null) { CABudget.charge(s, 0f, 0f, upkeep); return; }
             }
+            if (waiting != null && CALog.once("research:wait:" + waiting.id + ":" + (int) have))
+                CALog.add("Research: next for your colonies' plans is " + waiting.name + " (for " + CAContracts.join(waiting.planFor) + "), which needs "
+                        + waiting.databanks() + " research databanks; you have " + (int) have + ". Databanks come from salvage (research stations, derelicts) "
+                        + "and from a Research Facility on a pre-collapse research site; Autopilot uses them from Autopilot Storage, colony Storage or your cargo", true);
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "research step failed", t);
         }
@@ -498,9 +623,22 @@ public class CAResearch {
             else t.addPara("%s research facilities. Databanks in their storage: %s; in Autopilot Storage: %s; in your fleet's cargo: %s.", 4f, hl, "" + fac,
                     "" + (int) ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue(), "" + (int) d.storage().getCommodityQuantity(DATABANK),
                     "" + (int) fleetDatabanks());
+            t.addPara("Databanks on hand: %s (Research Facility tab, Autopilot Storage, colony Storage and your fleet's cargo).", 4f, hl, "" + (int) databanksOnHand(mgr));
+            List<Tech> rankedNow = ranked();
+            if (!needs.isEmpty()) {
+                t.addPara("Your colonies' plans wait on research:", 8f);
+                int k = 0;
+                for (Need n : needs) {
+                    if (k++ >= 6) break;
+                    List<String> names = new ArrayList<String>();
+                    for (Tech x : rankedNow) if (n.chain.contains(x.id)) names.add(x.name);
+                    t.addPara("    %s at %s: %s techs, %s databanks, about %s days" + (n.manual ? " (one uses items Auto won't spend)" : ""), 2f, hl,
+                            CALog.esc(n.step), CALog.esc(n.colony), "" + n.chain.size(), "" + n.databanks, "" + Math.round(n.days));
+                }
+            }
             boolean idle = idle(mgr);
             int shown = 0;
-            for (Tech x : ranked()) {
+            for (Tech x : rankedNow) {
                 if (shown++ >= 6) break;
                 t.addPara("%s (%s days, %s): %s a month" + (x.needsItems ? (covered(mgr, x) ? ", moved in from Autopilot Storage when started" : ", not enough on hand") : "") + (!x.databanksOnly() ? ", uses items Auto won't spend" : ""),
                         8f, x.rank > 0f ? hl : gray, x.name, "" + Math.round(Math.max(1f, x.days - x.spent)), itemsText(x), CAEngine.signed(x.value));

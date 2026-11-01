@@ -286,9 +286,11 @@ public class CAEngine {
             value -= profile == CAData.Profile.WAR ? 5000f : 30000f;
             p.lines.add("Pollutes this habitable world (permanent after 90 days)");
         }
-        // the plan only orders buildings that are worth something on their own; it never makes a money-losing one look good
-        float planBonus = value > 0f && !profitOnly ? CAPlan.bonusFor(m, plan, p.id) : 0f;
-        if (planBonus > 0f) p.lines.add(0, "Next step of this colony's " + plan.name + " plan");
+        // the plan only orders buildings that are worth something on their own, except Terraforming Made Easy's structures
+        // and the Unification Center: they cost more than they earn, but they're how the plan's world is reached
+        boolean enabler = p.id.startsWith("tme_");
+        float planBonus = (value > 0f || enabler) && !profitOnly ? CAPlan.bonusFor(m, plan, p.id) : 0f;
+        if (planBonus > 0f) p.lines.add(0, "Next step of this colony's " + plan.name + " plan" + (value <= 0f ? " (costs more than it earns; the plan needs it)" : ""));
         float followThrough = p.upgrade && value > 0f && !profitOnly ? 15000f : 0f;
         if (followThrough > 0f) p.lines.add("Follow-through: upgrades what's already built");
         p.worth = value; p.planBonus = planBonus; p.followThrough = followThrough;

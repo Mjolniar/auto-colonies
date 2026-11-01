@@ -5,6 +5,7 @@ import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.econ.MarketConditionAPI;
+import com.fs.starfarer.api.util.Misc;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -200,12 +201,39 @@ public class CAWorldPlanner {
             p.steps.addAll(done.steps);
             p.steps.add(new CAPlan.Step(CAPlan.Kind.BUILD, "tme_unification_center", industryName("tme_unification_center")));
             p.steps.add(new CAPlan.Step(CAPlan.Kind.COND, w, name(w)));
+            // the world's industries, plus the colony's other industries, must fit the slots it can have at its max size
+            int slots = 0;
+            for (String ind : p.exact) if (isIndustry(ind)) slots++;
+            for (Industry i : m.getIndustries()) {
+                if (i.isHidden() || !i.isIndustry()) continue;
+                boolean covers = false;
+                for (String ind : p.exact) if (i.getId().equals(ind) || CAPlan.leadsTo(i.getId(), ind) || CAPlan.leadsTo(ind, i.getId())) covers = true;
+                if (!covers) slots++;
+            }
+            if (slots > slotsAt(m, Misc.getMaxMarketSize(m))) continue;
             int open = 0;
             for (CAPlan.Step st : p.steps) if (!st.done(m)) open++;
-            float score = f * 1000000f - done.cost - open * 200000f;
+            // a year of what the end conditions change (hazard on upkeep and growth, deposits), so a world that keeps or adds
+            // hazards loses to one that clears them: growth is what every colony needs
+            float change = 0f;
+            try { change = CAConditions.change(m, done.conds, prof, null); } catch (Throwable ignored) { }
+            float score = f * 1000000f - done.cost - open * 200000f + 12f * change;
             if (score > bestScore) { bestScore = score; best = p; }
         }
         return best;
+    }
+
+    static boolean isIndustry(String id) {
+        try {
+            com.fs.starfarer.api.loading.IndustrySpecAPI sp = Global.getSettings().getIndustrySpec(id);
+            return sp != null && sp.hasTag(com.fs.starfarer.api.impl.campaign.ids.Industries.TAG_INDUSTRY);
+        } catch (Throwable t) { return false; }
+    }
+
+    /** Industry slots the colony would have at this size: today's (with every bonus) moved along the game's size table. */
+    static int slotsAt(MarketAPI m, int size) {
+        return Misc.getMaxIndustries(m) - com.fs.starfarer.api.impl.campaign.econ.impl.PopulationAndInfrastructure.getMaxIndustries(m.getSize())
+                + com.fs.starfarer.api.impl.campaign.econ.impl.PopulationAndInfrastructure.getMaxIndustries(size);
     }
 
     /** Structure that runs the project for this condition, or null. */
