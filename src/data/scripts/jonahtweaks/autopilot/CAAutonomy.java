@@ -18,18 +18,18 @@ import java.util.List;
  * you get 25% of its profit or loss (nex_autonomousIncomeMult), it no longer counts against your colony limit, and nothing
  * can be built there; taking it back adds 2 unrest (Nex_GrantAutonomy).
  *
- * An emergency is money (net income negative, with under RUNWAY months of it left above the credit reserve) or governance
- * (you govern more colonies than your limit and one of them is below stability 5, where it starts losing income). In one,
- * the colony whose autonomy saves the most is made autonomous the way Nexerelin's "Grant autonomy" dialog does it: in a money
- * emergency only a colony that loses money, in a governance one only a colony you govern yourself. Auto acts on Auto
- * colonies; Recommend logs the choice and the Mod features page has a button. Colonies Autopilot made autonomous are taken
+ * An emergency is money: net income negative, with under RUNWAY months of it left above the credit reserve. In one, the
+ * colony that loses the most is made autonomous the way Nexerelin's "Grant autonomy" dialog does it. Never a colony under
+ * NEW_DAYS old, and never for the colony limit: taking a colony back costs it 2 stability, which a new colony can't spare,
+ * so going past the limit gets an administrator instead (CAItems.adminsNeeded). Auto acts on Auto colonies; Recommend logs
+ * the choice and the Mod features page has a button. Colonies Autopilot made autonomous are taken
  * back once there's no emergency, net income stays positive with them, they fit your colony limit, and they can take the
  * 2 unrest without going below 5. One change every GAP days, and a colony stays autonomous at least HOLD days. Colonies
  * you made autonomous yourself are never touched.
  */
 final class CAAutonomy {
     static final String MOD = "nexerelin";
-    static final float RUNWAY = 3f, GAP = 30f, HOLD = 60f;
+    static final float RUNWAY = 3f, GAP = 30f, HOLD = 60f, NEW_DAYS = 365f;
     static final int REVOKE_UNREST = 2;   // Nex_GrantAutonomy.REVOKE_UNREST
 
     private CAAutonomy() { }
@@ -56,49 +56,33 @@ final class CAAutonomy {
     /** Credits a month you stop gaining (or losing) when a colony with this net income becomes autonomous. */
     static float moneySaved(float colonyNet, float mult) { return -(1f - mult) * colonyNet; }
 
+    /** A money emergency, or null. Going past the colony limit isn't one: that gets an administrator (CAItems.adminsNeeded). */
     static Emergency emergency(CASettings s) {
         float net = CABudget.netIncome(s);
-        if (moneyEmergency(net, CABuild.credits(), s.reserve)) {
-            Emergency e = new Emergency();
-            e.money = true;
-            e.why = "net income " + Misc.getDGSCredits(net) + " a month, with under " + (int) RUNWAY + " months of it left above the credit reserve";
-            return e;
-        }
-        List<MarketAPI> yours = CAItems.selfGoverned(Misc.getPlayerMarkets(false));
-        int over = yours.size() - CAItems.maxGoverned();
-        if (over <= 0) return null;
-        for (MarketAPI m : yours) {
-            if (m.getStabilityValue() >= 5f) continue;
-            Emergency e = new Emergency();
-            e.why = "you govern " + over + " more " + (over == 1 ? "colony" : "colonies") + " than your limit, and " + m.getName() + " is below stability 5";
-            return e;
-        }
-        return null;
+        if (!moneyEmergency(net, CABuild.credits(), s.reserve)) return null;
+        Emergency e = new Emergency();
+        e.money = true;
+        e.why = "net income " + Misc.getDGSCredits(net) + " a month, with under " + (int) RUNWAY + " months of it left above the credit reserve";
+        return e;
     }
 
     static boolean eligible(CAData d, MarketAPI m, boolean autoOnly) {
         CAData.Colony c = d.colony(m.getId());
         if (autoOnly ? c.mode != CAData.Mode.AUTO : c.mode == CAData.Mode.OFF) return false;
         if (c.buildout) return false;   // a fast buildout loses money on purpose until it pays
+        if (m.getDaysInExistence() < NEW_DAYS) return false;   // a new colony needs its stability, and taking it back costs 2
         if (CAEngine.isOutpost(m) || CAHypershunt.is(m) || CAMegastructures.has(m)) return false;
         return m.getAdmin() == null || !m.getAdmin().isAICore();   // an AI core you put there would stay behind
     }
 
-    /** The colony whose autonomy helps most in this emergency, or null if none would. */
+    /** The colony whose autonomy saves the most in this emergency (one that loses money, a year old or more), or null. */
     static Cand best(CAData d, Emergency e, boolean autoOnly) {
-        float mult = incomeMult(), per = Misc.getOutpostPenalty();
-        List<MarketAPI> yours = CAItems.selfGoverned(Misc.getPlayerMarkets(false));
+        float mult = incomeMult();
         Cand best = null;
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             if (!eligible(d, m, autoOnly)) continue;
             float v = moneySaved(colonyNet(m), mult);
-            if (e.money) {
-                if (v <= 0f) continue;
-            } else {
-                if (!yours.contains(m)) continue;   // only a colony you govern frees a place under the limit
-                for (MarketAPI o : yours) if (o != m) v += CAItems.stabilityWorth(o, o.getStability().getModifiedValue(), per);
-                if (v <= 0f) continue;
-            }
+            if (v <= 0f) continue;
             if (best == null || v > best.saving) { best = new Cand(); best.m = m; best.saving = v; }
         }
         return best;
@@ -112,7 +96,7 @@ final class CAAutonomy {
         if (emergency(s) != null) return "the emergency isn't over";
         float after = CABudget.netIncome(s) + (1f - incomeMult()) * colonyNet(m);
         if (after < 0f) return "net income would be " + Misc.getDGSCredits(after) + " a month with it";
-        if (CAItems.selfGoverned(Misc.getPlayerMarkets(false)).size() + 1 > CAItems.maxGoverned()) return "it would put you over your colony limit";
+        if (CAItems.overLimit() + 1 > 0) return "it would put you over your colony limit (Autopilot hires an administrator to make room)";
         float floor = Math.max(5f, d.minStability) + REVOKE_UNREST;
         if (m.getStabilityValue() < floor) return "its stability is under " + (int) floor + " (taking it back adds " + REVOKE_UNREST + " unrest)";
         return null;
@@ -136,7 +120,7 @@ final class CAAutonomy {
             Cand k = best(d, e, auto);
             if (k == null) {
                 if (CALog.once("autonomy:none:" + Global.getSector().getClock().getMonth()))
-                    CALog.add("Emergency (" + e.why + "), but making a colony autonomous wouldn't help", true);
+                    CALog.add("Emergency (" + e.why + "), but no colony a year old or more loses money, so none is made autonomous", true);
                 return;
             }
             if (auto) grant(d, k.m, "emergency: " + e.why, k.saving);

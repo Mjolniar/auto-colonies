@@ -54,10 +54,10 @@ They're chosen so that switching colonies to Auto and doing nothing else works o
 | Budget | **Automatic**: half of last month's net income, plus 15% of your credits above the reserve each month. A young colony that loses money still gets built, and spending slows as savings fall. |
 | Credit reserve | A quarter of your credits at setup, between 50,000 and 500,000; never spent |
 | Pause on loss | Off (the Automatic budget already slows down) |
-| AI cores, administrators | Used and hired (only cores you put in Autopilot Storage, where they add most; less the colony crisis progress they add; up to 7 inspection points per colony, so the Hegemony never inspects; an administrator only where they add more than their salary) |
+| AI cores, administrators | Used and hired (only cores you put in Autopilot Storage, where they add most; less the colony crisis progress they add; up to 7 inspection points per colony, so the Hegemony never inspects; an administrator where they add more than their salary, and always one for each colony past your colony limit) |
 | Research, trade contracts, settlement | Auto, each only when it pays (Ashes of the Domain, Random Assortment of Things) |
 | Agents | Defense: hired only when there's a rebellion, Pather cell, pirate base or enemy operation (Nexerelin) |
-| Emergency autonomy | Auto: in a money or colony-limit emergency, a colony is made autonomous, then taken back once it's over (Nexerelin) |
+| Emergency autonomy | Auto: in a money emergency, a colony a year old or more that loses money is made autonomous, then taken back once it's over (Nexerelin) |
 | Policies, edicts, IndEvo automation, defense fleets | On |
 | Removals, story points, offense | Off: these are your calls |
 
@@ -86,7 +86,7 @@ All three are under **Settings**, **Budget and spending**, in the empire panel; 
 ### Items, AI cores and administrators
 
 - **Colony items, AI cores and research databanks:** dock at any of your colonies, open the **Autopilot Storage** tab, and deposit them there. The manager uses only items in that storage, and only for colonies in Auto mode; it never takes from your normal storage. Research (Vaults of Knowledge) takes what a tech needs from it too, and databanks from your fleet's cargo after that. AI cores are used with the recommended settings (**Use AI cores**). Each core goes where it adds most for the colony's goal: an Alpha where its +1 output (or a structure's bonus) is worth most, a Beta where upkeep is highest, a Gamma only where an input is short. A better core replaces a lesser one, which goes back to storage. **Inspection risk** decides how many inspection points a colony may hold: 7 or less (the Hegemony ignores those), more where its defenses beat the next inspection (**More where defended**, recommended), or **No limit**. A colony over its limit sends cores back to storage one a day, and a colony an inspection is coming for is left as it is. Autopilot Storage lists each colony's points and limit.
-- **Administrators:** in Auto mode, an administrator is hired, placed or moved only where they add more than they cost: their +1 output (worth most at a big, productive colony) and the stability from your colony limit, against their salary (2,500 or 20,000 a month) and the hiring cost. The colony panel's Overview shows what its administrator costs and adds. Hiring is **Administrator hiring**, on in the recommended settings.
+- **Administrators:** in Auto mode, an administrator is hired, placed or moved only where they add more than they cost: their +1 output (worth most at a big, productive colony) and the stability from your colony limit, against their salary (2,500 or 20,000 a month) and the hiring cost. The colony panel's Overview shows what its administrator costs and adds. Hiring is **Administrator hiring**, on in the recommended settings. Past your colony limit (your 3rd colony at the base limit of 2), one is placed or hired whatever the money says, since each colony past it costs every colony you govern 2 stability; it may go past the monthly budget, never below the reserve.
 
 ### Keeping control
 
@@ -122,8 +122,8 @@ Off until setup runs; the recommended settings turn on **Defense**. Change it in
 
 Off until setup runs; the recommended settings turn on **Auto**. Change it in the empire panel's **Settings**, under **Emergency autonomy (Nexerelin)**: **Off**, **Recommend** or **Auto**.
 
-- **An emergency** is net income below zero with under 3 months of it left above the credit reserve, or more colonies governed by you than your limit with one of them below stability 5.
-- **What it does:** the colony whose autonomy saves the most is made autonomous, as with Nexerelin's **Grant autonomy**. You get 25% of its profit or loss, and it no longer counts against your colony limit. Recommend only logs it.
+- **An emergency** is net income below zero with under 3 months of it left above the credit reserve. Founding colonies past your limit isn't one: that gets an administrator.
+- **What it does:** the colony that loses the most is made autonomous, as with Nexerelin's **Grant autonomy**. You get 25% of its profit or loss, and it no longer counts against your colony limit. Never a colony under a year old, since taking it back costs 2 stability. Recommend only logs it.
 - **Taking it back:** once the emergency is over and net income stays positive with the colony, it's taken back. Nexerelin adds 2 unrest for that.
 - The Mod features page shows the emergency and the best choice with **Grant autonomy**, and each colony Autopilot made autonomous with **Take it back now**. Colonies you made autonomous yourself are left alone.
 

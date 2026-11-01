@@ -117,6 +117,9 @@ public class CAItems {
         if (s.useAICores && placeCore(d, s, markets)) return;
         if (s.adminOptimal && (assignAdmin(d, markets) || moveAdmin(markets))) return;
         if (s.adminHiring) hireAdmin(d, s, markets);
+        else if (adminsNeeded(d) > 0 && CALog.once("admin:need:off:" + adminsNeeded(d)))
+            CALog.add("You govern " + limitText(adminsNeeded(d)) + ". Administrator hiring is off, so hire one yourself, or turn on "
+                    + "Hire administrators under Administrators and ambassadors", true);
     }
 
     static boolean placeItem(CAData d, CASettings s, List<MarketAPI> markets) {
@@ -585,6 +588,32 @@ public class CAItems {
     /** How many colonies you can govern yourself before the mismanagement penalty starts. */
     static int maxGoverned() { return Global.getSector().getPlayerStats().getOutpostNumber().getModifiedInt(); }
 
+    /** How many more colonies you govern yourself than your limit, counted as vanilla does (PopulationAndInfrastructure.getMismanagementPenalty); 0 or less within it. */
+    static int overLimit() {
+        int n = 0;
+        for (MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) if (m.isPlayerOwned() && governedByYou(m)) n++;
+        return n - maxGoverned();
+    }
+
+    /**
+     * Administrators the colony limit still needs: the colonies you govern past it, each costing every colony you govern 2
+     * stability, plus colonies Autopilot made autonomous (Nexerelin), which come back once there's room for them. These
+     * are placed or hired even when the money they add doesn't cover the salary: stability matters most in a new colony.
+     */
+    static int adminsNeeded(CAData d) {
+        int back = 0;
+        for (String id : d.autonomous().keySet()) {
+            MarketAPI m = Global.getSector().getEconomy().getMarket(id);
+            if (m != null && !m.isPlayerOwned()) back++;
+        }
+        return Math.max(0, overLimit() + back);
+    }
+
+    static String limitText(int need) {
+        return need + " more " + (need == 1 ? "colony" : "colonies") + " than your colony limit (each costs every colony you govern "
+                + Math.round(Misc.getOutpostPenalty()) + " stability)";
+    }
+
     /** Credits a month that changing m's stability by delta is worth, from raw (unclamped) stability. */
     static float stabilityWorth(MarketAPI m, float raw, float delta) {
         float cur = Math.max(0f, Math.min(10f, raw)), next = Math.max(0f, Math.min(10f, raw + delta));
@@ -630,7 +659,10 @@ public class CAItems {
         return v;
     }
 
-    /** Places an idle administrator where they add the most, if that beats the 90% of salary that starts with the post. */
+    /**
+     * Places an idle administrator where they add the most, if that beats the 90% of salary that starts with the post, or
+     * anyway while the colony limit needs one (adminsNeeded).
+     */
     static boolean assignAdmin(CAData d, List<MarketAPI> markets) {
         List<AdminData> idle = new ArrayList<AdminData>();
         for (AdminData a : Global.getSector().getCharacterData().getAdmins()) {
@@ -644,9 +676,10 @@ public class CAItems {
         List<MarketAPI> open = selfGoverned(markets);
         if (open.isEmpty()) return false;
         float idleMult = idleSalaryMult();
+        int need = adminsNeeded(d);
         AdminData bestA = null;
         MarketAPI bestM = null;
-        float bestNet = 0f, bestWorth = 0f;
+        float bestNet = need > 0 ? -Float.MAX_VALUE : 0f, bestWorth = 0f;
         for (AdminData a : idle) {
             float cost = Misc.getAdminSalary(a.getPerson()) * (1f - idleMult);
             for (MarketAPI m : open) {
@@ -667,8 +700,9 @@ public class CAItems {
             bestM.setAdmin(bestA.getPerson());
             bestA.setMarket(bestM);
             CALog.forget("admin:idle:" + bestA.getPerson().getId());
-            CALog.add(bestM.getName() + ": assigned administrator " + bestA.getPerson().getNameString() + " (adds about " + Misc.getDGSCredits(bestWorth)
-                    + " a month, salary " + Misc.getDGSCredits(Misc.getAdminSalary(bestA.getPerson())) + ")", true);
+            CALog.forget("admin:need");
+            CALog.add(bestM.getName() + ": assigned administrator " + bestA.getPerson().getNameString() + " (" + (need > 0 ? "you govern " + limitText(need) + "; "
+                    : "") + "adds about " + Misc.getDGSCredits(bestWorth) + " a month, salary " + Misc.getDGSCredits(Misc.getAdminSalary(bestA.getPerson())) + ")", true);
             return true;
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "admin assignment failed at " + bestM.getName(), t);
@@ -720,17 +754,28 @@ public class CAItems {
     /**
      * Hires an administrator on offer at a non-hostile market, the way the vanilla hire dialog does, when an Auto colony you
      * govern yourself would gain more from them than their salary plus the hiring cost spread over three years, and no idle
-     * administrator is available or on the way. Picks the candidate and colony that come out furthest ahead. Optional
-     * 30-day arrival delay.
+     * administrator is available or on the way; or, while the colony limit needs administrators (adminsNeeded) and not
+     * enough are idle or on the way, whatever the money says, past the monthly budget if need be but never below the credit
+     * reserve. Picks the candidate and colony that come out furthest ahead. Optional 30-day arrival delay.
      */
     static boolean hireAdmin(CAData d, CASettings s, List<MarketAPI> markets) {
         List<MarketAPI> open = selfGoverned(markets);
-        if (open.isEmpty()) return false;
+        int need = adminsNeeded(d);
+        if (open.isEmpty()) {
+            if (need > 0 && CALog.once("admin:need:none:" + need))
+                CALog.add("You govern " + limitText(need) + ", but none of your Auto colonies is governed by you, so Autopilot has nowhere to put an "
+                        + "administrator. Put one on a colony yourself, or switch a colony you govern to Auto", true);
+            return false;
+        }
         int idleOrComing = 0;
         for (AdminData a : Global.getSector().getCharacterData().getAdmins()) if (a.getMarket() == null) idleOrComing++;
-        if (idleOrComing >= open.size()) return false;
+        if (idleOrComing >= (need > 0 ? Math.min(need, open.size()) : open.size())) return false;
         int max = (int) Global.getSector().getPlayerStats().getAdminNumber().getModifiedValue();
-        if (Global.getSector().getCharacterData().getAdmins().size() >= max) return false;
+        if (Global.getSector().getCharacterData().getAdmins().size() >= max) {
+            if (need > 0 && CALog.once("admin:need:max:" + max))
+                CALog.add("You govern " + limitText(need) + ", but you already have as many administrators as you can employ (" + max + ")", true);
+            return false;
+        }
         float fee = CABudget.fee(s, HIRE_FEE);
         com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent.AvailableOfficer best = null;
         com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent bestEvent = null;
@@ -754,8 +799,13 @@ public class CAItems {
                 }
             }
         }
-        if (best == null) return false;
-        if (bestNet <= 0f) {
+        if (best == null) {
+            if (need > 0 && CALog.once("admin:need:" + Global.getSector().getClock().getMonth()))
+                CALog.add("You govern " + limitText(need) + ", and no administrator is for hire at a market that isn't hostile to you. "
+                        + "New ones appear in markets' comm directories over time; Autopilot hires one as soon as there is", true);
+            return false;
+        }
+        if (bestNet <= 0f && need <= 0) {
             if (CALog.once("admin:skip:" + best.person.getId()))
                 CALog.add("Not hiring an administrator: the best on offer (" + best.person.getNameString() + " at " + bestAt.getName() + ", salary "
                         + Misc.getDGSCredits(best.salary) + " a month) would add about " + Misc.getDGSCredits(bestWorth) + " a month at " + bestFor.getName()
@@ -763,7 +813,7 @@ public class CAItems {
             return false;
         }
         float total = best.hiringBonus + fee;
-        if (total > CABudget.available(s) || CABuild.credits() < total) {
+        if (need > 0 ? CABuild.credits() - s.reserve < total : total > CABudget.available(s) || CABuild.credits() < total) {
             if (CALog.once("admin:" + best.person.getId()))
                 CALog.add("An administrator is for hire at " + bestAt.getName() + " (" + Misc.getDGSCredits(best.hiringBonus) + " + fee), waiting for budget");
             return false;
@@ -777,7 +827,8 @@ public class CAItems {
             if (s.adminDelay) d.adminTransit().put(best.person.getId(), Global.getSector().getClock().getTimestamp());
             CALog.add("Hired administrator " + best.person.getNameString() + " from " + bestAt.getName() + " for " + Misc.getDGSCredits(best.hiringBonus)
                     + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + ", salary " + Misc.getDGSCredits(best.salary) + "/month, for "
-                    + bestFor.getName() + " (adds about " + Misc.getDGSCredits(bestWorth) + " a month)" + (s.adminDelay ? "; arrives in 30 days" : ""), true);
+                    + bestFor.getName() + (need > 0 ? ": you govern " + limitText(need) : " (adds about " + Misc.getDGSCredits(bestWorth) + " a month)")
+                    + (s.adminDelay ? "; arrives in 30 days" : ""), true);
             return true;
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "administrator hire failed", t);
