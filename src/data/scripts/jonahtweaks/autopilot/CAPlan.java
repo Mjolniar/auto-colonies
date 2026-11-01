@@ -11,6 +11,12 @@ import java.util.List;
 /**
  * Colony plans: a target layout chosen ahead of time from the planet, its hazards and resources, and the profile.
  * Plan steps are favoured in scoring; the first unfinished build and terraforming steps get the biggest bonus.
+ *
+ * Plans work with any mix of mods: a reachable Terraforming Made Easy world first (CAWorldPlanner), else a plain plan
+ * for the goal. Any step whose building or condition the game doesn't have (its mod isn't installed) is dropped, so
+ * it never takes a plan rank; Ashes of the Domain's own versions count through their upgrade links (leadsTo), and
+ * research-locked steps are what CAResearch works toward. A colony whose plan steps are all done or blocked still
+ * builds whatever is worth most on its own: the plan only adds priority.
  */
 public class CAPlan {
     public enum Kind { BUILD, COND, NOCOND }
@@ -86,6 +92,14 @@ public class CAPlan {
     static final java.util.Set<String> WORLD_STEPS = new java.util.HashSet<String>(java.util.Arrays.asList("tme_unification_center",
             "tme_mineral_replicator", "tme_element_synthesizer", "tme_agricultural_laboratory"));
 
+    /** Whether the game has this step's building or condition: a step from a mod that isn't installed is dropped. */
+    static boolean exists(Step s) {
+        try {
+            if (s.kind == Kind.BUILD) return s.id.equals("station") || Global.getSettings().getIndustrySpec(s.id) != null;
+            return Global.getSettings().getMarketConditionSpec(s.id) != null;
+        } catch (Throwable t) { return false; }
+    }
+
     static void b(Plan p, String id, String label) { p.steps.add(new Step(Kind.BUILD, id, label)); }
     static void c(Plan p, String id, String label) { p.steps.add(new Step(Kind.COND, id, label)); }
     static void n(Plan p, String id, String label) { p.steps.add(new Step(Kind.NOCOND, id, label)); }
@@ -102,7 +116,7 @@ public class CAPlan {
             b(p, "grounddefenses", "Ground Defenses");
             List<Step> keep = new ArrayList<Step>();
             java.util.Set<String> seen = new java.util.HashSet<String>();
-            for (Step s : p.steps) if (seen.add(s.kind + ":" + s.id)) keep.add(s);
+            for (Step s : p.steps) if (exists(s) && seen.add(s.kind + ":" + s.id)) keep.add(s);
             p.steps = keep;
             return p;
         }
@@ -115,7 +129,7 @@ public class CAPlan {
 
         b(p, "spaceport", "Spaceport"); b(p, "megaport", "Megaport");
         if ((war || self || (ore && rare)) && !hab && (ore || rare)) {
-            p.name = "Forge World";
+            p.name = "Forge";
             b(p, "mining", "Mining"); b(p, "refining", "Refining"); b(p, "heavyindustry", "Heavy Industry"); b(p, "orbitalworks", "Orbital Works");
             b(p, "tme_mineral_replicator", "Mineral Replicator"); b(p, "tme_element_synthesizer", "Element Synthesizer");
             b(p, "tme_terrestrial_engine", "Terrestrial Engine");
@@ -123,14 +137,14 @@ public class CAPlan {
             c(p, "ore_ultrarich", "Ultrarich ore"); c(p, "rare_ore_ultrarich", "Ultrarich transplutonic ore");
             b(p, "tme_unification_center", "Unification Center"); c(p, "tme_forge_world", "Forge World");
         } else if ((sec || war) && hab) {
-            p.name = "Fortress World";
+            p.name = "Fortress";
             b(p, "heavyindustry", "Heavy Industry"); b(p, "orbitalworks", "Orbital Works"); b(p, "patrolhq", "Patrol HQ");
             b(p, "militarybase", "Military Base"); b(p, "highcommand", "High Command"); b(p, "fuelprod", "Fuel Production");
             b(p, "grounddefenses", "Ground Defenses"); b(p, "heavybatteries", "Heavy Batteries"); b(p, "station", "Orbital station");
             b(p, "tme_element_synthesizer", "Element Synthesizer"); c(p, "volatiles_plentiful", "Plentiful volatiles");
             b(p, "tme_unification_center", "Unification Center"); c(p, "tme_fortress_world", "Fortress World");
         } else if (hab && (inc || grow || prof == CAData.Profile.BALANCED)) {
-            p.name = "Paradise World";
+            p.name = "Paradise";
             b(p, "farming", "Farming"); b(p, "lightindustry", "Light Industry"); b(p, "commerce", "Commerce"); b(p, "waystation", "Waystation");
             b(p, "tme_agricultural_laboratory", "Agricultural Laboratory"); c(p, farm ? "farmland_bountiful" : "farmland_adequate", "Better farmland");
             c(p, "mild_climate", "Mild climate (Stellar Manufactory, start it yourself)");
@@ -156,13 +170,13 @@ public class CAPlan {
         // hazard clean-up applies to every plan
         if (m.hasCondition("no_atmosphere") || m.hasCondition("toxic_atmosphere") || m.hasCondition("dense_atmosphere")) {
             b(p, "tme_atmosphere_regulator", "Atmosphere Regulator");
-            if (!p.name.equals("Forge World")) { n(p, "toxic_atmosphere", "Remove toxic atmosphere"); n(p, "dense_atmosphere", "Remove dense atmosphere"); }
+            if (!p.name.equals("Forge")) { n(p, "toxic_atmosphere", "Remove toxic atmosphere"); n(p, "dense_atmosphere", "Remove dense atmosphere"); }
         }
         if (m.hasCondition("irradiated") || m.hasCondition("pollution") || m.hasCondition("inimical_biosphere")) {
             b(p, "tme_geomorphology_station", "Geomorphology Station");
             n(p, "irradiated", "Remove radiation"); n(p, "pollution", "Remove pollution"); n(p, "inimical_biosphere", "Remove inimical biosphere");
         }
-        if (!p.name.equals("Forge World") && (m.hasCondition("high_gravity") || m.hasCondition("extreme_tectonic_activity"))) {
+        if (!p.name.equals("Forge") && (m.hasCondition("high_gravity") || m.hasCondition("extreme_tectonic_activity"))) {
             b(p, "tme_terrestrial_engine", "Terrestrial Engine");
             n(p, "high_gravity", "Remove high gravity"); n(p, "extreme_tectonic_activity", "Remove extreme tectonic activity");
         }
@@ -176,7 +190,7 @@ public class CAPlan {
         for (Step s : p.steps) {
             if (s.kind == Kind.NOCOND && !m.hasCondition(s.id)) continue;
             if (tme && (s.kind == Kind.COND || WORLD_STEPS.contains(s.id))) continue;
-            if (!seen.add(s.kind + ":" + s.id)) continue;
+            if (!exists(s) || !seen.add(s.kind + ":" + s.id)) continue;
             keep.add(s);
         }
         p.steps = keep;
