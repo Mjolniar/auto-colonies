@@ -20,6 +20,22 @@ Colony management automation (Colony Autopilot) for Starsector 0.98a. No balance
 - **Autopilot Storage:** a tab at every colony market. Colony items, AI cores, Antimatter Stabilizers and research databanks deposited there are the only ones the manager uses. The empire panel's Autopilot Storage page lists what's in it, each colony's inspection points and, with Vaults of Knowledge, the Research section.
 - **Storage cheat** (Settings, **Cheats**; off, and never in the recommended settings): Autopilot Storage takes anything but ships and ambassadors, and every colony that uses stockpiles for shortages draws from it for free. Like the game's own stockpile: a colony short of a commodity in storage gets the missing amount as supply, and storage is drawn down at the game's stockpile rate for that shortage. It comes before the colony's own stockpile. The bonus is worked out every frame and taken off before every save, so turning the cheat off leaves nothing behind in the save.
 
+## Any mix of mods
+
+Every part has a fallback, so the manager works with any combination of the supported mods, or none:
+
+| Part | With the mod | Without it |
+|---|---|---|
+| Colony plans (Terraforming Made Easy) | A reachable special world: its industries must fit the slots the colony gets at max size, and its end conditions' hazard and deposits count; TME's structures and the Unification Center get the plan's priority | A plain plan for the goal (Forge, Fortress, Paradise, Bastion, Fuel Depot, Mining Colony, Trade Hub), vanilla buildings plus hazard clean-up; with TME on but no world reachable, the same without world steps |
+| Plan steps | Any step whose building or condition the game has | A step from a mod that isn't installed is dropped, so it never takes a plan rank |
+| Research locks (Ashes of the Domain, Building Menu Overhaul) | Locked steps are worked toward through research; AotD's own versions count through their upgrade links | Every vanilla building is open; nothing waits on research |
+| Research (Vaults of Knowledge) | Techs ranked by what colony plans need through their whole chain, then by what they unlock; a Research Facility is worth building when plans wait on research and you have none | Skipped |
+| Terraforming (TME, Boggled's TASC) | Projects scored by what they add or remove, plan conditions first | Skipped; hazard clean-up steps drop out with their buildings |
+| Growth | Hazard pay for the colonies it speeds up most, within a share of income; growth counts in every goal | Same (vanilla) |
+| Values | Formulas for vanilla buildings, estimates for known mod buildings, probe-colony measurements for the rest | A building that can't be valued is listed in Diagnostics and never built by Auto |
+
+Whatever a colony's plan is blocked on, it still builds whatever is worth most on its own; the plan only adds priority.
+
 ## Rules it follows
 
 - **Only worthwhile builds:** Approve and Auto only start a build that pays for itself within about 3 years: its money and other effects, valued with the colony goal's weights, must beat its build cost spread over 3 years. They never fall back to the least-bad option, so a building with nothing to do (a Research Facility with no research, say) isn't built. The colony panel shows each option's money per month after upkeep and how its ranking is made up, and marks the ones that aren't worth building.

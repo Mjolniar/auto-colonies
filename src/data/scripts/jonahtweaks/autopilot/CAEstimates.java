@@ -21,9 +21,31 @@ public class CAEstimates {
             "ix_surveillance_center",
             "tme_agricultural_laboratory", "tme_atmosphere_regulator", "tme_element_synthesizer", "tme_geomorphology_station",
             "tme_mineral_replicator", "tme_terrestrial_engine", "tme_unification_center",
-            "aotd_monoculture_plots", "aotd_extractive_operation", "aotd_smelting", "aotd_light_production", "aotd_trade_outpost"));
+            "aotd_monoculture_plots", "aotd_extractive_operation", "aotd_smelting", "aotd_light_production", "aotd_trade_outpost",
+            "aotd_research_facility"));
 
     public static boolean has(String id) { return IDS.contains(id); }
+
+    /**
+     * Vaults of Knowledge's Research Facility: research only runs while you own one, and it costs 10,000 a month. With
+     * none, it's worth half of what your colonies' plans wait on in research (CAResearch.needs, from the last ranking),
+     * or 5,000 a month with research but no plan need; a second one only adds 10% speed, so it's worth nothing.
+     */
+    static void researchFacility(CAEngine.Pick p) {
+        boolean have = false;
+        for (MarketAPI o : com.fs.starfarer.api.util.Misc.getPlayerMarkets(false))
+            if (o.hasIndustry("aotd_research_facility") || o.hasIndustry("aotd_blacksite")) have = true;
+        p.fx[0] -= 10000f;
+        if (have) { note(p, "You have one already; another adds only 10% research speed, for 10,000 a month"); return; }
+        float waiting = 0f;
+        int steps = 0;
+        if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAResearch.MOD))
+            for (CAResearch.Need n : CAResearch.needs) { waiting += n.value; steps++; }
+        float v = steps > 0 ? 0.5f * waiting : 5000f;
+        p.fx[0] += v;
+        note(p, steps > 0 ? "Research needs one: " + steps + " plan steps at your colonies wait on research (" + CAEngine.credits(v) + "), 10,000 a month"
+                : "Research needs one, though no plan step waits on it now; 10,000 a month");
+    }
 
     static void note(CAEngine.Pick p, String text) { p.lines.add(text + " (estimated)"); }
 
@@ -107,6 +129,7 @@ public class CAEstimates {
      * Light Production -> Light Industry, Trade Outpost -> Commerce).
      */
     static void aotd(MarketAPI m, String id, CAEngine.Pick p, java.util.Map<String, Integer> deficit, float gross, int s) {
+        if (id.equals("aotd_research_facility")) { researchFacility(p); return; }
         if (id.equals("aotd_monoculture_plots")) {
             int mod = 0;
             for (com.fs.starfarer.api.campaign.econ.MarketConditionAPI c : m.getConditions())
