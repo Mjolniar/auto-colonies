@@ -258,12 +258,10 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 String none = CAItems.noInspections();
                 int pts = CAItems.aiPoints(market), lim = CAItems.coreLimit(s, market, none);
                 boolean coming = CAItems.inspected().contains(market);
-                String why = coming ? "an inspection is coming, so its cores are left as they are"
-                        : lim != Integer.MAX_VALUE ? "limit " + lim + ", which the Hegemony ignores"
-                        : none != null ? "no limit: " + none
-                        : s.coreRisk == 2 ? "no limit (Inspection risk: No limit)"
-                        : "no limit: its defenses (about " + (int) CAItems.defenseFP(market) + " fleet points) beat the next inspection's " + (int) CAItems.nextInspectionFP();
+                String why = coming ? "an inspection is coming, so its cores are left as they are" : CAItems.limitWhy(s, market, none, lim);
                 t.addPara("AI cores: %s inspection points, %s.", 4f, coming || pts > lim ? Misc.getNegativeHighlightColor() : hl, "" + pts, why);
+                String crisis = CACrisis.coreLine(market);
+                if (crisis != null) t.addPara(CALog.esc(crisis), Misc.getGrayColor(), 2f);
             }
             if (Global.getSettings().getModManager().isModEnabled(CADevelopment.MOD) && !shunt) {
                 try { CADevelopment.render(t, market); }

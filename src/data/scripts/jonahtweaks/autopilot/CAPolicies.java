@@ -76,9 +76,10 @@ public class CAPolicies {
                 float margin = on ? 0f : 3f;   // free port costs up to 3 stability
                 boolean stableEnough = stab - margin >= d.minStability + 1f;
                 boolean shield = CAMods.shieldWantsClosedPort(m);   // Planetary Shield: Access Control keeps Pathers out only with the port closed
-                boolean want = profileFits && stableEnough && !luddic && !threat && !punitive && !emergency && !shield;
-                String why = punitive ? "punitive expedition under way" : threat ? "threat is high" : luddic ? "Luddic majority" : !stableEnough ? "stability too low" : emergency ? "net income is negative" : shield ? "the planetary shield keeps Pather cells out only while the port is closed" : !profileFits ? "profile is " + prof.label : "";
-                boolean urgentOff = on && (punitive || threat || stab < d.minStability);
+                boolean police = CACrisis.policeComing() && CACrisis.policeScore(m) > 0;   // Nexerelin's police crisis is next: a closed port isn't a target
+                boolean want = profileFits && stableEnough && !luddic && !threat && !punitive && !emergency && !shield && !police;
+                String why = police ? "Nexerelin's police raid on free ports is the next colony crisis" : punitive ? "punitive expedition under way" : threat ? "threat is high" : luddic ? "Luddic majority" : !stableEnough ? "stability too low" : emergency ? "net income is negative" : shield ? "the planetary shield keeps Pather cells out only while the port is closed" : !profileFits ? "profile is " + prof.label : "";
+                boolean urgentOff = on && (punitive || threat || police || stab < d.minStability);
                 if (want != on && (urgentOff || (!siege && canChange(c.lastFreePort, FREE_PORT_MIN_DAYS)))) {
                     m.setFreePort(want);
                     m.reapplyConditions();

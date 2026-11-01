@@ -378,6 +378,7 @@ public class CAEngine {
             p.fx[5] += 0.2f; p.fx[4] += 0.2f; p.lines.add("+20% ship quality and more ship output");
         } else if (id.equals("fuelprod")) {
             supply(p, "fuel", s - 2, deficit); demand(p, "volatiles", s, deficit);
+            CACrisis.diktat(m, s - 2, p);   // the Sindrian Diktat counts fuel output from 4
         } else if (id.equals("spaceport")) {
             p.fx[2] += 1.5f; p.fx[6] += 3f; p.lines.add("Removes the -100% no-spaceport penalty and adds +50% accessibility");
         } else if (id.equals("megaport")) {
@@ -385,11 +386,11 @@ public class CAEngine {
         } else if (id.equals("waystation")) {
             p.fx[2] += 0.1f; p.fx[6] += 0.5f; p.lines.add("+10% accessibility; stockpiles fuel and supplies");
         } else if (id.equals("patrolhq")) {
-            p.fx[3] += 0.1f; p.fx[4] += 0.3f; p.lines.add("Patrol fleets; +10% ground defense");
+            p.fx[3] += 0.1f; p.fx[4] += 0.3f; p.lines.add("Patrol fleets; +10% ground defense"); CACrisis.military(id, p);
         } else if (id.equals("militarybase")) {
-            p.fx[3] += 0.1f; p.fx[4] += 0.4f; p.lines.add("Larger patrols, marines and crew; ground defense +20%");
+            p.fx[3] += 0.1f; p.fx[4] += 0.4f; p.lines.add("Larger patrols, marines and crew; ground defense +20%"); CACrisis.military(id, p);
         } else if (id.equals("highcommand")) {
-            p.fx[3] += 0.1f; p.fx[4] += 0.5f; p.lines.add("Strongest patrols; ground defense +30%");
+            p.fx[3] += 0.1f; p.fx[4] += 0.5f; p.lines.add("Strongest patrols; ground defense +30%"); CACrisis.military(id, p);
         } else if (id.equals("grounddefenses")) {
             p.fx[3] += 1f; p.lines.add("Ground defense x2");
         } else if (id.equals("heavybatteries")) {

@@ -22,7 +22,8 @@ This mod is currently working with most of the colony mods I could find on the m
 - **Threat response:** Security at 70% threat; back below 65% after 60 days.
 - **Sieges:** while a colony is blockaded, has hostiles at the planet, or has a raid or blockade on its way, only defenses are built there, everything else waits, and trade contracts don't count on its goods.
 - **Derelict Empire start (Nexerelin):** fewer pirate and crisis fleets per system, and invasions, raids and blockades one at a time with a gap between them, since that start brings them within weeks. Only in that start.
-- **Items and AI cores:** placed from Autopilot Storage only.
+- **Colony crises:** crisis progress is priced in: AI cores pay for the Hegemony and Pather progress they add (size 3 or less is free from the Hegemony), and a Military Base or High Command counts how much it slows every crisis. The colony the coming crisis is likely to hit plans with Security. A Colony crises page shows the meter, what drives each faction's crisis and how to end it.
+- **Items and AI cores:** placed from Autopilot Storage only. Colonies stay at 7 inspection points or less, so the Hegemony never inspects them; inspection orders are yours (Advise) unless you choose Resist where defended.
 - **Administrators:** idle ones assigned; hiring optional.
 - **Mod buildings:** measured on a probe colony, then scored like vanilla.
 - **Diagnostics:** every building rated Supported, Measured, Analyzed or Quarantined.

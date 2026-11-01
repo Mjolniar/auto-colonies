@@ -40,7 +40,8 @@ public class CASetupUI {
         // items and people: only items you put in Autopilot Storage are used; cores are kept within inspection limits
         s.useAICores = true;
         s.alphaMode = 0;
-        s.coreRisk = 0;
+        s.coreRisk = 1;            // Never inspected: More where defended only pays if inspections are resisted, which means war with the Hegemony
+        s.inspectionMode = 0;      // Advise: resisting turns the Hegemony hostile, so that's your call
         s.storageCheat = false;    // cheats are never recommended
         s.disableStabilizers = false;
         s.adminHiring = true;
@@ -150,17 +151,26 @@ public class CASetupUI {
         }
         if (group(t, "items", "Items and AI cores", "AI cores " + onOff(s.useAICores).toLowerCase()
                 + (s.useAICores ? ", Alpha: " + CASettings.ALPHA_NAMES[Math.max(0, Math.min(2, s.alphaMode))]
-                        + ", risk: " + CASettings.CORE_RISK_NAMES[Math.max(0, Math.min(2, s.coreRisk))].toLowerCase() : ""))) {
+                        + ", risk: " + CASettings.CORE_RISK_NAMES[Math.max(0, Math.min(3, s.coreRisk))].toLowerCase() : ""))) {
             row(t, "Use AI cores", onOff(s.useAICores), "On", "cores", true);
             if (s.useAICores) {
                 row(t, "Alpha cores", CASettings.ALPHA_NAMES[Math.max(0, Math.min(2, s.alphaMode))], "Only where removable", "alpha", true);
-                row(t, "Inspection risk", CASettings.CORE_RISK_NAMES[Math.max(0, Math.min(2, s.coreRisk))], "More where defended", "corerisk", true);
+                row(t, "Inspection risk", CASettings.CORE_RISK_NAMES[Math.max(0, Math.min(3, s.coreRisk))], "Never inspected", "corerisk", true);
                 t.addPara("Each core goes where it adds most for the colony's goal (output, upkeep, shortages, a structure's own bonus), "
-                        + "less a small cost for each inspection point; a better core replaces a lesser one, which goes back to storage. "
-                        + "Colonies stay at " + CAItems.safePoints() + " inspection points or less, which the Hegemony ignores; More where defended "
-                        + "allows more where the defenses beat the next inspection by 1.5 times (2 times while the threat is high). There's no limit "
-                        + "once you've defeated the Hegemony's inspections, while you're in the Persean League, or when the Hegemony holds no colonies. "
-                        + "A colony an inspection is coming for is left as it is.", Misc.getGrayColor(), 6f);
+                        + "less the colony crisis progress it adds: the Hegemony counts every core at a colony above size 3 (size 3 or less "
+                        + "is free), and 7 Pather interest gives a colony of size 4 or more a Pather cell. A better core replaces a lesser "
+                        + "one, which goes back to storage. Never inspected keeps colonies at " + CAItems.safePoints() + " inspection points or "
+                        + "less, which the Hegemony never inspects; More where defended allows more where the defenses beat the next inspection "
+                        + "by 1.5 times (2 times while the threat is high), which only helps with Resist where defended below; Small colonies "
+                        + "only keeps cores out of colonies above size 3. There's no limit once you've defeated the Hegemony's inspections, "
+                        + "while you're in the Persean League, or when the Hegemony holds no colonies. A colony an inspection is coming for "
+                        + "is left as it is, and one a Pather attack is coming for drops under 7 Pather interest so its cell can dissolve.",
+                        Misc.getGrayColor(), 6f);
+                row(t, "Hegemony inspection orders", CASettings.INSPECTION_NAMES[Math.max(0, Math.min(2, s.inspectionMode))], "Advise", "inspect", true);
+                t.addPara("The game's default is to comply, which hands over every core at that colony. Advise logs each inspection coming for "
+                        + "an Auto colony with its strength and the colony's defenses, so you can resist or bribe from its intel. Resist where "
+                        + "defended resists at a colony whose defenses beat it by the margin above: the Hegemony turns hostile, and three beaten "
+                        + "inspections end them for good.", Misc.getGrayColor(), 6f);
             }
             row(t, "Antimatter Stabilizers to Advanced Fuel Production", s.disableStabilizers ? "Off" : "Convert", "Convert", "stab", true);
         }
@@ -330,7 +340,8 @@ public class CASetupUI {
         else if (k.equals("storecheat")) s.storageCheat = !s.storageCheat;
         else if (k.equals("removals")) s.allowRemovals = !s.allowRemovals;
         else if (k.equals("alpha")) s.alphaMode = (Math.max(0, Math.min(2, s.alphaMode)) + 1) % 3;
-        else if (k.equals("corerisk")) s.coreRisk = (Math.max(0, Math.min(2, s.coreRisk)) + 1) % 3;
+        else if (k.equals("inspect")) s.inspectionMode = (Math.max(0, Math.min(2, s.inspectionMode)) + 1) % 3;
+        else if (k.equals("corerisk")) s.coreRisk = (Math.max(0, Math.min(3, s.coreRisk)) + 1) % 4;
         else if (k.equals("sp")) s.storyPointRule = (s.storyPointRule + 1) % 3;
         else if (k.equals("spcap")) s.storyPointMonthlyCap = Math.max(0, s.storyPointMonthlyCap + (int) dir);
         else if (k.equals("admin")) s.adminHiring = !s.adminHiring;
