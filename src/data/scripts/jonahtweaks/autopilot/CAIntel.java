@@ -75,6 +75,7 @@ public class CAIntel extends BaseIntelPlugin {
         for (MarketAPI m : markets) if (data.colony(m.getId()).pendingId != null) pending++;
         p.add(new String[]{"colonies", pending > 0 ? "Colonies (" + pending + " to approve)" : "Colonies"});
         p.add(new String[]{"storage", "Autopilot Storage"});
+        p.add(new String[]{"crises", CACrisis.pending() != null ? "Colony crises (one coming)" : "Colony crises"});
         if (!modSections(s, markets).isEmpty()) p.add(new String[]{"mods", "Mod features"});
         int issues = CADiagnostics.count(CADiagnostics.Level.ANALYZED) + CADiagnostics.count(CADiagnostics.Level.QUARANTINED);
         p.add(new String[]{null, "Autopilot"});
@@ -225,19 +226,18 @@ public class CAIntel extends BaseIntelPlugin {
                 t.addPara("%s x%s", 3f, hl, CALog.esc(stack.getDisplayName()), "" + (int) stack.getSize());
             }
             t.addPara("AI cores: %s, inspection risk %s.", 6f, hl, s.useAICores ? "used" : "not used",
-                    CASettings.CORE_RISK_NAMES[Math.max(0, Math.min(2, s.coreRisk))].toLowerCase());
+                    CASettings.CORE_RISK_NAMES[Math.max(0, Math.min(3, s.coreRisk))].toLowerCase());
             String none = CAItems.noInspections();
             if (none != null) t.addPara("No Hegemony inspection can come now: %s. No limit on cores.", 4f, hl, none);
-            else t.addPara("The Hegemony ignores a colony with %s inspection points or less. Next inspection: %s fleet points.", 4f, hl,
-                    "" + CAItems.safePoints(), "" + (int) CAItems.nextInspectionFP());
+            else t.addPara("The Hegemony inspects only a colony with more than %s inspection points, but counts every core at a colony above "
+                    + "size 3 toward its crisis (%s points now). Next inspection: %s fleet points. See Colony crises.", 4f, hl,
+                    "" + CAItems.safePoints(), "" + CACrisis.base().hegPoints, "" + (int) CAItems.nextInspectionFP());
             java.util.Set<MarketAPI> inspected = CAItems.inspected();
             for (MarketAPI m : CAItems.autoMarkets()) {
                 int pts = CAItems.aiPoints(m), lim = CAItems.coreLimit(s, m, none);
                 boolean coming = inspected.contains(m);
                 if (pts <= 0 && !coming) continue;
-                String why = coming ? "inspection coming: left as it is"
-                        : lim != Integer.MAX_VALUE ? "limit " + lim
-                        : none == null && s.coreRisk == 0 ? "no limit, defended (" + (int) CAItems.defenseFP(m) + " fleet points estimated)" : "no limit";
+                String why = coming ? "inspection coming: left as it is" : CAItems.limitWhy(s, m, none, lim);
                 t.addPara("%s: %s inspection points, %s", 3f, coming || pts > lim ? Misc.getNegativeHighlightColor() : hl,
                         CALog.esc(m.getName()), "" + pts, why);
             }
@@ -255,6 +255,8 @@ public class CAIntel extends BaseIntelPlugin {
                     t.addPara("This section couldn't be shown; see starsector.log.", gray, 6f);
                 }
             }
+        } else if (page.equals("crises")) {
+            CACrisis.render(t, data, s);
         } else if (page.equals("mods")) {
             boolean first = true;
             for (String id : modSections(s, markets)) {

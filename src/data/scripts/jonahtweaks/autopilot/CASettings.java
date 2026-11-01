@@ -29,7 +29,8 @@ public class CASettings {
     public boolean useAICores = false;
     public int alphaMode = 0;             // 0 only where removable (default), 1 anywhere, 2 never
     public boolean storageCheat = false;  // cheat: Autopilot Storage takes anything and colonies draw shortages from it
-    public int coreRisk = 0;              // 0 more where defenses beat the next inspection (default), 1 never inspected, 2 no limit
+    public int coreRisk = 1;              // 0 more where defenses beat the next inspection, 1 never inspected (default for new saves), 2 no limit, 3 small colonies only
+    public int inspectionMode = 0;        // Hegemony inspections of Auto colonies: 0 advise (so older saves load as advise), 1 resist where defended, 2 off
     public boolean allowRemovals = false;
     public int storyPointRule = 0;        // 0 player only, 1 one per colony, 2 monthly cap
     public int storyPointMonthlyCap = 2;
@@ -107,7 +108,8 @@ public class CASettings {
     public static final float[] FEE_MULT = {0f, 0.5f, 1f, 2f};
     public static final String[] SP_NAMES = {"Player only", "One per colony", "Monthly cap"};
     public static final String[] ALPHA_NAMES = {"Only where removable", "Anywhere", "Never"};
-    public static final String[] CORE_RISK_NAMES = {"More where defended", "Never inspected", "No limit"};
+    public static final String[] CORE_RISK_NAMES = {"More where defended", "Never inspected", "No limit", "Small colonies only"};
+    public static final String[] INSPECTION_NAMES = {"Advise", "Resist where defended", "Off"};
     public static final String[] STATION_IDS = {"score", "low", "mid", "high"};
     public static final String[] STATION_NAMES = {"Pick by score", "Low tech", "Midline", "High tech"};
 

@@ -17,7 +17,7 @@ Nothing is built automatically after install. Every colony starts in **Advisor**
 | Panel | How to open | What it's for |
 |---|---|---|
 | Colony panel | The **Colony Autopilot** button on the colony screen, or right-click **Population & Infrastructure**, then **Colony Autopilot...** | One colony. Pages: **Overview** (stats, approval, goal, mode, fast buildout), **Plan and builds**, **Locks**, and **Mod features** (every mod feature that applies, on one page) |
-| Empire panel | Intel screen, the **Colony Autopilot** filter | Pages: **Colonies** (budget, approvals, every colony), **Autopilot Storage** (contents, inspection points, research), **Mod features** (every mod feature in use, on one page), **Settings**, **Log**, **Diagnostics** |
+| Empire panel | Intel screen, the **Colony Autopilot** filter | Pages: **Colonies** (budget, approvals, every colony), **Autopilot Storage** (contents, inspection points, research), **Colony crises** (the crisis meter, what's coming and where, what drives each faction's crisis and how it ends), **Mod features** (every mod feature in use, on one page), **Settings**, **Log**, **Diagnostics** |
 
 Both panels list their pages down the left side; click one to show it. In **Settings**, click a group to open it; one is open at a time.
 
@@ -54,7 +54,7 @@ They're chosen so that switching colonies to Auto and doing nothing else works o
 | Budget | **Automatic**: half of last month's net income, plus 15% of your credits above the reserve each month. A young colony that loses money still gets built, and spending slows as savings fall. |
 | Credit reserve | A quarter of your credits at setup, between 50,000 and 500,000; never spent |
 | Pause on loss | Off (the Automatic budget already slows down) |
-| AI cores, administrators | Used and hired (only cores you put in Autopilot Storage, where they add most; up to 7 inspection points per colony, more where its defenses beat the next inspection; an administrator only where they add more than their salary) |
+| AI cores, administrators | Used and hired (only cores you put in Autopilot Storage, where they add most; less the colony crisis progress they add; up to 7 inspection points per colony, so the Hegemony never inspects; an administrator only where they add more than their salary) |
 | Research, trade contracts, settlement | Auto, each only when it pays (Ashes of the Domain, Random Assortment of Things) |
 | Agents | Defense: hired only when there's a rebellion, Pather cell, pirate base or enemy operation (Nexerelin) |
 | Emergency autonomy | Auto: in a money or colony-limit emergency, a colony is made autonomous, then taken back once it's over (Nexerelin) |
@@ -102,6 +102,8 @@ Each new colony starts as Balanced and Advisor. Set its goal and mode in its col
 A colony whose threat estimate reaches 70% (hostile neighbors, crises, raids, Pather cells) is planned as Security on its own. It goes back to its own goal below 65%, after at least 60 days.
 
 A colony under siege (blockaded, hostile fleets at the planet, hostiles in the system that outweigh its defenses, or a raid, invasion or blockade on its way) only gets defenses until it's over. Its items, AI cores, policies and station augments are left alone, and trade contracts don't count on its goods. The log says when a siege starts and ends.
+
+Colony crises (the game's Hostile Activity meter) are priced in credits, about 640 a month per point of monthly progress. AI cores pay for the Hegemony progress they add at colonies above size 3 and the Pather interest that gives a colony of size 4 or more a Pather cell at 7. A Patrol HQ, Military Base or High Command counts how much it slows every crisis (x0.9, x0.7, x0.5), and Fuel Production counts the Sindrian Diktat's progress. Once the next crisis is picked (the meter at 500), the colony it's likely to hit plans with Security, a Pather target sheds cores until its cell can dissolve, and a coming Nexerelin police raid closes free ports. Hegemony inspections: the game's default is to comply, which hands over every core there. **Hegemony inspection orders** on Advise (recommended) logs each one so you can resist or bribe; Resist where defended resists where the defenses beat it, which turns the Hegemony hostile. Deals, fights and memberships are yours; the **Colony crises** page says what each takes.
 
 In a Nexerelin **Derelict Empire** start, every faction has enough points for a blockade or raid on day 0. Only in that start, the settings group **Attacks on your colonies** caps the pirate and crisis fleets in a system (the game allows 11) and makes Nexerelin's invasions, raids and blockades of your colonies come one at a time with a gap of 30 to 180 days. The recommended settings turn both on there (at most 4, 90 days apart).
 

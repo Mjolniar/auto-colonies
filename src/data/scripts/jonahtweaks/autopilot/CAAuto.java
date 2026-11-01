@@ -28,6 +28,7 @@ public class CAAuto {
         try { CASiege.update(d); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "siege check failed", t); }
         CAAttacks.apply(s);
+        CACrisis.daily(d, s);   // inspection orders, and a log line when a colony crisis is picked
         List<Cand> cands = new ArrayList<Cand>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             CAData.Colony c = d.colony(m.getId());

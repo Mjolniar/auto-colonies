@@ -8,13 +8,15 @@ import com.fs.starfarer.api.impl.campaign.intel.events.HostileActivityEventIntel
 import com.fs.starfarer.api.util.Misc;
 
 /**
- * Threat estimate per colony (0 = calm, 1+ = serious) from hostile neighbors, the Hostile Activity crisis and
- * raid/blockade conditions. At THRESHOLD the colony is planned with the Security profile until it drops below CLEAR
+ * Threat estimate per colony (0 = calm, 1+ = serious) from hostile neighbors, the Hostile Activity crisis (and being
+ * the likely target of the coming one, CACrisis.targets) and raid/blockade conditions. At THRESHOLD the colony is planned with the Security profile until it drops below CLEAR
  * and has stayed high for at least MIN_DAYS, so an estimate hovering at the line doesn't flip policies back and forth.
  */
 public class CAThreat {
     public static final float THRESHOLD = 0.7f, CLEAR = 0.65f;   // neighbors alone cap at 0.6, so CLEAR stays above that
     static final float MIN_DAYS = 60f;
+    /** The colony the coming colony crisis is likely to hit: with the meter at 500 or more (+0.33) that's past THRESHOLD. */
+    static final float CRISIS_TARGET = 0.4f;
 
     public static float estimate(MarketAPI m) {
         float t = 0f;
@@ -37,6 +39,7 @@ public class CAThreat {
         if (m.hasCondition("blockaded")) t += 0.3f;
         if (m.hasCondition("pather_cells")) t += 0.15f;
         if (m.hasCondition("nex_rebellion_condition")) t += 0.3f;
+        try { if (CACrisis.targets().contains(m)) t += CRISIS_TARGET; } catch (Throwable ignored) { }
         return t;
     }
 

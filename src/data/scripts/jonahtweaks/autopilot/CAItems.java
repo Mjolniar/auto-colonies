@@ -219,16 +219,15 @@ public class CAItems {
     // A core is worth what it does in that building, valued with the colony's goal weights the way buildings are
     // (CAEngine.WEIGHTS): vanilla's BaseIndustry gives every core -1 demand, Alpha and Beta -25% upkeep, and an Alpha +1 to
     // each output, or in a structure its own bonus instead (fleet size, station strength, ground defense, accessibility,
-    // income, growth). Every core also adds Hegemony hostile activity and Pather interest, held to cost POINT_COST a
-    // point, so a core that would do nothing stays in storage. The Hegemony only picks a colony holding more than an
+    // income, growth), less the colony crisis progress it adds (CACrisis): the Hegemony counts every core at a colony
+    // above size 3, and a colony of size 4 or more with 7 Pather interest gets a Pather cell, whose interest then counts
+    // too. A core that pays less than that stays in storage. The Hegemony only inspects a colony holding more than an
     // Alpha, a Beta and a Gamma's points (HegemonyHostileActivityFactor.pickTargetMarket), so that's every colony's limit
-    // unless the risk setting allows more.
+    // unless the risk setting allows more; Small colonies only keeps cores out of colonies above size 3 altogether.
 
     static final String[] CORES = {"alpha_core", "beta_core", "gamma_core"};
     static final String[] POINT_KEYS = {"hegemonyPointsAlpha", "hegemonyPointsBeta", "hegemonyPointsGamma"};
     static final int[] DEFAULT_POINTS = {4, 2, 1};
-    /** Credits a month each inspection point is held to cost (hostile activity and Pather interest); half at size 3 or less, which the Hegemony doesn't count. */
-    static final float POINT_COST = 250f;
     /** A core moves to another building only for this much more a month, so cores don't shuffle. */
     static final float CORE_MOVE_MARGIN = 3000f;
     /** How much stronger than the next inspection a colony's defenses must be to hold more; the second while its threat is high. */
@@ -318,11 +317,35 @@ public class CAItems {
         return defenseFP(m) >= margin * nextInspectionFP();
     }
 
-    /** The most inspection points Autopilot fills m to: no limit when no inspection can come, with No limit, or with More where defended at a defended colony. */
+    /**
+     * The most inspection points Autopilot fills m to: no limit when no inspection can come, with No limit, or with More
+     * where defended at a defended colony; none above size 3 with Small colonies only; and while a Pather attack is coming
+     * for m, few enough that its Pather interest falls under 7.
+     */
     public static int coreLimit(CASettings s, MarketAPI m, String noInspections) {
+        int lim = hegemonyLimit(s, m, noInspections), relief = pathRelief(m);
+        return relief >= 0 ? Math.min(lim, relief) : lim;
+    }
+
+    static int hegemonyLimit(CASettings s, MarketAPI m, String noInspections) {
         if (noInspections != null || s.coreRisk == 2) return Integer.MAX_VALUE;
         if (s.coreRisk == 0 && defended(m)) return Integer.MAX_VALUE;
+        if (s.coreRisk == 3 && m.getSize() > HegemonyAICoresActivityCause.IGNORE_COLONY_THRESHOLD && CACrisis.hegemonyCounts()) return 0;
         return safePoints();
+    }
+
+    static int pathRelief(MarketAPI m) {
+        try { return CACrisis.pathReliefLimit(m); } catch (Throwable t) { return -1; }
+    }
+
+    /** Why m's core limit is what it is, for the panels and the log. */
+    public static String limitWhy(CASettings s, MarketAPI m, String none, int lim) {
+        if (lim == pathRelief(m)) return "limit " + lim + ": a Pather attack is coming for it, so its Pather interest goes under 7 and its cell can dissolve";
+        if (lim == 0) return "limit 0: above size " + HegemonyAICoresActivityCause.IGNORE_COLONY_THRESHOLD + " every core adds to the Hegemony's crisis (AI cores: Small colonies only)";
+        if (lim != Integer.MAX_VALUE) return "limit " + lim + ", which the Hegemony never inspects";
+        if (none != null) return "no limit: " + none;
+        if (s.coreRisk == 2) return "no limit (Inspection risk: No limit)";
+        return "no limit: its defenses (about " + (int) defenseFP(m) + " fleet points) beat the next inspection's " + (int) nextInspectionFP();
     }
 
     /** An Alpha core only goes where it can be taken out cleanly: vanilla buildings, never Population & Infrastructure or mod code. */
@@ -377,8 +400,8 @@ public class CAItems {
         return CAEngine.WEIGHTS[CAThreat.effective(m, c.profile).ordinal()];
     }
 
-    /** Credits a month core k adds in ind with goal weights w, less what its inspection points cost. */
-    public static float coreValue(MarketAPI m, Industry ind, int k, float[] w, Map<String, Integer> deficit) {
+    /** Credits a month core k adds in ind with goal weights w, less the Hegemony and Pather crisis progress it adds (crisis null: none counted). */
+    public static float coreValue(MarketAPI m, Industry ind, int k, float[] w, Map<String, Integer> deficit, CACrisis.Base crisis) {
         float[] fx = new float[7];
         if (k <= 1) {   // Alpha and Beta: upkeep x0.75
             float up = ind.getUpkeep().getModifiedValue();
@@ -420,8 +443,9 @@ public class CAItems {
         }
         float v = 0f;
         for (int i = 0; i < 7; i++) v += w[i] * fx[i];
-        float cost = POINT_COST * (m.getSize() <= HegemonyAICoresActivityCause.IGNORE_COLONY_THRESHOLD ? 0.5f : 1f);
-        return v - cost * points(k);
+        if (crisis == null) return v;
+        int without = tier(ind.getAICoreId()) >= 0 ? points(tier(ind.getAICoreId())) : 0;   // priced from the colony without this building's core
+        return v - CACrisis.hegemonyCost(crisis, m, points(k), without) - CACrisis.pathCost(crisis, m, points(k), without);
     }
 
     /** A building that can take a core, with what each core is worth there. */
@@ -445,6 +469,7 @@ public class CAItems {
         String none = noInspections();
         Set<MarketAPI> frozen = inspected();
         Map<String, Integer> deficit = CAEngine.empireDeficits();
+        CACrisis.Base crisis = CACrisis.base();
         List<CoreSlot> slots = new ArrayList<CoreSlot>();
         Map<MarketAPI, Integer> points = new HashMap<MarketAPI, Integer>(), limit = new HashMap<MarketAPI, Integer>();
         for (MarketAPI m : markets) {
@@ -457,7 +482,7 @@ public class CAItems {
                 if (!coreSlot(c, ind)) continue;
                 CoreSlot x = new CoreSlot();
                 x.m = m; x.ind = ind; x.cur = tier(ind.getAICoreId()); x.threat = c.threatHigh;
-                for (int k = 0; k < CORES.length; k++) x.net[k] = coreValue(m, ind, k, w, deficit);
+                for (int k = 0; k < CORES.length; k++) x.net[k] = coreValue(m, ind, k, w, deficit, crisis);
                 slots.add(x);
             }
         }
@@ -474,15 +499,16 @@ public class CAItems {
                 if (worst == null || x.net[x.cur] / points(x.cur) < worst.net[worst.cur] / points(worst.cur)) worst = x;
             }
             if (worst == null || pts - movable > lim) {   // an AI core administrator or locked buildings keep it over anyway
-                if (CALog.once("cores:fixed:" + m.getId() + ":" + pts))
-                    CALog.add(m.getName() + ": " + pts + " inspection points, over the " + lim + " the Hegemony ignores, from cores Autopilot doesn't move "
-                            + "(an AI core administrator, or locked buildings); it can be inspected, so no more cores go there");
+                if (CALog.once("cores:fixed:" + m.getId() + ":" + pts + ":" + lim))
+                    CALog.add(m.getName() + ": " + pts + " inspection points (" + limitWhy(s, m, none, lim) + ") from cores Autopilot doesn't move "
+                            + "(an AI core administrator, or locked buildings), so no more cores go there");
                 continue;
             }
             worst.ind.setAICoreId(null);
             st.addCommodity(CORES[worst.cur], 1f);
             CALog.add(m.getName() + ": took the " + coreName(worst.cur) + " out of " + worst.ind.getCurrentName() + " and back to Autopilot Storage: "
-                    + pts + " inspection points is over the " + lim + " the Hegemony ignores" + (s.coreRisk == 0 ? " (its defenses don't beat the next inspection)" : ""), true);
+                    + pts + " inspection points, " + limitWhy(s, m, none, lim)
+                    + (s.coreRisk == 0 && lim == safePoints() ? " (its defenses don't beat the next inspection)" : ""), true);
             return true;
         }
 
