@@ -97,12 +97,21 @@ public class CATerraform {
         for (Cand k : cands) {
             float fee = CABudget.fee(s, STANDARD_FEE);
             float terraLeft = CABudget.limit(s) * s.terraformShare - s.terraSpent;
-            if (k.cost > s.perProjectCap) {
+            if (k.planned) {
+                // a plan step, the world's final project too: past the per-project cap and the monthly budget, paid from
+                // savings above the credit reserve, since it's how the colony reaches its plan
+                if (CABuild.credits() - s.reserve < k.cost + fee) {
+                    if (CALog.once("tfsave:" + k.m.getId() + ":" + k.pd.id))
+                        CALog.add(k.m.getName() + ": terraforming (" + k.why + ") waits until you have " + Misc.getDGSCredits(k.cost + fee)
+                                + " above the credit reserve", true);
+                    continue;
+                }
+            } else if (k.cost > s.perProjectCap) {
                 if (CALog.once("tfcap:" + k.m.getId() + ":" + k.pd.id))
                     CALog.add(k.m.getName() + ": terraforming (" + k.why + ") is over the per-project cap; start it from " + k.ind.getCurrentName() + " if you want it", true);
                 continue;
             }
-            if (k.cost + fee > Math.min(CABudget.available(s), terraLeft) || CABuild.credits() < k.cost + fee) {
+            else if (k.cost + fee > Math.min(CABudget.available(s), terraLeft) || CABuild.credits() < k.cost + fee) {
                 if (CALog.once("tf:" + k.m.getId() + ":" + k.pd.id))
                     CALog.add(k.m.getName() + ": terraforming (" + k.why + ") waits for the terraforming budget");
                 continue;

@@ -271,6 +271,16 @@ public class CAEngine {
         return r;
     }
 
+    /** What a new off-plan industry gives up when it would take a slot the plan's industries need (a mid plan step's bonus). */
+    static final float SLOT_RESERVE = 30000f;
+
+    static boolean isIndustry(String id) {
+        try {
+            com.fs.starfarer.api.loading.IndustrySpecAPI sp = Global.getSettings().getIndustrySpec(id);
+            return sp != null && sp.hasTag(com.fs.starfarer.api.impl.campaign.ids.Industries.TAG_INDUSTRY);
+        } catch (Throwable t) { return false; }
+    }
+
     /** Combines effects with profile weights; false when the pick breaks a rule or isn't worth building. */
     static boolean finish(MarketAPI m, Pick p, CAData.Profile profile, float minStability, CAPlan.Plan plan) {
         if (p.fx[1] < 0 && m.getStabilityValue() + p.fx[1] < minStability) return false;
@@ -291,11 +301,21 @@ public class CAEngine {
         boolean enabler = p.id.startsWith("tme_");
         float planBonus = (value > 0f || enabler) && !profitOnly ? CAPlan.bonusFor(m, plan, p.id) : 0f;
         if (planBonus > 0f) p.lines.add(0, "Next step of this colony's " + plan.name + " plan" + (value <= 0f ? " (costs more than it earns; the plan needs it)" : ""));
+        // a new industry the plan doesn't ask for, when the free slots are all the plan's industries have left
+        float reserve = 0f;
+        if (!p.upgrade && planBonus <= 0f && !profitOnly && isIndustry(p.id) && plan != null) {
+            int free = Misc.getMaxIndustries(m) - Misc.getNumIndustries(m);
+            int needed = CAPlan.openIndustrySteps(m, plan);
+            if (needed > 0 && free <= needed) {
+                reserve = SLOT_RESERVE;
+                p.lines.add("Takes an industry slot this colony's " + plan.name + " plan needs (" + needed + " plan industr" + (needed == 1 ? "y" : "ies") + " to come)");
+            }
+        }
         float followThrough = p.upgrade && value > 0f && !profitOnly ? 15000f : 0f;
         if (followThrough > 0f) p.lines.add("Follow-through: upgrades what's already built");
         p.worth = value; p.planBonus = planBonus; p.followThrough = followThrough;
         p.buildCost = p.cost / 36f + p.days * 10f;   // the price spread over three years, plus a little for the wait
-        p.score = value + planBonus + followThrough - p.buildCost;
+        p.score = value + planBonus + followThrough - p.buildCost - reserve;
         return true;   // every option is ranked and shown; Approve and Auto only act on a positive score (worthwhile())
     }
 

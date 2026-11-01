@@ -198,19 +198,40 @@ public class CAPlan {
     }
 
     /**
+     * Steps research blocks for now, "marketId:stepId": the building the colony must add next on the way to the step
+     * (the step, or the building it's upgraded from) is locked. Filled by CAResearch from its daily ranking; empty without
+     * Vaults of Knowledge. They don't take a plan rank, so the next step that can be built gets the most.
+     */
+    public static final java.util.Set<String> BLOCKED = new java.util.HashSet<String>();
+
+    /**
      * Score bonus for a build or upgrade pick that advances the plan; the earliest open build steps get the most.
-     * A pick that a plan building is upgraded from counts too (with AotD, Monoculture Plots on the way to Farming).
+     * A pick that a plan building is upgraded from counts too (with AotD, Monoculture Plots on the way to Farming), so a
+     * step whose own building is locked passes its rank to what it's upgraded from.
      */
     public static float bonusFor(MarketAPI m, Plan plan, String industryId) {
         int rank = 0;
         for (Step s : plan.steps) {
-            if (s.kind != Kind.BUILD || s.done(m)) continue;
+            if (s.kind != Kind.BUILD || s.done(m) || BLOCKED.contains(m.getId() + ":" + s.id)) continue;
             boolean match = s.id.equals(industryId) || (s.id.equals("station") && industryId.startsWith("orbitalstation"))
                     || leadsTo(industryId, s.id);
             if (match) return rank == 0 ? 60000f : rank == 1 ? 40000f : 20000f;
             rank++;
         }
         return 0f;
+    }
+
+    /** Open plan steps that are industries (they each need a slot), not counting ones research blocks for now. */
+    public static int openIndustrySteps(MarketAPI m, Plan plan) {
+        int n = 0;
+        for (Step s : plan.steps) {
+            if (s.kind != Kind.BUILD || s.done(m)) continue;
+            try {
+                com.fs.starfarer.api.loading.IndustrySpecAPI sp = Global.getSettings().getIndustrySpec(s.id);
+                if (sp != null && sp.hasTag(com.fs.starfarer.api.impl.campaign.ids.Industries.TAG_INDUSTRY)) n++;
+            } catch (Throwable ignored) { }
+        }
+        return n;
     }
 
     /** Score bonus for a terraforming project that adds a plan condition or removes a plan hazard. */

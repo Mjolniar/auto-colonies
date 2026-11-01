@@ -81,6 +81,7 @@ public class CAData {
     // colonies Autopilot made autonomous in an emergency (Nexerelin): market id to the timestamp; only these are taken back
     public Map<String, Long> autonomous;
     public long lastAutonomyChange;
+    public long researchWaitSince;   // when Auto research began holding databanks for a plan tech short of them (0: not waiting)
     public Map<String, Long> autonomous() { if (autonomous == null) autonomous = new HashMap<String, Long>(); return autonomous; }
 
     /** Keys of log messages already written once (waits, unavailable edicts), so a reload doesn't repeat them. */
