@@ -118,7 +118,7 @@ public class CAItems {
         if (s.adminOptimal && (assignAdmin(d, markets) || moveAdmin(markets))) return;
         if (s.adminHiring) hireAdmin(d, s, markets);
         else if (adminsNeeded(d) > 0 && CALog.once("admin:need:off:" + adminsNeeded(d)))
-            CALog.add("You govern " + limitText(adminsNeeded(d)) + ". Administrator hiring is off, so hire one yourself, or turn on "
+            CALog.add("Administrators needed: " + limitText(adminsNeeded(d)) + ". Administrator hiring is off, so hire one yourself, or turn on "
                     + "Hire administrators under Administrators and ambassadors", true);
     }
 
@@ -609,9 +609,15 @@ public class CAItems {
         return Math.max(0, overLimit() + back);
     }
 
+    /** "1 more colony than your colony limit (...)" or, when it's colonies waiting to come back from autonomy, that. */
     static String limitText(int need) {
-        return need + " more " + (need == 1 ? "colony" : "colonies") + " than your colony limit (each costs every colony you govern "
-                + Math.round(Misc.getOutpostPenalty()) + " stability)";
+        int over = Math.max(0, Math.min(need, overLimit()));
+        int back = need - over;
+        String s = over > 0 ? over + " more " + (over == 1 ? "colony" : "colonies") + " than your colony limit (each costs every colony you govern "
+                + Math.round(Misc.getOutpostPenalty()) + " stability)" : "";
+        if (back > 0) s += (s.isEmpty() ? "" : ", and ") + back + " autonomous " + (back == 1 ? "colony" : "colonies")
+                + " Autopilot takes back once there's room under your colony limit";
+        return s;
     }
 
     /** Credits a month that changing m's stability by delta is worth, from raw (unclamped) stability. */
@@ -659,6 +665,17 @@ public class CAItems {
         return v;
     }
 
+    /** An administrator who has arrived (past the hiring delay) and governs nothing, or null. */
+    static AdminData idleAdmin(CAData d) {
+        for (AdminData a : Global.getSector().getCharacterData().getAdmins()) {
+            if (a.getMarket() != null || a.getPerson() == null || a.getPerson().isAICore()) continue;
+            Long hired = d.adminTransit().get(a.getPerson().getId());
+            if (hired != null && Global.getSector().getClock().getElapsedDaysSince(hired) < 30f) continue;   // still travelling
+            return a;
+        }
+        return null;
+    }
+
     /**
      * Places an idle administrator where they add the most, if that beats the 90% of salary that starts with the post, or
      * anyway while the colony limit needs one (adminsNeeded).
@@ -701,7 +718,7 @@ public class CAItems {
             bestA.setMarket(bestM);
             CALog.forget("admin:idle:" + bestA.getPerson().getId());
             CALog.forget("admin:need");
-            CALog.add(bestM.getName() + ": assigned administrator " + bestA.getPerson().getNameString() + " (" + (need > 0 ? "you govern " + limitText(need) + "; "
+            CALog.add(bestM.getName() + ": assigned administrator " + bestA.getPerson().getNameString() + " (" + (need > 0 ? limitText(need) + "; "
                     : "") + "adds about " + Misc.getDGSCredits(bestWorth) + " a month, salary " + Misc.getDGSCredits(Misc.getAdminSalary(bestA.getPerson())) + ")", true);
             return true;
         } catch (Throwable t) {
@@ -763,7 +780,7 @@ public class CAItems {
         int need = adminsNeeded(d);
         if (open.isEmpty()) {
             if (need > 0 && CALog.once("admin:need:none:" + need))
-                CALog.add("You govern " + limitText(need) + ", but none of your Auto colonies is governed by you, so Autopilot has nowhere to put an "
+                CALog.add("Administrators needed: " + limitText(need) + ". But none of your Auto colonies is governed by you, so Autopilot has nowhere to put an "
                         + "administrator. Put one on a colony yourself, or switch a colony you govern to Auto", true);
             return false;
         }
@@ -773,7 +790,7 @@ public class CAItems {
         int max = (int) Global.getSector().getPlayerStats().getAdminNumber().getModifiedValue();
         if (Global.getSector().getCharacterData().getAdmins().size() >= max) {
             if (need > 0 && CALog.once("admin:need:max:" + max))
-                CALog.add("You govern " + limitText(need) + ", but you already have as many administrators as you can employ (" + max + ")", true);
+                CALog.add("Administrators needed: " + limitText(need) + ". But you already have as many as you can employ (" + max + ")", true);
             return false;
         }
         float fee = CABudget.fee(s, HIRE_FEE);
@@ -801,7 +818,7 @@ public class CAItems {
         }
         if (best == null) {
             if (need > 0 && CALog.once("admin:need:" + Global.getSector().getClock().getMonth()))
-                CALog.add("You govern " + limitText(need) + ", and no administrator is for hire at a market that isn't hostile to you. "
+                CALog.add("Administrators needed: " + limitText(need) + ". None is for hire at a market that isn't hostile to you. "
                         + "New ones appear in markets' comm directories over time; Autopilot hires one as soon as there is", true);
             return false;
         }
@@ -827,7 +844,7 @@ public class CAItems {
             if (s.adminDelay) d.adminTransit().put(best.person.getId(), Global.getSector().getClock().getTimestamp());
             CALog.add("Hired administrator " + best.person.getNameString() + " from " + bestAt.getName() + " for " + Misc.getDGSCredits(best.hiringBonus)
                     + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + ", salary " + Misc.getDGSCredits(best.salary) + "/month, for "
-                    + bestFor.getName() + (need > 0 ? ": you govern " + limitText(need) : " (adds about " + Misc.getDGSCredits(bestWorth) + " a month)")
+                    + bestFor.getName() + (need > 0 ? ": " + limitText(need) : " (adds about " + Misc.getDGSCredits(bestWorth) + " a month)")
                     + (s.adminDelay ? "; arrives in 30 days" : ""), true);
             return true;
         } catch (Throwable t) {

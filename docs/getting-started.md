@@ -124,7 +124,7 @@ Off until setup runs; the recommended settings turn on **Auto**. Change it in th
 
 - **An emergency** is net income below zero with under 3 months of it left above the credit reserve. Founding colonies past your limit isn't one: that gets an administrator.
 - **What it does:** the colony that loses the most is made autonomous, as with Nexerelin's **Grant autonomy**. You get 25% of its profit or loss, and it no longer counts against your colony limit. Never a colony under a year old, since taking it back costs 2 stability. Recommend only logs it.
-- **Taking it back:** once the emergency is over and net income stays positive with the colony, it's taken back. Nexerelin adds 2 unrest for that.
+- **Taking it back:** as soon as the emergency is over, taking it back wouldn't start another, and there's room under your colony limit (or an idle administrator, who then governs it), it's taken back. Nexerelin adds 2 unrest for that, which wears off.
 - The Mod features page shows the emergency and the best choice with **Grant autonomy**, and each colony Autopilot made autonomous with **Take it back now**. Colonies you made autonomous yourself are left alone.
 
 ## Storage cheat
