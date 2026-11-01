@@ -36,11 +36,16 @@ import java.util.*;
  * 0.2), reached by name through method handles, with the grid as the listener (it ignores dismissals of dialogs it
  * didn't open). If that can't be built the log says so and the right-click option still works.
  *
- * Nothing about the layout is assumed. Every visible element's rectangle is read, and the button goes in the first
- * candidate spot that's on the screen and overlaps none of them: to the right of the button under the building grid
- * ("Add industry or structure"), under that button, under the grid's right end, above it, under its left end, right of
- * it. With no free spot there's no button (logged once), and any error turns it off for the session. Setting "Button on
- * the colony screen". While it isn't showing, what it found is logged a few times a session (report()).
+ * Nothing about the layout is assumed. Every visible element's rectangle is read (a panel with no opacity is hidden, so
+ * nothing under it counts), and the button goes in the first candidate spot that's on the screen and overlaps none of
+ * them: to the right of the button under the building grid ("Add industry or structure"), under that button, under the
+ * grid's right end, above it, under its left end, right of it. It's added to the lowest panel above the buildings that
+ * holds that spot, so it moves, scrolls and hides with the colony screen rather than staying on whatever screen comes
+ * next, and the spot is worked out again four times a second: when buildings are added or you switch colonies, it moves.
+ * The current tab is searched first; on the colonies and docked screens, where the colony's own screen can sit outside
+ * the tab, the whole core UI is searched next. With no free spot there's no button (logged once), and any error turns it
+ * off for the session. Setting "Button on the colony screen". While it isn't showing, what it found is logged a few times
+ * a session (report()), and so are the first few placements (where, in which panel, next to what).
  */
 public class CAScreenButton implements EveryFrameScript {
     static final float W = 190f, H = 26f, GAP = 10f;
@@ -49,13 +54,15 @@ public class CAScreenButton implements EveryFrameScript {
     static final String DIALOG_CLASS = "com.fs.starfarer.ui.newui.super", PARENT_CLASS = "com.fs.starfarer.ui.interfacenew",
             LISTENER_CLASS = "com.fs.starfarer.ui.oo0O$o";
     static final Object NONE = new Object();
-    static boolean noSpotLogged = false, placedLogged = false;
+    static boolean noSpotLogged = false;
 
     private final Map<String, Object> methods = new HashMap<String, Object>();
     private boolean broken = false;
     private float timer = 0f;
     private CustomPanelAPI button;
     private UIPanelAPI parent;
+    private float relX, relY;   // where the button is in its panel, to tell when the spot has moved
+    static int placements = 0;
 
     public boolean isDone() { return false; }
     public boolean runWhilePaused() { return true; }   // the colony screen pauses the game
@@ -78,6 +85,9 @@ public class CAScreenButton implements EveryFrameScript {
         Object core, grid;
         UIPanelAPI tab;
         List<UIComponentAPI> all = new ArrayList<UIComponentAPI>(), leaves = new ArrayList<UIComponentAPI>(), tiles = new ArrayList<UIComponentAPI>();
+        /** Each visible component's panel, to find the panel the buildings sit in. */
+        Map<UIComponentAPI, UIComponentAPI> up = new IdentityHashMap<UIComponentAPI, UIComponentAPI>();
+        boolean sawButton;   // the button is still attached somewhere in what was searched
         MarketAPI market;
         String note;
     }
@@ -91,27 +101,20 @@ public class CAScreenButton implements EveryFrameScript {
         if (dialog != null) cores.add(tryCall(dialog, "getCoreUI"));
         cores.add(tryCall(ui, "getCore"));
         Screen best = null;
+        com.fs.starfarer.api.campaign.CoreUITabId coreTab = ui.getCurrentCoreTab();
+        boolean colonyScreens = dialog != null || coreTab == com.fs.starfarer.api.campaign.CoreUITabId.OUTPOSTS
+                || coreTab == com.fs.starfarer.api.campaign.CoreUITabId.CARGO;
         for (Object core : cores) {
             if (!(core instanceof UIPanelAPI)) continue;
             Object tab = tryCall(core, "getCurrentTab");
-            Screen s = new Screen();
-            s.core = core;
-            s.tab = tab instanceof UIPanelAPI ? (UIPanelAPI) tab : (UIPanelAPI) core;
+            Screen s = search(core, tab instanceof UIPanelAPI ? (UIPanelAPI) tab : (UIPanelAPI) core);
             if (!(tab instanceof UIPanelAPI)) s.note = "no current tab, searched the whole core UI";
-            collect(s.tab, s, 0);
-            // the building tiles are the elements with a public getIndustryPanel(), which returns the grid they belong to;
-            // the grid itself isn't always in the child tree above them
-            for (UIComponentAPI c : s.all) {
-                if (c == button) continue;
-                Object m = method(c.getClass(), "getIndustryPanel");
-                if (m == NONE) continue;
-                Object grid = null;
-                try { grid = CARefl.invoke(m, c); } catch (Throwable ignored) { }
-                if (grid == null) continue;
-                s.tiles.add(c);
-                if (s.grid == null) s.grid = grid;
+            else if (s.grid == null && colonyScreens && tab != core) {
+                // a colony opened from the colonies list, or while docked, can sit outside the current tab
+                Screen whole = search(core, (UIPanelAPI) core);
+                whole.note = "not in the current tab " + tab.getClass().getName() + ", searched the whole core UI";
+                if (whole.grid != null) s = whole;
             }
-            if (s.grid == null) for (UIComponentAPI c : s.all) if (c.getClass().getName().equals(GRID_CLASS)) { s.grid = c; s.tiles.add(c); break; }   // an empty grid
             if (s.grid != null) {
                 s.market = marketOf(s.grid);
                 for (int i = 0; s.market == null && i < s.tiles.size(); i++) s.market = marketOf(s.tiles.get(i));
@@ -123,6 +126,35 @@ public class CAScreenButton implements EveryFrameScript {
         }
         report(ui, dialog, best);
         return best == null || best.grid == null || best.market == null || !best.market.isPlayerOwned() ? null : best;
+    }
+
+    /** The visible components under root, the building tiles among them and the grid they belong to. */
+    Screen search(Object core, UIPanelAPI root) throws Exception {
+        Screen s = new Screen();
+        s.core = core;
+        s.tab = root;
+        collect(root, null, s, 0);
+        // the building tiles are the elements with a public getIndustryPanel(), which returns the grid they belong to;
+        // the grid itself isn't always in the child tree above them
+        float sw = screen(true), sh = screen(false);
+        for (UIComponentAPI c : s.all) {
+            Object m = method(c.getClass(), "getIndustryPanel");
+            if (m == NONE) continue;
+            Object grid = null;
+            try { grid = CARefl.invoke(m, c); } catch (Throwable ignored) { }
+            if (grid == null) continue;
+            float[] r = rect(c);
+            if (sw > 0f && (r[0] + r[2] < 0f || r[1] + r[3] < 0f || r[0] > sw || r[1] > sh)) continue;   // off the screen: not the one showing
+            s.tiles.add(c);
+            if (s.grid == null) s.grid = grid;
+        }
+        if (s.grid == null) for (UIComponentAPI c : s.all) if (c.getClass().getName().equals(GRID_CLASS)) { s.grid = c; s.tiles.add(c); break; }   // an empty grid
+        return s;
+    }
+
+    /** The screen's width or height in UI units, or 0 when unknown. */
+    static float screen(boolean width) {
+        try { return width ? Global.getSettings().getScreenWidth() : Global.getSettings().getScreenHeight(); } catch (Throwable t) { return 0f; }
     }
 
     static Object tryCall(Object target, String name) {
@@ -140,12 +172,16 @@ public class CAScreenButton implements EveryFrameScript {
         return m;
     }
 
-    void collect(UIComponentAPI c, Screen s, int depth) throws Exception {
+    /** Every visible component under c, with its panel; a hidden one (no opacity) and everything under it is skipped, and so is the button itself. */
+    void collect(UIComponentAPI c, UIComponentAPI from, Screen s, int depth) throws Exception {
+        if (c == button && button != null) { s.sawButton = true; return; }
+        if (depth > 0 && c.getOpacity() <= 0f) return;
         s.all.add(c);
+        if (from != null) s.up.put(c, from);
         Object m = method(c.getClass(), "getChildrenCopy");
         Object kids = m == NONE || depth > 16 ? null : CARefl.invoke(m, c);
         boolean any = false;
-        if (kids instanceof List) for (Object o : (List<?>) kids) if (o instanceof UIComponentAPI) { any = true; collect((UIComponentAPI) o, s, depth + 1); }
+        if (kids instanceof List) for (Object o : (List<?>) kids) if (o instanceof UIComponentAPI) { any = true; collect((UIComponentAPI) o, c, s, depth + 1); }
         if (!any) s.leaves.add(c);
     }
 
@@ -164,7 +200,7 @@ public class CAScreenButton implements EveryFrameScript {
     static int reports = 0;
 
     void report(CampaignUIAPI ui, InteractionDialogAPI dialog, Screen s) {
-        if (reports >= 8 || (s != null && button != null && parent == s.tab)) return;
+        if (reports >= 8 || (s != null && button != null && s.sawButton)) return;
         // only screens a colony could be on: the colonies tab, or a docked market's screens
         com.fs.starfarer.api.campaign.CoreUITabId tab = ui.getCurrentCoreTab();
         if (tab != com.fs.starfarer.api.campaign.CoreUITabId.OUTPOSTS && tab != com.fs.starfarer.api.campaign.CoreUITabId.CARGO && (s == null || s.grid == null)) return;
@@ -184,28 +220,60 @@ public class CAScreenButton implements EveryFrameScript {
     void update() throws Exception {
         Screen s = CAData.settings().noScreenButton ? null : read();
         if (s == null) { remove(); return; }
-        if (button != null && parent == s.tab && s.all.contains(button)) return;   // still in place
-        remove();
         float[] at = spot(s);
         if (at == null) {
+            remove();
             if (!noSpotLogged) { noSpotLogged = true; CADiagnostics.LOG.info(CADiagnostics.TAG + "no free spot for the colony screen button; the right-click option still works"); }
             return;
         }
+        UIPanelAPI in = container(s, at);
+        PositionAPI cp = in.getPosition();
+        float rx = at[0] - cp.getX(), ry = at[1] - cp.getY();
+        if (button != null && parent == in && s.sawButton && Math.abs(rx - relX) < 1f && Math.abs(ry - relY) < 1f) return;   // still in place
+        remove();
         button = make();
-        PositionAPI tp = s.tab.getPosition();
-        s.tab.addComponent(button).inBL(at[0] - tp.getX(), at[1] - tp.getY());
-        parent = s.tab;
-        if (!placedLogged) {
-            placedLogged = true;
-            CADiagnostics.LOG.info(CADiagnostics.TAG + "colony screen button placed at " + Math.round(at[0]) + ", " + Math.round(at[1])
-                    + " on " + s.market.getName() + " (screen " + Math.round(tp.getWidth()) + "x" + Math.round(tp.getHeight()) + ")");
+        in.addComponent(button).inBL(rx, ry);
+        parent = in;
+        relX = rx;
+        relY = ry;
+        if (placements < 6) {
+            placements++;
+            float[] g = gridBox(s), b = anchor(s, g);
+            CADiagnostics.LOG.info(CADiagnostics.TAG + "colony screen button placed at " + Math.round(at[0]) + ", " + Math.round(at[1]) + " on "
+                    + s.market.getName() + ", in " + in.getClass().getName() + " " + box(rect(in)) + "; buildings " + box(g)
+                    + (b != null ? ", next to the button at " + box(b) : ", no button under them") + "; searched " + s.tab.getClass().getName()
+                    + (s.note != null ? " (" + s.note + ")" : "") + ", screen " + Math.round(screen(true)) + "x" + Math.round(screen(false)));
         }
+    }
+
+    static String box(float[] r) {
+        return r == null ? "none" : "(" + Math.round(r[0]) + ", " + Math.round(r[1]) + ", " + Math.round(r[2]) + "x" + Math.round(r[3]) + ")";
+    }
+
+    /**
+     * The lowest panel above the buildings that holds the whole spot and all the buildings: the button then moves and
+     * hides with the colony screen. Never the grid itself or a tile, which lay out their own children. The searched root
+     * when there's none (or nothing is known about the panels).
+     */
+    static UIPanelAPI container(Screen s, float[] at) {
+        float[] r = {at[0], at[1], W, H}, g = gridBox(s);
+        if (g != null) {
+            UIComponentAPI c = s.up.get(s.tiles.get(0));
+            for (int i = 0; c != null && i < 40; i++, c = s.up.get(c)) {
+                if (!(c instanceof UIPanelAPI) || c == s.grid || s.tiles.contains(c) || c.getClass().getName().equals(GRID_CLASS)) continue;
+                float[] cr = rect(c);
+                cr = new float[]{cr[0] - 2f, cr[1] - 2f, cr[2] + 4f, cr[3] + 4f};   // a tile can sit a pixel past its panel's edge
+                if (inside(r, cr) && inside(g, cr)) return (UIPanelAPI) c;
+            }
+        }
+        return s.tab;
     }
 
     void remove() {
         try { if (button != null && parent != null) parent.removeComponent(button); } catch (Throwable ignored) { }
         button = null;
         parent = null;
+        relX = relY = Float.NaN;
     }
 
     CustomPanelAPI make() {
@@ -255,13 +323,36 @@ public class CAScreenButton implements EveryFrameScript {
     }
 
     /** Bottom-left corner of the first free candidate spot, in screen coordinates, or null. */
-    static float[] spot(Screen s) {
-        float[] tab = rect(s.tab);
+    /** The buildings' bounding box (x, y, width, height), or null with none. */
+    static float[] gridBox(Screen s) {
+        if (s.tiles.isEmpty()) return null;
         float minX = Float.MAX_VALUE, minY = Float.MAX_VALUE, maxX = -Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
         for (UIComponentAPI t : s.tiles) {
             float[] r = rect(t);
             minX = Math.min(minX, r[0]); minY = Math.min(minY, r[1]); maxX = Math.max(maxX, r[0] + r[2]); maxY = Math.max(maxY, r[1] + r[3]);
         }
+        return new float[]{minX, minY, maxX - minX, maxY - minY};
+    }
+
+    /** The nearest button under the buildings ("Add industry or structure"), or null. */
+    static float[] anchor(Screen s, float[] g) {
+        if (g == null) return null;
+        float minX = g[0], minY = g[1], maxX = g[0] + g[2];
+        float[] below = null;
+        for (UIComponentAPI c : s.leaves) {
+            if (!(c instanceof ButtonAPI)) continue;
+            float[] r = rect(c);
+            boolean under = r[1] + r[3] <= minY + 2f && r[1] + r[3] >= minY - 300f && r[0] < maxX && r[0] + r[2] > minX;
+            if (under && (below == null || r[1] + r[3] > below[1] + below[3])) below = r;
+        }
+        return below;
+    }
+
+    static float[] spot(Screen s) {
+        float[] tab = rect(s.tab), g = gridBox(s);
+        if (g == null) return null;
+        float minX = g[0], minY = g[1], maxX = g[0] + g[2], maxY = g[1] + g[3];
+        float sw = screen(true), sh = screen(false);
         // what's drawn: visible leaves (labels, buttons, images) and the tiles; big backgrounds and empty containers don't count
         List<float[]> taken = new ArrayList<float[]>();
         float big = 0.15f * tab[2] * tab[3];
@@ -273,13 +364,7 @@ public class CAScreenButton implements EveryFrameScript {
         for (UIComponentAPI t : s.tiles) taken.add(rect(t));
 
         List<float[]> candidates = new ArrayList<float[]>();
-        float[] below = null;   // the nearest button under the grid ("Add industry or structure")
-        for (UIComponentAPI c : s.leaves) {
-            if (!(c instanceof ButtonAPI)) continue;
-            float[] r = rect(c);
-            boolean under = r[1] + r[3] <= minY + 2f && r[1] + r[3] >= minY - 300f && r[0] < maxX && r[0] + r[2] > minX;
-            if (under && (below == null || r[1] + r[3] > below[1] + below[3])) below = r;
-        }
+        float[] below = anchor(s, g);   // the nearest button under the grid ("Add industry or structure")
         if (below != null) {
             candidates.add(new float[]{below[0] + below[2] + GAP, below[1] + (below[3] - H) / 2f});   // right of it
             candidates.add(new float[]{below[0], below[1] - GAP - H});                                 // under it
@@ -290,7 +375,7 @@ public class CAScreenButton implements EveryFrameScript {
         candidates.add(new float[]{maxX + GAP, maxY - H});
         for (float[] at : candidates) {
             float[] r = {at[0], at[1], W, H};
-            if (!inside(r, tab)) continue;
+            if (!inside(r, tab) || (sw > 0f && !inside(r, new float[]{0f, 0f, sw, sh}))) continue;
             boolean free = true;
             for (float[] o : taken) if (overlaps(r, o, 4f)) { free = false; break; }
             if (free) return at;
