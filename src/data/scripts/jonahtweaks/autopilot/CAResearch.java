@@ -40,6 +40,8 @@ public class CAResearch {
     static final String R = "data.kaysaar.aotd.vok.scripts.research.";
     static final String KEY = "$aotd_vok_manager", SUBMARKET = "researchfacil", DATABANK = "research_databank";
     static final float DATABANK_VALUE = 5000f, TIER_UPKEEP = 10000f;
+    /** Days Auto keeps databanks for a plan tech short of them before the best tech it can afford goes ahead anyway. */
+    static final float WAIT_DAYS = 90f;
     static final String START = "starting research";
     /** Vanilla buildings VoK locks through Building Menu Overhaul, and the Bifrost Control Center, by tech. */
     static final String[][] GATES = {{"aotd_tech_rudimentary_eq", "aquaculture"}, {"aotd_tech_agriculture", "farming"},
@@ -192,6 +194,12 @@ public class CAResearch {
      * upgraded from, traced to the tech that unlocks each. The step's plan value is shared along the chain by days.
      */
     static List<Need> planNeeds(Map<String, Tech> open) {
+        Set<String> blocked = new HashSet<String>();
+        try { return needsFor(open, blocked); }
+        finally { CAPlan.BLOCKED.clear(); CAPlan.BLOCKED.addAll(blocked); }
+    }
+
+    static List<Need> needsFor(Map<String, Tech> open, Set<String> blocked) {
         Map<String, String> byIndustry = new HashMap<String, String>();
         for (Tech t : open.values()) for (String ind : t.industries) if (!t.unlockedByCommission) byIndustry.put(ind, t.id);
         List<Need> out = new ArrayList<Need>();
@@ -208,14 +216,17 @@ public class CAResearch {
                 List<String> chain = new ArrayList<String>();
                 Set<String> seen = new HashSet<String>();
                 String cur = st.id;
+                boolean nextLocked = false;   // the building the colony must add next on the way: the last one before what it has
                 for (int k = 0; k < 6 && cur != null; k++) {   // the step, then what it's upgraded from
                     if (m.hasIndustry(cur)) break;
                     String tech = byIndustry.get(cur);
                     if (tech == null && cur.startsWith("tme_")) tech = tmeTech(m, cur);
                     if (tech != null) closure(tech, open, seen, chain);
+                    nextLocked = tech != null && open.containsKey(tech);   // TME names its tech whether or not it's researched
                     com.fs.starfarer.api.loading.IndustrySpecAPI sp = Global.getSettings().getIndustrySpec(cur);
                     cur = sp == null ? null : sp.getDowngrade();
                 }
+                if (nextLocked) blocked.add(m.getId() + ":" + st.id);
                 if (chain.isEmpty()) continue;
                 Need n = new Need();
                 n.step = st.label; n.colony = m.getName(); n.value = value; n.chain = chain;
@@ -282,7 +293,7 @@ public class CAResearch {
             t.own += t.plan;
             t.lines.add(0, "On the way to " + CAContracts.join(t.planFor) + " (colony plans): " + CAEngine.valueText(t.plan));
         }
-        int fac = Math.max(1, ((Number) CARefl.invoke(facilities, mgr)).intValue());
+        float fac = facilityUpkeepMult();
         for (Tech c : cands) {
             Tech bestChild = null;
             for (Tech ch : children.values()) {
@@ -394,8 +405,8 @@ public class CAResearch {
         String what = null;
         if (t.id.equals("aotd_tech_streamlined_production")) { v = lineValue(false); what = "+1 to every output line (" + outputLines(false) + " lines)"; }
         else if (t.id.equals("aotd_tech_advanced_mining_equipment")) { v = lineValue(true); what = "+1 to every mining output line (" + outputLines(true) + " lines)"; }
-        else if (t.id.equals("aotd_tech_hazmat_equipment")) { v = upkeep(false, 0.1f); what = "hazard -10% on every colony, so lower upkeep"; }
-        else if (t.id.equals("aotd_tech_aquatic_agriculture")) { v = upkeep(true, 0.1f); what = "hazard -10% on water worlds"; }
+        else if (t.id.equals("aotd_tech_hazmat_equipment")) { v = upkeep(false, 0.1f) + growthValue(false, 0.1f); what = "hazard -10% on every colony: lower upkeep and faster growth"; }
+        else if (t.id.equals("aotd_tech_aquatic_agriculture")) { v = upkeep(true, 0.1f) + growthValue(true, 0.1f); what = "hazard -10% on water worlds: lower upkeep and faster growth"; }
         else if (t.id.equals("aotd_tech_domain_template_construct")) { v = 0.1f * upkeep(false, 0f); what = "upkeep x0.9 on every colony"; }
         else if (t.id.equals("aotd_tech_megastructure_analysis") || t.id.equals("aotd_tech_hp_distribution")) {
             boolean shunt = false;
@@ -403,6 +414,32 @@ public class CAResearch {
             if (shunt) { v = 25000f; what = t.id.endsWith("analysis") ? "lets your Coronal Hypershunt be restored" : "Hypershunt Receivers: +2 industry slots in their systems"; }
         }
         if (what != null && v > 0f) t.lines.add(Character.toUpperCase(what.charAt(0)) + what.substring(1) + ": " + CAEngine.valueText(v));
+        return v;
+    }
+
+    /**
+     * Research upkeep multiplier summed over your facilities: VoK charges each 10,000 x tier a month while a tech runs,
+     * times its AI core's multiplier (alpha 0.5, beta 0.75, gamma 0.9). At least 1, so a missing facility isn't free.
+     */
+    static float facilityUpkeepMult() {
+        float sum = 0f;
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) for (Industry ind : m.getIndustries()) {
+            if (!ind.isFunctional() || !(ind.getId().equals("aotd_research_facility") || ind.getId().equals("aotd_blacksite"))) continue;
+            String core = ind.getAICoreId();
+            sum += "alpha_core".equals(core) ? 0.5f : "beta_core".equals(core) ? 0.75f : "gamma_core".equals(core) ? 0.9f : 1f;
+        }
+        return Math.max(1f, sum);
+    }
+
+    /** Hazard cut a tech gives everywhere (Hazmat) or on water worlds (Aquatic Agriculture), as growth: 0.1 hazard is 2 growth a month, x(1 + 0.5 per size past 3). */
+    static float growthValue(boolean waterOnly, float hazardCut) {
+        float v = 0f;
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            if (m.getSize() >= Misc.getMaxMarketSize(m)) continue;   // a colony at max size doesn't need it
+            if (waterOnly && (m.getPlanetEntity() == null || !com.fs.starfarer.api.impl.campaign.econ.impl.Farming.AQUA_PLANETS.contains(m.getPlanetEntity().getTypeId()))) continue;
+            float w6 = CAEngine.WEIGHTS[CAData.get().colony(m.getId()).profile.ordinal()][6];
+            v += hazardCut * 10f * w6 / 2f;   // as CAConditions.value counts a condition's hazard against growth
+        }
         return v;
     }
 
@@ -567,21 +604,29 @@ public class CAResearch {
             }
             CALog.forget("research:nofacility");
             if (CABudget.paused(s)) return;
-            int fac = ((Number) CARefl.invoke(facilities, mgr)).intValue();
+            float fac = facilityUpkeepMult();
             Tech waiting = null;   // the best plan tech that's short of databanks: the ones you have are kept for it
             float have = databanksOnHand(mgr);
+            // after WAIT_DAYS of holding them, the best tech you can afford goes ahead anyway, rather than research sitting idle
+            boolean waitedLong = d.researchWaitSince != 0L && Global.getSector().getClock().getElapsedDaysSince(d.researchWaitSince) >= WAIT_DAYS;
             for (Tech t : ranked()) {
                 if (t.rank <= 0f) break;
                 if (!t.databanksOnly()) continue;
                 if (t.needsItems && have < t.databanks()) { if (waiting == null && t.plan > 0f) waiting = t; continue; }
-                if (waiting != null && t.plan <= 0f) continue;   // no plan needs it; keep the databanks
+                if (waiting != null && t.plan <= 0f && !waitedLong) continue;   // no plan needs it; keep the databanks
                 float upkeep = t.tier * TIER_UPKEEP * fac;
                 if (t.plan <= 0f && s.upkeepAdded + upkeep > s.newUpkeepCap) {   // research upkeep ends with the tech; plan techs go anyway
                     if (CALog.once("research:upkeep:" + t.id)) CALog.add("Research: " + t.name + " waits for next month (new upkeep cap reached)");
                     continue;
                 }
-                if (start(t, "Auto") == null) { CABudget.charge(s, 0f, 0f, upkeep); return; }
+                if (start(t, waiting != null && t.plan <= 0f ? "Auto (" + waiting.name + " has waited " + (int) WAIT_DAYS + " days for databanks)" : "Auto") == null) {
+                    CABudget.charge(s, 0f, 0f, upkeep);
+                    d.researchWaitSince = 0L;
+                    return;
+                }
             }
+            if (waiting == null) d.researchWaitSince = 0L;
+            else if (d.researchWaitSince == 0L) d.researchWaitSince = Global.getSector().getClock().getTimestamp();
             if (waiting != null && CALog.once("research:wait:" + waiting.id + ":" + (int) have))
                 CALog.add("Research: next for your colonies' plans is " + waiting.name + " (for " + CAContracts.join(waiting.planFor) + "), which needs "
                         + waiting.databanks() + " research databanks; you have " + (int) have + ". Databanks come from salvage (research stations, derelicts) "
