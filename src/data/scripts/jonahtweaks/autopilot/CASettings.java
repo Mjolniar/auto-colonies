@@ -53,7 +53,8 @@ public class CASettings {
     }
 
     public int hazardPayMode = 0, freePortMode = 0;   // 0 auto, 1 don't touch
-    public float hazardPayColonyShare = 0.25f, hazardPayEmpireShare = 0.10f;
+    public float hazardPayColonyShare = 0.25f, hazardPayEmpireShare = 0.30f;
+    public boolean hazardLimitChecked = true;   // false in saves from before 2.20.0, whose old 10% default CAPolicies raises once
     public static final String[] POLICY_NAMES = {"Auto", "Don't touch"};
     // Industrial Evolution automation (stored inverted so older saves default to on)
     public boolean disableAmbassadors = false, disableVPC = false, disableForgeVPC = false, disableEdicts = false, disableShipping = false, disableSpecialties = false, disableStabilizers = false, disableDefenseFleets = false;
@@ -118,7 +119,7 @@ public class CASettings {
         if (log == null) log = new ArrayList<String>();
         if (stationLine == null) stationLine = "score";
         if (hazardPayColonyShare <= 0f) hazardPayColonyShare = 0.25f;   // older saves load these as 0
-        if (hazardPayEmpireShare <= 0f) hazardPayEmpireShare = 0.10f;
+        if (hazardPayEmpireShare <= 0f) hazardPayEmpireShare = 0.30f;
         if (settlementMinIncome <= 0f) settlementMinIncome = 20000f;
     }
 }

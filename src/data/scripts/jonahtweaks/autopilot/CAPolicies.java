@@ -24,6 +24,8 @@ import java.util.*;
  */
 public class CAPolicies {
     static final float HAZARD_PAY_MIN_DAYS = 30f, FREE_PORT_MIN_DAYS = 90f;
+    /** The hazard pay budget from the last hazardPlan, for the log's reasons. */
+    static float lastCap = 0f;
 
     static boolean punitiveActive() {
         try {
@@ -41,6 +43,13 @@ public class CAPolicies {
     public static void run(List<MarketAPI> auto) {
         CAData d = CAData.get();
         CASettings s = d.settings;
+        if (!s.hazardLimitChecked) {   // saves from before 2.17 kept the old 10% default; 30% is the recommended limit since then
+            s.hazardLimitChecked = true;
+            if (Math.abs(s.hazardPayEmpireShare - 0.10f) < 0.005f) {
+                s.hazardPayEmpireShare = 0.30f;
+                CALog.add("Hazard pay limit raised from the old default of 10% to 30% of empire net income (Settings, Hazard pay limit, all colonies)", true);
+            }
+        }
         boolean emergency = CABudget.paused(s);
         boolean punitive = punitiveActive();
         long now = Global.getSector().getClock().getTimestamp();
@@ -64,6 +73,8 @@ public class CAPolicies {
                     String why = atMax ? "max size" : emergency ? "net income is negative" : CAMods.growthUnsafe(m) ? "Astral Ascension can't grow a colony without a planet past size 10"
                             : g == null || g.points <= 0f ? "it adds no growth here"
                             : g.speedup < s.hazardPayColonyShare * 0.8f ? "it would only speed growth up by " + pct(g.speedup) + ", under the " + pct(s.hazardPayColonyShare) + " setting"
+                            : g.cost > lastCap * (on ? 1.1f : 1f) ? "the hazard pay budget is " + pct(s.hazardPayEmpireShare) + " of empire net income, "
+                                    + Misc.getDGSCredits(lastCap) + ", and it costs " + Misc.getDGSCredits(g.cost) + " a month here; raise Hazard pay limit, all colonies, in Settings"
                             : "the hazard pay budget (" + pct(s.hazardPayEmpireShare) + " of empire net income) goes to colonies it speeds up more";
                     boolean urgentOff = on && (atMax || emergency || why.startsWith("the hazard pay budget"));
                     if ((!siege && canChange(c.lastHazardPay, HAZARD_PAY_MIN_DAYS)) || urgentOff) {
@@ -155,6 +166,7 @@ public class CAPolicies {
         float paying = 0f;
         for (MarketAPI m : auto) if (m.isImmigrationIncentivesOn()) paying += m.getImmigrationIncentivesCost();
         float cap = s.hazardPayEmpireShare * Math.max(0f, CABudget.netIncome(s) + paying);
+        lastCap = cap;
         List<Growth> cands = new ArrayList<Growth>();
         for (MarketAPI m : auto) {
             if (CAHypershunt.is(m) || CAMods.growthUnsafe(m) || m.getSize() >= Misc.getMaxMarketSize(m)) continue;
