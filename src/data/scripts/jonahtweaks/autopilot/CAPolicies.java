@@ -3,14 +3,24 @@ package data.scripts.jonahtweaks.autopilot;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.comm.IntelInfoPlugin;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.combat.MutableStat;
 import com.fs.starfarer.api.impl.campaign.intel.punitive.PunitiveExpeditionIntel;
+import com.fs.starfarer.api.impl.campaign.population.CoreImmigrationPluginImpl;
 import com.fs.starfarer.api.util.Misc;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * Colony policies for Auto colonies: hazard pay and free port, switched on and off by profile, budget, stability,
  * threat and emergencies (negative income, punitive expeditions). Minimum time between changes avoids flip-flopping.
+ *
+ * Hazard pay buys growth (CoreImmigrationPluginImpl): it adds the colony's hazard penalty back plus 5 growth points a month,
+ * at about 1,000 credits a point, and a colony needs 300 x 2^(size-3) points for the next size. Every goal wants growth
+ * (bigger colonies make more, get more industry slots and reach their plans). Colonies are ranked by how much faster it
+ * makes them grow (its points against their own monthly growth; a colony that doesn't grow on its own counts as the
+ * fastest gain), and the best ones get it, as long as it speeds them up by at least the "faster growth" setting
+ * (hazardPayColonyShare) and all of it fits the empire share of net income before hazard pay (hazardPayEmpireShare).
+ * The more you earn, the more colonies get it.
  */
 public class CAPolicies {
     static final float HAZARD_PAY_MIN_DAYS = 30f, FREE_PORT_MIN_DAYS = 90f;
@@ -34,9 +44,8 @@ public class CAPolicies {
         boolean emergency = CABudget.paused(s);
         boolean punitive = punitiveActive();
         long now = Global.getSector().getClock().getTimestamp();
-        float hpCap = s.hazardPayEmpireShare * Math.max(0f, CABudget.netIncome(s));
-        float hpTotal = 0f;
-        for (MarketAPI m : auto) if (m.isImmigrationIncentivesOn()) hpTotal += m.getImmigrationIncentivesCost();
+        Map<MarketAPI, Growth> growth = new HashMap<MarketAPI, Growth>();
+        Set<MarketAPI> hpWant = s.hazardPayMode == 0 ? hazardPlan(auto, s, emergency, growth) : new HashSet<MarketAPI>();
         for (MarketAPI m : auto) {
             if (CAHypershunt.is(m)) continue;   // fixed at size 2 with no market to open, so neither policy helps
             CAData.Colony c = d.colony(m.getId());
@@ -45,25 +54,23 @@ public class CAPolicies {
             float stab = m.getStabilityValue();
             boolean siege = CASiege.held(m);   // its income is off while it lasts, so only urgent switch-offs
 
-            // ---- hazard pay: buys growth with credits ----
+            // ---- hazard pay: buys growth with credits (hazardPlan picks the colonies) ----
             if (s.hazardPayMode == 0) {
                 boolean on = m.isImmigrationIncentivesOn();
-                boolean atMax = m.getSize() >= Misc.getMaxMarketSize(m);
-                float cost = m.getImmigrationIncentivesCost();
-                CAData.Profile own = c.profile;
-                boolean unsafe = CAMods.growthUnsafe(m);   // Astral Ascension crashes planetless colonies past size 10
-                boolean growthWanted = !unsafe && (own != CAData.Profile.WAR || prof == CAData.Profile.GROWTH);
-                boolean unused = prof == CAData.Profile.GROWTH || prof == CAData.Profile.BALANCED || prof == CAData.Profile.INCOME || prof == CAData.Profile.SELF;
-                float colonyNet = Math.max(0f, m.getNetIncome() + (on ? cost : 0f));   // judge against income before hazard pay
-                boolean affordable = cost <= s.hazardPayColonyShare * colonyNet;
-                boolean fitsEmpire = on || hpTotal + cost <= hpCap;
-                boolean want = growthWanted && !atMax && affordable && !emergency && fitsEmpire;
-                String why = atMax ? "max size" : emergency ? "net income is negative" : !fitsEmpire ? "all colonies together would pass " + Math.round(s.hazardPayEmpireShare * 100f) + "% of empire net income" : !affordable ? Misc.getDGSCredits(cost) + "/month is over " + Math.round(s.hazardPayColonyShare * 100f) + "% of its net income" : unsafe ? "Astral Ascension can't grow a colony without a planet past size 10" : !growthWanted ? "profile doesn't need growth" : "";
-                if (want != on && ((!siege && canChange(c.lastHazardPay, HAZARD_PAY_MIN_DAYS)) || (on && (emergency || atMax)))) {
-                    m.setImmigrationIncentivesOn(want);
-                    hpTotal += want ? cost : -cost;
-                    c.lastHazardPay = now;
-                    CALog.add(m.getName() + ": hazard pay " + (want ? "on (" + Misc.getDGSCredits(cost) + "/month for faster growth)" : "off (" + why + ")"), true);
+                boolean want = hpWant.contains(m);
+                if (want != on) {
+                    Growth g = growth.get(m);
+                    boolean atMax = m.getSize() >= Misc.getMaxMarketSize(m);
+                    String why = atMax ? "max size" : emergency ? "net income is negative" : CAMods.growthUnsafe(m) ? "Astral Ascension can't grow a colony without a planet past size 10"
+                            : g == null || g.points <= 0f ? "it adds no growth here"
+                            : g.speedup < s.hazardPayColonyShare * 0.8f ? "it would only speed growth up by " + pct(g.speedup) + ", under the " + pct(s.hazardPayColonyShare) + " setting"
+                            : "the hazard pay budget (" + pct(s.hazardPayEmpireShare) + " of empire net income) goes to colonies it speeds up more";
+                    boolean urgentOff = on && (atMax || emergency || why.startsWith("the hazard pay budget"));
+                    if ((!siege && canChange(c.lastHazardPay, HAZARD_PAY_MIN_DAYS)) || urgentOff) {
+                        m.setImmigrationIncentivesOn(want);
+                        c.lastHazardPay = now;
+                        CALog.add(m.getName() + ": hazard pay " + (want ? "on (" + growthText(m, g) + ")" : "off (" + why + ")"), true);
+                    }
                 }
             }
 
@@ -88,27 +95,90 @@ public class CAPolicies {
                 }
             }
         }
-        if (s.hazardPayMode == 0) enforceEmpireCap(auto, s, now);
     }
 
-    /** Keeps total hazard pay under the empire share of net income, dropping the costliest first. */
-    static void enforceEmpireCap(List<MarketAPI> auto, CASettings s, long now) {
-        float cap = s.hazardPayEmpireShare * Math.max(0f, CABudget.netIncome(s));
-        java.util.List<MarketAPI> paying = new java.util.ArrayList<MarketAPI>();
-        float total = 0f;
-        for (MarketAPI m : auto) if (m.isImmigrationIncentivesOn()) { paying.add(m); total += m.getImmigrationIncentivesCost(); }
-        if (total <= cap) return;
-        java.util.Collections.sort(paying, new java.util.Comparator<MarketAPI>() {
-            public int compare(MarketAPI a, MarketAPI b) { return Float.compare(b.getImmigrationIncentivesCost(), a.getImmigrationIncentivesCost()); }
-        });
-        for (MarketAPI m : paying) {
-            if (total <= cap) break;
-            float cost = m.getImmigrationIncentivesCost();
-            m.setImmigrationIncentivesOn(false);
-            CAData.get().colony(m.getId()).lastHazardPay = now;
-            total -= cost;
-            CALog.add(m.getName() + ": hazard pay off (all colonies together were over " + Math.round(s.hazardPayEmpireShare * 100f)
-                    + "% of empire net income; this was the costliest at " + Misc.getDGSCredits(cost) + "/month)", true);
+    static String pct(float f) { return Math.round(f * 100f) + "%"; }
+
+    /** What hazard pay buys at a colony: growth points a month, its own growth without them, the cost, and the speed-up. */
+    static final class Growth {
+        MarketAPI m;
+        boolean on;
+        float points, base, cost, speedup;
+    }
+
+    /** Hazard pay points: the hazard penalty it cancels plus INCENTIVE_POINTS_EXTRA (CoreImmigrationPluginImpl.applyIncentives). */
+    static float hazardPoints(MarketAPI m) {
+        return -CoreImmigrationPluginImpl.getImmigrationHazardPenalty(m) + CoreImmigrationPluginImpl.INCENTIVE_POINTS_EXTRA;
+    }
+
+    /** The speed-up from points on top of base growth; a colony that doesn't grow on its own (base 0.5 or less) counts as 99x. */
+    static float speedup(float points, float base) { return base <= 0.5f ? 99f : points / base; }
+
+    static Growth growth(MarketAPI m) {
+        Growth g = new Growth();
+        g.m = m;
+        g.on = m.isImmigrationIncentivesOn();
+        g.points = hazardPoints(m);
+        try {
+            MutableStat w = m.getIncoming().getWeight();
+            g.base = w.getModifiedValue();
+            MutableStat.StatMod hp = w.getFlatStatMod("inc_incentives");
+            if (hp != null) g.base -= hp.getValue();   // its growth without hazard pay
+        } catch (Throwable ignored) { }
+        g.cost = m.getImmigrationIncentivesCost();
+        g.speedup = speedup(g.points, g.base);
+        return g;
+    }
+
+    /** Months to the next size at this many growth points a month, or -1 if it doesn't get there. */
+    static float monthsToGrow(MarketAPI m, float rate) {
+        if (rate <= 0f) return -1f;
+        float need = CoreImmigrationPluginImpl.getWeightForMarketSizeStatic(m.getSize() + 1) - m.getPopulation().getWeightValue();
+        return Math.max(0f, need) / rate;
+    }
+
+    static String growthText(MarketAPI m, Growth g) {
+        if (g == null) return "faster growth";
+        float with = monthsToGrow(m, g.base + g.points), without = monthsToGrow(m, g.base);
+        return "+" + Math.round(g.points) + " growth a month" + (g.base > 0.5f ? " on top of " + Math.round(g.base) + ", " + pct(g.speedup) + " faster" : "; it doesn't grow without it")
+                + (with >= 0f ? "; size " + (m.getSize() + 1) + " in about " + Math.max(1, Math.round(with)) + " months" + (without >= 0f ? " instead of " + Math.round(without) : "") : "")
+                + ", " + Misc.getDGSCredits(g.cost) + " a month";
+    }
+
+    /**
+     * The colonies that should have hazard pay: those it speeds up the most, at least hazardPayColonyShare, until the
+     * total reaches hazardPayEmpireShare of empire net income before hazard pay. One already paying keeps it with a
+     * little leeway (80% of the speed-up, 110% of the budget), so it doesn't flip on and off. None in a money emergency.
+     */
+    static Set<MarketAPI> hazardPlan(List<MarketAPI> auto, CASettings s, boolean emergency, Map<MarketAPI, Growth> info) {
+        Set<MarketAPI> want = new HashSet<MarketAPI>();
+        float paying = 0f;
+        for (MarketAPI m : auto) if (m.isImmigrationIncentivesOn()) paying += m.getImmigrationIncentivesCost();
+        float cap = s.hazardPayEmpireShare * Math.max(0f, CABudget.netIncome(s) + paying);
+        List<Growth> cands = new ArrayList<Growth>();
+        for (MarketAPI m : auto) {
+            if (CAHypershunt.is(m) || CAMods.growthUnsafe(m) || m.getSize() >= Misc.getMaxMarketSize(m)) continue;
+            Growth g = growth(m);
+            info.put(m, g);
+            if (g.points <= 0f || g.speedup < s.hazardPayColonyShare * (g.on ? 0.8f : 1f)) continue;
+            cands.add(g);
         }
+        if (emergency) return want;
+        return pick(cands, cap);
+    }
+
+    /** Greedy by speed-up (then cheaper first) within the budget; ones already paying get 10% leeway. */
+    static Set<MarketAPI> pick(List<Growth> cands, float cap) {
+        Collections.sort(cands, new Comparator<Growth>() {
+            public int compare(Growth a, Growth b) { int c = Float.compare(b.speedup, a.speedup); return c != 0 ? c : Float.compare(a.cost, b.cost); }
+        });
+        Set<MarketAPI> want = new HashSet<MarketAPI>();
+        float total = 0f;
+        for (Growth g : cands) {
+            if (total + g.cost > cap * (g.on ? 1.1f : 1f)) continue;
+            total += g.cost;
+            want.add(g.m);
+        }
+        return want;
     }
 }

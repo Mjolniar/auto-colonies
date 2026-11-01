@@ -79,9 +79,10 @@ public class CASettings {
     public boolean spyNoHiring = false;
     public int spyKeep = 0;
     public static final String[] SPY_NAMES = {"Off", "Defense", "Defense and offense"};
-    // Nexerelin emergency autonomy (CAAutonomy): 0 off (default, so older saves load as off), 1 recommend, 2 auto
+    // Nexerelin emergency autonomy (CAAutonomy): 0 off (default, so older saves load as off), 1 recommend. Autonomy is your
+    // call: 2 (the old Auto) now only recommends too.
     public int autonomyMode = 0;
-    public static final String[] AUTONOMY_NAMES = {"Off", "Recommend", "Auto"};
+    public static final String[] AUTONOMY_NAMES = {"Off", "Recommend", "Recommend"};
     // the Colony Autopilot button on your colony's screen (CAScreenButton); on unless this is set
     public boolean noScreenButton = false;
     // attacks on your colonies (CAAttacks), only used in a Nexerelin Derelict Empire start: Hostile Activity fleets per
