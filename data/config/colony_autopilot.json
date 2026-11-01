@@ -38,8 +38,8 @@
 
 	# Colony policies
 	"hazardPayMode":0,             # 0 auto, 1 don't touch
-	"hazardPayColonyShare":0.25,
-	"hazardPayEmpireShare":0.10,
+	"hazardPayColonyShare":0.25,   # hazard pay only where it speeds growth up by at least this much
+	"hazardPayEmpireShare":0.30,   # all hazard pay within this share of empire net income
 	"freePortMode":0,
 
 	# Stability floor the manager never builds below

@@ -41,7 +41,7 @@ public class CAItems {
         ITEM_VALUE.put("synchrotron", 60f); ITEM_VALUE.put("catalytic_core", 50f);
         ITEM_VALUE.put("mantle_bore", 50f); ITEM_VALUE.put("plasma_dynamo", 50f);
         ITEM_VALUE.put("soil_nanites", 40f); ITEM_VALUE.put("biofactory_embryo", 40f);
-        ITEM_VALUE.put("fullerene_spool", 40f); ITEM_VALUE.put("orbital_fusion_lamp", 30f);
+        ITEM_VALUE.put("fullerene_spool", 40f);   // the Orbital Fusion Lamp is valued by what it changes (lampValue)
         ITEM_VALUE.put("coronal_portal", 80f); ITEM_VALUE.put("cryoarithmetic_engine", 70f);
         ITEM_VALUE.put("drone_replicator", 40f); ITEM_VALUE.put("dealmaker_holosuite", 60f);
         // Ashes of the Domain's Tenebrian items and Turing Engine (effects from VoK 5.0.7's code)
@@ -96,6 +96,11 @@ public class CAItems {
     }
 
     static float itemScore(String id, MarketAPI m, CAData.Profile p) {
+        if (id.equals(LAMP)) {
+            float lv = lampValue(m, p, false);
+            if (lv <= 0f && m.hasCondition("hot") && planNeedsHeat(m, p)) lv = 1000f;   // its Extreme Heat opens a plan step
+            return lv > 0f ? lv / 1000f : 0f;
+        }
         Float v = ITEM_VALUE.get(id);
         if (v == null) v = modItemValue(id);
         if (v <= 0f) return 0f;
@@ -112,6 +117,7 @@ public class CAItems {
         CAData d = CAData.get();
         CASettings s = d.settings;
         if (markets.isEmpty()) return;
+        if (pullLamp(d, markets)) return;
         if (placeItem(d, s, markets)) return;
         if (!s.disableStabilizers && s.allowRemovals && convertFuel(d, s, markets)) return;   // replaces a building, so only with Allow removals
         if (s.useAICores && placeCore(d, s, markets)) return;
@@ -168,6 +174,81 @@ public class CAItems {
             } catch (Throwable t) {
                 CADiagnostics.quarantine(best.getId(), "installing " + spec.getId(), t);
                 return false;
+            }
+        }
+        return false;
+    }
+
+    // ---------------- Orbital Fusion Lamp ----------------
+    // In Population & Infrastructure (ItemEffectsRepo, PopulationAndInfrastructure.setSpecialItem) it cancels Cold, Very
+    // Cold, Poor Light and Dark and always needs 10 volatiles (a shortage adds up to +50% hazard). On a world that isn't
+    // cold it adds heat: Hot, or Extreme Heat in place of Hot; taking it out puts the old heat back. So it pays on a cold
+    // or dark world, or where the colony's plan needs Extreme Heat (Terraforming Made Easy's ore projects take it in place
+    // of extreme tectonic activity). Anywhere else it's only hazard: higher upkeep and slower growth.
+
+    static final String LAMP = "orbital_fusion_lamp";
+    static final String[] LAMP_CANCELS = {"cold", "very_cold", "poor_light", "dark"};
+    static final int LAMP_VOLATILES = 10;
+
+    /**
+     * What the lamp is worth a month at this colony (CAConditions values): the conditions it cancels, less the heat it
+     * adds and its volatiles at their base price. With the lamp in, the heat it added is already there, so a world that
+     * isn't cold counts as having gone from Hot to Extreme Heat.
+     */
+    static float lampValue(MarketAPI m, CAData.Profile p, boolean installed) {
+        float v = 0f;
+        boolean cold = m.hasCondition("cold") || m.hasCondition("very_cold");
+        for (String c : LAMP_CANCELS) if (m.hasCondition(c)) v -= CAConditions.value(m, c, p);
+        if (!cold) {
+            if (installed || m.hasCondition("hot")) v += CAConditions.value(m, "very_hot", p) - CAConditions.value(m, "hot", p);
+            else if (!m.hasCondition("very_hot")) v += CAConditions.value(m, "hot", p);
+        }
+        try { v -= LAMP_VOLATILES * Global.getSettings().getCommoditySpec("volatiles").getBasePrice(); } catch (Throwable ignored) { }
+        return v;
+    }
+
+    /** True when an open step of the colony's plan needs Extreme Heat and nothing here stands in for it (extreme tectonic activity). */
+    static boolean planNeedsHeat(MarketAPI m, CAData.Profile p) {
+        if (m.hasCondition("extreme_tectonic_activity")) return false;
+        try {
+            for (CAPlan.Step s : CAPlan.build(m, p).steps) {
+                if (s.kind != CAPlan.Kind.COND || s.done(m)) continue;
+                if (s.id.equals("very_hot")) return true;
+                CAWorldPlanner.Row r = CAWorldPlanner.rows().get(s.id);
+                if (r != null && CAWorldPlanner.idsOf(r.liked).contains("very_hot")) return true;
+            }
+        } catch (Throwable ignored) { }
+        return false;
+    }
+
+    /**
+     * Takes an Orbital Fusion Lamp back to Autopilot Storage from an Auto colony where it costs more than it gives,
+     * unless the colony's plan needs its Extreme Heat. The game puts the colony's old heat back. One a day, like placements.
+     */
+    static boolean pullLamp(CAData d, List<MarketAPI> markets) {
+        if (CADiagnostics.itemLevel(LAMP) == CADiagnostics.Level.QUARANTINED) return false;
+        for (MarketAPI m : markets) {
+            CAData.Colony c = d.colony(m.getId());
+            for (Industry ind : m.getIndustries()) {
+                SpecialItemData item = ind.getSpecialItem();
+                if (item == null || !LAMP.equals(item.getId()) || c.locks.contains(ind.getId())) continue;
+                if (planNeedsHeat(m, c.profile) || lampValue(m, c.profile, true) > 0f) continue;
+                boolean cancels = false;
+                for (String k : LAMP_CANCELS) if (m.hasCondition(k)) cancels = true;
+                try {
+                    ind.setSpecialItem(null);
+                    d.storage().addSpecial(item, 1f);
+                    m.reapplyConditions();
+                    m.reapplyIndustries();
+                    CALog.add(m.getName() + ": took the Orbital Fusion Lamp out of " + ind.getCurrentName() + ", back to Autopilot Storage ("
+                            + (cancels ? "the heat it adds costs more than the cold or darkness it cancels"
+                                       : "it only made the colony hotter and used " + LAMP_VOLATILES + " volatiles; it helps only a cold or dark world")
+                            + ")", true);
+                    return true;
+                } catch (Throwable t) {
+                    CADiagnostics.quarantine(LAMP, "taking out the Orbital Fusion Lamp at " + m.getName(), t);
+                    return false;
+                }
             }
         }
         return false;
