@@ -100,7 +100,7 @@ public class CASettings {
     // this month
     public int month = -1;
     public float spent = 0f, fees = 0f, upkeepAdded = 0f, terraSpent = 0f;
-    public int spMonth = 0;
+    public int spMonth = 0;   // story points spent this month (counted improvements before 2.20.1)
     public float lastNet = 0f;
     public boolean lastNetKnown = false;
 
