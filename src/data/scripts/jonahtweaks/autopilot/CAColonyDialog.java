@@ -86,6 +86,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         else if (BACK.equals(id)) { setupPage = false; message = null; }
         else if (APPROVE.equals(id)) { String err = CAAuto.approve(market); message = err == null ? "Approved and started" : err; }
         else if (REJECT.equals(id)) { CAAuto.reject(market); message = "Rejected; it won't propose again for 30 days"; }
+        else if (CASurplus.handle(market, id) != null) message = CASurplus.handle(market, id);
         else if ((AUG_APPLY.equals(id) || AUG_UNSKIP.equals(id)) && Global.getSettings().getModManager().isModEnabled(CAAugments.MOD)) {
             try {
                 if (AUG_UNSKIP.equals(id)) { CAAugments.unskip(market); message = "Autopilot may add those augments again"; }
@@ -296,6 +297,10 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             CALog.endRow(t, first);
             t.addPara(MODE_TEXT[c.mode.ordinal()], gray, 6f);
             CABuildout.render(t, market, c);
+            if (c.mode == CAData.Mode.AUTO && !outpost && !shunt) {
+                try { CASurplus.renderColony(t, market, s, 12f); }
+                catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus section failed at " + market.getName(), e); }
+            }
             if (outpost) {
                 t.addSectionHeading("Nexerelin outpost", Alignment.MID, 12f);
                 t.addPara(CAEngine.OUTPOST_TEXT + ". Items, cores, policies and fast buildout skip it too, and its shortages don't count as your colonies'.", gray, 6f);

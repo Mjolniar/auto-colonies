@@ -27,8 +27,9 @@ import java.util.*;
  * Each colony's plan comes first: every open plan step that research locks (BMO's gates, VoK's rewards, Terraforming Made
  * Easy's own tech ids) is traced to its tech and the whole chain of techs it still needs, and the step's plan value
  * (CAPlan.bonusFor) is shared along that chain by research days, so the first tech of a long chain counts too.
- * Auto starts the best tech whenever nothing is running or queued, only for techs that cost databanks alone (AI cores
- * and colony items are left to you). While a plan tech waits for databanks, the ones you have aren't spent on techs no
+ * Auto starts the best tech whenever nothing is running or queued, only for techs that cost databanks and AI cores (the
+ * cores from Autopilot Storage, counted at CORE_VALUE); colony items are left to you. With surplus credits (CASurplus) the
+ * focus world's plan counts twice and research upkeep a quarter. While a plan tech waits for databanks, the ones you have aren't spent on techs no
  * plan needs; the log says what's needed. Research upkeep is temporary, so plan techs aren't held back by the new-upkeep
  * cap. Databanks count from the Research Facility tab, Autopilot Storage, your colonies' Storage and your fleet's cargo. Autopilot Storage is research's storage too: whatever a tech is short of when it
  * starts (Auto or the Start button) is moved from there into the Research Facility tab, and databanks from your fleet's
@@ -40,6 +41,9 @@ public class CAResearch {
     static final String R = "data.kaysaar.aotd.vok.scripts.research.";
     static final String KEY = "$aotd_vok_manager", SUBMARKET = "researchfacil", DATABANK = "research_databank";
     static final float DATABANK_VALUE = 5000f, TIER_UPKEEP = 10000f;
+    /** AI cores a tech can use up from Autopilot Storage, at what they'd fetch: Auto counts them as part of the cost. */
+    static final Map<String, Float> CORE_VALUE = new HashMap<String, Float>();
+    static { CORE_VALUE.put("gamma_core", 2500f); CORE_VALUE.put("beta_core", 7500f); CORE_VALUE.put("alpha_core", 20000f); }
     /** Days Auto keeps databanks for a plan tech short of them before the best tech it can afford goes ahead anyway. */
     static final float WAIT_DAYS = 90f;
     static final String START = "starting research";
@@ -110,7 +114,11 @@ public class CAResearch {
         Object raw;
 
         boolean databanksOnly() { for (String k : items.keySet()) if (!DATABANK.equals(k)) return false; return true; }
+        /** Auto may start it: it costs databanks and AI cores only (cores come from Autopilot Storage); colony items are yours. */
+        boolean autoOk() { for (String k : items.keySet()) if (!DATABANK.equals(k) && !CORE_VALUE.containsKey(k)) return false; return true; }
         int databanks() { Integer n = items.get(DATABANK); return n == null ? 0 : n; }
+        /** What its AI cores are worth, counted as part of its cost. */
+        float coreCost() { float v = 0f; for (Map.Entry<String, Integer> e : items.entrySet()) { Float c = CORE_VALUE.get(e.getKey()); if (c != null) v += c * e.getValue(); } return v; }
     }
 
     @SuppressWarnings("unchecked")
@@ -211,7 +219,7 @@ public class CAResearch {
             try { plan = CAPlan.build(m, c.profile); } catch (Throwable e) { continue; }
             for (CAPlan.Step st : plan.steps) {
                 if (st.kind != CAPlan.Kind.BUILD || st.done(m)) continue;
-                float value = CAPlan.bonusFor(m, plan, st.id);
+                float value = CAPlan.bonusFor(m, plan, st.id) * (CASurplus.isFocus(m) ? 2f : 1f);   // the focus world's plan counts twice
                 if (value <= 0f) continue;
                 List<String> chain = new ArrayList<String>();
                 Set<String> seen = new HashSet<String>();
@@ -234,7 +242,7 @@ public class CAResearch {
                     Tech t = open.get(id);
                     n.days += Math.max(1f, t.days - t.spent);
                     n.databanks += t.databanks();
-                    if (!t.databanksOnly()) n.manual = true;
+                    if (!t.autoOk()) n.manual = true;
                 }
                 out.add(n);
             }
@@ -294,6 +302,7 @@ public class CAResearch {
             t.lines.add(0, "On the way to " + CAContracts.join(t.planFor) + " (colony plans): " + CAEngine.valueText(t.plan));
         }
         float fac = facilityUpkeepMult();
+        float money = CASurplus.on(CAData.settings()) ? CASurplus.CHEAP : 1f;   // with surplus credits, upkeep counts a quarter
         for (Tech c : cands) {
             Tech bestChild = null;
             for (Tech ch : children.values()) {
@@ -304,7 +313,7 @@ public class CAResearch {
             if (bestChild != null && bestChild.own > 0f) c.lines.add("Leads to " + bestChild.name + " (" + CAEngine.valueText(bestChild.own) + ")");
             c.value = c.own + c.next;
             float daysLeft = Math.max(1f, c.days - c.spent);
-            c.cost = c.tier * TIER_UPKEEP * fac * daysLeft / 30f + c.databanks() * DATABANK_VALUE;
+            c.cost = c.tier * TIER_UPKEEP * fac * daysLeft / 30f * money + c.databanks() * DATABANK_VALUE + c.coreCost();
             c.rank = (12f * c.value - c.cost) / daysLeft;   // a year of what it unlocks, less its cost, per research day
             out.add(c);
         }
@@ -592,7 +601,7 @@ public class CAResearch {
         return q == null || q.isEmpty();
     }
 
-    /** Auto: when nothing is being researched or queued, starts the best tech that costs only databanks and pays for itself. */
+    /** Auto: when nothing is being researched or queued, starts the best tech that costs only databanks and AI cores and pays for itself. */
     public static void run(CAData d, CASettings s) {
         if (s.researchMode != 1) return;
         try {
@@ -611,8 +620,9 @@ public class CAResearch {
             boolean waitedLong = d.researchWaitSince != 0L && Global.getSector().getClock().getElapsedDaysSince(d.researchWaitSince) >= WAIT_DAYS;
             for (Tech t : ranked()) {
                 if (t.rank <= 0f) break;
-                if (!t.databanksOnly()) continue;
+                if (!t.autoOk()) continue;
                 if (t.needsItems && have < t.databanks()) { if (waiting == null && t.plan > 0f) waiting = t; continue; }
+                if (t.needsItems && !covered(mgr, t)) continue;   // AI cores it needs aren't in Autopilot Storage
                 if (waiting != null && t.plan <= 0f && !waitedLong) continue;   // no plan needs it; keep the databanks
                 float upkeep = t.tier * TIER_UPKEEP * fac;
                 if (t.plan <= 0f && s.upkeepAdded + upkeep > s.newUpkeepCap) {   // research upkeep ends with the tech; plan techs go anyway
@@ -652,9 +662,11 @@ public class CAResearch {
     public static void render(TooltipMakerAPI t, CAData d, CASettings s) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         t.addPara("Mode: %s. Values each tech by the buildings it unlocks at your colonies (scored like any build), its other effects and "
-                + "what it leads to, against its databanks and the facility upkeep it adds. Auto starts the best one when nothing is running "
-                + "or queued, only if it costs databanks alone. Starting a tech, by Auto or with Start, moves whatever it's short of from "
-                + "Autopilot Storage into the Research Facility tab (databanks also from your fleet's cargo).", 6f, hl, CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.researchMode))]);
+                + "what it leads to, against its databanks, AI cores and the facility upkeep it adds. Auto starts the best one when nothing is running "
+                + "or queued, only if it costs databanks and AI cores (cores from Autopilot Storage); techs that use colony items are yours. "
+                + "Starting a tech, by Auto or with Start, moves whatever it's short of from Autopilot Storage into the Research Facility tab "
+                + "(databanks also from your fleet's cargo). With surplus credits, the focus world's plan counts twice and upkeep a quarter.",
+                6f, hl, CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.researchMode))]);
         try {
             Object mgr = mgr();
             if (mgr == null) { t.addPara("Vaults of Knowledge's research hasn't started in this save yet.", gray, 6f); return; }
@@ -682,10 +694,12 @@ public class CAResearch {
                 }
             }
             boolean idle = idle(mgr);
+            if (!idle && s.researchMode == 1) t.addPara("Auto waits while research is running or queued, yours or its own; it picks the next tech "
+                    + "once the queue is empty.", gray, 4f);
             int shown = 0;
             for (Tech x : rankedNow) {
                 if (shown++ >= 6) break;
-                t.addPara("%s (%s days, %s): %s a month" + (x.needsItems ? (covered(mgr, x) ? ", moved in from Autopilot Storage when started" : ", not enough on hand") : "") + (!x.databanksOnly() ? ", uses items Auto won't spend" : ""),
+                t.addPara("%s (%s days, %s): %s a month" + (x.needsItems ? (covered(mgr, x) ? ", moved in from Autopilot Storage when started" : ", not enough on hand") : "") + (!x.autoOk() ? ", uses colony items Auto won't spend" : ""),
                         8f, x.rank > 0f ? hl : gray, x.name, "" + Math.round(Math.max(1f, x.days - x.spent)), itemsText(x), CAEngine.signed(x.value));
                 for (int j = 0; j < Math.min(3, x.lines.size()); j++) t.addPara("    " + CALog.esc(x.lines.get(j)), gray, 2f);
                 if (idle && s.researchMode != 2) {

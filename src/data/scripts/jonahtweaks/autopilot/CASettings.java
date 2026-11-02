@@ -22,6 +22,14 @@ public class CASettings {
     public float terraformShare = 0.4f;
     public float newUpkeepCap = 50000f;
     public boolean pauseOnLoss = true;
+    // surplus investment (CASurplus): credits over the line go into one focus world; index into SURPLUS_LINES (0 off).
+    // surplusChecked is false loading a save from before 2.21.0, which gets the recommended line once.
+    public int surplusLine = 2;
+    public boolean surplusChecked = true;
+    public String focusId;        // the focus world you picked (null: Autopilot picks)
+    public String focusAuto;      // the one Autopilot picked last, kept unless another beats it clearly
+    public static final float[] SURPLUS_LINES = {0f, 1000000f, 3000000f, 5000000f, 10000000f};
+    public static final String[] SURPLUS_NAMES = {"Off", "Over 1,000,000", "Over 3,000,000", "Over 5,000,000", "Over 10,000,000"};
 
     // services
     public int feeLevel = 2;              // 0 off, 1 low, 2 standard, 3 high
