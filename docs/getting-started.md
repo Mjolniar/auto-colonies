@@ -54,6 +54,7 @@ They're chosen so that switching colonies to Auto and doing nothing else works o
 | Budget | **Automatic**: half of last month's net income, plus 15% of your credits above the reserve each month. A young colony that loses money still gets built, and spending slows as savings fall. |
 | Credit reserve | A quarter of your credits at setup, between 50,000 and 500,000; never spent |
 | Pause on loss | Off (the Automatic budget already slows down) |
+| Surplus investment | Over 3,000,000: credits past that go into one focus world (see below) |
 | AI cores, administrators | Used and hired (only cores you put in Autopilot Storage, where they add most; less the colony crisis progress they add; up to 7 inspection points per colony, so the Hegemony never inspects; an administrator where they add more than their salary, and always one for each colony past your colony limit) |
 | Research, trade contracts, settlement | Auto, each only when it pays; research follows what the colony plans need (Ashes of the Domain, Random Assortment of Things) |
 | Agents | Defense: hired only when there's a rebellion, Pather cell, pirate base or enemy operation (Nexerelin) |
@@ -83,9 +84,22 @@ The colony panel's budget line shows how much can be spent this month. With the 
 
 All three are under **Settings**, **Budget and spending**, in the empire panel; **Use recommended settings** fixes them in one click.
 
+The empire panel's **Log** also says when a build waits on the **New upkeep cap per month**. A plan step whose upkeep alone is over the whole cap goes as the month's first new upkeep; anything else that big waits until you raise the cap.
+
+### Surplus investment (a focus world)
+
+When your credits pass the line (**Surplus investment** under **Budget and spending**, recommended over 3,000,000), what's over it goes into one **focus world** to make it the best colony it can be:
+
+- it may spend the surplus past the monthly budget and the per-project cap, and add new upkeep up to 10% of net income a month;
+- its builds and terraforming count their price at a quarter, so expensive buildings that pay off get built, and its best-value terraforming is paid from the surplus;
+- research counts its plan twice;
+- colony items waiting in Autopilot Storage push for the buildings that would use them, at any colony where they fit.
+
+Autopilot picks the Auto colony with the most to build on (size, free industry slots, deposits, habitability, hazard, waiting items that fit, income, a reachable special world) and sticks with it unless another is clearly better. To pick one yourself, open its colony panel and press **Make this the focus world** on the Overview; **Let Autopilot choose** hands it back. The empire panel's **Colonies** page says how much is over the line and where it goes.
+
 ### Items, AI cores and administrators
 
-- **Colony items, AI cores and research databanks:** dock at any of your colonies, open the **Autopilot Storage** tab, and deposit them there. The manager uses only items in that storage, and only for colonies in Auto mode; it never takes from your normal storage. The Orbital Fusion Lamp only goes to a cold or dark colony, since anywhere else it just adds heat, and one in an Auto colony where it only adds heat comes back to storage. Research (Vaults of Knowledge) takes what a tech needs from it too, and databanks from your fleet's cargo after that. AI cores are used with the recommended settings (**Use AI cores**). Each core goes where it adds most for the colony's goal: an Alpha where its +1 output (or a structure's bonus) is worth most, a Beta where upkeep is highest, a Gamma only where an input is short. A better core replaces a lesser one, which goes back to storage. **Inspection risk** decides how many inspection points a colony may hold: 7 or less (the Hegemony ignores those), more where its defenses beat the next inspection (**More where defended**, recommended), or **No limit**. A colony over its limit sends cores back to storage one a day, and a colony an inspection is coming for is left as it is. Autopilot Storage lists each colony's points and limit.
+- **Colony items, AI cores and research databanks:** dock at any of your colonies, open the **Autopilot Storage** tab, and deposit them there. The manager uses only items in that storage, and only for colonies in Auto mode; it never takes from your normal storage. The Orbital Fusion Lamp only goes to a cold or dark colony, since anywhere else it just adds heat, and one in an Auto colony where it only adds heat comes back to storage. A better item swaps in for a lesser one of the same kind (a Pristine Nanoforge for a Corrupted one, which goes back to storage). Research (Vaults of Knowledge) takes what a tech needs from it too (Auto spends databanks and AI cores; techs that need colony items are yours), and databanks from your fleet's cargo after that. Auto research waits while you have research queued. AI cores are used with the recommended settings (**Use AI cores**). Each core goes where it adds most for the colony's goal: an Alpha where its +1 output (or a structure's bonus) is worth most, a Beta where upkeep is highest, a Gamma only where an input is short. A better core replaces a lesser one, which goes back to storage. **Inspection risk** decides how many inspection points a colony may hold: 7 or less (the Hegemony ignores those), more where its defenses beat the next inspection (**More where defended**, recommended), or **No limit**. A colony over its limit sends cores back to storage one a day, and a colony an inspection is coming for is left as it is. Autopilot Storage lists each colony's points and limit.
 - **Administrators:** in Auto mode, an administrator is hired, placed or moved only where they add more than they cost: their +1 output (worth most at a big, productive colony) and the stability from your colony limit, against their salary (2,500 or 20,000 a month) and the hiring cost. The colony panel's Overview shows what its administrator costs and adds. Hiring is **Administrator hiring**, on in the recommended settings. Past your colony limit (your 3rd colony at the base limit of 2), one is placed or hired whatever the money says, since each colony past it costs every colony you govern 2 stability; it may go past the monthly budget, never below the reserve.
 
 ### Keeping control

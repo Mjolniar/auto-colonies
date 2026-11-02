@@ -8,6 +8,8 @@ import java.util.*;
 
 /** Approve and Auto modes: one pass per colony every 7 days or when a build finishes, funded empire-wide by score per credit. */
 public class CAAuto {
+    /** Picks per colony a pass: the best upgrades and new builds, the rest standing by if the best has to wait. */
+    static final int UPS = 2, NEWS = 3;
     static final Map<String, Boolean> wasBuilding = new HashMap<String, Boolean>();
     static final Map<String, Float> nextPass = new HashMap<String, Float>();
     static float lastNow = 0f;
@@ -29,6 +31,8 @@ public class CAAuto {
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "siege check failed", t); }
         CAAttacks.apply(s);
         CACrisis.daily(d, s);   // inspection orders, and a log line when a colony crisis is picked
+        try { CASurplus.daily(s); }   // the focus world for credits over the surplus line
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus investment step failed", t); }
         List<Cand> cands = new ArrayList<Cand>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             CAData.Colony c = d.colony(m.getId());
@@ -53,50 +57,67 @@ public class CAAuto {
             }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "pass failed at " + m.getName(), t); continue; }
             if (r.picks.isEmpty()) continue;
-            // upgrades run alongside new construction, so take the best of each
-            CAEngine.Pick bestUp = null, bestNew = null;
+            // upgrades run alongside new construction; the next best of each stand by in case the best has to wait (budget,
+            // caps), so one held-back build doesn't stop the colony
+            List<CAEngine.Pick> ups = new ArrayList<CAEngine.Pick>(), news = new ArrayList<CAEngine.Pick>();
             for (CAEngine.Pick q : r.picks) {
                 if (!CAEngine.worthwhile(q)) continue;   // never the least-bad option: only what pays for itself
                 if (siege && !CASiege.defensive(q)) continue;   // under siege only defenses are built
-                if (q.upgrade && bestUp == null) bestUp = q;
-                if (!q.upgrade && bestNew == null && !building) bestNew = q;
+                if (q.upgrade) { if (ups.size() < UPS) ups.add(q); }
+                else if (!building && news.size() < NEWS) news.add(q);
             }
             if (c.mode == CAData.Mode.APPROVE) {
+                CAEngine.Pick bestUp = ups.isEmpty() ? null : ups.get(0), bestNew = news.isEmpty() ? null : news.get(0);
                 CAEngine.Pick p = bestNew != null && (bestUp == null || bestNew.score >= bestUp.score) ? bestNew : bestUp;
                 if (p != null) propose(m, c, p, "waiting for your approval");
                 continue;
             }
-            for (CAEngine.Pick p : new CAEngine.Pick[]{bestUp, bestNew}) {
-                if (p == null) continue;
+            List<CAEngine.Pick> all = new ArrayList<CAEngine.Pick>(ups);
+            all.addAll(news);
+            for (CAEngine.Pick p : all) {
                 Cand k = new Cand();
                 k.m = m; k.c = c; k.p = p; k.total = p.cost + CABudget.constructionFee(s, p.cost);
                 cands.add(k);
             }
-            if (building && bestUp == null) nextPass.put(m.getId(), now + 1f);   // re-check soon for the new build
+            if (building && ups.isEmpty()) nextPass.put(m.getId(), now + 1f);   // re-check soon for the new build
         }
         Collections.sort(cands, new Comparator<Cand>() {
             public int compare(Cand a, Cand b) {
                 return Float.compare(b.p.score / Math.max(1f, b.total), a.p.score / Math.max(1f, a.total));
             }
         });
+        // a plan step whose upkeep is over the whole cap only fits as the month's first new upkeep, so it goes first
+        List<Cand> big = new ArrayList<Cand>();
+        for (Cand k : cands) if (k.p.planBonus > 0f && k.p.upkeep > CASurplus.upkeepCap(k.m, s)) big.add(k);
+        cands.removeAll(big);
+        cands.addAll(0, big);
+        Set<String> startedNew = new HashSet<String>(), startedUp = new HashSet<String>();   // one of each per colony a pass
         for (Cand k : cands) {
-            if (k.p.cost > s.perProjectCap) { propose(k.m, k.c, k.p, "over the per-project cap, needs your approval"); continue; }
+            Set<String> started = k.p.upgrade ? startedUp : startedNew;
+            if (started.contains(k.m.getId())) continue;
+            float cap = CASurplus.projectCap(k.m, s);   // the focus world may go past it with surplus credits
+            if (k.p.cost > cap) { propose(k.m, k.c, k.p, "over the per-project cap, needs your approval"); continue; }
             if (k.p.measured && s.measuredMode == 1) { propose(k.m, k.c, k.p, "a mod building scored from measurements, needs your approval"); continue; }
-            if (k.p.confidence < 0.9f && k.p.cost > 0.5f * s.perProjectCap) {
+            if (k.p.confidence < 0.9f && k.p.cost > 0.5f * cap) {
                 propose(k.m, k.c, k.p, "scored from an estimate rather than a game formula and over half the per-project cap, needs your approval");
                 continue;
             }
             String key = k.m.getId() + ":" + k.p.id;
-            if (k.total > CABudget.available(s)) {
+            float avail = Math.min(Math.max(0f, CABuild.credits() - s.reserve), CABudget.available(s) + CASurplus.extra(k.m, s));
+            if (k.total > avail) {
                 if (CALog.once(key)) CALog.add(k.m.getName() + ": " + k.p.name + " waits for budget ("
-                        + Misc.getDGSCredits(k.total) + " needed, " + Misc.getDGSCredits(CABudget.available(s)) + " left this month)");
+                        + Misc.getDGSCredits(k.total) + " needed, " + Misc.getDGSCredits(avail) + " left this month)");
                 continue;
             }
-            if (s.upkeepAdded + k.p.upkeep > s.newUpkeepCap) {
-                if (CALog.once(key + ":upkeep")) CALog.add(k.m.getName() + ": " + k.p.name + " waits for next month (new upkeep cap reached)");
+            float upCap = CASurplus.upkeepCap(k.m, s);
+            if (!CABudget.upkeepFits(s.upkeepAdded, k.p.upkeep, upCap, k.p.planBonus > 0f)) {
+                if (CALog.once(key + ":upkeep")) CALog.add(k.m.getName() + ": " + k.p.name + " waits for next month (new upkeep cap reached"
+                        + (k.p.upkeep > upCap ? ": its " + Misc.getDGSCredits(k.p.upkeep) + " a month is over the whole " + Misc.getDGSCredits(upCap)
+                        + (k.p.planBonus > 0f ? "; as a plan step it goes in a month with no other new upkeep" : "; raise New upkeep cap per month in Settings to allow it") : "")
+                        + ")");
                 continue;
             }
-            execute(k.m, k.c, k.p, "Auto");
+            if (execute(k.m, k.c, k.p, "Auto") == null) started.add(k.m.getId());
         }
         List<MarketAPI> allAuto = CAItems.autoMarkets();
         List<MarketAPI> auto = CASiege.free(allAuto);   // colonies under siege are left as they are

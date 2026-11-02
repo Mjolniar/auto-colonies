@@ -82,7 +82,7 @@ public class CATerraform {
                             if (!adding && plan.world != null && planNeeds(plan, pd.id)) continue;   // never undo a plan condition
                             float value = conditionValue(m, pd.id, prof) * (adding ? 1f : -1f) + CAPlan.bonusForCondition(m, plan, pd.id, adding);
                             float cost = projectCost(m, pd);
-                            float score = value - cost / 36f - pd.buildTime * 30f;
+                            float score = value - cost / 36f * CASurplus.costWeight(m) - pd.buildTime * 30f;   // a quarter at the focus world with surplus
                             if (score > 0f && (pick == null || score > pick.score)) {
                                 pick = new Cand(); pick.m = m; pick.ind = ind; pick.pd = pd; pick.cost = cost; pick.score = score;
                                 pick.why = (adding ? "add " : "remove ") + pd.name;
@@ -104,6 +104,13 @@ public class CATerraform {
                     if (CALog.once("tfsave:" + k.m.getId() + ":" + k.pd.id))
                         CALog.add(k.m.getName() + ": terraforming (" + k.why + ") waits until you have " + Misc.getDGSCredits(k.cost + fee)
                                 + " above the credit reserve", true);
+                    continue;
+                }
+            } else if (CASurplus.isFocus(k.m)) {
+                // the focus world's best-value projects are paid from surplus credits, past the caps and the terraforming budget
+                if (k.cost + fee > CASurplus.amount(s)) {
+                    if (CALog.once("tfsurplus:" + k.m.getId() + ":" + k.pd.id))
+                        CALog.add(k.m.getName() + ": terraforming (" + k.why + ") waits for " + Misc.getDGSCredits(k.cost + fee) + " of surplus credits");
                     continue;
                 }
             } else if (k.cost > s.perProjectCap) {

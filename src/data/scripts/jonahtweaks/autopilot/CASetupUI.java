@@ -11,6 +11,8 @@ import java.awt.Color;
 /** Settings rows with recommendations, used by the first-time setup window and the empire panel's settings section. */
 public class CASetupUI {
     public static final String PREFIX = "ca:set:";
+    /** Recommended surplus line: over 3,000,000. */
+    static final int REC_SURPLUS = 2;
 
     static float round(float v, float step) { return Math.max(step, Math.round(v / step) * step); }
 
@@ -31,6 +33,8 @@ public class CASetupUI {
         s.reserve = Math.min(500000f, round(Math.max(50000f, credits * 0.25f), 50000f));   // a quarter of what you have, 50k-500k
         s.perProjectCap = Math.min(5000000f, round(Math.max(1000000f, net), 250000f));
         s.newUpkeepCap = round(Math.max(20000f, net * 0.1f), 10000f);
+        s.surplusLine = REC_SURPLUS;   // credits over 3,000,000 go into one focus world
+        s.surplusChecked = true;
         s.monthCredits = credits;
         s.feeLevel = 2;
         s.stationLine = "score";
@@ -135,6 +139,11 @@ public class CASetupUI {
             row(t, "Per-project cap", Misc.getDGSCredits(s.perProjectCap), "monthly net income, 1M-5M", "cap", false);
             row(t, "Credit reserve", Misc.getDGSCredits(s.reserve), "a quarter of your credits, 50,000-500,000", "reserve", false);
             row(t, "New upkeep cap per month", Misc.getDGSCredits(s.newUpkeepCap), "10% of net income, at least 20,000", "upkeep", false);
+            row(t, "Surplus investment", CASurplus.lineName(s), CASettings.SURPLUS_NAMES[REC_SURPLUS], "surplus", true);
+            t.addPara("Credits over the line go into one focus world, to make it the best colony it can be: past the monthly budget and the "
+                    + "per-project cap, new upkeep up to a tenth of net income a month, prices counted at a quarter, its terraforming paid from "
+                    + "the surplus, and research counting its plan twice. Pick the focus world on its colony panel, or let Autopilot pick "
+                    + "the Auto colony with the most to build on.", Misc.getGrayColor(), 4f);
             row(t, "Pause on loss", onOff(s.pauseOnLoss), "Off", "pause", true);
             row(t, "Convenience fees", CASettings.FEE_NAMES[s.feeLevel], "Standard", "fees", true);
             float st = stationLineItem(s);
@@ -332,6 +341,7 @@ public class CASetupUI {
         else if (k.equals("reserve")) s.reserve = Math.max(0f, s.reserve + 50000f * dir);
         else if (k.equals("upkeep")) s.newUpkeepCap = Math.max(0f, s.newUpkeepCap + 10000f * dir);
         else if (k.equals("pause")) s.pauseOnLoss = !s.pauseOnLoss;
+        else if (k.equals("surplus")) { s.surplusLine = (Math.max(0, s.surplusLine) + 1) % CASettings.SURPLUS_LINES.length; s.surplusChecked = true; }
         else if (k.equals("fees")) s.feeLevel = (s.feeLevel + 1) % 4;
         else if (k.equals("station")) {
             int i = 0;

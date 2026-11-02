@@ -158,7 +158,10 @@ public class CAItems {
                     if (sc > bestScore) { bestScore = sc; best = ind; bestM = m; }
                 }
             }
-            if (best == null) continue;
+            if (best == null) {
+                if (swapItem(d, s, markets, spec, data, effect, targets)) return true;
+                continue;
+            }
             float fee = CABudget.fee(s, STANDARD_MOVE_FEE);
             if (!canPay(s, fee)) return false;
             try {
@@ -168,6 +171,7 @@ public class CAItems {
                 st.removeItems(CargoAPI.CargoItemType.SPECIAL, data, 1f);
                 bestM.reapplyIndustries();   // the item's effect otherwise waits for the next economy update
                 CABudget.charge(s, 0f, fee, 0f);
+                idleAt = -99f;
                 CALog.add(bestM.getName() + ": installed " + spec.getName() + " in " + best.getCurrentName()
                         + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : ""), true);
                 return true;
@@ -177,6 +181,156 @@ public class CAItems {
             }
         }
         return false;
+    }
+
+    /** Worth swapping: the waiting item scores at least a quarter more than the known item installed. */
+    static boolean better(float waiting, float installed) { return installed > 0f && waiting >= installed * 1.25f; }
+
+    /**
+     * With no free building for it, swaps a waiting item in for a lesser one in the same kind of building (a Pristine
+     * Nanoforge for a Corrupted one); the old one goes back to Autopilot Storage. Never the Orbital Fusion Lamp (pullLamp
+     * handles it), an item Autopilot can't value, or a building that uses its item up.
+     */
+    static boolean swapItem(CAData d, CASettings s, List<MarketAPI> markets, SpecialItemSpecAPI spec, SpecialItemData data,
+                            InstallableItemEffect effect, Set<String> targets) {
+        Industry best = null; MarketAPI bestM = null; float bestGain = 0f;
+        for (MarketAPI m : markets) {
+            if (CAHypershunt.is(m) || !CAMods.itemFits(spec.getId(), m)) continue;
+            CAData.Colony c = d.colony(m.getId());
+            for (Industry ind : m.getIndustries()) {
+                SpecialItemData old = ind.getSpecialItem();
+                if (old == null || !targets.contains(ind.getId()) || old.getId().equals(spec.getId()) || LAMP.equals(old.getId())) continue;
+                if (!ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId()) || ind.getSpec().hasTag("consumes")) continue;
+                try { if (!effect.getUnmetRequirements(ind).isEmpty()) continue; } catch (Throwable t) { continue; }
+                float now = itemScore(old.getId(), m, c.profile), then = itemScore(spec.getId(), m, c.profile);
+                if (better(then, now) && then - now > bestGain) { bestGain = then - now; best = ind; bestM = m; }
+            }
+        }
+        if (best == null) return false;
+        float fee = CABudget.fee(s, STANDARD_MOVE_FEE);
+        if (!canPay(s, fee)) return false;
+        SpecialItemData old = best.getSpecialItem();
+        String oldName = name(old.getId());
+        try {
+            best.setSpecialItem(data);
+            d.storage().removeItems(CargoAPI.CargoItemType.SPECIAL, data, 1f);
+            d.storage().addSpecial(old, 1f);
+            bestM.reapplyIndustries();
+            CABudget.charge(s, 0f, fee, 0f);
+            idleAt = -99f;
+            CALog.add(bestM.getName() + ": swapped " + spec.getName() + " into " + best.getCurrentName() + " for the " + oldName
+                    + ", which went back to Autopilot Storage" + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : ""), true);
+            return true;
+        } catch (Throwable t) {
+            CADiagnostics.quarantine(best.getId(), "swapping in " + spec.getId(), t);
+            return false;
+        }
+    }
+
+    static String name(String itemId) {
+        try { return Global.getSettings().getSpecialItemSpec(itemId).getName(); } catch (Throwable t) { return itemId; }
+    }
+
+    // ---------------- waiting items ----------------
+
+    /** A colony item in Autopilot Storage and the buildings it goes in. */
+    public static class Idle {
+        public SpecialItemData data;
+        public SpecialItemSpecAPI spec;
+        public InstallableItemEffect effect;
+        public Set<String> targets = new HashSet<String>();
+    }
+
+    /** Credits a month per point of itemScore, at the default unit value: a Catalytic Core's 50 x size 6 comes to about +3 metals. */
+    static final float POINT_CREDITS = 30f;
+
+    static List<Idle> idle;
+    static float idleAt = -99f;
+
+    /** An Auto colony's building this item would go in right now (its kind, no item yet, requirements met), or null. */
+    static Industry emptyTarget(Idle it, MarketAPI m) {
+        CAData.Colony c = CAData.get().colony(m.getId());
+        for (Industry ind : m.getIndustries()) {
+            if (!it.targets.contains(ind.getId()) || ind.getSpecialItem() != null || !ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId())) continue;
+            try { if (it.effect.getUnmetRequirements(ind).isEmpty()) return ind; } catch (Throwable ignored) { }
+        }
+        return null;
+    }
+
+    /**
+     * Colony items in Autopilot Storage that no Auto colony has a building for: a new building that would take one is
+     * worth that much more (idleBonus). Industrial Evolution's VPC chips have their own placer. Refreshed daily.
+     */
+    public static List<Idle> idleItems() {
+        float now = Global.getSector().getClock().getElapsedDaysSince(0L);
+        if (idle != null && now - idleAt < 1f) return idle;
+        idleAt = now;
+        List<Idle> out = new ArrayList<Idle>();
+        List<MarketAPI> auto = autoMarkets();
+        for (CargoStackAPI stack : CAData.get().storage().getStacksCopy()) {
+            if (!stack.isSpecialStack() || stack.getSize() < 1f) continue;
+            SpecialItemSpecAPI spec = stack.getSpecialItemSpecIfSpecial();
+            SpecialItemData data = stack.getSpecialDataIfSpecial();
+            if (spec == null || data == null || NEVER.contains(spec.getId()) || LAMP.equals(spec.getId()) || spec.getId().startsWith("IndEvo_vpc_")) continue;
+            if (CADiagnostics.itemLevel(spec.getId()) == CADiagnostics.Level.QUARANTINED) continue;
+            InstallableItemEffect effect = ItemEffectsRepo.ITEM_EFFECTS.get(spec.getId());
+            if (effect == null || spec.getParams() == null || CABrewery.minSize(data) < 0) continue;
+            Idle it = new Idle();
+            it.data = data; it.spec = spec; it.effect = effect;
+            for (String p : spec.getParams().split(",")) it.targets.add(p.trim());
+            boolean home = false;
+            for (MarketAPI m : auto) if (!CAHypershunt.is(m) && CAMods.itemFits(spec.getId(), m) && emptyTarget(it, m) != null) { home = true; break; }
+            if (!home) out.add(it);
+        }
+        idle = out;
+        return out;
+    }
+
+    /** The building a waiting item would go in at this colony: one it has, or one it could build now; null if neither. */
+    public static String fitsAt(Idle it, MarketAPI m) {
+        if (!CAMods.itemFits(it.spec.getId(), m)) return null;
+        Industry has = emptyTarget(it, m);
+        if (has != null) return has.getId();
+        boolean free = Misc.getMaxIndustries(m) - Misc.getNumIndustries(m) > 0;
+        for (String id : it.targets) {
+            try {
+                com.fs.starfarer.api.loading.IndustrySpecAPI sp = Global.getSettings().getIndustrySpec(id);
+                if (sp == null || m.hasIndustry(id) || CAPlan.hasOrBetter(m, id)) continue;
+                Industry inst = sp.getNewPluginInstance(m);
+                if (!inst.isAvailableToBuild() || (inst.isIndustry() && !free)) continue;
+                if (CAAotD.enabled() && !CAAotD.allows(id, m)) continue;
+                if (it.effect.getUnmetRequirements(inst).isEmpty()) return id;
+            } catch (Throwable ignored) { }
+        }
+        return null;
+    }
+
+    /** What a waiting item adds a month in a building of the pick's kind: its extra output, else its value next to the vanilla items. */
+    static float itemWorth(Idle it, MarketAPI m, CAEngine.Pick p, CAData.Profile prof) {
+        if (it.effect instanceof com.fs.starfarer.api.impl.campaign.econ.impl.BoostIndustryInstallableItemEffect) {
+            int up = ((com.fs.starfarer.api.impl.campaign.econ.impl.BoostIndustryInstallableItemEffect) it.effect).getSupplyIncrease();
+            float v = 0f;
+            for (String com : p.supplied.keySet()) {
+                try { v += up * Global.getSettings().getCommoditySpec(com).getBasePrice() * CAEngine.unitValue; } catch (Throwable ignored) { }
+            }
+            if (v > 0f) return v;
+        }
+        return itemScore(it.spec.getId(), m, prof) * POINT_CREDITS * CAEngine.unitValue / 100f;
+    }
+
+    /** A new building that would take a waiting item (one no colony has a building for) is worth what the item adds there. */
+    public static void idleBonus(MarketAPI m, Industry inst, CAEngine.Pick p, CAData.Profile prof) {
+        if (p.upgrade) return;
+        Idle best = null; float bestV = 0f;
+        for (Idle it : idleItems()) {
+            if (!it.targets.contains(p.id) || !CAMods.itemFits(it.spec.getId(), m)) continue;
+            try { if (!it.effect.getUnmetRequirements(inst).isEmpty()) continue; } catch (Throwable t) { continue; }
+            float v = itemWorth(it, m, p, prof);
+            if (v > bestV) { bestV = v; best = it; }
+        }
+        if (best == null) return;
+        p.fx[0] += bestV;
+        p.lines.add("Uses the " + best.spec.getName() + " waiting in Autopilot Storage: about " + Misc.getDGSCredits(bestV) + " per month");
     }
 
     // ---------------- Orbital Fusion Lamp ----------------

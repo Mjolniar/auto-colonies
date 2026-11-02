@@ -210,6 +210,7 @@ public class CAEngine {
                 p.recording = false;
                 if (!worth) continue;
                 trust(spec, p, p.measured);
+                CAItems.idleBonus(m, inst, p, profile);   // a colony item waiting in Autopilot Storage that would go in it
                 if (!CADevelopment.adjust(m, p, inst, deficit)) continue;   // AotD management style
                 CASynergies.score(syn, p);
                 upkeep(m, spec, null, p);
@@ -314,7 +315,9 @@ public class CAEngine {
         float followThrough = p.upgrade && value > 0f && !profitOnly ? 15000f : 0f;
         if (followThrough > 0f) p.lines.add("Follow-through: upgrades what's already built");
         p.worth = value; p.planBonus = planBonus; p.followThrough = followThrough;
-        p.buildCost = p.cost / 36f + p.days * 10f;   // the price spread over three years, plus a little for the wait
+        float cw = CASurplus.costWeight(m);   // a quarter at the focus world while there are surplus credits
+        p.buildCost = (p.cost / 36f + p.days * 10f) * cw;   // the price spread over three years, plus a little for the wait
+        if (cw < 1f && p.cost > 0f) p.lines.add("Focus world with surplus credits: the price counts a quarter");
         p.score = value + planBonus + followThrough - p.buildCost - reserve;
         return true;   // every option is ranked and shown; Approve and Auto only act on a positive score (worthwhile())
     }

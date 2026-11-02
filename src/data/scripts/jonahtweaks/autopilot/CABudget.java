@@ -62,6 +62,15 @@ public class CABudget {
         return Math.max(0f, Math.min(byBudget, byReserve));
     }
 
+    /**
+     * New upkeep fits this month: within the cap, or a plan step whose upkeep alone is over the whole cap, in a month nothing
+     * else has added upkeep, so it waits a month at most rather than forever.
+     */
+    static boolean upkeepFits(float added, float upkeep, float cap, boolean planStep) {
+        if (added + upkeep <= cap) return true;
+        return planStep && upkeep > cap && added <= 0f;
+    }
+
     public static float constructionFee(CASettings s, float cost) {
         return Math.max(5000f, 0.05f * cost) * CASettings.FEE_MULT[Math.max(0, Math.min(3, s.feeLevel))];
     }

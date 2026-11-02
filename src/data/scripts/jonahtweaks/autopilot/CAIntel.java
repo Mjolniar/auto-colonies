@@ -169,6 +169,8 @@ public class CAIntel extends BaseIntelPlugin {
                     Misc.getDGSCredits(s.spent), Misc.getDGSCredits(CABudget.limit(s)), Misc.getDGSCredits(s.fees),
                     Misc.getDGSCredits(CABudget.available(s)), Misc.getDGSCredits(s.reserve));
             if (CABudget.paused(s)) t.addPara("Spending is paused: net income is negative.", Misc.getNegativeHighlightColor(), 4f);
+            try { CASurplus.renderEmpire(t, s); }
+            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus line failed", e); }
 
             boolean anyPending = false;
             for (MarketAPI m : markets) if (data.colony(m.getId()).pendingId != null) anyPending = true;
