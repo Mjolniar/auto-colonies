@@ -18,7 +18,7 @@ public class CAAuto {
         MarketAPI m; CAData.Colony c; CAEngine.Pick p; float total;
     }
 
-    public static void reset() { wasBuilding.clear(); nextPass.clear(); lastNow = 0f; }
+    public static void reset() { wasBuilding.clear(); nextPass.clear(); lastTrace.clear(); lastNow = 0f; }
 
     public static void runPass(float now) {
         lastNow = now;
@@ -66,6 +66,7 @@ public class CAAuto {
                 if (q.upgrade) { if (ups.size() < UPS) ups.add(q); }
                 else if (!building && news.size() < NEWS) news.add(q);
             }
+            if (ups.isEmpty() && news.isEmpty()) trace(m, r, building, now);
             if (c.mode == CAData.Mode.APPROVE) {
                 CAEngine.Pick bestUp = ups.isEmpty() ? null : ups.get(0), bestNew = news.isEmpty() ? null : news.get(0);
                 CAEngine.Pick p = bestNew != null && (bestUp == null || bestNew.score >= bestUp.score) ? bestNew : bestUp;
@@ -179,6 +180,34 @@ public class CAAuto {
             try { CATasc.run(CASiege.free(Misc.getPlayerMarkets(false))); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "TASC terraforming step failed", t); }
         }
+    }
+
+    static final Map<String, Float> lastTrace = new HashMap<String, Float>();
+    static final float TRACE_DAYS = 30f;
+
+    /**
+     * Why a colony starts nothing: its best three options with how each score is made up, and the best one that only lacks
+     * an industry slot. Written to starsector.log (not the panel log) at most once a month per colony, so a stalled
+     * colony can be explained from the log alone.
+     */
+    static void trace(MarketAPI m, CAEngine.Result r, boolean building, float now) {
+        Float last = lastTrace.get(m.getId());
+        if (last != null && now - last < TRACE_DAYS) return;
+        lastTrace.put(m.getId(), now);
+        StringBuilder b = new StringBuilder(m.getName()).append(": nothing worth starting");
+        if (CASurplus.isFocus(m)) b.append(" (focus world, ").append(Misc.getDGSCredits(CASurplus.amount(CAData.settings()))).append(" surplus)");
+        if (building) b.append("; a new building is under construction, so only upgrades count");
+        if (r.blocked != null) b.append("; ").append(r.blocked);
+        b.append("; ").append(r.picks.size()).append(" options");
+        for (int i = 0; i < Math.min(3, r.picks.size()); i++) b.append(i == 0 ? ", best: " : "; ").append(scoreText(r.picks.get(i)));
+        if (r.bestNoSlot != null) b.append("; with a free industry slot: ").append(scoreText(r.bestNoSlot)).append(" (").append(r.noSlot).append(" need a slot)");
+        if (r.locked > 0) b.append("; ").append(r.locked).append(" locked by research");
+        CADiagnostics.LOG.info(CADiagnostics.TAG + b);
+    }
+
+    static String scoreText(CAEngine.Pick p) {
+        return p.verb + " " + p.name + " " + Math.round(p.score) + " (worth " + Math.round(p.worth) + ", plan " + Math.round(p.planBonus)
+                + ", follow-through " + Math.round(p.followThrough) + ", price -" + Math.round(p.buildCost) + ", upkeep " + Math.round(p.upkeep) + "/month)";
     }
 
     static void propose(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String why) {
