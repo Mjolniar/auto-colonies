@@ -92,7 +92,7 @@ All three are under **Settings**, **Budget and spending**, in the empire panel; 
 
 - **Locks:** the colony panel's **Locks** page lists your buildings. A locked building is never upgraded, replaced or removed.
 - **Removals:** buildings are only removed during terraforming, unless you turn on **Allow removals**.
-- **Story points:** never spent unless you change **Story points** away from Player only.
+- **Story points:** never spent unless you change **Story points** away from Player only. **Monthly cap** counts story points, not improvements: each improvement at a colony costs twice the last one there, so the cheapest ones go first.
 - **Fees:** Approve and Auto add a convenience fee to each project they start (at Standard, 5% of the cost, at least 5,000). Moving items and hiring cost a small fee too. **Convenience fees** can be Off, Low, Standard or High.
 
 ## More colonies
