@@ -14,7 +14,8 @@ import java.awt.Color;
 import java.util.*;
 
 /**
- * Surplus investment: credits over a line (3,000,000 recommended) go into one focus world, to make it the best colony it
+ * Surplus investment: credits over a line (3,000,000 recommended), less what's already promised (custom production still
+ * to build, and Ashes of the Domain's production orders), go into one focus world, to make it the best colony it
  * can be. While there's a surplus the focus world may spend it past the monthly budget and the per-project cap, its new
  * upkeep cap is 10% of net income, its builds and terraforming count their price at a quarter, and research counts its
  * plan twice. Colony items waiting in Autopilot Storage count toward what a building is worth anywhere (CAItems.idleBonus).
@@ -34,7 +35,10 @@ public class CASurplus {
     static final Map<String, Float> scores = new LinkedHashMap<String, Float>();
     static final Map<String, String> whys = new HashMap<String, String>();
 
-    public static void reset() { focusId = null; computedAt = -99f; scores.clear(); whys.clear(); CAItems.idle = null; CAItems.idleAt = -99f; }
+    public static void reset() {
+        focusId = null; computedAt = -99f; scores.clear(); whys.clear(); CAItems.idle = null; CAItems.idleAt = -99f;
+        committedAt = Long.MIN_VALUE;
+    }
 
     static float now() { return Global.getSector().getClock().getElapsedDaysSince(0L); }
 
@@ -48,7 +52,55 @@ public class CASurplus {
         return Math.max(0f, credits - Math.max(line, reserve));
     }
 
-    public static float amount(CASettings s) { return amount(line(s), s.reserve, CABuild.credits()); }
+    public static float amount(CASettings s) { return amount(line(s), s.reserve, CABuild.credits() - committed()); }
+
+    static long committedAt = Long.MIN_VALUE;
+    static float committedCache;
+
+    /**
+     * Credits already promised: the game's custom production still to build, and with Ashes of the Domain its production
+     * orders' remaining units (each is paid when it's finished; Jonah's Auto Outfitting's weapon orders go there).
+     */
+    public static float committed() {
+        long ts;
+        try { ts = Global.getSector().getClock().getTimestamp(); } catch (Throwable t) { ts = Long.MIN_VALUE + 1; }
+        if (ts == committedAt) return committedCache;   // scoring asks for every pick; once per moment of game time is enough
+        committedAt = ts;
+        committedCache = readCommitted();
+        return committedCache;
+    }
+
+    static float readCommitted() {
+        float c = 0f;
+        try { c += Math.max(0, Global.getSector().getPlayerFaction().getProduction().getTotalCurrentCost()); } catch (Throwable ignored) { }
+        try { if (Global.getSettings().getModManager().isModEnabled("aotd_vok")) c += aotdOrders(); }
+        catch (Throwable t) {
+            if (!aotdWarned) { aotdWarned = true; CADiagnostics.LOG.warn(CADiagnostics.TAG + "couldn't read Ashes of the Domain's production orders; surplus investment counts the game's own only", t); }
+        }
+        return c;
+    }
+
+    static boolean aotdWarned = false;
+    static final String AOTD_PRODUCTION = "data.kaysaar.aotd.vok.campaign.econ.produciton.manager.AoTDProductionManager";
+
+    /** What Ashes of the Domain's production orders still owe: each order line's remaining units at its price. By reflection. */
+    static float aotdOrders() throws Exception {
+        Class<?> mgr = Class.forName(AOTD_PRODUCTION, true, Global.getSettings().getScriptClassLoader());
+        Object inst = CARefl.invoke(CARefl.method(mgr, "getInstance"), null);
+        Object snaps = inst == null ? null : CARefl.call(inst, "getCurrentSnapshots");
+        float c = 0f;
+        if (!(snaps instanceof List)) return c;
+        for (Object snap : (List<?>) snaps) {
+            Object lines = CARefl.get(CARefl.field(snap.getClass(), "productionData"), snap);
+            if (!(lines instanceof List)) continue;
+            for (Object d : (List<?>) lines) {
+                int left = ((Number) CARefl.call(d, "getRemainingUnits")).intValue();
+                Object spec = left > 0 ? CARefl.call(d, "getSpec") : null;
+                if (spec != null) c += left * ((Number) CARefl.call(spec, "getProductionCost")).floatValue();
+            }
+        }
+        return c;
+    }
 
     public static boolean on(CASettings s) { return amount(s) > 0f; }
 
@@ -187,6 +239,8 @@ public class CASurplus {
                 Misc.getDGSCredits(line(s)), f.getName());
         else t.addPara("Surplus investment: %s over your %s line goes into %s, the focus world" + (f.getId().equals(s.focusId) ? " (your pick)." : " ("
                 + CALog.esc(whys.get(f.getId())) + ")."), 4f, hl, Misc.getDGSCredits(a), Misc.getDGSCredits(line(s)), f.getName());
+        float c = committed();
+        if (c > 0f) t.addPara("Kept back: %s already promised to production that hasn't been paid yet.", 2f, gray, hl, Misc.getDGSCredits(c));
     }
 
     /** The colony panel's section: whether this is the focus world, and the buttons to pick it or hand it back. */

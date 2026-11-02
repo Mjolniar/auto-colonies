@@ -42,13 +42,15 @@ import java.util.*;
  * grid's right end, above it, under its left end, right of it. It's added to the lowest panel above the buildings that
  * holds that spot, so it moves, scrolls and hides with the colony screen rather than staying on whatever screen comes
  * next, and the spot is worked out again four times a second: when buildings are added or you switch colonies, it moves.
- * The current tab is searched first; on the colonies and docked screens, where the colony's own screen can sit outside
- * the tab, the whole core UI is searched next. With no free spot there's no button (logged once), and any error turns it
+ * Only the colonies tab (Command) and the docked market screen are searched: on refit, fleet and the other screens the
+ * button can't appear and nothing is walked. The current tab is searched first; the colony's own screen can sit outside
+ * it, so the whole core UI is searched next. Past the spots above, it tries every free place along the rows under and
+ * above the buildings and the columns beside them. With no free spot there's no button (logged once), and any error turns it
  * off for the session. Setting "Button on the colony screen". While it isn't showing, what it found is logged a few times
  * a session (report()), and so are the first few placements (where, in which panel, next to what).
  */
 public class CAScreenButton implements EveryFrameScript {
-    static final float W = 190f, H = 26f, GAP = 10f;
+    static final float W = 190f, H = 26f, GAP = 10f, STEP = 20f;
     static final String OPEN = "ca:screen:open";
     static final String GRID_CLASS = "com.fs.starfarer.campaign.ui.marketinfo.IndustryListPanel";
     static final String DIALOG_CLASS = "com.fs.starfarer.ui.newui.super", PARENT_CLASS = "com.fs.starfarer.ui.interfacenew",
@@ -95,21 +97,22 @@ public class CAScreenButton implements EveryFrameScript {
     Screen read() throws Exception {
         CampaignUIAPI ui = Global.getSector().getCampaignUI();
         InteractionDialogAPI dialog = ui.getCurrentInteractionDialog();
-        if (ui.getCurrentCoreTab() == null && dialog == null) return null;   // plain campaign view: nothing to look at
+        com.fs.starfarer.api.campaign.CoreUITabId coreTab = ui.getCurrentCoreTab();
+        // the colony screen only shows under Command's colonies (OUTPOSTS) or, docked, the market screen (CARGO); on any
+        // other screen (refit, fleet, map, intel, character) nothing is searched, so the button can't land on them and
+        // their UI isn't walked four times a second
+        if (!colonyTab(coreTab)) return null;
         // the colony screen lives in the core UI: the campaign's own, or (docked) the open dialog's
         List<Object> cores = new ArrayList<Object>();
         if (dialog != null) cores.add(tryCall(dialog, "getCoreUI"));
         cores.add(tryCall(ui, "getCore"));
         Screen best = null;
-        com.fs.starfarer.api.campaign.CoreUITabId coreTab = ui.getCurrentCoreTab();
-        boolean colonyScreens = dialog != null || coreTab == com.fs.starfarer.api.campaign.CoreUITabId.OUTPOSTS
-                || coreTab == com.fs.starfarer.api.campaign.CoreUITabId.CARGO;
         for (Object core : cores) {
             if (!(core instanceof UIPanelAPI)) continue;
             Object tab = tryCall(core, "getCurrentTab");
             Screen s = search(core, tab instanceof UIPanelAPI ? (UIPanelAPI) tab : (UIPanelAPI) core);
             if (!(tab instanceof UIPanelAPI)) s.note = "no current tab, searched the whole core UI";
-            else if (s.grid == null && colonyScreens && tab != core) {
+            else if (s.grid == null && tab != core) {
                 // a colony opened from the colonies list, or while docked, can sit outside the current tab
                 Screen whole = search(core, (UIPanelAPI) core);
                 whole.note = "not in the current tab " + tab.getClass().getName() + ", searched the whole core UI";
@@ -126,6 +129,11 @@ public class CAScreenButton implements EveryFrameScript {
         }
         report(ui, dialog, best);
         return best == null || best.grid == null || best.market == null || !best.market.isPlayerOwned() ? null : best;
+    }
+
+    /** The core tabs a colony's screen can show under: Command's colonies, or the docked market screen. */
+    static boolean colonyTab(com.fs.starfarer.api.campaign.CoreUITabId tab) {
+        return tab == com.fs.starfarer.api.campaign.CoreUITabId.OUTPOSTS || tab == com.fs.starfarer.api.campaign.CoreUITabId.CARGO;
     }
 
     /** The visible components under root, the building tiles among them and the grid they belong to. */
@@ -373,6 +381,17 @@ public class CAScreenButton implements EveryFrameScript {
         candidates.add(new float[]{maxX - W, maxY + GAP});
         candidates.add(new float[]{minX, minY - GAP - H});
         candidates.add(new float[]{maxX + GAP, maxY - H});
+        // then any free place along the rows under and above the buildings and the columns beside them, right to left and
+        // top to bottom: a full grid (12 or more buildings) leaves none of the spots above
+        for (float x = maxX - W; x >= minX - W; x -= STEP) {
+            candidates.add(new float[]{x, minY - GAP - H});
+            candidates.add(new float[]{x, maxY + GAP});
+            candidates.add(new float[]{x, minY - 2f * (GAP + H)});
+        }
+        for (float y = maxY - H; y >= minY - H; y -= STEP) {
+            candidates.add(new float[]{maxX + GAP, y});
+            candidates.add(new float[]{minX - GAP - W, y});
+        }
         for (float[] at : candidates) {
             float[] r = {at[0], at[1], W, H};
             if (!inside(r, tab) || (sw > 0f && !inside(r, new float[]{0f, 0f, sw, sh}))) continue;

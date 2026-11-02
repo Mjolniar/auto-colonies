@@ -6,8 +6,16 @@ import com.fs.starfarer.api.Global;
 /** Starts Colony Autopilot on every save load. Balance changes and sticky autopilot moved to Jonah's Easy Sector. */
 public class JTModPlugin extends BaseModPlugin {
 
+    /** Counts the three mods' warnings and errors from the start, for the Diagnostics page. */
+    public void onApplicationLoad() {
+        try { data.scripts.jonahtweaks.autopilot.CALogWatch.install(); }
+        catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] log watch failed", t); }
+    }
+
     public void onGameLoad(boolean newGame) {
-        Global.getSector().addTransientScript(new JTCampaignScript());
+        try { data.scripts.jonahtweaks.autopilot.CALogWatch.install(); } catch (Throwable ignored) { }
+        try { JTCampaignScript.removeRetired(); }   // once a load: nothing adds the retired condition any more
+        catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] removing a retired condition failed", t); }
         try {
             data.scripts.jonahtweaks.autopilot.CAData.get();
             data.scripts.jonahtweaks.autopilot.CAAttacks.apply(data.scripts.jonahtweaks.autopilot.CAData.settings());   // per save: puts the game's own values back for a save without them

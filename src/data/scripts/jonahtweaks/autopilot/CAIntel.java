@@ -285,8 +285,42 @@ public class CAIntel extends BaseIntelPlugin {
         }
     }
 
+    /**
+     * Jonah's three mods at a glance: enabled and version, warnings and errors this session (CALogWatch), and each one's
+     * own status line, which Easy Sector and Auto Outfitting write to sector memory as "$jonahs_status_" + mod id.
+     */
+    static void renderJonahsMods(TooltipMakerAPI t) {
+        Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), bad = Misc.getNegativeHighlightColor();
+        com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
+        t.addSectionHeading("Jonah's mods", Alignment.MID, 0f);
+        for (String[] m : CALogWatch.MODS) {
+            String ver = "";
+            try { ver = mm.getModSpec(m[2]).getVersion(); } catch (Throwable ignored) { }
+            if (!mm.isModEnabled(m[2])) { t.addPara("%s: not enabled", 6f, gray, m[1]); continue; }
+            int[] c = CALogWatch.counts(m[0]);
+            t.addPara("%s " + CALog.esc(ver) + ": %s warnings, %s errors this session", 6f, c[0] + c[1] > 0 ? bad : hl, m[1], "" + c[0], "" + c[1]);
+            String status;
+            if (m[2].equals("jonah_tweaks")) {
+                status = CAItems.autoMarkets().size() + " Auto colonies, " + CABreaker.tripped().size() + " actions paused for the session, "
+                        + CADiagnostics.count(CADiagnostics.Level.QUARANTINED) + " quarantined, surplus investment " + CASurplus.lineName(CAData.settings()).toLowerCase();
+            } else {
+                Object o = null;
+                try { o = Global.getSector().getMemoryWithoutUpdate().get("$jonahs_status_" + m[2]); } catch (Throwable ignored) { }
+                status = o instanceof String ? (String) o : "no status yet (it writes one when a game loads)";
+            }
+            t.addPara("    " + CALog.esc(status), gray, 2f);
+            String last = CALogWatch.last(m[0]);
+            if (last != null) t.addPara("    Latest: " + CALog.esc(last), bad, 2f);
+        }
+        float promised = CASurplus.committed();
+        if (promised > 0f) t.addPara("Credits promised to production and not paid yet: %s (surplus investment keeps them back).", 6f, hl, Misc.getDGSCredits(promised));
+        t.addSpacer(12f);
+    }
+
     static void renderDiagnostics(TooltipMakerAPI t) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
+        try { renderJonahsMods(t); }
+        catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Jonah's mods section failed", e); }
         t.addSectionHeading("Diagnostics", Alignment.MID, 0f);
         t.addPara("Last scan: %s. Supported content is planned with; %s mod buildings were measured on a probe colony and are scored "
                         + "from those measurements; %s analyzed and %s quarantined entries are never acted on. "

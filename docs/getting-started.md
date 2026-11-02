@@ -95,7 +95,11 @@ When your credits pass the line (**Surplus investment** under **Budget and spend
 - research counts its plan twice;
 - colony items waiting in Autopilot Storage push for the buildings that would use them, at any colony where they fit.
 
-Autopilot picks the Auto colony with the most to build on (size, free industry slots, deposits, habitability, hazard, waiting items that fit, income, a reachable special world) and sticks with it unless another is clearly better. To pick one yourself, open its colony panel and press **Make this the focus world** on the Overview; **Let Autopilot choose** hands it back. The empire panel's **Colonies** page says how much is over the line and where it goes.
+Autopilot picks the Auto colony with the most to build on (size, free industry slots, deposits, habitability, hazard, waiting items that fit, income, a reachable special world) and sticks with it unless another is clearly better. To pick one yourself, open its colony panel and press **Make this the focus world** on the Overview; **Let Autopilot choose** hands it back. The empire panel's **Colonies** page says how much is over the line and where it goes. Credits already promised to production (the game's custom production, or Ashes of the Domain's production orders, where Jonah's Auto Outfitting sends its weapon orders) are kept back, so those orders are always paid.
+
+### Diagnostics
+
+The empire panel's **Diagnostics** page starts with **Jonah's mods**: Colony Manager, Jonah's Easy Sector and Jonah's Auto Outfitting, each with its version, its warnings and errors this session, and its status. If a colony seems stuck, `starsector.log` has a monthly `nothing worth starting` line for it with its best options and what each one's score is made of.
 
 ### Items, AI cores and administrators
 
