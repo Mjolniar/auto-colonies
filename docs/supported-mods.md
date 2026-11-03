@@ -14,6 +14,10 @@ Back to [Getting started](getting-started.md). The full rules are in [details.md
 - **Terraforming projects.** It uses TME's own project lists and build checks, and starts projects the way TME's dialog does. It plans one project ahead, plus a two-step look-ahead for swapping a deposit for a richer one.
 - **Side effects are counted.** Hazards a project adds are scored, and conditions TME removes as conflicts are simulated before a project is picked.
 - Terraforming may use up to **Terraforming share** of the monthly budget (default 40%).
+- **Surplus terraforming** (2.26.0). Credits over the surplus line that the focus world doesn't spend go into TME projects at every Auto colony, most value per credit first: richer deposits and farmland, and harsh conditions cleared. It builds the structure when a colony has none, and takes it down again once its work is done (TME's changes stay).
+  - **Plans on TME's own rules.** Each plan looks one or two projects ahead and includes TME's habitability updates. So it never trades a habitable world's farmland and organics for richer ore, and never undoes what the colony's plan needs.
+  - **Modes:** Max output (anything worth 1,000 a month), Pays back in 10 years, or Off.
+  - **Research locks.** With Vaults of Knowledge, structures research still locks aren't built, but research values their techs by what they would allow.
 
 ## Industrial Evolution
 

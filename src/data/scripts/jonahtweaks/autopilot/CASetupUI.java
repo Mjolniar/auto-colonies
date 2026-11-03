@@ -37,6 +37,7 @@ public class CASetupUI {
         s.upkeepCapChecked = true;
         s.surplusLine = REC_SURPLUS;   // credits over 3,000,000 go into one focus world
         s.surplusChecked = true;
+        s.surplusTerraform = 0;        // what the focus world leaves of it goes into terraforming, as much output as it buys
         s.monthCredits = credits;
         s.feeLevel = 2;
         s.stationLine = "score";
@@ -148,6 +149,14 @@ public class CASetupUI {
                     + "per-project cap, new upkeep up to a tenth of net income a month, prices counted at a quarter, its terraforming paid from "
                     + "the surplus, and research counting its plan twice. Pick the focus world on its colony panel, or let Autopilot pick "
                     + "the Auto colony with the most to build on.", Misc.getGrayColor(), 4f);
+            if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("terraformingmadeeasy")) {
+                row(t, "Surplus terraforming", CASettings.SURPLUS_TF_NAMES[Math.max(0, Math.min(2, s.surplusTerraform))], "Max output", "surplustf", true);
+                t.addPara("What the focus world leaves of the surplus goes into Terraforming Made Easy projects at every Auto colony, most value "
+                        + "per credit first: richer deposits and farmland, harsh conditions cleared, the structure built first when needed. "
+                        + "Planned on TME's own rules, so a project that loses more than it gains (extreme tectonic activity takes a habitable "
+                        + "world's farmland and organics) never goes, and nothing a colony's plan needs is undone. Max output: anything worth "
+                        + "1,000 a month or more after the structure's upkeep. Paid from the surplus only, outside the monthly budget.", Misc.getGrayColor(), 4f);
+            }
             row(t, "Pause on loss", onOff(s.pauseOnLoss), "Off", "pause", true);
             row(t, "Convenience fees", CASettings.FEE_NAMES[s.feeLevel], "Standard", "fees", true);
             float st = stationLineItem(s);
@@ -351,6 +360,7 @@ public class CASetupUI {
         }
         else if (k.equals("pause")) s.pauseOnLoss = !s.pauseOnLoss;
         else if (k.equals("surplus")) { s.surplusLine = (Math.max(0, s.surplusLine) + 1) % CASettings.SURPLUS_LINES.length; s.surplusChecked = true; }
+        else if (k.equals("surplustf")) { s.surplusTerraform = (Math.max(0, s.surplusTerraform) + 1) % CASettings.SURPLUS_TF_NAMES.length; CATerraSim.reset(); }
         else if (k.equals("fees")) s.feeLevel = (s.feeLevel + 1) % 4;
         else if (k.equals("station")) {
             int i = 0;

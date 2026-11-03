@@ -129,6 +129,8 @@ public class CAAuto {
         if (!auto.isEmpty() && Global.getSettings().getModManager().isModEnabled("terraformingmadeeasy")) {
             try { CATerraform.run(auto); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "terraforming planner failed", t); }
+            try { CATerraformSurplus.run(auto); }   // after the plan's own projects, so it only takes structures they leave idle
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus terraforming failed", t); }
         }
         if (!auto.isEmpty() && Global.getSettings().getModManager().isModEnabled("IndEvo")) {
             try { CAIndEvo.run(auto); }
