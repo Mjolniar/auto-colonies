@@ -470,10 +470,8 @@ public class CAEngine {
     }
 
     static boolean stationMatches(String id, String line) {
-        if ("low".equals(line)) return id.equals("orbitalstation");
-        if ("mid".equals(line)) return id.equals("orbitalstation_mid");
-        if ("high".equals(line)) return id.equals("orbitalstation_high");
-        return true;
+        String starter = CASettings.stationStarter(line);
+        return starter == null || id.equals(starter);
     }
 
     /** Unmet demand per commodity across all player colonies, plus what held trade contracts (AotD) are short of. */

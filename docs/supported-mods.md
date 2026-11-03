@@ -85,6 +85,13 @@ Covers Building Menu Overhaul, Vaults of Knowledge and Theory of Toolbox.
 - **Station augments** setting: follow colony mode, recommend only, or off. Each colony panel has an Apply button.
 - Augments you installed are never changed, and one you remove isn't added back.
 - **Left to you:** augments that use up an item, ones that trade a drawback for points, and Economy Conversion while the colony plans for Security.
+- Works on any mod's station (Interstellar Imperium's, Knights of Ludd's, AotD's Star Citadels): Station Augments gives each its budget from the same station tags, and decides which augments fit.
+
+## Stations from other mods (Interstellar Imperium, Knights of Ludd, Ashes of the Domain)
+
+- **Counted like vanilla's** (2.27.0). Every station counts by its tags (battlestation, starfortress). That covers the defense estimate behind Hegemony inspections and AI core risk, AI cores (station cores, with the defensive priority under threat), and the plan's Orbital station step.
+- **Station line: Imperium** when Interstellar Imperium is installed: new stations are Imperium ones. Pick by score chooses between them and vanilla's by what they do.
+- **Not built:** the Stella Castellum, the Libra stations and the Star Citadels aren't in the build menu for player colonies. They're counted when you have one.
 
 ## Terraforming & Station Construction (Boggled)
 
@@ -131,4 +138,4 @@ Covers Building Menu Overhaul, Vaults of Knowledge and Theory of Toolbox.
 
 ## Checked, nothing needed
 
-Better Colonies, Supply Forging, LOST_SECTOR, Kon's Player Faction Bundles, Galactic Constellate, Tri-Tachyon Expansion, Luddic Enhancement, Knights of Ludd, Interstellar Imperium, Hillock, Hazard Mining, Hiver Swarm and Adversary work as they are. Their buildings are measured, or their threats already count in the threat estimate.
+Better Colonies, Supply Forging, LOST_SECTOR, Kon's Player Faction Bundles, Galactic Constellate, Tri-Tachyon Expansion, Luddic Enhancement, Hillock, Hazard Mining, Hiver Swarm and Adversary work as they are. Their buildings are measured, or their threats already count in the threat estimate.

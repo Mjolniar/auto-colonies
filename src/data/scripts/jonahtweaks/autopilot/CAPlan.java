@@ -44,7 +44,8 @@ public class CAPlan {
             {"spaceport", "megaport"}, {"heavyindustry", "orbitalworks"}, {"grounddefenses", "heavybatteries"},
             {"patrolhq", "militarybase", "highcommand"}, {"orbitalstation", "battlestation", "starfortress"},
             {"orbitalstation_mid", "battlestation_mid", "starfortress_mid"}, {"orbitalstation_high", "battlestation_high", "starfortress_high"},
-            {"ii_orbitalstation", "ii_battlestation", "ii_starfortress"}, {"IndEvo_ComArray", "IndEvo_IntArray"},
+            {"ii_orbitalstation", "ii_battlestation", "ii_starfortress", "ii_stellacastellum"},
+            {"kol_battlestation_libra", "kol_battlestar_libra"}, {"IndEvo_ComArray", "IndEvo_IntArray"},
             {"fuelprod", "ix_fuel_production"}};
 
     /**
@@ -68,6 +69,24 @@ public class CAPlan {
             for (int i = at + 1; i < chain.length; i++) if (m.hasIndustry(chain[i])) return true;
         }
         return false;
+    }
+
+    /**
+     * A station's tier from its tags, so every mod's stations count like vanilla's (Interstellar Imperium, Knights of Ludd and
+     * Ashes of the Domain tag theirs the same way): 0 not a station (or vanilla's abandoned station_base, which has no
+     * fleet), 1 orbital station, 2 battlestation, 3 star fortress, 4 a tier above (Imperium's Stella Castellum, AotD's Star
+     * Citadels).
+     */
+    public static int stationTier(IndustrySpecAPI spec) {
+        if (spec == null || !spec.hasTag("station") || spec.hasTag("parent_item")) return 0;
+        if (spec.hasTag("starcitadel") || spec.getId().equals("ii_stellacastellum")) return 4;
+        if (spec.hasTag("starfortress")) return 3;
+        if (spec.hasTag("battlestation")) return 2;
+        return 1;
+    }
+
+    static IndustrySpecAPI spec(String id) {
+        try { return Global.getSettings().getIndustrySpec(id); } catch (Throwable t) { return null; }
     }
 
     /** True when target is reached by upgrading from: from appears in target's chain of downgrade links. */
@@ -213,7 +232,7 @@ public class CAPlan {
         int rank = 0;
         for (Step s : plan.steps) {
             if (s.kind != Kind.BUILD || s.done(m) || BLOCKED.contains(m.getId() + ":" + s.id)) continue;
-            boolean match = s.id.equals(industryId) || (s.id.equals("station") && industryId.startsWith("orbitalstation"))
+            boolean match = s.id.equals(industryId) || (s.id.equals("station") && stationTier(spec(industryId)) > 0)
                     || leadsTo(industryId, s.id);
             if (match) return rank == 0 ? 60000f : rank == 1 ? 40000f : 20000f;
             rank++;
