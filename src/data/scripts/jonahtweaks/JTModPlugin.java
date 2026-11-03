@@ -28,7 +28,6 @@ public class JTModPlugin extends BaseModPlugin {
             data.scripts.jonahtweaks.autopilot.CAItems.ensureStorageTabs();
             Global.getSector().addTransientScript(new data.scripts.jonahtweaks.autopilot.CAScript());
             Global.getSector().addTransientScript(new data.scripts.jonahtweaks.autopilot.CAScreenButton());
-            Global.getSector().addTransientScript(new data.scripts.jonahtweaks.autopilot.CAReportFix());
             data.scripts.jonahtweaks.autopilot.CAStockpile.reset();
             Global.getSector().addTransientScript(new data.scripts.jonahtweaks.autopilot.CAStockpile());
         } catch (Throwable t) {
