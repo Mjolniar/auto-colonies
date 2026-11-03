@@ -86,6 +86,9 @@ public class CAData {
     // Terraforming Made Easy structures surplus terraforming built ("marketId:structureId"); only these are taken down again
     public Set<String> surplusBuilt;
     public Set<String> surplusBuilt() { if (surplusBuilt == null) surplusBuilt = new HashSet<String>(); return surplusBuilt; }
+    // colonies whose Research Facility surplus research built (market ids); only these come down again
+    public Set<String> surplusResearch;
+    public Set<String> surplusResearch() { if (surplusResearch == null) surplusResearch = new HashSet<String>(); return surplusResearch; }
 
     /** Keys of log messages already written once (waits, unavailable edicts), so a reload doesn't repeat them. */
     public Set<String> noted() {

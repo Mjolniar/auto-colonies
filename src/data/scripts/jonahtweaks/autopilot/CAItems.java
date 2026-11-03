@@ -590,7 +590,38 @@ public class CAItems {
 
     /** An Alpha core only goes where it can be taken out cleanly: vanilla buildings, never Population & Infrastructure or mod code. */
     static boolean alphaRemovable(Industry ind) {
+        if (research(ind)) return true;   // VoK recomputes its research costs from whatever core is in
         return ind.getSpec().getSourceMod() == null && CAEngine.isSupportedVanilla(ind.getId()) && !ind.getSpec().hasTag("population");
+    }
+
+    // ---------------- research buildings ----------------
+    // Vaults of Knowledge's Research Facility and Black Site (ResearchFacility/BlackSite.apply): a core doesn't speed research.
+    // It cuts the building's own costs, the research cost (10,000 x the running tech's tier), the 10,000 maintenance and a
+    // Black Site's cover-up (20,000 per point of stability under 10), by half for an Alpha, a quarter for a Beta and a tenth
+    // for a Gamma. An Alpha also adds a research databank a month on a world with a pre-collapse facility.
+
+    static final float[] RESEARCH_CUT = {0.5f, 0.25f, 0.1f};
+    /** Alpha cores: research buildings first. An Alpha there counts this much more, so it beats any other placement. */
+    static final float RESEARCH_FIRST = 1e7f;
+
+    static boolean research(Industry ind) { return ind.getId().equals("aotd_research_facility") || ind.getId().equals("aotd_blacksite"); }
+
+    /** Credits a month core k saves in a research building whose research costs are `costs` now, with core `cur` in it (-1: none). */
+    static float researchSaving(float costs, int cur, int k) {
+        float now = cur >= 0 ? 1f - RESEARCH_CUT[cur] : 1f;
+        return costs / now * RESEARCH_CUT[k];
+    }
+
+    /** The part of a research building's upkeep that its core cuts (VoK's aotd_research flat mods), at the colony's upkeep modifiers. */
+    static float researchUpkeep(Industry ind) {
+        com.fs.starfarer.api.combat.MutableStat up = ind.getUpkeep();
+        float flats = 0f, costs = 0f;
+        for (Map.Entry<String, com.fs.starfarer.api.combat.MutableStat.StatMod> e : up.getFlatMods().entrySet()) {
+            flats += e.getValue().getValue();
+            if (e.getKey().startsWith("aotd_research")) costs += e.getValue().getValue();
+        }
+        float raw = up.getBaseValue() + flats;
+        return raw <= 0f || costs <= 0f ? 0f : up.getModifiedValue() * costs / raw;
     }
 
     /** Core priority by building type; matches the vanilla id, or the type tag Ashes of the Domain puts on its own versions. */
@@ -629,7 +660,7 @@ public class CAItems {
     /** A building Autopilot may put a core in or take one out of: working, unlocked, supported and taking cores, with no core or a vanilla one. */
     static boolean coreSlot(CAData.Colony c, Industry ind) {
         if (!ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId())) return false;
-        if (CADiagnostics.industryLevel(ind.getId()) != CADiagnostics.Level.SUPPORTED && !ind.getSpec().hasTag("population")) return false;
+        if (CADiagnostics.industryLevel(ind.getId()) != CADiagnostics.Level.SUPPORTED && !ind.getSpec().hasTag("population") && !research(ind)) return false;
         if (ind.getAICoreId() != null && tier(ind.getAICoreId()) < 0) return false;
         try { return ind.canInstallAICores(); } catch (Throwable t) { return false; }
     }
@@ -643,7 +674,12 @@ public class CAItems {
     /** Credits a month core k adds in ind with goal weights w, less the Hegemony and Pather crisis progress it adds (crisis null: none counted). */
     public static float coreValue(MarketAPI m, Industry ind, int k, float[] w, Map<String, Integer> deficit, CACrisis.Base crisis) {
         float[] fx = new float[7];
-        if (k <= 1) {   // Alpha and Beta: upkeep x0.75
+        boolean rs = research(ind);
+        if (rs) {   // VoK's own cut instead of vanilla's x0.75, for all three cores; an Alpha also adds a databank on a pre-collapse facility world
+            fx[0] += researchSaving(researchUpkeep(ind), tier(ind.getAICoreId()), k);
+            if (k == 0 && m.hasCondition("pre_collapse_facility")) fx[0] += CAResearch.DATABANK_VALUE;
+        }
+        if (k <= 1 && !rs) {   // Alpha and Beta: upkeep x0.75
             float up = ind.getUpkeep().getModifiedValue();
             if (tier(ind.getAICoreId()) == 0 || tier(ind.getAICoreId()) == 1) up /= BaseIndustry.UPKEEP_MULT;
             fx[0] += up * (1f - BaseIndustry.UPKEEP_MULT);
@@ -695,7 +731,10 @@ public class CAItems {
     /** A building that can take a core, with what each core is worth there. */
     static class CoreSlot {
         MarketAPI m; Industry ind; int cur; boolean threat;
+        boolean first;   // a research building that gets Alpha cores before anything else
         float[] net = new float[3];
+        /** What core k counts for when ranking placements: what it adds, plus RESEARCH_FIRST for an Alpha in a research building first in line. */
+        float rank(int k) { return net[k] + (k == 0 && first ? RESEARCH_FIRST : 0f); }
     }
 
     static String coreName(int k) {
@@ -726,6 +765,7 @@ public class CAItems {
                 if (!coreSlot(c, ind)) continue;
                 CoreSlot x = new CoreSlot();
                 x.m = m; x.ind = ind; x.cur = tier(ind.getAICoreId()); x.threat = c.threatHigh;
+                x.first = !s.researchCoresByValue && research(ind);
                 for (int k = 0; k < CORES.length; k++) x.net[k] = coreValue(m, ind, k, w, deficit, crisis);
                 slots.add(x);
             }
@@ -740,7 +780,7 @@ public class CAItems {
             for (CoreSlot x : slots) {
                 if (x.m != m || x.cur < 0 || (x.cur == 0 && s.alphaMode == 0 && !alphaRemovable(x.ind))) continue;
                 movable += points(x.cur);
-                if (worst == null || x.net[x.cur] / points(x.cur) < worst.net[worst.cur] / points(worst.cur)) worst = x;
+                if (worst == null || x.rank(x.cur) / points(x.cur) < worst.rank(worst.cur) / points(worst.cur)) worst = x;
             }
             if (worst == null || pts - movable > lim) {   // an AI core administrator or locked buildings keep it over anyway
                 if (CALog.once("cores:fixed:" + m.getId() + ":" + pts + ":" + lim))
@@ -758,6 +798,7 @@ public class CAItems {
 
         int[] have = new int[CORES.length];
         for (int k = 0; k < CORES.length; k++) have[k] = (int) st.getCommodityQuantity(CORES[k]);
+        if (s.alphaMode != 2 && makeRoom(slots, points, limit, have[0] > 0, s, st, none)) return true;
         CoreSlot bestTo = null, bestFrom = null;
         int bestK = -1;
         float bestGain = 0f;
@@ -769,7 +810,7 @@ public class CAItems {
                 if (to.cur >= 0 && k >= to.cur) continue;   // into an empty building, or replacing a lesser core
                 if (to.net[k] <= 0f) continue;
                 int extra = points(k) - (to.cur >= 0 ? points(to.cur) : 0);
-                float gain = to.net[k] - (to.cur >= 0 ? to.net[to.cur] : 0f);
+                float gain = to.rank(k) - (to.cur >= 0 ? to.rank(to.cur) : 0f);
                 if (have[k] > 0) {
                     if (extra <= room && gain > bestGain) { bestGain = gain; bestTo = to; bestFrom = null; bestK = k; }
                     continue;
@@ -777,7 +818,7 @@ public class CAItems {
                 for (CoreSlot from : slots) {   // none in storage: the same kind from where it adds least
                     if (from.cur != k || from == to || (k == 0 && s.alphaMode == 0 && !alphaRemovable(from.ind))) continue;
                     if ((from.m == to.m ? extra - points(k) : extra) > room) continue;
-                    float g = gain - from.net[k];
+                    float g = gain - from.rank(k);
                     if (g > CORE_MOVE_MARGIN && g > bestGain) { bestGain = g; bestTo = to; bestFrom = from; bestK = k; }
                 }
             }
@@ -786,6 +827,9 @@ public class CAItems {
         float fee = CABudget.fee(s, STANDARD_MOVE_FEE);
         if (!canPay(s, fee)) return false;
         int old = bestTo.cur;
+        // what the change adds, without research buildings' place in line
+        float real = bestTo.net[bestK] - (old >= 0 ? bestTo.net[old] : 0f) - (bestFrom != null ? bestFrom.net[bestK] : 0f);
+        boolean first = bestK == 0 && bestTo.first && (bestFrom == null || !bestFrom.first);
         if (bestFrom != null) bestFrom.ind.setAICoreId(null);
         else st.removeCommodity(CORES[bestK], 1f);
         bestTo.ind.setAICoreId(CORES[bestK]);
@@ -797,9 +841,50 @@ public class CAItems {
                 ? "moved the " + coreName(bestK) + " from " + (bestFrom.m == bestTo.m ? "" : bestFrom.m.getName() + "'s ") + bestFrom.ind.getCurrentName() + " to " + bestTo.ind.getCurrentName()
                 : (old >= 0 ? "replaced the " + coreName(old) + " in " + bestTo.ind.getCurrentName() + " with " + (coreName(bestK).matches("(?i)[aeiou].*") ? "an " : "a ") + coreName(bestK) + " (the " + coreName(old) + " is back in Autopilot Storage)"
                         : "installed " + coreName(bestK) + " in " + bestTo.ind.getCurrentName());
-        CALog.add(where + what + ": about " + Misc.getDGSCredits(bestGain) + " a month more (" + aiPoints(bestTo.m) + " inspection points"
+        String gainText = first ? ": research buildings get Alpha cores first (Settings, Items and AI cores); it cuts their costs by "
+                + Misc.getDGSCredits(bestTo.net[0]) + " a month here" : ": about " + Misc.getDGSCredits(real) + " a month more";
+        CALog.add(where + what + gainText + " (" + aiPoints(bestTo.m) + " inspection points"
                 + (lim == Integer.MAX_VALUE ? (none != null ? ", no inspections" : s.coreRisk == 2 ? ", no limit" : ", defended") : " of " + lim) + ")", true);
         return true;
+    }
+
+    /**
+     * Alpha cores: research buildings first. A research building waiting for an Alpha its colony has no inspection points
+     * left for gets them: the colony's least useful other core goes back to storage, one a day, until the Alpha fits. Only
+     * while an Alpha is to be had (in storage, or in another colony's ordinary building), only where that core's removal is
+     * enough together with the others, and never under a high threat (research isn't a defense). Returns whether it acted.
+     */
+    static boolean makeRoom(List<CoreSlot> slots, Map<MarketAPI, Integer> points, Map<MarketAPI, Integer> limit, boolean alphaStored,
+                            CASettings s, CargoAPI st, String none) {
+        for (CoreSlot to : slots) {
+            if (!to.first || to.cur == 0 || to.threat || to.net[0] <= 0f) continue;
+            int room = limit.get(to.m) - points.get(to.m);
+            int extra = points(0) - (to.cur >= 0 ? points(to.cur) : 0);
+            if (extra <= room) continue;   // it fits: the ordinary pass puts it in
+            boolean alpha = alphaStored;
+            for (CoreSlot x : slots) if (x.cur == 0 && !x.first && x.m != to.m && (s.alphaMode != 0 || alphaRemovable(x.ind))) alpha = true;
+            if (!alpha) continue;
+            CoreSlot worst = null;
+            int freeable = 0;
+            for (CoreSlot x : slots) {
+                if (x.m != to.m || x == to || x.cur < 0 || (x.cur == 0 && x.first)) continue;
+                if (x.cur == 0 && s.alphaMode == 0 && !alphaRemovable(x.ind)) continue;
+                freeable += points(x.cur);
+                if (worst == null || x.net[x.cur] / points(x.cur) < worst.net[worst.cur] / points(worst.cur)) worst = x;
+            }
+            if (worst == null || room + freeable < extra) {
+                if (CALog.once("cores:room:" + to.m.getId() + ":" + points.get(to.m)))
+                    CALog.add(to.m.getName() + ": " + to.ind.getCurrentName() + " should get an Alpha core first, but even without the colony's "
+                            + "other movable cores it's over its inspection limit (" + limitWhy(s, to.m, none, limit.get(to.m)) + ")");
+                continue;
+            }
+            worst.ind.setAICoreId(null);
+            st.addCommodity(CORES[worst.cur], 1f);
+            CALog.add(to.m.getName() + ": took the " + coreName(worst.cur) + " out of " + worst.ind.getCurrentName() + " and back to Autopilot Storage, "
+                    + "to make inspection room for an Alpha core in " + to.ind.getCurrentName() + " (research buildings get Alpha cores first)", true);
+            return true;
+        }
+        return false;
     }
 
     // ---------------- administrators ----------------

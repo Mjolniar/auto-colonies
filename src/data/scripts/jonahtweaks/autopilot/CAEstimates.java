@@ -36,7 +36,7 @@ public class CAEstimates {
         for (MarketAPI o : com.fs.starfarer.api.util.Misc.getPlayerMarkets(false))
             if (o.hasIndustry("aotd_research_facility") || o.hasIndustry("aotd_blacksite")) have = true;
         p.fx[0] -= 10000f;
-        if (have) { note(p, "You have one already; another adds only 10% research speed, for 10,000 a month"); return; }
+        if (have) { note(p, "You have one already; another adds only 10% research speed, for 10,000 a month (surplus research builds more when it pays)"); return; }
         float waiting = 0f;
         int steps = 0;
         if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAResearch.MOD))

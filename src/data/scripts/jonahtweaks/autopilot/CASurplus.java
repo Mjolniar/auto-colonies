@@ -38,6 +38,7 @@ public class CASurplus {
     public static void reset() {
         focusId = null; computedAt = -99f; scores.clear(); whys.clear(); CAItems.idle = null; CAItems.idleAt = -99f;
         committedAt = Long.MIN_VALUE;
+        CASurplusResearch.summary = null;
     }
 
     static float now() { return Global.getSector().getClock().getElapsedDaysSince(0L); }
@@ -243,6 +244,7 @@ public class CASurplus {
         float c = committed();
         if (c > 0f) t.addPara("Kept back: %s already promised to production that hasn't been paid yet.", 2f, gray, hl, Misc.getDGSCredits(c));
         if (CATerraSim.summary != null) t.addPara(CALog.esc(CATerraSim.summary), gray, 2f);
+        if (CASurplusResearch.summary != null) t.addPara(CALog.esc(CASurplusResearch.summary), gray, 2f);
     }
 
     /** The colony panel's section: whether this is the focus world, and the buttons to pick it or hand it back. */

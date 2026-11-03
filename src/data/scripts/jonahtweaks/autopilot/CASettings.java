@@ -37,12 +37,16 @@ public class CASettings {
     // at every Auto colony. 0 Max output (also what older saves load as), 1 Pays back in 10 years, 2 Off
     public int surplusTerraform = 0;
     public static final String[] SURPLUS_TF_NAMES = {"Max output", "Pays back in 10 years", "Off"};
+    // surplus research (CASurplusResearch, with Vaults of Knowledge): more Research Facilities from the surplus, up to the 8 VoK
+    // counts. False (on) is also what older saves load as
+    public boolean noSurplusResearch = false;
 
     // services
     public int feeLevel = 2;              // 0 off, 1 low, 2 standard, 3 high
     public String stationLine = "score";  // score, low, mid, high
     public boolean useAICores = false;
     public int alphaMode = 0;             // 0 only where removable (default), 1 anywhere, 2 never
+    public boolean researchCoresByValue = false;   // false (default, and older saves): Alpha cores go into research buildings first
     public boolean storageCheat = false;  // cheat: Autopilot Storage takes anything and colonies draw shortages from it
     public int coreRisk = 1;              // 0 more where defenses beat the next inspection, 1 never inspected (default for new saves), 2 no limit, 3 small colonies only
     public int inspectionMode = 0;        // Hegemony inspections of Auto colonies: 0 advise (so older saves load as advise), 1 resist where defended, 2 off

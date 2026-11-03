@@ -132,6 +132,10 @@ public class CAAuto {
             try { CATerraformSurplus.run(auto); }   // after the plan's own projects, so it only takes structures they leave idle
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus terraforming failed", t); }
         }
+        if (Global.getSettings().getModManager().isModEnabled(CAResearch.MOD)) {
+            try { CASurplusResearch.run(auto); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus research failed", t); }
+        }
         if (!auto.isEmpty() && Global.getSettings().getModManager().isModEnabled("IndEvo")) {
             try { CAIndEvo.run(auto); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Industrial Evolution automation failed", t); }

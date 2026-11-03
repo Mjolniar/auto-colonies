@@ -38,6 +38,7 @@ public class CASetupUI {
         s.surplusLine = REC_SURPLUS;   // credits over 3,000,000 go into one focus world
         s.surplusChecked = true;
         s.surplusTerraform = 0;        // what the focus world leaves of it goes into terraforming, as much output as it buys
+        s.noSurplusResearch = false;   // and into more Research Facilities while research left is worth the speed
         s.monthCredits = credits;
         s.feeLevel = 2;
         s.stationLine = "score";
@@ -47,7 +48,8 @@ public class CASetupUI {
         // items and people: only items you put in Autopilot Storage are used; cores are kept within inspection limits
         s.useAICores = true;
         s.alphaMode = 0;
-        s.coreRisk = 1;            // Never inspected: More where defended only pays if inspections are resisted, which means war with the Hegemony
+        s.researchCoresByValue = false;   // Alpha cores halve research buildings' costs: they go there first
+        s.coreRisk = 1;           // Never inspected: More where defended only pays if inspections are resisted, which means war with the Hegemony
         s.inspectionMode = 0;      // Advise: resisting turns the Hegemony hostile, so that's your call
         s.storageCheat = false;    // cheats are never recommended
         s.disableStabilizers = false;
@@ -158,6 +160,14 @@ public class CASetupUI {
                         + "world's farmland and organics) never goes, and nothing a colony's plan needs is undone. Max output: anything worth "
                         + "1,000 a month or more after the structure's upkeep. Paid from the surplus only, outside the monthly budget.", Misc.getGrayColor(), 4f);
             }
+            if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAResearch.MOD)) {
+                row(t, "Surplus research", onOff(!s.noSurplusResearch), "On", "surplusres", true);
+                t.addPara("The surplus also builds Research Facilities at Auto colonies that have no research building, one at a time, up to the "
+                        + CASurplusResearch.MAX + " Vaults of Knowledge counts (each past the first is +10%% research speed), while the research "
+                        + "left is worth more than a quarter of the upkeep (10,000 a month plus 10,000 x the tech's tier, half with an Alpha core). "
+                        + "Worlds with a pre-collapse facility go first. The ones it built come down once there's nothing left to research.",
+                        Misc.getGrayColor(), 4f);
+            }
             row(t, "Pause on loss", onOff(s.pauseOnLoss), "Off", "pause", true);
             row(t, "Convenience fees", CASettings.FEE_NAMES[s.feeLevel], "Standard", "fees", true);
             float st = stationLineItem(s);
@@ -178,6 +188,14 @@ public class CASetupUI {
             row(t, "Use AI cores", onOff(s.useAICores), "On", "cores", true);
             if (s.useAICores) {
                 row(t, "Alpha cores", CASettings.ALPHA_NAMES[Math.max(0, Math.min(2, s.alphaMode))], "Only where removable", "alpha", true);
+                if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAResearch.MOD)) {
+                    row(t, "Alpha cores in research buildings", s.researchCoresByValue ? "By value" : "First", "First", "researchcores", true);
+                    t.addPara("A core in a Research Facility or Black Site doesn't speed research: it cuts the building's research, maintenance and "
+                            + "cover-up costs, by half for an Alpha (a quarter for a Beta, a tenth for a Gamma), and an Alpha adds a research "
+                            + "databank a month on a world with a pre-collapse facility. First puts Alpha cores there before anywhere else, "
+                            + "making inspection room by moving the colony's other cores out; By value weighs them like any other building.",
+                            Misc.getGrayColor(), 4f);
+                }
                 row(t, "Inspection risk", CASettings.CORE_RISK_NAMES[Math.max(0, Math.min(3, s.coreRisk))], "Never inspected", "corerisk", true);
                 t.addPara("Each core goes where it adds most for the colony's goal (output, upkeep, shortages, a structure's own bonus), "
                         + "less the colony crisis progress it adds: the Hegemony counts every core at a colony above size 3 (size 3 or less "
@@ -375,6 +393,8 @@ public class CASetupUI {
         else if (k.equals("storecheat")) s.storageCheat = !s.storageCheat;
         else if (k.equals("removals")) s.allowRemovals = !s.allowRemovals;
         else if (k.equals("alpha")) s.alphaMode = (Math.max(0, Math.min(2, s.alphaMode)) + 1) % 3;
+        else if (k.equals("researchcores")) s.researchCoresByValue = !s.researchCoresByValue;
+        else if (k.equals("surplusres")) s.noSurplusResearch = !s.noSurplusResearch;
         else if (k.equals("inspect")) s.inspectionMode = (Math.max(0, Math.min(2, s.inspectionMode)) + 1) % 3;
         else if (k.equals("corerisk")) s.coreRisk = (Math.max(0, Math.min(3, s.coreRisk)) + 1) % 4;
         else if (k.equals("sp")) s.storyPointRule = (s.storyPointRule + 1) % 3;
