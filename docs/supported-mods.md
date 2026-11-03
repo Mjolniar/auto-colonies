@@ -80,8 +80,16 @@ Covers Building Menu Overhaul, Vaults of Knowledge and Theory of Toolbox.
 
 ## Station Augments
 
-- **Augment loadouts.** Picks the set of augments worth the most within each station's augment points. Installing is free and can be undone. Scored with the colony's goal: accessibility, upkeep, output, ground defense and the mod's combat rating.
-- **Output when calm, defense when threatened.** Hydroponics Basins (+2 food, +1 organics) counts what it adds above the colony's own output, so it goes on stations of colonies without a farm. While a colony's threat is high, combat augments count ten times as much and take its points; when the threat drops, the output augments come back.
+- **Augment loadouts.** Picks the set of augments worth the most within each station's augment points. Installing is free and can be undone. Scored with the colony's goal: accessibility, upkeep, output, ground defense and combat.
+- **Combat from what each augment does on this station** (2.28.0). It reads the station's own ships (fighter wings, guns, point defense, shields, drones) and its AI core:
+  - Bubble Shield is worth most without shields of the station's own.
+  - Weapon platforms (Secrets of the Frontier) are worth the same on any station.
+  - AI Fighter Uplink and Fighter Temporal Cores go on carrier stations, as much as the station relies on fighters. With the uplink known, an AI core in a carrier station counts what it gives the fighters.
+  - Midline stations get Axial Overclocking and Deep Shield Dissipators.
+  - **Never picked:** Macro Thrusters, Backline Deployment, Safety Shunt and Support Outfit. Command points count for nothing in battle.
+- **Output when calm, defense when threatened.** Hydroponics Basins (+2 food, +1 organics) counts what it adds above the colony's own output, so it goes on stations of colonies without a farm.
+  - While a colony's threat is high, or a raid or blockade is on its way, combat counts four times as much and takes the points. When the threat drops, the output augments come back.
+  - The swap happens before the station is engaged. Nothing changes during a battle.
 - **Station augments** setting: follow colony mode, recommend only, or off. Each colony panel has an Apply button.
 - Augments you installed are never changed, and one you remove isn't added back.
 - **Left to you:** augments that use up an item, ones that trade a drawback for points, and Economy Conversion while the colony plans for Security.

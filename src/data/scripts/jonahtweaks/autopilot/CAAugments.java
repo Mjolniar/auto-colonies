@@ -27,9 +27,14 @@ import java.util.*;
  * and one you remove isn't added back to that colony. Augments that use up an item, and ones that give AP back for a
  * drawback, are left to you. Economy Conversion is never removed once added: its extra industry slot may be in use.
  * Output augments (Hydroponics Basins: +2 food, +1 organics on the station) count only what they add above the colony's
- * own largest source of each, since a market's supply is its largest single source. While a colony plans with Security
- * (its threat is high, or that's its goal) combat augments count THREAT_COMBAT times as much, so they take the AP from
- * output augments; when the threat drops, the output ones come back. A change of plan profile re-plans at once.
+ * own largest source of each, since a market's supply is its largest single source. Combat is valued from what each
+ * augment really does on this station (CAAugmentModel, from Station Augments' source), read from the station's own ships
+ * (CAStationKit): fighter augments by its share of fighters, the shield augments by its shields, AI Fighter Uplink and
+ * Warmind Refit by its AI core; ones that work against an AI-run station (Macro Thrusters, Backline Deployment, Safety
+ * Shunt, Support Outfit) are never picked. While a colony plans with Security (its threat is high, or that's its goal),
+ * or a raid or blockade is on its way (CASiege), combat counts CAAugmentModel.THREAT times as much, so the combat loadout
+ * takes the AP from output augments before the station is engaged; when the threat drops, the output ones come back.
+ * Nothing changes while the station is in a battle. A change of plan profile re-plans at once.
  * Only called when Station Augments is enabled (check CAAugments.MOD first; the constant is inlined, so it doesn't load this class).
  */
 public class CAAugments {
@@ -50,6 +55,7 @@ public class CAAugments {
     /** A station's loadout now and the changes Autopilot recommends. */
     public static class Plan {
         public String station, note;
+        public CAStationKit kit;
         public float budget, used, gain;
         public List<String> mine = new ArrayList<String>(), yours = new ArrayList<String>();
         public List<Opt> add = new ArrayList<Opt>();
@@ -71,6 +77,11 @@ public class CAAugments {
     static Map<String, stationAugmentSpec> specs() { return stationAugmentStore.allAugmentsExternalGetter(); }
 
     static Set<String> known() { return stationAugmentStore.getKnownAugmentsOfFac(Global.getSector().getPlayerFaction()); }
+
+    /** Whether you know this augment (check CAAugments.MOD is enabled first). */
+    public static boolean knows(String id) {
+        try { return known().contains(id); } catch (Throwable t) { return false; }
+    }
 
     static String join(List<String> l) { return join(l, ", "); }
 
@@ -140,13 +151,43 @@ public class CAAugments {
         }
     }
 
+    /** What a plan knows about the station once: its loadout, its AI core, whether patrols fight beside it, the Dustkeepers' mood. */
+    static class Ctx {
+        CAStationKit kit; String core; boolean patrols, dustkeepersHostile;
+        static Ctx of(MarketAPI m, Industry station) {
+            Ctx x = new Ctx();
+            x.kit = CAStationKit.of(m);
+            x.core = station.getAICoreId();
+            x.patrols = m.hasIndustry("patrolhq") || m.hasIndustry("militarybase") || m.hasIndustry("highcommand");
+            try {
+                com.fs.starfarer.api.campaign.FactionAPI dk = Global.getSector().getFaction("sotf_dustkeepers");
+                x.dustkeepersHostile = Global.getSector().getMemoryWithoutUpdate().contains("$sotf_dustkeeperHatred") || (dk != null && dk.getRelToPlayer().isHostile());
+            } catch (Throwable ignored) { }
+            return x;
+        }
+    }
+
     /** One augment's effects in the engine's units, weighted by the profile. Null when it's never worth having here. */
     static Opt value(MarketAPI m, Industry station, stationAttachment a, CAData.Profile profile, Map<String, Integer> deficit, float upkeep, Slot slot) {
+        return value(m, station, a, profile, deficit, upkeep, slot, Ctx.of(m, station));
+    }
+
+    static Opt value(MarketAPI m, Industry station, stationAttachment a, CAData.Profile profile, Map<String, Integer> deficit, float upkeep, Slot slot, Ctx ctx) {
         String id = a.getId();
         CAEngine.Pick p = new CAEngine.Pick();
         float extra = 0f;
         int combat = rating(a, "combatgood") - rating(a, "combatbad");
-        if (id.equals("SA_commsCenter")) { p.fx[2] += 0.1f; p.lines.add("+10% accessibility; unlimited command points for the station's defenders"); }
+        boolean threatened = profile == CAData.Profile.SECURITY;
+        // combat from what the augment really does on this station (CAAugmentModel); the mod's own rating only for augments it doesn't know
+        CAAugmentModel.Gain g = OWN_LOGIC.contains(id) ? null : CAAugmentModel.gain(id, ctx.kit, ctx.core, ctx.patrols, ctx.dustkeepersHostile);
+        if (g != null) {
+            if (g.share < 0f) return null;
+            combat = 0;
+            float fx = CAAugmentModel.fleetEffect(g, ctx.kit.tier, threatened);
+            p.fx[4] += fx;
+            p.lines.add(g.line + (fx > 0f && threatened ? "; combat counts four times while the colony is threatened" : ""));
+        }
+        if (id.equals("SA_commsCenter")) { p.fx[2] += 0.1f; p.lines.add("+10% accessibility"); }
         else if (id.equals("SA_logisticsDrones")) { p.fx[2] += 0.1f; p.lines.add("+10% accessibility; up to +15% combat readiness for your fleets near the station"); }
         else if (id.equals("SA_jumpEngine")) { p.fx[2] += 0.2f; p.lines.add("+20% accessibility; opens a jump point at the station"); }
         else if (id.equals("SA_efficiencyOverhaul")) { p.fx[0] += 0.3f * upkeep; p.lines.add("Station upkeep -30%: about " + Misc.getDGSCredits(0.3f * upkeep) + " per month"); }
@@ -158,9 +199,7 @@ public class CAAugments {
             if (food <= 0 && organics <= 0) p.lines.add("Food and organics are already made here in larger amounts");
         }
         else if (id.equals("SA_ecmPackage")) { p.fx[3] += 0.05f; p.lines.add("Ground defense x1.05"); }
-        else if (id.equals("SA_stationRepairUnit")) { p.fx[4] += 0.05f; p.lines.add("The station recovers from disruption twice as fast"); }
         else if (id.equals("SA_navRelay")) p.lines.add("+1 burn for friendly fleets near the station");
-        else if (id.equals("SA_highResSensors")) p.lines.add("Sensor range bonus for friendly fleets near the station");
         else if (id.equals("SA_sanctifiedStation")) {
             if (!LuddicMajority.matchesBonusConditions(m)) return null;   // without an active Luddic majority it's only a drawback
             p.fx[0] += 0.4f * upkeep; p.fx[4] += 0.1f;
@@ -177,10 +216,9 @@ public class CAAugments {
             p.lines.add("Station hull -30%, flux capacity -30%, dissipation -20%");
         }
         if (combat != 0) {
-            boolean defense = profile == CAData.Profile.SECURITY;
-            p.fx[4] += combat * COMBAT * (defense && combat > 0 ? THREAT_COMBAT : 1f);
+            p.fx[4] += combat * COMBAT * (threatened && combat > 0 ? THREAT_COMBAT : 1f);
             p.lines.add(combat > 0 ? "Stronger station in combat (Station Augments rates it " + combat + ")"
-                    + (defense ? "; counts ten times while the colony plans with Security" : "") : "Weaker station in combat");
+                    + (threatened ? "; counts ten times while the colony is threatened" : "") : "Weaker station in combat");
         }
         float[] w = CAEngine.WEIGHTS[profile.ordinal()];
         float v = extra;
@@ -189,8 +227,14 @@ public class CAAugments {
         o.id = id; o.name = a.getName(); o.ap = a.getAugmentCost(); o.score = v; o.lines = p.lines;
         Set<String> inc = a.getIncompatibleAugments();
         if (inc != null) o.incompatible.addAll(inc);
+        // K-Type Shield Shunt takes the shields away that Deep Shield Dissipators would help; Station Augments doesn't forbid both
+        if (id.equals("SA_shieldShunt")) o.incompatible.add("SA_fluxShunt");
+        if (id.equals("SA_fluxShunt")) o.incompatible.add("SA_shieldShunt");
         return o;
     }
+
+    /** Augments with their own logic below, which the combat model leaves alone. */
+    static final Set<String> OWN_LOGIC = new HashSet<String>(Collections.singletonList(CONVERSION));
 
     static float total(List<Opt> l) { float t = 0f; for (Opt o : l) t += o.score; return t; }
 
@@ -222,10 +266,15 @@ public class CAAugments {
     /**
      * The set to have: A, the best set from scratch, or B, Autopilot's current augments plus the best fill of the free
      * AP. A wins only by a margin, so estimates that wobble don't swap augments back and forth. Of two incompatible new
-     * augments (Backline Deployment and Macro Thrusters) only the better one is considered.
+     * augments (K-Type Shield Shunt and Deep Shield Dissipators) only the better one is considered, and none that clashes
+     * with one Autopilot keeps.
      */
     static List<Opt> choose(List<Opt> current, List<Opt> fresh, float avail) {
         fresh = new ArrayList<Opt>(fresh);
+        for (Iterator<Opt> it = fresh.iterator(); it.hasNext(); ) {
+            Opt f = it.next();
+            for (Opt k : current) if (f.incompatible.contains(k.id) || k.incompatible.contains(f.id)) { it.remove(); break; }
+        }
         Collections.sort(fresh, new Comparator<Opt>() { public int compare(Opt a, Opt b) { return Float.compare(b.score, a.score); } });
         for (int i = 0; i < fresh.size(); i++) {
             for (int j = fresh.size() - 1; j > i; j--) {
@@ -263,6 +312,8 @@ public class CAAugments {
         Map<String, Integer> deficit = CAEngine.empireDeficits();
         float upkeep = baseUpkeep(ind);
         Slot slot = new Slot();
+        Ctx ctx = Ctx.of(m, ind);
+        pl.kit = ctx.kit;
         float avail = pl.budget, currentScore = 0f;
         List<Opt> current = new ArrayList<Opt>();   // Autopilot's augments still worth keeping
         for (stationAttachment a : installed.values()) {
@@ -272,7 +323,7 @@ public class CAAugments {
                 continue;
             }
             try {
-                Opt o = value(m, ind, a, profile, deficit, upkeep, slot);
+                Opt o = value(m, ind, a, profile, deficit, upkeep, slot, ctx);
                 if (o != null) currentScore += o.score;
                 if (o != null && o.score > 0f) current.add(o);
             } catch (Throwable t) {
@@ -290,7 +341,7 @@ public class CAAugments {
                 inst.setConsiderAP(false);
                 inst.setConsiderEngagement(false);
                 if (inst.getUnavailableReason() != null || inst.getAugmentCost() <= 0f) continue;
-                Opt o = value(m, ind, inst, profile, deficit, upkeep, slot);
+                Opt o = value(m, ind, inst, profile, deficit, upkeep, slot, ctx);
                 if (o != null && o.score > 0f) fresh.add(o);
             } catch (Throwable t) {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment " + id + " could not be scored at " + m.getName(), t);
@@ -332,6 +383,9 @@ public class CAAugments {
 
     /** Removes, then adds, as planned. Returns null on success, or why nothing changed. */
     static String apply(MarketAPI m, CAData.Colony c, Plan pl, String who) {
+        // Station Augments lets an augment come off mid-battle but not go on, so nothing changes while the station fights
+        com.fs.starfarer.api.campaign.CampaignFleetAPI sf = Misc.getStationFleet(m);
+        if (sf != null && sf.getBattle() != null) return "The station is in a battle; its augments change once it's over";
         Map<String, stationAttachment> installed = new HashMap<String, stationAttachment>();
         for (stationAttachment a : MarketUtils.getStationAugments(m)) installed.put(a.getId(), a);
         List<String> done = new ArrayList<String>(), failed = new ArrayList<String>();
@@ -378,8 +432,9 @@ public class CAAugments {
             try {
                 sync(m, c);
                 if (!(hasStation(m))) continue;
-                if (CASiege.held(m)) continue;   // a station in a fight can't be refitted, and the loadout waits for the siege to end
-                CAData.Profile profile = profileFor(m, c);
+                // a raid or blockade on the way: the defense loadout goes on now, while the station can still be refitted
+                boolean siege = CASiege.held(m);
+                CAData.Profile profile = siege ? CAData.Profile.SECURITY : profileFor(m, c);
                 String sig = signature(m, profile);   // the threat state is in it, so a colony that turns to defense re-plans at once
                 Float next = nextRun.get(m.getId());
                 if (sig.equals(lastSig.get(m.getId())) && next != null && now < next) continue;
@@ -389,8 +444,10 @@ public class CAAugments {
                 if (!pl.changes()) continue;
                 boolean defense = profile == CAData.Profile.SECURITY && c.profile != CAData.Profile.SECURITY;
                 if (c.mode == CAData.Mode.AUTO) {
-                    apply(m, c, pl, "Auto set" + (defense ? " (threat is high: defense first)" : c.augDefense ? " (threat over: output again)" : ""));
-                    c.augDefense = defense;
+                    String done = apply(m, c, pl, "Auto set" + (siege ? " (" + CASiege.why(m) + ": defense first)" : defense ? " (threat is high: defense first)"
+                            : c.augDefense ? " (threat over: output again)" : ""));
+                    if (done == null) c.augDefense = defense;
+                    else lastSig.remove(m.getId());   // try again tomorrow (the station was fighting)
                 }
                 else if (CALog.once("aug:" + m.getId() + ":" + pl.summary())) {
                     CALog.add(m.getName() + ": recommends station augments (" + pl.summary() + ")" + (defense ? " for defense while the threat is high" : "")
@@ -426,6 +483,7 @@ public class CAAugments {
         Plan pl = plan(m, c, profile);
         if (pl.station == null) { t.addPara(CALog.esc(pl.note), gray, 6f); return; }
         t.addPara("%s: %s of %s AP used.", 6f, hl, pl.station, ap(pl.used), ap(pl.budget));
+        if (pl.kit != null) t.addPara("What it fights with: " + CALog.esc(pl.kit.describe()) + ".", gray, 4f);
         if (!pl.mine.isEmpty()) t.addPara("Added by Autopilot: %s", 4f, hl, join(pl.mine));
         if (!pl.yours.isEmpty()) t.addPara("Yours (never changed): %s", 4f, hl, join(pl.yours));
         if (pl.note != null) t.addPara(CALog.esc(pl.note), gray, 4f);
@@ -444,6 +502,8 @@ public class CAAugments {
         }
         if (profile == CAData.Profile.SECURITY) t.addPara(c.profile == CAData.Profile.SECURITY ? "Security goal: combat augments come first." :
                 "The threat is high, so combat augments come first; output augments such as Hydroponics come back once it drops.", gray, 6f);
+        else t.addPara("Calm: augments that add accessibility, output or cut upkeep come first. When a raid, blockade or high threat comes, "
+                + "the combat loadout goes on before the station is engaged (Bubble Shield, weapon platforms, fighter augments on carrier stations).", gray, 6f);
         if (!c.augSkip().isEmpty()) {
             List<String> names = new ArrayList<String>();
             for (String id : c.augSkip()) { stationAugmentSpec sp = specs().get(id); names.add(sp == null ? id : sp.getName()); }
@@ -452,6 +512,7 @@ public class CAAugments {
         }
         t.addPara("You know %s station augments. Augment blueprints from loot and markets teach more; ones that use up an item, "
                 + "or give AP back for a drawback, are left to you.", 6f, gray, hl, "" + known().size());
+        t.addPara("Never added, since they work against a station the AI fights: " + CALog.esc(join(new ArrayList<String>(CAAugmentModel.NEVER.values()), "; ")) + ".", gray, 4f);
     }
 
     /** The empire panel's section: one line per colony with a station. */

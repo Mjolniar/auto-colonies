@@ -681,6 +681,10 @@ public class CAItems {
                 fx[0] += 0.25f * income;
             }
         }
+        // Station Augments' AI Fighter Uplink makes this core the captain of every fighter a carrier station launches
+        if ("station".equals(st) && Global.getSettings().getModManager().isModEnabled(CAAugments.MOD) && CAAugments.knows("SA_aiFighterUplink")) {
+            try { fx[4] += CAAugmentModel.uplinkCoreFx(CAStationKit.of(m), k); } catch (Throwable ignored) { }
+        }
         float v = 0f;
         for (int i = 0; i < 7; i++) v += w[i] * fx[i];
         if (crisis == null) return v;
