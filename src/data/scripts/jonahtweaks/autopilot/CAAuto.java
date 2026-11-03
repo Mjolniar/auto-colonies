@@ -25,6 +25,7 @@ public class CAAuto {
         CAData d = CAData.get();
         CASettings s = d.settings;
         CABudget.rollMonth(s);
+        CABudget.migrateUpkeepCap(s);
         try { CACalibrate.run(now); }   // weekly: compare estimates with what your buildings really do
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "calibration failed", t); }
         try { CASiege.update(d); }
@@ -114,7 +115,8 @@ public class CAAuto {
             if (!CABudget.upkeepFits(s.upkeepAdded, k.p.upkeep, upCap, k.p.planBonus > 0f)) {
                 if (CALog.once(key + ":upkeep")) CALog.add(k.m.getName() + ": " + k.p.name + " waits for next month (new upkeep cap reached"
                         + (k.p.upkeep > upCap ? ": its " + Misc.getDGSCredits(k.p.upkeep) + " a month is over the whole " + Misc.getDGSCredits(upCap)
-                        + (k.p.planBonus > 0f ? "; as a plan step it goes in a month with no other new upkeep" : "; raise New upkeep cap per month in Settings to allow it") : "")
+                        + (k.p.planBonus > 0f ? "; as a plan step it goes in a month with no other new upkeep"
+                        : s.upkeepCapAuto ? "; it fits once 10% of net income covers it" : "; raise the Fixed new upkeep cap in Settings to allow it") : "")
                         + ")");
                 continue;
             }

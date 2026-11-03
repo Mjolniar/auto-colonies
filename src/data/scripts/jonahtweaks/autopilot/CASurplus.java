@@ -194,7 +194,8 @@ public class CASurplus {
     public static float projectCap(MarketAPI m, CASettings s) { return isFocus(m) ? Math.max(s.perProjectCap, amount(s)) : s.perProjectCap; }
 
     public static float upkeepCap(MarketAPI m, CASettings s) {
-        return isFocus(m) ? Math.max(s.newUpkeepCap, UPKEEP_SHARE * Math.max(0f, CABudget.netIncome(s))) : s.newUpkeepCap;
+        float cap = CABudget.upkeepCap(s);
+        return isFocus(m) ? Math.max(cap, UPKEEP_SHARE * Math.max(0f, CABudget.netIncome(s))) : cap;
     }
 
     /** How much a price counts at this colony: a quarter at the focus world while there's a surplus. */

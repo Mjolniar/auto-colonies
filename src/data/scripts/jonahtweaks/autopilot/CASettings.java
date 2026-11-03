@@ -20,7 +20,10 @@ public class CASettings {
     public float perProjectCap = 2000000f;
     public float reserve = 500000f;
     public float terraformShare = 0.4f;
-    public float newUpkeepCap = 50000f;
+    public float newUpkeepCap = 50000f;   // the Fixed cap; the Automatic one follows net income (CABudget.upkeepCap)
+    // new upkeep cap: Automatic (10% of last month's net income, at least 20,000) unless set to Fixed. upkeepCapChecked
+    // is false loading a save from before 2.24.0, whose fixed cap (set once at setup) becomes Automatic once
+    public boolean upkeepCapAuto = true, upkeepCapChecked = true;
     public boolean pauseOnLoss = true;
     // surplus investment (CASurplus): credits over the line go into one focus world; index into SURPLUS_LINES (0 off).
     // surplusChecked is false loading a save from before 2.21.0, which gets the recommended line once.

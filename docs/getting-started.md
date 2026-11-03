@@ -55,6 +55,7 @@ They're chosen so that switching colonies to Auto and doing nothing else works o
 | Credit reserve | A quarter of your credits at setup, between 50,000 and 500,000; never spent |
 | Pause on loss | Off (the Automatic budget already slows down) |
 | Surplus investment | Over 3,000,000: credits past that go into one focus world (see below) |
+| New upkeep cap | **Automatic**: 10% of last month's net income, at least 20,000 |
 | AI cores, administrators | Used and hired (only cores you put in Autopilot Storage, where they add most; less the colony crisis progress they add; up to 7 inspection points per colony, so the Hegemony never inspects; an administrator where they add more than their salary, and always one for each colony past your colony limit) |
 | Research, trade contracts, settlement | Auto, each only when it pays; research follows what the colony plans need (Ashes of the Domain, Random Assortment of Things) |
 | Agents | Defense: hired only when there's a rebellion, Pather cell, pirate base or enemy operation (Nexerelin) |
@@ -84,7 +85,7 @@ The colony panel's budget line shows how much can be spent this month. With the 
 
 All three are under **Settings**, **Budget and spending**, in the empire panel; **Use recommended settings** fixes them in one click.
 
-The empire panel's **Log** also says when a build waits on the **New upkeep cap per month**. A plan step whose upkeep alone is over the whole cap goes as the month's first new upkeep; anything else that big waits until you raise the cap.
+The empire panel's **Log** also says when a build waits on the **New upkeep cap per month**: how much new monthly upkeep Auto takes on in a month. It's **Automatic** (recommended): 10% of last month's net income, at least 20,000, so it grows with your income; the Colonies page shows this month's new upkeep against it. A plan step whose upkeep alone is over the whole cap goes as the month's first new upkeep; anything else that big waits until 10% of net income covers it, or you set a **Fixed** cap.
 
 ### Surplus investment (a focus world)
 
