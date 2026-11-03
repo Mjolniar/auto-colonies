@@ -447,6 +447,16 @@ public class CAResearch {
         return Math.max(1f, sum);
     }
 
+    /** The tier of the tech running now (VoK charges 10,000 x tier a month on every facility while it runs), 0 for none. */
+    static int runningTier() {
+        try {
+            Object mgr = mgr();
+            Object f = mgr == null ? null : CARefl.invoke(focus, mgr);
+            Object tier = f == null ? null : CARefl.get(fTier, f);
+            return tier instanceof Enum ? ((Enum<?>) tier).ordinal() : 0;
+        } catch (Throwable t) { return 0; }
+    }
+
     /** Hazard cut a tech gives everywhere (Hazmat) or on water worlds (Aquatic Agriculture), as growth: 0.1 hazard is 2 growth a month, x(1 + 0.5 per size past 3). */
     static float growthValue(boolean waterOnly, float hazardCut) {
         float v = 0f;
