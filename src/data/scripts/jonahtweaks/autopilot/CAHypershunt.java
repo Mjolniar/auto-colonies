@@ -362,7 +362,7 @@ public class CAHypershunt {
             return;
         }
         float more = (t - h.range) * STEP_UPKEEP;
-        if (more > 0f && s.upkeepAdded + more > s.newUpkeepCap) {
+        if (more > 0f && s.upkeepAdded + more > CABudget.upkeepCap(s)) {
             if (CALog.once(key + ":upkeep")) CALog.add(h.m.getName() + ": a hypershunt range of " + t * h.mult + " light-years waits for next month (new upkeep cap reached)");
             return;
         }
@@ -402,7 +402,7 @@ public class CAHypershunt {
             if (CALog.once(key + ":budget")) CALog.add(m.getName() + ": restoring the " + next.name + " waits for budget (" + cost + ")");
             return;
         }
-        if (s.upkeepAdded + next.upkeep > s.newUpkeepCap) {
+        if (s.upkeepAdded + next.upkeep > CABudget.upkeepCap(s)) {
             if (CALog.once(key + ":upkeep")) CALog.add(m.getName() + ": restoring the " + next.name + " waits for next month (new upkeep cap reached)");
             return;
         }

@@ -20,6 +20,7 @@ public class CASettingsFile {
             s.reserve = (float) j.optDouble("reserve", s.reserve);
             s.terraformShare = (float) j.optDouble("terraformShare", s.terraformShare);
             s.newUpkeepCap = (float) j.optDouble("newUpkeepCap", s.newUpkeepCap);
+            s.upkeepCapAuto = j.optBoolean("upkeepCapAuto", s.upkeepCapAuto);
             s.pauseOnLoss = j.optBoolean("pauseOnLoss", s.pauseOnLoss);
             s.feeLevel = Math.max(0, Math.min(3, j.optInt("feeLevel", s.feeLevel)));
             s.stationLine = j.optString("stationLine", s.stationLine);

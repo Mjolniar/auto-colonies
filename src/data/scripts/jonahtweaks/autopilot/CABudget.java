@@ -62,6 +62,28 @@ public class CABudget {
         return Math.max(0f, Math.min(byBudget, byReserve));
     }
 
+    /** The Automatic new-upkeep cap: this share of last month's net income, never under the floor. */
+    static final float UPKEEP_SHARE = 0.1f, UPKEEP_FLOOR = 20000f;
+
+    static float autoUpkeepCap(float net) { return Math.max(UPKEEP_FLOOR, UPKEEP_SHARE * Math.max(0f, net)); }
+
+    /**
+     * New upkeep Auto may add this month: Automatic, 10% of last month's net income and at least 20,000, so it keeps up
+     * as income grows (a fixed number set at setup went stale: 20,000 against 760,000 a month held a plan step back for
+     * seven months); or your Fixed amount.
+     */
+    public static float upkeepCap(CASettings s) { return s.upkeepCapAuto ? autoUpkeepCap(netIncome(s)) : s.newUpkeepCap; }
+
+    /** A save from before 2.24.0 had a fixed cap, set once at setup; it becomes Automatic once, with a log line. */
+    static void migrateUpkeepCap(CASettings s) {
+        if (s.upkeepCapChecked) return;
+        s.upkeepCapChecked = true;
+        if (s.upkeepCapAuto) return;
+        s.upkeepCapAuto = true;
+        CALog.add("New upkeep cap per month is Automatic now: 10% of last month's net income, at least 20,000 (" + Misc.getDGSCredits(upkeepCap(s))
+                + " now; it was a fixed " + Misc.getDGSCredits(s.newUpkeepCap) + "). Settings, Budget and spending can set a Fixed cap again", true);
+    }
+
     /**
      * New upkeep fits this month: within the cap, or a plan step whose upkeep alone is over the whole cap, in a month nothing
      * else has added upkeep, so it waits a month at most rather than forever.

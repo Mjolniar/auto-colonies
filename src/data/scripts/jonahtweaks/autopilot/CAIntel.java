@@ -169,6 +169,8 @@ public class CAIntel extends BaseIntelPlugin {
                     Misc.getDGSCredits(s.spent), Misc.getDGSCredits(CABudget.limit(s)), Misc.getDGSCredits(s.fees),
                     Misc.getDGSCredits(CABudget.available(s)), Misc.getDGSCredits(s.reserve));
             if (CABudget.paused(s)) t.addPara("Spending is paused: net income is negative.", Misc.getNegativeHighlightColor(), 4f);
+            t.addPara("New upkeep this month: %s of %s (%s).", 4f, hl, Misc.getDGSCredits(s.upkeepAdded), Misc.getDGSCredits(CABudget.upkeepCap(s)),
+                    s.upkeepCapAuto ? "automatic: 10% of last month's net income, at least 20,000" : "fixed");
             try { CASurplus.renderEmpire(t, s); }
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus line failed", e); }
 

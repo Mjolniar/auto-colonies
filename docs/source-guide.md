@@ -64,7 +64,7 @@ After those, any integration class can be read on its own.
    - a measured mod building while that setting asks for approval → proposed;
    - a low-confidence estimate costing more than half the cap → proposed;
    - not enough budget (plus `CASurplus.extra` at the focus world) → waits (logged once);
-   - over this month's new-upkeep cap (`CABudget.upkeepFits`, with `CASurplus.upkeepCap`) → waits; a plan step bigger than the whole cap fits as the month's first new upkeep.
+   - over this month's new-upkeep cap (`CABudget.upkeepFits`, with `CASurplus.upkeepCap` over `CABudget.upkeepCap`: Automatic 10% of last month's net income, at least 20,000, or the Fixed amount) → waits; a plan step bigger than the whole cap fits as the month's first new upkeep.
 
    Otherwise `CAAuto.execute` starts it through `CABuild.start`, charges the fee and logs it. A colony with no candidate at all gets `CAAuto.trace`: one starsector.log line a month with its best three options and their score parts.
 4. **Everything else**, each step in its own `try`/`catch` so one failing integration can't stop the rest:

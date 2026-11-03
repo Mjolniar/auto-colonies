@@ -625,7 +625,7 @@ public class CAResearch {
                 if (t.needsItems && !covered(mgr, t)) continue;   // AI cores it needs aren't in Autopilot Storage
                 if (waiting != null && t.plan <= 0f && !waitedLong) continue;   // no plan needs it; keep the databanks
                 float upkeep = t.tier * TIER_UPKEEP * fac;
-                if (t.plan <= 0f && s.upkeepAdded + upkeep > s.newUpkeepCap) {   // research upkeep ends with the tech; plan techs go anyway
+                if (t.plan <= 0f && s.upkeepAdded + upkeep > CABudget.upkeepCap(s)) {   // research upkeep ends with the tech; plan techs go anyway
                     if (CALog.once("research:upkeep:" + t.id)) CALog.add("Research: " + t.name + " waits for next month (new upkeep cap reached)");
                     continue;
                 }
