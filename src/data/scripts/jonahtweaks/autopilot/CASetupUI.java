@@ -113,7 +113,8 @@ public class CASetupUI {
     /** Total cost of each colony's next station step under the chosen station line (new station or next upgrade). */
     public static float stationLineItem(CASettings s) {
         float total = 0f;
-        String starter = "mid".equals(s.stationLine) ? "orbitalstation_mid" : "high".equals(s.stationLine) ? "orbitalstation_high" : "orbitalstation";
+        String starter = CASettings.stationStarter(s.stationLine);
+        if (starter == null) starter = "orbitalstation";
         for (com.fs.starfarer.api.campaign.econ.MarketAPI m : Misc.getPlayerMarkets(false)) {
             try {
                 com.fs.starfarer.api.campaign.econ.Industry station = null;
@@ -363,9 +364,12 @@ public class CASetupUI {
         else if (k.equals("surplustf")) { s.surplusTerraform = (Math.max(0, s.surplusTerraform) + 1) % CASettings.SURPLUS_TF_NAMES.length; CATerraSim.reset(); }
         else if (k.equals("fees")) s.feeLevel = (s.feeLevel + 1) % 4;
         else if (k.equals("station")) {
-            int i = 0;
-            for (int j = 0; j < CASettings.STATION_IDS.length; j++) if (CASettings.STATION_IDS[j].equals(s.stationLine)) i = j;
-            s.stationLine = CASettings.STATION_IDS[(i + 1) % CASettings.STATION_IDS.length];
+            int i = 0, n = CASettings.STATION_IDS.length;
+            for (int j = 0; j < n; j++) if (CASettings.STATION_IDS[j].equals(s.stationLine)) i = j;
+            for (int step = 1; step <= n; step++) {   // the next line whose station the game has (Imperium only with Interstellar Imperium)
+                String next = CASettings.STATION_IDS[(i + step) % n];
+                if ("score".equals(next) || CASettings.stationStarter(next) != null) { s.stationLine = next; break; }
+            }
         }
         else if (k.equals("cores")) s.useAICores = !s.useAICores;
         else if (k.equals("storecheat")) s.storageCheat = !s.storageCheat;

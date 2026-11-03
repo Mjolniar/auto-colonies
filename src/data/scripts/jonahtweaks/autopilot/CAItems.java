@@ -530,15 +530,17 @@ public class CAItems {
         return out;
     }
 
+    /** Station fleet points by CAPlan.stationTier: orbital station, battlestation, star fortress, Stella Castellum or Star Citadel. */
+    static final float[] STATION_FP = {0f, 120f, 300f, 600f, 900f};
+
     /** Rough defense estimate in fleet points: station plus patrol fleets, scaled by fleet size. Disrupted ones don't count. */
     public static float defenseFP(MarketAPI m) {
         float station = 0f, patrol = 0f;
         for (Industry ind : m.getIndustries()) {
             if (!ind.isFunctional()) continue;
             String id = ind.getId();
-            if (id.startsWith("starfortress")) station = Math.max(station, 600f);
-            else if (id.startsWith("battlestation")) station = Math.max(station, 300f);
-            else if (id.startsWith("orbitalstation")) station = Math.max(station, 120f);
+            int tier = CAPlan.stationTier(ind.getSpec());   // any mod's station by its tags (Imperium's, Knights of Ludd's, AotD's citadels)
+            if (tier > 0) station = Math.max(station, STATION_FP[tier]);
             else if (id.equals("highcommand")) patrol = Math.max(patrol, 300f);
             else if (id.equals("militarybase")) patrol = Math.max(patrol, 180f);
             else if (id.equals("patrolhq")) patrol = Math.max(patrol, 80f);
@@ -597,7 +599,7 @@ public class CAItems {
         if (id.equals("orbitalworks") || is(ind, "heavyindustry")) return 0;
         if (is(ind, "refining") || is(ind, "fuelprod") || is(ind, "mining")) return 1;
         if (is(ind, "lightindustry") || is(ind, "farming") || is(ind, "aquaculture") || is(ind, "commerce")) return 2;
-        if (id.equals("highcommand") || id.equals("militarybase") || id.startsWith("starfortress") || id.startsWith("battlestation")) return 3;
+        if (id.equals("highcommand") || id.equals("militarybase") || CAPlan.stationTier(ind.getSpec()) >= 2) return 3;
         return 4;
     }
 
@@ -609,7 +611,7 @@ public class CAItems {
     static String structure(Industry ind) {
         String id = ind.getId();
         if (id.equals("patrolhq") || id.equals("militarybase") || id.equals("highcommand")) return "fleet";
-        if (id.startsWith("orbitalstation") || id.startsWith("battlestation") || id.startsWith("starfortress")) return "station";
+        if (CAPlan.stationTier(ind.getSpec()) > 0) return "station";
         if (id.equals("grounddefenses") || id.equals("heavybatteries") || id.equals("planetaryshield")) return "ground";
         if (id.equals("spaceport") || id.equals("megaport")) return "port";
         if (is(ind, "commerce")) return "commerce";

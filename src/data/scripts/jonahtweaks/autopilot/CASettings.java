@@ -127,8 +127,20 @@ public class CASettings {
     public static final String[] ALPHA_NAMES = {"Only where removable", "Anywhere", "Never"};
     public static final String[] CORE_RISK_NAMES = {"More where defended", "Never inspected", "No limit", "Small colonies only"};
     public static final String[] INSPECTION_NAMES = {"Advise", "Resist where defended", "Off"};
-    public static final String[] STATION_IDS = {"score", "low", "mid", "high"};
-    public static final String[] STATION_NAMES = {"Pick by score", "Low tech", "Midline", "High tech"};
+    public static final String[] STATION_IDS = {"score", "low", "mid", "high", "imperium"};
+    public static final String[] STATION_NAMES = {"Pick by score", "Low tech", "Midline", "High tech", "Imperium"};
+    /** The first station of each line; a line whose station the game doesn't have (its mod is off) isn't offered and counts as Pick by score. */
+    public static final String[] STATION_STARTERS = {null, "orbitalstation", "orbitalstation_mid", "orbitalstation_high", "ii_orbitalstation"};
+
+    /** The station the line starts with, or null for Pick by score (also when that station's mod isn't enabled). */
+    public static String stationStarter(String line) {
+        for (int i = 0; i < STATION_IDS.length; i++) {
+            if (!STATION_IDS[i].equals(line) || STATION_STARTERS[i] == null) continue;
+            try { if (com.fs.starfarer.api.Global.getSettings().getIndustrySpec(STATION_STARTERS[i]) != null) return STATION_STARTERS[i]; }
+            catch (Throwable ignored) { }
+        }
+        return null;
+    }
 
     void fixNulls() {
         if (log == null) log = new ArrayList<String>();
