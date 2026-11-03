@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Counts the warnings and errors Jonah's three mods write to starsector.log this session, with the latest of each, for
+ * Counts the warnings and errors Jonah's mods write to starsector.log this session, with the latest of each, for
  * the Diagnostics page. It listens on each mod's package logger (log4j passes every class's messages up to its
  * package), so the other mods need nothing from this one, and it only reads what they log anyway.
  */
@@ -18,7 +18,8 @@ public class CALogWatch extends AppenderSkeleton {
     public static final String[][] MODS = {
             {"data.scripts.jonahtweaks", "Jonah's Colony Manager", "jonah_tweaks"},
             {"data.scripts.jonahseasysector", "Jonah's Easy Sector", "jonahs_easy_sector"},
-            {"data.scripts.jonahsautooutfitting", "Jonah's Auto Outfitting", "jonahs_auto_outfitting"}};
+            {"data.scripts.jonahsautooutfitting", "Jonah's Auto Outfitting", "jonahs_auto_outfitting"},
+            {"data.scripts.jonahsfixes", "Jonah's Fixes", "jonahs_fixes"}};
 
     static final Map<String, int[]> counts = new HashMap<String, int[]>();   // package -> {warnings, errors}
     static final Map<String, String> last = new HashMap<String, String>();   // package -> latest warning or error

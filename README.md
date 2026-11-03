@@ -27,7 +27,7 @@ This mod is currently working with most of the colony mods I could find on the m
 - **Administrators:** idle ones assigned; hiring optional. Past your colony limit one is always placed or hired, never autonomy.
 - **Mod buildings:** measured on a probe colony, then scored like vanilla.
 - **Diagnostics:** every building rated Supported, Measured, Analyzed or Quarantined.
-- **No balance changes.** Battle size, sticky combat autopilot and other easier-game changes are in [Jonah's Easy Sector](https://github.com/Mjolniar/jonahs-easy-sector).
+- **No balance changes.** It only manages your colonies; battle size, combat and the game's other rules are left alone.
 - **Mod updates:** each integration is health-checked on load; mod values are read live; estimates are calibrated against real results; an action that keeps failing is paused for the session.
 
 ## Integrations

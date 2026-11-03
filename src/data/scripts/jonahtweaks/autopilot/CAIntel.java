@@ -286,17 +286,18 @@ public class CAIntel extends BaseIntelPlugin {
     }
 
     /**
-     * Jonah's three mods at a glance: enabled and version, warnings and errors this session (CALogWatch), and each one's
-     * own status line, which Easy Sector and Auto Outfitting write to sector memory as "$jonahs_status_" + mod id.
+     * Jonah's mods that are installed, at a glance: enabled and version, warnings and errors this session (CALogWatch),
+     * and each one's own status line, which the others write to sector memory as "$jonahs_status_" + mod id.
      */
     static void renderJonahsMods(TooltipMakerAPI t) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), bad = Misc.getNegativeHighlightColor();
         com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
         t.addSectionHeading("Jonah's mods", Alignment.MID, 0f);
         for (String[] m : CALogWatch.MODS) {
-            String ver = "";
+            String ver = null;
             try { ver = mm.getModSpec(m[2]).getVersion(); } catch (Throwable ignored) { }
-            if (!mm.isModEnabled(m[2])) { t.addPara("%s: not enabled", 6f, gray, m[1]); continue; }
+            if (ver == null) continue;   // not installed: nothing to show
+            if (!mm.isModEnabled(m[2])) { t.addPara("%s: installed, not enabled", 6f, gray, m[1]); continue; }
             int[] c = CALogWatch.counts(m[0]);
             t.addPara("%s " + CALog.esc(ver) + ": %s warnings, %s errors this session", 6f, c[0] + c[1] > 0 ? bad : hl, m[1], "" + c[0], "" + c[1]);
             String status;

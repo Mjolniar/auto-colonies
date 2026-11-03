@@ -1,6 +1,6 @@
 # Jonah's Colony Manager
 
-Colony management automation (Colony Autopilot) for Starsector 0.98a. No balance changes. Battle size, sticky combat autopilot and the other balance changes moved to the separate mod Jonah's Easy Sector (2.7.0).
+Colony management automation (Colony Autopilot) for Starsector 0.98a. No balance changes: it only manages your colonies (battle size and sticky combat autopilot left in 2.7.0).
 
 ## Install
 
@@ -157,7 +157,6 @@ Whatever a colony's plan is blocked on, it still builds whatever is worth most o
   - Installed augments are only replaced when the new set is worth at least 10% (and 300 per month) more, so wobbling estimates don't swap them back and forth.
   - Left to you: augments that use up an item (Shrouded, Threat), ones that give AP back for a drawback (Extreme or Special Modifications), and Economy Conversion while the colony plans for Security. Economy Conversion is never removed once added, since its industry slot may be in use.
 - **Unsupported content:** mod content the manager can't support or measure is never acted on. It's analyzed and reported (see Diagnostics).
-- **Unnamed income rows (crash fix):** Industrial Evolution 4.1.b leaves some monthly report rows without a name (Pet Storage and the Academy at other factions' markets), and clicking a column in Command, Income then crashes the game. Twice a second, also while paused, the manager names any such row in this and last month's report, after the building or its id. Only names change. This runs in every save, whatever the colony modes.
 
 ## Diagnostics
 
@@ -167,9 +166,9 @@ Whatever a colony's plan is blocked on, it still builds whatever is worth most o
   - the empire panel's **Diagnostics** section
   - `[ColonyAutopilot]` lines in `starsector-core/starsector.log`
   - `saves/common/colony_autopilot_diagnostics.json.data` (full report with probe results and errors)
-- **Jonah's mods** (top of the Diagnostics page): Colony Manager, Easy Sector and Auto Outfitting, each with its version, its warnings and errors this session (with the latest one), and its own status line (Easy Sector and Auto Outfitting write theirs to sector memory as `$jonahs_status_<mod id>` on every load, so no mod needs another's classes), plus the credits promised to production that surplus investment keeps back.
+- **Jonah's mods** (top of the Diagnostics page): Colony Manager and each of Jonah's other mods that's installed (Jonah's Auto Outfitting, for one), each with its version, its warnings and errors this session (with the latest one), and its own status line (the others write theirs to sector memory as `$jonahs_status_<mod id>` on every load, so no mod needs another's classes), plus the credits promised to production that surplus investment keeps back.
 - **Why nothing is built:** when an Auto colony has nothing worth starting, `starsector.log` gets one `[ColonyAutopilot] <colony>: nothing worth starting` line a month with its best three options, how each score is made up (worth, plan, follow-through, price, upkeep), and the best one that only lacks a free industry slot.
-- Outside the game, `jtbuild\jtdiag.ps1` (build folder) checks all three mods at once: built vs installed jars, repos and releases, enabled mods and dependencies, install watchers, every `starsector.log` for their warnings, errors and "nothing worth starting" lines, and the newest save (which of their classes it needs, Colony Manager's settings, waits and log).
+- Outside the game, the author's `jtdiag.ps1` (not shipped) checks Colony Manager and Jonah's other mods at once: built vs installed jars, repos and releases, enabled mods and dependencies, install watchers, every `starsector.log` for their warnings, errors and "nothing worth starting" lines, and the newest save (which of their classes it needs, Colony Manager's settings, waits and log).
 
 ## Staying working through mod updates
 
@@ -234,7 +233,7 @@ The colony-mod integrations (`CATasc`, `CAGrand`, `CABrewery`, `CAMods`) use lit
 27. New save: found a colony, decline the fast buildout, switch the colony to Auto and just click **Save and switch to Auto**. The budget line shows money available even while net income is negative (Automatic budget), and builds start within a few days.
 28. Open a colony panel: each recommended build shows money a month after upkeep (a Waystation is a few thousand, not hundreds of thousands) and a "Ranked" line. Options that don't pay for themselves are marked, and Auto doesn't start them.
 29. With a Nexerelin outpost: its panel says it's left alone, it has no plan or builds, and the empire panel lists it as "Nexerelin outpost, left alone".
-30. With Industrial Evolution: open Command, Income and click each column header. Nothing crashes, and the log has "named N monthly report rows another mod left unnamed" once.
+30. (Retired in 2.23.0: the Income panel fix for Industrial Evolution's unnamed report rows is no longer part of Colony Manager.)
 31. A colony on fast buildout with the threat at 70% or more: its panel says defenses wait, Recommended builds are ranked "for fast buildout (money only)", and no Ground Defenses, Heavy Batteries, Patrol HQ or station is started.
 32. Empire panel: the page list on the left shows Colonies, Autopilot Storage, Mod features (only when a supported mod is in use), Settings, Log and Diagnostics; only the chosen page shows on the right. Colonies shows "(N to approve)" while a proposal waits.
 33. Mod features, in both panels: every feature in use is a section with its own heading on one page (none for mods that aren't enabled), and a button in any section (Apply, Start, Let Autopilot use it) keeps that page and its scroll position.
@@ -258,6 +257,6 @@ The colony-mod integrations (`CATasc`, `CAGrand`, `CABrewery`, `CAMods`) use lit
 51. Research with AI cores: with an Alpha core in Autopilot Storage, a tech that needs databanks and an Alpha core (Orbital Skunkworks) is one Auto can start; its line doesn't say "uses colony items Auto won't spend".
 52. Refit and fleet screens: dock at a colony and open Refit, then Fleet. No Colony Autopilot button appears on either, and `starsector.log` has no "colony screen button: core tab REFIT" or "core tab FLEET" line (the docked colony screen still gets its button).
 53. Full building grid: open a colony with 12 or more buildings. The Colony Autopilot button is placed (a "placed at" line, not "no free spot"), next to the buildings and over nothing.
-54. Diagnostics page: the **Jonah's mods** section lists Colony Manager, Easy Sector and Auto Outfitting with versions, 0 warnings and 0 errors, and a status line for each (Easy Sector's "on: battle size ..." and Auto Outfitting's "on: Optimal goal on ..." after a load).
+54. Diagnostics page: the **Jonah's mods** section lists Colony Manager and each of Jonah's other mods you have installed (none that isn't), with versions, 0 warnings and 0 errors, and a status line for each (Auto Outfitting's "on: Optimal goal on ..." after a load).
 55. Production kept back: with a weapon order from Jonah's Auto Outfitting (or any AoTD or custom production order) still building, the Colonies page says "Kept back: N already promised to production" and the surplus is that much less.
 56. Stalled colony: an Auto colony that builds nothing for a while gets one "nothing worth starting" line a month in `starsector.log`, with its best three options and the best one that needs a free slot.

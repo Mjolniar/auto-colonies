@@ -10,7 +10,7 @@ Install, the two panels, your first colony, and the settings that matter early. 
 
 Nothing is built automatically after install. Every colony starts in **Advisor** mode, which only makes recommendations; the one exception is the fast buildout you can accept for your first colony.
 
-**Updating from 2.6.0 or earlier:** battle size 2000 and sticky combat autopilot moved to [Jonah's Easy Sector](https://github.com/Mjolniar/jonahs-easy-sector). Install it too if you want them; sticky autopilot keeps its on/off state.
+**Updating from 2.6.0 or earlier:** battle size 2000 and sticky combat autopilot are no longer part of Colony Manager (2.7.0); it makes no balance changes.
 
 ## The two panels
 
@@ -99,7 +99,7 @@ Autopilot picks the Auto colony with the most to build on (size, free industry s
 
 ### Diagnostics
 
-The empire panel's **Diagnostics** page starts with **Jonah's mods**: Colony Manager, Jonah's Easy Sector and Jonah's Auto Outfitting, each with its version, its warnings and errors this session, and its status. If a colony seems stuck, `starsector.log` has a monthly `nothing worth starting` line for it with its best options and what each one's score is made of.
+The empire panel's **Diagnostics** page starts with **Jonah's mods**: Colony Manager and each of Jonah's other mods you have installed (such as [Jonah's Auto Outfitting](https://github.com/Mjolniar/jonahs-auto-outfitting)), each with its version, its warnings and errors this session, and its status. If a colony seems stuck, `starsector.log` has a monthly `nothing worth starting` line for it with its best options and what each one's score is made of.
 
 ### Items, AI cores and administrators
 
