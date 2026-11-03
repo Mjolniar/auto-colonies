@@ -33,6 +33,10 @@ public class CASettings {
     public String focusAuto;      // the one Autopilot picked last, kept unless another beats it clearly
     public static final float[] SURPLUS_LINES = {0f, 1000000f, 3000000f, 5000000f, 10000000f};
     public static final String[] SURPLUS_NAMES = {"Off", "Over 1,000,000", "Over 3,000,000", "Over 5,000,000", "Over 10,000,000"};
+    // surplus terraforming (CATerraformSurplus, with Terraforming Made Easy): what's left of the surplus goes into terraforming
+    // at every Auto colony. 0 Max output (also what older saves load as), 1 Pays back in 10 years, 2 Off
+    public int surplusTerraform = 0;
+    public static final String[] SURPLUS_TF_NAMES = {"Max output", "Pays back in 10 years", "Off"};
 
     // services
     public int feeLevel = 2;              // 0 off, 1 low, 2 standard, 3 high

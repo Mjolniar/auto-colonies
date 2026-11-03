@@ -83,6 +83,9 @@ public class CAData {
     public long lastAutonomyChange;
     public long researchWaitSince;   // when Auto research began holding databanks for a plan tech short of them (0: not waiting)
     public Map<String, Long> autonomous() { if (autonomous == null) autonomous = new HashMap<String, Long>(); return autonomous; }
+    // Terraforming Made Easy structures surplus terraforming built ("marketId:structureId"); only these are taken down again
+    public Set<String> surplusBuilt;
+    public Set<String> surplusBuilt() { if (surplusBuilt == null) surplusBuilt = new HashSet<String>(); return surplusBuilt; }
 
     /** Keys of log messages already written once (waits, unavailable edicts), so a reload doesn't repeat them. */
     public Set<String> noted() {

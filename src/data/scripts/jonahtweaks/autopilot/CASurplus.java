@@ -242,6 +242,7 @@ public class CASurplus {
                 + CALog.esc(whys.get(f.getId())) + ")."), 4f, hl, Misc.getDGSCredits(a), Misc.getDGSCredits(line(s)), f.getName());
         float c = committed();
         if (c > 0f) t.addPara("Kept back: %s already promised to production that hasn't been paid yet.", 2f, gray, hl, Misc.getDGSCredits(c));
+        if (CATerraSim.summary != null) t.addPara(CALog.esc(CATerraSim.summary), gray, 2f);
     }
 
     /** The colony panel's section: whether this is the focus world, and the buttons to pick it or hand it back. */

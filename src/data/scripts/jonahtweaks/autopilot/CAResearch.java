@@ -426,6 +426,10 @@ public class CAResearch {
             if (shunt) { v = 25000f; what = t.id.endsWith("analysis") ? "lets your Coronal Hypershunt be restored" : "Hypershunt Receivers: +2 industry slots in their systems"; }
         }
         if (what != null && v > 0f) t.lines.add(Character.toUpperCase(what.charAt(0)) + what.substring(1) + ": " + CAEngine.valueText(v));
+        // a Terraforming Made Easy structure surplus terraforming would use (CATerraSim.lockedValue: its best plan at each colony)
+        float tf = 0f;
+        for (String ind : t.industries) { Float x = CATerraSim.lockedValue.get(ind); if (x != null) tf += x; }
+        if (tf > 0f) { v += tf; t.lines.add("Opens surplus terraforming: " + CAEngine.valueText(tf)); }
         return v;
     }
 
