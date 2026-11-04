@@ -273,7 +273,7 @@ public class CAHypershunt {
         CAContracts.cached = null;
         CALog.add(m.getName() + ": " + who + " started restoring the " + s.name + ": about " + Misc.getDGSCredits(s.monthlyCredits)
                 + " a month for " + s.months() + " months through a restoration contract that draws on your exports"
-                + (s.upkeep > 0f ? ", then " + Misc.getDGSCredits(s.upkeep) + " a month upkeep" : ""), true);
+                + (s.upkeep > 0f ? ", then " + Misc.getDGSCredits(s.upkeep) + " a month upkeep" : ""));
         return null;
     }
 
@@ -294,7 +294,7 @@ public class CAHypershunt {
         h.range = n;
         CALog.add(h.m.getName() + ": " + who + " set the hypershunt range from " + was * h.mult + " to " + n * h.mult + " light-years ("
                 + (n > was ? "+" : "-") + Misc.getDGSCredits(Math.abs(n - was) * STEP_UPKEEP) + " a month upkeep, "
-                + (n > was ? "+" : "-") + Math.abs(n - was) * STEP_PTM + " purified transplutonics demand)", true);
+                + (n > was ? "+" : "-") + Math.abs(n - was) * STEP_PTM + " purified transplutonics demand)");
         return null;
     }
 
@@ -358,7 +358,7 @@ public class CAHypershunt {
         String key = "hsrange:" + h.m.getId() + ":" + t;
         if (!auto) {
             if (CALog.once(key)) CALog.add(h.m.getName() + ": recommends a hypershunt range of " + t * h.mult + " light-years (now "
-                    + h.range * h.mult + "); set it in the colony panel", true);
+                    + h.range * h.mult + "); set it in the colony panel");
             return;
         }
         float more = (t - h.range) * STEP_UPKEEP;
@@ -391,11 +391,11 @@ public class CAHypershunt {
         }
         String cost = "about " + Misc.getDGSCredits(next.monthlyCredits) + " a month for " + next.months() + " months";
         if (!auto) {
-            if (CALog.once(key)) CALog.add(m.getName() + ": recommends restoring the " + next.name + " (" + cost + "); Start in the colony panel", true);
+            if (CALog.once(key)) CALog.add(m.getName() + ": recommends restoring the " + next.name + " (" + cost + "); Start in the colony panel");
             return;
         }
         if (next.total() > s.perProjectCap) {
-            if (CALog.once(key + ":cap")) CALog.add(m.getName() + ": restoring the " + next.name + " (" + cost + ") is over the per-project cap; Start it in the colony panel", true);
+            if (CALog.once(key + ":cap")) CALog.add(m.getName() + ": restoring the " + next.name + " (" + cost + ") is over the per-project cap; Start it in the colony panel");
             return;
         }
         if (next.monthlyCredits > CABudget.available(s)) {

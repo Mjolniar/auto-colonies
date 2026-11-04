@@ -313,16 +313,13 @@ public class CAProjects {
                     l.add(new CAPlan.Step(CAPlan.Kind.BUILD, pl.building, buildingName(pl.building) + " (" + name(pl.good) + " for " + forWhat + ")"));
                 }
                 if (CALog.once("proj:" + forWhat + ":" + pl.good + ":" + pl.host + ":" + pl.building))
-                    CALog.add(forWhat + " takes " + name(pl.good) + ", and none of your colonies make it"
-                            + (sector.get(pl.good) > 0 ? " (other factions do, but AotD only takes your own production)" : " (nobody in the sector does)") + ": "
-                            + (s.projectSupplyMode == 0 ? buildingName(pl.building) + " at " + pl.hostName + " is a first plan step now" : "build " + buildingName(pl.building) + " at " + pl.hostName)
-                            + " (" + routeText(pl) + ")", true);
+                    CALog.add(pl.hostName + ": " + (s.projectSupplyMode == 0 ? "planning " : "build ") + buildingName(pl.building) + " for " + name(pl.good)
+                            + " (" + forWhat + (pl.locked ? ", research first" : "") + ")");
             }
             for (String g : last.unresolved) if (CALog.once("projx:" + forWhat(g) + ":" + g))
-                CALog.add(forWhat(g) + " takes " + name(g) + ", none of your colonies make it, and no Approve or Auto colony can host what makes it ("
-                        + hostText(g) + "): that's yours to build", true);
+                CALog.add(name(g) + " (" + forWhat(g) + "): no Auto colony can host " + hostText(g) + "; yours to build", true);
             if (project != null && !other.isEmpty() && CALog.once("projo:" + project + ":" + other))
-                CALog.add(project + " (special project): its next stages also take " + CAContracts.join(other) + ", which Autopilot doesn't make; they're yours to find", false);
+                CALog.add(project + " also needs " + CAContracts.join(other) + " (yours to find)");
         } catch (Throwable t) {
             broken = true;
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "can't read Vaults of Knowledge's special projects; their supply is left to you", t);
@@ -334,8 +331,8 @@ public class CAProjects {
 
     /** What a good is needed for: the running special project, else AotD's wonders, gates and production (spending freely). */
     static String forWhat(String good) {
-        if (project != null && left.containsKey(good)) return project + " (special project)";
-        return "Ashes of the Domain's wonders, gates and production";
+        if (project != null && left.containsKey(good)) return project;
+        return "AotD wonders and gates";
     }
 
     static String routeText(Plan pl) {

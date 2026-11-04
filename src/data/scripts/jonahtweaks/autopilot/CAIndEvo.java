@@ -88,7 +88,7 @@ public class CAIndEvo {
                 if (p != null) d.ambTransit().remove(p.getId());
                 CABudget.charge(s, 0f, fee, 0f);
                 FactionAPI f = AmbassadorItemHelper.getFactionForItem(data);
-                CALog.add(tm.getName() + ": installed the " + (f == null ? "" : f.getDisplayName() + " ") + "ambassador in the Embassy", true);
+                CALog.add(tm.getName() + ": installed the " + (f == null ? "" : f.getDisplayName() + " ") + "ambassador in the Embassy");
                 return true;
             }
         }
@@ -158,14 +158,14 @@ public class CAIndEvo {
         String who = src.getFaction().getDisplayName() + " ambassador " + person.getNameString();
         if (s.adminDelay) {
             CargoAPI st = storageOf(target);
-            if (st == null) { emb.setSpecialItem(data); CALog.add(target.getName() + ": hired and installed the " + who, true); return true; }
+            if (st == null) { emb.setSpecialItem(data); CALog.add(target.getName() + ": hired and installed the " + who); return true; }
             st.addSpecial(data, 1f);
             CAData.get().ambTransit().put(person.getId(), Global.getSector().getClock().getTimestamp());
             CALog.add(target.getName() + ": hired the " + who + " from " + src.getName() + "; arrives in 30 days"
-                    + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : ""), true);
+                    + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : ""));
         } else {
             emb.setSpecialItem(data);
-            CALog.add(target.getName() + ": hired and installed the " + who + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : ""), true);
+            CALog.add(target.getName() + ": hired and installed the " + who + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : ""));
         }
         return true;
     }
@@ -189,7 +189,7 @@ public class CAIndEvo {
                     st.removeItems(CargoAPI.CargoItemType.SPECIAL, data, 1f);
                     CABudget.charge(s, 0f, fee, 0f);
                     CALog.add(m.getName() + ": installed " + stack.getDisplayName() + " in " + ind.getCurrentName()
-                            + (tid.equals("IndEvo_ComForge") ? " (the forge uses the chip up after three production cycles)" : ""), true);
+                            + (tid.equals("IndEvo_ComForge") ? " (the forge uses the chip up after three production cycles)" : ""));
                     return true;
                 }
             }
@@ -233,7 +233,7 @@ public class CAIndEvo {
                 m.addCondition(id);
                 m.reapplyConditions();
                 CALog.forget(key);
-                CALog.add(m.getName() + ": enacted " + spec.getName() + " (effects estimated; edicts are never removed automatically)", true);
+                CALog.add(m.getName() + ": enacted " + spec.getName() + " (effects estimated; edicts are never removed automatically)");
                 return true;
             } catch (Throwable t) {
                 if (CALog.once(key)) CADiagnostics.LOG.warn(CADiagnostics.TAG + "edict check failed for " + id + " at " + m.getName(), t);
@@ -298,7 +298,7 @@ public class CAIndEvo {
                 Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(best.cost);
                 CABudget.charge(s, best.cost, fee, 0f);
                 CALog.add(m.getName() + ": switched " + ind.getCurrentName() + " to " + best.name + " for " + Misc.getDGSCredits(best.cost)
-                        + " (estimated " + CAEngine.credits(bestV) + "/month vs " + CAEngine.credits(current) + ")", true);
+                        + " (estimated " + CAEngine.credits(bestV) + "/month vs " + CAEngine.credits(current) + ")");
                 return true;
             }
         }

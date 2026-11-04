@@ -87,7 +87,7 @@ public class CACourier {
                 }
                 ShippingContractMemory.addOrReplaceContract(sc);
                 CALog.add(to.getName() + ": started a monthly Courier Port contract shipping " + (int) amount + " "
-                        + c.getCommodity().getName() + " from " + from.getName() + " to cover a shortage", true);
+                        + c.getCommodity().getName() + " from " + from.getName() + " to cover a shortage");
                 return;   // at most one new contract per pass
             }
         }

@@ -409,7 +409,10 @@ public class CAAugments {
         lastSig.remove(m.getId());
         if (!failed.isEmpty() && CALog.once("augfail:" + m.getId() + ":" + join(failed))) CALog.add(m.getName() + ": could not add station augments: " + join(failed));
         if (done.isEmpty()) return failed.isEmpty() ? "Nothing to change" : "Could not add " + join(failed);
-        CALog.add(m.getName() + ": " + who + " station augments: " + join(done), true);
+        // short, and at most every 10 days a colony (they follow the threat back and forth): "Gargor augments (defense): +Bubble Shield, -Jump Engine"
+        List<String> brief = new ArrayList<String>();
+        for (String x : done) brief.add(x.replaceFirst("^added ", "+").replaceFirst("^removed ", "-"));
+        CALog.status("aug:" + m.getId(), m.getName() + " augments" + (who.isEmpty() ? "" : " (" + who + ")") + ": " + join(brief));
         return null;
     }
 
@@ -444,14 +447,12 @@ public class CAAugments {
                 if (!pl.changes()) continue;
                 boolean defense = profile == CAData.Profile.SECURITY && c.profile != CAData.Profile.SECURITY;
                 if (c.mode == CAData.Mode.AUTO) {
-                    String done = apply(m, c, pl, "Auto set" + (siege ? " (" + CASiege.why(m) + ": defense first)" : defense ? " (threat is high: defense first)"
-                            : c.augDefense ? " (threat over: output again)" : ""));
+                    String done = apply(m, c, pl, siege || defense ? "defense" : c.augDefense ? "calm" : "");
                     if (done == null) c.augDefense = defense;
                     else lastSig.remove(m.getId());   // try again tomorrow (the station was fighting)
                 }
                 else if (CALog.once("aug:" + m.getId() + ":" + pl.summary())) {
-                    CALog.add(m.getName() + ": recommends station augments (" + pl.summary() + ")" + (defense ? " for defense while the threat is high" : "")
-                            + "; Apply in the colony panel", true);
+                    CALog.add(m.getName() + ": suggested augments (" + pl.summary() + ")" + (defense ? ", for defense" : "") + "; Apply on its panel");
                 }
             } catch (Throwable t) {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment step failed at " + m.getName(), t);

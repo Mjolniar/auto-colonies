@@ -107,10 +107,10 @@ public class CASpies {
             if ("use".equals(action)) {
                 d.spyAgents().add(personId);
                 CALog.forget("spy:yours");
-                CALog.add("Agent " + name(a) + " (" + types(a) + ") handed to Autopilot; it gets orders once it's idle", true);
+                CALog.add("Agent " + name(a) + " (" + types(a) + ") handed to Autopilot; it gets orders once it's idle");
             } else {
                 d.spyAgents().remove(personId);
-                CALog.add("Agent " + name(a) + " is yours again; Autopilot won't give it orders", true);
+                CALog.add("Agent " + name(a) + " is yours again; Autopilot won't give it orders");
             }
         }
     }
@@ -161,7 +161,7 @@ public class CASpies {
         else a.issueBaseFindOrder(target);   // these charge the credits themselves
         CABudget.charge(s, cost, 0f, 0f);
         CALog.forget(key);
-        CALog.add(target.getName() + ": agent " + name(a) + " sent for " + what + (cost > 0 ? " (" + Misc.getDGSCredits(cost) + ")" : ""), true);
+        CALog.add(target.getName() + ": agent " + name(a) + " sent for " + what + (cost > 0 ? " (" + Misc.getDGSCredits(cost) + ")" : ""));
         return true;
     }
 
@@ -205,7 +205,7 @@ public class CASpies {
             CABudget.charge(s, cost, 0f, 0f);
             CALog.forget(key);
             CALog.add("Agent " + name(a) + " sent to " + target.getName() + " to raise relations with " + f.getDisplayName()
-                    + ", which has operations running against your colonies (" + Misc.getDGSCredits(cost) + ")", true);
+                    + ", which has operations running against your colonies (" + Misc.getDGSCredits(cost) + ")");
             return true;
         }
         return false;
@@ -307,7 +307,7 @@ public class CASpies {
         CABudget.charge(s, cost, 0f, 0f);
         CALog.forget(key);
         CALog.add("Agent " + name(a) + " sent to sabotage " + ind.getCurrentName() + " at " + m.getName() + " (" + m.getFaction().getDisplayName()
-                + ", about " + Math.round(success(op, m)) + " percent success, " + Misc.getDGSCredits(cost) + ")", true);
+                + ", about " + Math.round(success(op, m)) + " percent success, " + Misc.getDGSCredits(cost) + ")");
         return true;
     }
 
@@ -342,7 +342,7 @@ public class CASpies {
             if (mine.contains(a) || busy(mgr, a)) continue;
             if (saboteurWork && NexConfig.useAgentSpecializations && !a.getSpecializationsCopy().contains(AgentIntel.Specialization.SABOTEUR)) continue;
             if (CALog.once("spy:yours")) CALog.add("Agents: your agent " + name(a) + " (" + types(a) + ") is idle, so Autopilot doesn't hire one. "
-                    + "To have Autopilot use it, click Let Autopilot use it on the Colony Autopilot intel's Mod features page, under Agents", true);
+                    + "To have Autopilot use it, click Let Autopilot use it on the Colony Autopilot intel's Mod features page, under Agents");
             return;
         }
         if (mgr.getAgents().size() >= mgr.getMaxAgents().getModifiedInt()) {
@@ -370,7 +370,7 @@ public class CASpies {
         d.spyAgents().add(p.getId());
         CALog.forget("spy:max"); CALog.forget("spy:hirebudget"); CALog.forget("spy:yours");
         CALog.add("Hired agent " + p.getNameString() + " (" + spec.getName() + ", level 1) at " + home.getName() + " for "
-                + Misc.getDGSCredits(HIRE_FEE) + "; Nexerelin pays " + Misc.getDGSCredits(AgentIntel.getSalary(1)) + " a month in salary", true);
+                + Misc.getDGSCredits(HIRE_FEE) + "; Nexerelin pays " + Misc.getDGSCredits(AgentIntel.getSalary(1)) + " a month in salary");
     }
 
     // ---- empire panel

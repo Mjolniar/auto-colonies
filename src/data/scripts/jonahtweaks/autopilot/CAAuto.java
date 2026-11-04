@@ -115,17 +115,14 @@ public class CAAuto {
             String key = k.m.getId() + ":" + k.p.id;
             float avail = Math.min(Math.max(0f, CABuild.credits() - s.reserve), CABudget.available(s) + CASurplus.extra(k.m, s));
             if (k.total > avail) {
-                if (CALog.once(key)) CALog.add(k.m.getName() + ": " + k.p.name + " waits for budget ("
-                        + Misc.getDGSCredits(k.total) + " needed, " + Misc.getDGSCredits(avail) + " left this month)");
+                if (CALog.once(key)) CALog.quiet(k.m.getName() + ": " + k.p.name + " waits for budget (" + Misc.getDGSCredits(k.total) + ", "
+                        + Misc.getDGSCredits(avail) + " left)");
                 continue;
             }
             float upCap = CASurplus.upkeepCap(k.m, s);
             if (!CABudget.upkeepFits(s.upkeepAdded, k.p.upkeep, upCap, k.p.planBonus > 0f)) {
-                if (CALog.once(key + ":upkeep")) CALog.add(k.m.getName() + ": " + k.p.name + " waits for next month (new upkeep cap reached"
-                        + (k.p.upkeep > upCap ? ": its " + Misc.getDGSCredits(k.p.upkeep) + " a month is over the whole " + Misc.getDGSCredits(upCap)
-                        + (k.p.planBonus > 0f ? "; as a plan step it goes in a month with no other new upkeep"
-                        : s.upkeepCapAuto ? "; it fits once 10% of net income covers it" : "; raise the Fixed new upkeep cap in Settings to allow it") : "")
-                        + ")");
+                if (CALog.once(key + ":upkeep")) CALog.quiet(k.m.getName() + ": " + k.p.name + " waits for next month's upkeep room ("
+                        + Misc.getDGSCredits(k.p.upkeep) + " of " + Misc.getDGSCredits(upCap) + ")");
                 continue;
             }
             if (execute(k.m, k.c, k.p, "Auto") == null) {
@@ -146,6 +143,8 @@ public class CAAuto {
         if (Global.getSettings().getModManager().isModEnabled(CAResearch.MOD)) {
             try { CASurplusResearch.run(auto); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus research failed", t); }
+            try { CAWonders.run(); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "wonders and gates step failed", t); }
         }
         if (!auto.isEmpty() && Global.getSettings().getModManager().isModEnabled("IndEvo")) {
             try { CAIndEvo.run(auto); }
@@ -233,7 +232,7 @@ public class CAAuto {
         if (p.id.equals(c.pendingId)) return;
         c.pendingId = p.id; c.pendingName = p.verb + " " + p.name; c.pendingUpgrade = p.upgrade; c.pendingCost = p.cost;
         c.pendingNotified = true;
-        CALog.add(m.getName() + ": proposes " + c.pendingName + " for " + Misc.getDGSCredits(p.cost) + ", " + why, true);
+        CALog.add(m.getName() + ": proposes " + c.pendingName + " for " + Misc.getDGSCredits(p.cost) + ", " + why);
     }
 
     /** Starts a pick, charging the fee and counting it against the budget. Returns null on success. */
@@ -248,8 +247,8 @@ public class CAAuto {
         CALog.forget(m.getId() + ":" + p.id + ":upkeep");
         CAData.get().clearPending(c);
         wasBuilding.put(m.getId(), true);
-        CALog.add(m.getName() + ": " + who + " started " + p.verb.toLowerCase() + " " + p.name + " for "
-                + Misc.getDGSCredits(p.cost) + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : ""), true);
+        CALog.add(m.getName() + ": " + (p.upgrade ? "upgrading to " : "building ") + p.name + " (" + Misc.getDGSCredits(p.cost) + ")"
+                + ("Auto".equals(who) ? "" : ", " + who));
         return null;
     }
 

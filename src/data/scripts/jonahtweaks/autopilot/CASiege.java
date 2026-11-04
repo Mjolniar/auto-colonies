@@ -93,11 +93,10 @@ public class CASiege {
             if (c.mode == CAData.Mode.OFF || CAEngine.isOutpost(m)) continue;
             String w = why(m), key = KEY + m.getId();
             if (w != null && CALog.once(key)) {
-                CALog.add(m.getName() + ": under siege (" + w + "); only defenses are built there, and its items, AI cores, policies, "
-                        + "station augments and trade contract goods wait until it's over");
+                CALog.status("siege:" + m.getId(), m.getName() + ": under siege (" + w + "), defenses only");
             } else if (w == null && d.noted().contains(key)) {
                 CALog.forget(key);
-                CALog.add(m.getName() + ": siege over; back to normal");
+                CALog.quiet(m.getName() + ": siege over");
             }
         }
     }

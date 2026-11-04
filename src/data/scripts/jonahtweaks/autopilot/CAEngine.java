@@ -190,6 +190,7 @@ public class CAEngine {
                     || spec.hasTag("do_not_show_in_build_dialog") || upgradeTargets.contains(id) || CAAotD.upgradeOnly(spec)) continue;
             if (spec.hasTag("station") && hasStation) continue;
             if (spec.hasTag("station") && !"score".equals(line) && !stationMatches(id, line)) continue;
+            if (id.equals(CAWonders.SITE)) continue;   // a Grand Wonder site is only ever built for a wonder (CAWonders)
             boolean supported = CADiagnostics.industryLevel(id) == CADiagnostics.Level.SUPPORTED;
             boolean measurable = !supported && !noProbe && CADiagnostics.industryLevel(id) == CADiagnostics.Level.MEASURED && CAData.settings().measuredMode != 2;
             try {
@@ -308,7 +309,8 @@ public class CAEngine {
         // the plan only orders buildings that are worth something on their own, except Terraforming Made Easy's structures
         // and the Unification Center: they cost more than they earn, but they're how the plan's world is reached
         // and producers a special project needs (CAProjects): nothing else makes those goods
-        boolean enabler = p.id.startsWith("tme_") || CAProjects.isStep(m, p.id) || CASurplus.isRichStep(m, p.id);
+        boolean enabler = p.id.startsWith("tme_") || CAProjects.isStep(m, p.id) || CASurplus.isRichStep(m, p.id)
+                || (CAWonders.BFC.equals(p.id) && !CAWonders.stepsFor(m).isEmpty());
         float planBonus = (value > 0f || enabler) && !profitOnly ? CAPlan.bonusFor(m, plan, p.id) : 0f;
         if (planBonus > 0f) p.lines.add(0, "Next step of this colony's " + plan.name + " plan" + (value <= 0f ? " (costs more than it earns; the plan needs it)" : ""));
         // a new industry the plan doesn't ask for, when the free slots are all the plan's industries have left

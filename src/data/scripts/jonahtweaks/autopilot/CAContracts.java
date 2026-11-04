@@ -220,15 +220,26 @@ public class CAContracts {
             CARefl.invoke(cSetTaken, c, true);
             CARefl.invoke(addContract, mgr(), c);
             if (!CABreaker.check(ACCEPT, ((Map<String, Object>) CARefl.invoke(activeMap, mgr())).containsKey(id), "trade contracts")) return "ToT didn't take the contract";
-            CALog.add("Trade contract: " + who + " accepted " + o.name + ": " + join(o.lines) + " per month for " + o.months + " months, "
-                    + Misc.getDGSCredits(o.pay) + " per month (" + Misc.getDGSCredits(o.gain) + " over exporting)"
-                    + (o.rewards.isEmpty() ? "" : "; rewards: " + join(o.rewards)), true);
+            if ("Auto".equals(who)) taken.add(o);   // one line for the day's contracts (run)
+            else CALog.add("Contract taken: " + goods(o) + ", " + Misc.getDGSCredits(o.pay) + "/month for " + o.months + " months");
+            CALog.quiet("trade contract " + o.name + ": " + join(o.lines) + ", " + o.months + " months, " + Misc.getDGSCredits(o.pay)
+                    + "/month (" + Misc.getDGSCredits(o.gain) + " over exporting)" + (o.rewards.isEmpty() ? "" : "; rewards: " + join(o.rewards)));
             cached = null;
             return null;
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "accepting trade contract " + id + " failed", t);
             return "That failed; see starsector.log";
         }
+    }
+
+    /** Contracts Auto took today, logged as one line. */
+    static final List<Offer> taken = new ArrayList<Offer>();
+
+    /** An offer's goods without the "(n spare)" detail: "1,258 Luxury Goods". */
+    static String goods(Offer o) {
+        List<String> l = new ArrayList<String>();
+        for (String s : o.lines) l.add(s.replaceAll("\\s*\\([^)]*spare\\)", ""));
+        return join(l);
     }
 
     static String join(List<String> l) {
@@ -277,16 +288,26 @@ public class CAContracts {
             for (Object c : ((Map<String, Object>) CARefl.invoke(activeMap, mgr())).values()) {
                 if (c == null || Boolean.TRUE.equals(CARefl.invoke(cPlayer, c)) || !live(c)) continue;
                 int missed = ((Number) CARefl.invoke(cMissed, c)).intValue();
-                if (missed > 0 && CALog.once("contract:" + CARefl.invoke(cId, c) + ":" + missed)) {
-                    CALog.add("Trade contract with " + CARefl.invoke(cName, c) + " missed a delivery (" + missed + " of " + CARefl.invoke(cAllowed, c)
-                            + " allowed); colonies that make what it needs now score higher", true);
-                }
+                if (missed > 0 && CALog.once("contract:" + CARefl.invoke(cId, c) + ":" + missed))
+                    CALog.add("Contract with " + CARefl.invoke(cName, c) + " missed a delivery (" + missed + " of " + CARefl.invoke(cAllowed, c) + ")");
             }
             if (s.contractMode != 1) return;
-            for (int n = 0; n < MAX_PER_DAY; n++) {
-                Offer best = null;
-                for (Offer o : offers()) if (o.feasible && o.gain > 0f) { best = o; break; }
-                if (best == null || accept(best.id, "Auto") != null) return;
+            taken.clear();
+            try {
+                for (int n = 0; n < MAX_PER_DAY; n++) {
+                    Offer best = null;
+                    for (Offer o : offers()) if (o.feasible && o.gain > 0f) { best = o; break; }
+                    if (best == null || accept(best.id, "Auto") != null) break;
+                }
+            } finally {
+                if (!taken.isEmpty()) {
+                    float pay = 0f, gain = 0f;
+                    List<String> what = new ArrayList<String>();
+                    for (Offer o : taken) { pay += o.pay; gain += o.gain; what.add(goods(o)); }
+                    CALog.add((taken.size() == 1 ? "Contract taken: " : taken.size() + " contracts taken: ") + join(what) + ", " + Misc.getDGSCredits(pay)
+                            + "/month (+" + Misc.getDGSCredits(gain) + " over exporting)");
+                    taken.clear();
+                }
             }
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "trade contract step failed", t);
