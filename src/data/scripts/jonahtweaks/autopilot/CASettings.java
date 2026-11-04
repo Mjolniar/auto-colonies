@@ -31,6 +31,7 @@ public class CASettings {
     // past CASurplus.RICH over the line every Approve/Auto colony spends from the surplus (false, also older saves); true: the focus world only
     public boolean surplusFocusOnly = false;
     public float richIncomeRef = 0f;   // best net income while spending freely (its floor is half of it)
+    public boolean noWonders = false;  // false (also older saves): spending freely builds the Daedalus Array and Bifrost gates (CAWonders)
     public boolean surplusChecked = true;
     public String focusId;        // the focus world you picked (null: Autopilot picks)
     public String focusAuto;      // the one Autopilot picked last, kept unless another beats it clearly

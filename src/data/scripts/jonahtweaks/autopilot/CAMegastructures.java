@@ -227,7 +227,7 @@ public class CAMegastructures {
         if (g.kind.equals(PLUTO)) plutoApply(g, t); else nidApply(g, t);
         c.megaSet().clear();
         c.megaSet().putAll(t);
-        CALog.add(g.m.getName() + ": " + who + " set the " + g.name + ": " + describe(g, t), true);
+        CALog.add(g.m.getName() + ": " + who + " set the " + g.name + ": " + describe(g, t));
         return null;
     }
 
@@ -246,7 +246,7 @@ public class CAMegastructures {
                         Integer was = now.get("nexus"), will = t.get("nexus");
                         if (auto && was != null && will != null && will < was) c.megaHold = Global.getSector().getClock().getTimestamp();   // wait 30 days before adding again
                         if (auto) applyTarget(g, c, t, "Auto");
-                        else if (CALog.once("mega:" + g.m.getId() + ":" + t)) CALog.add(g.m.getName() + ": recommends " + describe(g, t) + " at the " + g.name + "; Apply in the colony panel", true);
+                        else if (CALog.once("mega:" + g.m.getId() + ":" + t)) CALog.add(g.m.getName() + ": recommends " + describe(g, t) + " at the " + g.name + "; Apply in the colony panel");
                     }
                 }
                 CAHypershunt.Section next = nextRestore(g);

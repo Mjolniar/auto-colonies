@@ -120,8 +120,7 @@ public class CASurplusResearch {
         }
         if (s.upkeepAdded + up > CASurplus.upkeepCap(m, s)) {
             summary = head + "; the next, at " + m.getName() + ", waits for next month's new-upkeep room.";
-            if (CALog.once(key + ":upkeep")) CALog.add(m.getName() + ": surplus research (a Research Facility, " + Misc.getDGSCredits(up)
-                    + " a month) waits for next month's new-upkeep room");
+            if (CALog.once(key + ":upkeep")) CALog.quiet(m.getName() + ": surplus Research Facility waits for next month's upkeep room");
             return;
         }
         CAEngine.Pick p = new CAEngine.Pick();
@@ -129,16 +128,13 @@ public class CASurplusResearch {
         String err = CABuild.start(m, p);
         if (err != null) {
             summary = head + "; " + m.getName() + " couldn't start it: " + err + ".";
-            if (CALog.once(key + ":" + err)) CALog.add(m.getName() + ": surplus research couldn't start building a Research Facility: " + err);
+            if (CALog.once(key + ":" + err)) CALog.add(m.getName() + ": Research Facility not started: " + err);
             return;
         }
         CABudget.charge(s, 0f, fee, up);   // the price came from the surplus (CABuild.start took it), outside the monthly budget
         d.surplusResearch().add(m.getId());
         summary = head + "; building one at " + m.getName() + ".";
-        CALog.add(m.getName() + ": surplus research started building a Research Facility for " + Misc.getDGSCredits(cost)
-                + (fee > 0f ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + ": +10% research speed, worth about " + Misc.getDGSCredits(sv)
-                + " a month while research lasts, for " + Misc.getDGSCredits(up) + " a month (half with an Alpha core); it comes down once "
-                + "nothing is left to research", true);
+        CALog.add(m.getName() + ": Research Facility started (+10% research speed), " + Misc.getDGSCredits(cost) + ", " + Misc.getDGSCredits(up) + "/month");
     }
 
     /** Takes down the Research Facilities surplus research built: nothing is left to research. Ones you upgraded or locked stay. */
@@ -152,8 +148,7 @@ public class CASurplusResearch {
             float up = ind.getUpkeep().getModifiedValue();
             m.removeIndustry(FACILITY, MarketAPI.MarketInteractionMode.REMOTE, false);   // with a mode, VoK moves its tab's cargo to Storage
             d.surplusResearch().remove(id);
-            CALog.add(m.getName() + ": surplus research took down its Research Facility: nothing is left to research, so its "
-                    + Misc.getDGSCredits(up) + " a month upkeep stops (its storage tab's contents went to the colony's Storage)", true);
+            CALog.add(m.getName() + ": Research Facility removed, research done (-" + Misc.getDGSCredits(up) + "/month)");
         }
     }
 }

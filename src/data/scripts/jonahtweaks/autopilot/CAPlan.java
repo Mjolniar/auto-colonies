@@ -128,6 +128,7 @@ public class CAPlan {
         Plan p = buildOwn(m, prof);
         List<Step> extra = new ArrayList<Step>(CAProjects.stepsFor(m));
         extra.addAll(CASurplus.richSteps(m));   // spending freely: every station and defense maxed
+        extra.addAll(CAWonders.stepsFor(m));    // and the Bifrost Control Center at one colony
         if (extra.isEmpty()) return p;
         List<Step> steps = new ArrayList<Step>();
         java.util.Set<String> ids = new java.util.HashSet<String>();

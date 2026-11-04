@@ -80,7 +80,7 @@ public class CAPolicies {
                     if ((!siege && canChange(c.lastHazardPay, HAZARD_PAY_MIN_DAYS)) || urgentOff) {
                         m.setImmigrationIncentivesOn(want);
                         c.lastHazardPay = now;
-                        CALog.add(m.getName() + ": hazard pay " + (want ? "on (" + growthText(m, g) + ")" : "off (" + why + ")"), true);
+                        CALog.status("hazard:" + m.getId(), m.getName() + ": hazard pay " + (want ? "on (" + growthText(m, g) + ")" : "off (" + why + ")"));
                     }
                 }
             }
@@ -102,7 +102,7 @@ public class CAPolicies {
                     m.setFreePort(want);
                     m.reapplyConditions();
                     c.lastFreePort = now;
-                    CALog.add(m.getName() + ": free port " + (want ? "on (accessibility and growth build up over a year; up to -3 stability)" : "off (" + why + ")"), true);
+                    CALog.status("freeport:" + m.getId(), m.getName() + ": free port " + (want ? "on" : "off (" + why + ")"));
                 }
             }
         }

@@ -163,7 +163,7 @@ public class CATerraform {
                 if (CABuild.credits() - s.reserve < k.cost + fee) {
                     if (CALog.once("tfsave:" + k.m.getId() + ":" + k.pd.id))
                         CALog.add(k.m.getName() + ": terraforming (" + k.why + ") waits until you have " + Misc.getDGSCredits(k.cost + fee)
-                                + " above the credit reserve", true);
+                                + " above the credit reserve");
                     continue;
                 }
             } else if (CASurplus.spends(k.m)) {
@@ -176,7 +176,7 @@ public class CATerraform {
                 }
             } else if (k.cost > s.perProjectCap) {
                 if (CALog.once("tfcap:" + k.m.getId() + ":" + k.pd.id))
-                    CALog.add(k.m.getName() + ": terraforming (" + k.why + ") is over the per-project cap; start it from " + k.ind.getCurrentName() + " if you want it", true);
+                    CALog.add(k.m.getName() + ": terraforming (" + k.why + ") is over the per-project cap; start it from " + k.ind.getCurrentName() + " if you want it");
                 continue;
             }
             else if (k.cost + fee > Math.min(CABudget.available(s), terraLeft) || CABuild.credits() < k.cost + fee) {
@@ -194,7 +194,7 @@ public class CATerraform {
                 s.terraSpent += k.cost;
                 CALog.forget("tf:" + k.m.getId() + ":" + k.pd.id);
                 CALog.add(k.m.getName() + ": " + k.ind.getCurrentName() + " started: " + k.why + " for " + Misc.getDGSCredits(k.cost)
-                        + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : ""), true);
+                        + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : ""));
             } catch (Throwable t) {
                 CADiagnostics.quarantine(k.ind.getId(), "starting terraforming project " + k.pd.id, t);
             }

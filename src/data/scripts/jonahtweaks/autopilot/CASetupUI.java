@@ -40,6 +40,7 @@ public class CASetupUI {
         s.surplusTerraform = 0;        // what the focus world leaves of it goes into terraforming, as much output as it buys
         s.noSurplusResearch = false;   // and into more Research Facilities while research left is worth the speed
         s.surplusFocusOnly = false;    // past 10,000,000 over the line, every colony spends it
+        s.noWonders = false;           // and builds the Daedalus Array and Bifrost gates once their goods are made
         s.monthCredits = credits;
         s.feeLevel = 2;
         s.stationLine = "score";
@@ -161,6 +162,13 @@ public class CASetupUI {
                     + "defense, stability, growth or access goes up even if it costs more than it earns), new upkeep up to a fifth of net income a "
                     + "month, hazard pay wherever it speeds growth, and up to three terraforming projects at once per colony. It pauses while net "
                     + "income is under half its best since it began.", Misc.getGrayColor(), 4f);
+            if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAResearch.MOD)) {
+                row(t, "Wonders and gates while spending freely", onOff(!s.noWonders), "On", "wonders", true);
+                t.addPara("The Daedalus Array (Grand Wonder) and the Bifrost network: the Control Center becomes a plan step, so research works "
+                        + "toward it, then a gate goes up in each of your systems. AotD takes their construction goods from your exports every "
+                        + "month, so each starts only once your colonies make every good it needs. The Garden of Elysium and Star Citadels stay yours.",
+                        Misc.getGrayColor(), 4f);
+            }
             if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("terraformingmadeeasy")) {
                 row(t, "Surplus terraforming", CASettings.SURPLUS_TF_NAMES[Math.max(0, Math.min(2, s.surplusTerraform))], "Max output", "surplustf", true);
                 t.addPara("What the focus world leaves of the surplus goes into Terraforming Made Easy projects at every Auto colony, most value "
@@ -414,6 +422,7 @@ public class CASetupUI {
         else if (k.equals("projsupply")) { s.projectSupplyMode = (Math.max(0, Math.min(2, s.projectSupplyMode)) + 1) % 3; CAProjects.computedAt = -99f; }
         else if (k.equals("surplusres")) s.noSurplusResearch = !s.noSurplusResearch;
         else if (k.equals("surplusrich")) s.surplusFocusOnly = !s.surplusFocusOnly;
+        else if (k.equals("wonders")) s.noWonders = !s.noWonders;
         else if (k.equals("inspect")) s.inspectionMode = (Math.max(0, Math.min(2, s.inspectionMode)) + 1) % 3;
         else if (k.equals("corerisk")) s.coreRisk = (Math.max(0, Math.min(3, s.coreRisk)) + 1) % 4;
         else if (k.equals("sp")) s.storyPointRule = (s.storyPointRule + 1) % 3;

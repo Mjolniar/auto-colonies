@@ -293,7 +293,7 @@ public class CATasc {
         }
         cache.remove(m.getId());
         if (!CABreaker.check(START, running(m) != null, m.getName())) return "TASC didn't start it";
-        CALog.add(m.getName() + ": " + who + " started TASC's " + p.name + " (" + Math.round(p.days) + " days, " + CAEngine.valueText(p.value) + " once done)", true);
+        CALog.add(m.getName() + ": " + who + " started TASC's " + p.name + " (" + Math.round(p.days) + " days, " + CAEngine.valueText(p.value) + " once done)");
         return null;
     }
 
@@ -309,7 +309,7 @@ public class CATasc {
                 for (Proj p : projects(m, c.profile)) if (p.startable && p.value >= MIN_PROJECT) { best = p; break; }
                 if (best == null) continue;
                 if (c.mode == CAData.Mode.AUTO) startProject(m, best, "Auto");
-                else if (CALog.once("tasc:" + m.getId() + ":" + best.name)) CALog.add(m.getName() + ": recommends TASC's " + best.name + "; start it in the colony panel", true);
+                else if (CALog.once("tasc:" + m.getId() + ":" + best.name)) CALog.add(m.getName() + ": recommends TASC's " + best.name + "; start it in the colony panel");
             } catch (Throwable t) {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "TASC step failed at " + m.getName(), t);
             }

@@ -215,21 +215,19 @@ public class CATerraformSurplus {
             float cost = sp.getCost(), fee = CABudget.constructionFee(s, cost), up = CAEngine.baseUpkeep(m, sp);
             if (cost + fee > budget) { waits(m, key, "building " + sp.getName() + " (" + what + ")", cost + fee); return 0f; }
             if (s.upkeepAdded + up > CASurplus.upkeepCap(m, s)) {
-                if (CALog.once("tsu:" + key)) CALog.add(m.getName() + ": surplus terraforming (" + sp.getName() + ", " + Misc.getDGSCredits(up)
-                        + " a month) waits for next month's new-upkeep room");
+                if (CALog.once("tsu:" + key)) CALog.quiet(m.getName() + ": " + sp.getName() + " waits for next month's upkeep room");
                 return 0f;
             }
             CAEngine.Pick p = new CAEngine.Pick();
             p.id = mv.structure; p.name = sp.getName(); p.verb = "Build"; p.cost = cost; p.upkeep = up;
             String err = CABuild.start(m, p);
             if (err != null) {
-                if (CALog.once("tse:" + key + ":" + err)) CALog.add(m.getName() + ": surplus terraforming couldn't start building " + sp.getName() + ": " + err);
+                if (CALog.once("tse:" + key + ":" + err)) CALog.quiet(m.getName() + ": " + sp.getName() + " not started: " + err);
                 return 0f;
             }
             CABudget.charge(s, 0f, fee, up);   // the price came from the surplus (CABuild.start took it), outside the monthly budget
             CAData.get().surplusBuilt().add(m.getId() + ":" + mv.structure);
-            CALog.add(m.getName() + ": surplus terraforming started building " + sp.getName() + " for " + Misc.getDGSCredits(cost)
-                    + (fee > 0f ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + ", for " + what + "; it's taken down again once its work is done", true);
+            CALog.add(m.getName() + ": building " + sp.getName() + " (" + Misc.getDGSCredits(cost) + ") to " + k.q.text());
             return cost + fee;
         }
         if (!(ind instanceof BaseTerraformingIndustry)) return 0f;
@@ -246,8 +244,7 @@ public class CATerraformSurplus {
         List<Utils.ProjectData> projects = ti.getProjects();
         if (projects != null) for (Utils.ProjectData x : projects) if (x.id.equals(mv.condition)) pd = x;
         if (pd == null || !ProjectListPlugin.canBuild(ti, pd)) {
-            if (CALog.once("tsn:" + key)) CALog.add(m.getName() + ": surplus terraforming wanted " + ti.getCurrentName() + " to " + mv.label()
-                    + ", but Terraforming Made Easy doesn't offer it there now");
+            if (CALog.once("tsn:" + key)) CALog.quiet(m.getName() + ": " + ti.getCurrentName() + " can't " + mv.label() + " there yet");
             return 0f;
         }
         float cost = CATerraform.projectCost(m, pd), fee = CABudget.fee(s, CATerraform.STANDARD_FEE);
@@ -262,9 +259,8 @@ public class CATerraformSurplus {
             CAData.get().enablers().put(m.getId() + ":" + mv.condition, k.q.moves.get(1).condition);
             CAData.get().enablerAt().put(m.getId() + ":" + mv.condition, Global.getSector().getClock().getTimestamp());
         }
-        CALog.add(m.getName() + ": surplus terraforming: " + ti.getCurrentName() + " started to " + mv.label() + " (" + Math.round(pd.buildTime)
-                + " days) for " + Misc.getDGSCredits(cost) + (fee > 0f ? " + " + Misc.getDGSCredits(fee) + " fee" : "")
-                + (k.q.moves.size() > 1 ? "; then " + k.q.moves.get(1).label() : "") + ": " + CAEngine.valueText(k.q.gain) + " once done", true);
+        CALog.add(m.getName() + ": " + mv.label() + " (" + Math.round(pd.buildTime) + " days, " + Misc.getDGSCredits(cost) + ", " + CAEngine.valueText(k.q.gain)
+                + (k.q.moves.size() > 1 ? ", then " + k.q.moves.get(1).label() : "") + ")");
         return cost + fee;
     }
 
@@ -289,8 +285,7 @@ public class CATerraformSurplus {
             float up = ind.getUpkeep().getModifiedValue();
             m.removeIndustry(id, null, false);
             built.remove(key);
-            CALog.add(m.getName() + ": surplus terraforming took down " + ind.getCurrentName() + ": nothing worth doing is left for it; "
-                    + "what it changed stays, and its " + Misc.getDGSCredits(up) + " a month upkeep stops");
+            CALog.add(m.getName() + ": removed idle " + ind.getCurrentName() + " (-" + Misc.getDGSCredits(up) + "/month)");
         }
     }
 
@@ -313,6 +308,6 @@ public class CATerraformSurplus {
     static boolean wantsChange(boolean add, boolean has) { return add != has; }
 
     static void waits(MarketAPI m, String key, String what, float need) {
-        if (CALog.once("tsw:" + key)) CALog.add(m.getName() + ": surplus terraforming (" + what + ") waits for " + Misc.getDGSCredits(need) + " of surplus credits");
+        if (CALog.once("tsw:" + key)) CALog.quiet(m.getName() + ": " + what + " waits for " + Misc.getDGSCredits(need) + " of surplus");
     }
 }

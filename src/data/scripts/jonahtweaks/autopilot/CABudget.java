@@ -27,8 +27,7 @@ public class CABudget {
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "could not read last month's report", t);
         }
-        if (!first) CALog.add("New month: budget " + Misc.getDGSCredits(limit(s)) + ", last month's net income "
-                + Misc.getDGSCredits(netIncome(s)));
+        if (!first) CALog.add("Month: net " + Misc.getDGSCredits(netIncome(s)) + ", budget " + Misc.getDGSCredits(limit(s)));
     }
 
     /** Last month's net income, or this month's colony net income until a full month has passed. */

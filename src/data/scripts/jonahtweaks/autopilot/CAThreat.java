@@ -52,12 +52,12 @@ public class CAThreat {
             if (t < THRESHOLD) return false;
             c.threatHigh = true;
             c.threatSince = Global.getSector().getClock().getTimestamp();
-            CALog.add(m.getName() + ": threat is high (" + Math.round(t * 100f) + "%)" + (security ? "" : "; planning with Security until it drops"), true);
+            CALog.status("threat:" + m.getId(), m.getName() + ": threat high (" + Math.round(t * 100f) + "%)" + (security ? "" : ", defense first"));
             return true;
         }
         if (t >= CLEAR || Global.getSector().getClock().getElapsedDaysSince(c.threatSince) < MIN_DAYS) return true;
         c.threatHigh = false;
-        CALog.add(m.getName() + ": threat has dropped (" + Math.round(t * 100f) + "%)" + (security ? "" : "; back to " + c.profile.label));
+        CALog.quiet(m.getName() + ": threat down (" + Math.round(t * 100f) + "%)" + (security ? "" : ", back to " + c.profile.label));
         return false;
     }
 

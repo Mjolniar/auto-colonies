@@ -117,7 +117,7 @@ public class CAResearch {
 
         boolean databanksOnly() { for (String k : items.keySet()) if (!DATABANK.equals(k)) return false; return true; }
         /** Auto may start it: it costs databanks and AI cores only (cores come from Autopilot Storage); colony items are yours. */
-        boolean autoOk() { for (String k : items.keySet()) if (!DATABANK.equals(k) && !CORE_VALUE.containsKey(k)) return false; return true; }
+        boolean autoOk() { for (String k : items.keySet()) if (!DATABANK.equals(k) && !CORE_VALUE.containsKey(k) && !spendable(k)) return false; return true; }
         int databanks() { Integer n = items.get(DATABANK); return n == null ? 0 : n; }
         /** What its AI cores are worth, counted as part of its cost. */
         float coreCost() { float v = 0f; for (Map.Entry<String, Integer> e : items.entrySet()) { Float c = CORE_VALUE.get(e.getKey()); if (c != null) v += c * e.getValue(); } return v; }
@@ -169,6 +169,19 @@ public class CAResearch {
     static float cachedAt = -99f;
     static int openCount;   // unresearched techs at the last ranking, startable or not
     static final List<Tech> itemTechs = new ArrayList<Tech>();   // unresearched techs that take colony items, which Auto leaves to you
+
+    /** Items Auto may spend on research while spending freely (CASurplus.rich), from any Storage: AotD's production makes Fullerene Spools. */
+    static final Set<String> SPENDABLE = new HashSet<String>(Arrays.asList("fullerene_spool"));
+    static boolean spendItems = false;   // set each day: spending freely
+
+    static boolean spendable(String id) { return spendItems && SPENDABLE.contains(id); }
+
+    /** How many of an item your colonies' Storage tabs hold. */
+    static float colonyCount(String id) {
+        float n = 0f;
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) n += count(Misc.getStorageCargo(m), id);
+        return n;
+    }
 
     /** Where a research item comes from, for the panel. */
     static String whereFrom(String id) {
@@ -503,7 +516,7 @@ public class CAResearch {
             Object f = CARefl.invoke(focus, mgr);
             if (!CABreaker.check(START, f != null && t.id.equals(String.valueOf(CARefl.get(fId, f))), "research")) return "VoK didn't start it";
             CALog.add("Research: " + who + " started " + t.name + " (" + Math.round(Math.max(1f, t.days - t.spent)) + " days, " + itemsText(t)
-                    + (t.tier > 0 ? ", +" + Misc.getDGSCredits(t.tier * TIER_UPKEEP) + " a month per facility while it runs" : "") + ")", true);
+                    + (t.tier > 0 ? ", +" + Misc.getDGSCredits(t.tier * TIER_UPKEEP) + " a month per facility while it runs" : "") + ")");
             return null;
         } catch (Throwable e) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "starting research " + t.id + " failed", e);
@@ -567,7 +580,7 @@ public class CAResearch {
         CargoAPI st = CAData.get().storage();
         for (Map.Entry<String, Integer> e : t.items.entrySet()) {
             float have = ((Number) CARefl.invoke(itemCount, mgr, e.getKey())).floatValue() + count(st, e.getKey())
-                    + (DATABANK.equals(e.getKey()) ? colonyDatabanks() + fleetDatabanks() : 0f);
+                    + (DATABANK.equals(e.getKey()) ? colonyDatabanks() + fleetDatabanks() : spendable(e.getKey()) ? colonyCount(e.getKey()) : 0f);
             if (have < e.getValue()) return false;
         }
         return true;
@@ -588,6 +601,15 @@ public class CAResearch {
             if (need <= 0) continue;
             int fromStorage = (int) Math.min(need, count(st, e.getKey()));
             if (DATABANK.equals(e.getKey())) fromColonies = (int) Math.min(need - fromStorage, colonyDatabanks());
+            if (spendable(e.getKey()) && need > fromStorage) {   // spending freely: from your colonies' Storage too
+                int n = (int) Math.min(need - fromStorage, colonyCount(e.getKey())), left = n;
+                for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+                    CargoAPI c = Misc.getStorageCargo(m);
+                    int k = c == null ? 0 : (int) Math.min(left, count(c, e.getKey()));
+                    if (k > 0) { move(c, st, e.getKey(), k); left -= k; }
+                }
+                fromStorage += n;   // now in Autopilot Storage, moved on below
+            }
             int fromFleet = need - fromStorage - (DATABANK.equals(e.getKey()) ? fromColonies : 0);
             if (fromFleet > 0 && (!DATABANK.equals(e.getKey()) || fleet == null || fleet.getCargo() == null || fleetDatabanks() < fromFleet)) return null;
             plan.put(e.getKey(), new int[]{fromStorage, fromFleet});
@@ -700,6 +722,7 @@ public class CAResearch {
      * when none pays for itself within a year, the best of the rest. When nothing can start, the log says why.
      */
     public static void run(CAData d, CASettings s) {
+        spendItems = CASurplus.rich(s);
         if (s.researchMode != 1) return;
         try {
             Object mgr = mgr();
@@ -736,10 +759,10 @@ public class CAResearch {
                 if (CALog.once("research:wait:" + waiting.id + ":" + (int) have))
                     CALog.add("Research: next for your colonies' plans is " + waiting.name + " (for " + CAContracts.join(waiting.planFor) + "), which needs "
                             + waiting.databanks() + " research databanks; you have " + (int) have + ". Databanks come from salvage (research stations, derelicts) "
-                            + "and from a Research Facility on a pre-collapse research site; Autopilot uses them from Autopilot Storage, colony Storage or your cargo", true);
+                            + "and from a Research Facility on a pre-collapse research site; Autopilot uses them from Autopilot Storage, colony Storage or your cargo");
             } else if (c.tries.isEmpty()) {
                 String why = idleReason(c, have, openCount > 0);
-                if (CALog.once("research:idle:" + why)) CALog.add("Research: Auto has nothing it can start: " + why, true);
+                if (CALog.once("research:idle:" + why)) CALog.add("Research: Auto has nothing it can start: " + why);
             }
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "research step failed", t);

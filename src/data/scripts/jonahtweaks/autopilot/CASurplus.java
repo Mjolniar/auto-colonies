@@ -295,7 +295,7 @@ public class CASurplus {
             if (s.surplusLine == 0) {
                 s.surplusLine = 2;
                 CALog.add("Surplus investment is on (new in this version): credits over " + Misc.getDGSCredits(line(s)) + " go into one focus world. "
-                        + "Change it under Settings, Budget and spending", true);
+                        + "Change it under Settings, Budget and spending");
             }
         }
         compute(s);
@@ -308,8 +308,7 @@ public class CASurplus {
         MarketAPI f = CAAuto.market(focusId);
         if (f != null && CALog.once(key)) {
             for (String id : scores.keySet()) if (!id.equals(focusId)) CALog.forget("surplus:on:" + id);
-            CALog.add("Surplus investment: " + Misc.getDGSCredits(amount(s)) + " over your " + Misc.getDGSCredits(line(s)) + " line goes into "
-                    + f.getName() + ", the focus world" + (focusId.equals(s.focusId) ? " (your pick)" : " (" + whys.get(focusId) + ")"), true);
+            CALog.add("Focus world: " + f.getName() + (focusId.equals(s.focusId) ? " (your pick)" : "") + ", " + Misc.getDGSCredits(amount(s)) + " surplus");
         }
     }
 
@@ -320,18 +319,16 @@ public class CASurplus {
             if (s.richIncomeRef > 0f) {
                 s.richIncomeRef = 0f;
                 CALog.forget("surplus:rich"); CALog.forget("surplus:richfloor");
-                CALog.add("Surplus: under " + Misc.getDGSCredits(RICH) + " over the line now, so only the focus world spends it", true);
+                CALog.add("Spending freely ended (surplus under " + Misc.getDGSCredits(RICH) + ")");
             }
             return;
         }
         if (s.richIncomeRef <= 0f || net > s.richIncomeRef) s.richIncomeRef = Math.max(net, 1f);
         if (rich(s)) {
             CALog.forget("surplus:richfloor");
-            if (CALog.once("surplus:rich")) CALog.add("Surplus: " + Misc.getDGSCredits(a) + " over your line, so every Auto colony spends it now: past the monthly "
-                    + "budget, prices at a quarter, new upkeep up to a fifth of net income a month, and credits count a quarter in what a building "
-                    + "is worth, so whatever adds defense, stability, growth or access goes up. Hazard pay goes wherever it speeds growth", true);
-        } else if (CALog.once("surplus:richfloor")) CALog.add("Surplus: spending freely pauses: net income (" + Misc.getDGSCredits(net) + ") is under half the best since it began ("
-                + Misc.getDGSCredits(s.richIncomeRef) + "), so no more new upkeep until it recovers", true);
+            if (CALog.once("surplus:rich")) CALog.add("Spending freely: " + Misc.getDGSCredits(a) + " surplus, every Auto colony spends it", true);
+        } else if (CALog.once("surplus:richfloor")) CALog.add("Spending freely paused: net income " + Misc.getDGSCredits(net) + " is under half its best ("
+                + Misc.getDGSCredits(s.richIncomeRef) + ")", true);
     }
 
     // ---------------- panels ----------------
@@ -357,6 +354,7 @@ public class CASurplus {
         if (c > 0f) t.addPara("Kept back: %s already promised to production that hasn't been paid yet.", 2f, gray, hl, Misc.getDGSCredits(c));
         if (CATerraSim.summary != null) t.addPara(CALog.esc(CATerraSim.summary), gray, 2f);
         if (CASurplusResearch.summary != null) t.addPara(CALog.esc(CASurplusResearch.summary), gray, 2f);
+        if (CAWonders.summary != null) t.addPara(CALog.esc(CAWonders.summary), gray, 2f);
     }
 
     /** The colony panel's section: whether this is the focus world, and the buttons to pick it or hand it back. */

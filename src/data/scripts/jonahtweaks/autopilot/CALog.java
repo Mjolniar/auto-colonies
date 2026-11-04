@@ -23,6 +23,22 @@ public class CALog {
 
     public static void add(String text) { add(text, false); }
 
+    /** Days a flipping status (siege, threat, station augments, policy toggles) waits before its next line in the panel log. */
+    static final float STATUS_DAYS = 10f;
+    static final java.util.Map<String, Float> statusAt = new java.util.HashMap<String, Float>();
+
+    /** A status that can flip back and forth: in the panel log at most once per key every STATUS_DAYS, always in starsector.log. */
+    public static void status(String key, String text) {
+        float now = CADay.now();
+        Float at = statusAt.get(key);
+        if (at != null && now - at < STATUS_DAYS && now >= at) { quiet(text); return; }
+        statusAt.put(key, now);
+        add(text);
+    }
+
+    /** starsector.log only: routine detail that doesn't belong in the panel log. */
+    public static void quiet(String text) { CADiagnostics.LOG.info(CADiagnostics.TAG + text); }
+
     public static void add(String text, boolean notify) {
         List<String> log = CAData.settings().log;
         String date = Global.getSector().getClock().getDateString();
