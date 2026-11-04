@@ -259,6 +259,15 @@ public class CAIntel extends BaseIntelPlugin {
                     t.addPara("This section couldn't be shown; see starsector.log.", gray, 6f);
                 }
             }
+            if (Global.getSettings().getModManager().isModEnabled(CAResearch.MOD) && s.projectSupplyMode != 2) {
+                t.addSpacer(16f);
+                t.addSectionHeading("Special projects (Ashes of the Domain)", Alignment.MID, 0f);
+                try { CAProjects.render(t, s); }
+                catch (Throwable e) {
+                    CADiagnostics.LOG.warn(CADiagnostics.TAG + "special projects section failed", e);
+                    t.addPara("This section couldn't be shown; see starsector.log.", gray, 6f);
+                }
+            }
         } else if (page.equals("crises")) {
             CACrisis.render(t, data, s);
         } else if (page.equals("mods")) {

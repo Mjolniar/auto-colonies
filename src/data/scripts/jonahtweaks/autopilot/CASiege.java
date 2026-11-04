@@ -30,7 +30,7 @@ public class CASiege {
 
     /** Why the colony is under siege, or null. */
     public static String why(MarketAPI m) {
-        float day = Global.getSector().getClock().getElapsedDaysSince(0L);
+        float day = CADay.now();
         if (day - cachedDay >= 1f || day < cachedDay) { cache.clear(); cachedDay = day; }
         if (cache.containsKey(m.getId())) return cache.get(m.getId());
         String w = null;

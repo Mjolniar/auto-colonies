@@ -63,7 +63,7 @@ public class CASettlement {
 
     static SettlementData settlement() { return fu().getFrontiersData().getActiveSettlement(); }
 
-    static float days() { return Global.getSector().getClock().getElapsedDaysSince(0L); }
+    static float days() { return CADay.now(); }
 
     // ---------------- sites ----------------
 

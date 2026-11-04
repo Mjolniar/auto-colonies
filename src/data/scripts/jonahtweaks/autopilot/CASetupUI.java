@@ -49,6 +49,7 @@ public class CASetupUI {
         s.useAICores = true;
         s.alphaMode = 0;
         s.researchCoresByValue = false;   // Alpha cores halve research buildings' costs: they go there first
+        s.projectSupplyMode = 0;   // the goods a special project takes that no colony makes get a producer
         s.coreRisk = 1;           // Never inspected: More where defended only pays if inspections are resisted, which means war with the Hegemony
         s.inspectionMode = 0;      // Advise: resisting turns the Hegemony hostile, so that's your call
         s.storageCheat = false;    // cheats are never recommended
@@ -212,6 +213,14 @@ public class CASetupUI {
                         + "an Auto colony with its strength and the colony's defenses, so you can resist or bribe from its intel. Resist where "
                         + "defended resists at a colony whose defenses beat it by the margin above: the Hegemony turns hostile, and three beaten "
                         + "inspections end them for good.", Misc.getGrayColor(), 6f);
+            }
+            if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAResearch.MOD)) {
+                row(t, "Special project supply", CASettings.PROJECT_SUPPLY_NAMES[Math.max(0, Math.min(2, s.projectSupplyMode))], "Auto", "projsupply", true);
+                t.addPara("A black site project takes goods every month from your own colonies, and a stage stops while one isn't delivered at "
+                        + "all. Several are AotD goods no faction makes (Electronic Components, Domain-grade machinery, Refined Metal, Enriched "
+                        + "Transplutonics). Auto makes the producer of each one your colonies lack a first plan step at the Approve or Auto "
+                        + "colony best placed for it, with the producers of its own inputs, so research works toward it and it gets built. "
+                        + "Warn only logs what to build where.", Misc.getGrayColor(), 4f);
             }
             row(t, "Antimatter Stabilizers to Advanced Fuel Production", s.disableStabilizers ? "Off" : "Convert", "Convert", "stab", true);
         }
@@ -394,6 +403,7 @@ public class CASetupUI {
         else if (k.equals("removals")) s.allowRemovals = !s.allowRemovals;
         else if (k.equals("alpha")) s.alphaMode = (Math.max(0, Math.min(2, s.alphaMode)) + 1) % 3;
         else if (k.equals("researchcores")) s.researchCoresByValue = !s.researchCoresByValue;
+        else if (k.equals("projsupply")) { s.projectSupplyMode = (Math.max(0, Math.min(2, s.projectSupplyMode)) + 1) % 3; CAProjects.computedAt = -99f; }
         else if (k.equals("surplusres")) s.noSurplusResearch = !s.noSurplusResearch;
         else if (k.equals("inspect")) s.inspectionMode = (Math.max(0, Math.min(2, s.inspectionMode)) + 1) % 3;
         else if (k.equals("corerisk")) s.coreRisk = (Math.max(0, Math.min(3, s.coreRisk)) + 1) % 4;

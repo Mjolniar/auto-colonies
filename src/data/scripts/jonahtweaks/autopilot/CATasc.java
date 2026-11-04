@@ -110,7 +110,7 @@ public class CATasc {
      * whole research map), and the engine asks for every building at every colony.
      */
     public static boolean available(MarketAPI m, Industry inst) {
-        int day = (int) Global.getSector().getClock().getElapsedDaysSince(0L);
+        int day = (int) CADay.now();
         if (day != availDay) { availCache.clear(); availDay = day; }
         String key = m.getId() + "|" + inst.getId();
         Boolean b = availCache.get(key);
@@ -229,7 +229,7 @@ public class CATasc {
     /** Every project TASC offers here, valued, best first; cached for the day. Empty for stations or with terraforming off. */
     @SuppressWarnings("unchecked")
     static List<Proj> projects(MarketAPI m, CAData.Profile prof) {
-        int day = (int) Global.getSector().getClock().getElapsedDaysSince(0L);
+        int day = (int) CADay.now();
         Integer at = cacheDay.get(m.getId());
         if (at != null && at == day && cache.containsKey(m.getId())) return cache.get(m.getId());
         List<Proj> out = new ArrayList<Proj>();

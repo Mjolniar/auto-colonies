@@ -34,6 +34,8 @@ public class CAAuto {
         CACrisis.daily(d, s);   // inspection orders, and a log line when a colony crisis is picked
         try { CASurplus.daily(s); }   // the focus world for credits over the surplus line
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus investment step failed", t); }
+        try { CAProjects.update(); }   // before any plan is read: a special project's producers are plan steps
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "special project supply step failed", t); }
         List<Cand> cands = new ArrayList<Cand>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             CAData.Colony c = d.colony(m.getId());

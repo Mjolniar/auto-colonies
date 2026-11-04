@@ -123,7 +123,20 @@ public class CAPlan {
     static void c(Plan p, String id, String label) { p.steps.add(new Step(Kind.COND, id, label)); }
     static void n(Plan p, String id, String label) { p.steps.add(new Step(Kind.NOCOND, id, label)); }
 
+    /** The colony's plan, with any producer a special project needs from it first (CAProjects). */
     public static Plan build(MarketAPI m, CAData.Profile prof) {
+        Plan p = buildOwn(m, prof);
+        List<Step> extra = CAProjects.stepsFor(m);
+        if (extra.isEmpty()) return p;
+        List<Step> steps = new ArrayList<Step>();
+        java.util.Set<String> ids = new java.util.HashSet<String>();
+        for (Step s : extra) if (exists(s) && ids.add(s.id)) steps.add(s);
+        for (Step s : p.steps) if (s.kind != Kind.BUILD || !ids.contains(s.id)) steps.add(s);
+        p.steps = steps;
+        return p;
+    }
+
+    static Plan buildOwn(MarketAPI m, CAData.Profile prof) {
         if (CAHypershunt.is(m)) { Plan h = new Plan(); h.name = "Coronal Hypershunt"; return h; }   // nothing can be built there
         Plan wp = null;
         try { wp = CAWorldPlanner.plan(m, prof); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "world planner failed at " + m.getName(), t); }
@@ -145,13 +158,15 @@ public class CAPlan {
         boolean cold = m.hasCondition("cold") || m.hasCondition("very_cold");
         boolean war = prof == CAData.Profile.WAR, sec = prof == CAData.Profile.SECURITY, inc = prof == CAData.Profile.INCOME,
                 grow = prof == CAData.Profile.GROWTH, self = prof == CAData.Profile.SELF;
+        boolean tme = Global.getSettings().getModManager().isModEnabled("terraformingmadeeasy");
 
         b(p, "spaceport", "Spaceport"); b(p, "megaport", "Megaport");
         if ((war || self || (ore && rare)) && !hab && (ore || rare)) {
             p.name = "Forge";
             b(p, "mining", "Mining"); b(p, "refining", "Refining"); b(p, "heavyindustry", "Heavy Industry"); b(p, "orbitalworks", "Orbital Works");
             b(p, "tme_mineral_replicator", "Mineral Replicator"); b(p, "tme_element_synthesizer", "Element Synthesizer");
-            b(p, "tme_terrestrial_engine", "Terrestrial Engine");
+            // only there to add the tectonic activity below, which is a world step: without a reachable world it'd sit idle
+            if (!tme) b(p, "tme_terrestrial_engine", "Terrestrial Engine");
             c(p, "extreme_tectonic_activity", "Extreme tectonic activity (lets rich deposits be added)");
             c(p, "ore_ultrarich", "Ultrarich ore"); c(p, "rare_ore_ultrarich", "Ultrarich transplutonic ore");
             b(p, "tme_unification_center", "Unification Center"); c(p, "tme_forge_world", "Forge World");
@@ -164,7 +179,7 @@ public class CAPlan {
             b(p, "tme_unification_center", "Unification Center"); c(p, "tme_fortress_world", "Fortress World");
         } else if (hab && (inc || grow || prof == CAData.Profile.BALANCED)) {
             p.name = "Paradise";
-            b(p, "farming", "Farming"); b(p, "lightindustry", "Light Industry"); b(p, "commerce", "Commerce"); b(p, "waystation", "Waystation");
+            if (farm) b(p, "farming", "Farming");   // Farming needs farmland; without it the step could never be done and held the plan's first rank b(p, "lightindustry", "Light Industry"); b(p, "commerce", "Commerce"); b(p, "waystation", "Waystation");
             b(p, "tme_agricultural_laboratory", "Agricultural Laboratory"); c(p, farm ? "farmland_bountiful" : "farmland_adequate", "Better farmland");
             c(p, "mild_climate", "Mild climate (Stellar Manufactory, start it yourself)");
             b(p, "tme_unification_center", "Unification Center"); c(p, "tme_paradise_world", "Paradise World");
@@ -203,7 +218,6 @@ public class CAPlan {
         // drop steps that don't apply (conditions that were never present for NOCOND); and with Terraforming Made Easy on,
         // the world planner found no world this colony can reach, so the world steps (Unification Center, the structures
         // that add conditions, the conditions) go too: hazard clean-up stays, since it lets the colony grow
-        boolean tme = Global.getSettings().getModManager().isModEnabled("terraformingmadeeasy");
         List<Step> keep = new ArrayList<Step>();
         java.util.Set<String> seen = new java.util.HashSet<String>();
         for (Step s : p.steps) {
@@ -228,10 +242,16 @@ public class CAPlan {
      * A pick that a plan building is upgraded from counts too (with AotD, Monoculture Plots on the way to Farming), so a
      * step whose own building is locked passes its rank to what it's upgraded from.
      */
-    public static float bonusFor(MarketAPI m, Plan plan, String industryId) {
+    public static float bonusFor(MarketAPI m, Plan plan, String industryId) { return bonusFor(m, plan, industryId, true); }
+
+    /**
+     * skipBlocked false: the step's rank as if research had opened every step, which is what the research it waits on is
+     * worth (counting blocked steps out there made a blocked step worth nothing every other day).
+     */
+    public static float bonusFor(MarketAPI m, Plan plan, String industryId, boolean skipBlocked) {
         int rank = 0;
         for (Step s : plan.steps) {
-            if (s.kind != Kind.BUILD || s.done(m) || BLOCKED.contains(m.getId() + ":" + s.id)) continue;
+            if (s.kind != Kind.BUILD || s.done(m) || (skipBlocked && BLOCKED.contains(m.getId() + ":" + s.id))) continue;
             boolean match = s.id.equals(industryId) || (s.id.equals("station") && stationTier(spec(industryId)) > 0)
                     || leadsTo(industryId, s.id);
             if (match) return rank == 0 ? 60000f : rank == 1 ? 40000f : 20000f;

@@ -166,7 +166,9 @@ public class CAEngine {
         }
         if (isOutpost(m)) { r.blocked = OUTPOST_TEXT; return r; }
         calibrate();
-        CAPlan.Plan plan = CAPlan.build(m, profile);
+        // the colony's own goal, not the threat-adjusted one the weights use: every other planner (terraforming, research)
+        // reads the same plan, so a passing threat doesn't switch the world it's working toward (Zendia's gravity went back and forth)
+        CAPlan.Plan plan = CAPlan.build(m, col.profile);
         Industry building = Misc.getCurrentlyBeingConstructed(m);
         if (building != null) r.blocked = "Already building " + building.getCurrentName();
         String full = CAGrand.full(m);   // the vanilla colony screen shows 12 buildings; a 13th couldn't be seen or managed
@@ -293,13 +295,17 @@ public class CAEngine {
             value *= p.confidence;
             p.lines.add("Estimate rather than a game formula: counted at " + Math.round(p.confidence * 100f) + "%");
         }
+        // upgrading a forge that holds a nanoforge makes a new building, which pollutes a clean habitable world again
+        if (!p.pollution && m != null && p.upgrade && p.existing instanceof com.fs.starfarer.api.impl.campaign.econ.impl.HeavyIndustry
+                && CAConditions.polluting(p.existing.getSpecialItem()) && m.hasCondition("habitable") && !m.hasCondition("pollution")) p.pollution = true;
         if (p.pollution) {
             value -= profile == CAData.Profile.WAR ? 5000f : 30000f;
             p.lines.add("Pollutes this habitable world (permanent after 90 days)");
         }
         // the plan only orders buildings that are worth something on their own, except Terraforming Made Easy's structures
         // and the Unification Center: they cost more than they earn, but they're how the plan's world is reached
-        boolean enabler = p.id.startsWith("tme_");
+        // and producers a special project needs (CAProjects): nothing else makes those goods
+        boolean enabler = p.id.startsWith("tme_") || CAProjects.isStep(m, p.id);
         float planBonus = (value > 0f || enabler) && !profitOnly ? CAPlan.bonusFor(m, plan, p.id) : 0f;
         if (planBonus > 0f) p.lines.add(0, "Next step of this colony's " + plan.name + " plan" + (value <= 0f ? " (costs more than it earns; the plan needs it)" : ""));
         // a new industry the plan doesn't ask for, when the free slots are all the plan's industries have left
@@ -398,7 +404,8 @@ public class CAEngine {
             supply(p, "heavy_machinery", s - 2, deficit); supply(p, "supplies", s - 2, deficit);
             supply(p, "hand_weapons", s - 2, deficit); supply(p, "ships", s - 2, deficit);
             demand(p, "metals", s, deficit); demand(p, "rare_metals", s - 2, deficit);
-            if (habitable && !m.hasCondition("pollution")) p.pollution = true;
+            // a Heavy Industry pollutes only with a nanoforge in it: one waiting in Autopilot Storage would go there
+            if (habitable && !m.hasCondition("pollution") && CAItems.pollutingForgeWaiting()) p.pollution = true;
         } else if (id.equals("orbitalworks")) {
             p.fx[5] += 0.2f; p.fx[4] += 0.2f; p.lines.add("+20% ship quality and more ship output");
         } else if (id.equals("fuelprod")) {
