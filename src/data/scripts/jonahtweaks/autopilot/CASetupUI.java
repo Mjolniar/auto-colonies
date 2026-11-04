@@ -39,6 +39,7 @@ public class CASetupUI {
         s.surplusChecked = true;
         s.surplusTerraform = 0;        // what the focus world leaves of it goes into terraforming, as much output as it buys
         s.noSurplusResearch = false;   // and into more Research Facilities while research left is worth the speed
+        s.surplusFocusOnly = false;    // past 10,000,000 over the line, every colony spends it
         s.monthCredits = credits;
         s.feeLevel = 2;
         s.stationLine = "score";
@@ -153,6 +154,13 @@ public class CASetupUI {
                     + "per-project cap, new upkeep up to a tenth of net income a month, prices counted at a quarter, its terraforming paid from "
                     + "the surplus, and research counting its plan twice. Pick the focus world on its colony panel, or let Autopilot pick "
                     + "the Auto colony with the most to build on.", Misc.getGrayColor(), 4f);
+            row(t, "Over " + Misc.getDGSCredits(CASurplus.RICH) + " of surplus", s.surplusFocusOnly ? "Focus world only" : "Every colony spends it",
+                    "Every colony spends it", "surplusrich", true);
+            t.addPara("Past that, one focus world can't spend it all, so every Approve and Auto colony spends from the surplus: past the monthly "
+                    + "budget and the per-project cap, prices at a quarter, credits counting a quarter in what a building is worth (so what adds "
+                    + "defense, stability, growth or access goes up even if it costs more than it earns), new upkeep up to a fifth of net income a "
+                    + "month, hazard pay wherever it speeds growth, and up to three terraforming projects at once per colony. It pauses while net "
+                    + "income is under half its best since it began.", Misc.getGrayColor(), 4f);
             if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("terraformingmadeeasy")) {
                 row(t, "Surplus terraforming", CASettings.SURPLUS_TF_NAMES[Math.max(0, Math.min(2, s.surplusTerraform))], "Max output", "surplustf", true);
                 t.addPara("What the focus world leaves of the surplus goes into Terraforming Made Easy projects at every Auto colony, most value "
@@ -405,6 +413,7 @@ public class CASetupUI {
         else if (k.equals("researchcores")) s.researchCoresByValue = !s.researchCoresByValue;
         else if (k.equals("projsupply")) { s.projectSupplyMode = (Math.max(0, Math.min(2, s.projectSupplyMode)) + 1) % 3; CAProjects.computedAt = -99f; }
         else if (k.equals("surplusres")) s.noSurplusResearch = !s.noSurplusResearch;
+        else if (k.equals("surplusrich")) s.surplusFocusOnly = !s.surplusFocusOnly;
         else if (k.equals("inspect")) s.inspectionMode = (Math.max(0, Math.min(2, s.inspectionMode)) + 1) % 3;
         else if (k.equals("corerisk")) s.coreRisk = (Math.max(0, Math.min(3, s.coreRisk)) + 1) % 4;
         else if (k.equals("sp")) s.storyPointRule = (s.storyPointRule + 1) % 3;

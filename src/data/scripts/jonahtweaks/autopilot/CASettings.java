@@ -28,6 +28,9 @@ public class CASettings {
     // surplus investment (CASurplus): credits over the line go into one focus world; index into SURPLUS_LINES (0 off).
     // surplusChecked is false loading a save from before 2.21.0, which gets the recommended line once.
     public int surplusLine = 2;
+    // past CASurplus.RICH over the line every Approve/Auto colony spends from the surplus (false, also older saves); true: the focus world only
+    public boolean surplusFocusOnly = false;
+    public float richIncomeRef = 0f;   // best net income while spending freely (its floor is half of it)
     public boolean surplusChecked = true;
     public String focusId;        // the focus world you picked (null: Autopilot picks)
     public String focusAuto;      // the one Autopilot picked last, kept unless another beats it clearly

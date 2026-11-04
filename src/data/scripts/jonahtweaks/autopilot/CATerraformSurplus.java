@@ -53,10 +53,11 @@ public class CATerraformSurplus {
         } catch (Throwable t) { return false; }
     }
 
-    static CATerraSim.Colony colony(final MarketAPI m, final CAData.Profile prof) {
+    /** base: the value already coming from projects under way, so a plan made on top of them counts only what it adds. */
+    static CATerraSim.Colony colony(final MarketAPI m, final CAData.Profile prof, final float base) {
         final Map<String, Boolean> can = new HashMap<String, Boolean>();
         return new CATerraSim.Colony() {
-            public float value(Set<String> after) { return CAConditions.change(m, after, prof, null); }
+            public float value(Set<String> after) { return CAConditions.change(m, after, prof, null) - base; }
             public boolean has(String s) { return m.hasIndustry(s); }
             public boolean ours(String s) { return CAData.get().surplusBuilt().contains(m.getId() + ":" + s); }
             public float buildDays(String s) { IndustrySpecAPI sp = spec(s); return sp == null ? 0f : sp.getBuildTime(); }
@@ -70,26 +71,70 @@ public class CATerraformSurplus {
         };
     }
 
-    /** The colony's surplus terraforming plan, worked out once a day. */
+    /** TME structures at the colony that are being built, upgraded or running a project, with the project each runs (null while building). */
+    static Map<String, Utils.ProjectData> busy(MarketAPI m) {
+        Map<String, Utils.ProjectData> out = new HashMap<String, Utils.ProjectData>();
+        for (Industry ind : m.getIndustries()) {
+            if (!(ind instanceof BaseTerraformingIndustry)) continue;
+            BaseTerraformingIndustry ti = (BaseTerraformingIndustry) ind;
+            if (ti.isBuilding() || ti.isUpgrading() || ti.hasOngoingProject()) out.put(ind.getId(), ti.hasOngoingProject() ? ti.getProject() : null);
+        }
+        return out;
+    }
+
+    /**
+     * The colony's surplus terraforming plan, worked out once a day and again whenever its conditions or busy structures
+     * change. It's made from the conditions the colony will have once the projects under way finish, for the structures
+     * that are free, and leaves out any project that would touch a running one's condition either way (TME projects
+     * remove what they hate, so the order they finish in would matter): several can then run at once.
+     */
     static CATerraSim.Result plan(MarketAPI m, CAData.Colony c, CASettings s) {
         Set<String> conds = new HashSet<String>();
         for (MarketConditionAPI mc : m.getConditions()) conds.add(mc.getId());
+        Map<String, Utils.ProjectData> busy = busy(m);
+        Set<String> key = new HashSet<String>(conds);
+        for (String b : busy.keySet()) key.add("busy:" + b);
         Float at = planAt.get(m.getId());
         CATerraSim.Result cached = plans.get(m.getId());
         // a plan from before the colony's conditions changed (a project just finished) is redone at once
-        if (cached != null && at != null && now() - at < 1f && conds.equals(planConds.get(m.getId()))) return cached;
-        planConds.put(m.getId(), conds);
+        if (cached != null && at != null && now() - at < 1f && key.equals(planConds.get(m.getId()))) return cached;
+        planConds.put(m.getId(), key);
         CAPlan.Plan plan = CAPlan.build(m, c.profile);
         Set<String>[] ka = CATerraform.keepAvoid(plan, conds);   // the same rule as the plan's own projects, so neither undoes the other
         Set<String> keep = ka[0], avoid = ka[1];
         if (CAConditions.pollutionReturns(m)) keep.add("pollution");   // its forge's upgrade adds it back: removing it now is wasted
         boolean gas = CATerraform.gasGiant(m);
-        CATerraSim.Result r = CATerraSim.plan(conds, gas, CAWorldPlanner.rows(), keep, avoid, Settings.BUILD_COST_MULTIPLIER,
-                Settings.REMOVAL_COST_MULTIPLIER, s.surplusTerraform, colony(m, CAThreat.effective(m, c.profile)));
+        Map<String, CAWorldPlanner.Row> all = CAWorldPlanner.rows();
+        Set<String> start = conds, running = new HashSet<String>(), runningHate = new HashSet<String>();
+        for (Utils.ProjectData pd : busy.values()) {
+            if (pd == null) continue;
+            CAWorldPlanner.Row row = all.get(pd.id);
+            running.add(pd.id);
+            if (row == null) continue;
+            runningHate.addAll(CAWorldPlanner.idsOf(row.hated));
+            CATerraSim.Move mv = new CATerraSim.Move();
+            mv.structure = row.structure; mv.condition = pd.id; mv.add = !start.contains(pd.id);
+            start = CATerraSim.apply(start, mv, row, gas);
+        }
+        Map<String, CAWorldPlanner.Row> rows = new HashMap<String, CAWorldPlanner.Row>();
+        for (Map.Entry<String, CAWorldPlanner.Row> e : all.entrySet()) {
+            CAWorldPlanner.Row r = e.getValue();
+            if (busy.containsKey(r.structure) || running.contains(r.condition) || runningHate.contains(r.condition)) continue;
+            boolean touches = false;
+            for (String h : CAWorldPlanner.idsOf(r.hated)) if (running.contains(h)) touches = true;
+            if (!touches) rows.put(e.getKey(), r);
+        }
+        CAData.Profile prof = CAThreat.effective(m, c.profile);
+        float base = start == conds ? 0f : CAConditions.change(m, start, prof, null);
+        CATerraSim.Result r = CATerraSim.plan(start, gas, rows, keep, avoid, Settings.BUILD_COST_MULTIPLIER,
+                Settings.REMOVAL_COST_MULTIPLIER, s.surplusTerraform, colony(m, prof, base));
         plans.put(m.getId(), r);
         planAt.put(m.getId(), now());
         return r;
     }
+
+    /** While spending freely (CASurplus.rich), up to this many surplus projects start at a colony a day, on different structures. */
+    static final int PARALLEL = 3;
 
     public static void run(List<MarketAPI> auto) {
         CAData d = CAData.get();
@@ -127,9 +172,26 @@ public class CATerraformSurplus {
                     + " for " + Misc.getDGSCredits(top.q.cost) + (top.q.builds.isEmpty() ? "" : " with the structure") + ".";
         }
         float budget = CASurplus.amount(s);
+        Set<String> acted = new HashSet<String>();
         for (Cand k : cands) {
-            try { budget -= act(k, s, budget); }
+            try { float spent = act(k, s, budget); budget -= spent; if (spent > 0f) acted.add(k.m.getId()); }
             catch (Throwable t) { CADiagnostics.quarantine(k.q.moves.get(0).structure, "surplus terraforming at " + k.m.getName(), t); }
+        }
+        // spending freely: a colony that started one goes again for its other free structures, planned on top of what's running
+        if (!CASurplus.rich(s)) return;
+        for (int pass = 1; pass < PARALLEL && !acted.isEmpty(); pass++) {
+            Set<String> again = new HashSet<String>();
+            for (MarketAPI m : auto) {
+                if (!acted.contains(m.getId())) continue;
+                try {
+                    CATerraSim.Result r = plan(m, d.colony(m.getId()), s);
+                    if (r.best == null) continue;
+                    float spent = act(new Cand(m, r.best), s, budget);
+                    budget -= spent;
+                    if (spent > 0f) again.add(m.getId());
+                } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus terraforming (more at once) failed at " + m.getName(), t); }
+            }
+            acted = again;
         }
     }
 

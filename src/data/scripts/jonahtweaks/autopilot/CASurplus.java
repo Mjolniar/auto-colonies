@@ -190,18 +190,60 @@ public class CASurplus {
         return f != null && f.getId().equals(m.getId());
     }
 
-    /** Spending the focus world may do beyond the monthly budget: the surplus. 0 elsewhere. */
-    public static float extra(MarketAPI m, CASettings s) { return isFocus(m) ? amount(s) : 0f; }
+    // ---------------- spending freely ----------------
+    // Past RICH over the line, one focus world can't spend it all (built out, one new building at a time), so every Approve
+    // and Auto colony spends from the surplus like the focus world, and a credit counts RICH_MONEY in what a build is worth:
+    // upkeep matters little against that much, so buildings that add defense, stability, growth or access go up even when
+    // they cost more than they earn. It pauses while net income is under half the best it's been while rich, so new upkeep
+    // can never eat the income that makes the surplus.
 
-    public static float projectCap(MarketAPI m, CASettings s) { return isFocus(m) ? Math.max(s.perProjectCap, amount(s)) : s.perProjectCap; }
+    /** Credits over the line past which every colony spends from the surplus. */
+    public static final float RICH = 10000000f;
+    /** While rich, a credit counts this much in what a build is worth (income and upkeep alike). */
+    public static final float RICH_MONEY = 0.25f;
+    /** While rich, the month's new upkeep may reach this share of net income. */
+    static final float RICH_UPKEEP_SHARE = 0.2f;
+    /** Rich spending pauses while net income is under this share of the best it's been while rich. */
+    static final float RICH_FLOOR = 0.5f;
+
+    /** Spending freely: surplus spreading on, this far over the line, and net income still at least half its best since. */
+    public static boolean rich(CASettings s) {
+        return richAt(s.surplusFocusOnly, amount(s), CABudget.netIncome(s), s.richIncomeRef);
+    }
+
+    static boolean richAt(boolean focusOnly, float amount, float net, float ref) {
+        return !focusOnly && amount >= RICH && net > 0f && net >= RICH_FLOOR * ref;
+    }
+
+    /** Spends from the surplus: the focus world, or while rich every Approve or Auto colony that builds. */
+    public static boolean spends(MarketAPI m) {
+        if (m == null) return false;
+        CASettings s = CAData.settings();
+        if (!on(s)) return false;
+        if (rich(s)) {
+            CAData.Mode mode = CAData.get().colony(m.getId()).mode;
+            return (mode == CAData.Mode.AUTO || mode == CAData.Mode.APPROVE) && !CAEngine.isOutpost(m) && !CAHypershunt.is(m);
+        }
+        MarketAPI f = focus();
+        return f != null && f.getId().equals(m.getId());
+    }
+
+    /** What a credit counts in a build's worth at this colony: RICH_MONEY while rich, else 1. */
+    public static float moneyWeight(MarketAPI m) { return m != null && spends(m) && rich(CAData.settings()) ? RICH_MONEY : 1f; }
+
+    /** Spending the colony may do beyond the monthly budget: the surplus, at the focus world (every colony while rich). 0 elsewhere. */
+    public static float extra(MarketAPI m, CASettings s) { return spends(m) ? amount(s) : 0f; }
+
+    public static float projectCap(MarketAPI m, CASettings s) { return spends(m) ? Math.max(s.perProjectCap, amount(s)) : s.perProjectCap; }
 
     public static float upkeepCap(MarketAPI m, CASettings s) {
         float cap = CABudget.upkeepCap(s);
-        return isFocus(m) ? Math.max(cap, UPKEEP_SHARE * Math.max(0f, CABudget.netIncome(s))) : cap;
+        if (!spends(m)) return cap;
+        return Math.max(cap, (rich(s) ? RICH_UPKEEP_SHARE : UPKEEP_SHARE) * Math.max(0f, CABudget.netIncome(s)));
     }
 
-    /** How much a price counts at this colony: a quarter at the focus world while there's a surplus. */
-    public static float costWeight(MarketAPI m) { return isFocus(m) ? CHEAP : 1f; }
+    /** How much a price counts at this colony: a quarter where the surplus is spent. */
+    public static float costWeight(MarketAPI m) { return spends(m) ? CHEAP : 1f; }
 
     /** Daily: turns surplus investment on once in saves from before it existed, works out the focus world, and logs changes. */
     public static void daily(CASettings s) {
@@ -214,6 +256,7 @@ public class CASurplus {
             }
         }
         compute(s);
+        richDaily(s);
         String key = "surplus:on:" + focusId;
         if (!on(s) || focusId == null) {
             for (String id : scores.keySet()) CALog.forget("surplus:on:" + id);
@@ -225,6 +268,27 @@ public class CASurplus {
             CALog.add("Surplus investment: " + Misc.getDGSCredits(amount(s)) + " over your " + Misc.getDGSCredits(line(s)) + " line goes into "
                     + f.getName() + ", the focus world" + (focusId.equals(s.focusId) ? " (your pick)" : " (" + whys.get(focusId) + ")"), true);
         }
+    }
+
+    /** Daily: tracks the best net income while rich (the floor), and logs when spending freely starts, pauses or ends. */
+    static void richDaily(CASettings s) {
+        float a = amount(s), net = CABudget.netIncome(s);
+        if (s.surplusFocusOnly || a < RICH) {
+            if (s.richIncomeRef > 0f) {
+                s.richIncomeRef = 0f;
+                CALog.forget("surplus:rich"); CALog.forget("surplus:richfloor");
+                CALog.add("Surplus: under " + Misc.getDGSCredits(RICH) + " over the line now, so only the focus world spends it", true);
+            }
+            return;
+        }
+        if (s.richIncomeRef <= 0f || net > s.richIncomeRef) s.richIncomeRef = Math.max(net, 1f);
+        if (rich(s)) {
+            CALog.forget("surplus:richfloor");
+            if (CALog.once("surplus:rich")) CALog.add("Surplus: " + Misc.getDGSCredits(a) + " over your line, so every Auto colony spends it now: past the monthly "
+                    + "budget, prices at a quarter, new upkeep up to a fifth of net income a month, and credits count a quarter in what a building "
+                    + "is worth, so whatever adds defense, stability, growth or access goes up. Hazard pay goes wherever it speeds growth", true);
+        } else if (CALog.once("surplus:richfloor")) CALog.add("Surplus: spending freely pauses: net income (" + Misc.getDGSCredits(net) + ") is under half the best since it began ("
+                + Misc.getDGSCredits(s.richIncomeRef) + "), so no more new upkeep until it recovers", true);
     }
 
     // ---------------- panels ----------------
@@ -242,6 +306,10 @@ public class CASurplus {
                 Misc.getDGSCredits(line(s)), f.getName());
         else t.addPara("Surplus investment: %s over your %s line goes into %s, the focus world" + (f.getId().equals(s.focusId) ? " (your pick)." : " ("
                 + CALog.esc(whys.get(f.getId())) + ")."), 4f, hl, Misc.getDGSCredits(a), Misc.getDGSCredits(line(s)), f.getName());
+        if (rich(s)) t.addPara("Spending freely (over %s): every Auto colony spends the surplus, prices and credits count a quarter, new upkeep up to a fifth "
+                + "of net income a month, hazard pay wherever it speeds growth, and several terraforming projects at once.", 2f, hl, Misc.getDGSCredits(RICH));
+        else if (!s.surplusFocusOnly && a >= RICH) t.addPara("Spending freely is paused: net income is under half its best since it began (%s), so no new upkeep "
+                + "until it recovers.", 2f, Misc.getNegativeHighlightColor(), Misc.getDGSCredits(s.richIncomeRef));
         float c = committed();
         if (c > 0f) t.addPara("Kept back: %s already promised to production that hasn't been paid yet.", 2f, gray, hl, Misc.getDGSCredits(c));
         if (CATerraSim.summary != null) t.addPara(CALog.esc(CATerraSim.summary), gray, 2f);
