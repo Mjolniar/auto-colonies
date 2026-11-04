@@ -86,6 +86,18 @@ public class CAData {
     // Terraforming Made Easy structures surplus terraforming built ("marketId:structureId"); only these are taken down again
     public Set<String> surplusBuilt;
     public Set<String> surplusBuilt() { if (surplusBuilt == null) surplusBuilt = new HashSet<String>(); return surplusBuilt; }
+    // an enabler hazard surplus terraforming added on the way to a deposit that needs it ("marketId:condition" -> the deposit),
+    // and when: the plan doesn't clean it up until the deposit is in (or 540 days pass)
+    public Map<String, String> enablers;
+    public Map<String, Long> enablerAt;
+    public Map<String, String> enablers() { if (enablers == null) enablers = new HashMap<String, String>(); return enablers; }
+    public Map<String, Long> enablerAt() { if (enablerAt == null) enablerAt = new HashMap<String, Long>(); return enablerAt; }
+
+    /** Whether surplus terraforming added this condition at the colony on the way to a deposit that isn't in yet. */
+    public static boolean enabler(com.fs.starfarer.api.campaign.econ.MarketAPI m, String cond) {
+        try { return get().enablers().containsKey(m.getId() + ":" + cond); } catch (Throwable t) { return false; }
+    }
+
     // colonies whose Research Facility surplus research built (market ids); only these come down again
     public Set<String> surplusResearch;
     public Set<String> surplusResearch() { if (surplusResearch == null) surplusResearch = new HashSet<String>(); return surplusResearch; }

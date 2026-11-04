@@ -174,7 +174,7 @@ public class CAResearch {
     static String whereFrom(String id) {
         if (DATABANK.equals(id)) return "Research Facilities on pre-collapse facility worlds, ruins and salvage";
         if (CORE_VALUE.containsKey(id)) return "salvage";
-        if (id.equals("fullerene_spool")) return "the Daedalus Array";
+        if (id.equals("fullerene_spool")) return "AotD's custom production (Sky Tether research)";
         if (id.equals("corrupted_nanoforge")) return "the Nanoforge Corruption Analysis special project";
         return "exploration: ruins, derelicts, research stations";
     }

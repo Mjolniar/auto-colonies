@@ -285,41 +285,57 @@ public class CAProjects {
         last = null;
         computing = true;
         try {
-            if (!read()) return;
+            boolean running = read();
+            // spending freely (CASurplus.rich): AotD's own goods get producers even with no project running, since Grand Wonders,
+            // megastructure restoration, Bifrost gates and AotD production all take them from your colonies' exports
+            boolean rich = CASurplus.rich(CAData.settings());
+            if (!running && !rich) return;
             yours.clear(); sector.clear();
             Set<String> goods = new LinkedHashSet<String>(left.keySet());
             goods.addAll(monthly.keySet());
             for (Producer p : PRODUCERS) { goods.add(p.good); for (String in : p.inputs) goods.add(in); }
             Map<String, Integer> made = new HashMap<String, Integer>();
             for (String g : goods) { int y = yours(g); yours.put(g, y); made.put(g, y); sector.put(g, others(g)); }
+            Set<String> wanted = new LinkedHashSet<String>(left.keySet());
+            if (rich) wanted.addAll(Arrays.asList(AOTD_GOODS));
             List<String> missing = new ArrayList<String>();
-            for (String g : left.keySet()) if (!madeAny(made, g)) missing.add(g);
+            for (String g : wanted) if (!madeAny(made, g)) missing.add(g);
             int ships = Math.max(0, yours.get("ships") == null ? 0 : yours.get("ships"));
             Set<String> built = new HashSet<String>();
             for (MarketAPI m : Misc.getPlayerMarkets(false)) for (Industry ind : m.getIndustries()) built.add(ind.getId());
             last = plan(missing, hosts(), built, made, ships);
             CASettings s = CAData.settings();
             for (Plan pl : last.plans) {
+                String forWhat = forWhat(pl.good);
                 if (s.projectSupplyMode == 0) {
                     List<CAPlan.Step> l = STEPS.get(pl.host);
                     if (l == null) { l = new ArrayList<CAPlan.Step>(); STEPS.put(pl.host, l); }
-                    l.add(new CAPlan.Step(CAPlan.Kind.BUILD, pl.building, buildingName(pl.building) + " (" + name(pl.good) + " for " + project + ")"));
+                    l.add(new CAPlan.Step(CAPlan.Kind.BUILD, pl.building, buildingName(pl.building) + " (" + name(pl.good) + " for " + forWhat + ")"));
                 }
-                if (CALog.once("proj:" + project + ":" + pl.good + ":" + pl.host + ":" + pl.building))
-                    CALog.add(project + " (special project) takes " + name(pl.good) + " every month, and none of your colonies make it"
-                            + (sector.get(pl.good) > 0 ? " (other factions do, but projects only take your own production)" : " (nobody in the sector does)") + ": "
+                if (CALog.once("proj:" + forWhat + ":" + pl.good + ":" + pl.host + ":" + pl.building))
+                    CALog.add(forWhat + " takes " + name(pl.good) + ", and none of your colonies make it"
+                            + (sector.get(pl.good) > 0 ? " (other factions do, but AotD only takes your own production)" : " (nobody in the sector does)") + ": "
                             + (s.projectSupplyMode == 0 ? buildingName(pl.building) + " at " + pl.hostName + " is a first plan step now" : "build " + buildingName(pl.building) + " at " + pl.hostName)
                             + " (" + routeText(pl) + ")", true);
             }
-            for (String g : last.unresolved) if (CALog.once("projx:" + project + ":" + g))
-                CALog.add(project + " (special project) takes " + name(g) + " every month, none of your colonies make it, and no Approve or Auto colony can host what makes it ("
+            for (String g : last.unresolved) if (CALog.once("projx:" + forWhat(g) + ":" + g))
+                CALog.add(forWhat(g) + " takes " + name(g) + ", none of your colonies make it, and no Approve or Auto colony can host what makes it ("
                         + hostText(g) + "): that's yours to build", true);
-            if (!other.isEmpty() && CALog.once("projo:" + project + ":" + other))
+            if (project != null && !other.isEmpty() && CALog.once("projo:" + project + ":" + other))
                 CALog.add(project + " (special project): its next stages also take " + CAContracts.join(other) + ", which Autopilot doesn't make; they're yours to find", false);
         } catch (Throwable t) {
             broken = true;
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "can't read Vaults of Knowledge's special projects; their supply is left to you", t);
         } finally { computing = false; }
+    }
+
+    /** AotD's goods, which only its upgraded industries make; spending freely, every one gets a producer. */
+    static final String[] AOTD_GOODS = {"refined_metal", "purified_rare_metal", "advanced_components", "domain_heavy_machinery"};
+
+    /** What a good is needed for: the running special project, else AotD's wonders, gates and production (spending freely). */
+    static String forWhat(String good) {
+        if (project != null && left.containsKey(good)) return project + " (special project)";
+        return "Ashes of the Domain's wonders, gates and production";
     }
 
     static String routeText(Plan pl) {
@@ -344,7 +360,14 @@ public class CAProjects {
                 + "them isn't delivered at all. For the one you're running, each good no colony of yours makes gets a producer as a first plan "
                 + "step at the colony best placed for it (research works toward it first if it's locked), along with whatever AotD goods that "
                 + "producer needs itself.", 6f, hl, CASettings.PROJECT_SUPPLY_NAMES[Math.max(0, Math.min(2, s.projectSupplyMode))]);
-        if (project == null) { t.addPara("No special project is running.", gray, 4f); return; }
+        if (project == null) {
+            t.addPara("No special project is running.", gray, 4f);
+            if (last != null && !last.plans.isEmpty()) {   // spending freely: AotD's goods for wonders, gates and production
+                t.addPara("Spending freely: producers of AotD's own goods, for its wonders, gates and production:", 4f);
+                for (Plan pl : last.plans) t.addPara("    " + CALog.esc(buildingName(pl.building) + " at " + pl.hostName + " for " + name(pl.good) + ": " + routeText(pl)), gray, 2f);
+            }
+            return;
+        }
         t.addPara("Running: %s.", 6f, hl, project);
         for (Map.Entry<String, Integer> e : left.entrySet()) {
             String g = e.getKey();
