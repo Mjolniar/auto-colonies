@@ -107,6 +107,13 @@ public class CAContracts {
         catch (Throwable t) { return null; }
     }
 
+    /** Your production of the commodity by ToT's figures (what its contracts deliver from), or null when ToT can't say. */
+    public static Integer production(String com) {
+        if (!Global.getSettings().getModManager().isModEnabled(MOD) || !active()) return null;
+        try { return i(prod, com, "player"); }
+        catch (Throwable t) { return null; }
+    }
+
     /** ToT delivers from a colony only with a spaceport and accessibility above 0; one under siege may lose it any day. */
     static boolean delivers(MarketAPI m) {
         return m.hasSpaceport() && m.getAccessibilityMod().computeEffective(0f) > 0f && !CASiege.held(m);
@@ -238,7 +245,7 @@ public class CAContracts {
     /** Commodities your held contracts need more of than your colonies make, and by how much; refreshed daily. */
     @SuppressWarnings("unchecked")
     public static Map<String, Integer> shortfalls() {
-        float now = Global.getSector().getClock().getElapsedDaysSince(0L);
+        float now = CADay.now();
         if (cached != null && now - cachedAt < 1f) return cached;
         Map<String, Integer> out = new HashMap<String, Integer>();
         if (active()) {

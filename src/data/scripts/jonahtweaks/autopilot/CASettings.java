@@ -47,6 +47,9 @@ public class CASettings {
     public boolean useAICores = false;
     public int alphaMode = 0;             // 0 only where removable (default), 1 anywhere, 2 never
     public boolean researchCoresByValue = false;   // false (default, and older saves): Alpha cores go into research buildings first
+    // special project supply (CAProjects, Vaults of Knowledge): 0 Auto (also older saves), 1 Warn only, 2 Off
+    public int projectSupplyMode = 0;
+    public static final String[] PROJECT_SUPPLY_NAMES = {"Auto", "Warn only", "Off"};
     public boolean storageCheat = false;  // cheat: Autopilot Storage takes anything and colonies draw shortages from it
     public int coreRisk = 1;              // 0 more where defenses beat the next inspection, 1 never inspected (default for new saves), 2 no limit, 3 small colonies only
     public int inspectionMode = 0;        // Hegemony inspections of Auto colonies: 0 advise (so older saves load as advise), 1 resist where defended, 2 off

@@ -31,10 +31,12 @@ public class CATerraformSurplus {
     static final String ACTION = "surplus terraforming";
     static final Map<String, CATerraSim.Result> plans = CATerraSim.plans;
     static final Map<String, Float> planAt = CATerraSim.planAt;
+    /** The conditions each colony's cached plan was made for. */
+    static final Map<String, Set<String>> planConds = new HashMap<String, Set<String>>();
 
     static class Cand { MarketAPI m; CATerraSim.Seq q; Cand(MarketAPI m, CATerraSim.Seq q) { this.m = m; this.q = q; } }
 
-    static float now() { return Global.getSector().getClock().getElapsedDaysSince(0L); }
+    static float now() { return CADay.now(); }
 
     static IndustrySpecAPI spec(String id) {
         try { return Global.getSettings().getIndustrySpec(id); } catch (Throwable t) { return null; }
@@ -70,24 +72,18 @@ public class CATerraformSurplus {
 
     /** The colony's surplus terraforming plan, worked out once a day. */
     static CATerraSim.Result plan(MarketAPI m, CAData.Colony c, CASettings s) {
-        Float at = planAt.get(m.getId());
-        CATerraSim.Result cached = plans.get(m.getId());
-        if (cached != null && at != null && now() - at < 1f) return cached;
-        CAPlan.Plan plan = CAPlan.build(m, c.profile);
         Set<String> conds = new HashSet<String>();
         for (MarketConditionAPI mc : m.getConditions()) conds.add(mc.getId());
-        Set<String> keep = new HashSet<String>(), avoid = new HashSet<String>();
-        for (CAPlan.Step st : plan.steps) {
-            if (st.kind == CAPlan.Kind.COND) keep.add(st.id);
-            else if (st.kind == CAPlan.Kind.NOCOND) avoid.add(st.id);
-        }
-        for (String w : CAWorldPlanner.WORLDS) {
-            if (!w.equals(plan.world) && !conds.contains(w)) continue;
-            keep.add(w);   // the plan's world, or one the colony has: its conditions stay
-            CAWorldPlanner.Row r = CAWorldPlanner.rows().get(w);
-            if (r != null) keep.addAll(CAWorldPlanner.idsOf(r.liked));
-        }
-        boolean gas = m.getPrimaryEntity() instanceof PlanetAPI && ((PlanetAPI) m.getPrimaryEntity()).isGasGiant();
+        Float at = planAt.get(m.getId());
+        CATerraSim.Result cached = plans.get(m.getId());
+        // a plan from before the colony's conditions changed (a project just finished) is redone at once
+        if (cached != null && at != null && now() - at < 1f && conds.equals(planConds.get(m.getId()))) return cached;
+        planConds.put(m.getId(), conds);
+        CAPlan.Plan plan = CAPlan.build(m, c.profile);
+        Set<String>[] ka = CATerraform.keepAvoid(plan, conds);   // the same rule as the plan's own projects, so neither undoes the other
+        Set<String> keep = ka[0], avoid = ka[1];
+        if (CAConditions.pollutionReturns(m)) keep.add("pollution");   // its forge's upgrade adds it back: removing it now is wasted
+        boolean gas = CATerraform.gasGiant(m);
         CATerraSim.Result r = CATerraSim.plan(conds, gas, CAWorldPlanner.rows(), keep, avoid, Settings.BUILD_COST_MULTIPLIER,
                 Settings.REMOVAL_COST_MULTIPLIER, s.surplusTerraform, colony(m, CAThreat.effective(m, c.profile)));
         plans.put(m.getId(), r);
@@ -172,6 +168,13 @@ public class CATerraformSurplus {
         if (!(ind instanceof BaseTerraformingIndustry)) return 0f;
         BaseTerraformingIndustry ti = (BaseTerraformingIndustry) ind;
         if (ti.isBuilding() || ti.isUpgrading() || ti.hasOngoingProject()) return 0f;
+        // a TME project toggles its condition: on a world that already is the way the move wants, it would undo it
+        // (pollution removed by the plan an hour ago, then added back by this). Never start one that goes the wrong way
+        if (!wantsChange(mv.add, m.hasCondition(mv.condition))) {
+            planAt.remove(m.getId());
+            CADiagnostics.LOG.info(CADiagnostics.TAG + m.getName() + ": surplus terraforming dropped '" + mv.label() + "': the colony already is that way; replanning");
+            return 0f;
+        }
         Utils.ProjectData pd = null;
         List<Utils.ProjectData> projects = ti.getProjects();
         if (projects != null) for (Utils.ProjectData x : projects) if (x.id.equals(mv.condition)) pd = x;
@@ -208,6 +211,7 @@ public class CATerraformSurplus {
             if (ind == null) { built.remove(key); continue; }   // gone already
             if (ind.isBuilding() || ind.isUpgrading() || (ind instanceof BaseTerraformingIndustry && ((BaseTerraformingIndustry) ind).hasOngoingProject())) continue;
             if (r.wanted.contains(id) || c.locks.contains(id)) continue;
+            if (id.equals("tme_geomorphology_station") && CAConditions.pollutionReturns(m)) continue;   // the forge's upgrade brings pollution back: it'll be needed
             boolean planned = false;
             for (CAPlan.Step st : CAPlan.build(m, c.profile).steps) if (st.kind == CAPlan.Kind.BUILD && st.id.equals(id)) planned = true;
             if (planned) { built.remove(key); continue; }   // the plan wants it now: it's the plan's to keep
@@ -218,6 +222,9 @@ public class CATerraformSurplus {
                     + "what it changed stays, and its " + Misc.getDGSCredits(up) + " a month upkeep stops");
         }
     }
+
+    /** Whether a move still changes the colony: adding a condition it lacks, or removing one it has (TME toggles either way). */
+    static boolean wantsChange(boolean add, boolean has) { return add != has; }
 
     static void waits(MarketAPI m, String key, String what, float need) {
         if (CALog.once("tsw:" + key)) CALog.add(m.getName() + ": surplus terraforming (" + what + ") waits for " + Misc.getDGSCredits(need) + " of surplus credits");

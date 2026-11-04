@@ -10,6 +10,30 @@ import java.util.*;
 /** What a planet condition is worth to a colony, shared by the terraforming planners (Terraforming Made Easy, TASC). */
 public class CAConditions {
 
+    /** Whether the item pollutes in a forge: vanilla's nanoforges do, Ashes of the Domain's no_pollution items don't. */
+    static boolean polluting(com.fs.starfarer.api.campaign.SpecialItemData item) {
+        if (item == null) return false;
+        try {
+            com.fs.starfarer.api.campaign.SpecialItemSpecAPI sp =Global.getSettings().getSpecialItemSpec(item.getId());
+            return sp == null || !sp.hasTag("no_pollution");
+        } catch (Throwable t) { return true; }
+    }
+
+    /**
+     * Whether pollution removed now comes back by itself: vanilla's Heavy Industry (and every forge built on it) with a
+     * polluting item on a habitable world adds pollution once per building, and an upgrade under way (Heavy Industry to
+     * Orbital Works, Orbital Works to Orbital Skunkworks) makes a new one when it finishes. So pollution removal waits for it.
+     * (A forge that found pollution already there adds it back once after the first removal, then the next removal sticks.)
+     */
+    public static boolean pollutionReturns(MarketAPI m) {
+        if (!m.hasCondition("habitable")) return false;
+        for (com.fs.starfarer.api.campaign.econ.Industry ind : m.getIndustries()) {
+            if (!(ind instanceof com.fs.starfarer.api.impl.campaign.econ.impl.HeavyIndustry) || !polluting(ind.getSpecialItem())) continue;
+            if (ind.isUpgrading()) return true;
+        }
+        return false;
+    }
+
     /** Hazard rating change of a condition (from condition_gen_data). */
     static final Map<String, Float> HAZARD = new HashMap<String, Float>();
     static {

@@ -122,7 +122,7 @@ public class CACrisis {
     /** Just the meter: progress, multiplier and cap, read once a day (every faction's progress takes a scan of the sector). */
     public static Base meter() {
         float day = -1f;
-        try { day = Global.getSector().getClock().getElapsedDaysSince(0L); } catch (Throwable ignored) { }
+        try { day = CADay.now(); } catch (Throwable ignored) { }
         if (day < 0f || day - meterDay >= 1f || day < meterDay) {
             meterDay = day;
             meterLive = false;
@@ -334,7 +334,7 @@ public class CACrisis {
      * system where that faction's activity is strongest (pirate, Diktat, Tri-Tachyon and League targets follow it).
      */
     public static Set<MarketAPI> targets() {
-        float day = Global.getSector().getClock().getElapsedDaysSince(0L);
+        float day = CADay.now();
         if (day - targetsDay < 1f && day >= targetsDay) return targets;
         targetsDay = day;
         targets.clear();

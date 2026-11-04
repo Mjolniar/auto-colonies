@@ -110,6 +110,7 @@ public class CAResearch {
         public boolean available, needsItems, unlockedByCommission;
         public float own, next, value, cost, rank;
         public float plan;   // its share of the plan steps whose research chain it's on
+        public String otherText;   // a requirement that isn't an item, not met yet (VoK's text: a Hyperdimensional Processor in a Research Facility)
         public List<String> planFor = new ArrayList<String>();
         public List<String> lines = new ArrayList<String>();
         Object raw;
@@ -141,7 +142,9 @@ public class CAResearch {
             if (e.getValue() instanceof Enum && "INDUSTRY".equals(((Enum<?>) e.getValue()).name()) && Global.getSettings().getIndustrySpec(e.getKey()) != null) t.industries.add(e.getKey());
         }
         for (String[] g : GATES) if (g[0].equals(t.id)) t.industries.add(g[1]);
-        boolean flagOk = CARefl.get(fOther, o) == null || CARefl.getBoolean(fOtherMet, o);
+        Object other = CARefl.get(fOther, o);
+        boolean flagOk = other == null || CARefl.getBoolean(fOtherMet, o);
+        if (!flagOk) try { Object two = CARefl.get(CARefl.field(other.getClass(), "two"), other); if (two != null) t.otherText = String.valueOf(two); } catch (Throwable ignored) { }
         t.available = Boolean.TRUE.equals(CARefl.invoke(canResearch, mgr, t.id, false));
         t.needsItems = !t.available && flagOk && Boolean.TRUE.equals(CARefl.invoke(allReq, mgr, t.id)) && !Boolean.TRUE.equals(CARefl.invoke(itemsOk, mgr, t.id));
         t.unlockedByCommission = forPlayer(t.id);
@@ -165,8 +168,18 @@ public class CAResearch {
     static List<Tech> cached;
     static float cachedAt = -99f;
     static int openCount;   // unresearched techs at the last ranking, startable or not
+    static final List<Tech> itemTechs = new ArrayList<Tech>();   // unresearched techs that take colony items, which Auto leaves to you
 
-    static float now() { return Global.getSector().getClock().getElapsedDaysSince(0L); }
+    /** Where a research item comes from, for the panel. */
+    static String whereFrom(String id) {
+        if (DATABANK.equals(id)) return "Research Facilities on pre-collapse facility worlds, ruins and salvage";
+        if (CORE_VALUE.containsKey(id)) return "salvage";
+        if (id.equals("fullerene_spool")) return "the Daedalus Array";
+        if (id.equals("corrupted_nanoforge")) return "the Nanoforge Corruption Analysis special project";
+        return "exploration: ruins, derelicts, research stations";
+    }
+
+    static float now() { return CADay.now(); }
 
     /** An open plan step that research locks, with the chain of techs it still needs. */
     public static class Need {
@@ -221,7 +234,7 @@ public class CAResearch {
             try { plan = CAPlan.build(m, c.profile); } catch (Throwable e) { continue; }
             for (CAPlan.Step st : plan.steps) {
                 if (st.kind != CAPlan.Kind.BUILD || st.done(m)) continue;
-                float value = CAPlan.bonusFor(m, plan, st.id) * (CASurplus.isFocus(m) ? 2f : 1f);   // the focus world's plan counts twice
+                float value = CAPlan.bonusFor(m, plan, st.id, false) * (CASurplus.isFocus(m) ? 2f : 1f);   // the focus world's plan counts twice
                 if (value <= 0f) continue;
                 List<String> chain = new ArrayList<String>();
                 Set<String> seen = new HashSet<String>();
@@ -286,6 +299,8 @@ public class CAResearch {
             if (t.available || t.needsItems) cands.add(t);
         }
         openCount = open.size();
+        itemTechs.clear();
+        for (Tech t : open.values()) if (!t.autoOk()) itemTechs.add(t);
         try { needs = planNeeds(open); } catch (Throwable e) { needs = new ArrayList<Need>(); CADiagnostics.LOG.warn(CADiagnostics.TAG + "research plan needs failed", e); }
         // techs one step past a candidate, for the "leads to" share
         for (Tech t : open.values()) {
@@ -794,6 +809,21 @@ public class CAResearch {
                 }
             }
             if (shown == 0) t.addPara("No tech can be started: every remaining one needs another researched first.", gray, 6f);
+            if (!itemTechs.isEmpty()) {
+                t.addPara("Research that takes colony items (yours to start; Autopilot can't make them):", 8f);
+                int k = 0;
+                for (Tech x : itemTechs) {
+                    if (k++ >= 8) break;
+                    List<String> parts = new ArrayList<String>();
+                    for (Map.Entry<String, Integer> e : x.items.entrySet()) {
+                        if (DATABANK.equals(e.getKey())) continue;
+                        int have = 0;
+                        try { have = (int) ((Number) CARefl.invoke(itemCount, mgr, e.getKey())).floatValue(); } catch (Throwable ignored) { }
+                        parts.add(e.getValue() + " " + commodityName(e.getKey()) + " (have " + have + "; from " + whereFrom(e.getKey()) + ")");
+                    }
+                    t.addPara("    %s: " + CALog.esc(CAContracts.join(parts)) + (x.otherText != null ? ". Also: " + CALog.esc(x.otherText) : ""), 2f, hl, x.name);
+                }
+            }
         } catch (Throwable e) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "research section failed", e);
             t.addPara("Research info unavailable; see starsector.log.", gray, 6f);

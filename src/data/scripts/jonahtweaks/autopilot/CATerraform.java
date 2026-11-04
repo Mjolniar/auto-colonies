@@ -34,6 +34,50 @@ public class CATerraform {
 
     static class Cand { MarketAPI m; BaseTerraformingIndustry ind; Utils.ProjectData pd; float cost, score; String why; boolean planned; }
 
+    static final String ACTION = "terraforming";
+
+    /** Hazards a plain plan clears (CAPlan's clean-up), which no terraforming may bring back; a Forge keeps tectonic activity and gravity. */
+    static final String[] CLEANUP = {"toxic_atmosphere", "dense_atmosphere", "irradiated", "pollution", "inimical_biosphere", "high_gravity",
+            "extreme_tectonic_activity"};
+
+    /**
+     * What terraforming must leave alone at a colony, shared by the plan's projects and surplus terraforming. keep: its COND
+     * steps, the world its plan works toward and every condition that world needs, and a world it has formed (TME never
+     * re-checks a formed world's requirements, so only the world itself). avoid: what it wants gone: NOCOND steps, what the
+     * target world hates, and on a plain plan the hazards it clears, so nothing adds back what the plan just paid to remove.
+     */
+    @SuppressWarnings("unchecked")
+    static Set<String>[] keepAvoid(CAPlan.Plan plan, Set<String> conds) {
+        Set<String> keep = new HashSet<String>(), avoid = new HashSet<String>();
+        for (CAPlan.Step st : plan.steps) {
+            if (st.kind == CAPlan.Kind.COND) keep.add(st.id);
+            else if (st.kind == CAPlan.Kind.NOCOND) avoid.add(st.id);
+        }
+        for (String w : CAWorldPlanner.WORLDS) {
+            if (conds.contains(w)) { keep.add(w); continue; }
+            if (!w.equals(plan.world)) continue;
+            keep.add(w);
+            CAWorldPlanner.Row r = CAWorldPlanner.rows().get(w);
+            if (r != null) { keep.addAll(CAWorldPlanner.idsOf(r.liked)); avoid.addAll(CAWorldPlanner.idsOf(r.hated)); }
+        }
+        if (plan.world == null) for (String h : CLEANUP) {
+            if ("Forge".equals(plan.name) && (h.equals("extreme_tectonic_activity") || h.equals("high_gravity"))) continue;
+            avoid.add(h);
+        }
+        avoid.removeAll(keep);
+        return new Set[]{keep, avoid};
+    }
+
+    static Set<String> conditions(MarketAPI m) {
+        Set<String> c = new HashSet<String>();
+        for (com.fs.starfarer.api.campaign.econ.MarketConditionAPI mc : m.getConditions()) c.add(mc.getId());
+        return c;
+    }
+
+    static boolean gasGiant(MarketAPI m) {
+        return m.getPrimaryEntity() instanceof com.fs.starfarer.api.campaign.PlanetAPI && ((com.fs.starfarer.api.campaign.PlanetAPI) m.getPrimaryEntity()).isGasGiant();
+    }
+
     /**
      * Every idle TME structure in an Auto colony works its part of the colony plan: the earliest unfinished plan step
      * it can run comes first; otherwise its best-value project. Candidates are funded in priority order within the budget.
@@ -46,6 +90,11 @@ public class CATerraform {
             CAData.Colony c = d.colony(m.getId());
             CAData.Profile prof = CAThreat.effective(m, c.profile);
             CAPlan.Plan plan = CAPlan.build(m, c.profile);
+            Set<String> conds = conditions(m);
+            Set<String>[] ka = keepAvoid(plan, conds);
+            boolean gas = gasGiant(m), pollutionBack = CAConditions.pollutionReturns(m);
+            if (pollutionBack && m.hasCondition("pollution") && CALog.once("tfpollution:" + m.getId()))
+                CALog.add(m.getName() + ": pollution isn't removed while its nanoforge forge is being upgraded: the new building adds it back when it finishes");
             for (Industry raw : m.getIndustries()) {
                 if (!(raw instanceof BaseTerraformingIndustry)) continue;
                 BaseTerraformingIndustry ind = (BaseTerraformingIndustry) raw;
@@ -65,6 +114,7 @@ public class CATerraform {
                         if (!pd.id.equals(st.id)) continue;
                         boolean adding = !m.hasCondition(pd.id);
                         if ((st.kind == CAPlan.Kind.COND) != adding) continue;
+                        if (!adding && pd.id.equals("pollution") && pollutionBack) continue;
                         try { if (!ProjectListPlugin.canBuild(ind, pd)) continue; } catch (Throwable t) { continue; }
                         pick = new Cand(); pick.m = m; pick.ind = ind; pick.pd = pd; pick.cost = projectCost(m, pd);
                         pick.score = 1000000f - order * 1000f; pick.planned = true;
@@ -73,14 +123,22 @@ public class CATerraform {
                     }
                     if (pick != null) break;
                 }
-                // 2) otherwise the structure's best-value project
+                // 2) otherwise the structure's best-value project, valued on what the colony is after it: TME removes what the
+                // added condition hates (sparse transplutonics deletes abundant ones) and settles farmland, organics and habitability
                 if (pick == null) {
                     for (Utils.ProjectData pd : projects) {
                         try {
                             if (!ProjectListPlugin.canBuild(ind, pd)) continue;
                             boolean adding = !m.hasCondition(pd.id);
-                            if (!adding && plan.world != null && planNeeds(plan, pd.id)) continue;   // never undo a plan condition
-                            float value = conditionValue(m, pd.id, prof) * (adding ? 1f : -1f) + CAPlan.bonusForCondition(m, plan, pd.id, adding);
+                            if (!adding && pd.id.equals("pollution") && pollutionBack) continue;
+                            CATerraSim.Move mv = new CATerraSim.Move();
+                            mv.structure = ind.getId(); mv.condition = pd.id; mv.add = adding;
+                            CAWorldPlanner.Row row = CAWorldPlanner.rows().get(pd.id);
+                            Set<String> after;
+                            if (row != null) after = CATerraSim.apply(conds, mv, row, gas);
+                            else { after = new HashSet<String>(conds); if (adding) after.add(pd.id); else after.remove(pd.id); }
+                            if (!CATerraSim.valid(conds, after, ka[0], ka[1])) continue;   // never undoes what the plan needs, never adds what it clears
+                            float value = CAConditions.change(m, after, prof, null) + CAPlan.bonusForCondition(m, plan, pd.id, adding);
                             float cost = projectCost(m, pd);
                             float score = value - cost / 36f * CASurplus.costWeight(m) - pd.buildTime * 30f;   // a quarter at the focus world with surplus
                             if (score > 0f && (pick == null || score > pick.score)) {
@@ -124,8 +182,10 @@ public class CATerraform {
                 continue;
             }
             try {
+                if (!CABreaker.allowed(ACTION)) continue;
                 k.ind.setProject(k.pd);
                 k.ind.startUpgrading();
+                if (!CABreaker.check(ACTION, k.ind.isUpgrading() || k.ind.hasOngoingProject(), k.m.getName())) continue;   // not charged if it didn't start
                 Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(k.cost);
                 CABudget.charge(s, k.cost, fee, 0f);
                 s.terraSpent += k.cost;

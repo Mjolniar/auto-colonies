@@ -39,9 +39,10 @@ public class CASurplus {
         focusId = null; computedAt = -99f; scores.clear(); whys.clear(); CAItems.idle = null; CAItems.idleAt = -99f;
         committedAt = Long.MIN_VALUE;
         CASurplusResearch.summary = null;
+        CAProjects.reset();
     }
 
-    static float now() { return Global.getSector().getClock().getElapsedDaysSince(0L); }
+    static float now() { return CADay.now(); }
 
     public static float line(CASettings s) { return CASettings.SURPLUS_LINES[Math.max(0, Math.min(CASettings.SURPLUS_LINES.length - 1, s.surplusLine))]; }
 

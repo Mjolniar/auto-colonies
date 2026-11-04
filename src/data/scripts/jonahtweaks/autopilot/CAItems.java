@@ -262,7 +262,7 @@ public class CAItems {
      * worth that much more (idleBonus). Industrial Evolution's VPC chips have their own placer. Refreshed daily.
      */
     public static List<Idle> idleItems() {
-        float now = Global.getSector().getClock().getElapsedDaysSince(0L);
+        float now = CADay.now();
         if (idle != null && now - idleAt < 1f) return idle;
         idleAt = now;
         List<Idle> out = new ArrayList<Idle>();
@@ -586,6 +586,17 @@ public class CAItems {
         if (none != null) return "no limit: " + none;
         if (s.coreRisk == 2) return "no limit (Inspection risk: No limit)";
         return "no limit: its defenses (about " + (int) defenseFP(m) + " fleet points) beat the next inspection's " + (int) nextInspectionFP();
+    }
+
+    /** A nanoforge that pollutes (vanilla's; AotD's no_pollution ones don't) waits in Autopilot Storage. */
+    static boolean pollutingForgeWaiting() {
+        try {
+            for (CargoStackAPI st : CAData.get().storage().getStacksCopy()) {
+                if (!st.isSpecialStack() || st.getSpecialDataIfSpecial() == null) continue;
+                if (st.getSpecialDataIfSpecial().getId().endsWith("_nanoforge") && CAConditions.polluting(st.getSpecialDataIfSpecial())) return true;
+            }
+        } catch (Throwable ignored) { }
+        return false;
     }
 
     /** An Alpha core only goes where it can be taken out cleanly: vanilla buildings, never Population & Infrastructure or mod code. */
