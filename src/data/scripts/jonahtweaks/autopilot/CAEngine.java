@@ -308,7 +308,7 @@ public class CAEngine {
         // the plan only orders buildings that are worth something on their own, except Terraforming Made Easy's structures
         // and the Unification Center: they cost more than they earn, but they're how the plan's world is reached
         // and producers a special project needs (CAProjects): nothing else makes those goods
-        boolean enabler = p.id.startsWith("tme_") || CAProjects.isStep(m, p.id);
+        boolean enabler = p.id.startsWith("tme_") || CAProjects.isStep(m, p.id) || CASurplus.isRichStep(m, p.id);
         float planBonus = (value > 0f || enabler) && !profitOnly ? CAPlan.bonusFor(m, plan, p.id) : 0f;
         if (planBonus > 0f) p.lines.add(0, "Next step of this colony's " + plan.name + " plan" + (value <= 0f ? " (costs more than it earns; the plan needs it)" : ""));
         // a new industry the plan doesn't ask for, when the free slots are all the plan's industries have left

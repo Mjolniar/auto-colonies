@@ -198,16 +198,40 @@ public class CATerraSim {
 
     static Result plan(Set<String> conds, boolean gasGiant, Map<String, CAWorldPlanner.Row> rows, Set<String> keep, Set<String> avoid,
                        float costMult, float removalMult, int mode, Colony col) {
+        return plan(conds, gasGiant, rows, keep, avoid, costMult, removalMult, mode, col, false);
+    }
+
+    /**
+     * Hazards that are only ever added as the first of two projects whose second needs them: tectonic activity for moderate
+     * ore and transplutonics, extreme tectonic activity for abundant, rich and ultrarich (TME's liked conditions).
+     */
+    static final Set<String> ENABLERS = new HashSet<String>(Arrays.asList("tectonic_activity", "extreme_tectonic_activity"));
+
+    /** A sequence that adds an enabler must add it first, for a second project that adds something needing it. */
+    static boolean enablerOk(Seq q, Set<String> conds, Map<String, CAWorldPlanner.Row> rows) {
+        for (int i = 0; i < q.moves.size(); i++) {
+            Move m = q.moves.get(i);
+            if (!m.add || !ENABLERS.contains(m.condition) || conds.contains(m.condition)) continue;
+            if (i != 0 || q.moves.size() < 2 || !q.moves.get(1).add) return false;
+            CAWorldPlanner.Row r2 = rows.get(q.moves.get(1).condition);
+            if (r2 == null || !CAWorldPlanner.idsOf(r2.liked).contains(m.condition)) return false;
+        }
+        return true;
+    }
+
+    /** byGain: the sequence that adds most a month (spending freely), not the most per credit. */
+    static Result plan(Set<String> conds, boolean gasGiant, Map<String, CAWorldPlanner.Row> rows, Set<String> keep, Set<String> avoid,
+                       float costMult, float removalMult, int mode, Colony col, boolean byGain) {
         Result r = new Result();
         for (Seq q : sequences(conds, gasGiant, rows, keep, avoid, costMult, removalMult, col)) {
-            if (!worth(q, mode)) continue;
+            if (!worth(q, mode) || !enablerOk(q, conds, rows)) continue;
             if (q.locked != null) {
                 Seq cur = r.locked.get(q.locked);
                 if (cur == null || q.gain > cur.gain) r.locked.put(q.locked, q);
                 continue;
             }
             r.wanted.add(q.moves.get(0).structure);
-            if (r.best == null || q.ratio() > r.best.ratio()) r.best = q;
+            if (r.best == null || (byGain ? q.gain > r.best.gain : q.ratio() > r.best.ratio())) r.best = q;
         }
         return r;
     }

@@ -126,7 +126,8 @@ public class CAPlan {
     /** The colony's plan, with any producer a special project needs from it first (CAProjects). */
     public static Plan build(MarketAPI m, CAData.Profile prof) {
         Plan p = buildOwn(m, prof);
-        List<Step> extra = CAProjects.stepsFor(m);
+        List<Step> extra = new ArrayList<Step>(CAProjects.stepsFor(m));
+        extra.addAll(CASurplus.richSteps(m));   // spending freely: every station and defense maxed
         if (extra.isEmpty()) return p;
         List<Step> steps = new ArrayList<Step>();
         java.util.Set<String> ids = new java.util.HashSet<String>();
@@ -222,6 +223,7 @@ public class CAPlan {
         java.util.Set<String> seen = new java.util.HashSet<String>();
         for (Step s : p.steps) {
             if (s.kind == Kind.NOCOND && !m.hasCondition(s.id)) continue;
+            if (s.kind == Kind.NOCOND && CAData.enabler(m, s.id)) continue;   // surplus terraforming's step toward a richer deposit
             if (tme && (s.kind == Kind.COND || WORLD_STEPS.contains(s.id))) continue;
             if (!exists(s) || !seen.add(s.kind + ":" + s.id)) continue;
             keep.add(s);

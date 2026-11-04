@@ -100,9 +100,13 @@ public class CATerraformSurplus {
         if (cached != null && at != null && now() - at < 1f && key.equals(planConds.get(m.getId()))) return cached;
         planConds.put(m.getId(), key);
         CAPlan.Plan plan = CAPlan.build(m, c.profile);
-        Set<String>[] ka = CATerraform.keepAvoid(plan, conds);   // the same rule as the plan's own projects, so neither undoes the other
+        Set<String>[] ka = CATerraform.keepAvoid(m, plan, conds);   // the same rule as the plan's own projects, so neither undoes the other
         Set<String> keep = ka[0], avoid = ka[1];
         if (CAConditions.pollutionReturns(m)) keep.add("pollution");   // its forge's upgrade adds it back: removing it now is wasted
+        // spending freely: tectonic activity may go in first for the richer deposits that need it (CATerraSim.enablerOk), and the
+        // best is what adds most, not most per credit
+        boolean rich = CASurplus.rich(s);
+        if (rich && plan.world == null) avoid.removeAll(CATerraSim.ENABLERS);
         boolean gas = CATerraform.gasGiant(m);
         Map<String, CAWorldPlanner.Row> all = CAWorldPlanner.rows();
         Set<String> start = conds, running = new HashSet<String>(), runningHate = new HashSet<String>();
@@ -127,7 +131,7 @@ public class CATerraformSurplus {
         CAData.Profile prof = CAThreat.effective(m, c.profile);
         float base = start == conds ? 0f : CAConditions.change(m, start, prof, null);
         CATerraSim.Result r = CATerraSim.plan(start, gas, rows, keep, avoid, Settings.BUILD_COST_MULTIPLIER,
-                Settings.REMOVAL_COST_MULTIPLIER, s.surplusTerraform, colony(m, prof, base));
+                Settings.REMOVAL_COST_MULTIPLIER, s.surplusTerraform, colony(m, prof, base), rich);
         plans.put(m.getId(), r);
         planAt.put(m.getId(), now());
         return r;
@@ -141,6 +145,7 @@ public class CATerraformSurplus {
         CASettings s = d.settings;
         CATerraSim.lockedValue.clear();
         if (s.surplusTerraform >= 2 || CASurplus.line(s) <= 0f) { CATerraSim.summary = null; return; }
+        expireEnablers(d);
         List<Cand> cands = new ArrayList<Cand>();
         String lockedText = null; float lockedBest = 0f;
         for (MarketAPI m : auto) {
@@ -253,6 +258,10 @@ public class CATerraformSurplus {
         if (!CABreaker.check(ACTION, ti.isUpgrading() || ti.hasOngoingProject(), m.getName())) return 0f;
         Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(cost);
         CABudget.charge(s, 0f, fee, 0f);
+        if (mv.add && CATerraSim.ENABLERS.contains(mv.condition) && k.q.moves.size() > 1) {   // the plan leaves it until the deposit is in
+            CAData.get().enablers().put(m.getId() + ":" + mv.condition, k.q.moves.get(1).condition);
+            CAData.get().enablerAt().put(m.getId() + ":" + mv.condition, Global.getSector().getClock().getTimestamp());
+        }
         CALog.add(m.getName() + ": surplus terraforming: " + ti.getCurrentName() + " started to " + mv.label() + " (" + Math.round(pd.buildTime)
                 + " days) for " + Misc.getDGSCredits(cost) + (fee > 0f ? " + " + Misc.getDGSCredits(fee) + " fee" : "")
                 + (k.q.moves.size() > 1 ? "; then " + k.q.moves.get(1).label() : "") + ": " + CAEngine.valueText(k.q.gain) + " once done", true);
@@ -282,6 +291,21 @@ public class CATerraformSurplus {
             built.remove(key);
             CALog.add(m.getName() + ": surplus terraforming took down " + ind.getCurrentName() + ": nothing worth doing is left for it; "
                     + "what it changed stays, and its " + Misc.getDGSCredits(up) + " a month upkeep stops");
+        }
+    }
+
+    /** Days an enabler waits for its deposit before the plan may clean it up anyway. */
+    static final float ENABLER_DAYS = 540f;
+
+    /** Drops enabler marks whose deposit is in (the plan may then clear the hazard; the deposit stays), is gone, or waited too long. */
+    static void expireEnablers(CAData d) {
+        for (String key : new ArrayList<String>(d.enablers().keySet())) {
+            int at = key.lastIndexOf(':');
+            MarketAPI m = at < 0 ? null : CAAuto.market(key.substring(0, at));
+            Long since = d.enablerAt().get(key);
+            boolean done = m == null || !m.isPlayerOwned() || m.hasCondition(d.enablers().get(key))
+                    || since == null || Global.getSector().getClock().getElapsedDaysSince(since) > ENABLER_DAYS;
+            if (done) { d.enablers().remove(key); d.enablerAt().remove(key); }
         }
     }
 

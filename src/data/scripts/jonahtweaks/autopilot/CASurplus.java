@@ -242,8 +242,51 @@ public class CASurplus {
         return Math.max(cap, (rich(s) ? RICH_UPKEEP_SHARE : UPKEEP_SHARE) * Math.max(0f, CABudget.netIncome(s)));
     }
 
-    /** How much a price counts at this colony: a quarter where the surplus is spent. */
-    public static float costWeight(MarketAPI m) { return spends(m) ? CHEAP : 1f; }
+    /** How much a price counts at this colony: a quarter where the surplus is spent, a twentieth while spending freely. */
+    public static float costWeight(MarketAPI m) {
+        if (!spends(m)) return 1f;
+        return rich(CAData.settings()) ? RICH_PRICE : CHEAP;
+    }
+
+    /** While spending freely, a build's price counts this much: tens of millions have nothing better to do. */
+    static final float RICH_PRICE = 0.05f;
+
+    /**
+     * Spending freely, every colony maxes its structures (no industry slot needed): its station to the top tier of its line,
+     * Heavy Batteries, a Planetary Shield, a Megaport and a Patrol HQ. They go first in its plan, built even when they
+     * earn less than they cost (CAEngine.finish); ones the colony can't build here (research, a mod's rules) simply wait.
+     */
+    static final String[] RICH_STRUCTURES = {"heavybatteries", "planetaryshield", "megaport", "patrolhq"};
+
+    static List<CAPlan.Step> richSteps(MarketAPI m) {
+        if (m == null || !spends(m) || !rich(CAData.settings())) return Collections.emptyList();
+        List<CAPlan.Step> out = new ArrayList<CAPlan.Step>();
+        String top = stationTop(m);
+        if (top != null) out.add(new CAPlan.Step(CAPlan.Kind.BUILD, top, CAWorldPlanner.industryName(top) + " (surplus credits: every station maxed)"));
+        for (String id : RICH_STRUCTURES) out.add(new CAPlan.Step(CAPlan.Kind.BUILD, id, CAWorldPlanner.industryName(id) + " (surplus credits)"));
+        return out;
+    }
+
+    static boolean isRichStep(MarketAPI m, String industryId) {
+        for (CAPlan.Step s : richSteps(m)) if (s.id.equals(industryId) || CAPlan.leadsTo(industryId, s.id)) return true;
+        return false;
+    }
+
+    /** The top of the colony's station line (its own station's upgrades, or the chosen line's), up to a star fortress; null when it's there. */
+    static String stationTop(MarketAPI m) {
+        com.fs.starfarer.api.campaign.econ.Industry st = null;
+        for (com.fs.starfarer.api.campaign.econ.Industry ind : m.getIndustries()) if (CAPlan.stationTier(ind.getSpec()) > 0) st = ind;
+        String id = st != null ? st.getId() : CASettings.stationStarter(CAData.settings().stationLine);
+        if (id == null) id = "orbitalstation";
+        for (int k = 0; k < 6; k++) {
+            com.fs.starfarer.api.loading.IndustrySpecAPI sp = CAPlan.spec(id);
+            String up = sp == null ? null : sp.getUpgrade();
+            com.fs.starfarer.api.loading.IndustrySpecAPI upSpec = up == null ? null : CAPlan.spec(up);
+            if (upSpec == null || CAPlan.stationTier(upSpec) > 3) break;   // Star Citadels and the Stella Castellum aren't built from the menu
+            id = up;
+        }
+        return st != null && st.getId().equals(id) ? null : id;
+    }
 
     /** Daily: turns surplus investment on once in saves from before it existed, works out the focus world, and logs changes. */
     public static void daily(CASettings s) {

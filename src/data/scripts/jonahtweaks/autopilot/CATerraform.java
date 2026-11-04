@@ -47,8 +47,10 @@ public class CATerraform {
      * target world hates, and on a plain plan the hazards it clears, so nothing adds back what the plan just paid to remove.
      */
     @SuppressWarnings("unchecked")
-    static Set<String>[] keepAvoid(CAPlan.Plan plan, Set<String> conds) {
+    static Set<String>[] keepAvoid(MarketAPI m, CAPlan.Plan plan, Set<String> conds) {
         Set<String> keep = new HashSet<String>(), avoid = new HashSet<String>();
+        // an enabler surplus terraforming added on the way to a richer deposit stays until the deposit is in
+        for (String e : CATerraSim.ENABLERS) if (conds.contains(e) && CAData.enabler(m, e)) keep.add(e);
         for (CAPlan.Step st : plan.steps) {
             if (st.kind == CAPlan.Kind.COND) keep.add(st.id);
             else if (st.kind == CAPlan.Kind.NOCOND) avoid.add(st.id);
@@ -91,7 +93,7 @@ public class CATerraform {
             CAData.Profile prof = CAThreat.effective(m, c.profile);
             CAPlan.Plan plan = CAPlan.build(m, c.profile);
             Set<String> conds = conditions(m);
-            Set<String>[] ka = keepAvoid(plan, conds);
+            Set<String>[] ka = keepAvoid(m, plan, conds);
             boolean gas = gasGiant(m), pollutionBack = CAConditions.pollutionReturns(m);
             if (pollutionBack && m.hasCondition("pollution") && CALog.once("tfpollution:" + m.getId()))
                 CALog.add(m.getName() + ": pollution isn't removed while its nanoforge forge is being upgraded: the new building adds it back when it finishes");

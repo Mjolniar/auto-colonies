@@ -37,6 +37,7 @@ public class CAAuto {
         try { CAProjects.update(); }   // before any plan is read: a special project's producers are plan steps
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "special project supply step failed", t); }
         List<Cand> cands = new ArrayList<Cand>();
+        boolean rich = CASurplus.rich(s);
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             CAData.Colony c = d.colony(m.getId());
             if (c.buildout && c.mode != CAData.Mode.AUTO) CABuildout.stop(m, c, "the colony left Auto");
@@ -47,7 +48,8 @@ public class CAAuto {
             boolean justFinished = was != null && was;
             if (!justFinished && next != null && now < next) continue;
             boolean siege = CASiege.held(m);
-            nextPass.put(m.getId(), now + (siege ? 1f : 7f));   // under siege, look daily so it carries on as soon as it ends
+            // under siege, look daily so it carries on as soon as it ends; spending freely, daily too, so the surplus keeps moving
+            nextPass.put(m.getId(), now + (siege || rich ? 1f : 7f));
             if (c.buildout && c.mode == CAData.Mode.AUTO) {
                 if (siege) continue;   // a buildout builds no defenses, so it waits out the siege
                 try { if (CABuildout.pass(m, c, now, building)) continue; }
@@ -66,7 +68,7 @@ public class CAAuto {
             for (CAEngine.Pick q : r.picks) {
                 if (!CAEngine.worthwhile(q)) continue;   // never the least-bad option: only what pays for itself
                 if (siege && !CASiege.defensive(q)) continue;   // under siege only defenses are built
-                if (q.upgrade) { if (ups.size() < UPS) ups.add(q); }
+                if (q.upgrade) { if (ups.size() < (rich ? UPS + 2 : UPS)) ups.add(q); }
                 else if (!building && news.size() < NEWS) news.add(q);
             }
             if (ups.isEmpty() && news.isEmpty()) trace(m, r, building, now);
@@ -95,10 +97,14 @@ public class CAAuto {
         for (Cand k : cands) if (k.p.planBonus > 0f && k.p.upkeep > CASurplus.upkeepCap(k.m, s)) big.add(k);
         cands.removeAll(big);
         cands.addAll(0, big);
-        Set<String> startedNew = new HashSet<String>(), startedUp = new HashSet<String>();   // one of each per colony a pass
+        // one new building and one upgrade per colony a pass; spending freely, up to three upgrades (never two on one building)
+        Set<String> startedNew = new HashSet<String>();
+        Map<String, Integer> startedUp = new HashMap<String, Integer>();
+        Set<Object> upgrading = new HashSet<Object>();
+        int maxUps = rich ? 3 : 1;
         for (Cand k : cands) {
-            Set<String> started = k.p.upgrade ? startedUp : startedNew;
-            if (started.contains(k.m.getId())) continue;
+            Integer ups = startedUp.get(k.m.getId());
+            if (k.p.upgrade ? (ups != null && ups >= maxUps) || upgrading.contains(k.p.existing) : startedNew.contains(k.m.getId())) continue;
             float cap = CASurplus.projectCap(k.m, s);   // the focus world may go past it with surplus credits
             if (k.p.cost > cap) { propose(k.m, k.c, k.p, "over the per-project cap, needs your approval"); continue; }
             if (k.p.measured && s.measuredMode == 1) { propose(k.m, k.c, k.p, "a mod building scored from measurements, needs your approval"); continue; }
@@ -122,7 +128,10 @@ public class CAAuto {
                         + ")");
                 continue;
             }
-            if (execute(k.m, k.c, k.p, "Auto") == null) started.add(k.m.getId());
+            if (execute(k.m, k.c, k.p, "Auto") == null) {
+                if (!k.p.upgrade) startedNew.add(k.m.getId());
+                else { startedUp.put(k.m.getId(), (ups == null ? 0 : ups) + 1); upgrading.add(k.p.existing); }
+            }
         }
         List<MarketAPI> allAuto = CAItems.autoMarkets();
         List<MarketAPI> auto = CASiege.free(allAuto);   // colonies under siege are left as they are
