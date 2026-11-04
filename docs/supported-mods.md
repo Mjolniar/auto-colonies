@@ -143,6 +143,11 @@ Covers Building Menu Overhaul, Vaults of Knowledge and Theory of Toolbox.
 
 - **Planetless colonies** crash past size 10, so hazard pay never pushes one there.
 
+## United Aurora Federation
+
+- **Colony items** (2.31.0), valued from UAF 0.8.4c's code. The Dimensional Nanoforge (+2 output, +50% quality, clears pollution) goes to habitable forges before a polluting nanoforge. The Servosync Pump (+2 fuel, any atmosphere) and Modular Purifier (+2 metals and transplutonics) are placed like vanilla items. The Garrison Transmitter goes to a spaceport or waystation (+10% accessibility) before ground defenses (x1.3).
+- **Never installed:** the Rice Cooker (its +5 heavy machinery and transplutonics demand costs more food than it adds), the Dimensional Stove (it only multiplies a bakery's existing bonuses) and the Access Router (it does nothing in 0.98a).
+
 ## Any other mod
 
 - **Deposits.** Deposit conditions a mod registers in the game's own tables are scored like vanilla ones.
