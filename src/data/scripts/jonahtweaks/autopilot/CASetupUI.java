@@ -159,9 +159,9 @@ public class CASetupUI {
                     "Every colony spends it", "surplusrich", true);
             t.addPara("Past that, one focus world can't spend it all, so every Approve and Auto colony spends from the surplus: past the monthly "
                     + "budget and the per-project cap, prices at a quarter, credits counting a quarter in what a building is worth (so what adds "
-                    + "defense, stability, growth or access goes up even if it costs more than it earns), new upkeep up to a fifth of net income a "
-                    + "month, hazard pay wherever it speeds growth, and up to three terraforming projects at once per colony. It pauses while net "
-                    + "income is under half its best since it began.", Misc.getGrayColor(), 4f);
+                    + "defense, stability, growth or access goes up even if it costs more than it earns), new upkeep each month up to a sixtieth "
+                    + "of the surplus (paid from the pool, not from income), hazard pay wherever it speeds growth, and up to three terraforming "
+                    + "projects at once per colony.", Misc.getGrayColor(), 4f);
             if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAResearch.MOD)) {
                 row(t, "Wonders and gates while spending freely", onOff(!s.noWonders), "On", "wonders", true);
                 t.addPara("The Daedalus Array (Grand Wonder) and the Bifrost network: the Control Center becomes a plan step, so research works "
