@@ -288,8 +288,11 @@ public class CAEngine {
     static boolean finish(MarketAPI m, Pick p, CAData.Profile profile, float minStability, CAPlan.Plan plan) {
         if (p.fx[1] < 0 && m.getStabilityValue() + p.fx[1] < minStability) return false;
         float[] w = profitOnly ? PROFIT : WEIGHTS[profile.ordinal()];
+        // spending freely (CASurplus.rich): money counts a quarter, so what else a building adds decides
+        float mw = profitOnly ? 1f : CASurplus.moneyWeight(m);
+        if (mw < 1f && p.fx[0] < 0f) p.lines.add("Surplus credits: its money counts a quarter");
         float value = 0f;
-        for (int i = 0; i < 7; i++) value += w[i] * p.fx[i];
+        for (int i = 0; i < 7; i++) value += w[i] * p.fx[i] * (i == 0 ? mw : 1f);
         // an uncertain gain must beat a known one by a margin (an estimate at 0.85 needs about 18% more to win)
         if (value > 0f && p.confidence < 1f) {
             value *= p.confidence;

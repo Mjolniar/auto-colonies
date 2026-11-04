@@ -165,14 +165,17 @@ public class CAPolicies {
         Set<MarketAPI> want = new HashSet<MarketAPI>();
         float paying = 0f;
         for (MarketAPI m : auto) if (m.isImmigrationIncentivesOn()) paying += m.getImmigrationIncentivesCost();
-        float cap = s.hazardPayEmpireShare * Math.max(0f, CABudget.netIncome(s) + paying);
+        // spending freely (CASurplus.rich): wherever it speeds growth by 5% or more, paid for as long as the surplus lasts
+        boolean rich = CASurplus.rich(s);
+        float cap = rich ? Float.MAX_VALUE : s.hazardPayEmpireShare * Math.max(0f, CABudget.netIncome(s) + paying);
+        float minShare = rich ? Math.min(0.05f, s.hazardPayColonyShare) : s.hazardPayColonyShare;
         lastCap = cap;
         List<Growth> cands = new ArrayList<Growth>();
         for (MarketAPI m : auto) {
             if (CAHypershunt.is(m) || CAMods.growthUnsafe(m) || m.getSize() >= Misc.getMaxMarketSize(m)) continue;
             Growth g = growth(m);
             info.put(m, g);
-            if (g.points <= 0f || g.speedup < s.hazardPayColonyShare * (g.on ? 0.8f : 1f)) continue;
+            if (g.points <= 0f || g.speedup < minShare * (g.on ? 0.8f : 1f)) continue;
             cands.add(g);
         }
         if (emergency) return want;

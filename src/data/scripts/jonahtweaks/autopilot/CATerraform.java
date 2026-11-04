@@ -164,8 +164,9 @@ public class CATerraform {
                                 + " above the credit reserve", true);
                     continue;
                 }
-            } else if (CASurplus.isFocus(k.m)) {
-                // the focus world's best-value projects are paid from surplus credits, past the caps and the terraforming budget
+            } else if (CASurplus.spends(k.m)) {
+                // the focus world's best-value projects (every colony's while spending freely) are paid from surplus credits,
+                // past the caps and the terraforming budget
                 if (k.cost + fee > CASurplus.amount(s)) {
                     if (CALog.once("tfsurplus:" + k.m.getId() + ":" + k.pd.id))
                         CALog.add(k.m.getName() + ": terraforming (" + k.why + ") waits for " + Misc.getDGSCredits(k.cost + fee) + " of surplus credits");
