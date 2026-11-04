@@ -11,10 +11,13 @@ import java.util.*;
 public class CAConditions {
 
     /** Whether the item pollutes in a forge: vanilla's nanoforges do, Ashes of the Domain's no_pollution items don't. */
-    static boolean polluting(com.fs.starfarer.api.campaign.SpecialItemData item) {
-        if (item == null) return false;
+    static boolean polluting(com.fs.starfarer.api.campaign.SpecialItemData item) { return item != null && polluting(item.getId()); }
+
+    /** By id. UAF's Dimensional Nanoforge isn't tagged, but it removes the colony's pollution every time its effect applies. */
+    static boolean polluting(String id) {
+        if (id == null || id.equals("uaf_dimen_nanoforge")) return false;
         try {
-            com.fs.starfarer.api.campaign.SpecialItemSpecAPI sp =Global.getSettings().getSpecialItemSpec(item.getId());
+            com.fs.starfarer.api.campaign.SpecialItemSpecAPI sp = Global.getSettings().getSpecialItemSpec(id);
             return sp == null || !sp.hasTag("no_pollution");
         } catch (Throwable t) { return true; }
     }

@@ -50,6 +50,28 @@ public class CAItems {
         ITEM_VALUE.put("aotd_atmospheric_driver", 70f);        // +3 food, suppresses extreme weather
         ITEM_VALUE.put("aotd_shrouded_catalytic_core", 50f);   // +3 metals, no atmosphere needed
         ITEM_VALUE.put("turing_engine", 110f);                 // +6 advanced components
+        // United Aurora Federation 0.8.4c (uaf_specialItemEffectsRepo); Vaults of Knowledge adds its own buildings to their lists
+        ITEM_VALUE.put("uaf_dimen_nanoforge", 80f);       // +2 every output, +50% ship and weapon quality, clears pollution on every update
+        ITEM_VALUE.put("uaf_servosync_pump", 45f);        // +2 fuel, with or without an atmosphere (a Synchrotron's +3 needs none)
+        ITEM_VALUE.put("uaf_modular_purifier", 35f);      // +2 metals and transplutonics, no requirement
+        ITEM_VALUE.put("uaf_garrison_transmitter", 15f);  // spaceport or waystation: +10% accessibility; ground defenses x1.3 (itemScore by building)
+        // never worth installing: Rice Cooker's +1 food comes with +5 heavy machinery and transplutonics demand (a shortage cuts
+        // more than it adds); the Dimensional Stove only multiplies bonuses a bakery already has; the Access Router writes a
+        // modifier Tech-Mining never reads, so it does nothing in 0.98a
+        ITEM_VALUE.put("uaf_rice_cooker", 0f); ITEM_VALUE.put("uaf_dimen_microwave", 0f); ITEM_VALUE.put("uaf_access_router", 0f);
+    }
+
+    /**
+     * itemScore in a given building: UAF's Garrison Transmitter does a third as much in ground defenses as in a port, and a
+     * nanoforge that pollutes counts for less on a clean habitable world (it pollutes it; UAF's Dimensional Nanoforge doesn't).
+     */
+    static float itemScore(String id, MarketAPI m, CAData.Profile p, Industry ind) {
+        float sc = itemScore(id, m, p);
+        if (sc <= 0f || ind == null) return sc;
+        if (id.equals("uaf_garrison_transmitter") && (ind.getId().equals("grounddefenses") || ind.getId().equals("heavybatteries"))) sc /= 3f;
+        if (id.endsWith("nanoforge") && CAConditions.polluting(id) && ind instanceof com.fs.starfarer.api.impl.campaign.econ.impl.HeavyIndustry
+                && m.hasCondition("habitable") && !m.hasCondition("pollution")) sc *= 0.75f;
+        return sc;
     }
     /** Items this placer never installs: Ashes of the Domain blanks the Coronal Hypershunt Tap's buildings (it builds receivers),
      *  the AquaOrb has no effect so the game can't install it, and the Hyperdimensional Processor is for research. */
@@ -154,7 +176,7 @@ public class CAItems {
                     try {
                         if (!effect.getUnmetRequirements(ind).isEmpty()) continue;
                     } catch (Throwable t) { CADiagnostics.quarantine(ind.getId(), "item requirement check", t); continue; }
-                    float sc = itemScore(spec.getId(), m, c.profile);
+                    float sc = itemScore(spec.getId(), m, c.profile, ind);
                     if (sc > bestScore) { bestScore = sc; best = ind; bestM = m; }
                 }
             }
@@ -202,7 +224,7 @@ public class CAItems {
                 if (old == null || !targets.contains(ind.getId()) || old.getId().equals(spec.getId()) || LAMP.equals(old.getId())) continue;
                 if (!ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId()) || ind.getSpec().hasTag("consumes")) continue;
                 try { if (!effect.getUnmetRequirements(ind).isEmpty()) continue; } catch (Throwable t) { continue; }
-                float now = itemScore(old.getId(), m, c.profile), then = itemScore(spec.getId(), m, c.profile);
+                float now = itemScore(old.getId(), m, c.profile, ind), then = itemScore(spec.getId(), m, c.profile, ind);
                 if (better(then, now) && then - now > bestGain) { bestGain = then - now; best = ind; bestM = m; }
             }
         }
