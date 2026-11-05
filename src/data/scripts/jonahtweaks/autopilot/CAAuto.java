@@ -16,6 +16,8 @@ public class CAAuto {
 
     static class Cand {
         MarketAPI m; CAData.Colony c; CAEngine.Pick p; float total;
+        CAEndgame.Weakest remove;   // the endgame takes this industry down first, to free its slot
+        float gain;                 // what ranks it: the score, less what a replaced industry was worth
     }
 
     public static void reset() { wasBuilding.clear(); nextPass.clear(); lastTrace.clear(); lastNow = 0f; }
@@ -34,6 +36,8 @@ public class CAAuto {
         CACrisis.daily(d, s);   // inspection orders, and a log line when a colony crisis is picked
         try { CASurplus.daily(s); }   // the focus world for credits over the surplus line
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus investment step failed", t); }
+        try { CAEndgame.daily(s); }   // after spending freely is known: the endgame economy starts or ends
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "endgame economy step failed", t); }
         try { CAProjects.update(); }   // before any plan is read: a special project's producers are plan steps
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "special project supply step failed", t); }
         List<Cand> cands = new ArrayList<Cand>();
@@ -56,11 +60,25 @@ public class CAAuto {
                 catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "fast buildout pass failed at " + m.getName(), t); continue; }
             }
             CAEngine.Result r;
+            CAData.Profile used;
             try {
                 CAData.Profile prof = CAThreat.effective(m, c.profile);   // keeps the threat state current
-                r = CAEngine.evaluate(m, siege ? CAData.Profile.SECURITY : prof, d.minStability);
+                used = siege ? CAData.Profile.SECURITY : prof;
+                r = CAEngine.evaluate(m, used, d.minStability);
             }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "pass failed at " + m.getName(), t); continue; }
+            // the endgame economy: with every industry slot taken, the best industry it has no slot for may replace the weakest
+            CAEndgame.Weakest wk = null;
+            if (c.mode == CAData.Mode.AUTO && !building && !siege && r.blocked == null && CAEngine.worthwhile(r.bestNoSlot)) {
+                try { wk = CAEndgame.replacement(m, c, r.bestNoSlot, used); }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "endgame replacement check failed at " + m.getName(), t); }
+            }
+            if (wk != null) {
+                Cand k = new Cand();
+                k.m = m; k.c = c; k.p = r.bestNoSlot; k.remove = wk; k.gain = r.bestNoSlot.score - wk.keep;
+                k.total = k.p.cost + CABudget.constructionFee(s, k.p.cost);
+                cands.add(k);
+            }
             if (r.picks.isEmpty()) continue;
             // upgrades run alongside new construction; the next best of each stand by in case the best has to wait (budget,
             // caps), so one held-back build doesn't stop the colony
@@ -71,7 +89,7 @@ public class CAAuto {
                 if (q.upgrade) { if (ups.size() < (rich ? UPS + 2 : UPS)) ups.add(q); }
                 else if (!building && news.size() < NEWS) news.add(q);
             }
-            if (ups.isEmpty() && news.isEmpty()) trace(m, r, building, now);
+            if (ups.isEmpty() && news.isEmpty() && wk == null) trace(m, r, building, now);
             if (c.mode == CAData.Mode.APPROVE) {
                 CAEngine.Pick bestUp = ups.isEmpty() ? null : ups.get(0), bestNew = news.isEmpty() ? null : news.get(0);
                 CAEngine.Pick p = bestNew != null && (bestUp == null || bestNew.score >= bestUp.score) ? bestNew : bestUp;
@@ -82,14 +100,14 @@ public class CAAuto {
             all.addAll(news);
             for (CAEngine.Pick p : all) {
                 Cand k = new Cand();
-                k.m = m; k.c = c; k.p = p; k.total = p.cost + CABudget.constructionFee(s, p.cost);
+                k.m = m; k.c = c; k.p = p; k.total = p.cost + CABudget.constructionFee(s, p.cost); k.gain = p.score;
                 cands.add(k);
             }
             if (building && ups.isEmpty()) nextPass.put(m.getId(), now + 1f);   // re-check soon for the new build
         }
         Collections.sort(cands, new Comparator<Cand>() {
             public int compare(Cand a, Cand b) {
-                return Float.compare(b.p.score / Math.max(1f, b.total), a.p.score / Math.max(1f, a.total));
+                return Float.compare(b.gain / Math.max(1f, b.total), a.gain / Math.max(1f, a.total));
             }
         });
         // a plan step whose upkeep is over the whole cap only fits as the month's first new upkeep, so it goes first
@@ -120,14 +138,33 @@ public class CAAuto {
                 continue;
             }
             float upCap = CASurplus.upkeepCap(k.m, s);
-            if (!CABudget.upkeepFits(s.upkeepAdded, k.p.upkeep, upCap, k.p.planBonus > 0f)) {
+            float addedUpkeep = k.p.upkeep - (k.remove != null ? k.remove.upkeep : 0f);   // a replaced industry's upkeep stops
+            if (!CABudget.upkeepFits(s.upkeepAdded, addedUpkeep, upCap, k.p.planBonus > 0f)) {
                 if (CALog.once(key + ":upkeep")) CALog.add(k.m.getName() + ": " + k.p.name + " waits for next month's upkeep room ("
-                        + Misc.getDGSCredits(k.p.upkeep) + " of " + Misc.getDGSCredits(upCap) + ")");
+                        + Misc.getDGSCredits(addedUpkeep) + " of " + Misc.getDGSCredits(upCap) + ")");
                 continue;
+            }
+            // the endgame economy gives up income only down to a third of what it was when it started
+            boolean eg = CAEndgame.at(k.m);
+            float loss = eg ? (k.remove != null ? k.remove.money : 0f) - k.p.fx[0] : 0f;
+            if (eg && !CAEndgame.lossFits(s, loss)) {
+                if (CALog.once(key + ":endgame")) CALog.add(k.m.getName() + ": " + k.p.name + " waits: it costs " + Misc.getDGSCredits(loss)
+                        + "/month of income and the endgame keeps " + Misc.getDGSCredits(CAEndgame.floor(s)) + "/month");
+                continue;
+            }
+            if (k.remove != null) {
+                String why = CAEndgame.cantStart(k.m, k.p);
+                if (why != null) {
+                    if (CALog.once(key + ":replace")) CALog.add(k.m.getName() + ": " + k.p.name + " would replace " + k.remove.ind.getCurrentName() + ", but " + why);
+                    continue;
+                }
+                try { CAEndgame.takeDown(k.m, k.remove, k.p); }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "endgame replacement failed at " + k.m.getName(), t); continue; }
             }
             if (execute(k.m, k.c, k.p, "Auto") == null) {
                 if (!k.p.upgrade) startedNew.add(k.m.getId());
                 else { startedUp.put(k.m.getId(), (ups == null ? 0 : ups) + 1); upgrading.add(k.p.existing); }
+                if (eg) { CAEndgame.charge(s, loss); CAEndgame.built(k.m, k.p); }
             }
         }
         List<MarketAPI> allAuto = CAItems.autoMarkets();

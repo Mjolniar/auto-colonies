@@ -41,6 +41,8 @@ public class CASetupUI {
         s.noSurplusResearch = false;   // and into more Research Facilities while research left is worth the speed
         s.surplusFocusOnly = false;    // past 10,000,000 over the line, every colony spends it
         s.noWonders = false;           // and builds the Daedalus Array and Bifrost gates once their goods are made
+        s.endgameMode = 0;             // from 1,000,000 a month while spending freely, money stops being the goal
+        s.endgameNoReplace = false;    // and weak industries make way for production chains, fleets and defense
         s.monthCredits = credits;
         s.feeLevel = 2;
         s.stationLine = "score";
@@ -164,6 +166,19 @@ public class CASetupUI {
                     + "defense, stability, growth or access goes up even if it costs more than it earns), new upkeep each month up to a sixtieth "
                     + "of the surplus (paid from the pool, not from income), hazard pay wherever it speeds growth, and up to three terraforming "
                     + "projects at once per colony.", Misc.getGrayColor(), 4f);
+            row(t, "Endgame economy", CAEndgame.NAMES[Math.max(0, Math.min(CAEndgame.NAMES.length - 1, s.endgameMode))], CAEndgame.NAMES[0], "endgame", true);
+            if (s.endgameMode < CAEndgame.ENTER_NET.length) {
+                row(t, "Endgame replaces industries", onOff(!s.endgameNoReplace), "On", "endgamerep", true);
+                t.addPara("Spending freely with net income at that level, money stops being the goal: a credit counts 5%%, fleets, ship quality "
+                        + "and defense count more, and what a building makes is valued as production chains: a good none of your colonies "
+                        + "make is worth most, then covering your own shortfalls, then a bigger share of the sector's production, spread over "
+                        + "more than one world; war goods count 1.5x and Ashes of the Domain's advanced goods 2x. Research Facilities go up "
+                        + "while any research is left, and AI cores and items go where they add most to fleets and defense. A money plan's "
+                        + "Commerce or Light Industry no longer gets plan priority. With no free industry slot, an Auto colony may take down "
+                        + "its weakest industry for a better one (one a day, one a month per colony; never a military, plan, project or improved one, "
+                        + "one you locked, nor a good's last producer while you'd be short; its core and item go to Autopilot Storage). It "
+                        + "gives up income only down to a third of the net income it started at.", Misc.getGrayColor(), 4f);
+            }
             if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAResearch.MOD)) {
                 row(t, "Wonders and gates while spending freely", onOff(!s.noWonders), "On", "wonders", true);
                 t.addPara("The Daedalus Array (Grand Wonder) and the Bifrost network: the Control Center becomes a plan step, so research works "
@@ -440,6 +455,8 @@ public class CASetupUI {
         else if (k.equals("surplusres")) s.noSurplusResearch = !s.noSurplusResearch;
         else if (k.equals("surplusrich")) s.surplusFocusOnly = !s.surplusFocusOnly;
         else if (k.equals("wonders")) s.noWonders = !s.noWonders;
+        else if (k.equals("endgame")) s.endgameMode = (Math.max(0, Math.min(CAEndgame.NAMES.length - 1, s.endgameMode)) + 1) % CAEndgame.NAMES.length;
+        else if (k.equals("endgamerep")) s.endgameNoReplace = !s.endgameNoReplace;
         else if (k.equals("inspect")) s.inspectionMode = (Math.max(0, Math.min(2, s.inspectionMode)) + 1) % 3;
         else if (k.equals("corerisk")) s.coreRisk = (Math.max(0, Math.min(3, s.coreRisk)) + 1) % 4;
         else if (k.equals("sp")) s.storyPointRule = (s.storyPointRule + 1) % 3;

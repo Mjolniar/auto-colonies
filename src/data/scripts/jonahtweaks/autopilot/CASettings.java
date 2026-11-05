@@ -45,6 +45,13 @@ public class CASettings {
     // surplus research (CASurplusResearch, with Vaults of Knowledge): more Research Facilities from the surplus, up to the 8 VoK
     // counts. False (on) is also what older saves load as
     public boolean noSurplusResearch = false;
+    // endgame economy (CAEndgame): 0 from 1M a month (also what older saves load as), 1 from 2M, 2 from 500k, 3 off; names in
+    // CAEndgame.NAMES. endgameNoReplace false (default): it may replace industries. The rest is its state: whether it's on,
+    // the net income when it started (it keeps a third of it), and the income its changes gave up this month
+    public int endgameMode = 0;
+    public boolean endgameNoReplace = false;
+    public boolean endgameOn = false;
+    public float endgameRefNet = 0f, endgameLoss = 0f;
 
     // services
     public int feeLevel = 2;              // 0 off, 1 low, 2 standard, 3 high

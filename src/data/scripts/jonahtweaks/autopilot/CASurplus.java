@@ -339,6 +339,7 @@ public class CASurplus {
                 + CALog.esc(whys.get(f.getId())) + ")."), 4f, hl, Misc.getDGSCredits(a), Misc.getDGSCredits(line(s)), f.getName());
         if (rich(s)) t.addPara("Spending freely (over %s): every Auto colony spends the surplus, new upkeep up to %s this month (a sixtieth of the pool), "
                 + "hazard pay wherever it helps, several terraforming projects at once.", 2f, hl, Misc.getDGSCredits(RICH), Misc.getDGSCredits(a / RICH_UPKEEP_MONTHS));
+        CAEndgame.render(t, s);
         float c = committed();
         if (c > 0f) t.addPara("Kept back: %s already promised to production that hasn't been paid yet.", 2f, gray, hl, Misc.getDGSCredits(c));
         if (CATerraSim.summary != null) t.addPara(CALog.esc(CATerraSim.summary), gray, 2f);

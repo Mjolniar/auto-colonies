@@ -88,6 +88,10 @@ public class CAData {
     // war fleets (CAWar): markets that sent raids, invasions or blockades at your colonies, to when they were last seen doing it
     public Map<String, Long> attackers;
     public Map<String, Long> attackers() { if (attackers == null) attackers = new HashMap<String, Long>(); return attackers; }
+    // endgame economy (CAEndgame), to timestamps: "marketId:industryId" built by it, "marketId:-industryId" taken down by it,
+    // "marketId:replaced" its last replacement there; kept a year, so nothing it did is undone or redone sooner
+    public Map<String, Long> endgameBuilt;
+    public Map<String, Long> endgameBuilt() { if (endgameBuilt == null) endgameBuilt = new HashMap<String, Long>(); return endgameBuilt; }
     // Terraforming Made Easy structures surplus terraforming built ("marketId:structureId"); only these are taken down again
     public Set<String> surplusBuilt;
     public Set<String> surplusBuilt() { if (surplusBuilt == null) surplusBuilt = new HashSet<String>(); return surplusBuilt; }

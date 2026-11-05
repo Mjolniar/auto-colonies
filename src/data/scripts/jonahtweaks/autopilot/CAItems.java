@@ -131,6 +131,9 @@ public class CAItems {
         if (war && (id.endsWith("nanoforge") || id.equals("cryoarithmetic_engine"))) mult = 2f;
         if (sec && (id.equals("drone_replicator") || id.equals("cryoarithmetic_engine"))) mult = 1.5f;
         if (inc && (id.equals("dealmaker_holosuite") || id.equals("fullerene_spool"))) mult = 1.5f;
+        if (CAEndgame.at(m)) {   // the endgame economy: ship production and defense first, income items count as usual
+            mult = id.endsWith("nanoforge") || id.equals("cryoarithmetic_engine") ? 2f : id.equals("drone_replicator") ? 1.5f : 1f;
+        }
         return v * mult * m.getSize();
     }
 
@@ -701,7 +704,8 @@ public class CAItems {
     /** The colony's goal weights: fast buildout's money-only ones, else its goal's, or Security while its threat is high. */
     static float[] coreWeights(MarketAPI m, CAData.Colony c) {
         if (c.buildout) return CAEngine.PROFIT;
-        return CAEngine.WEIGHTS[CAThreat.effective(m, c.profile).ordinal()];
+        float[] w = CAEngine.WEIGHTS[CAThreat.effective(m, c.profile).ordinal()];
+        return CAEndgame.at(m) ? CAEndgame.weights(w) : w;   // the endgame economy: money counts 5%, fleets and defense more
     }
 
     /** Credits a month core k adds in ind with goal weights w, less the Hegemony and Pather crisis progress it adds (crisis null: none counted). */
