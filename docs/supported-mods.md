@@ -1,162 +1,96 @@
-# What each supported mod adds
+# Supported mods
 
-Every integration is optional and turns on by itself when its mod is enabled. Any mix of these mods works. The empire panel's **Diagnostics** shows each integration's status (OK, newer version, partly off, off).
+None of these are required. Each one turns on by itself when its mod is enabled, and any mix of them works. The empire panel's **Diagnostics** page shows how each one is doing (OK, newer version, partly off, off).
 
-Unless a section says otherwise, the manager only acts on colonies in **Auto**. Approve colonies get a proposal, Advisor colonies a recommendation. All spending follows your budget, per-project cap and credit reserve.
+Unless it says otherwise, the manager only acts on colonies in Auto. Approve colonies get a proposal and Advisor colonies a recommendation, and everything follows your budget.
 
-Back to [Getting started](getting-started.md). The full rules are in [details.md](details.md).
-
----
+If a mod you use isn't here and you'd like it supported, throw it in the [issues](https://github.com/Mjolniar/jonahs-colony-manager/issues).
 
 ## Terraforming Made Easy
 
-- **Special worlds in the plan.** A colony's plan can aim for a reachable Forge, Fortress, Paradise, Hive, Death or Waste world. The steps come from TME's own requirement table, resolved back through the projects that create each condition.
-- **Terraforming projects.** It uses TME's own project lists and build checks, and starts projects the way TME's dialog does. It plans one project ahead, plus a two-step look-ahead for swapping a deposit for a richer one.
-- **Side effects are counted.** Hazards a project adds are scored, and conditions TME removes as conflicts are simulated before a project is picked.
-- Terraforming may use up to **Terraforming share** of the monthly budget (default 40%).
-- **Surplus terraforming** (2.26.0). Credits over the surplus line that the focus world doesn't spend go into TME projects at every Auto colony, most value per credit first: richer deposits and farmland, and harsh conditions cleared. It builds the structure when a colony has none, and takes it down again once its work is done (TME's changes stay).
-  - **Plans on TME's own rules.** Each plan looks one or two projects ahead and includes TME's habitability updates. So it never trades a habitable world's farmland and organics for richer ore, and never undoes what the colony's plan needs.
-  - **Modes:** Max output (anything worth 1,000 a month), Pays back in 10 years, or Off.
-  - **Research locks.** With Vaults of Knowledge, structures research still locks aren't built, but research values their techs by what they would allow.
-- **No back-and-forth** (2.30.0). TME's projects toggle a condition, so surplus terraforming re-plans as soon as a colony's conditions change and never starts a project that would undo what the colony already is. The plan's own projects and surplus terraforming share one rule: nothing removes what the plan needs, and nothing adds back a hazard the plan clears. Best-value projects are valued on the colony as TME leaves it (an added deposit deletes the richer one it hates).
-- **Nanoforge pollution** (2.30.0). Pollution isn't removed while a Heavy Industry with a nanoforge is being upgraded on a habitable world, since the new building adds it back.
+Special-world plans (Forge, Fortress, Paradise, Hive, Death, Waste) built from TME's own requirement table, the plan's terraforming, and surplus terraforming at every Auto colony. All in [Terraforming](terraforming.md).
 
 ## Industrial Evolution
 
-- **Ambassadors.** Hires an ambassador for an empty Embassy the way IndEvo's dialog does, and installs one waiting in a colony's storage.
-  - **Ambassador focus:** worst relations first, strongest factions, nearest neighbors, or priority list only.
-  - **Per-faction priority:** High, Normal or Ignore.
-  - **Stop raising at:** the reputation level where it stops.
-- **Senate edicts.** Enacts the edict that suits the colony. Harsh edicts (forced labour, cleansing, single-child, labour limits) are never automated.
-- **VPC chips.** Installs chips from Autopilot Storage. **Commodity Forge may use up chips** decides whether the Forge can consume them.
-- **Specialized Mining and Refining.** Switches to the specialty worth the most, from the colony's deposits and your empire's shortages.
-- **Supply shipping (Courier Port).** When an Auto colony runs short, it sets up a monthly Courier contract from another colony's stockpile and cancels it once the shortage is gone. IndEvo's normal shipping cost applies.
-- Each part can be switched off in **Settings**.
+- **Ambassadors** - hires one for an empty Embassy and installs one waiting in a colony's normal Storage, with a focus (worst relations first and so on), a priority per faction, and a level where it stops.
+- **Senate edicts** - enacts the one that suits the colony. The harsh ones (forced labour, cleansing, single-child, labour limits) are never automated.
+- **VPC chips** - installs chips from Autopilot Storage.
+- **Specialized Mining and Refining** - switches to whichever specialty is worth the most.
+- **Supply shipping** - when a colony runs short, it sets up a monthly Courier Port contract from another colony's stockpile and cancels it once the shortage is gone. Only the best-connected colony gets a Courier Port.
+- Its campaign consumables aren't allowed in Autopilot Storage.
 
 ## Nexerelin
 
-- **Emergency defense fleets.** When an Auto colony's system is targeted by a hostile raid, invasion or crisis fleet, or hostile fleets there outweigh its defenses, it requests a Defense fleet the way Nexerelin's fleet request dialog does. This may go over the monthly budget, since it's an emergency, but never under the credit reserve.
-- **War fleets** (Protect and strike back by default; **Settings**, **Colony policies**, **War fleets**): relief fleets for colonies under siege, Defense fleets where the threat is high or a colony crisis is coming, base strikes on known pirate and Pather bases near your colonies, and raids on the markets that attacked you. Never invasions or colony expeditions, and only against factions already hostile to you. One a day, keeping 40% of fleet request points for emergencies; while spending freely (10M or more) up to 3 a day, bigger, every known base and a standing Defense fleet at every colony, paid from the surplus.
-- **Agents** (Defense in the recommended settings, off before setup; **Settings**, then **Agents (Nexerelin)**):
-  - **Defense:** Counter-Insurgency on a rebellion, Infiltrate Cell on an active Pather cell, and Find Pirate Base for a hidden base, at the closest colony that needs it. Then Raise Relations with a faction running operations against your colonies while not at war with you. Above Neutral, its AI can't start new operations and drops the running ones.
-  - **Defense and offense:** adds sabotage of military industries. It starts with the market an invasion or raid against you comes from. It only targets factions already at war with you; never allies, factions in a ceasefire, or your commissioner, because a detected operation can start a war. It needs 60% estimated success or better and runs one operation per enemy faction.
-  - **Hiring:** a level-1 agent for 12,000, only while there's work for one, up to **Agents to keep** and Nexerelin's own limit. Hybrid first, then a Saboteur when offense is on. Nexerelin pays the salary.
-  - Only agents the manager hired, or ones you hand over on the empire panel's Mod features page, get orders, and only operations their type can run (Negotiator, Saboteur, Hybrid). While one of your own agents is idle, none is hired.
-  - The Agents section of that page lists every agent you have, plus the enemy operations running against your colonies, which the game doesn't show anywhere else.
-- **Emergency autonomy** (Recommend in the recommended settings, off before setup; **Settings**, then **Emergency autonomy (Nexerelin)**): autonomy is your call. In a money emergency (net income below zero, under 3 months of it left above the credit reserve) Recommend names the colony a year old or more that loses the most, and the Mod features page has **Grant autonomy**. Colonies an older Autopilot made autonomous are taken back as soon as there's room under your colony limit, without Nexerelin's unrest.
-- **Threat estimate.** Raids, invasions, rebellions and hostile neighbors raise a colony's threat; at 70% it's planned as Security.
-- **Sieges.** Nexerelin's blockades, raids and invasions headed for a colony put it under siege: only defenses are built there until they're over.
-- **Police crisis.** Nexerelin's free-port police crisis is on the Colony crises page. While it's the coming crisis, Auto colonies close free ports that would count (size + drugs + weapons - 2, from 5), so they're no target.
-- **Derelict Empire start.** That start gives every faction enough points for a blockade or raid on day 0. Only there, a settings group caps pirate and crisis fleets per system and makes attacks on your colonies come one at a time, 30 to 180 days apart, by holding Nexerelin's own cooldown while one is on its way or under way. IX Revival's blockades come through Nexerelin, so they're covered too.
-
-## Emergent Threats (IX Revival)
-
-- **Antimatter Stabilizer.** With a stabilizer in Autopilot Storage, it upgrades Fuel Production to Advanced Fuel Production the way the mod's portmaster does. The AI core, colony item and improvement carry over. This replaces a building, so it needs **Allow removals** on.
+Emergency defense fleets, war fleets (relief, defense, pirate base strikes, raids on whoever attacked you, never invasions), agents, the threat estimate, sieges, the police crisis, and the Derelict Empire start. All in [War and security](war-and-security.md). Autonomy is in [Money](money.md#autonomy-nexerelin). Nexerelin's player outposts are left alone completely, since they sit outside your economy.
 
 ## Ashes of the Domain
 
 Covers Building Menu Overhaul, Vaults of Knowledge and Theory of Toolbox.
 
-- **Research locks and upgrade paths.** It asks Building Menu Overhaul the same questions the build menu does, so nothing locked or hidden is ever built.
-  - Upgrades like Monoculture Plots to Farming, Heavy Industry to Orbital Works, and Spaceport to Megaport are started the way the menu starts them.
-  - Locked plan steps show what they need.
-- **Starter buildings.** Monoculture Plots, Extractive Operation, Smelting, Light Production and Trade Outpost are scored with estimated effects.
-- **Industry synergies.** A build's value includes the synergies it starts or ends (Ore-To-Core, Defensive Network, Rapid Transportation and 16 more), modelled from VoK's code. The colony panel shows active synergies and those one building away.
-- **Management styles** (Colony Development). New buildings are scored with the style's real effects: Centralized Urban Core, Distributed Regional Network, Bore City, Archeo-Site, Floating City. On a Floating City, nothing is built while fuel would run short. The style itself is never changed.
-- **Research** (Advisor, Auto or Off; Auto in the recommended settings). Each tech is valued by what it unlocks and ranked by value per research day; the empire panel lists what each colony's plan waits on and the best six techs.
-  - Colony plans come first: a plan step that research locks is traced to the whole chain of techs it needs, and its value is shared along the chain, so the first tech of a long chain gets started. While the best plan tech is short of databanks, the ones you have only go to techs some plan needs, and the log says what's needed; after 90 days the best affordable tech goes ahead anyway. Hazmat and Aquatic Agriculture count the growth they give.
-  - Auto starts the best databank-only tech and makes Sophia Anderson head of R&D if you have her. Starting a tech (Auto or Start) moves whatever the Research Facility tab is short of from Autopilot Storage, and databanks from your fleet's cargo after that. The Research section is on the empire panel's Autopilot Storage page.
-  - Your research queue is never touched.
-  - **AI cores in research buildings.** A core in a Research Facility or Black Site doesn't speed research; VoK uses it to cut the building's research, maintenance and cover-up costs (Alpha by half, Beta a quarter, Gamma a tenth), and an Alpha adds a databank a month on a pre-collapse facility world. Alpha cores go there first (setting), and a colony at its inspection limit makes room for one.
-  - **Special project supply.** A black-site project takes goods every month from your own colonies, and a stage stops while one isn't delivered at all. For the project you're running, each good no colony of yours makes (Electronic Components, Domain-grade machinery, Refined Metal, Enriched Transplutonics: no faction makes these) gets its VoK producer as a first plan step at the best-placed colony, with the producers of that building's own inputs, so research works toward it and it gets built. What it can't place, and the cores, items and ships a stage takes, are logged as yours.
-  - **Research that takes colony items** is listed with what you have and where each item comes from.
-  - **Wonders and gates** (2.34.0, while spending freely past 10M of surplus). The Daedalus Array goes up at a colony that qualifies, and the Bifrost Control Center becomes a plan step so research works toward it, then a gate goes up in each of your systems. Each starts only once your colonies make every good its construction takes. The Garden of Elysium and Star Citadels stay yours.
-  - **Surplus research.** With credits over the surplus line, more Research Facilities go up at Auto colonies, one at a time, up to the 8 VoK counts (+10% research speed each past the first), while the research left is worth more than a quarter of their upkeep. They come down once nothing is left to research.
-- **Trade contracts** (Advisor, Auto or Off; Auto in the recommended settings). It takes offers only when ToT's own figures leave 15% to spare, and only when they pay more than exporting would. Goods at a colony that can't deliver (no spaceport, no accessibility, or under siege) don't count, since ToT can't ship them. Shortfalls count as shortages when scoring buildings.
-- **Coronal Hypershunt colony.** Nothing is built there; AotD allows no buildings. The wormhole range is kept at the smallest that reaches your receivers. The Coronal Collector and Wormhole are restored when every resource is in surplus and the cost fits your budget. The empire panel lists where a receiver would pay off.
-- **Pluto Mining Station.** The laser runs at full strength and ore goes to your restored forges. Sections are restored in order.
-- **Nidavelir Complex.** Manpower goes into the Nexus Core one point at a time while its inputs are supplied. The Nexus Core is restored.
-- Any megastructure setting you change yourself is left alone until you click **Let Autopilot manage it**.
-- **Colony items.** The Tenebrian Nanoforge, Synchrotron, Atmospheric Driver, Catalytic Core and Turing Engine are placed like vanilla items.
-- **Underworld.** A colony with one keeps its free port.
-- **Left to you:** Bifrost gates, Grand Wonders, black-site projects, custom production, and choosing a management style.
+- **Research locks and upgrade paths** - it asks Building Menu Overhaul the same questions the build menu does, so nothing locked or hidden ever gets built, and AotD's upgrades (Monoculture Plots to Farming and so on) are started the way the menu does it.
+- **Starter buildings** and **industry synergies** are scored, and the colony panel shows active synergies and ones a building away.
+- **Management styles** - new buildings are scored with the style's real effects. The style itself is never changed. On a Floating City nothing is built while fuel would run short.
+- **Research**, **special project supply**, **wonders and gates** - see [Research](research.md).
+- **Trade contracts** - takes an offer only when ToT's own numbers leave 15% to spare and it pays more than exporting would.
+- **Megastructures** - the Coronal Hypershunt (wormhole range kept to what reaches your receivers, the collector and wormhole restored when you can afford it), Pluto Mining Station and the Nidavelir Complex. Anything you change yourself is left alone until you click **Let Autopilot manage it**.
+- **Colony items** - AotD's items are placed like vanilla ones.
+- **Left to you**: Grand Wonders other than the Daedalus Array, Star Citadels, custom production, and picking a management style.
 
-## Random Assortment of Things (Frontiers)
+## Emergent Threats (IX Revival)
 
-- **Settlement** (Advisor, Approve, Auto or Off; Auto in the recommended settings). Founds your one settlement on the best surveyed site once it makes at least the threshold (default 20,000 a month), the way RAT's own option does.
-- Builds Refining and Trading Post when they pay back within 2 years. The other facilities change how you play, so they're yours.
+With an Antimatter Stabilizer in Autopilot Storage, it upgrades Fuel Production to Advanced Fuel Production the way the mod's portmaster does, keeping the core, item and improvement. This replaces a building, so it needs **Allow removals** on.
+
+## Random Assortment of Things
+
+Founds your one Frontiers settlement on the best surveyed site once it would make at least 20,000 a month, then builds Refining and a Trading Post there when they pay back within two years. The other facilities change how you play, so they're yours. Its Forge-Assisted Industry BP isn't allowed in Autopilot Storage.
 
 ## Station Augments
 
-- **Augment loadouts.** Picks the set of augments worth the most within each station's augment points. Installing is free and can be undone. Scored with the colony's goal: accessibility, upkeep, output, ground defense and combat.
-- **Combat from what each augment does on this station** (2.28.0). It reads the station's own ships (fighter wings, guns, point defense, shields, drones) and its AI core:
-  - Bubble Shield is worth most without shields of the station's own.
-  - Weapon platforms (Secrets of the Frontier) are worth the same on any station.
-  - AI Fighter Uplink and Fighter Temporal Cores go on carrier stations, as much as the station relies on fighters. With the uplink known, an AI core in a carrier station counts what it gives the fighters.
-  - Midline stations get Axial Overclocking and Deep Shield Dissipators.
-  - **Never picked:** Macro Thrusters, Backline Deployment, Safety Shunt and Support Outfit. Command points count for nothing in battle.
-- **Output when calm, defense when threatened.** Hydroponics Basins (+2 food, +1 organics) counts what it adds above the colony's own output, so it goes on stations of colonies without a farm.
-  - While a colony's threat is high, or a raid or blockade is on its way, combat counts four times as much and takes the points. When the threat drops, the output augments come back.
-  - The swap happens before the station is engaged. Nothing changes during a battle.
-- **Station augments** setting: follow colony mode, recommend only, or off. Each colony panel has an Apply button.
-- Augments you installed are never changed, and one you remove isn't added back.
-- **Left to you:** augments that use up an item, ones that trade a drawback for points, and Economy Conversion while the colony plans for Security.
-- Works on any mod's station (Interstellar Imperium's, Knights of Ludd's, AotD's Star Citadels): Station Augments gives each its budget from the same station tags, and decides which augments fit.
+Picks the best set of augments each station can fit, scored by what each one actually does on that station (its own guns, fighters, shields and AI core). Output augments while things are calm, combat when the colony is threatened. Augments you installed yourself are never changed. Works on any mod's stations.
 
-## Stations from other mods (Interstellar Imperium, Knights of Ludd, Ashes of the Domain)
+## Stations from other mods
 
-- **Counted like vanilla's** (2.27.0). Every station counts by its tags (battlestation, starfortress). That covers the defense estimate behind Hegemony inspections and AI core risk, AI cores (station cores, with the defensive priority under threat), and the plan's Orbital station step.
-- **Station line: Imperium** when Interstellar Imperium is installed: new stations are Imperium ones. Pick by score chooses between them and vanilla's by what they do.
-- **Not built:** the Stella Castellum, the Libra stations and the Star Citadels aren't in the build menu for player colonies. They're counted when you have one.
+Interstellar Imperium, Knights of Ludd and Ashes of the Domain stations count like vanilla ones everywhere (defense, cores, the plan's station step). With Interstellar Imperium you can pick the Imperium station line.
 
 ## Terraforming & Station Construction (Boggled)
 
-- **Terraforming projects.** Each project TASC offers is valued by the conditions it leaves. Auto starts the best one; the colony panel lists the best four with Start. A running project is never cancelled.
-- **Prerequisites.** The Atmosphere Processor and Stellar Reflector Array are built when a worthwhile project waits only for them.
-- **Building estimates.** Domed Cities, Genelab, CHAMELEON, Mesozoic Park and the Kletka Simulator are scored with estimates. Plain output buildings are measured on the probe colony.
-- **Left to you:** station construction (it needs your fleet on site), and TASC buildings that can't be safely test-built.
+Its terraforming projects are valued and started, with the prerequisite buildings built when needed. Some of its buildings are scored from estimates. See [Terraforming](terraforming.md#terraforming--station-construction-boggled).
 
 ## Grand.Colonies
 
-- **More than 12 buildings.** Without Grand.Colonies nothing is built past 12, since the colony screen can't show a 13th. With it, the extra upkeep for each building past its threshold (read from its LunaLib settings) is added to that build's cost.
+Without it nothing is built past 12 buildings, since the colony screen can't show a 13th. With it, the extra upkeep past its limit is counted in each build's cost.
 
 ## Substance.Abuse
 
-- **Brewery.** Built only when Autopilot Storage holds a recipe (or a Recipe Book the colony is big enough for) and no Brewery stands idle. The recipe is then installed. Drinks are valued at a quarter of base price, since few factions buy them.
+A Brewery is built only when Autopilot Storage holds a recipe (or a Recipe Book the colony is big enough for) and no Brewery is idle, then the recipe goes in.
 
 ## Volkov Industrial Conglomerate
 
-- **Viral contamination.** The anti-EVC treatment comes first, tier by tier, to stop a contaminated colony shrinking.
-- **Soil nanites** go only where the farmland is vanilla, since other farmland crashes them.
+Viral contamination treatment comes first, tier by tier, to stop a colony shrinking. Soil nanites only go where the farmland is vanilla, since other farmland crashes them.
 
 ## Roider Union
 
-- **Dives and Union HQ** are valued by the deposits they mine within 1 or 6 light-years, which a probe colony can't see.
+Dives and the Union HQ are valued by the deposits they can mine nearby.
 
 ## Planetary Shield: Access Control
 
-- **The shield** is valued as +300 ground defense and -4 Pather interest. A colony with a working shield and Pather cells keeps its port closed, since the shield only works that way.
+The shield is valued as ground defense plus lower Pather interest, and a colony with a working shield and Pather cells keeps its port closed, since that's how the shield works.
 
-## Unknown Skies, What We Left Behind
+## Unknown Skies, What We Left Behind, Astral Ascension
 
-- **Extra mining.** Luminescent Clouds (+3 volatiles) and Fractured World (+5 ore and transplutonic ore) count toward Mining. The new water worlds count as water worlds.
-
-## Astral Ascension
-
-- **Planetless colonies** crash past size 10, so hazard pay never pushes one there.
+Their extra mining conditions count toward Mining, their water worlds count as water worlds, and planetless colonies (Astral Ascension) never get pushed past size 10 by hazard pay, since they crash there.
 
 ## United Aurora Federation
 
-- **Colony items** (2.31.0), valued from UAF 0.8.4c's code. The Dimensional Nanoforge (+2 output, +50% quality, clears pollution) goes to habitable forges before a polluting nanoforge. The Servosync Pump (+2 fuel, any atmosphere) and Modular Purifier (+2 metals and transplutonics) are placed like vanilla items. The Garrison Transmitter goes to a spaceport or waystation (+10% accessibility) before ground defenses (x1.3).
-- **Never installed:** the Rice Cooker (its +5 heavy machinery and transplutonics demand costs more food than it adds), the Dimensional Stove (it only multiplies a bakery's existing bonuses) and the Access Router (it does nothing in 0.98a).
+Its colony items are placed from what they actually do: the Dimensional Nanoforge, Servosync Pump, Modular Purifier and Garrison Transmitter. The Rice Cooker, Dimensional Stove and Access Router are never installed, since they cost more than they add or do nothing.
 
 ## Any other mod
 
-- **Deposits.** Deposit conditions a mod registers in the game's own tables are scored like vanilla ones.
-- **Colony items.** Any mod's item with an effect in the game's item table is placed from Autopilot Storage, moved as the exact stack.
-- **Mod buildings.** Buildings with no known formula are measured on a throwaway probe colony and scored from what they really do. A building that misbehaves on the probe is quarantined and never touched.
-- Anything the manager can't support is listed in Diagnostics and left alone.
+- Deposits a mod registers in the game's own tables are scored like vanilla ones.
+- Any mod's colony item the game knows how to install gets placed from Autopilot Storage.
+- Mod buildings with no formula are measured on a throwaway test colony and scored from what they really do. See [How it builds](how-it-builds.md#mod-buildings-it-doesnt-know).
+- Anything it can't support is listed in Diagnostics and left alone.
 
 ## Checked, nothing needed
 
-Better Colonies, Supply Forging, LOST_SECTOR, Kon's Player Faction Bundles, Galactic Constellate, Tri-Tachyon Expansion, Luddic Enhancement, Hillock, Hazard Mining, Hiver Swarm and Adversary work as they are. Their buildings are measured, or their threats already count in the threat estimate.
+Better Colonies, Supply Forging, LOST_SECTOR, Kon's Player Faction Bundles, Galactic Constellate, Tri-Tachyon Expansion, Luddic Enhancement, Hillock, Hazard Mining, Hiver Swarm and Adversary all work as they are.
