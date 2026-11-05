@@ -96,7 +96,7 @@ public class CAIntel extends BaseIntelPlugin {
         com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
         if (mm.isModEnabled(CASettlement.MOD)) l.add("settle");
         if (mm.isModEnabled(CASpies.MOD)) l.add("agents");
-        if (mm.isModEnabled(CAAutonomy.MOD) && (s.autonomyMode != 0 || !CAData.get().autonomous().isEmpty())) l.add("autonomy");
+        if (mm.isModEnabled(CAAutonomy.MOD)) l.add("autonomy");   // always: its Grant and Take back buttons work in any mode
         if (mm.isModEnabled(CAAugments.MOD) && s.augmentMode != 2) l.add("augments");
         if (mm.isModEnabled(CAContracts.MOD) && s.contractMode != 2) l.add("contracts");
         if (anyMega && mm.isModEnabled(CAHypershunt.MOD) && s.hypershuntMode != 2) l.add("mega");
