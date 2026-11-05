@@ -120,7 +120,7 @@ public class CASurplusResearch {
         }
         if (s.upkeepAdded + up > CASurplus.upkeepCap(m, s)) {
             summary = head + "; the next, at " + m.getName() + ", waits for next month's new-upkeep room.";
-            if (CALog.once(key + ":upkeep")) CALog.quiet(m.getName() + ": surplus Research Facility waits for next month's upkeep room");
+            if (CALog.once(key + ":upkeep")) CALog.add(m.getName() + ": surplus Research Facility waits for next month's upkeep room");
             return;
         }
         CAEngine.Pick p = new CAEngine.Pick();

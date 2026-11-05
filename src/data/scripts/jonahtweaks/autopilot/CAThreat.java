@@ -57,7 +57,7 @@ public class CAThreat {
         }
         if (t >= CLEAR || Global.getSector().getClock().getElapsedDaysSince(c.threatSince) < MIN_DAYS) return true;
         c.threatHigh = false;
-        CALog.quiet(m.getName() + ": threat down (" + Math.round(t * 100f) + "%)" + (security ? "" : ", back to " + c.profile.label));
+        CALog.status("threatdown:" + m.getId(), m.getName() + ": threat down (" + Math.round(t * 100f) + "%)" + (security ? "" : ", back to " + c.profile.label));
         return false;
     }
 
