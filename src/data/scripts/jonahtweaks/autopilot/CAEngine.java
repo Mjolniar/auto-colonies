@@ -322,9 +322,9 @@ public class CAEngine {
         // upgrading a forge that holds a nanoforge makes a new building, which pollutes a clean habitable world again
         if (!p.pollution && m != null && p.upgrade && p.existing instanceof com.fs.starfarer.api.impl.campaign.econ.impl.HeavyIndustry
                 && CAConditions.polluting(p.existing.getSpecialItem()) && m.hasCondition("habitable") && !m.hasCondition("pollution")) p.pollution = true;
-        if (p.pollution) {
-            value -= profile == CAData.Profile.WAR ? 5000f : 30000f;
-            p.lines.add("Pollutes this habitable world (permanent after 90 days)");
+        if (p.pollution) {   // the same for every goal (War production used to mind it a sixth as much), and never started (below)
+            value -= 30000f;
+            p.lines.add("Pollutes this habitable world (permanent after 90 days): Autopilot never starts this; build it yourself if you want it");
         }
         // the plan only orders buildings that are worth something on their own, except Terraforming Made Easy's structures
         // and the Unification Center: they cost more than they earn, but they're how the plan's world is reached
@@ -347,10 +347,12 @@ public class CAEngine {
         float followThrough = p.upgrade && value > 0f && !profitOnly ? 15000f : 0f;
         if (followThrough > 0f) p.lines.add("Follow-through: upgrades what's already built");
         p.worth = value; p.planBonus = planBonus; p.followThrough = followThrough;
+        if (p.pollution) { planBonus = 0f; followThrough = 0f; p.planBonus = 0f; p.followThrough = 0f; }
         float cw = CASurplus.costWeight(m);   // a quarter at the focus world while there are surplus credits
         p.buildCost = (p.cost / 36f + p.days * 10f) * cw;   // the price spread over three years, plus a little for the wait
         if (cw < 1f && p.cost > 0f) p.lines.add("Focus world with surplus credits: the price counts a quarter");
         p.score = value + planBonus + followThrough - p.buildCost - reserve;
+        if (p.pollution) p.score = Math.min(p.score, -1f);   // shown, never started: worthwhile() needs a positive score
         return true;   // every option is ranked and shown; Approve and Auto only act on a positive score (worthwhile())
     }
 
@@ -430,8 +432,8 @@ public class CAEngine {
             supply(p, "heavy_machinery", s - 2, deficit); supply(p, "supplies", s - 2, deficit);
             supply(p, "hand_weapons", s - 2, deficit); supply(p, "ships", s - 2, deficit);
             demand(p, "metals", s, deficit); demand(p, "rare_metals", s - 2, deficit);
-            // a Heavy Industry pollutes only with a nanoforge in it: one waiting in Autopilot Storage would go there
-            if (habitable && !m.hasCondition("pollution") && CAItems.pollutingForgeWaiting()) p.pollution = true;
+            // a Heavy Industry pollutes only with a polluting item in it, and Autopilot never puts one in on a habitable
+            // world (CAItems.wouldPollute, 2.36.2), so building one here doesn't pollute
         } else if (id.equals("orbitalworks")) {
             p.fx[5] += 0.2f; p.fx[4] += 0.2f; p.lines.add("+20% ship quality and more ship output");
         } else if (id.equals("fuelprod")) {

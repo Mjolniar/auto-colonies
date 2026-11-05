@@ -62,15 +62,25 @@ public class CAItems {
     }
 
     /**
-     * itemScore in a given building: UAF's Garrison Transmitter does a third as much in ground defenses as in a port, and a
-     * nanoforge that pollutes counts for less on a clean habitable world (it pollutes it; UAF's Dimensional Nanoforge doesn't).
+     * Never a polluting item in a forge on a habitable world (2.36.2), whatever the colony's goal, threat or the endgame:
+     * vanilla's Heavy Industry (and every forge built on it) pollutes a habitable world the day such an item goes in, and
+     * the pollution is permanent after 90 days (on a world already polluted, it makes that pollution permanent). Before,
+     * this only cut the item's score by a quarter, and a War production goal doubled a nanoforge's, so it could happen.
+     * Items tagged no_pollution (Ashes of the Domain's) and UAF's Dimensional Nanoforge (it clears pollution) are fine. Pure.
      */
+    static boolean pollutesHabitable(boolean pollutingItem, boolean forge, boolean habitable) { return pollutingItem && forge && habitable; }
+
+    static boolean wouldPollute(String itemId, MarketAPI m, Industry ind) {
+        return pollutesHabitable(CAConditions.polluting(itemId), ind instanceof com.fs.starfarer.api.impl.campaign.econ.impl.HeavyIndustry,
+                m != null && m.hasCondition("habitable"));
+    }
+
+    /** itemScore in a given building: UAF's Garrison Transmitter does a third as much in ground defenses as in a port; never a forge it would pollute. */
     static float itemScore(String id, MarketAPI m, CAData.Profile p, Industry ind) {
+        if (ind != null && wouldPollute(id, m, ind)) return 0f;
         float sc = itemScore(id, m, p);
         if (sc <= 0f || ind == null) return sc;
         if (id.equals("uaf_garrison_transmitter") && (ind.getId().equals("grounddefenses") || ind.getId().equals("heavybatteries"))) sc /= 3f;
-        if (id.endsWith("nanoforge") && CAConditions.polluting(id) && ind instanceof com.fs.starfarer.api.impl.campaign.econ.impl.HeavyIndustry
-                && m.hasCondition("habitable") && !m.hasCondition("pollution")) sc *= 0.75f;
         return sc;
     }
     /** Items this placer never installs: Ashes of the Domain blanks the Coronal Hypershunt Tap's buildings (it builds receivers),
@@ -143,6 +153,7 @@ public class CAItems {
         CASettings s = d.settings;
         if (markets.isEmpty()) return;
         if (pullLamp(d, markets)) return;
+        if (pullPollutingForge(d, markets)) return;
         if (placeItem(d, s, markets)) return;
         if (!s.disableStabilizers && s.allowRemovals && convertFuel(d, s, markets)) return;   // replaces a building, so only with Allow removals
         if (s.useAICores && placeCore(d, s, markets)) return;
@@ -277,6 +288,7 @@ public class CAItems {
         CAData.Colony c = CAData.get().colony(m.getId());
         for (Industry ind : m.getIndustries()) {
             if (!it.targets.contains(ind.getId()) || ind.getSpecialItem() != null || !ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId())) continue;
+            if (wouldPollute(it.spec.getId(), m, ind)) continue;   // a forge on a habitable world is no home for a polluting item
             try { if (it.effect.getUnmetRequirements(ind).isEmpty()) return ind; } catch (Throwable ignored) { }
         }
         return null;
@@ -323,6 +335,7 @@ public class CAItems {
                 if (sp == null || m.hasIndustry(id) || CAPlan.hasOrBetter(m, id)) continue;
                 Industry inst = sp.getNewPluginInstance(m);
                 if (!inst.isAvailableToBuild() || (inst.isIndustry() && !free)) continue;
+                if (wouldPollute(it.spec.getId(), m, inst)) continue;
                 if (CAAotD.enabled() && !CAAotD.allows(id, m)) continue;
                 if (it.effect.getUnmetRequirements(inst).isEmpty()) return id;
             } catch (Throwable ignored) { }
@@ -349,6 +362,7 @@ public class CAItems {
         Idle best = null; float bestV = 0f;
         for (Idle it : idleItems()) {
             if (!it.targets.contains(p.id) || !CAMods.itemFits(it.spec.getId(), m)) continue;
+            if (wouldPollute(it.spec.getId(), m, inst)) continue;   // never goes in there, so no reason to build for it
             try { if (!it.effect.getUnmetRequirements(inst).isEmpty()) continue; } catch (Throwable t) { continue; }
             float v = itemWorth(it, m, p, prof);
             if (v > bestV) { bestV = v; best = it; }
@@ -356,6 +370,43 @@ public class CAItems {
         if (best == null) return;
         p.fx[0] += bestV;
         p.lines.add("Uses the " + best.spec.getName() + " waiting in Autopilot Storage: about " + Misc.getDGSCredits(bestV) + " per month");
+    }
+
+    // ---------------- polluting forges ----------------
+
+    /**
+     * Vanilla's Heavy Industry (HeavyIndustry.updatePollutionStatus) adds pollution to a habitable world the day a polluting
+     * item goes in (addedPollution), makes it permanent after DAYS_BEFORE_POLLUTION_PERMANENT (90) days (permaPollution), and
+     * takes it away again if the item comes out before then. So at an Auto colony, a polluting item whose pollution is still
+     * reversible goes back to Autopilot Storage (2.36.2): older versions could put one there. A locked building keeps it, as
+     * does pollution that was already permanent or there before the item. One a day, like placements.
+     */
+    static boolean pullPollutingForge(CAData d, List<MarketAPI> markets) {
+        for (MarketAPI m : markets) {
+            if (!m.hasCondition("habitable")) continue;
+            CAData.Colony c = d.colony(m.getId());
+            for (Industry ind : m.getIndustries()) {
+                if (!(ind instanceof com.fs.starfarer.api.impl.campaign.econ.impl.HeavyIndustry) || c.locks.contains(ind.getId())) continue;
+                SpecialItemData item = ind.getSpecialItem();
+                if (item == null || !CAConditions.polluting(item)) continue;
+                com.fs.starfarer.api.impl.campaign.econ.impl.HeavyIndustry hi = (com.fs.starfarer.api.impl.campaign.econ.impl.HeavyIndustry) ind;
+                if (!hi.isAddedPollution() || hi.isPermaPollution()) continue;
+                int left = Math.max(0, Math.round(com.fs.starfarer.api.impl.campaign.econ.impl.HeavyIndustry.DAYS_BEFORE_POLLUTION_PERMANENT - hi.getDaysWithNanoforge()));
+                try {
+                    ind.setSpecialItem(null);
+                    d.storage().addSpecial(item, 1f);
+                    m.reapplyIndustries();
+                    idleAt = -99f;
+                    CALog.add(m.getName() + ": took the " + name(item.getId()) + " out of " + ind.getCurrentName() + " before its pollution became permanent ("
+                            + left + " days left); back to Autopilot Storage. Lock the building to keep it there", true);
+                    return true;
+                } catch (Throwable t) {
+                    CADiagnostics.quarantine(item.getId(), "taking a polluting item out at " + m.getName(), t);
+                    return false;
+                }
+            }
+        }
+        return false;
     }
 
     // ---------------- Orbital Fusion Lamp ----------------

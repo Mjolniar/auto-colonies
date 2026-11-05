@@ -48,7 +48,7 @@ Each colony is looked at every 7 days, or right after something finishes buildin
 
 A few things it avoids on its own:
 
-- putting a nanoforge where it would pollute a clean habitable world (War production colonies mind a lot less);
+- polluting a habitable world. A nanoforge that pollutes never goes into a forge on a habitable world, whatever the colony's goal (War production and Security included), its threat, or the endgame. It waits for a forge on a world that isn't habitable instead. An upgrade that would pollute one again is shown but never started for you;
 - building past 12 buildings, since the colony screen can't show a 13th (Grand.Colonies changes this);
 - taking an industry slot the plan still needs for something else.
 
