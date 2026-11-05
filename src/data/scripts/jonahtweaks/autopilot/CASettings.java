@@ -111,6 +111,10 @@ public class CASettings {
     // call: 2 (the old Auto) now only recommends too.
     public int autonomyMode = 0;
     public static final String[] AUTONOMY_NAMES = {"Off", "Recommend", "Auto"};
+    // war fleets (CAWar, Nexerelin): 0 protect and strike back (default, so older saves get it), 1 protect only, 2 off.
+    // The names live here so the settings screen loads without Nexerelin.
+    public int warMode = 0;
+    public static final String[] WAR_NAMES = {"Protect and strike back", "Protect", "Off"};
     // the Colony Autopilot button on your colony's screen (CAScreenButton); on unless this is set
     public boolean noScreenButton = false;
     // attacks on your colonies (CAAttacks), only used in a Nexerelin Derelict Empire start: Hostile Activity fleets per

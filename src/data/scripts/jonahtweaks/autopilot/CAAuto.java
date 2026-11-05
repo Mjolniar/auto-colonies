@@ -157,6 +157,12 @@ public class CAAuto {
             for (MarketAPI m : Misc.getPlayerMarkets(false)) if (d.colony(m.getId()).mode != CAData.Mode.OFF) managed.add(m);
             try { CADefense.run(managed); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "emergency defense step failed", t); }
+            if (CABreaker.allowed(CAWar.MOD + ":war")) {   // after emergencies, so they get fleet request points first
+                boolean ok = true;
+                try { CAWar.run(managed); }
+                catch (Throwable t) { ok = false; CADiagnostics.LOG.warn(CADiagnostics.TAG + "war fleet step failed", t); }
+                CABreaker.check(CAWar.MOD + ":war", ok, "Nexerelin war fleets");
+            }
             if (CABreaker.allowed(CASpies.MOD + ":agents")) {
                 boolean ok = true;
                 try { CASpies.run(d, s); }

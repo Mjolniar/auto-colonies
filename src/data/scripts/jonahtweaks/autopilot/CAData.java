@@ -85,6 +85,9 @@ public class CAData {
     public long lastAutonomyChange;
     public long researchWaitSince;   // when Auto research began holding databanks for a plan tech short of them (0: not waiting)
     public Map<String, Long> autonomous() { if (autonomous == null) autonomous = new HashMap<String, Long>(); return autonomous; }
+    // war fleets (CAWar): markets that sent raids, invasions or blockades at your colonies, to when they were last seen doing it
+    public Map<String, Long> attackers;
+    public Map<String, Long> attackers() { if (attackers == null) attackers = new HashMap<String, Long>(); return attackers; }
     // Terraforming Made Easy structures surplus terraforming built ("marketId:structureId"); only these are taken down again
     public Set<String> surplusBuilt;
     public Set<String> surplusBuilt() { if (surplusBuilt == null) surplusBuilt = new HashSet<String>(); return surplusBuilt; }
