@@ -40,7 +40,7 @@ When a colony's system is targeted by a hostile raid, invasion or crisis fleet, 
 
 The **War fleets** setting (also under Colony policies) is **Protect and strike back** by default, or Protect, or Off. Every day it looks at what's needed, in this order:
 
-1. **Relief** - a relief fleet to a colony under siege (once every 60 days per colony).
+1. **Relief** - a relief fleet to a colony under siege (once every 60 days per colony), at Nexerelin's own price for one.
 2. **Proactive defense** - a Defense fleet to a colony whose threat is high or that a colony crisis is heading for, before anything shows up.
 3. **Pirate eradication** - base strikes on the pirate and Pather bases you know about within 15 light-years of a colony, at twice the strength of the base's station.
 4. **Strike back** - raids on the markets that sent raids, invasions or blockades at your colonies in the last 120 days, as long as they're still hostile. Protect mode skips this one.
@@ -55,16 +55,14 @@ The **War fleets** section on the Mod features page shows your points, what's wa
 
 ### Agents
 
-The **Agents** setting is Off before setup, **Defense** with the recommended settings, or **Defense and offense**.
+The **Agents** setting is Off before setup, **Defense** with the recommended settings, or **Defense and offense**. Each agent gets a role, the way you'd set them up yourself:
 
-- **Defense** handles rebellions, Pather cells and hidden pirate bases at the closest colony that needs it, then raises relations with factions running operations against you while not at war with you (once they're above Neutral, their AI drops those operations).
-- **Offense** adds sabotage of military industries, starting with whoever is invading or raiding you. It only goes after factions already at war with you, never allies, a ceasefire or your commissioner, since a caught operation can start a war.
-- **Hiring** - a level 1 agent for 12,000, only while there's work for one, up to **Agents to keep**. Nexerelin pays the salary.
+- **Security** (the first one) - handles rebellions, Pather cells and hidden pirate bases at the closest colony that needs it, the same things Nexerelin's Internal security mode does.
+- **Relations** (the second) - raises relations with your preferred factions. It picks them the same way ambassadors are picked (the faction priorities and focus under Administrators and ambassadors), and never a faction you're at war with.
+- **Offense** (a third, only with Defense and offense) - sabotages the military of the **Offense target**: whoever is attacking you (the default), a random enemy, or a faction at war with you that you pick. Only factions already hostile to you, never allies, a ceasefire or your commissioner, since a caught operation can start a war.
 
-Agents you hired yourself don't get orders until you click **Let Autopilot use it** on the Mod features page, and **Take it back** returns one. That page also lists the enemy operations running against your colonies, which the game doesn't show anywhere else.
+Agents don't appear out of nowhere. Recruiting one costs 12,000 plus the convenience fee and takes 60 days before it reports for duty. The security one gets recruited as soon as you have a colony, the others once the budget has room.
 
-### Derelict Empire start
-
-That start gives every faction enough points for a blockade or raid on day 0. Only in that start, the **Attacks on your colonies** settings group shows up: it caps pirate and crisis fleets per system and makes Nexerelin's invasions, raids and blockades of your colonies come one at a time, with a gap of 30 to 180 days. The recommended settings set at most 4 fleets, 90 days apart. In any other game these don't show and the game's own rules stay.
+Agents you hired yourself don't get orders until you click **Let Autopilot use it** on the Mod features page, and **Take it back** returns one. It only uses what you can see in game, so enemy operations the game hides from you aren't shown or used.
 
 Next: [Research](research.md).

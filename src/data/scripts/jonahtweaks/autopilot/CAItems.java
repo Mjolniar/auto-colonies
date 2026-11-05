@@ -90,8 +90,10 @@ public class CAItems {
 
     /** True when Autopilot Storage holds an Industrial Evolution VPC chip. */
     public static boolean storageHasVPC() {
-        for (CargoStackAPI stack : CAData.get().storage().getStacksCopy())
+        for (CAStores.Held h : CAStores.stacks()) {
+            CargoStackAPI stack = h.stack;
             if (stack.isSpecialStack() && stack.getSpecialDataIfSpecial() != null && stack.getSpecialDataIfSpecial().getId().startsWith("IndEvo_vpc_")) return true;
+        }
         return false;
     }
 
@@ -164,9 +166,15 @@ public class CAItems {
                     + "Hire administrators under Administrators and ambassadors");
     }
 
+    /**
+     * One item a day from any colony's Autopilot Storage into the Auto colony building where it scores best. At the colony
+     * it's stored in, it goes straight in; anywhere else it's shipped there first (CAStores, a fee and travel time) and goes
+     * in once it has arrived, so an item never jumps across the sector for free.
+     */
     static boolean placeItem(CAData d, CASettings s, List<MarketAPI> markets) {
-        CargoAPI st = d.storage();
-        for (CargoStackAPI stack : st.getStacksCopy()) {
+        for (CAStores.Held held : CAStores.stacks()) {
+            CargoStackAPI stack = held.stack;
+            CargoAPI st = CAStores.of(held.market);
             if (!stack.isSpecialStack() || stack.getSize() < 1f) continue;
             SpecialItemSpecAPI spec = stack.getSpecialItemSpecIfSpecial();
             SpecialItemData data = stack.getSpecialDataIfSpecial();
@@ -195,7 +203,12 @@ public class CAItems {
                 }
             }
             if (best == null) {
-                if (swapItem(d, s, markets, spec, data, effect, targets)) return true;
+                if (swapItem(d, s, markets, held.market, spec, data, effect, targets)) return true;
+                continue;
+            }
+            if (bestM != held.market) {   // somewhere else: shipped there first, unless one is already on its way
+                if (CAStores.inTransit(spec.getId(), bestM.getId()) > 0) continue;
+                if (CAStores.ship(held.market, bestM, null, data, 1, "for " + best.getCurrentName())) return true;
                 continue;
             }
             float fee = CABudget.fee(s, STANDARD_MOVE_FEE);
@@ -227,7 +240,7 @@ public class CAItems {
      * Nanoforge for a Corrupted one); the old one goes back to Autopilot Storage. Never the Orbital Fusion Lamp (pullLamp
      * handles it), an item Autopilot can't value, or a building that uses its item up.
      */
-    static boolean swapItem(CAData d, CASettings s, List<MarketAPI> markets, SpecialItemSpecAPI spec, SpecialItemData data,
+    static boolean swapItem(CAData d, CASettings s, List<MarketAPI> markets, MarketAPI holder, SpecialItemSpecAPI spec, SpecialItemData data,
                             InstallableItemEffect effect, Set<String> targets) {
         Industry best = null; MarketAPI bestM = null; float bestGain = 0f;
         for (MarketAPI m : markets) {
@@ -243,14 +256,19 @@ public class CAItems {
             }
         }
         if (best == null) return false;
+        if (bestM != holder) {   // shipped to that colony first; the swap happens once it's there
+            if (CAStores.inTransit(spec.getId(), bestM.getId()) > 0) return false;
+            return CAStores.ship(holder, bestM, null, data, 1, "to replace the " + name(best.getSpecialItem().getId()) + " in " + best.getCurrentName());
+        }
         float fee = CABudget.fee(s, STANDARD_MOVE_FEE);
         if (!canPay(s, fee)) return false;
         SpecialItemData old = best.getSpecialItem();
         String oldName = name(old.getId());
+        CargoAPI st = CAStores.of(bestM);
         try {
             best.setSpecialItem(data);
-            d.storage().removeItems(CargoAPI.CargoItemType.SPECIAL, data, 1f);
-            d.storage().addSpecial(old, 1f);
+            st.removeItems(CargoAPI.CargoItemType.SPECIAL, data, 1f);
+            st.addSpecial(old, 1f);
             bestM.reapplyIndustries();
             CABudget.charge(s, 0f, fee, 0f);
             idleAt = -99f;
@@ -304,7 +322,8 @@ public class CAItems {
         idleAt = now;
         List<Idle> out = new ArrayList<Idle>();
         List<MarketAPI> auto = autoMarkets();
-        for (CargoStackAPI stack : CAData.get().storage().getStacksCopy()) {
+        for (CAStores.Held held : CAStores.stacks()) {
+            CargoStackAPI stack = held.stack;
             if (!stack.isSpecialStack() || stack.getSize() < 1f) continue;
             SpecialItemSpecAPI spec = stack.getSpecialItemSpecIfSpecial();
             SpecialItemData data = stack.getSpecialDataIfSpecial();
@@ -394,7 +413,7 @@ public class CAItems {
                 int left = Math.max(0, Math.round(com.fs.starfarer.api.impl.campaign.econ.impl.HeavyIndustry.DAYS_BEFORE_POLLUTION_PERMANENT - hi.getDaysWithNanoforge()));
                 try {
                     ind.setSpecialItem(null);
-                    d.storage().addSpecial(item, 1f);
+                    CAStores.of(m).addSpecial(item, 1f);
                     m.reapplyIndustries();
                     idleAt = -99f;
                     CALog.add(m.getName() + ": took the " + name(item.getId()) + " out of " + ind.getCurrentName() + " before its pollution became permanent ("
@@ -467,7 +486,7 @@ public class CAItems {
                 for (String k : LAMP_CANCELS) if (m.hasCondition(k)) cancels = true;
                 try {
                     ind.setSpecialItem(null);
-                    d.storage().addSpecial(item, 1f);
+                    CAStores.of(m).addSpecial(item, 1f);
                     m.reapplyConditions();
                     m.reapplyIndustries();
                     CALog.add(m.getName() + ": took the Orbital Fusion Lamp out of " + ind.getCurrentName() + ", back to Autopilot Storage ("
@@ -491,8 +510,7 @@ public class CAItems {
      * Emergent Threats' portmaster does it: the AI core, colony item and improvement carry over.
      */
     static boolean convertFuel(CAData d, CASettings s, List<MarketAPI> markets) {
-        CargoAPI st = d.storage();
-        if (st.getCommodityQuantity("ix_antimatter_stabilizer") < 1f) return false;
+        if (CAStores.count("ix_antimatter_stabilizer") < 1f) return false;
         if (Global.getSettings().getIndustrySpec("ix_fuel_production") == null) return false;
         MarketAPI best = null; int bestSize = -1;
         for (MarketAPI m : markets) {
@@ -504,6 +522,12 @@ public class CAItems {
             if (score > bestSize) { bestSize = score; best = m; }
         }
         if (best == null) return false;
+        CargoAPI st = CAStores.of(best);
+        if (st.getCommodityQuantity("ix_antimatter_stabilizer") < 1f) {   // stored at another colony: shipped here first
+            if (CAStores.inTransit("ix_antimatter_stabilizer", best.getId()) > 0) return false;
+            MarketAPI holder = CAStores.nearestHolding("ix_antimatter_stabilizer", best);
+            return holder != null && CAStores.ship(holder, best, "ix_antimatter_stabilizer", null, 1, "to upgrade Fuel Production");
+        }
         float fee = CABudget.fee(s, STANDARD_MOVE_FEE);
         if (!canPay(s, fee)) return false;
         try {
@@ -667,7 +691,8 @@ public class CAItems {
     /** A nanoforge that pollutes (vanilla's; AotD's no_pollution ones don't) waits in Autopilot Storage. */
     static boolean pollutingForgeWaiting() {
         try {
-            for (CargoStackAPI st : CAData.get().storage().getStacksCopy()) {
+            for (CAStores.Held h : CAStores.stacks()) {
+                CargoStackAPI st = h.stack;
                 if (!st.isSpecialStack() || st.getSpecialDataIfSpecial() == null) continue;
                 if (st.getSpecialDataIfSpecial().getId().endsWith("_nanoforge") && CAConditions.polluting(st.getSpecialDataIfSpecial())) return true;
             }
@@ -836,7 +861,6 @@ public class CAItems {
      * inspection is coming for are left as they are.
      */
     static boolean placeCore(CAData d, CASettings s, List<MarketAPI> markets) {
-        CargoAPI st = d.storage();
         String none = noInspections();
         Set<MarketAPI> frozen = inspected();
         Map<String, Integer> deficit = CAEngine.empireDeficits();
@@ -877,21 +901,26 @@ public class CAItems {
                 continue;
             }
             worst.ind.setAICoreId(null);
-            st.addCommodity(CORES[worst.cur], 1f);
+            CAStores.of(m).addCommodity(CORES[worst.cur], 1f);
             CALog.add(m.getName() + ": took the " + coreName(worst.cur) + " out of " + worst.ind.getCurrentName() + " and back to Autopilot Storage: "
                     + pts + " inspection points, " + limitWhy(s, m, none, lim)
                     + (s.coreRisk == 0 && lim == safePoints() ? " (its defenses don't beat the next inspection)" : ""));
             return true;
         }
 
+        // cores in any colony's Autopilot Storage: one at the colony goes straight in, one elsewhere is shipped there first (2.37.0)
         int[] have = new int[CORES.length];
-        for (int k = 0; k < CORES.length; k++) have[k] = (int) st.getCommodityQuantity(CORES[k]);
-        if (s.alphaMode != 2 && makeRoom(slots, points, limit, have[0] > 0, s, st, none)) return true;
+        for (int k = 0; k < CORES.length; k++) have[k] = (int) CAStores.count(CORES[k]);
+        if (s.alphaMode != 2 && makeRoom(slots, points, limit, have[0] > 0, s, none)) return true;
         CoreSlot bestTo = null, bestFrom = null;
         int bestK = -1;
         float bestGain = 0f;
+        Set<String> incoming = new HashSet<String>();   // colonies a core is already on its way to: one at a time
+        for (CAStores.Shipment sh : d.shipments()) if (sh.commodity != null && tier(sh.commodity) >= 0) incoming.add(sh.to);
         for (CoreSlot to : slots) {
             if (to.threat && !defensive(to.ind)) continue;   // a threatened colony only gets cores in its defenses
+            if (incoming.contains(to.m.getId()) && CAStores.of(to.m).getCommodityQuantity(CORES[0]) + CAStores.of(to.m).getCommodityQuantity(CORES[1])
+                    + CAStores.of(to.m).getCommodityQuantity(CORES[2]) < 1f) continue;
             int room = limit.get(to.m) - points.get(to.m);
             for (int k = 0; k < CORES.length; k++) {
                 if (k == 0 && (s.alphaMode == 2 || (s.alphaMode == 0 && !alphaRemovable(to.ind)))) continue;
@@ -912,6 +941,23 @@ public class CAItems {
             }
         }
         if (bestTo == null) return false;
+        String coreId = CORES[bestK];
+        CargoAPI here = CAStores.of(bestTo.m);
+        // not at that colony yet: ship it there (out of the other colony's building or Autopilot Storage); it goes in once it arrives
+        if (bestFrom != null ? bestFrom.m != bestTo.m : here.getCommodityQuantity(coreId) < 1f) {
+            String why = coreName(bestK) + " for " + bestTo.ind.getCurrentName();
+            if (bestFrom != null) {
+                CargoAPI there = CAStores.of(bestFrom.m);
+                bestFrom.ind.setAICoreId(null);
+                there.addCommodity(coreId, 1f);
+                if (CAStores.ship(bestFrom.m, bestTo.m, coreId, null, 1, why)) return true;
+                there.removeCommodity(coreId, 1f);   // couldn't pay for the shipping: it stays where it was
+                bestFrom.ind.setAICoreId(coreId);
+                return false;
+            }
+            MarketAPI holder = CAStores.nearestHolding(coreId, bestTo.m);
+            return holder != null && CAStores.ship(holder, bestTo.m, coreId, null, 1, why);
+        }
         float fee = CABudget.fee(s, STANDARD_MOVE_FEE);
         if (!canPay(s, fee)) return false;
         int old = bestTo.cur;
@@ -919,9 +965,9 @@ public class CAItems {
         float real = bestTo.net[bestK] - (old >= 0 ? bestTo.net[old] : 0f) - (bestFrom != null ? bestFrom.net[bestK] : 0f);
         boolean first = bestK == 0 && bestTo.first && (bestFrom == null || !bestFrom.first);
         if (bestFrom != null) bestFrom.ind.setAICoreId(null);
-        else st.removeCommodity(CORES[bestK], 1f);
-        bestTo.ind.setAICoreId(CORES[bestK]);
-        if (old >= 0) st.addCommodity(CORES[old], 1f);
+        else here.removeCommodity(coreId, 1f);
+        bestTo.ind.setAICoreId(coreId);
+        if (old >= 0) here.addCommodity(CORES[old], 1f);
         CABudget.charge(s, 0f, fee, 0f);
         int lim = limit.get(bestTo.m);
         String where = bestTo.m.getName() + ": ";
@@ -941,7 +987,7 @@ public class CAItems {
      * enough together with the others, and never under a high threat (research isn't a defense). Returns whether it acted.
      */
     static boolean makeRoom(List<CoreSlot> slots, Map<MarketAPI, Integer> points, Map<MarketAPI, Integer> limit, boolean alphaStored,
-                            CASettings s, CargoAPI st, String none) {
+                            CASettings s, String none) {
         for (CoreSlot to : slots) {
             if (!to.first || to.cur == 0 || to.threat || to.net[0] <= 0f) continue;
             int room = limit.get(to.m) - points.get(to.m);
@@ -965,7 +1011,7 @@ public class CAItems {
                 continue;
             }
             worst.ind.setAICoreId(null);
-            st.addCommodity(CORES[worst.cur], 1f);
+            CAStores.of(to.m).addCommodity(CORES[worst.cur], 1f);
             CALog.add(to.m.getName() + ": took the " + coreName(worst.cur) + " out of " + worst.ind.getCurrentName() + " and back to Autopilot Storage, "
                     + "to make inspection room for an Alpha core in " + to.ind.getCurrentName() + " (research buildings get Alpha cores first)");
             return true;
@@ -1252,11 +1298,11 @@ public class CAItems {
             Global.getSector().getCharacterData().addAdmin(best.person);
             Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(best.hiringBonus);
             CABudget.charge(s, best.hiringBonus, fee, best.salary);
-            if (s.adminDelay) d.adminTransit().put(best.person.getId(), Global.getSector().getClock().getTimestamp());
+            d.adminTransit().put(best.person.getId(), Global.getSector().getClock().getTimestamp());
             CALog.add("Hired administrator " + best.person.getNameString() + " from " + bestAt.getName() + " for " + Misc.getDGSCredits(best.hiringBonus)
                     + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + ", salary " + Misc.getDGSCredits(best.salary) + "/month, for "
                     + bestFor.getName() + (need > 0 ? ": " + limitText(need) : " (adds about " + Misc.getDGSCredits(bestWorth) + " a month)")
-                    + (s.adminDelay ? "; arrives in 30 days" : ""));
+                    + "; arrives in 30 days");
             return true;
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "administrator hire failed", t);

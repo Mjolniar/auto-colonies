@@ -137,8 +137,38 @@ public class CASettlement {
 
     // ---------------- founding ----------------
 
+    /**
+     * An expedition founds it (2.37.0): RAT's dialog founds a settlement when your fleet is at the planet, so from afar
+     * Autopilot pays now and the settlement is founded once an expedition from your nearest colony gets there (SETUP_DAYS
+     * plus the shipping travel time, a day a light-year). If the planet can't take it any more by then, the cost is refunded.
+     */
+    static final float SETUP_DAYS = 10f;
+
+    static float expeditionDays(PlanetAPI planet) {
+        float best = Float.MAX_VALUE;
+        for (MarketAPI m : Misc.getPlayerMarkets(false))
+            if (m.getPrimaryEntity() != null) best = Math.min(best, Misc.getDistanceLY(m.getPrimaryEntity(), planet));
+        return SETUP_DAYS + CAStores.days(best == Float.MAX_VALUE ? 0f : best);
+    }
+
+    /** Daily: an expedition that has arrived founds the settlement (paid already), or refunds the cost if it can't. */
+    static void expedition(CAData d) {
+        if (d.settleExpeditionPlanet == null) return;
+        if (Global.getSector().getClock().getElapsedDaysSince(d.settleExpeditionAt) < d.settleExpeditionDays) return;
+        String planetId = d.settleExpeditionPlanet;
+        float paid = d.settleExpeditionCost;
+        d.settleExpeditionPlanet = null;
+        String err = found(planetId, false, false);
+        if (err == null) { CALog.add("Settlement: the expedition founded the settlement", true); return; }
+        Global.getSector().getPlayerFleet().getCargo().getCredits().add(paid);
+        CALog.add("Settlement: the expedition couldn't found it (" + err + "); " + Misc.getDGSCredits(paid) + " refunded", true);
+    }
+
     /** Founds the settlement on this planet's best site, exactly as RAT's dialog does. Returns null on success. */
-    public static String found(String planetId) {
+    public static String found(String planetId) { return found(planetId, true, false); }
+
+    /** pay: take the founding cost now; check: only check it can be founded, change nothing. */
+    static String found(String planetId, boolean pay, boolean check) {
         if (settlement() != null) return "You already have a settlement";
         SectorEntityToken e = Global.getSector().getEntityById(planetId);
         if (!(e instanceof PlanetAPI) || !eligible((PlanetAPI) e)) return "That planet can't host a settlement any more";
@@ -146,7 +176,7 @@ public class CASettlement {
         Site want = evaluate(planet);
         if (want == null) return "No resource site on " + planet.getName();
         float cost = foundingCost();
-        if (CABuild.credits() < cost) return "Not enough credits (" + Misc.getDGSCredits(cost) + " needed)";
+        if (pay && CABuild.credits() < cost) return "Not enough credits (" + Misc.getDGSCredits(cost) + " needed)";
 
         // pick the site holding that resource (RAT puts every resource the planet has on at least one site)
         List<SiteData> sites = fu().getSiteData(planet);
@@ -165,8 +195,9 @@ public class CASettlement {
             plugin.setConditionId(cond);
             mods.add(plugin);
         }
+        if (check) return null;
 
-        Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(cost);
+        if (pay) Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(cost);
         SectorEntityToken ent = planet.getStarSystem().addCustomEntity("rat_frontiers_settlement_" + Misc.genUID(), planet.getName() + " Settlement",
                 "rat_frontiers_settlement", Factions.PLAYER);
         ent.setCircularOrbitPointingDown(planet, 1f, 1f, 360f);
@@ -268,7 +299,9 @@ public class CASettlement {
     // ---------------- daily pass ----------------
 
     public static void run(CAData d, CASettings s) {
-        if (!active() || s.settlementMode == 3) return;
+        if (!active()) return;
+        expedition(d);   // even with the setting off: one already paid for still arrives
+        if (s.settlementMode == 3 || d.settleExpeditionPlanet != null) return;
         SettlementData data = settlement();
         // a proposal goes stale when you found or build it yourself first
         if ("found".equals(d.settlePendingKind) && data != null) clearPending(d);
@@ -310,7 +343,19 @@ public class CASettlement {
         float cost = "found".equals(kind) ? foundingCost() : facilityCost(id);
         float fee = CABudget.constructionFee(s, cost);
         if (CABuild.credits() < cost + fee) return "Not enough credits for it plus the " + Misc.getDGSCredits(fee) + " fee";
-        String err = "found".equals(kind) ? found(id) : buildFacility(id);
+        String err;
+        if ("found".equals(kind)) {
+            err = found(id, false, true);
+            if (err == null) {
+                PlanetAPI planet = (PlanetAPI) Global.getSector().getEntityById(id);
+                Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(cost);
+                d.settleExpeditionPlanet = id;
+                d.settleExpeditionAt = Global.getSector().getClock().getTimestamp();
+                d.settleExpeditionDays = expeditionDays(planet);
+                d.settleExpeditionCost = cost;
+                name = name + "; the expedition gets there in " + Math.round(d.settleExpeditionDays) + " days";
+            }
+        } else err = buildFacility(id);
         if (err != null) { CALog.add("Settlement: could not start " + name + ": " + err); return err; }
         CABudget.charge(s, cost, fee, 0f);
         CALog.forget("settle:" + kind + ":" + id);
@@ -337,6 +382,12 @@ public class CASettlement {
         t.addPara("Mode: %s. Founds a settlement when a surveyed site makes at least %s per month; builds Refining and Trading Post when they pay "
                 + "for themselves within 2 years. Other facilities are yours to pick.", 6f, hl, CASettings.SETTLE_NAMES[Math.max(0, Math.min(3, s.settlementMode))],
                 Misc.getDGSCredits(s.settlementMinIncome));
+        if (d.settleExpeditionPlanet != null) {
+            float left = Math.max(0f, d.settleExpeditionDays - Global.getSector().getClock().getElapsedDaysSince(d.settleExpeditionAt));
+            SectorEntityToken pl = Global.getSector().getEntityById(d.settleExpeditionPlanet);
+            t.addPara("An expedition is on its way to found the settlement" + (pl != null ? " on " + CALog.esc(pl.getName()) : "") + ": %s days left.", 8f, hl,
+                    "" + (int) Math.ceil(left));
+        }
         if (d.settlePendingKind != null) {
             t.addPara("Waiting for your approval: %s for %s", 8f, hl, d.settlePendingName, Misc.getDGSCredits(d.settlePendingCost));
             com.fs.starfarer.api.ui.ButtonAPI a = t.addButton("Approve", new String[]{"settle", "approve", ""}, hl, dark, com.fs.starfarer.api.ui.Alignment.MID, com.fs.starfarer.api.ui.CutStyle.ALL, 120f, 22f, 4f);

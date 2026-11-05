@@ -56,7 +56,6 @@ public class CASetupUI {
         s.projectSupplyMode = 0;   // the goods a special project takes that no colony makes get a producer
         s.coreRisk = 1;           // Never inspected: More where defended only pays if inspections are resisted, which means war with the Hegemony
         s.inspectionMode = 0;      // Advise: resisting turns the Hegemony hostile, so that's your call
-        s.storageCheat = false;    // cheats are never recommended
         s.disableStabilizers = false;
         s.adminHiring = true;
         s.adminOptimal = true;
@@ -85,8 +84,6 @@ public class CASetupUI {
         s.autonomyMode = 1;     // Recommend: autonomy is your call; Autopilot only says which colony would help in a money emergency
         s.noScreenButton = false;
         s.screenLog = 0;           // every log entry on screen, as one short line
-        // attacks on your colonies: only a Derelict Empire start needs them (attacks from the first weeks)
-        if (CAAttacks.forThisStart()) { s.haFleetCap = CAAttacks.REC_CAP; s.nexAttackGap = CAAttacks.REC_GAP; }
     }
 
     /** Which group is expanded (UI state only, not saved); at most one. Budget starts open. */
@@ -258,11 +255,10 @@ public class CASetupUI {
             row(t, "Antimatter Stabilizers to Advanced Fuel Production", s.disableStabilizers ? "Off" : "Convert", "Convert", "stab", true);
         }
         if (group(t, "people", "Administrators and ambassadors", "hiring " + onOff(s.adminHiring).toLowerCase() + ", ambassadors "
-                + (s.disableAmbassadors ? "off" : "on, " + CASettings.FOCUS_NAMES[Math.max(0, Math.min(3, s.ambassadorFocus))].toLowerCase()) + ", arrival delay " + onOff(s.adminDelay).toLowerCase())) {
+                + (s.disableAmbassadors ? "off" : "on, " + CASettings.FOCUS_NAMES[Math.max(0, Math.min(3, s.ambassadorFocus))].toLowerCase()))) {
             row(t, "Administrator hiring", onOff(s.adminHiring), "On", "admin", true);
             row(t, "Assign administrators optimally", onOff(s.adminOptimal), "On", "adminopt", true);
             row(t, "Ambassadors (Industrial Evolution)", s.disableAmbassadors ? "Off" : "Hire and install", "Hire and install", "amb", true);
-            row(t, "Arrival delay", s.adminDelay ? "On (30 days)" : "Off", "On", "admindelay", true);
             t.addPara("An administrator is hired, placed or moved only where they add more than they cost: Industrial Planning's "
                     + "+1 output (worth more at a productive colony) and the stability from your colony limit, against their salary "
                     + "(2,500 or 20,000 a month) and the hiring cost spread over three years.", Misc.getGrayColor(), 6f);
@@ -306,12 +302,15 @@ public class CASetupUI {
                 + (s.spyMode == 0 ? "" : ", hiring " + (s.spyNoHiring ? "off" : "on")))) {
             row(t, "Agents", CASettings.SPY_NAMES[Math.max(0, Math.min(2, s.spyMode))], "Defense", "spy", true);
             if (s.spyMode != 0) {
-                row(t, "Hire agents", s.spyNoHiring ? "Off" : "On, 12,000 each", "On", "spyhire", true);
-                row(t, "Agents to keep", s.spyKeep == 0 ? "Auto (1, or 2 with offense)" : "" + s.spyKeep, "Auto", "spykeep", true);
-                t.addPara("Defense: counter-insurgency, Pather cells, pirate bases, and raising relations with factions running operations "
-                        + "against you. Offense only targets factions already at war with you. Costs come out of the monthly budget; "
-                        + "Nexerelin pays salaries. Only agents Autopilot hired, or you hand over on the Mod features page, are given orders, "
-                        + "and only operations their type can run.", Misc.getGrayColor(), 6f);
+                row(t, "Recruit agents", s.spyNoHiring ? "Off" : "On, 12,000 each, 60 days", "On", "spyhire", true);
+                row(t, "Agents to keep", s.spyKeep == 0 ? "Auto (2, or 3 with offense)" : "" + s.spyKeep, "Auto", "spykeep", true);
+                if (s.spyMode == 2) row(t, "Offense target", spyTargetName(s.spyTarget), "Whoever attacks you", "spytarget", true);
+                t.addPara("The first agent is on security: counter-insurgency, Pather cells and pirate bases. The second raises relations with "
+                        + "your preferred factions, picked like ambassadors (Administrators and ambassadors), never one at war with you. With "
+                        + "offense, a third sabotages the military of the offense target, only factions already at war with you. Recruiting "
+                        + "costs 12,000 plus the fee and takes 60 days; the first comes once you have a colony, the others once the budget allows. "
+                        + "Costs come out of the monthly budget; Nexerelin pays salaries. Only agents Autopilot recruited, or you hand over on the "
+                        + "Mod features page, are given orders, and only operations their type can run.", Misc.getGrayColor(), 6f);
             }
         }
         if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("nexerelin")
@@ -357,21 +356,6 @@ public class CASetupUI {
             }
             if (vok) row(t, "Megastructures (Hypershunt, Pluto, Nidavelir)", CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.hypershuntMode))], "Follow colony mode", "hs", true);
         }
-        if (CAAttacks.forThisStart() && group(t, "attacks", "Attacks on your colonies (Derelict Empire start)", "pirate and crisis fleets: "
-                + CAAttacks.capName(s).toLowerCase() + ", Nexerelin attacks: " + CAAttacks.gapName(s).toLowerCase())) {
-            t.addPara("Only in this start: Nexerelin's Derelict Empire gives every faction enough points for a blockade or raid on day 0, "
-                    + "so they come within weeks while your colony is new.", Misc.getGrayColor(), 6f);
-            row(t, "Pirate and crisis fleets per system", CAAttacks.capName(s), "At most " + CAAttacks.REC_CAP, "hacap", true);
-            t.addPara("Hostile Activity keeps up to this many pirate, Pather and other crisis fleets in a system with your colonies; "
-                    + "a big colony at low stability gets the most. Fewer means smaller swarms.", Misc.getGrayColor(), 6f);
-            row(t, "Nexerelin invasions, raids and blockades", CAAttacks.gapName(s), "One at a time, " + CAAttacks.REC_GAP + " days apart", "nexgap", true);
-            t.addPara("Nexerelin waits only 60 days between attacks on you, and a blockade lasts 120, so they can stack up. One at a "
-                    + "time stops a new invasion, raid or blockade of your colonies while one is on its way or under way, and for the "
-                    + "chosen days after it ends. Not in Nexerelin's hard mode, which ignores it."
-                    + (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("EmergentThreats_IX_Revival")
-                    ? " IX Revival's blockades come through Nexerelin, so this covers them; IX's own difficulty is in its LunaLib menu." : ""),
-                    Misc.getGrayColor(), 6f);
-        }
         if (group(t, "interface", "Interface", "colony screen button " + (s.noScreenButton ? "off" : "on"))) {
             row(t, "Button on the colony screen", s.noScreenButton ? "Off" : "On", "On", "screenbtn", true);
             t.addPara("Opens this panel from your colony's own screen. Right-clicking Population & Infrastructure works either way.", Misc.getGrayColor(), 6f);
@@ -380,15 +364,30 @@ public class CASetupUI {
                     + "hazard pay, station augments) show at most once every 10 days per colony. Important only: emergencies, defense fleets, "
                     + "wonders and gates, and what's yours to do.", Misc.getGrayColor(), 6f);
         }
-        if (group(t, "cheats", "Cheats", "storage cheat " + (s.storageCheat ? "on" : "off"))) {
-            row(t, "Store anything, colonies draw shortages from it (cheat)", s.storageCheat ? "On (cheat)" : "Off", "Off", "storecheat", true);
-            t.addPara("Autopilot Storage also takes commodities, weapons and fighters, and you can take them out at any colony. Every colony "
-                    + "that uses stockpiles for shortages draws from it, for free, before its own stockpile: a colony short of a commodity "
-                    + "in storage gets the missing amount, and the storage is drawn down at the game's stockpile rate.", Misc.getGrayColor(), 6f);
-        }
         ButtonAPI rec = t.addButton("Use recommended settings", PREFIX + "recommend:x", Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
                 Alignment.MID, CutStyle.ALL, 260f, 24f, 14f);
     }
+
+    // ---- offense target (agents): Whoever attacks you (null), a random enemy, or one faction at war with you
+
+    static String spyTargetName(String t) {
+        if (t == null || t.isEmpty()) return "Whoever attacks you";
+        if ("random".equals(t)) return "A random enemy";
+        com.fs.starfarer.api.campaign.FactionAPI f = com.fs.starfarer.api.Global.getSector().getFaction(t);
+        return f == null ? "Whoever attacks you" : f.getDisplayName() + (f.isHostileTo("player") ? "" : " (not at war with you: none)");
+    }
+
+    /** Cycles Whoever attacks you, A random enemy, then each faction now at war with you (vanilla API only: this loads without Nexerelin). */
+    static String nextSpyTarget(String cur) {
+        java.util.List<String> order = new java.util.ArrayList<String>();
+        order.add(null);
+        order.add("random");
+        for (com.fs.starfarer.api.campaign.FactionAPI f : com.fs.starfarer.api.Global.getSector().getAllFactions())
+            if (!f.isPlayerFaction() && f.isShowInIntelTab() && f.isHostileTo("player")) order.add(f.getId());
+        int i = order.indexOf(cur);
+        return order.get((i + 1) % order.size());
+    }
+
     static String stationName(String id) {
         for (int i = 0; i < CASettings.STATION_IDS.length; i++) if (CASettings.STATION_IDS[i].equals(id)) return CASettings.STATION_NAMES[i];
         return id;
@@ -454,7 +453,6 @@ public class CASetupUI {
             }
         }
         else if (k.equals("cores")) s.useAICores = !s.useAICores;
-        else if (k.equals("storecheat")) s.storageCheat = !s.storageCheat;
         else if (k.equals("removals")) s.allowRemovals = !s.allowRemovals;
         else if (k.equals("alpha")) s.alphaMode = (Math.max(0, Math.min(2, s.alphaMode)) + 1) % 3;
         else if (k.equals("researchcores")) s.researchCoresByValue = !s.researchCoresByValue;
@@ -470,7 +468,6 @@ public class CASetupUI {
         else if (k.equals("spcap")) s.storyPointMonthlyCap = Math.max(0, s.storyPointMonthlyCap + (int) dir);
         else if (k.equals("admin")) s.adminHiring = !s.adminHiring;
         else if (k.equals("adminopt")) s.adminOptimal = !s.adminOptimal;
-        else if (k.equals("admindelay")) s.adminDelay = !s.adminDelay;
         else if (k.equals("amb")) s.disableAmbassadors = !s.disableAmbassadors;
         else if (k.equals("vpc")) s.disableVPC = !s.disableVPC;
         else if (k.equals("forge")) s.disableForgeVPC = !s.disableForgeVPC;
@@ -500,12 +497,11 @@ public class CASetupUI {
         else if (k.equals("resitems")) { s.researchItemMode = (Math.max(0, Math.min(2, s.researchItemMode)) + 1) % 3; CAResearch.updateItemMode(s); CAResearch.cached = null; }
         else if (k.equals("screenbtn")) s.noScreenButton = !s.noScreenButton;
         else if (k.equals("screenlog")) s.screenLog = (Math.max(0, Math.min(2, s.screenLog)) + 1) % 3;
-        else if (k.equals("hacap")) { s.haFleetCap = CASettings.next(CASettings.HA_CAPS, s.haFleetCap); CAAttacks.apply(s); }
-        else if (k.equals("nexgap")) { s.nexAttackGap = CASettings.next(CASettings.NEX_GAPS, s.nexAttackGap); CAAttacks.apply(s); }
         else if (k.equals("spy")) s.spyMode = (Math.max(0, Math.min(2, s.spyMode)) + 1) % 3;
         else if (k.equals("spyhire")) s.spyNoHiring = !s.spyNoHiring;
         else if (k.equals("autonomy")) s.autonomyMode = (Math.max(0, Math.min(2, s.autonomyMode)) + 1) % 3;
         else if (k.equals("spykeep")) s.spyKeep = (Math.max(0, Math.min(4, s.spyKeep)) + 1) % 5;
+        else if (k.equals("spytarget")) s.spyTarget = nextSpyTarget(s.spyTarget);
         else if (k.equals("settleinc")) s.settlementMinIncome = Math.max(5000f, s.settlementMinIncome + 5000f * dir);
         return true;
     }

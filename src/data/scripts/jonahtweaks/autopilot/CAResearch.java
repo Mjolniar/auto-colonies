@@ -199,10 +199,11 @@ public class CAResearch {
         return n;
     }
 
-    /** Takes up to n of an item out of buildings, the one where it does least first, into cargo `to`; returns how many, and where in `where`. */
-    static int pullFromBuildings(String id, int n, CargoAPI to, List<String> where) {
+    /** Takes up to n of an item out of buildings at colony `only`, the one where it does least first, into cargo `to`; returns how many, and where in `where`. */
+    static int pullFromBuildings(String id, int n, CargoAPI to, List<String> where, MarketAPI only) {
         List<Object[]> spots = new ArrayList<Object[]>();   // {market, industry, score}
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            if (only != null && m != only) continue;
             CAData.Colony c = CAData.get().colony(m.getId());
             for (Industry ind : m.getIndustries()) {
                 if (ind.getSpecialItem() == null || !id.equals(ind.getSpecialItem().getId()) || c.locks.contains(ind.getId())) continue;
@@ -447,8 +448,14 @@ public class CAResearch {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "research building valuation failed", e);
         } finally {
             CAEngine.noProbe = false;
+            // put every tech back as it was; a failure is retried and logged, never swallowed (a tech left marked researched
+            // would be research for free)
             for (Map.Entry<Object, Boolean> e : was.entrySet()) {
-                try { CARefl.set(fDone, e.getKey(), e.getValue()); } catch (Throwable ignored) { }
+                try { CARefl.set(fDone, e.getKey(), e.getValue()); }
+                catch (Throwable first) {
+                    try { CARefl.set(fDone, e.getKey(), e.getValue()); }
+                    catch (Throwable again) { CADiagnostics.LOG.error(CADiagnostics.TAG + "couldn't put a tech's researched flag back after valuing it", again); }
+                }
             }
         }
         for (Map.Entry<Tech, Float> e : total.entrySet()) {
@@ -603,9 +610,10 @@ public class CAResearch {
         return n;
     }
 
-    /** Databanks research can use: the Research Facility tabs, Autopilot Storage, your colonies' Storage and your fleet's cargo. */
+    /** Databanks research can use: the Research Facility tabs, every colony's Autopilot Storage (and what's on its way), your colonies' Storage and your fleet's cargo. */
     static float databanksOnHand(Object mgr) throws Exception {
-        return ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue() + CAData.get().storage().getCommodityQuantity(DATABANK) + colonyDatabanks() + fleetDatabanks();
+        return ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue() + CAStores.count(DATABANK) + CAStores.inTransit(DATABANK, null)
+                + colonyDatabanks() + fleetDatabanks();
     }
 
     static boolean isCommodity(String id) {
@@ -626,52 +634,24 @@ public class CAResearch {
         to.addSpecial(data, n);
     }
 
-    /** Whether the Research Facility tabs, Autopilot Storage and (databanks only) your fleet's cargo hold everything t needs. */
+    /**
+     * Whether everything t needs is somewhere research may take it from: the Research Facility tabs, any colony's Autopilot
+     * Storage or on its way there, databanks (and, while spending freely or with Research spends colony items, colony
+     * items) in your colonies' Storage, databanks in your fleet's cargo, and with From storage and buildings, buildings.
+     */
     static boolean covered(Object mgr, Tech t) throws Exception {
-        CargoAPI st = CAData.get().storage();
         for (Map.Entry<String, Integer> e : t.items.entrySet()) {
-            float have = ((Number) CARefl.invoke(itemCount, mgr, e.getKey())).floatValue() + count(st, e.getKey())
-                    + (DATABANK.equals(e.getKey()) ? colonyDatabanks() + fleetDatabanks() : spendable(e.getKey()) ? colonyCount(e.getKey())
-                    + (itemMode == 2 && colonyItem(e.getKey()) ? installedCount(e.getKey()) : 0f) : 0f);
+            String id = e.getKey();
+            float have = ((Number) CARefl.invoke(itemCount, mgr, id)).floatValue() + CAStores.count(id) + CAStores.inTransit(id, null)
+                    + (DATABANK.equals(id) ? colonyDatabanks() + fleetDatabanks() : spendable(id) ? colonyCount(id)
+                    + (itemMode == 2 && colonyItem(id) ? installedCount(id) : 0f) : 0f);
             if (have < e.getValue()) return false;
         }
         return true;
     }
 
-    /**
-     * Moves everything a tech is short of into the Research Facility tab that holds the most databanks already: from
-     * Autopilot Storage first, then databanks from your colonies' Storage, then from your fleet's cargo. Nothing moves
-     * unless the whole shortfall is covered.
-     */
-    static String topUp(Object mgr, Tech t) throws Exception {
-        CargoAPI st = CAData.get().storage();
-        com.fs.starfarer.api.campaign.CampaignFleetAPI fleet = Global.getSector().getPlayerFleet();
-        Map<String, int[]> plan = new LinkedHashMap<String, int[]>();   // item -> {from storage, from your fleet's cargo}
-        int fromColonies = 0;
-        // nothing moves (above all, no item comes out of a building) unless the whole tech is covered
-        if (itemMode > 0 && !covered(mgr, t)) return null;
-        List<String> pulled = new ArrayList<String>();
-        for (Map.Entry<String, Integer> e : t.items.entrySet()) {
-            int need = e.getValue() - (int) ((Number) CARefl.invoke(itemCount, mgr, e.getKey())).floatValue();
-            if (need <= 0) continue;
-            int fromStorage = (int) Math.min(need, count(st, e.getKey()));
-            if (DATABANK.equals(e.getKey())) fromColonies = (int) Math.min(need - fromStorage, colonyDatabanks());
-            if (spendable(e.getKey()) && need > fromStorage) {   // spending freely: from your colonies' Storage too
-                int n = (int) Math.min(need - fromStorage, colonyCount(e.getKey())), left = n;
-                for (MarketAPI m : Misc.getPlayerMarkets(false)) {
-                    CargoAPI c = Misc.getStorageCargo(m);
-                    int k = c == null ? 0 : (int) Math.min(left, count(c, e.getKey()));
-                    if (k > 0) { move(c, st, e.getKey(), k); left -= k; }
-                }
-                fromStorage += n;   // now in Autopilot Storage, moved on below
-                if (itemMode == 2 && colonyItem(e.getKey()) && need > fromStorage)   // and out of buildings, least useful first
-                    fromStorage += pullFromBuildings(e.getKey(), need - fromStorage, st, pulled);
-            }
-            int fromFleet = need - fromStorage - (DATABANK.equals(e.getKey()) ? fromColonies : 0);
-            if (fromFleet > 0 && (!DATABANK.equals(e.getKey()) || fleet == null || fleet.getCargo() == null || fleetDatabanks() < fromFleet)) return null;
-            plan.put(e.getKey(), new int[]{fromStorage, fromFleet});
-        }
-        if (plan.isEmpty()) return null;
+    /** The Research Facility tab research takes its items from: the one holding the most databanks already. */
+    static SubmarketAPI facilityTab() {
         SubmarketAPI best = null; float bestHas = -1f;
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             SubmarketAPI sm = m.getSubmarket(SUBMARKET);
@@ -679,31 +659,83 @@ public class CAResearch {
             float has = sm.getCargo().getCommodityQuantity(DATABANK);
             if (has > bestHas) { bestHas = has; best = sm; }
         }
-        if (best == null) return null;
-        List<String> what = new ArrayList<String>();
-        boolean anyStorage = false, anyFleet = false;
-        int left = fromColonies;
-        for (MarketAPI m : Misc.getPlayerMarkets(false)) {   // databanks from your colonies' Storage
-            CargoAPI c = Misc.getStorageCargo(m);
-            if (left <= 0 || c == null) continue;
-            int n = (int) Math.min(left, c.getCommodityQuantity(DATABANK));
-            if (n <= 0) continue;
-            move(c, best.getCargo(), DATABANK, n);
-            left -= n;
+        return best;
+    }
+
+    /**
+     * Gets everything a tech is short of into the Research Facility tab (facilityTab), never for free across the sector
+     * (2.37.0): what's at that colony (its Autopilot Storage, databanks in its Storage, colony items there when allowed,
+     * your fleet's databanks while it's in that system) goes straight in; anything elsewhere (another colony's Autopilot
+     * Storage or Storage, a building there with From storage and buildings, your fleet's databanks away from it) is shipped
+     * to that colony's Autopilot Storage for a fee and travel time, and the tech starts once it has all arrived. Nothing
+     * moves unless the whole tech is covered. Returns what it did, or null if nothing.
+     */
+    static String topUp(Object mgr, Tech t) throws Exception {
+        if (!covered(mgr, t)) return null;
+        SubmarketAPI tabSm = facilityTab();
+        if (tabSm == null) return null;
+        MarketAPI f = tabSm.getMarket();
+        CargoAPI tab = tabSm.getCargo(), local = CAStores.of(f), localStorage = Misc.getStorageCargo(f);
+        com.fs.starfarer.api.campaign.CampaignFleetAPI fleet = Global.getSector().getPlayerFleet();
+        boolean fleetHere = fleet != null && fleet.getCargo() != null && f.getPrimaryEntity() != null
+                && fleet.getContainingLocation() == f.getPrimaryEntity().getContainingLocation();
+        List<String> moved = new ArrayList<String>(), pulled = new ArrayList<String>();
+        int shipped = 0, coming = 0;
+        for (Map.Entry<String, Integer> e : t.items.entrySet()) {
+            String id = e.getKey();
+            int need = e.getValue() - (int) ((Number) CARefl.invoke(itemCount, mgr, id)).floatValue();
+            if (need <= 0) continue;
+            int before = need;
+            // at the facility's colony: straight in
+            int k = (int) Math.min(need, count(local, id)); move(local, tab, id, k); need -= k;
+            if (need > 0 && (DATABANK.equals(id) || spendable(id))) { k = (int) Math.min(need, count(localStorage, id)); move(localStorage, tab, id, k); need -= k; }
+            if (need > 0 && itemMode == 2 && colonyItem(id)) need -= pullFromBuildings(id, need, tab, pulled, f);
+            if (need > 0 && DATABANK.equals(id) && fleetHere) { k = (int) Math.min(need, count(fleet.getCargo(), id)); move(fleet.getCargo(), tab, id, k); need -= k; }
+            if (before > need) moved.add((before - need) + " " + commodityName(id));
+            if (need <= 0) continue;
+            // already on its way there
+            int onWay = CAStores.inTransit(id, f.getId());
+            coming += Math.min(need, onWay);
+            need -= onWay;
+            // from elsewhere: shipped to the facility's colony
+            for (CAStores.Store sto : CAStores.all()) {
+                if (need <= 0) break;
+                if (sto.market == f) continue;
+                k = (int) Math.min(need, count(sto.cargo, id));
+                if (k > 0 && ship(sto.cargo, sto.market.getPrimaryEntity(), sto.market.getName() + "'s Autopilot Storage", f, id, k)) { need -= k; shipped += k; }
+            }
+            if (need > 0 && (DATABANK.equals(id) || spendable(id))) for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+                if (need <= 0) break;
+                if (m == f) continue;
+                CargoAPI c = Misc.getStorageCargo(m);
+                k = (int) Math.min(need, count(c, id));
+                if (k > 0 && ship(c, m.getPrimaryEntity(), m.getName() + "'s Storage", f, id, k)) { need -= k; shipped += k; }
+            }
+            if (need > 0 && itemMode == 2 && colonyItem(id)) for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+                if (need <= 0) break;
+                if (m == f) continue;
+                CargoAPI st = CAStores.of(m);
+                int got = pullFromBuildings(id, need, st, pulled, m);
+                if (got > 0 && ship(st, m.getPrimaryEntity(), m.getName(), f, id, got)) { need -= got; shipped += got; }
+            }
+            if (need > 0 && DATABANK.equals(id) && !fleetHere && fleet != null && fleet.getCargo() != null) {
+                k = (int) Math.min(need, count(fleet.getCargo(), id));
+                if (k > 0 && ship(fleet.getCargo(), fleet, "your fleet's cargo", f, id, k)) { need -= k; shipped += k; }
+            }
         }
-        if (fromColonies > 0) what.add(fromColonies + " " + commodityName(DATABANK) + " from your colonies' Storage");
-        for (Map.Entry<String, int[]> e : plan.entrySet()) {
-            int fromStorage = e.getValue()[0], fromFleet = e.getValue()[1];
-            move(st, best.getCargo(), e.getKey(), fromStorage);
-            if (fromFleet > 0) move(fleet.getCargo(), best.getCargo(), e.getKey(), fromFleet);
-            anyStorage |= fromStorage > 0; anyFleet |= fromFleet > 0;
-            what.add((fromStorage + fromFleet) + " " + commodityName(e.getKey()) + (fromStorage > 0 && fromFleet > 0 ? " (" + fromFleet + " from your fleet's cargo)" : ""));
-        }
-        String from = anyStorage && anyFleet ? "from Autopilot Storage and your fleet's cargo" : anyFleet ? "from your fleet's cargo" : "from Autopilot Storage";
-        String msg = "moved " + CAContracts.join(what) + " " + from + " to " + best.getMarket().getName() + "'s Research Facility tab"
-                + (pulled.isEmpty() ? "" : " (taken out of " + CAContracts.join(pulled) + ")");
-        CALog.add("Research: " + msg);
+        if (moved.isEmpty() && shipped == 0 && coming == 0) return null;
+        String msg = (moved.isEmpty() ? "" : "moved " + CAContracts.join(moved) + " into " + f.getName() + "'s Research Facility tab"
+                + (pulled.isEmpty() ? "" : " (taken out of " + CAContracts.join(pulled) + ")"))
+                + (shipped + coming > 0 ? (moved.isEmpty() ? "" : "; ") + (shipped + coming) + " more on the way to " + f.getName() + ", "
+                + t.name + " starts once they arrive" : "");
+        if (!moved.isEmpty() || shipped > 0) CALog.add("Research: " + msg);
         return msg;
+    }
+
+    /** Ships qty of a commodity or (generic) research item to a colony's Autopilot Storage. */
+    static boolean ship(CargoAPI from, com.fs.starfarer.api.campaign.SectorEntityToken at, String fromName, MarketAPI to, String id, int qty) {
+        if (isCommodity(id)) return CAStores.ship(from, at, fromName, to, id, null, qty, "for research");
+        return CAStores.ship(from, at, fromName, to, null, new SpecialItemData(id, null), qty, "for research");
     }
 
     @SuppressWarnings("unchecked")
@@ -863,7 +895,7 @@ public class CAResearch {
             } else t.addPara("Nothing is being researched.", 6f);
             if (fac <= 0) t.addPara("No working Research Facility, so research doesn't advance.", Misc.getNegativeHighlightColor(), 4f);
             else t.addPara("%s research facilities. Databanks in their storage: %s; in Autopilot Storage: %s; in your fleet's cargo: %s.", 4f, hl, "" + fac,
-                    "" + (int) ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue(), "" + (int) d.storage().getCommodityQuantity(DATABANK),
+                    "" + (int) ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue(), "" + (int) CAStores.count(DATABANK),
                     "" + (int) fleetDatabanks());
             t.addPara("Databanks on hand: %s (Research Facility tab, Autopilot Storage, colony Storage and your fleet's cargo).", 4f, hl, "" + (int) databanksOnHand(mgr));
             List<Tech> rankedNow = ranked();

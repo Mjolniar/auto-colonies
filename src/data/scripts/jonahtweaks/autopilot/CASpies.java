@@ -33,27 +33,28 @@ import exerelin.utilities.NexFactionConfig;
 import java.util.*;
 
 /**
- * Nexerelin agents (setting "Agents", off by default). Only agents Autopilot hired, or ones you hand over on the empire
- * panel's Mod features page, are given orders; the rest are left alone, and you can take any of them back. Each agent only
- * gets operations its type can run (Nexerelin's agentConfig: Raise Relations needs a Negotiator or Hybrid, Sabotage
- * Industry a Saboteur; the defensive operations any type).
- * Nexerelin has no counter-intelligence and no bonus for an agent parked at a colony, so defense means running the
- * operations Nexerelin's own automatic mode runs, in the same order: Counter-Insurgency on a rebellion, Infiltrate Cell
- * on an active Pather cell, Find Pirate Base for hidden bases. After those, Raise Relations with a faction that has
- * operations running against your colonies while it isn't at war with you: above Neutral its Strategic AI can't start
- * them and drops the ones it is running. Offense (setting "Defense and offense") only targets factions already hostile to
- * you, never allies, factions in a ceasefire or your commissioner, since a detected operation can start a war: Sabotage
- * Industry on the military industry of a market an invasion or raid against you comes from, else Nexerelin's own
- * military sabotage pick, at 60% estimated success or better, alert 0.2 or lower, one operation per enemy faction.
- * Operation costs and hiring come out of the monthly budget and never the credit reserve; Nexerelin pays salaries
- * itself. Hiring makes a level-1 agent for 12,000 (Nexerelin's own price for a chosen specialization), Hybrid first, a
- * Saboteur with offense on, never past "Agents to keep" or Nexerelin's agent limit, and only while there's work for one
- * that none of your own idle agents of a suitable type could do (it says so in the log instead).
- * Only person ids are saved, so the save loads without Nexerelin.
+ * Nexerelin agents (setting "Agents", off before setup). Only agents Autopilot recruited, or ones you hand over on the
+ * empire panel's Mod features page, are given orders; the rest are left alone, and you can take any of them back. Each
+ * agent has a role, the way a player sets theirs up (2.37.0):
+ * - Security (the first): Nexerelin's own defensive operations, in the order its Internal security mode runs them:
+ *   Counter-Insurgency on a rebellion, Infiltrate Cell on an active Pather cell, Find Pirate Base for a hidden base.
+ * - Relations (the second, recruited once the budget allows): Raise Relations with your preferred factions, picked like
+ *   ambassadors (Administrators and ambassadors: High priority first, then the ambassador focus, up to "Stop raising a
+ *   faction at"), never one at war with you.
+ * - Offense (only with "Defense and offense"): Sabotage Industry on a military industry of the faction set under "Offense
+ *   target" (whoever attacks you, a random enemy, or one you pick), only factions already hostile to you, never allies, a
+ *   ceasefire or your commissioner, at 60% estimated success or better, alert 0.2 or lower, one operation per faction.
+ * An agent only gets operations its type can run (Nexerelin's agentConfig). Recruiting one costs Nexerelin's 12,000 plus
+ * the convenience fee and takes RECRUIT_DAYS before the agent reports for duty; it never appears from nothing (before 2.37.0
+ * one was created on the spot, the way Nexerelin's console command does). Operation costs and recruiting come out of the
+ * monthly budget, never the credit reserve; Nexerelin pays salaries. Enemy operations the game doesn't show you are neither
+ * shown nor used (they were before 2.37.0). Only person ids are saved, so the save loads without Nexerelin.
  */
 public class CASpies {
     public static final String MOD = "nexerelin";
     static final int HIRE_FEE = 12000;
+    static final float RECRUIT_DAYS = 60f;
+    static final String SECURITY = "security", RELATIONS = "relations", OFFENSE = "offense";
     static final float MIN_SUCCESS = 60f, MAX_ALERT = 0.2f;
     static final String[] MILITARY = {Industries.HIGHCOMMAND, Industries.MILITARYBASE, Industries.PATROLHQ, Industries.HEAVYBATTERIES,
             Industries.GROUNDDEFENSES, Industries.MEGAPORT, Industries.SPACEPORT};
@@ -66,12 +67,37 @@ public class CASpies {
         CovertOpsManager mgr = CovertOpsManager.getManager();
         if (mgr == null) return;
         List<AgentIntel> mine = managed(d, mgr);
+        arrive(d, mgr, mine);
         hire(d, s, mgr, mine);
         for (AgentIntel a : mine) {
             if (busy(mgr, a)) continue;
-            if (defend(s, mgr, a)) continue;
-            if (s.spyMode == 2) attack(s, mgr, a, mine);
+            String role = role(d, s, a);
+            if (SECURITY.equals(role)) defend(s, mgr, a);
+            else if (RELATIONS.equals(role)) relations(s, a);
+            else if (OFFENSE.equals(role)) { if (s.spyMode == 2) attack(s, mgr, a, mine); }
         }
+    }
+
+    // ---- roles
+
+    /** The role an agent has, giving it the first one free that its type can run: security, relations, then offense. */
+    static String role(CAData d, CASettings s, AgentIntel a) {
+        String id = a.getAgent().getId();
+        String r = d.spyRoles().get(id);
+        if (r != null) return r;
+        Set<String> held = new HashSet<String>(d.spyRoles().values());
+        if (!held.contains(SECURITY)) r = SECURITY;
+        else if (!held.contains(RELATIONS) && canDo(a, "raiseRelations")) r = RELATIONS;
+        else if (s.spyMode == 2 && !held.contains(OFFENSE) && canDo(a, "sabotageIndustry")) r = OFFENSE;
+        else r = canDo(a, "raiseRelations") ? RELATIONS : SECURITY;
+        d.spyRoles().put(id, r);
+        CALog.add("Agent " + name(a) + " (" + types(a) + ") takes the " + r + " role");
+        return r;
+    }
+
+    static String roleName(String r) {
+        return SECURITY.equals(r) ? "security (rebellions, Pather cells, pirate bases)" : RELATIONS.equals(r) ? "relations with your preferred factions"
+                : OFFENSE.equals(r) ? "offense (sabotage)" : r;
     }
 
     /** Every agent you have that still serves, whoever hired it. */
@@ -89,6 +115,7 @@ public class CASpies {
             if (d.spyAgents().contains(a.getAgent().getId())) { out.add(a); alive.add(a.getAgent().getId()); }
         }
         d.spyAgents().retainAll(alive);
+        d.spyRoles().keySet().retainAll(alive);
         return out;
     }
 
@@ -110,6 +137,7 @@ public class CASpies {
                 CALog.add("Agent " + name(a) + " (" + types(a) + ") handed to Autopilot; it gets orders once it's idle");
             } else {
                 d.spyAgents().remove(personId);
+                d.spyRoles().remove(personId);
                 CALog.add("Agent " + name(a) + " is yours again; Autopilot won't give it orders");
             }
         }
@@ -137,8 +165,7 @@ public class CASpies {
         List<MarketAPI> mine = Misc.getPlayerMarkets(false);
         if (local(s, a, new CounterInsurgency(a, null, pf, null, true, null), mine, "counterInsurgency", "counter-insurgency")) return true;
         if (local(s, a, new InfiltrateCell(a, null, pf, null, true, null), mine, "infiltrateCell", "infiltrating the Pather cell")) return true;
-        if (local(s, a, new FindPirateBase(a, null, pf, true, null), mine, "findPirateBase", "finding the pirate base")) return true;
-        return calm(s, mgr, a);
+        return local(s, a, new FindPirateBase(a, null, pf, true, null), mine, "findPirateBase", "finding the pirate base");
     }
 
     /** One of Nexerelin's own defensive orders at the closest colony that needs it, if the budget allows. */
@@ -165,50 +192,53 @@ public class CASpies {
         return true;
     }
 
-    /** Enemy operations in flight against your colonies (the game never shows these). */
-    static List<CovertActionIntel> enemyOps(CovertOpsManager mgr) {
-        List<CovertActionIntel> out = new ArrayList<CovertActionIntel>();
-        for (CovertActionIntel op : mgr.getOngoingCovertActionsOfType(CovertActionIntel.class)) {
-            if (op.isPlayerInvolved() || op.isEnded() || op.isEnding() || op.getResult() != null) continue;
-            MarketAPI t = op.getMarket();
-            if (t != null && t.isPlayerOwned() && op.getAgentFaction() != null) out.add(op);
-        }
-        return out;
-    }
-
-    /** Raise Relations with a faction running operations against you that isn't at war with you. */
-    static boolean calm(CASettings s, CovertOpsManager mgr, AgentIntel a) {
+    /**
+     * Raise Relations with your preferred faction, picked as ambassadors are (CAIndEvo): High priority first, Ignore never,
+     * Priority list only if that's the focus, else by the focus (worst relations, strongest, nearest), never at war with you
+     * and never past "Stop raising a faction at".
+     */
+    static boolean relations(CASettings s, AgentIntel a) {
         if (!canDo(a, "raiseRelations")) return false;
         FactionAPI pf = Global.getSector().getPlayerFaction();
-        Map<FactionAPI, Integer> count = new HashMap<FactionAPI, Integer>();
-        for (CovertActionIntel op : enemyOps(mgr)) {
-            FactionAPI f = op.getAgentFaction();
-            Integer n = count.get(f);
-            count.put(f, n == null ? 1 : n + 1);
-        }
-        List<FactionAPI> order = new ArrayList<FactionAPI>(count.keySet());
-        final Map<FactionAPI, Integer> c = count;
-        Collections.sort(order, new Comparator<FactionAPI>() { public int compare(FactionAPI x, FactionAPI y) { return c.get(y) - c.get(x); } });
-        for (FactionAPI f : order) {
-            if (f.isPlayerFaction() || f.isHostileTo(Factions.PLAYER) || !f.isAtBest(Factions.PLAYER, RepLevel.NEUTRAL)) continue;   // at war is your call
-            if (!RaiseRelations.canModifyRelations(f, a)) continue;
-            MarketAPI target = nearest(Misc.getFactionMarkets(f), a.getMarket());
-            if (target == null) continue;
-            RaiseRelations op = new RaiseRelations(a, target, pf, f, pf, true, new HashMap<String, Object>());
-            int cost = op.getCost();
-            String key = "spy:calm:" + f.getId();
-            if (cost > CABudget.available(s)) {
-                if (CALog.once(key)) CALog.add("Agent " + name(a) + " waits for budget to raise relations with " + f.getDisplayName() + " (" + Misc.getDGSCredits(cost) + ")");
-                return false;
+        float stopAt = CASettings.STOP_VALUES[Math.max(0, Math.min(3, s.ambassadorStopAt))];
+        Map<String, Float> strength = new HashMap<String, Float>(), near = new HashMap<String, Float>();
+        List<MarketAPI> mine = Misc.getPlayerMarkets(false);
+        for (MarketAPI o : Global.getSector().getEconomy().getMarketsCopy()) {
+            if (o.isPlayerOwned() || o.getFaction() == null || o.isHidden()) continue;
+            String fid = o.getFactionId();
+            strength.put(fid, (strength.containsKey(fid) ? strength.get(fid) : 0f) + o.getSize());
+            for (MarketAPI pm : mine) {
+                if (pm.getPrimaryEntity() == null || o.getPrimaryEntity() == null) continue;
+                if (Misc.getDistanceLY(pm.getPrimaryEntity(), o.getPrimaryEntity()) <= 10f) { near.put(fid, (near.containsKey(fid) ? near.get(fid) : 0f) + 1f); break; }
             }
-            order(a, op, target, cost);
-            CABudget.charge(s, cost, 0f, 0f);
-            CALog.forget(key);
-            CALog.add("Agent " + name(a) + " sent to " + target.getName() + " to raise relations with " + f.getDisplayName()
-                    + ", which has operations running against your colonies (" + Misc.getDGSCredits(cost) + ")");
-            return true;
         }
-        return false;
+        FactionAPI best = null; float bestScore = -1e9f;
+        for (String fid : strength.keySet()) {
+            FactionAPI f = Global.getSector().getFaction(fid);
+            if (f == null || f.isPlayerFaction() || f.isHostileTo(Factions.PLAYER)) continue;   // at war is your call
+            int prio = s.priorityOf(fid);
+            if (prio == 0 || (s.ambassadorFocus == 3 && prio != 2)) continue;
+            float rel = pf.getRelationship(fid);
+            if (rel >= stopAt || !RaiseRelations.canModifyRelations(f, a)) continue;
+            float score = s.ambassadorFocus == 1 ? strength.get(fid) : s.ambassadorFocus == 2 ? (near.containsKey(fid) ? near.get(fid) : 0f) : -rel * 100f;
+            if (prio == 2) score += 100000f;
+            if (score > bestScore) { bestScore = score; best = f; }
+        }
+        if (best == null) return false;
+        MarketAPI target = nearest(Misc.getFactionMarkets(best), a.getMarket());
+        if (target == null) return false;
+        RaiseRelations op = new RaiseRelations(a, target, pf, best, pf, true, new HashMap<String, Object>());
+        int cost = op.getCost();
+        String key = "spy:rel:" + best.getId();
+        if (cost > CABudget.available(s)) {
+            if (CALog.once(key)) CALog.add("Agent " + name(a) + " waits for budget to raise relations with " + best.getDisplayName() + " (" + Misc.getDGSCredits(cost) + ")");
+            return false;
+        }
+        order(a, op, target, cost);
+        CABudget.charge(s, cost, 0f, 0f);
+        CALog.forget(key);
+        CALog.add("Agent " + name(a) + " sent to " + target.getName() + " to raise relations with " + best.getDisplayName() + " (" + Misc.getDGSCredits(cost) + ")");
+        return true;
     }
 
     /** A remote order the way Nexerelin queues one: travel there, then the operation starts on arrival. */
@@ -255,8 +285,23 @@ public class CASpies {
         return null;
     }
 
-    /** What to sabotage: the military of a market attacking you, else Nexerelin's own military pick. Null if nothing qualifies. */
-    static Industry target(CovertOpsManager mgr) {
+    /**
+     * What to sabotage, by the "Offense target" setting: a faction you picked (its military nearest your agents), a random
+     * enemy faction, or (the default) the military of a market whose raid or invasion against you is on its way, else
+     * Nexerelin's own military pick. Only factions offense may target (allowed). Null if nothing qualifies.
+     */
+    static Industry target(CovertOpsManager mgr, CASettings s) {
+        if (s.spyTarget != null && !s.spyTarget.isEmpty() && !RANDOM.equals(s.spyTarget)) {
+            FactionAPI f = Global.getSector().getFaction(s.spyTarget);
+            return allowed(f) ? militaryOf(f) : null;
+        }
+        if (RANDOM.equals(s.spyTarget)) {
+            List<FactionAPI> enemies = new ArrayList<FactionAPI>();
+            for (FactionAPI f : Global.getSector().getAllFactions()) if (allowed(f)) enemies.add(f);
+            Collections.shuffle(enemies);
+            for (FactionAPI f : enemies) { Industry ind = militaryOf(f); if (ind != null) return ind; }
+            return null;
+        }
         InvasionFleetManager inv = InvasionFleetManager.getManager();
         if (inv != null) {
             for (OffensiveFleetIntel o : inv.getActiveIntelCopy()) {
@@ -269,6 +314,19 @@ public class CASpies {
         }
         Industry ind = mgr.pickMilitarySabotageTarget(Global.getSector().getPlayerFaction());
         return ind != null && allowed(ind.getMarket()) ? ind : null;
+    }
+
+    static final String RANDOM = "random";
+
+    /** The biggest market of a faction with a military industry to sabotage, or null. */
+    static Industry militaryOf(FactionAPI f) {
+        Industry best = null; int bestSize = -1;
+        for (MarketAPI m : Misc.getFactionMarkets(f)) {
+            if (!allowed(m)) continue;
+            Industry ind = military(m);
+            if (ind != null && m.getSize() > bestSize) { bestSize = m.getSize(); best = ind; }
+        }
+        return best;
     }
 
     /** Estimated success in percent, as Nexerelin computes it (its own method is protected). */
@@ -286,7 +344,7 @@ public class CASpies {
 
     static boolean attack(CASettings s, CovertOpsManager mgr, AgentIntel a, List<AgentIntel> mine) {
         if (!canDo(a, "sabotageIndustry")) return false;
-        Industry ind = target(mgr);
+        Industry ind = target(mgr, s);
         if (ind == null) return false;
         MarketAPI m = ind.getMarket();
         for (CovertActionIntel op : mgr.getOngoingCovertActionsOfType(CovertActionIntel.class)) {   // one operation per enemy faction
@@ -311,66 +369,86 @@ public class CASpies {
         return true;
     }
 
-    // ---- hiring
+    // ---- recruiting
 
-    static int keep(CASettings s) { return s.spyKeep > 0 ? s.spyKeep : (s.spyMode == 2 ? 2 : 1); }
+    /** Agents to keep: your setting, or Auto: security and relations, plus offense with "Defense and offense". */
+    static int keep(CASettings s) { return s.spyKeep > 0 ? s.spyKeep : (s.spyMode == 2 ? 3 : 2); }
 
-    static boolean has(List<AgentIntel> mine, AgentIntel.Specialization spec) {
-        for (AgentIntel a : mine) if (a.getSpecializationsCopy().contains(spec)) return true;
-        return false;
+    /** The roles to fill, in order: security, relations, then offense (only with offense on), up to keep(). */
+    static List<String> wanted(CASettings s) {
+        List<String> out = new ArrayList<String>();
+        out.add(SECURITY);
+        out.add(RELATIONS);
+        if (s.spyMode == 2) out.add(OFFENSE);
+        while (out.size() > keep(s)) out.remove(out.size() - 1);
+        return out;
     }
 
-    /** Work a new agent would have now. */
-    static boolean work(CovertOpsManager mgr, CASettings s, List<AgentIntel> mine) {
-        if (s.spyMode == 2 && !has(mine, AgentIntel.Specialization.SABOTEUR) && target(mgr) != null) return true;
-        if (!mine.isEmpty()) return false;   // one defender covers the defensive work
-        if (!enemyOps(mgr).isEmpty()) return true;
-        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
-            if (RebellionIntel.isOngoing(m) || m.hasCondition(Conditions.PATHER_CELLS) || m.hasCondition(Conditions.PIRATE_ACTIVITY)) return true;
+    /** Recruits whose RECRUIT_DAYS are up report for duty. */
+    static void arrive(CAData d, CovertOpsManager mgr, List<AgentIntel> mine) {
+        Iterator<Map.Entry<String, Long>> it = d.spyRecruits().entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, Long> e = it.next();
+            if (Global.getSector().getClock().getElapsedDaysSince(e.getValue()) < RECRUIT_DAYS) continue;
+            MarketAPI home = null;
+            for (MarketAPI m : Misc.getPlayerMarkets(false)) if (!CAEngine.isOutpost(m) && (home == null || m.getSize() > home.getSize())) home = m;
+            if (home == null) continue;   // no colony to report to yet
+            String role = e.getKey();
+            AgentIntel.Specialization spec = SECURITY.equals(role) ? AgentIntel.Specialization.HYBRID
+                    : RELATIONS.equals(role) ? AgentIntel.Specialization.NEGOTIATOR : AgentIntel.Specialization.SABOTEUR;
+            FactionAPI pf = Global.getSector().getPlayerFaction();
+            PersonAPI p = pf.createRandomPerson();
+            p.setRankId(Ranks.AGENT);
+            p.setPostId(Ranks.POST_AGENT);
+            AgentIntel a = new AgentIntel(p, pf, 1);
+            if (NexConfig.useAgentSpecializations) a.addSpecialization(spec);
+            a.setMarket(home);
+            a.init();
+            a.setImportant(true);
+            d.spyAgents().add(p.getId());
+            d.spyRoles().put(p.getId(), role);
+            mine.add(a);
+            it.remove();
+            CALog.add("Agent " + p.getNameString() + " (" + spec.getName() + ", level 1) reported for duty at " + home.getName() + ": " + roleName(role)
+                    + "; Nexerelin pays " + Misc.getDGSCredits(AgentIntel.getSalary(1)) + " a month in salary", true);
         }
-        return false;
     }
 
+    /**
+     * Recruits for the first role in wanted() nobody holds or is being recruited for: security as soon as you have a colony,
+     * the others once the month's budget has twice the cost to spare. Pays now; the agent reports RECRUIT_DAYS later.
+     */
     static void hire(CAData d, CASettings s, CovertOpsManager mgr, List<AgentIntel> mine) {
-        if (s.spyNoHiring || mine.size() >= keep(s)) return;
-        if (!work(mgr, s, mine)) return;
-        AgentIntel.Specialization spec = s.spyMode == 2 && has(mine, AgentIntel.Specialization.HYBRID) && !has(mine, AgentIntel.Specialization.SABOTEUR)
-                ? AgentIntel.Specialization.SABOTEUR : AgentIntel.Specialization.HYBRID;
-        // one of your own idle agents could do this: don't pay for another, say how to hand it over
-        boolean saboteurWork = spec == AgentIntel.Specialization.SABOTEUR;
+        if (s.spyNoHiring) return;
+        Set<String> held = new HashSet<String>();
+        for (AgentIntel a : mine) { String r = d.spyRoles().get(a.getAgent().getId()); if (r != null) held.add(r); }
+        held.addAll(d.spyRecruits().keySet());
+        String role = null;
+        for (String r : wanted(s)) if (!held.contains(r)) { role = r; break; }
+        if (role == null || mine.size() + d.spyRecruits().size() >= keep(s)) return;
+        // one of your own idle agents could take it: don't pay for another, say how to hand it over
         for (AgentIntel a : agents(mgr)) {
             if (mine.contains(a) || busy(mgr, a)) continue;
-            if (saboteurWork && NexConfig.useAgentSpecializations && !a.getSpecializationsCopy().contains(AgentIntel.Specialization.SABOTEUR)) continue;
-            if (CALog.once("spy:yours")) CALog.add("Agents: your agent " + name(a) + " (" + types(a) + ") is idle, so Autopilot doesn't hire one. "
+            if (CALog.once("spy:yours")) CALog.add("Agents: your agent " + name(a) + " (" + types(a) + ") is idle, so Autopilot doesn't recruit one. "
                     + "To have Autopilot use it, click Let Autopilot use it on the Colony Autopilot intel's Mod features page, under Agents");
             return;
         }
-        if (mgr.getAgents().size() >= mgr.getMaxAgents().getModifiedInt()) {
-            if (CALog.once("spy:max")) CALog.add("Agents: Nexerelin's agent limit is reached, so no agent was hired (Officer Training and Officer Management raise it)");
+        if (mgr.getAgents().size() + d.spyRecruits().size() >= mgr.getMaxAgents().getModifiedInt()) {
+            if (CALog.once("spy:max")) CALog.add("Agents: Nexerelin's agent limit is reached, so no agent was recruited (Officer Training and Officer Management raise it)");
             return;
         }
-        if (HIRE_FEE > CABudget.available(s)) {
-            if (CALog.once("spy:hirebudget")) CALog.add("Agents: hiring waits for budget (" + Misc.getDGSCredits(HIRE_FEE) + ")");
+        float fee = CABudget.fee(s, HIRE_FEE * 0.1f), total = HIRE_FEE + fee;
+        float room = CABudget.available(s);
+        if (SECURITY.equals(role) ? total > room : 2f * total > room) {
+            if (CALog.once("spy:hirebudget:" + role)) CALog.add("Agents: recruiting for " + roleName(role) + " waits for budget (" + Misc.getDGSCredits(total) + ")");
             return;
         }
-        MarketAPI home = null;
-        for (MarketAPI m : Misc.getPlayerMarkets(false)) if (!CAEngine.isOutpost(m) && (home == null || m.getSize() > home.getSize())) home = m;
-        if (home == null) return;
-        FactionAPI pf = Global.getSector().getPlayerFaction();
-        PersonAPI p = pf.createRandomPerson();
-        p.setRankId(Ranks.AGENT);
-        p.setPostId(Ranks.POST_AGENT);
-        AgentIntel a = new AgentIntel(p, pf, 1);
-        if (NexConfig.useAgentSpecializations) a.addSpecialization(spec);
-        a.setMarket(home);
-        a.init();   // as Nexerelin's own AddAgent command does
-        a.setImportant(true);
-        Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(HIRE_FEE);
-        CABudget.charge(s, HIRE_FEE, 0f, 0f);
-        d.spyAgents().add(p.getId());
-        CALog.forget("spy:max"); CALog.forget("spy:hirebudget"); CALog.forget("spy:yours");
-        CALog.add("Hired agent " + p.getNameString() + " (" + spec.getName() + ", level 1) at " + home.getName() + " for "
-                + Misc.getDGSCredits(HIRE_FEE) + "; Nexerelin pays " + Misc.getDGSCredits(AgentIntel.getSalary(1)) + " a month in salary");
+        if (CABuild.credits() - total < s.reserve) return;
+        Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(total);
+        CABudget.charge(s, HIRE_FEE, fee, 0f);
+        d.spyRecruits().put(role, Global.getSector().getClock().getTimestamp());
+        CALog.forget("spy:max"); CALog.forget("spy:yours");
+        CALog.add("Agents: recruiting one for " + roleName(role) + " (" + Misc.getDGSCredits(total) + "); reports for duty in " + Math.round(RECRUIT_DAYS) + " days");
     }
 
     // ---- empire panel
@@ -383,20 +461,26 @@ public class CASpies {
         CovertOpsManager mgr = CovertOpsManager.getManager();
         if (mgr == null) { t.addPara("Nexerelin's agents aren't running in this save.", gray, 6f); return; }
         if (s.spyMode == 0) t.addPara("Agents are off: Autopilot gives no orders and hires no one. Turn them on in Settings, under Agents (Nexerelin).", gray, 6f);
-        else t.addPara("Mode: %s. Hiring: %s, keeping %s.", 6f, hl, CASettings.SPY_NAMES[Math.max(0, Math.min(2, s.spyMode))],
+        else t.addPara("Mode: %s. Recruiting: %s, keeping %s.", 6f, hl, CASettings.SPY_NAMES[Math.max(0, Math.min(2, s.spyMode))],
                 s.spyNoHiring ? "off" : "on", "" + keep(s));
+        for (Map.Entry<String, Long> e : d.spyRecruits().entrySet()) {
+            float left = Math.max(0f, RECRUIT_DAYS - Global.getSector().getClock().getElapsedDaysSince(e.getValue()));
+            t.addPara("Recruiting for %s: reports for duty in %s days.", 4f, hl, roleName(e.getKey()), "" + (int) Math.ceil(left));
+        }
         t.addPara("Autopilot only gives orders to agents it hired or you hand over, and only operations the agent's type can run: "
                 + "Negotiators and Hybrids raise relations, Saboteurs sabotage industry, any type handles rebellions, Pather cells and pirate bases.", gray, 4f);
-        t.addPara("Defense does what Nexerelin's Internal security mode does (Counter-Insurgency on a rebellion, Infiltrate Cell on a Pather "
-                + "cell, Find Pirate Base for a hidden base), checked daily and paid from the budget, then Raise Relations with a faction running "
-                + "operations against you. Autopilot's agents don't need that mode switched on, and with nothing of that kind going on they wait "
-                + "at their colony. Nexerelin advises only one agent with Internal security mode on.", gray, 4f);
+        t.addPara("Roles: the first agent is on security (what Nexerelin's Internal security mode does: Counter-Insurgency on a rebellion, "
+                + "Infiltrate Cell on a Pather cell, Find Pirate Base for a hidden base); the second raises relations with your preferred factions "
+                + "(picked like ambassadors); with offense on, a third sabotages enemy military. Recruiting one costs 12,000 plus the fee and takes "
+                + Math.round(RECRUIT_DAYS) + " days. Agents with nothing to do wait at their colony.", gray, 4f);
         List<AgentIntel> all = agents(mgr), mine = managed(d, mgr);
         if (all.isEmpty()) t.addPara(s.spyMode != 0 && !s.spyNoHiring ? "You have no agents; Autopilot hires one when there's work for it." : "You have no agents.", gray, 6f);
         for (AgentIntel a : all) {
             boolean auto = mine.contains(a);
-            String doing = auto && s.spyMode != 0 ? "idle: no rebellion, Pather cell, hidden pirate base or enemy operation at your colonies"
-                    + (s.spyMode == 2 ? ", and no enemy military target it can sabotage at 60% or better" : "") : "idle";
+            String role = auto ? d.spyRoles().get(a.getAgent().getId()) : null;
+            String doing = !auto || s.spyMode == 0 ? "idle" : SECURITY.equals(role) ? "idle: no rebellion, Pather cell or hidden pirate base at your colonies"
+                    : RELATIONS.equals(role) ? "idle: no preferred faction to raise relations with (or no budget)"
+                    : OFFENSE.equals(role) ? "idle: no enemy military target it can sabotage at 60% or better" : "idle";
             for (CovertActionIntel op : mgr.getOngoingCovertActionsOfType(CovertActionIntel.class)) {
                 if (op.getAgent() == a && !op.isEnded() && !op.isEnding() && op.getResult() == null) {
                     doing = op.getActionName(false) + (op.getMarket() != null ? " at " + op.getMarket().getName() : "");
@@ -405,19 +489,9 @@ public class CASpies {
             }
             t.addPara("%s, level %s %s: " + CALog.esc(doing) + (a.getMarket() != null ? " (at " + CALog.esc(a.getMarket().getName()) + ")" : "")
                     + ". %s", 8f, new java.awt.Color[]{hl, hl, hl, auto ? hl : gray},
-                    CALog.esc(name(a)), "" + a.getLevel(), CALog.esc(types(a)), auto ? "Autopilot gives its orders" : "Yours; Autopilot leaves it alone");
+                    CALog.esc(name(a)), "" + a.getLevel(), CALog.esc(types(a)), auto ? "Autopilot gives its orders" + (role != null ? ", " + roleName(role) : "") : "Yours; Autopilot leaves it alone");
             t.addButton(auto ? "Take it back" : "Let Autopilot use it", new String[]{"agent", auto ? "back" : "use", a.getAgent().getId()},
                     base, dark, Alignment.MID, com.fs.starfarer.api.ui.CutStyle.ALL, 180f, 22f, 4f);
-        }
-        List<CovertActionIntel> enemy = enemyOps(mgr);
-        t.addSectionHeading("Enemy operations", Alignment.MID, 12f);
-        if (enemy.isEmpty()) t.addPara("No enemy operations against your colonies right now.", gray, 6f);
-        else {
-            t.addPara("Enemy operations against your colonies (the game doesn't show these):", 6f);
-            for (CovertActionIntel op : enemy) {
-                t.addPara("%s: " + CALog.esc(op.getActionName(false)) + " at " + CALog.esc(op.getMarket().getName()) + ", about %s days left", 3f,
-                        op.getAgentFaction().getBaseUIColor(), CALog.esc(op.getAgentFaction().getDisplayName()), "" + Math.round(op.getStrategicActionDaysRemaining()));
-            }
         }
     }
 }

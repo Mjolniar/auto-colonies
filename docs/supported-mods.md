@@ -12,7 +12,7 @@ Special-world plans (Forge, Fortress, Paradise, Hive, Death, Waste) built from T
 
 ## Industrial Evolution
 
-- **Ambassadors** - hires one for an empty Embassy and installs one waiting in a colony's normal Storage, with a focus (worst relations first and so on), a priority per faction, and a level where it stops.
+- **Ambassadors** - hires one for an empty Embassy and installs one waiting in a colony's normal Storage, with a focus (worst relations first and so on), a priority per faction, and a level where it stops. One hired from afar takes 30 days to arrive.
 - **Senate edicts** - enacts the one that suits the colony. The harsh ones (forced labour, cleansing, single-child, labour limits) are never automated.
 - **VPC chips** - installs chips from Autopilot Storage.
 - **Specialized Mining and Refining** - switches to whichever specialty is worth the most.
@@ -42,11 +42,11 @@ With an Antimatter Stabilizer in Autopilot Storage, it upgrades Fuel Production 
 
 ## Random Assortment of Things
 
-Founds your one Frontiers settlement on the best surveyed site once it would make at least 20,000 a month, then builds Refining and a Trading Post there when they pay back within two years. The other facilities change how you play, so they're yours. Its Forge-Assisted Industry BP isn't allowed in Autopilot Storage.
+Founds your one Frontiers settlement on the best surveyed site once it would make at least 20,000 a month (by sending an expedition, which gets there 10 days plus a day a light-year after you pay; it's refunded if the site's gone by then), then builds Refining and a Trading Post there when they pay back within two years. The other facilities change how you play, so they're yours. Its Forge-Assisted Industry BP isn't allowed in Autopilot Storage.
 
 ## Station Augments
 
-Picks the best set of augments each station can fit, scored by what each one actually does on that station (its own guns, fighters, shields and AI core). Output augments while things are calm, combat when the colony is threatened. Augments you installed yourself are never changed. Works on any mod's stations.
+Picks the best set of augments each station can fit, scored by what each one actually does on that station (its own guns, fighters, shields and AI core). Output augments while things are calm, combat when the colony is threatened. Augments you installed yourself are never changed. Station Augments only lets you change them while docked, so from afar a refit crew makes the change 7 days later (at once while your fleet is in the system). Works on any mod's stations.
 
 ## Stations from other mods
 

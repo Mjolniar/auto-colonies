@@ -3,7 +3,10 @@ package data.scripts.jonahtweaks;
 import com.fs.starfarer.api.BaseModPlugin;
 import com.fs.starfarer.api.Global;
 
-/** Starts Colony Autopilot on every save load. Balance changes and sticky autopilot moved to Jonah's Easy Sector. */
+/**
+ * Starts Colony Autopilot on every save load. Each step is its own try (2.37.0), so one failing (the diagnostics scan,
+ * say) can't stop the daily script or the colony screen button from starting; failures go to starsector.log.
+ */
 public class JTModPlugin extends BaseModPlugin {
 
     /** Counts the three mods' warnings and errors from the start, for the Diagnostics page. */
@@ -12,33 +15,28 @@ public class JTModPlugin extends BaseModPlugin {
         catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] log watch failed", t); }
     }
 
+    static void step(String what, Runnable r) {
+        try { r.run(); }
+        catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] startup step failed: " + what, t); }
+    }
+
     public void onGameLoad(boolean newGame) {
-        try { data.scripts.jonahtweaks.autopilot.CALogWatch.install(); } catch (Throwable ignored) { }
-        try { JTCampaignScript.removeRetired(); }   // once a load: nothing adds the retired condition any more
-        catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] removing a retired condition failed", t); }
-        try {
-            data.scripts.jonahtweaks.autopilot.CAData.get();
-            data.scripts.jonahtweaks.autopilot.CAAttacks.apply(data.scripts.jonahtweaks.autopilot.CAData.settings());   // per save: puts the game's own values back for a save without them
-            data.scripts.jonahtweaks.autopilot.CACalibrate.migrate();
-            data.scripts.jonahtweaks.autopilot.CADiagnostics.runScan();
-            data.scripts.jonahtweaks.autopilot.CAOptionProvider.register();
-            data.scripts.jonahtweaks.autopilot.CAIntel.ensure();
+        step("log watch", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CALogWatch.install(); } });
+        step("retired condition", new Runnable() { public void run() { JTCampaignScript.removeRetired(); } });   // nothing adds it any more
+        step("saved data", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CAData.get(); } });
+        step("calibration", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CACalibrate.migrate(); } });
+        step("daily script", new Runnable() { public void run() {
             data.scripts.jonahtweaks.autopilot.CAAuto.reset();
             data.scripts.jonahtweaks.autopilot.CASurplus.reset();
             data.scripts.jonahtweaks.autopilot.CATerraSim.reset();
-            data.scripts.jonahtweaks.autopilot.CAItems.ensureStorageTabs();
             Global.getSector().addTransientScript(new data.scripts.jonahtweaks.autopilot.CAScript());
+        } });
+        step("colony screen button", new Runnable() { public void run() {
             Global.getSector().addTransientScript(new data.scripts.jonahtweaks.autopilot.CAScreenButton());
-            data.scripts.jonahtweaks.autopilot.CAStockpile.reset();
-            Global.getSector().addTransientScript(new data.scripts.jonahtweaks.autopilot.CAStockpile());
-        } catch (Throwable t) {
-            Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] startup failed", t);
-        }
-    }
-
-    /** The storage stockpile's supply bonus is worked out every frame; it never goes into a save. */
-    public void beforeGameSave() {
-        try { data.scripts.jonahtweaks.autopilot.CAStockpile.clear(); }
-        catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] clearing the storage stockpile before saving failed", t); }
+        } });
+        step("colony menu option", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CAOptionProvider.register(); } });
+        step("intel panel", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CAIntel.ensure(); } });
+        step("storage tabs", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CAItems.ensureStorageTabs(); } });
+        step("diagnostics scan", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CADiagnostics.runScan(); } });
     }
 }

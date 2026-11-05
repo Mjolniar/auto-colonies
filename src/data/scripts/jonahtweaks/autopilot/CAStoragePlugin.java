@@ -7,16 +7,23 @@ import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.impl.campaign.submarkets.BaseSubmarketPlugin;
 
 /**
- * Autopilot Storage: one shared storage shown as a tab at every player colony. Colony items, AI cores, Antimatter
- * Stabilizers and research databanks go in; with the storage cheat on, commodities, weapons and fighters do too, and
- * colonies draw their shortages from it (CAStockpile). The manager uses only what is here, and returns anything it
- * removes to here.
+ * Autopilot Storage: a tab at every player colony holding that colony's own store (CAStores, per colony since 2.37.0;
+ * before, one shared cargo let anything put in at one colony come out at any other). Colony items, AI cores, Antimatter
+ * Stabilizers, research databanks, VPC chips and recipes go in. The manager uses only what is in these, ships what it
+ * needs elsewhere for a fee and travel time, and returns anything it takes out of a building to that colony's store.
+ * (The storage cheat that let anything in and fed colonies' shortages moved to Jonah's Easy Sector in 2.37.0.)
  */
 public class CAStoragePlugin extends BaseSubmarketPlugin {
     public static final String ID = "jt_ca_storage";
 
-    @Override public CargoAPI getCargo() { return CAData.get().storage(); }
-    @Override public CargoAPI getCargoNullOk() { return CAData.get().storage(); }
+    static CargoAPI none;   // a tab with no colony (never expected) shows an empty cargo
+
+    @Override public CargoAPI getCargo() {
+        if (market != null) return CAStores.of(market);
+        if (none == null) none = com.fs.starfarer.api.Global.getFactory().createCargo(true);
+        return none;
+    }
+    @Override public CargoAPI getCargoNullOk() { return getCargo(); }
     @Override public boolean isFreeTransfer() { return true; }
     @Override public float getTariff() { return 0f; }
     @Override public boolean isParticipatesInEconomy() { return false; }
@@ -29,11 +36,9 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
     @Override public void updateCargoPrePlayerInteraction() { }
 
     public static boolean allowedCommodity(String id) {
-        return cheat() || "alpha_core".equals(id) || "beta_core".equals(id) || "gamma_core".equals(id) || "ix_antimatter_stabilizer".equals(id)
+        return "alpha_core".equals(id) || "beta_core".equals(id) || "gamma_core".equals(id) || "ix_antimatter_stabilizer".equals(id)
                 || "research_databank".equals(id);   // Vaults of Knowledge research takes them from here
     }
-
-    static boolean cheat() { return CAData.get().settings.storageCheat; }
 
     @Override
     public boolean isIllegalOnSubmarket(String commodityId, TransferAction action) {
@@ -45,7 +50,7 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
         if (action != TransferAction.PLAYER_SELL) return false;
         if (stack.isSpecialStack()) return stack.getSpecialDataIfSpecial() != null && ("IndEvo_amb".equals(stack.getSpecialDataIfSpecial().getId()) || consumable(stack));
         if (stack.isCommodityStack()) return !allowedCommodity(stack.getCommodityId());
-        return !cheat();   // weapons and fighter wings
+        return true;   // weapons and fighter wings
     }
 
     @Override
@@ -54,7 +59,7 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
             return "Keep ambassadors in a colony's normal Storage; Autopilot installs them from there";
         if (stack.isSpecialStack() && consumable(stack))
             return "Campaign consumables and blueprints don't go in Autopilot Storage; keep them in your cargo or a colony's normal Storage";
-        return "Only colony items, AI cores and research databanks can go in Autopilot Storage (anything can with the storage cheat in Settings)";
+        return "Only colony items, AI cores and research databanks can go in Autopilot Storage";
     }
 
     // ---------------- campaign consumables (2.36.1) ----------------
@@ -96,27 +101,23 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
     }
 
     /**
-     * Daily: campaign consumables and blueprints already in Autopilot Storage (from before 2.36.1) go to the normal Storage
-     * of your biggest colony, with a log line.
+     * Daily: campaign consumables and blueprints in a colony's Autopilot Storage (from before 2.36.1) go to that colony's
+     * normal Storage, with a log line.
      */
     public static void evict() {
-        CargoAPI st = CAData.get().storage();
-        com.fs.starfarer.api.campaign.econ.MarketAPI to = null;
-        for (com.fs.starfarer.api.campaign.econ.MarketAPI m : com.fs.starfarer.api.util.Misc.getPlayerMarkets(false)) {
-            if (com.fs.starfarer.api.util.Misc.getStorageCargo(m) == null || CAEngine.isOutpost(m)) continue;
-            if (to == null || m.getSize() > to.getSize()) to = m;
+        for (CAStores.Store s : CAStores.all()) {
+            CargoAPI dest = com.fs.starfarer.api.util.Misc.getStorageCargo(s.market);
+            if (dest == null) continue;
+            java.util.List<String> moved = new java.util.ArrayList<String>();
+            for (CargoStackAPI stack : s.cargo.getStacksCopy()) {
+                if (!stack.isSpecialStack() || !consumable(stack)) continue;
+                float n = stack.getSize();
+                s.cargo.removeItems(CargoAPI.CargoItemType.SPECIAL, stack.getSpecialDataIfSpecial(), n);
+                dest.addSpecial(stack.getSpecialDataIfSpecial(), n);
+                moved.add((n > 1f ? (int) n + " " : "") + stack.getDisplayName());
+            }
+            if (!moved.isEmpty()) CALog.add(s.market.getName() + ": moved " + CAContracts.join(moved) + " from Autopilot Storage to Storage (campaign consumables and blueprints don't go there)");
         }
-        if (to == null) return;
-        CargoAPI dest = com.fs.starfarer.api.util.Misc.getStorageCargo(to);
-        java.util.List<String> moved = new java.util.ArrayList<String>();
-        for (CargoStackAPI stack : st.getStacksCopy()) {
-            if (!stack.isSpecialStack() || !consumable(stack)) continue;
-            float n = stack.getSize();
-            st.removeItems(CargoAPI.CargoItemType.SPECIAL, stack.getSpecialDataIfSpecial(), n);
-            dest.addSpecial(stack.getSpecialDataIfSpecial(), n);
-            moved.add((n > 1f ? (int) n + " " : "") + stack.getDisplayName());
-        }
-        if (!moved.isEmpty()) CALog.add("Autopilot Storage: moved " + CAContracts.join(moved) + " to " + to.getName() + "'s Storage (campaign consumables and blueprints don't go there)");
     }
 
     @Override

@@ -4,11 +4,16 @@ A tour of the code for anyone who wants to read it: how it's laid out, what happ
 
 All the code is Java 17, compiled against Starsector 0.98a-RC8's `starfarer.api.jar`. It's about 16,000 lines in 70 files. Every class opens with a comment saying what it does and why; this page links them together. For what the mod does as a player sees it, read [Getting started](getting-started.md), the other guides linked from the README, and [details.md](details.md).
 
+Two companion pages:
+- **[Auditing the mod](audit.md)** lists every way the mod changes your game, what each one charges, and what it never does, so you can check it's safe without reading all of this.
+- **[Automating Starsector colonies](automation-primer.md)** is the game API knowledge behind it: how colonies, buildings, items, cores and the economy work from code, and the traps we hit. Useful if you're writing your own automation.
+
 > The code was written by AI coding agents (see the README's warning). It's compiled and checked offline (see [Building and checking](#building-and-checking)), and parts are confirmed in game, but not all of it.
 
 ## Contents
 
 - [Layout](#layout)
+- [The shape of it in one paragraph](#the-shape-of-it-in-one-paragraph)
 - [Where to start reading](#where-to-start-reading)
 - [A day in game](#a-day-in-game)
 - [How a building is scored](#how-a-building-is-scored)
@@ -36,6 +41,10 @@ All the code is Java 17, compiled against Starsector 0.98a-RC8's `starfarer.api.
 
 The package and jar names are still `jonahtweaks` for the same reason as the mod id.
 
+## The shape of it in one paragraph
+
+Once a day a script runs one pass over your colonies. For each colony on Approve or Auto, a scoring engine lists every building and upgrade the colony could start, values each one in credits a month (money after upkeep, plus everything else it does weighted by the colony's goal, plus a plan bonus, minus its price spread over three years), and the empire-wide budget funds the best value per credit. After the building pass, a row of independent steps runs, each in its own try/catch and each only when its mod is enabled: items and cores, administrators, policies, terraforming, research, Nexerelin fleets and agents, and so on. Every action goes through the same game calls the game's own UI (or the source mod's UI) uses, charges what that UI charges plus a convenience fee, and is written to the log. Anything that touches another mod is done by reflection or by class name, fails closed, and is checked when the game loads.
+
 ## Where to start reading
 
 1. [JTModPlugin](../src/data/scripts/jonahtweaks/JTModPlugin.java). On every save load it creates the saved data, runs the diagnostics scan, registers the colony menu option and the intel panel, and adds the daily script.
@@ -52,7 +61,7 @@ After those, any integration class can be read on its own.
 
 `CAScript.advance` adds up in-game days and calls `CAAuto.runPass(now)` once a day. If Theory of Toolbox's background threads are reading markets, it waits, but never past a second day. The pass:
 
-1. **Month and calibration.** `CABudget.rollMonth` starts a new month's budget when the month changes. `CACalibrate.run` compares predictions with your real buildings once a week. Then `CASiege.update` (which colonies are under siege), `CAAttacks.apply` (Derelict Empire start only), `CACrisis.daily` (Hegemony inspection orders, and a log line when a colony crisis is picked) and `CASurplus.daily` (today's focus world for credits over the surplus line).
+1. **Month and calibration.** `CABudget.rollMonth` starts a new month's budget when the month changes. `CACalibrate.run` compares predictions with your real buildings once a week. Then `CASiege.update` (which colonies are under siege), `CAStores.daily` (shipments between colonies' Autopilot Storage arrive; an old save's shared storage is moved, once), `CACrisis.daily` (Hegemony inspection orders, and a log line when a colony crisis is picked), `CASurplus.daily` (today's focus world for credits over the surplus line) and `CAEndgame.daily` (whether the endgame economy runs).
 2. **Each colony in Approve or Auto:**
    - A colony is re-planned every 7 days, or as soon as a build finishes.
    - **Fast buildout:** a colony with one running goes to `CABuildout.pass` instead. That pass ranks with `CAEngine.evaluateForProfit`: the Money goal whatever the colony's goal or threat, with the `PROFIT` weights (defense, fleets and ship quality worth nothing) and no plan or upgrade bonus. It picks by value per credit, pays from credits above the floor, and repeats daily.
@@ -74,7 +83,10 @@ After those, any integration class can be read on its own.
    | Items, AI cores and administrators | `CAItems.run` |
    | Terraforming Made Easy projects | `CATerraform.run` |
    | Industrial Evolution, then Courier Port shipping | `CAIndEvo.run`, `CACourier.run` |
-   | Nexerelin emergency fleets, agents, then emergency autonomy | `CADefense.run`, `CASpies.run`, `CAAutonomy.run` |
+   | Surplus terraforming | `CATerraformSurplus.run` |
+   | Surplus research, wonders and gates | `CASurplusResearch.run`, `CAWonders.run` |
+   | Nexerelin emergency fleets, war fleets, agents, then autonomy | `CADefense.run`, `CAWar.run`, `CASpies.run`, `CAAutonomy.run` |
+   | Campaign consumables out of Autopilot Storage | `CAStoragePlugin.evict` |
    | Hazard pay and free port | `CAPolicies.run` |
    | Story points | `CAStory.run` |
    | RAT settlement | `CASettlement.run` |
@@ -85,7 +97,7 @@ After those, any integration class can be read on its own.
 
    Each runs only when its mod is enabled.
 
-Nothing in the pass spends below the credit reserve. Emergency defense fleets are the one exception to the monthly budget, and they still keep the reserve.
+Nothing in the pass spends below the credit reserve. A few emergencies may pass the monthly budget (emergency defense and relief fleets, an administrator for a colony past the colony limit), and they still keep the reserve. Anything that moves between colonies (an item, a core, research databanks) goes through `CAStores.ship`, which charges a fee and takes travel time; nothing is moved across the sector for free.
 
 ## How a building is scored
 
@@ -213,13 +225,15 @@ Five pieces keep a mod update from quietly breaking things:
 |---|---|
 | `colonies` | One `Colony` per market id: goal, mode, locked buildings, the pending proposal, story points used, policy timestamps, threat state, augments added or skipped, hypershunt and megastructure settings, fast-buildout state |
 | `settings` | A [CASettings](../src/data/scripts/jonahtweaks/autopilot/CASettings.java): budget, caps, fees, every switch, this month's spending, and the action log (last 100 entries). A new save is filled from `colony_autopilot.json` by `CASettingsFile`. |
-| `storage` | The shared Autopilot Storage cargo |
+| `stores`, `shipments` | Each colony's Autopilot Storage cargo by market id, and what's being shipped between them (2.37.0). The old shared `storage` field stays so older saves load; it's emptied into the biggest colony's store once. |
 | `noted` | Keys of messages already logged once (`CALog.once`) |
 | `calOut`, `calUp` and their counts | Calibration ratios |
-| `buildoutOffered`, `spyAgents` | Whether the first-colony offer was shown; ids of the agents the manager hired |
+| `buildoutOffered`, `spyAgents`, `spyRoles`, `spyRecruits` | Whether the first-colony offer was shown; ids of the agents the manager gives orders, their roles, and agents being recruited |
+| `attackers`, `endgameBuilt`, `augRefit`, `settleExpedition*`, `surplusBuilt`, `surplusResearch`, `enablers` | War fleets' strike-back targets, what the endgame built or took down, booked station refit crews, a settlement expedition on its way, and what surplus terraforming and research built (so only those come down again) |
 
 Rules that keep saves working:
 - **New fields:** a field added in a later version is missing from older saves and loads as zero, false or null. So defaults are written to mean "off" or "default" at those values, and collections are created lazily by accessors such as `augAuto()` and `spyAgents()`.
+- **No removed fields:** the game's save loader fails on a field the class no longer has, so a feature that's taken out keeps its fields (`storageCheat`, `haFleetCap` and `nexAttackGap` since 2.37.0), unused.
 - **No other mods' objects:** nothing from another mod is ever stored, only ids. A save made with an optional mod still loads after that mod is removed.
 - **Exception:** Autopilot Storage is a market tab, so this mod itself can't be removed from a save that used it.
 
@@ -233,8 +247,7 @@ Rules that keep saves working:
 | [CANav](../src/data/scripts/jonahtweaks/autopilot/CANav.java) | The page list both panels draw on the left, so one section shows at a time instead of one long scroll |
 | [CASetupUI](../src/data/scripts/jonahtweaks/autopilot/CASetupUI.java) | The settings rows, shared by the setup page and the empire panel, in groups that open one at a time. Each row shows its value and the recommendation. `applyRecommended` fills in the recommendations, which are chosen so that switching colonies to Auto and nothing else works out well; its comments give the reason for each. |
 | `CABuildout.Offer` | The first-colony offer, an interaction dialog with the game's own option list |
-| [CAStoragePlugin](../src/data/scripts/jonahtweaks/autopilot/CAStoragePlugin.java) | The Autopilot Storage tab: colony items, AI cores, Antimatter Stabilizers and research databanks, plus commodities, weapons and fighters with the storage cheat; never campaign consumables or blueprints |
-| [CAStockpile](../src/data/scripts/jonahtweaks/autopilot/CAStockpile.java) | Storage cheat: colonies cover shortages from Autopilot Storage the way vanilla's stockpile does, worked out every frame and taken off before every save (`JTModPlugin.beforeGameSave`) |
+| [CAStoragePlugin](../src/data/scripts/jonahtweaks/autopilot/CAStoragePlugin.java), [CAStores](../src/data/scripts/jonahtweaks/autopilot/CAStores.java) | The Autopilot Storage tab, one store per colony (`CAStores.of`), and shipping between them (`CAStores.ship`: a fee and travel days, delivered by `CAStores.daily`); campaign consumables and blueprints are refused (`consumable`) |
 
 Everything uses the game's own colors and widgets, so it looks like the base game.
 
@@ -253,7 +266,6 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
 | [CAThreat](../src/data/scripts/jonahtweaks/autopilot/CAThreat.java) | Threat estimate per colony, with the 70% / 65% / 60-day hysteresis; the likely target of the coming colony crisis adds 0.4 |
 | [CACrisis](../src/data/scripts/jonahtweaks/autopilot/CACrisis.java) | Colony crises (Hostile Activity): prices monthly progress in credits (`pointCost`, after the military multiplier and the 60 cap), the game's diminishing returns for Hegemony and Pather progress, AI core costs, what a Patrol HQ/Military Base/High Command saves (`military`), Diktat fuel (`diktat`), the coming crisis and its likely targets, Pather relief, Nexerelin's police score, Hegemony inspection orders, and the Colony crises page |
 | [CASiege](../src/data/scripts/jonahtweaks/autopilot/CASiege.java) | Which colonies are under siege (blockaded, hostiles at the planet or outweighing its defenses, an attack on its way), checked daily |
-| [CAAttacks](../src/data/scripts/jonahtweaks/autopilot/CAAttacks.java) | Nexerelin Derelict Empire start only: the Hostile Activity fleet cap per system and Nexerelin's player attack cooldown |
 | [CABuild](../src/data/scripts/jonahtweaks/autopilot/CABuild.java) | Starts a build or upgrade like the build menu |
 | [CABudget](../src/data/scripts/jonahtweaks/autopilot/CABudget.java) | Monthly budget (Automatic: half of net income plus 15% of the credits above the reserve at the month's start; share of income; fixed), reserve, pause on loss, convenience fees |
 | [CABuildout](../src/data/scripts/jonahtweaks/autopilot/CABuildout.java) | Fast buildout: the offer, the daily pass, the panel section |

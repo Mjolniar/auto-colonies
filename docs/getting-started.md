@@ -17,7 +17,7 @@ Nothing gets built on its own after installing. Every colony starts in **Advisor
 **Empire panel.** On the Intel screen, pick the **Colony Autopilot** filter. This is everything at once:
 
 - **Colonies** - your budget, anything waiting for approval, and every colony with its plan and next build.
-- **Autopilot Storage** - what's in storage, each colony's inspection points, and research if you have Vaults of Knowledge.
+- **Autopilot Storage** - what's in each colony's storage, what's being shipped, each colony's inspection points, and research if you have Vaults of Knowledge.
 - **Colony crises** - the crisis meter, what's coming and where, and how to end each faction's crisis.
 - **Mod features** - everything your other mods add, on one page (agents, war fleets, autonomy, trade contracts and so on).
 - **Settings**, **Log** and **Diagnostics**.

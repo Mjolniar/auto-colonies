@@ -56,11 +56,20 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     public CAColonyDialog(MarketAPI market) { this.market = market; }
 
     class Plugin extends BaseCustomUIPanelPlugin {
-        @Override public void buttonPressed(Object id) { handle(id); }
-        @Override public void advance(float amount) { if (dirty) { dirty = false; build(); } }
+        @Override public void buttonPressed(Object id) {
+            try { handle(id); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony panel button failed", t); message = "That didn't work; see starsector.log"; dirty = true; }
+        }
+        @Override public void advance(float amount) { if (dirty) { dirty = false; safeBuild(); } }
     }
 
-    @Override public void createCustomDialog(CustomPanelAPI panel, CustomDialogCallback callback) { root = panel; build(); }
+    /** Builds the panel; an error shows a line instead of reaching the game's UI (2.37.0). */
+    void safeBuild() {
+        try { build(); }
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony panel failed to draw", t); }
+    }
+
+    @Override public void createCustomDialog(CustomPanelAPI panel, CustomDialogCallback callback) { root = panel; safeBuild(); }
     @Override public boolean hasCancelButton() { return false; }
     @Override public String getConfirmText() { return "Close"; }
     @Override public CustomUIPanelPlugin getCustomPanelPlugin() { return plugin; }

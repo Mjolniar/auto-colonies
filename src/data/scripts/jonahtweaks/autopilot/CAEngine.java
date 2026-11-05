@@ -255,7 +255,7 @@ public class CAEngine {
                 try {
                     IndustrySpecAPI upSpec = Global.getSettings().getIndustrySpec(up);
                     Industry upInst = upSpec.getNewPluginInstance(m);
-                    if (up.equals(vanillaUp) ? !ind.canUpgrade() : !upInst.isAvailableToBuild()) continue;
+                    if ((up.equals(vanillaUp) && !ind.canUpgrade()) || !upInst.isAvailableToBuild()) continue;   // as the build menu: a Military Base needs a working spaceport
                     if (bmo && !CAAotD.allows(up, m, hidden)) continue;
                     boolean needsSlot = upInst.isIndustry() && !ind.isIndustry() && slotsFree <= 0;
                     if (!up.equals(vanillaUp) && upSpec.hasTag("consumes") && ind.getSpecialItem() != null) continue;   // the menu would discard the item

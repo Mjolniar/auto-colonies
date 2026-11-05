@@ -381,6 +381,32 @@ public class CAAugments {
         }
     }
 
+    // ---------------- refit crews (2.37.0) ----------------
+    // Station Augments only changes a station's augments while you're docked there. From afar, Autopilot books a refit crew:
+    // the change happens REFIT_DAYS later, or at once while your fleet is in the colony's system.
+
+    static final float REFIT_DAYS = 7f;
+
+    static boolean fleetHere(MarketAPI m) {
+        com.fs.starfarer.api.campaign.CampaignFleetAPI f = com.fs.starfarer.api.Global.getSector().getPlayerFleet();
+        return f != null && m.getPrimaryEntity() != null && f.getContainingLocation() == m.getPrimaryEntity().getContainingLocation();
+    }
+
+    /** Whether the augments may change today; books a refit crew (and says so) when none is booked yet. */
+    static boolean refitReady(MarketAPI m) {
+        Map<String, Long> booked = CAData.get().augRefit();
+        if (fleetHere(m)) { booked.remove(m.getId()); return true; }
+        Long at = booked.get(m.getId());
+        if (at == null) {
+            booked.put(m.getId(), com.fs.starfarer.api.Global.getSector().getClock().getTimestamp());
+            CALog.status("augrefit:" + m.getId(), m.getName() + ": station refit crew booked, augments change in " + Math.round(REFIT_DAYS) + " days");
+            return false;
+        }
+        if (com.fs.starfarer.api.Global.getSector().getClock().getElapsedDaysSince(at) < REFIT_DAYS) return false;
+        booked.remove(m.getId());
+        return true;
+    }
+
     /** Removes, then adds, as planned. Returns null on success, or why nothing changed. */
     static String apply(MarketAPI m, CAData.Colony c, Plan pl, String who) {
         // Station Augments lets an augment come off mid-battle but not go on, so nothing changes while the station fights
@@ -447,6 +473,7 @@ public class CAAugments {
                 if (!pl.changes()) continue;
                 boolean defense = profile == CAData.Profile.SECURITY && c.profile != CAData.Profile.SECURITY;
                 if (c.mode == CAData.Mode.AUTO) {
+                    if (!refitReady(m)) { lastSig.remove(m.getId()); continue; }   // the refit crew isn't there yet: look again tomorrow
                     String done = apply(m, c, pl, siege || defense ? "defense" : c.augDefense ? "calm" : "");
                     if (done == null) c.augDefense = defense;
                     else lastSig.remove(m.getId());   // try again tomorrow (the station was fighting)
@@ -468,6 +495,7 @@ public class CAAugments {
         sync(m, c);
         Plan pl = plan(m, c, profileFor(m, c));
         if (!pl.changes()) return "Nothing to change";
+        if (!refitReady(m)) return "Refit crew booked: the augments change in " + Math.round(REFIT_DAYS) + " days, or at once while your fleet is in this system";
         return apply(m, c, pl, "you set");
     }
 

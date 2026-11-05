@@ -2,6 +2,16 @@
 
 Every version, newest first. If you're wondering why the first version on here is 2.1.0: this started as **Jonah Tweaks**, a personal mod of little tweaks for my own games (bigger battle size, sticky combat autopilot, that kind of thing), and Colony Autopilot grew inside it until it became the main thing. 2.1.0 is when it went up on GitHub, and 2.6.0 was the first version with a downloadable release. The balance tweaks moved out into their own mod in 2.7.0, so this one only manages colonies.
 
+## 2.37.0 - 2026-11-05
+
+The fair play release. A review went through everything the mod does and anything that gave you something for free, or changed the game's rules, got fixed or removed.
+
+- **Autopilot Storage is per colony now.** It used to be one shared storage at every colony, which meant items and cores basically teleported across the sector. Now each colony has its own, and anything the manager needs somewhere else gets shipped there for a fee and some travel time (a couple of days plus a day a light-year). Your old shared storage gets moved into your biggest colony's.
+- **Agents are recruited, not conjured.** They used to be created on the spot. Now recruiting one costs 12,000 plus the fee and takes 60 days. They also get roles: the first one on security, the second raising relations with your preferred factions, and with offense on a third that sabotages whoever you set as the target (whoever attacks you, a random enemy, or a faction you pick). Enemy operations the game hides from you aren't shown or used anymore.
+- **Remote stuff takes time.** Administrators and IndEvo ambassadors always take 30 days to arrive (that used to be optional). The RAT settlement gets founded by an expedition that has to get there. Station augment changes from afar need a refit crew, 7 days, or right away if your fleet's in the system. Research items and databanks from other colonies or your fleet get shipped to the Research Facility.
+- **Removed:** the storage cheat and the Derelict Empire attack settings. Both changed the game's rules, so they're not in this mod anymore.
+- **Fixed:** relief fleets were way underpriced, now they cost what Nexerelin charges. Taking back a colony an old version made autonomous now costs the normal unrest. Surplus terraforming could delete a core or item when it took a structure down. Every measured mod building was being charged an extra 25% of the colony's upkeep because of a test colony quirk. A few places where an error could have reached the game's UI are now caught.
+
 ## 2.36.3 - 2026-11-05
 
 - Wording: the storage cheat's description just says what it adds (commodities, weapons and fighters) instead of listing ships and ambassadors, which never went in storage like items anyway.

@@ -27,7 +27,7 @@ It's fine to add to an existing save. Don't remove it from a save that used it t
 1. Open a colony and hit the **Colony Autopilot** button.
 2. Pick a goal (Balanced, Money, Security, War production, Rapid growth, Self-sufficiency) or leave it on Balanced.
 3. Set the mode to **Auto**. The first time you do this it opens setup with the recommended settings already filled in. Just save it, they're meant to work without touching anything.
-4. Drop any colony items and AI cores you want it to use into **Autopilot Storage** at any of your colonies.
+4. Drop any colony items and AI cores you want it to use into **Autopilot Storage** at any of your colonies. It ships them where they're needed, for a fee and some travel time.
 
 That's really it. The [Getting started](docs/getting-started.md) guide walks through it properly, including the fast buildout it offers when you found your first colony.
 
@@ -55,7 +55,16 @@ That's really it. The [Getting started](docs/getting-started.md) guide walks thr
 - **[Supported mods](docs/supported-mods.md)** - what it does with each mod you have.
 - **[Patch notes](docs/changelog.md)** - every version so far, all the way back to when it was Jonah Tweaks.
 
-If you want every rule written down, that's in [details.md](docs/details.md). It's long. If you want to dig into the code, there's a [source guide](docs/source-guide.md).
+If you want every rule written down, that's in [details.md](docs/details.md). It's long.
+
+For the code side:
+- **[Auditing the mod](docs/audit.md)** - everything it can change in your game, what each thing costs, and what it never does, so you can check it's safe quickly.
+- **[Source guide](docs/source-guide.md)** - how the code is laid out and how it works, file by file.
+- **[Automating Starsector colonies](docs/automation-primer.md)** - the game API stuff and traps we hit, if you're automating colonies yourself.
+
+## Permissions
+
+Use it however you want. Modpacks, reuploads, forks, copying the whole thing, building on it, all fine, no need to ask or credit me. Just don't sell it. See [LICENSE](LICENSE).
 
 ## Building it yourself
 

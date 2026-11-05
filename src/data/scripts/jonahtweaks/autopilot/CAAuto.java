@@ -32,7 +32,8 @@ public class CAAuto {
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "calibration failed", t); }
         try { CASiege.update(d); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "siege check failed", t); }
-        CAAttacks.apply(s);
+        try { CAStores.daily(); }   // shipments between colonies' Autopilot Storage arrive
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autopilot Storage shipping failed", t); }
         CACrisis.daily(d, s);   // inspection orders, and a log line when a colony crisis is picked
         try { CASurplus.daily(s); }   // the focus world for credits over the surplus line
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus investment step failed", t); }

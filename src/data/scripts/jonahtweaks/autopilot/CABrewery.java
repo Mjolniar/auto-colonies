@@ -49,7 +49,8 @@ public class CABrewery {
     /** Recipes Autopilot Storage holds that would work at this size: recipe ids (a book counts as all its recipes). */
     static List<String> recipes(int size) {
         List<String> out = new ArrayList<String>();
-        for (CargoStackAPI st : CAData.get().storage().getStacksCopy()) {
+        for (CAStores.Held held : CAStores.stacks()) {   // any colony's Autopilot Storage: the recipe is shipped to the Brewery
+            CargoStackAPI st = held.stack;
             if (!st.isSpecialStack() || st.getSpecialDataIfSpecial() == null) continue;
             String id = st.getSpecialDataIfSpecial().getId();
             if (id.startsWith("alcoholism_") && id.endsWith("_item")) out.add(id.substring("alcoholism_".length(), id.length() - "_item".length()));

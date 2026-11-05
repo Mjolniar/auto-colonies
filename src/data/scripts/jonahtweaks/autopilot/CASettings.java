@@ -62,7 +62,7 @@ public class CASettings {
     // special project supply (CAProjects, Vaults of Knowledge): 0 Auto (also older saves), 1 Warn only, 2 Off
     public int projectSupplyMode = 0;
     public static final String[] PROJECT_SUPPLY_NAMES = {"Auto", "Warn only", "Off"};
-    public boolean storageCheat = false;  // cheat: Autopilot Storage takes anything and colonies draw shortages from it
+    public boolean storageCheat = false;  // unused since 2.37.0 (the storage cheat moved to Jonah's Easy Sector); kept so older saves load
     public int coreRisk = 1;              // 0 more where defenses beat the next inspection, 1 never inspected (default for new saves), 2 no limit, 3 small colonies only
     public int inspectionMode = 0;        // Hegemony inspections of Auto colonies: 0 advise (so older saves load as advise), 1 resist where defended, 2 off
     public boolean allowRemovals = false;
@@ -114,6 +114,8 @@ public class CASettings {
     public boolean spyNoHiring = false;
     public int spyKeep = 0;
     public static final String[] SPY_NAMES = {"Off", "Defense", "Defense and offense"};
+    // whom the offense agent sabotages (2.37.0): null whoever attacks you, else Nexerelin's pick; "random" a random enemy; or a faction id
+    public String spyTarget = null;
     // research spends colony items (CAResearch, Vaults of Knowledge), only while credits are over the surplus line: 0 off
     // (default, also older saves), 1 from storage (Autopilot Storage and colonies' Storage tabs), 2 also out of buildings
     public int researchItemMode = 0;
@@ -128,16 +130,9 @@ public class CASettings {
     public static final String[] WAR_NAMES = {"Protect and strike back", "Protect", "Off"};
     // the Colony Autopilot button on your colony's screen (CAScreenButton); on unless this is set
     public boolean noScreenButton = false;
-    // attacks on your colonies (CAAttacks), only used in a Nexerelin Derelict Empire start: Hostile Activity fleets per
-    // system (0 = the game's own) and days between Nexerelin's invasions, raids and blockades of yours (0 = the game's own)
+    // unused since 2.37.0, kept so older saves load (the save can't drop a field): the Derelict Empire "Attacks on your
+    // colonies" settings moved to Jonah's Easy Sector, and so did the storage cheat (storageCheat, above)
     public int haFleetCap = 0, nexAttackGap = 0;
-    public static final int[] HA_CAPS = {0, 8, 6, 4, 2};
-    public static final int[] NEX_GAPS = {0, 30, 60, 90, 180};
-
-    static int next(int[] steps, int v) {
-        for (int i = 0; i < steps.length; i++) if (steps[i] == v) return steps[(i + 1) % steps.length];
-        return steps[0];
-    }
 
     // this month
     public int month = -1;
