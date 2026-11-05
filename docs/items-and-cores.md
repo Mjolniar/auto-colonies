@@ -11,7 +11,7 @@ What goes in:
 - research databanks (Vaults of Knowledge takes them from here);
 - Antimatter Stabilizers (Emergent Threats), VPC chips (Industrial Evolution), recipes (Substance.Abuse).
 
-What doesn't: ships, ambassadors (keep those in a colony's normal Storage, it installs them from there), and campaign consumables or blueprints (Industrial Evolution's Nanite Repair Module and its other consumables, ship and weapon blueprints, Random Assortment's Forge-Assisted Industry BP and anything else that's used up on right click). If any of those were already in there from an older version, they get moved to your biggest colony's normal Storage with a line in the log.
+What doesn't: campaign consumables and blueprints (Industrial Evolution's Nanite Repair Module and its other consumables, ship and weapon blueprints, Random Assortment's Forge-Assisted Industry BP and anything else that's used up on right click). If any of those were already in there from an older version, they get moved to your biggest colony's normal Storage with a line in the log.
 
 The empire panel's **Autopilot Storage** page lists what's in it and each colony's inspection points.
 
@@ -63,6 +63,6 @@ Past your colony limit, one is always placed or hired whatever the money says, s
 
 ## The storage cheat
 
-Off unless you turn it on (Settings, **Cheats**). With it on, Autopilot Storage takes anything but ships, ambassadors and campaign consumables, and every colony that uses stockpiles draws its shortages from it for free. The recommended settings never turn this on.
+Off unless you turn it on (Settings, **Cheats**). With it on, Autopilot Storage also takes commodities, weapons and fighters, and every colony that uses stockpiles draws its shortages from it for free. The recommended settings never turn this on.
 
 Next: [War and security](war-and-security.md).

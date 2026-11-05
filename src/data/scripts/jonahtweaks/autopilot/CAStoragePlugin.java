@@ -8,7 +8,7 @@ import com.fs.starfarer.api.impl.campaign.submarkets.BaseSubmarketPlugin;
 
 /**
  * Autopilot Storage: one shared storage shown as a tab at every player colony. Colony items, AI cores, Antimatter
- * Stabilizers and research databanks go in; with the storage cheat on, anything but ships and ambassadors does, and
+ * Stabilizers and research databanks go in; with the storage cheat on, commodities, weapons and fighters do too, and
  * colonies draw their shortages from it (CAStockpile). The manager uses only what is here, and returns anything it
  * removes to here.
  */
