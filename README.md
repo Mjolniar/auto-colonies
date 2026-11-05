@@ -57,24 +57,6 @@ That's really it. The [Getting started](docs/getting-started.md) guide walks thr
 
 If you want every rule written down, that's in [details.md](docs/details.md). It's long. If you want to dig into the code, there's a [source guide](docs/source-guide.md).
 
-## Screenshots
-
-**Colony panel:** stats, goal and mode, fast buildout, and the plan with research locks.
-
-![Colony panel](docs/screenshots/colony-panel.jpg)
-
-**Recommended builds:** money a month after upkeep, and how each option's ranking is made up.
-
-![Recommended builds](docs/screenshots/colony-panel-builds.jpg)
-
-**Empire panel:** budget, every colony with its plan and next build, and Autopilot Storage.
-
-![Empire panel](docs/screenshots/empire-panel.jpg)
-
-**Research and settings:** research ranked by what it unlocks, and settings with their recommendations.
-
-![Research and settings](docs/screenshots/empire-panel-settings.jpg)
-
 ## Building it yourself
 
 JDK 17, sources in `src/`:
