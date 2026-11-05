@@ -124,7 +124,7 @@ Positive value is scaled by confidence, so an uncertain gain has to beat a known
 
 **Weights.** `CAEngine.finish` combines `fx` with the goal's weights (the `WEIGHTS` table, one row per goal: Balanced, Money, Security, War production, Rapid growth, Self-sufficiency). It then applies:
 - the stability floor;
-- a pollution penalty (smaller for War production);
+- pollution: an upgrade that would pollute a habitable world again is shown with a negative score, so it's never started (the same for every goal). Polluting items never go into a habitable world's forge at all (`CAItems.wouldPollute`), and `CAItems.pullPollutingForge` takes one back while its pollution is still reversible;
 - the plan bonus from `CAPlan.bonusFor`, only for picks worth something on their own, so the plan orders good buildings but never makes a money-losing one look good;
 
 A pick that breaks a rule (such as the stability floor) is dropped; everything else is ranked and shown, worthwhile or not.

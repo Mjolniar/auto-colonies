@@ -2,6 +2,12 @@
 
 Every version, newest first. If you're wondering why the first version on here is 2.1.0: this started as **Jonah Tweaks**, a personal mod of little tweaks for my own games (bigger battle size, sticky combat autopilot, that kind of thing), and Colony Autopilot grew inside it until it became the main thing. 2.1.0 is when it went up on GitHub, and 2.6.0 was the first version with a downloadable release. The balance tweaks moved out into their own mod in 2.7.0, so this one only manages colonies.
 
+## 2.36.2 - 2026-11-05
+
+- A nanoforge that pollutes never goes into a forge on a habitable world anymore, whatever the colony's goal, threat or the endgame. Before, it only counted against it, and a War production colony barely minded, so it could happen.
+- If one is already in there and its pollution can still be undone (under 90 days), it comes back out to Autopilot Storage. Lock the building to keep it.
+- A forge upgrade that would pollute a habitable world again is shown but never started for you.
+
 ## 2.36.1 - 2026-11-05
 
 - Campaign consumables and blueprints can't go into Autopilot Storage anymore (Industrial Evolution's consumables, ship and weapon blueprints, Random Assortment's Forge-Assisted Industry BP, anything that's used up on right click). Any already in there get moved to your biggest colony's normal Storage.

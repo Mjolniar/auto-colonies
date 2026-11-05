@@ -22,7 +22,8 @@ Each item goes where it adds the most, at an Auto colony that can take it. A few
 - A better item swaps in for a lesser one of the same kind (a Pristine Nanoforge for a Corrupted one), and the lesser one goes back to storage.
 - An item waiting in storage counts toward building whatever would use it, so a nanoforge sitting there can get a Heavy Industry built somewhere.
 - The Orbital Fusion Lamp only goes to a cold or dark colony. Anywhere else it just adds heat.
-- It's careful with nanoforges that would pollute a clean habitable world.
+- A nanoforge that pollutes (Corrupted, Pristine, anything that isn't marked as clean) never goes into a forge on a habitable world, no matter the colony's goal, threat or the endgame. The pollution from one is permanent after 90 days, so it's just not worth the risk. It waits for a forge on a world that isn't habitable instead, and it won't get a forge built on a habitable world either. The Dimensional Nanoforge (UAF) and Ashes of the Domain's clean ones are fine anywhere.
+- If a polluting nanoforge is already in a forge on a habitable world at an Auto colony and its pollution can still be undone (under 90 days, and the world wasn't polluted before), it comes back out to Autopilot Storage and the log says how many days were left. Lock the building if you put it there on purpose and want it kept.
 - A few items that do nothing useful (or hurt more than they help) are never installed. Those are listed in [details.md](details.md).
 
 ## AI cores
