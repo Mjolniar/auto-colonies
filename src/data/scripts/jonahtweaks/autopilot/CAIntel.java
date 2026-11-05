@@ -224,13 +224,24 @@ public class CAIntel extends BaseIntelPlugin {
             }
         } else if (page.equals("storage")) {
             t.addSectionHeading("Autopilot Storage", Alignment.MID, 0f);
-            t.addPara("Dock at any of your colonies and open the Autopilot Storage tab to deposit colony items, AI cores and research "
-                    + "databanks" + (s.storageCheat ? " (anything, with the storage cheat on)" : "") + ". Auto-mode colonies take items and cores "
-                    + "from it, and research takes what a tech needs. Nothing in your normal storage is used.", 6f);
-            com.fs.starfarer.api.campaign.CargoAPI st = data.storage();
-            if (st.isEmpty()) t.addPara("Empty.", gray, 4f);
-            for (com.fs.starfarer.api.campaign.CargoStackAPI stack : st.getStacksCopy()) {
-                t.addPara("%s x%s", 3f, hl, CALog.esc(stack.getDisplayName()), "" + (int) stack.getSize());
+            t.addPara("Each colony has its own Autopilot Storage tab: dock there and deposit colony items, AI cores and research databanks. "
+                    + "Auto-mode colonies use what's in their own, and the manager ships what it needs at another colony for a fee and "
+                    + "travel time (a couple of days plus a day a light-year). Nothing in your normal storage is used.", 6f);
+            boolean any = false;
+            for (CAStores.Store sto : CAStores.all()) {
+                if (sto.cargo.isEmpty()) continue;
+                any = true;
+                java.util.List<String> parts = new java.util.ArrayList<String>();
+                for (com.fs.starfarer.api.campaign.CargoStackAPI stack : sto.cargo.getStacksCopy())
+                    parts.add(stack.getDisplayName() + (stack.getSize() > 1f ? " x" + (int) stack.getSize() : ""));
+                t.addPara("%s: " + CALog.esc(CAContracts.join(parts)), 3f, hl, sto.market.getName());
+            }
+            if (!any) t.addPara("Empty at every colony.", gray, 4f);
+            for (CAStores.Shipment sh : data.shipments()) {
+                MarketAPI to = CAAuto.market(sh.to);
+                float left = Math.max(0f, sh.days - Global.getSector().getClock().getElapsedDaysSince(sh.sent));
+                t.addPara("On the way: %s to %s, %s days left.", 3f, hl, (sh.qty > 1 ? sh.qty + " " : "") + sh.name(),
+                        to == null ? "your biggest colony" : to.getName(), "" + (int) Math.ceil(left));
             }
             t.addPara("AI cores: %s, inspection risk %s.", 6f, hl, s.useAICores ? "used" : "not used",
                     CASettings.CORE_RISK_NAMES[Math.max(0, Math.min(3, s.coreRisk))].toLowerCase());
@@ -247,11 +258,6 @@ public class CAIntel extends BaseIntelPlugin {
                 String why = coming ? "inspection coming: left as it is" : CAItems.limitWhy(s, m, none, lim);
                 t.addPara("%s: %s inspection points, %s", 3f, coming || pts > lim ? Misc.getNegativeHighlightColor() : hl,
                         CALog.esc(m.getName()), "" + pts, why);
-            }
-            if (s.storageCheat) {
-                java.util.List<String> cov = CAStockpile.covering();
-                t.addPara("Storage cheat on: colonies draw their shortages from here. " + (cov.isEmpty() ? "No shortage it can cover right now."
-                        : "Covering " + CALog.esc(CAContracts.join(cov)) + "."), 6f);
             }
             if (Global.getSettings().getModManager().isModEnabled(CAResearch.MOD) && s.researchMode != 2) {
                 t.addSpacer(16f);
@@ -377,6 +383,15 @@ public class CAIntel extends BaseIntelPlugin {
 
     @Override
     public void buttonPressConfirmed(Object buttonId, IntelUIAPI ui) {
+        // every button goes through here: an error is logged and shown in the log instead of reaching the game (2.37.0)
+        try { pressed(buttonId, ui); }
+        catch (Throwable t) {
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "empire panel button failed", t);
+            try { CALog.add("That button failed; see starsector.log", true); ui.updateUIForItem(this); } catch (Throwable ignored) { }
+        }
+    }
+
+    void pressed(Object buttonId, IntelUIAPI ui) {
         CAData d = CAData.get();
         if (CANav.page(buttonId) != null) {
             page = CANav.page(buttonId);

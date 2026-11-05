@@ -28,7 +28,7 @@ import java.util.List;
  * Colonies made autonomous by you or by Auto stay that way until you take them back (a button per colony; Nexerelin's
  * unrest applies). Colonies an older Autopilot made autonomous (CAData.autonomous) are taken back, one a day, as soon as
  * there's no money emergency, taking one back wouldn't start one, and there's room under your colony limit or an idle
- * administrator to put there, without unrest (Nex_GrantAutonomy.setNoStabLossOnRevokeAutonomy).
+ * administrator to put there, with Nexerelin's usual unrest (2.37.0: it used to skip the unrest, which a player can't).
  */
 final class CAAutonomy {
     static final String MOD = "nexerelin";
@@ -177,10 +177,9 @@ final class CAAutonomy {
                 + (a != null ? "; " + a.getPerson().getNameString() + " is free" : ""), true);
     }
 
-    /** Taking one back: without unrest for a colony an older Autopilot made autonomous, with Nexerelin's for yours or Auto's. */
+    /** Taking one back, with Nexerelin's usual unrest (2.37.0: no exception for colonies an older Autopilot made autonomous). */
     static void reclaim(CAData d, MarketAPI m, String why) {
         boolean legacy = d.autonomous().containsKey(m.getId());
-        if (legacy) Nex_GrantAutonomy.setNoStabLossOnRevokeAutonomy(m);
         Nex_GrantAutonomy.revokeAutonomy(m);
         d.autonomous().remove(m.getId());
         d.lastAutonomyChange = Global.getSector().getClock().getTimestamp();
@@ -191,7 +190,7 @@ final class CAAutonomy {
             m.setAdmin(a.getPerson());
             a.setMarket(m);
         }
-        CALog.add(m.getName() + ": taken back from autonomy (" + why + ")" + (legacy ? ", no unrest" : "")
+        CALog.add(m.getName() + ": taken back from autonomy (" + why + ")" + ""
                 + (a != null ? "; " + a.getPerson().getNameString() + " governs it" : ""), true);
     }
 
@@ -228,9 +227,9 @@ final class CAAutonomy {
             if (m.isPlayerOwned() || m.getFaction() == null || !m.getFaction().isPlayerFaction() || m.isHidden()) continue;
             boolean legacy = d.autonomous().containsKey(m.getId());
             String why = legacy ? waitReason(d, s, m) : null;
-            t.addPara("%s is autonomous (you get %s/month)." + (legacy ? (why == null ? " Taken back today, no unrest." : " Taken back without unrest once " + CALog.esc(why) + ".") : ""),
+            t.addPara("%s is autonomous (you get %s/month)." + (legacy ? (why == null ? " Taken back today." : " Taken back once " + CALog.esc(why) + ".") : ""),
                     8f, hl, m.getName(), Misc.getDGSCredits(incomeMult() * colonyNet(m)));
-            t.addButton("Take back: " + m.getName() + (legacy ? "" : " (" + REVOKE_UNREST + " unrest)"), new String[]{"auton", "back", m.getId()}, base, dark,
+            t.addButton("Take back: " + m.getName() + " (" + REVOKE_UNREST + " unrest)", new String[]{"auton", "back", m.getId()}, base, dark,
                     Alignment.MID, CutStyle.ALL, 260f, 22f, 4f);
         }
     }

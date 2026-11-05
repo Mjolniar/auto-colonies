@@ -156,7 +156,7 @@ public class CAIndEvo {
         AmbassadorPersonManager.removeAmbassadorFromMarket(src);
         CABudget.charge(s, 0f, fee, 0f);
         String who = src.getFaction().getDisplayName() + " ambassador " + person.getNameString();
-        if (s.adminDelay) {
+        if (true) {   // always travels (2.37.0): a hire made from afar arrives in 30 days, never on the spot
             CargoAPI st = storageOf(target);
             if (st == null) { emb.setSpecialItem(data); CALog.add(target.getName() + ": hired and installed the " + who); return true; }
             st.addSpecial(data, 1f);
@@ -173,8 +173,9 @@ public class CAIndEvo {
     static final String[] VPC_TARGETS = {"IndEvo_AdManuf", "IndEvo_AdAssem", "IndEvo_ComForge"};
 
     static boolean installVPC(CASettings s, List<MarketAPI> markets) {
-        CargoAPI st = CAData.get().storage();
-        for (CargoStackAPI stack : st.getStacksCopy()) {
+        for (CAStores.Held held : CAStores.stacks()) {
+            CargoStackAPI stack = held.stack;
+            CargoAPI st = CAStores.of(held.market);
             SpecialItemData data = stack.isSpecialStack() ? stack.getSpecialDataIfSpecial() : null;
             if (data == null || !data.getId().startsWith("IndEvo_vpc_")) continue;
             for (String tid : VPC_TARGETS) {
@@ -183,6 +184,11 @@ public class CAIndEvo {
                     Industry ind = m.getIndustry(tid);
                     if (ind == null || !ind.isFunctional() || ind.getSpecialItem() != null) continue;
                     if (CAData.get().colony(m.getId()).locks.contains(tid) || !ind.wantsToUseSpecialItem(data)) continue;
+                    if (m != held.market) {   // stored at another colony: shipped here first (2.37.0)
+                        if (CAStores.inTransit(data.getId(), m.getId()) > 0) continue;
+                        if (CAStores.ship(held.market, m, null, data, 1, "for " + ind.getCurrentName())) return true;
+                        continue;
+                    }
                     float fee = CABudget.fee(s, MOVE_FEE);
                     if (!CAItems.canPay(s, fee)) return false;
                     ind.setSpecialItem(new SpecialItemData(data.getId(), data.getData()));

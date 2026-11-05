@@ -141,7 +141,10 @@ public class CAWar {
             fp = relief.calcFP();
             if (fp > mgr.getFleetRequestStock()) { relief.endImmediately(); return false; }
         }
-        float cost = Math.round(fp * NexConfig.fleetRequestCostPerFP * (relief != null ? Nex_FleetRequest.RELIEF_COST_MULT : 1f));
+        // Nexerelin's own prices (Nex_FleetRequest.updateCost): fleet points x the cost per point, but a relief fleet is twice the
+        // colony's stabilize package (needed credits plus the goods), whatever its size (2.37.0: it was priced by points, far too cheap)
+        float cost = Math.round(relief != null ? 2f * com.fs.starfarer.api.impl.campaign.rulecmd.Nex_StabilizePackage.getNominalCost(target)
+                : fp * NexConfig.fleetRequestCostPerFP);
         String payer = payer(emergency, rich, cost, CABuild.credits(), s.reserve, CABudget.available(s), CASurplus.amount(s));
         if (payer == null) {
             if (relief != null) relief.endImmediately();

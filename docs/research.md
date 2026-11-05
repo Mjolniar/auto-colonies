@@ -14,7 +14,7 @@ Auto starts the best tech whenever nothing is running or queued. If you have som
 
 Databanks are usually the bottleneck. While the best plan tech is short of them, the ones you have only go to techs some plan needs, and the log says what's next and how many it needs. After 90 days of that, the best thing you can afford goes ahead anyway so research doesn't sit idle forever. Same if nothing pays for itself within a year: it starts the best of the rest rather than stopping.
 
-When a tech starts, whatever the Research Facility tab is short of gets moved in from Autopilot Storage, then databanks from your colonies' normal Storage, then from your fleet's cargo. Nothing moves unless everything the tech needs is there.
+When a tech starts, whatever the Research Facility tab is short of gets moved in. What's already at that colony (its Autopilot Storage, databanks in its Storage, your fleet's databanks while you're in that system) goes straight in. Anything at another colony, or in your fleet somewhere else, gets shipped there first for a fee and travel time, and the tech starts once it all arrives. Nothing moves unless everything the tech needs is somewhere it can be taken from.
 
 ## Techs that take colony items
 

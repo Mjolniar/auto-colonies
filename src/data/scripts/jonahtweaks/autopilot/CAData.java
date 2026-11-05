@@ -1,7 +1,9 @@
 package data.scripts.jonahtweaks.autopilot;
 
 import com.fs.starfarer.api.Global;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -77,9 +79,18 @@ public class CAData {
     // Random Assortment of Things settlement proposal waiting for approval: kind "found" (planet id) or "facility" (facility id)
     public String settlePendingKind, settlePendingId, settlePendingName;
     public float settlePendingCost;
+    // a Random Assortment of Things settlement expedition on its way (2.37.0): the planet, when it left, its days, and what it cost
+    public String settleExpeditionPlanet;
+    public long settleExpeditionAt;
+    public float settleExpeditionDays, settleExpeditionCost;
     // Nexerelin agents Autopilot hired (person ids); only these are given orders
     public Set<String> spyAgents;
     public Set<String> spyAgents() { if (spyAgents == null) spyAgents = new HashSet<String>(); return spyAgents; }
+    // their roles (2.37.0: person id to security, relations or offense) and agents being recruited (role to when it began)
+    public Map<String, String> spyRoles;
+    public Map<String, Long> spyRecruits;
+    public Map<String, String> spyRoles() { if (spyRoles == null) spyRoles = new HashMap<String, String>(); return spyRoles; }
+    public Map<String, Long> spyRecruits() { if (spyRecruits == null) spyRecruits = new HashMap<String, Long>(); return spyRecruits; }
     // colonies Autopilot made autonomous in an emergency (Nexerelin): market id to the timestamp; only these are taken back
     public Map<String, Long> autonomous;
     public long lastAutonomyChange;
@@ -87,6 +98,9 @@ public class CAData {
     public Map<String, Long> autonomous() { if (autonomous == null) autonomous = new HashMap<String, Long>(); return autonomous; }
     // war fleets (CAWar): markets that sent raids, invasions or blockades at your colonies, to when they were last seen doing it
     public Map<String, Long> attackers;
+    // station augment refit crews booked (CAAugments, 2.37.0): market id to when
+    public Map<String, Long> augRefit;
+    public Map<String, Long> augRefit() { if (augRefit == null) augRefit = new HashMap<String, Long>(); return augRefit; }
     public Map<String, Long> attackers() { if (attackers == null) attackers = new HashMap<String, Long>(); return attackers; }
     // endgame economy (CAEndgame), to timestamps: "marketId:industryId" built by it, "marketId:-industryId" taken down by it,
     // "marketId:replaced" its last replacement there; kept a year, so nothing it did is undone or redone sooner
@@ -129,12 +143,12 @@ public class CAData {
         return ambTransit;
     }
 
-    /** The shared Autopilot Storage cargo. */
-    public com.fs.starfarer.api.campaign.CargoAPI storage() {
-        if (storage == null) storage = Global.getFactory().createCargo(true);
-        if (storage.getMothballedShips() == null) storage.initMothballedShips("player");   // other mods iterate every submarket's ship list
-        return storage;
-    }
+    // Autopilot Storage per colony (CAStores, 2.37.0): market id to its cargo, and what's being shipped between them. The old
+    // shared `storage` field stays so older saves load; CAStores.migrate empties it into the biggest colony's store once.
+    public Map<String, com.fs.starfarer.api.campaign.CargoAPI> stores;
+    public List<CAStores.Shipment> shipments;
+    public Map<String, com.fs.starfarer.api.campaign.CargoAPI> stores() { if (stores == null) stores = new HashMap<String, com.fs.starfarer.api.campaign.CargoAPI>(); return stores; }
+    public List<CAStores.Shipment> shipments() { if (shipments == null) shipments = new ArrayList<CAStores.Shipment>(); return shipments; }
 
     public static CAData get() {
         Map<String, Object> pd = Global.getSector().getPersistentData();

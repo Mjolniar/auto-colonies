@@ -43,7 +43,6 @@ Groups for mods you don't have don't show up.
 
 - **Administrator hiring** - On (recommended) or Off.
 - **Assign administrators optimally** - On (recommended) or Off.
-- **Arrival delay** - a new hire takes 30 days to arrive. Recommended on.
 - **Ambassadors** - Hire and install (recommended) or Off (Industrial Evolution).
 - **Ambassador focus** - Worst relations first (recommended), Strongest factions, Nearest neighbors, or Priority list only.
 - **Stop raising a faction at** - Welcoming, Friendly, Cooperative (recommended), or Never stop.
@@ -62,8 +61,9 @@ Groups for mods you don't have don't show up.
 ## Agents (Nexerelin)
 
 - **Agents** - Off, Defense (recommended), or Defense and offense.
-- **Hire agents** - On (recommended, 12,000 each) or Off.
-- **Agents to keep** - Auto (1, or 2 with offense) or a number.
+- **Recruit agents** - On (recommended; 12,000 each, 60 days to report for duty) or Off.
+- **Agents to keep** - Auto (2, or 3 with offense) or a number.
+- **Offense target** - Whoever attacks you (recommended), A random enemy, or a faction at war with you. Only with Defense and offense.
 
 ## Autonomy (Nexerelin)
 
@@ -92,16 +92,9 @@ Groups for mods you don't have don't show up.
 - **Research spends colony items (surplus only)** - Off (recommended), From storage, or From storage and buildings. See [Research](research.md#techs-that-take-colony-items).
 - **Megastructures (Hypershunt, Pluto, Nidavelir)** - Follow colony mode (recommended), Recommend only, or Off.
 
-## Attacks on your colonies (Derelict Empire start only)
-
-- **Pirate and crisis fleets per system** - the game's own, or at most 8, 6, 4 (recommended) or 2.
-- **Nexerelin invasions, raids and blockades** - the game's own (can overlap), or one at a time 30, 60, 90 (recommended) or 180 days apart.
-
 ## Interface
 
 - **Button on the colony screen** - On (recommended) or Off.
 - **Log entries on screen** - Every entry (recommended, each as one short line), Important only, or Off.
 
-## Cheats
-
-- **Store anything, colonies draw shortages from it** - Off (recommended). Turns Autopilot Storage into a free stockpile. See [Items, AI cores and administrators](items-and-cores.md#the-storage-cheat).
+There are no cheat or balance settings. The mod only manages your colonies the way you could yourself.

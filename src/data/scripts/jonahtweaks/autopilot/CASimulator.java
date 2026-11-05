@@ -98,8 +98,9 @@ public class CASimulator {
         Effects e = new Effects();
         List<EveryFrameScript> scripts = new ArrayList<EveryFrameScript>(Global.getSector().getScripts());
         List<IntelInfoPlugin> intel = new ArrayList<IntelInfoPlugin>(Global.getSector().getIntelManager().getIntel());
+        MarketAPI p = null;
         try {
-            MarketAPI p = probe(colony);
+            p = probe(colony);
             float[] before = snapshot(p);
             p.addIndustry(industryId);
             Industry ind = p.getIndustry(industryId);
@@ -116,11 +117,15 @@ public class CASimulator {
                 if (u > 0) e.demand.put(q.getCommodityId(), u);
             }
             e.stability = after[0] - before[0]; e.access = after[1] - before[1]; e.ground = after[2] - before[2];
-            e.fleet = after[3] - before[3]; e.quality = after[4] - before[4]; e.incomeMult = after[5] - before[5]; e.upkeepMult = after[6] - before[6];
-            p.removeIndustry(industryId, null, false);
+            e.fleet = after[3] - before[3]; e.quality = after[4] - before[4]; e.incomeMult = after[5] - before[5];
+            // the probe colony's upkeep multiplier rises by the same +25% whatever is built on it (all 57 measured buildings
+            // in one game), so it's the probe, not the building: counting it cost every measured building a quarter of the
+            // colony's upkeep (2.37.0). A building's own upkeep is predicted separately (CAEngine.upkeep).
+            e.upkeepMult = 0f;
         } catch (Throwable t) {
             e.error = "its code failed on a probe colony: " + t;
         } finally {
+            if (p != null) try { p.removeIndustry(industryId, null, false); } catch (Throwable ignored) { }   // even when it threw
             boolean leaked = false;
             for (EveryFrameScript s : new ArrayList<EveryFrameScript>(Global.getSector().getScripts()))
                 if (!scripts.contains(s)) { Global.getSector().removeScript(s); leaked = true; }

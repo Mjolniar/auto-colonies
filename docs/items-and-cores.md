@@ -2,7 +2,11 @@
 
 ## Autopilot Storage
 
-Every colony you own has an **Autopilot Storage** tab. It's one shared storage, so whatever you put in at one colony is there at all of them. This is the only place the manager takes items and cores from. It never touches your normal Storage or your cargo for this, and it only places things at colonies on Auto.
+Every colony you own has its own **Autopilot Storage** tab. This is the only place the manager takes items and cores from. It never touches your normal Storage or your cargo for this, and it only places things at colonies on Auto.
+
+It uses an item at the colony it's stored at. If the best spot for it is at another colony, it ships it there first: that costs a fee (2,000 plus 300 a light-year, scaled by your convenience fee setting) and takes a couple of days plus a day a light-year, then it goes in once it arrives. Same for an AI core moved from one colony's building to another's. Nothing jumps across the sector for free. Whatever the manager takes out of a building goes into that colony's own Autopilot Storage.
+
+If you're coming from a version before 2.37.0, where it was one shared storage, everything that was in it gets moved into your biggest colony's Autopilot Storage once, and the log says so.
 
 What goes in:
 
@@ -13,7 +17,7 @@ What goes in:
 
 What doesn't: campaign consumables and blueprints (Industrial Evolution's Nanite Repair Module and its other consumables, ship and weapon blueprints, Random Assortment's Forge-Assisted Industry BP and anything else that's used up on right click). If any of those were already in there from an older version, they get moved to your biggest colony's normal Storage with a line in the log.
 
-The empire panel's **Autopilot Storage** page lists what's in it and each colony's inspection points.
+The empire panel's **Autopilot Storage** page lists what's in each colony's store, what's on its way where, and each colony's inspection points.
 
 ## Colony items
 
@@ -55,14 +59,11 @@ A colony over its limit sends cores back to storage one a day. Once you've beate
 
 - **Administrator hiring** (on with the recommended settings) - hires when one is worth it.
 - **Assign administrators optimally** - places and moves them where they add the most.
-- **Arrival delay** - a newly hired administrator takes 30 days to show up, if you want that.
 
 An administrator is only hired, placed or moved where they add more than they cost. What they add is their +1 to everything the colony's industries make, which is worth a lot more at a big productive colony than a small one, plus stability from your colony limit. That's set against their salary (2,500 a month, 20,000 with a skill) and the hiring cost.
 
+A hire always takes 30 days to show up, since they're hired from another market's comm directory and have to travel.
+
 Past your colony limit, one is always placed or hired whatever the money says, since every colony past the limit costs every colony you govern 2 stability. That hire can go over the monthly budget but never under the reserve. An idle administrator who isn't worth their salary anywhere just stays unassigned, and dismissing them is up to you.
-
-## The storage cheat
-
-Off unless you turn it on (Settings, **Cheats**). With it on, Autopilot Storage also takes commodities, weapons and fighters, and every colony that uses stockpiles draws its shortages from it for free. The recommended settings never turn this on.
 
 Next: [War and security](war-and-security.md).

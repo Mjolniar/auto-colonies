@@ -12,7 +12,10 @@ public class CAScript implements EveryFrameScript {
 
     public void advance(float amount) {
         try { CABuildout.checkOffer(amount); }
-        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "fast buildout offer failed", t); CAData.get().buildoutOffered = true; }
+        catch (Throwable t) {
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "fast buildout offer failed", t);
+            try { CAData.get().buildoutOffered = true; } catch (Throwable ignored) { }   // never let the handler itself throw into the game
+        }
         float days = Global.getSector().getClock().convertToDays(amount);
         now += days;
         acc += days;

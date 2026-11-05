@@ -283,7 +283,8 @@ public class CATerraformSurplus {
             for (CAPlan.Step st : CAPlan.build(m, c.profile).steps) if (st.kind == CAPlan.Kind.BUILD && st.id.equals(id)) planned = true;
             if (planned) { built.remove(key); continue; }   // the plan wants it now: it's the plan's to keep
             float up = ind.getUpkeep().getModifiedValue();
-            m.removeIndustry(id, null, false);
+            CAStores.emptyInto(m, ind);   // its AI core and item to Autopilot Storage (with no mode the game would delete them)
+            m.removeIndustry(id, com.fs.starfarer.api.campaign.econ.MarketAPI.MarketInteractionMode.REMOTE, false);
             built.remove(key);
             CALog.add(m.getName() + ": removed idle " + ind.getCurrentName() + " (-" + Misc.getDGSCredits(up) + "/month)");
         }

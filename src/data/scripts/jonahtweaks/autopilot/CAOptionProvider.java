@@ -36,7 +36,9 @@ public class CAOptionProvider extends BaseIndustryOptionProvider {
     @Override
     public void optionSelected(IndustryOptionData opt, DialogCreatorUI ui) {
         if (opt.id != OPEN) return;
-        CAColonyDialog d = new CAColonyDialog(opt.ind.getMarket());
-        ui.showDialog(CAColonyDialog.W, CAColonyDialog.H, d);
+        try {
+            CAColonyDialog d = new CAColonyDialog(opt.ind.getMarket());
+            ui.showDialog(CAColonyDialog.W, CAColonyDialog.H, d);
+        } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "opening the colony panel failed", t); }
     }
 }

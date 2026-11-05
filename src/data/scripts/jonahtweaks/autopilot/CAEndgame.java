@@ -293,7 +293,7 @@ public class CAEndgame {
 
     static boolean protectedHere(MarketAPI m, CAData.Colony col, CAPlan.Plan plan, Industry ind, CAData d) {
         String id = ind.getId();
-        if (!ind.isIndustry() || ind.isHidden() || ind.isBuilding() || ind.isUpgrading() || ind.isImproved()) return true;
+        if (!ind.isIndustry() || ind.isHidden() || ind.isBuilding() || ind.isUpgrading() || ind.isImproved() || !ind.canShutDown()) return true;
         if (ind.getSpec().hasTag("population") || ind.getSpec().hasTag("station") || col.locks.contains(id)) return true;
         if (keepsPlanBonus(m, plan, id) || CASurplusResearch.FACILITY.equals(id) || CASurplusResearch.BLACK_SITE.equals(id) || CAWonders.SITE.equals(id)) return true;
         if (!CAEngine.isSupportedVanilla(id) && !CAEstimates.has(id)) return true;   // only what the engine can value for certain
@@ -344,11 +344,9 @@ public class CAEndgame {
     static void takeDown(MarketAPI m, Weakest wk, CAEngine.Pick p) {
         Industry ind = wk.ind;
         CAData d = CAData.get();
-        CargoAPI st = d.storage();
         String core = ind.getAICoreId();
-        if (core != null) { ind.setAICoreId(null); st.addCommodity(core, 1); }
         SpecialItemData item = ind.getSpecialItem();
-        if (item != null) { ind.setSpecialItem(null); st.addSpecial(item, 1); }
+        CAStores.emptyInto(m, ind);   // core and item to this colony's Autopilot Storage
         String oldName = ind.getCurrentName(), oldId = ind.getId();
         m.removeIndustry(oldId, MarketAPI.MarketInteractionMode.REMOTE, false);
         long ts = Global.getSector().getClock().getTimestamp();

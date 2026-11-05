@@ -453,7 +453,7 @@ public class CAHypershunt {
     static int taps() {
         try {
             int n = (int) Global.getSector().getPlayerFleet().getCargo().getQuantity(CargoAPI.CargoItemType.SPECIAL, new SpecialItemData(TAP, null));
-            return n + (int) CAData.get().storage().getQuantity(CargoAPI.CargoItemType.SPECIAL, new SpecialItemData(TAP, null));
+            return n + (int) CAStores.count(TAP);
         } catch (Throwable t) { return 0; }
     }
 
