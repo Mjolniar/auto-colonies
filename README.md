@@ -19,6 +19,7 @@ This mod is currently working with most of the colony mods I could find on the m
 - **Plans:** target layout from planet, hazards, resources.
 - **Budget:** Automatic by default (half of net income plus 15% of savings above a reserve), per-project cap, convenience fees. The recommended settings are meant to work if you only switch colonies to Auto.
 - **Fast buildout:** after you found your first colony, a popup offers to spend everything above a floor you choose (default 250,000) on the fastest-paying builds until the colony earns money. Any losing colony can start one from its panel.
+- **Surplus and endgame:** credits over a line go into a focus world; past 10M every colony spends them. With net income of 1M a month or more on top, the endgame economy stops building for money: production chains (every good made in-faction, spread over your worlds, toward a monopoly), fleets, ship quality, defense and research decide, and weak industries make way, keeping at least a third of the income.
 - **Threat response:** Security at 70% threat; back below 65% after 60 days.
 - **Sieges:** while a colony is blockaded, has hostiles at the planet, or has a raid or blockade on its way, only defenses are built there, everything else waits, and trade contracts don't count on its goods.
 - **Derelict Empire start (Nexerelin):** fewer pirate and crisis fleets per system, and invasions, raids and blockades one at a time with a gap between them, since that start brings them within weeks. Only in that start.
@@ -38,7 +39,7 @@ All optional. Each loads only when its mod is enabled. **[What each supported mo
 |---|---|
 | Terraforming Made Easy | Special-world plans, terraforming |
 | Industrial Evolution | Ambassadors, edicts, VPC chips, courier shipping |
-| Nexerelin | Emergency defense fleets; agents (off by default): defense against rebellions, Pather cells, pirate bases and enemy operations, optional sabotage of factions at war with you, auto-hiring |
+| Nexerelin | Emergency defense fleets; war fleets (relief, defense, pirate base strikes, raids on attackers; never invasions); agents (off by default): defense against rebellions, Pather cells, pirate bases and enemy operations, optional sabotage of factions at war with you, auto-hiring |
 | Emergent Threats | Antimatter Stabilizer conversion |
 | Ashes of the Domain | Research choices, research locks, upgrade paths, starter buildings, industry synergies, management styles, trade contracts, megastructures (Coronal Hypershunt, Pluto, Nidavelir), AotD colony items |
 | Random Assortment of Things | Frontiers settlement: found and develop |

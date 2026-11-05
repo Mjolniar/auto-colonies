@@ -83,7 +83,7 @@ public class CASurplusResearch {
         String speedNow = "+" + Math.round((speed(n) - 1f) * 100f) + "% research speed";
         if (n >= MAX) { summary = "Surplus research: " + n + " colonies have a research building, all Vaults of Knowledge counts (" + speedNow + ")."; return; }
         if (n == 0) { summary = "Surplus research: you have no research building yet; the colonies' plans build the first."; return; }
-        if (!worth(pending, n, tier)) {
+        if (!worth(pending, n, tier) && !(CAEndgame.on(s) && pending > 0f)) {   // the endgame researches while anything is left
             summary = "Surplus research: another Research Facility's +10% speed is worth about " + Misc.getDGSCredits(sv) + " a month (the research left "
                     + "adds " + CAEngine.valueText(pending) + " once done), not a quarter of its " + Misc.getDGSCredits(up) + " upkeep; " + n
                     + " colonies have one (" + speedNow + ").";

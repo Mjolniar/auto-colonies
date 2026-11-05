@@ -104,6 +104,21 @@ public class CAEngine {
     /** Buildings scored from Autopilot's own estimates rather than the game's formulas or a probe measurement. */
     static boolean estimated(String id) { return CATasc.has(id) || CABrewery.has(id) || CAMods.has(id) || CAEstimates.has(id); }
 
+    /**
+     * What a building does here by the game's formulas or Autopilot's estimates, with its output lines recorded (p.supplied);
+     * null for one the engine can't value that way (measured or special-cased mod buildings). For the endgame's production
+     * chains and what an existing building is worth.
+     */
+    static Pick effectsOf(MarketAPI m, String id, Map<String, Integer> deficit) {
+        if (!VANILLA.contains(id) && !CAEstimates.has(id)) return null;
+        Pick p = new Pick();
+        p.id = id;
+        p.recording = true;
+        effects(m, id, p, deficit);
+        p.recording = false;
+        return p;
+    }
+
     /** Effects of an estimated building; false when it isn't worth building here. */
     static boolean estimate(MarketAPI m, String id, Pick p, Map<String, Integer> deficit) {
         if (CATasc.has(id)) return CATasc.apply(m, id, p, deficit);   // TASC: scored here, never test-built
@@ -288,12 +303,17 @@ public class CAEngine {
     /** Combines effects with profile weights; false when the pick breaks a rule or isn't worth building. */
     static boolean finish(MarketAPI m, Pick p, CAData.Profile profile, float minStability, CAPlan.Plan plan) {
         if (p.fx[1] < 0 && m.getStabilityValue() + p.fx[1] < minStability) return false;
-        float[] w = profitOnly ? PROFIT : WEIGHTS[profile.ordinal()];
+        // the endgame economy (CAEndgame): money counts 5%, military and security at least its weights, and what the building
+        // makes is valued as production chains
+        boolean endgame = !profitOnly && CAEndgame.at(m);
+        float[] w = profitOnly ? PROFIT : endgame ? CAEndgame.weights(WEIGHTS[profile.ordinal()]) : WEIGHTS[profile.ordinal()];
         // spending freely (CASurplus.rich): money counts a quarter, so what else a building adds decides
-        float mw = profitOnly ? 1f : CASurplus.moneyWeight(m);
-        if (mw < 1f && p.fx[0] < 0f) p.lines.add("Surplus credits: its money counts a quarter");
+        float mw = profitOnly || endgame ? 1f : CASurplus.moneyWeight(m);
+        if (endgame && p.fx[0] != 0f) p.lines.add("Endgame economy: its money counts 5%");
+        else if (mw < 1f && p.fx[0] < 0f) p.lines.add("Surplus credits: its money counts a quarter");
         float value = 0f;
         for (int i = 0; i < 7; i++) value += w[i] * p.fx[i] * (i == 0 ? mw : 1f);
+        if (endgame) value += CAEndgame.chainValue(m, p, false);
         // an uncertain gain must beat a known one by a margin (an estimate at 0.85 needs about 18% more to win)
         if (value > 0f && p.confidence < 1f) {
             value *= p.confidence;
@@ -312,12 +332,13 @@ public class CAEngine {
         boolean enabler = p.id.startsWith("tme_") || CAProjects.isStep(m, p.id) || CASurplus.isRichStep(m, p.id)
                 || (CAWonders.BFC.equals(p.id) && !CAWonders.stepsFor(m).isEmpty());
         float planBonus = (value > 0f || enabler) && !profitOnly ? CAPlan.bonusFor(m, plan, p.id) : 0f;
+        if (endgame && planBonus > 0f && !CAEndgame.keepsPlanBonus(m, plan, p.id)) planBonus = 0f;   // a money plan's steps stand on their own
         if (planBonus > 0f) p.lines.add(0, "Next step of this colony's " + plan.name + " plan" + (value <= 0f ? " (costs more than it earns; the plan needs it)" : ""));
         // a new industry the plan doesn't ask for, when the free slots are all the plan's industries have left
         float reserve = 0f;
         if (!p.upgrade && planBonus <= 0f && !profitOnly && isIndustry(p.id) && plan != null) {
             int free = Misc.getMaxIndustries(m) - Misc.getNumIndustries(m);
-            int needed = CAPlan.openIndustrySteps(m, plan);
+            int needed = endgame ? CAEndgame.openKeptIndustrySteps(m, plan) : CAPlan.openIndustrySteps(m, plan);
             if (needed > 0 && free <= needed) {
                 reserve = SLOT_RESERVE;
                 p.lines.add("Takes an industry slot this colony's " + plan.name + " plan needs (" + needed + " plan industr" + (needed == 1 ? "y" : "ies") + " to come)");

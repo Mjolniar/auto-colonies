@@ -15,7 +15,7 @@ public class CABudget {
         if (s.month == m) return;
         boolean first = s.month < 0;
         s.month = m;
-        s.spent = 0f; s.fees = 0f; s.upkeepAdded = 0f; s.terraSpent = 0f; s.spMonth = 0;
+        s.spent = 0f; s.fees = 0f; s.upkeepAdded = 0f; s.terraSpent = 0f; s.spMonth = 0; s.endgameLoss = 0f;
         s.monthCredits = CABuild.credits();
         try {
             MonthlyReport prev = SharedData.getData().getPreviousReport();
