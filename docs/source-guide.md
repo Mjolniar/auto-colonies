@@ -233,7 +233,7 @@ Rules that keep saves working:
 | [CANav](../src/data/scripts/jonahtweaks/autopilot/CANav.java) | The page list both panels draw on the left, so one section shows at a time instead of one long scroll |
 | [CASetupUI](../src/data/scripts/jonahtweaks/autopilot/CASetupUI.java) | The settings rows, shared by the setup page and the empire panel, in groups that open one at a time. Each row shows its value and the recommendation. `applyRecommended` fills in the recommendations, which are chosen so that switching colonies to Auto and nothing else works out well; its comments give the reason for each. |
 | `CABuildout.Offer` | The first-colony offer, an interaction dialog with the game's own option list |
-| [CAStoragePlugin](../src/data/scripts/jonahtweaks/autopilot/CAStoragePlugin.java) | The Autopilot Storage tab: colony items, AI cores, Antimatter Stabilizers and research databanks, or anything but ships with the storage cheat |
+| [CAStoragePlugin](../src/data/scripts/jonahtweaks/autopilot/CAStoragePlugin.java) | The Autopilot Storage tab: colony items, AI cores, Antimatter Stabilizers and research databanks, plus commodities, weapons and fighters with the storage cheat; never campaign consumables or blueprints |
 | [CAStockpile](../src/data/scripts/jonahtweaks/autopilot/CAStockpile.java) | Storage cheat: colonies cover shortages from Autopilot Storage the way vanilla's stockpile does, worked out every frame and taken off before every save (`JTModPlugin.beforeGameSave`) |
 
 Everything uses the game's own colors and widgets, so it looks like the base game.

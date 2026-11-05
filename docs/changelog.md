@@ -2,6 +2,10 @@
 
 Every version, newest first. If you're wondering why the first version on here is 2.1.0: this started as **Jonah Tweaks**, a personal mod of little tweaks for my own games (bigger battle size, sticky combat autopilot, that kind of thing), and Colony Autopilot grew inside it until it became the main thing. 2.1.0 is when it went up on GitHub, and 2.6.0 was the first version with a downloadable release. The balance tweaks moved out into their own mod in 2.7.0, so this one only manages colonies.
 
+## 2.36.3 - 2026-11-05
+
+- Wording: the storage cheat's description just says what it adds (commodities, weapons and fighters) instead of listing ships and ambassadors, which never went in storage like items anyway.
+
 ## 2.36.2 - 2026-11-05
 
 - A nanoforge that pollutes never goes into a forge on a habitable world anymore, whatever the colony's goal, threat or the endgame. Before, it only counted against it, and a War production colony barely minded, so it could happen.

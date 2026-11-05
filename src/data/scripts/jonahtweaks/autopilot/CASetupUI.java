@@ -382,7 +382,7 @@ public class CASetupUI {
         }
         if (group(t, "cheats", "Cheats", "storage cheat " + (s.storageCheat ? "on" : "off"))) {
             row(t, "Store anything, colonies draw shortages from it (cheat)", s.storageCheat ? "On (cheat)" : "Off", "Off", "storecheat", true);
-            t.addPara("Autopilot Storage takes anything but ships and ambassadors, and you can take it out at any colony. Every colony "
+            t.addPara("Autopilot Storage also takes commodities, weapons and fighters, and you can take them out at any colony. Every colony "
                     + "that uses stockpiles for shortages draws from it, for free, before its own stockpile: a colony short of a commodity "
                     + "in storage gets the missing amount, and the storage is drawn down at the game's stockpile rate.", Misc.getGrayColor(), 6f);
         }
