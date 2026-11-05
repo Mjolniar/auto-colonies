@@ -97,6 +97,7 @@ public class CAIntel extends BaseIntelPlugin {
         if (mm.isModEnabled(CASettlement.MOD)) l.add("settle");
         if (mm.isModEnabled(CASpies.MOD)) l.add("agents");
         if (mm.isModEnabled(CAAutonomy.MOD)) l.add("autonomy");   // always: its Grant and Take back buttons work in any mode
+        if (mm.isModEnabled(CAWar.MOD) && s.warMode != 2) l.add("war");
         if (mm.isModEnabled(CAAugments.MOD) && s.augmentMode != 2) l.add("augments");
         if (mm.isModEnabled(CAContracts.MOD) && s.contractMode != 2) l.add("contracts");
         if (anyMega && mm.isModEnabled(CAHypershunt.MOD) && s.hypershuntMode != 2) l.add("mega");
@@ -114,6 +115,8 @@ public class CAIntel extends BaseIntelPlugin {
             CASpies.render(t, data, s);
         } else if (id.equals("autonomy") && mm.isModEnabled(CAAutonomy.MOD)) {
             CAAutonomy.render(t, data, s);
+        } else if (id.equals("war") && mm.isModEnabled(CAWar.MOD)) {
+            CAWar.render(t, data, s);
         } else if (id.equals("augments") && mm.isModEnabled(CAAugments.MOD)) {
             t.addSectionHeading("Station augments", Alignment.MID, 0f);
             CAAugments.renderEmpire(t, data, s);

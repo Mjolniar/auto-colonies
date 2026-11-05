@@ -67,6 +67,7 @@ public class CASetupUI {
         s.hazardPayEmpireShare = 0.30f;   // all of it within 30% of empire net income: the more you earn, the more colonies get it
         s.disableEdicts = false;
         s.disableDefenseFleets = false;
+        s.warMode = 0;          // protect and strike back: security only, never invasions
         s.disableSpecialties = false;
         s.disableVPC = false;
         s.disableForgeVPC = false;
@@ -263,7 +264,8 @@ public class CASetupUI {
             }
         }
         if (group(t, "policy", "Colony policies", "hazard pay " + CASettings.POLICY_NAMES[Math.max(0, Math.min(1, s.hazardPayMode))].toLowerCase()
-                + ", free port " + CASettings.POLICY_NAMES[Math.max(0, Math.min(1, s.freePortMode))].toLowerCase() + ", edicts " + (s.disableEdicts ? "off" : "on") + ", defense fleets " + (s.disableDefenseFleets ? "off" : "on"))) {
+                + ", free port " + CASettings.POLICY_NAMES[Math.max(0, Math.min(1, s.freePortMode))].toLowerCase() + ", edicts " + (s.disableEdicts ? "off" : "on") + ", defense fleets " + (s.disableDefenseFleets ? "off" : "on")
+                + (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("nexerelin") ? ", war fleets " + CASettings.WAR_NAMES[Math.max(0, Math.min(2, s.warMode))].toLowerCase() : ""))) {
             row(t, "Hazard pay", CASettings.POLICY_NAMES[Math.max(0, Math.min(1, s.hazardPayMode))], "Auto", "hazard", true);
             if (s.hazardPayMode == 0) {
                 row(t, "Hazard pay where growth is at least", Math.round(s.hazardPayColonyShare * 100f) + "% faster", "25%", "hpcol", false);
@@ -275,6 +277,14 @@ public class CASetupUI {
             row(t, "Free port", CASettings.POLICY_NAMES[Math.max(0, Math.min(1, s.freePortMode))], "Auto", "freeport", true);
             row(t, "Senate edicts", s.disableEdicts ? "Off" : "Enact", "Enact", "edicts", true);
             row(t, "Emergency defense fleets (Nexerelin)", s.disableDefenseFleets ? "Off" : "Send when threatened", "Send when threatened", "defense", true);
+            if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("nexerelin")) {
+                row(t, "War fleets (Nexerelin)", CASettings.WAR_NAMES[Math.max(0, Math.min(2, s.warMode))], "Protect and strike back", "war", true);
+                t.addPara("Relief fleets for sieges, defense fleets where the threat is high or a colony crisis is coming, base strikes on "
+                        + "pirate and Pather bases near your colonies, and (strike back) raids on the markets that attacked you. Never "
+                        + "invasions or new colonies, and only against factions already hostile to you. One a day, keeping 40%% of fleet "
+                        + "request points for emergencies; spending freely (10M or more), up to 3 a day, bigger, every known base, a "
+                        + "standing defense fleet at every colony, paid from the surplus.", Misc.getGrayColor(), 6f);
+            }
         }
         if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("nexerelin")
                 && group(t, "spies", "Agents (Nexerelin)", CASettings.SPY_NAMES[Math.max(0, Math.min(2, s.spyMode))].toLowerCase()
@@ -445,6 +455,7 @@ public class CASetupUI {
         else if (k.equals("spec")) s.disableSpecialties = !s.disableSpecialties;
         else if (k.equals("stab")) s.disableStabilizers = !s.disableStabilizers;
         else if (k.equals("defense")) s.disableDefenseFleets = !s.disableDefenseFleets;
+        else if (k.equals("war")) s.warMode = (Math.max(0, Math.min(2, s.warMode)) + 1) % 3;
         else if (k.equals("ambfocus")) s.ambassadorFocus = (Math.max(0, Math.min(3, s.ambassadorFocus)) + 1) % 4;
         else if (k.equals("ambstop")) s.ambassadorStopAt = (Math.max(0, Math.min(3, s.ambassadorStopAt)) + 1) % 4;
         else if (k.startsWith("fprio_")) {
