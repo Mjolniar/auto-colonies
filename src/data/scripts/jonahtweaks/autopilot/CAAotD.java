@@ -66,7 +66,7 @@ public class CAAotD {
     /** True when the build menu would offer this building here: not hidden and every requirement met. */
     public static boolean allows(String id, MarketAPI m, Set<String> hidden) {
         if (!enabled()) return true;
-        if (!link()) return false;
+        if (!link()) return fallbackAllows(id);
         if (hidden.contains(id)) return false;
         try { return unmet(id, m).isEmpty(); }
         catch (Throwable t) {
@@ -76,6 +76,20 @@ public class CAAotD {
     }
 
     public static boolean allows(String id, MarketAPI m) { return allows(id, m, hidden(m)); }
+
+    /**
+     * Building Menu Overhaul is on but its code can't be read (an update renamed something): instead of building nothing at
+     * all (before 2.38.0), what research would lock stays locked and the rest is open. Without Vaults of Knowledge, BMO
+     * locks nothing by research. With it, Ashes of the Domain's own buildings stay locked, and the vanilla ones it gates
+     * (CAResearch.GATES) only open once their tech is researched; another mod's building is open.
+     */
+    static boolean fallbackAllows(String id) {
+        if (!Global.getSettings().getModManager().isModEnabled("aotd_vok")) return true;
+        if (id.startsWith("aotd_")) return false;
+        CAResearch.link();
+        for (String[] g : CAResearch.GATES) if (g[1].equals(id)) return CAResearch.forPlayer(g[0]);
+        return true;
+    }
 
     /** Why the build menu locks this building here (for AotD, the research it needs), or null when it's open. */
     public static String lockReason(String id, MarketAPI m) {

@@ -271,7 +271,7 @@ public class CAEndgame {
     static int openKeptIndustrySteps(MarketAPI m, CAPlan.Plan plan) {
         int n = 0;
         for (CAPlan.Step st : plan.steps) {
-            if (st.kind != CAPlan.Kind.BUILD || st.done(m) || !keepsPlanBonus(m, plan, st.id) || !CAEngine.isIndustry(st.id)) continue;
+            if (!keepsPlanBonus(m, plan, st.id) || !CAPlan.needsSlot(m, plan, st)) continue;   // 2.38.0: not blocked, reachable, one per chain
             n++;
         }
         return n;

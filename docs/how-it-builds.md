@@ -32,6 +32,8 @@ With Terraforming Made Easy, a plan can aim for one of its special worlds instea
 
 Plan steps get a priority boost, the next step most of all, but a plan never forces a bad building. If the next step is blocked by research or something else, the colony still builds whatever is worth the most on its own in the meantime. A step that research still locks shows what it needs, and with Vaults of Knowledge, research works toward it.
 
+And if a step can't be reached at all in your game (research you're not running, a blueprint you don't have, a deposit the planet doesn't have, a mod you took out), it doesn't hang around forever. After 60 days with no way to it, it stops getting the boost and stops holding an industry slot, and the log tells you. The moment a way opens up, it counts again. Same for a Terraforming Made Easy world that can't form: it gets dropped for a year and the colony goes back to the normal plan for its goal. So whatever mods you have or don't have, the plan only ever chases what it can actually get to.
+
 ## How it picks
 
 Every option the colony could build or upgrade gets a score:

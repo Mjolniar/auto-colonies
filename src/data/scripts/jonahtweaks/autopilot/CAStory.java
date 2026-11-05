@@ -16,6 +16,7 @@ public class CAStory {
         for (Industry ind : m.getIndustries()) {
             try {
                 if (ind.isHidden() || !ind.isFunctional() || ind.isImproved() || !ind.canImprove() || c.locks.contains(ind.getId())) continue;
+                if (CAMods.noImprove(ind.getId())) continue;   // its improvement does nothing (Yunru's Advent Outreach)
                 int p = CAItems.industryPriority(ind);
                 if (p < bestP) { bestP = p; best = ind; }
             } catch (Throwable t) { CADiagnostics.quarantine(ind.getId(), "improvement check", t); }

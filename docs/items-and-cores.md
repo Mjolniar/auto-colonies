@@ -42,6 +42,14 @@ A better core replaces a lesser one, which goes back to storage. Cores also add 
 
 **Alpha cores** can be **Only where removable** (recommended), Anywhere, or Never. **Alpha cores in research buildings** set to **First** puts Alphas into Vaults of Knowledge Research Facilities and Black Sites before anywhere else, since there they cut the research costs.
 
+### Omega cores
+
+With **Omega Core Everywhere** or **Astral Ascension Renewed** installed, you can drop Omega cores in Autopilot Storage too. Without either one, an Omega core barely does anything in a colony, so storage won't take them.
+
+- With Omega Core Everywhere, one goes into whichever building it does the most in (that mod doubles a lot of things: output, income, fleets). A core in a building doesn't count toward inspections at all.
+- With Astral Ascension Renewed, one can govern a colony instead, which is usually the better spot by a mile. As an administrator it counts 10 inspection points though, so it only happens where your **Inspection risk** setting allows that. Otherwise the log tells you it's your call.
+- Once placed, it stays put. The manager never swaps out an AI core administrator, which matters a lot with Astral Ascension Renewed: past size 10, taking that core away starts a civil war.
+
 ## Hegemony inspections
 
 The Hegemony only inspects a colony with more than 7 inspection points (cores add points). **Inspection risk** decides how many a colony may hold:

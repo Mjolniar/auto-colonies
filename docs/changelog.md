@@ -2,6 +2,35 @@
 
 Every version, newest first. If you're wondering why the first version on here is 2.1.0: this started as **Jonah Tweaks**, a personal mod of little tweaks for my own games (bigger battle size, sticky combat autopilot, that kind of thing), and Colony Autopilot grew inside it until it became the main thing. 2.1.0 is when it went up on GitHub, and 2.6.0 was the first version with a downloadable release. The balance tweaks moved out into their own mod in 2.7.0, so this one only manages colonies.
 
+## 2.38.0 - 2026-11-05
+
+A bunch of new colony mods supported, a big fix for how mod buildings get measured, and a pass to make sure nothing ever gets stuck waiting on a mod (or a building) you don't have.
+
+**New mods supported** (all optional, any mix works, details in [Supported mods](supported-mods.md)):
+- **Omega Core Everywhere** and **Astral Ascension Renewed**: drop Omega cores in Autopilot Storage and they go where they do the most. In a building with Omega Core Everywhere (they don't count toward Hegemony inspections there), or governing a colony with Astral Ascension Renewed, but only where your Inspection risk setting allows its 10 inspection points. The manager never swaps out an AI core administrator, so it'll never set off that mod's civil war.
+- **Niko's Scavengable Industries**: only blueprints you've learned get built, and the ones that do big things you'd want to decide on (Blast-Core Mining eating your deposits, the spy buildings, the Cryosanctum's crisis, the size-5 Planetary Defense Network and a few more) are left to you.
+- **Junk Yard Dogs** and **Carter's Freetraders**: their forges and Biolab get built when they pay. Drugs and hand weapons your faction bans don't export without a free port now, from any mod's building, so they only count for what the colony needs itself.
+- **Vulpoids**: Organ Farms and the Biotech Facility, the Midas Nanoforge (never polluting a habitable world), the Mangonut tree, the Nanofiltration Core where it actually clears something, the Lobster Bioforge only where it doesn't kill the organs, and Profecto administrators. The Vulpoid Bioforge itself is left to you, since it starts the whole sanctions and Knights of Ludd story.
+- **Yunru Industries**, **Slightly Better Tech-Mining** and **Yunru's Worlds**: Secondary Drydocks valued by what it adds next to your Heavy Industry, Tech-Mining valued with Slightly Better Tech-Mining's much bigger numbers, Advent Outreach never improved (it does nothing), and the Bazaar left to you.
+- **Roider Union** got rechecked against 2.3.1: a couple of Union HQ numbers were off, and the Historical Roider Charter's extra output and range count now.
+
+**Mod watch.** The Diagnostics page (and the report file) now says how each of those mods is doing in your game, weekly: OK, WARN or FAIL, what's built where, whether measured buildings really make what the test colony said, and checks of its own for each mod (is the Omega core's double output actually applied, does the Omega-governed colony's size limit really go to 15, and so on).
+
+**Fixed:**
+- Mod buildings measured on the test colony were getting their output cut by fake shortages, since the test colony isn't in the economy and nothing's ever for sale there. Anything that needs inputs measured as making little or nothing (AotD's Artisanal Farming read zero food). Now the test colony has everything on hand, and inputs are counted separately like they always were.
+- The Paradise plan was missing Light Industry, Commerce and Waystation since 2.30.0 (they'd slipped into a code comment).
+- If Building Menu Overhaul's code ever can't be read (after an update, say), the manager used to build nothing at all anywhere. Now only what research would lock stays locked.
+- Fast buildout never ended for a colony that couldn't turn a profit, and that colony never got its plan, defenses or anything else. Now a day with nothing that pays runs the normal plan, and the buildout ends after 60 days of that or a year in total.
+- Hostile fleets that just live in a system (Remnant, IX patrols, a pirate base) kept a colony "under siege" forever, building nothing but defenses. After 30 days of only that, it's treated as how the system is. Fleets at the colony, blockades and raids still count.
+- The Bifrost Control Center step could never be built, so the Bifrost plan waited forever.
+- On a Floating City short on fuel, even the Fuel Production that would fix it was blocked.
+- A station line whose first station needs a blueprint you don't have meant no station at all; that colony picks by score now.
+- Special project producers the manager doesn't build don't sit in the plan anymore; you get a log line instead.
+- Surplus terraforming's markers on hazards it wants to keep now expire even with surplus terraforming off.
+- With Vaults of Knowledge, the first Research Facility is worth building when your plans have research-locked steps, even before research has ever run.
+
+**Nothing gets stuck anymore.** Every plan step gets checked each day for a way to it: can it (or something on the way to it) be built here, or will research the manager is running unlock it? A step with no way for 60 days stops holding the plan's top spot and its industry slot, and the log tells you. It counts again as soon as a way opens. A Terraforming Made Easy world whose own buildings are out of reach gets dropped for a year and the colony follows the plain plan for its goal. A world that needs Mining or Farming isn't picked where those can never go. And the slot a plan keeps free now counts one per upgrade chain (Heavy Industry and Orbital Works used to reserve two).
+
 ## 2.37.0 - 2026-11-05
 
 The fair play release. A review went through everything the mod does and anything that gave you something for free, or changed the game's rules, got fixed or removed.

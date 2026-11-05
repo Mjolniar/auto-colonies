@@ -174,6 +174,15 @@ public class CAEngine {
     public static Result evaluate(MarketAPI m, CAData.Profile profile, float minStability) {
         CAData.Colony col = CAData.get().colony(m.getId());
         String line = CAData.settings().stationLine;
+        // a station line whose first station can't be built here (a blueprint you don't have) meant no station at all (2.38.0)
+        String starter = CASettings.stationStarter(line);
+        if (starter != null && !"score".equals(line)) {
+            try {
+                IndustrySpecAPI ss = Global.getSettings().getIndustrySpec(starter);
+                // without a working spaceport no station can be built anyway, so only judge the line once there is one
+                if (ss == null || (m.hasSpaceport() && !ss.getNewPluginInstance(m).isAvailableToBuild())) line = "score";
+            } catch (Throwable t) { line = "score"; }
+        }
         Result r = new Result();
         if (CAHypershunt.is(m) || m.hasTag("market_no_industries_allowed")) {
             r.blocked = CAHypershunt.is(m) ? "Coronal Hypershunt: Ashes of the Domain allows no buildings here" : "This colony allows no buildings";
@@ -184,6 +193,8 @@ public class CAEngine {
         // the colony's own goal, not the threat-adjusted one the weights use: every other planner (terraforming, research)
         // reads the same plan, so a passing threat doesn't switch the world it's working toward (Zendia's gravity went back and forth)
         CAPlan.Plan plan = CAPlan.build(m, col.profile);
+        try { CAPlan.track(m, plan); }   // plan steps with no way to them stop holding rank and slots (2.38.0)
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "plan step check failed at " + m.getName(), t); }
         Industry building = Misc.getCurrentlyBeingConstructed(m);
         if (building != null) r.blocked = "Already building " + building.getCurrentName();
         String full = CAGrand.full(m);   // the vanilla colony screen shows 12 buildings; a 13th couldn't be seen or managed
@@ -222,9 +233,12 @@ public class CAEngine {
                 p.cost = inst.getBuildCost(); p.days = inst.getBuildTime();
                 p.recording = true;
                 boolean worth = true;
-                if (estimated(id) && !CAEstimates.has(id)) worth = estimate(m, id, p, deficit);
-                else if (measuredFx != null) { p.measured = true; CASimulator.apply(m, measuredFx, null, p, deficit); }
-                else effects(m, id, p, deficit);   // vanilla formulas, and CAEstimates' at the end
+                scoring(inst, m);
+                try {
+                    if (estimated(id) && !CAEstimates.has(id)) worth = estimate(m, id, p, deficit);
+                    else if (measuredFx != null) { p.measured = true; CASimulator.apply(m, measuredFx, null, p, deficit); }
+                    else effects(m, id, p, deficit);   // vanilla formulas, and CAEstimates' at the end
+                } finally { scoring(null, null); }
                 p.recording = false;
                 if (!worth) continue;
                 trust(spec, p, p.measured);
@@ -263,15 +277,18 @@ public class CAEngine {
                     p.id = up; p.name = upSpec.getName(); p.verb = "Upgrade to"; p.upgrade = true; p.existing = ind;
                     p.cost = upInst.getBuildCost(); p.days = upInst.getBuildTime();
                     p.recording = true;
-                    if (CAMods.has(up)) {
-                        if (!CAMods.apply(m, up, p, deficit)) continue;   // VIC treatment, Roider Union HQ
-                    } else if (upMeasured) {
-                        // measure both on the same probe colony so the difference is like for like
-                        CASimulator.Effects to = CASimulator.measure(m, up), from = CASimulator.measure(m, ind.getId());
-                        if (to.error != null || from.error != null) continue;
-                        p.measured = true;
-                        CASimulator.apply(m, to, from, p, deficit);
-                    } else effects(m, up, p, deficit);
+                    scoring(upInst, m);
+                    try {
+                        if (CAMods.has(up)) {
+                            if (!CAMods.apply(m, up, p, deficit)) continue;   // VIC treatment, Roider Union HQ
+                        } else if (upMeasured) {
+                            // measure both on the same probe colony so the difference is like for like
+                            CASimulator.Effects to = CASimulator.measure(m, up), from = CASimulator.measure(m, ind.getId());
+                            if (to.error != null || from.error != null) continue;
+                            p.measured = true;
+                            CASimulator.apply(m, to, from, p, deficit);
+                        } else effects(m, up, p, deficit);
+                    } finally { scoring(null, null); }
                     p.recording = false;
                     trust(upSpec, p, p.measured);
                     CASynergies.score(syn, p);
@@ -373,8 +390,41 @@ public class CAEngine {
         if (u > 0) p.lines.add("Upkeep about " + Misc.getDGSCredits(u) + " per month" + (Math.abs(f - 1f) > 0.05f ? " (corrected from your colonies)" : ""));
     }
 
+    /**
+     * The building being scored and where, while evaluate() scores it, so supply() can ask the building whether its output is
+     * legal there (Industry.isSupplyLegal: vanilla's Heavy Industry makes hand weapons legally, a mod building may not).
+     */
+    static Industry supplier;
+    static MarketAPI supplierAt;
+
+    static void scoring(Industry ind, MarketAPI m) { supplier = ind; supplierAt = m; }
+
+    /**
+     * Output the colony's faction bans (drugs, hand weapons and organs for yours) and the building doesn't make legally: the
+     * game gives it no export income unless the colony is a free port (CommodityMarketData: an illegal source exports
+     * nothing), so it's only worth the shortage it covers at the colony itself (Carter's Freetraders' Biolab and Grey
+     * Industries, 2.38.0). Returns the units that count, or -1 when the output is legal.
+     */
+    static int illegalUnits(String com, int units) {
+        if (supplier == null || supplierAt == null) return -1;
+        try {
+            CommodityOnMarketAPI c = supplierAt.getCommodityData(com);
+            if (c == null || supplier.isSupplyLegal(c)) return -1;
+            return Math.min(units, Math.max(0, c.getDeficitQuantity()));
+        } catch (Throwable t) { return -1; }
+    }
+
     static void supply(Pick p, String com, int units, Map<String, Integer> deficit) {
         if (units <= 0) return;
+        int local = illegalUnits(com, units);
+        if (local >= 0) {
+            float v = Global.getSettings().getCommoditySpec(com).getBasePrice() * unitValue * local * 1.5f;
+            p.fx[0] += v;
+            if (p.recording) { Integer was = p.supplied.get(com); p.supplied.put(com, (was == null ? 0 : was) + units); p.suppliedValue += v; }
+            p.lines.add("+" + units + " " + Global.getSettings().getCommoditySpec(com).getName() + ": illegal here without a free port, so it exports nothing"
+                    + (local > 0 ? "; covers " + local + " of this colony's own shortage, about " + Misc.getDGSCredits(v) + " per month" : ""));
+            return;
+        }
         float base = Global.getSettings().getCommoditySpec(com).getBasePrice();
         Integer d = deficit.get(com);
         float mult = (d != null && d > 0) ? 1.5f : 1f;
@@ -419,7 +469,8 @@ public class CAEngine {
         } else if (id.equals("techmining")) {
             int r = m.hasCondition("ruins_vast") ? 4 : m.hasCondition("ruins_extensive") ? 3 : m.hasCondition("ruins_widespread") ? 2 : 1;
             float left = m.getMemoryWithoutUpdate().contains("$core_techMiningMult") ? m.getMemoryWithoutUpdate().getFloat("$core_techMiningMult") : 1f;   // ruins deplete 5% a month
-            float v = 4000f * r * left * CADevelopment.techMiningMult(m);   // x1.7 at an AotD Archeo-Site
+            // Slightly Better Tech-Mining: far richer finds, by colony size (2.38.0)
+            float v = (CAMods.sbtm() ? CAMods.sbtmMonthly(m, left) : 4000f * r * left) * CADevelopment.techMiningMult(m);   // x1.7 at an AotD Archeo-Site
             p.fx[0] += v;
             p.lines.add("Salvage from the ruins: about " + Misc.getDGSCredits(v) + " per month in value");
         } else if (id.equals("refining")) {

@@ -131,7 +131,8 @@ public class CADevelopment {
             int fuel = thrusterFuel(inst);
             CommodityOnMarketAPI c = m.getCommodityData("fuel");
             int shortBy = c == null ? 0 : Math.max(c.getDeficitQuantity(), c.getMaxDemand() + fuel - c.getAvailable());
-            if (shortBy > 0) {
+            Integer own = p.supplied.get("fuel");   // the building that fixes the shortage goes ahead (2.38.0: it was blocked too)
+            if (shortBy > 0 && (own == null || own < shortBy)) {
                 if (CALog.once("floatfuel:" + m.getId())) CALog.add(m.getName() + ": Floating City: nothing new is built until fuel covers the thrusters "
                         + "(each building adds 3-5 fuel demand; a shortage lowers the city until it's lost)", true);
                 return false;

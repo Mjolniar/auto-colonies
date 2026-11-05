@@ -307,6 +307,13 @@ public class CAProjects {
             CASettings s = CAData.settings();
             for (Plan pl : last.plans) {
                 String forWhat = forWhat(pl.good);
+                // a producer Auto doesn't build (not rated, or measured with measured buildings set to Ignore) would sit
+                // first in the plan forever (2.38.0): it's yours to build instead
+                if (!CADiagnostics.autopilotBuilds(pl.building) && !CAEngine.isSupported(pl.building)) {
+                    if (CALog.once("projn:" + forWhat + ":" + pl.good + ":" + pl.building))
+                        CALog.add(pl.hostName + ": " + buildingName(pl.building) + " would make " + name(pl.good) + " (" + forWhat + "), but Autopilot doesn't build it; yours to build", true);
+                    continue;
+                }
                 if (s.projectSupplyMode == 0) {
                     List<CAPlan.Step> l = STEPS.get(pl.host);
                     if (l == null) { l = new ArrayList<CAPlan.Step>(); STEPS.put(pl.host, l); }
