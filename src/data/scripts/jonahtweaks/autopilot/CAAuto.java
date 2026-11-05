@@ -30,6 +30,8 @@ public class CAAuto {
         CABudget.migrateUpkeepCap(s);
         try { CACalibrate.run(now); }   // weekly: compare estimates with what your buildings really do
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "calibration failed", t); }
+        try { CAModWatch.weekly(now); }   // weekly: how each colony mod is doing, into the Diagnostics report (2.38.0)
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "mod watch failed", t); }
         try { CASiege.update(d); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "siege check failed", t); }
         try { CAStores.daily(); }   // shipments between colonies' Autopilot Storage arrive

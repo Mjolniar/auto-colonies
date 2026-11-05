@@ -34,6 +34,8 @@ public class CABuildout {
     public static final float[] FLOORS = {50000f, 100000f, 250000f, 500000f, 1000000f, 2000000f};
     static final float[] OFFERED = {250000f, 100000f, 500000f, 1000000f};
     public static final float DEFAULT_FLOOR = 250000f, PROFIT_DAYS = 30f, OFFER_DAYS = 30f;
+    /** A buildout ends after this many days in a row with nothing that pays to build, or this long in all (2.38.0). */
+    public static final float IDLE_DAYS = 60f, MAX_DAYS = 365f;
     static float checkTimer = 0f;
 
     public static float floor(CAData.Colony c) { return c.buildoutFloor > 0f ? c.buildoutFloor : DEFAULT_FLOOR; }
@@ -105,6 +107,8 @@ public class CABuildout {
         c.buildout = true;
         c.buildoutFloor = floor;
         c.buildoutProfitSince = 0L;
+        c.buildoutSince = Global.getSector().getClock().getTimestamp();
+        c.buildoutIdleSince = 0L;
         CAAuto.nextPass.remove(m.getId());
         CALog.add(m.getName() + ": fast buildout started; spends down to " + Misc.getDGSCredits(floor)
                 + " until the colony has earned money for 30 days", true);
@@ -113,6 +117,8 @@ public class CABuildout {
     static void stop(MarketAPI m, CAData.Colony c, String why) {
         c.buildout = false;
         c.buildoutProfitSince = 0L;
+        c.buildoutSince = 0L;
+        c.buildoutIdleSince = 0L;
         CALog.add(m.getName() + ": fast buildout ended (" + why + "); the normal Auto budget applies now", true);
     }
 
@@ -133,6 +139,12 @@ public class CABuildout {
      */
     static boolean pass(MarketAPI m, CAData.Colony c, float now, boolean building) {
         if (finished(m, c)) return false;
+        // a colony that can't turn a profit never ended its buildout, and the buildout skipped its plan, defenses and the
+        // endgame for good (2.38.0): a day with nothing that pays runs the normal pass, and the buildout ends after
+        // IDLE_DAYS of that, or after MAX_DAYS whatever happens
+        CampaignClockAPI clock = Global.getSector().getClock();
+        if (c.buildoutSince == 0L) c.buildoutSince = clock.getTimestamp();
+        if (clock.getElapsedDaysSince(c.buildoutSince) >= MAX_DAYS) { stop(m, c, "a year without earning money for 30 days in a row; its plan takes over"); return false; }
         CAData d = CAData.get();
         CASettings s = d.settings;
         CAAuto.nextPass.put(m.getId(), now + 1f);
@@ -145,6 +157,14 @@ public class CABuildout {
             if (q.upgrade) { if (bestUp == null || ratio > upRatio) { bestUp = q; upRatio = ratio; } }
             else if (!building && (bestNew == null || ratio > newRatio)) { bestNew = q; newRatio = ratio; }
         }
+        if (bestUp == null && bestNew == null && !building) {
+            if (c.buildoutIdleSince == 0L) c.buildoutIdleSince = clock.getTimestamp();
+            else if (clock.getElapsedDaysSince(c.buildoutIdleSince) >= IDLE_DAYS) {
+                stop(m, c, "nothing that pays has been worth building for " + Math.round(IDLE_DAYS) + " days; its plan takes over");
+            }
+            return false;   // nothing that pays today: the normal pass runs
+        }
+        c.buildoutIdleSince = 0L;
         CAEngine.Pick[] order = upRatio >= newRatio ? new CAEngine.Pick[]{bestUp, bestNew} : new CAEngine.Pick[]{bestNew, bestUp};
         float floor = floor(c);
         for (CAEngine.Pick p : order) {

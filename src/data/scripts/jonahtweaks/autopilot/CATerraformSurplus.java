@@ -144,8 +144,10 @@ public class CATerraformSurplus {
         CAData d = CAData.get();
         CASettings s = d.settings;
         CATerraSim.lockedValue.clear();
-        if (s.surplusTerraform >= 2 || CASurplus.line(s) <= 0f) { CATerraSim.summary = null; return; }
+        // marks first: with surplus terraforming off they never expired, and a marked hazard stayed protected for good (2.38.0)
+        if (s.surplusTerraform >= 2) { d.enablers().clear(); d.enablerAt().clear(); }
         expireEnablers(d);
+        if (s.surplusTerraform >= 2 || CASurplus.line(s) <= 0f) { CATerraSim.summary = null; return; }
         List<Cand> cands = new ArrayList<Cand>();
         String lockedText = null; float lockedBest = 0f;
         for (MarketAPI m : auto) {

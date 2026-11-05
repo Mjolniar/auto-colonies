@@ -61,7 +61,20 @@ public class CACompat {
         ENTRIES.add(new Entry("alcoholism", "Substance.Abuse", "1.1.d", a("alcohol_brewery"), NONE, a("alcoholism_recipe_book", "alcoholism_stout_item"), a("alcoholism_stout_c"), null));
         ENTRIES.add(new Entry("vic", "Volkov Industrial Conglomerate", "1.6.3a", a("vic_antiEVCt1", "vic_antiEVCt2", "vic_antiEVCt3"), a("VIC_VBomb_scar"),
                 a("vic_soil_nanites2"), a("vic_genetech"), null));
-        ENTRIES.add(new Entry("roider", "Roider Union", "2.3.1", a("roider_dives", "roider_union_hq"), NONE, NONE, NONE, null));
+        ENTRIES.add(new Entry("roider", "Roider Union", "2.3.1", a("roider_dives", "roider_union_hq"), NONE, a(CAMods.CHARTER), NONE, null));
+        // 2.38.0
+        ENTRIES.add(new Entry("omega_core_everywhere", "Omega Core Everywhere", "1.2.2", NONE, NONE, NONE, a(CAOmega.CORE), () -> CAOmega.linkOce()));
+        ENTRIES.add(new Entry("astral_ascension_renewed", "Astral Ascension Renewed", "1.0.1", NONE,
+                a("population_11", "aar_arcology_world", "aar_ecumenopolis", "aar_crowned_world"), NONE, a(CAOmega.CORE), () -> CAOmega.adminPlugin() != null));
+        ENTRIES.add(new Entry("niko_scavengableindustries", "Niko's Scavengable Industries", "1.0.0",
+                a("NSI_blastCoreMining", "NSI_SpyBureau", "NSI_SpyOutpost", "NSI_cryosanctum", "NSI_outpostDefense", "NSI_ASBUplink", "NSI_expertDockworks"), NONE, NONE, NONE, null));
+        ENTRIES.add(new Entry("JYD", "Junk Yard Dogs", "3.7.0", a("JYD_forge", "JYD_scrap"), NONE, NONE, NONE, null));
+        ENTRIES.add(new Entry("CFT", "Carter's Freetraders", "3.3.1", a("CFT_biolab", "CFT_greyindustry"), NONE, NONE, NONE, null));
+        ENTRIES.add(new Entry("vulpoids", "Vulpoids", "0.10.3", a("organfarms", "biofacility", "vulpoidagency"), NONE,
+                a("vulpoid_biofactory", "lobster_bioforge", "midas_nanoforge", "air_filter_core"), a("vulpoids"), null));
+        ENTRIES.add(new Entry("yunruindustries", "Yunru Industries", "2025-03-30", a(CAMods.DRYDOCK, CAMods.BAZAAR, "yunru_advent"), NONE, NONE, NONE, null));
+        ENTRIES.add(new Entry("SBTM", "Slightly Better Tech-Mining", "2025-03-29", a("techmining"), NONE, NONE, NONE, () -> CAMods.sbtm()));
+        ENTRIES.add(new Entry("yunruworlds", "Yunru's Worlds", "2025-07-06", NONE, a("yunru_gaia", "yunru_hephaestus", "yunru_crashedcryo"), NONE, NONE, null));
         ENTRIES.add(new Entry("wyv_planetaryShieldAccessControl", "Planetary Shield: Access Control", "1.7", a("planetaryshield"), NONE, NONE, NONE, () -> CAMods.psac()));
         ENTRIES.add(new Entry("US", "Unknown Skies", "3.0.3", NONE, a("US_fluorescent"), NONE, NONE, null));
         ENTRIES.add(new Entry("niko_morePlanetaryConditions", "What We Left Behind", "4.5.3", NONE, a("MPC_fracturedWorld"), NONE, NONE, null));

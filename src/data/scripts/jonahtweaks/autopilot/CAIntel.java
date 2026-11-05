@@ -361,6 +361,22 @@ public class CAIntel extends BaseIntelPlugin {
                 t.addPara("%s " + CALog.esc(e.version) + ": " + CALog.esc(CACompat.describe(e)), 4f, lc, e.name);
             }
         }
+        // mod watch (2.38.0): each colony mod's verdict and its warnings in this game
+        List<org.json.JSONObject> watch = CAModWatch.latest();
+        if (!watch.isEmpty()) {
+            t.addPara("Mod watch (also in the report file, updated weekly):", 8f);
+            for (org.json.JSONObject o : watch) {
+                String v = o.optString("verdict");
+                Color lc = "OK".equals(v) ? Misc.getPositiveHighlightColor() : "WARN".equals(v) ? hl : Misc.getNegativeHighlightColor();
+                t.addPara("%s " + CALog.esc(o.optString("name")) + ": " + CALog.esc(o.optString("summary")), 4f, lc, v);
+                org.json.JSONArray cs = o.optJSONArray("checks");
+                for (int i = 0; cs != null && i < cs.length(); i++) {
+                    org.json.JSONObject c = cs.optJSONObject(i);
+                    if (c == null || !("WARN".equals(c.optString("result")) || "FAIL".equals(c.optString("result")))) continue;
+                    t.addPara("    " + CALog.esc(c.optString("text")), gray, 2f);
+                }
+            }
+        }
         for (Map.Entry<String, String> e : CABreaker.tripped().entrySet())
             t.addPara("Paused this session: %s (didn't take effect three times; last at " + CALog.esc(e.getValue()) + ")", 4f, Misc.getNegativeHighlightColor(), e.getKey());
         if (!CAConst.drift.isEmpty()) t.addPara("Mod values that changed since Autopilot was written (the new ones are used): " + CALog.esc(String.join("; ", CAConst.drift)), gray, 4f);

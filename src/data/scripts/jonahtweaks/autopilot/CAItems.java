@@ -59,6 +59,20 @@ public class CAItems {
         // more than it adds); the Dimensional Stove only multiplies bonuses a bakery already has; the Access Router writes a
         // modifier Tech-Mining never reads, so it does nothing in 0.98a
         ITEM_VALUE.put("uaf_rice_cooker", 0f); ITEM_VALUE.put("uaf_dimen_microwave", 0f); ITEM_VALUE.put("uaf_access_router", 0f);
+        // Vulpoids 0.10.3 (VulpoidModPlugin's item effects)
+        ITEM_VALUE.put("midas_nanoforge", 90f);    // a pristine nanoforge's +3 output and +50% quality, eating ore instead of metals; pollutes like vanilla's
+        ITEM_VALUE.put("lobster_bioforge", 40f);   // lobsters into the colony's storage every month; only in a Biotech Facility (itemScore)
+        ITEM_VALUE.put("air_filter_core", 50f);    // Population & Infrastructure: suppresses pollution, extreme weather and toxic air (airFilterFits)
+    }
+
+    /**
+     * Vulpoids' Nanofiltration Core: worth it only where it suppresses something (pollution, extreme weather, toxic air) and
+     * the colony has the 4 volatiles and 4 transplutonics it needs on hand, since a shortage adds up to +50% hazard instead.
+     */
+    static boolean airFilterFits(MarketAPI m) {
+        if (!m.hasCondition("pollution") && !m.hasCondition("extreme_weather") && !m.hasCondition("toxic_atmosphere")) return false;
+        try { return m.getCommodityData("volatiles").getAvailable() >= 4 && m.getCommodityData("rare_metals").getAvailable() >= 4; }
+        catch (Throwable t) { return false; }
     }
 
     /**
@@ -78,6 +92,8 @@ public class CAItems {
     /** itemScore in a given building: UAF's Garrison Transmitter does a third as much in ground defenses as in a port; never a forge it would pollute. */
     static float itemScore(String id, MarketAPI m, CAData.Profile p, Industry ind) {
         if (ind != null && wouldPollute(id, m, ind)) return 0f;
+        // Vulpoids: the Lobster Bioforge ends an Organ Farm's organs; a Biotech Facility keeps them (OrganFarm, 2.38.0)
+        if (id.equals("lobster_bioforge") && (ind == null || !ind.getId().equals("biofacility"))) return 0f;
         float sc = itemScore(id, m, p);
         if (sc <= 0f || ind == null) return sc;
         if (id.equals("uaf_garrison_transmitter") && (ind.getId().equals("grounddefenses") || ind.getId().equals("heavybatteries"))) sc /= 3f;
@@ -86,7 +102,10 @@ public class CAItems {
     /** Items this placer never installs: Ashes of the Domain blanks the Coronal Hypershunt Tap's buildings (it builds receivers),
      *  the AquaOrb has no effect so the game can't install it, and the Hyperdimensional Processor is for research. */
     static final Set<String> NEVER = new HashSet<String>(Arrays.asList("coronal_portal", "aotd_aquaorb", "omega_processor",
-            "planetkiller", "jdp_lobster_eggs"));   // JaydeePiracy: a story item, and +1 lobster for +8 Pather interest
+            "planetkiller", "jdp_lobster_eggs",   // JaydeePiracy: a story item, and +1 lobster for +8 Pather interest
+            // Vulpoids' Vulpoid Bioforge starts its acceptance story: sector-wide vulpoid demand, then sanctions on the colony
+            // holding it, a Knights of Ludd fleet and a saturation bombardment. Where it goes is your call (2.38.0)
+            "vulpoid_biofactory"));
 
     /** True when Autopilot Storage holds an Industrial Evolution VPC chip. */
     public static boolean storageHasVPC() {
@@ -135,6 +154,7 @@ public class CAItems {
             if (lv <= 0f && m.hasCondition("hot") && planNeedsHeat(m, p)) lv = 1000f;   // its Extreme Heat opens a plan step
             return lv > 0f ? lv / 1000f : 0f;
         }
+        if (id.equals("air_filter_core") && !airFilterFits(m)) return 0f;
         Float v = ITEM_VALUE.get(id);
         if (v == null) v = modItemValue(id);
         if (v <= 0f) return 0f;
@@ -159,6 +179,7 @@ public class CAItems {
         if (placeItem(d, s, markets)) return;
         if (!s.disableStabilizers && s.allowRemovals && convertFuel(d, s, markets)) return;   // replaces a building, so only with Allow removals
         if (s.useAICores && placeCore(d, s, markets)) return;
+        if (s.useAICores && CAOmega.run(d, s, markets)) return;   // Omega Core Everywhere / Astral Ascension Renewed (2.38.0)
         if (s.adminOptimal && (assignAdmin(d, markets) || moveAdmin(markets))) return;
         if (s.adminHiring) hireAdmin(d, s, markets);
         else if (adminsNeeded(d) > 0 && CALog.once("admin:need:off:" + adminsNeeded(d)))
@@ -1092,7 +1113,18 @@ public class CAItems {
 
     /** What p's skills add at m: Industrial Planning's +1 to every commodity the colony's industries make. Other mods' admin skills count as nothing. */
     static float skillWorth(MarketAPI m, PersonAPI p) {
-        if (p == null || p.getStats() == null || p.getStats().getSkillLevel("industrial_planning") <= 0f) return 0f;
+        if (p == null || p.getStats() == null) return 0f;
+        // Vulpoids' Profecto administrators: their own skill gives +1 stability and +20% accessibility (VulpoidBrain); they
+        // learn Industrial Planning after a year, which the line below then counts
+        float vulp = p.getStats().getSkillLevel("vulpoid_brain") > 0f ? stabilityWorth(m, m.getStability().getModifiedValue(), 1f) + 0.2f * ACCESS_WORTH : 0f;
+        if (p.getStats().getSkillLevel("industrial_planning") <= 0f) return vulp;
+        return vulp + planningWorth(m);
+    }
+
+    /** Credits a month for +100% accessibility, at the Balanced goal's weight (CAEngine.WEIGHTS). */
+    static final float ACCESS_WORTH = 20000f;
+
+    static float planningWorth(MarketAPI m) {
         Set<String> made = new HashSet<String>();
         for (Industry ind : m.getIndustries()) {
             if (ind.isHidden() || !ind.isFunctional()) continue;

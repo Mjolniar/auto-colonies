@@ -161,6 +161,7 @@ public class CAWorldPlanner {
         for (String w : WORLDS) {
             float f = fit(w, prof);
             if (f <= 0f) continue;
+            if (CAPlan.worldDead(m, w)) continue;   // its own steps were out of reach: the plain plan for a year (2.38.0)
             Row r = rows().get(w);
             if (r == null) continue;
             Sim sim = new Sim();
@@ -190,6 +191,14 @@ public class CAWorldPlanner {
             CAPlan.Plan p = new CAPlan.Plan();
             p.name = name(w); p.world = w;
             List<Boolean> ia = new ArrayList<Boolean>();
+            // the world's industries must be possible once its projects are done: Mining needs a deposit and Farming farmland
+            // (a water world's Aquaculture counts), which Hive, Death and Waste worlds' projects never add (2.38.0)
+            boolean possible = true;
+            for (String[] g : groups(r.likedInd, new ArrayList<Boolean>())) for (String ind : g) {
+                if (ind.equals("mining") && !m.hasIndustry("mining") && !anyPrefix(done.conds, "ore_", "rare_ore_", "volatiles_", "organics_")) possible = false;
+                if (ind.equals("farming") && !m.hasIndustry("farming") && !m.hasIndustry("aquaculture") && !anyPrefix(done.conds, "farmland_")) possible = false;
+            }
+            if (!possible) continue;
             for (String[] g : groups(r.likedInd, ia)) for (String ind : g) {
                 p.exact.add(ind);
                 String label = industryName(ind) + (ind.equals("mining") && m.hasIndustry("IndEvo_SwitchableMining") ? " (vanilla Mining; Specialized Mining doesn't count)" :
@@ -221,6 +230,11 @@ public class CAWorldPlanner {
             if (score > bestScore) { bestScore = score; best = p; }
         }
         return best;
+    }
+
+    static boolean anyPrefix(Set<String> conds, String... prefixes) {
+        for (String c : conds) for (String p : prefixes) if (c.startsWith(p)) return true;
+        return false;
     }
 
     static boolean isIndustry(String id) {

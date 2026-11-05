@@ -119,39 +119,67 @@ public class CAMods {
         return best;
     }
 
+    static final String CHARTER = "roider_charter";
+
+    /** The Historical Roider Charter in the colony's Dives or Union HQ: +1 to every mined output and +6 light-years of range (RoiderItems). */
+    static boolean charter(MarketAPI m) {
+        for (String id : new String[]{"roider_dives", "roider_union_hq"}) {
+            Industry ind = m.getIndustry(id);
+            if (ind != null && ind.getSpecialItem() != null && CHARTER.equals(ind.getSpecialItem().getId())) return true;
+        }
+        return false;
+    }
+
+    static float charterRange() { return CAConst.num("roiderUnion.ids.RoiderItems", "CHARTER_MINING_RANGE_BONUS", 6f); }
+
+    /** Unknown Skies' Psychoactive (and Shrooms) worlds: Roider miners need no drugs there; Psychoactive also takes 1 off each mined output (DivesSupplyInteractor). */
+    static boolean noDrugs(MarketAPI m) { return m.hasCondition("US_mind") || m.hasCondition("US_shrooms"); }
+
+    /** Mined units of one commodity at this range: Roider's flat table (not by colony size), +1 with a Charter, -1 on a Psychoactive world. */
+    static int mined(MarketAPI m, String com, float range, int extra) {
+        Integer b = bestBonus(m, com, range);
+        if (b == null) return 0;
+        return Math.max(0, base(com) + b + extra);
+    }
+
+    static int extra(MarketAPI m) { return (charter(m) ? 1 : 0) - (m.hasCondition("US_mind") ? 1 : 0); }
+
     static int output(MarketAPI m, float range, CAEngine.Pick p, Map<String, Integer> deficit, boolean add) {
-        int total = 0;
+        int total = 0, x = extra(m);
         for (String com : MINED) {
-            Integer b = bestBonus(m, com, range);
-            if (b == null) continue;
-            int u = Math.max(0, base(com) + b);
+            int u = mined(m, com, range, x);
             total += u;
             if (add && u > 0) CAEngine.supply(p, com, u, deficit);
         }
         return total;
     }
 
-    /** Dives (1 ly) or the step up to Union HQ (6 ly): what's mined, less for the HQ what the Dives already mined. False when nothing is in reach. */
+    /**
+     * Dives (1 ly) or the step up to Union HQ (6 ly): what's mined, less for the HQ what the Dives already mined. False when
+     * nothing is in reach. Checked against Roider Union 2.3.1's code (2.38.0): the HQ's crew is the colony's size (not size - 3)
+     * and it needs 3 drugs too; neither needs drugs on Unknown Skies' Psychoactive or Shrooms worlds; a Charter adds 1 to each
+     * output and 6 light-years of range.
+     */
     static boolean roiderApply(MarketAPI m, String id, CAEngine.Pick p, Map<String, Integer> deficit) {
         int s = m.getSize();
+        float add = charter(m) ? charterRange() : 0f;
+        int drugs = noDrugs(m) ? 0 : 3;
         if (id.equals("roider_dives")) {
-            if (output(m, divesRange(), p, deficit, true) <= 0) return false;
+            if (output(m, divesRange() + add, p, deficit, true) <= 0) return false;
             CAEngine.supply(p, "crew", 3, deficit);
-            CAEngine.demand(p, "heavy_machinery", 1, deficit); CAEngine.demand(p, "drugs", 3, deficit); CAEngine.demand(p, "supplies", 2, deficit);
-            p.lines.add("Roider miners work deposits within 1 light-year");
+            CAEngine.demand(p, "heavy_machinery", 1, deficit); CAEngine.demand(p, "drugs", drugs, deficit); CAEngine.demand(p, "supplies", 2, deficit);
+            p.lines.add("Roider miners work deposits within " + Math.round(divesRange() + add) + " light-years");
             return true;
         }
-        Map<String, Integer> was = new HashMap<String, Integer>();
-        for (String com : MINED) { Integer b = bestBonus(m, com, divesRange()); was.put(com, b == null ? 0 : Math.max(0, base(com) + b)); }
+        int x = extra(m);
         for (String com : MINED) {
-            Integer b = bestBonus(m, com, hqRange());
-            int u = b == null ? 0 : Math.max(0, base(com) + b);
-            if (u > was.get(com)) CAEngine.supply(p, com, u - was.get(com), deficit);
+            int was = mined(m, com, divesRange() + add, x), u = mined(m, com, hqRange() + add, x);
+            if (u > was) CAEngine.supply(p, com, u - was, deficit);
         }
-        CAEngine.supply(p, "crew", Math.max(0, s - 3), deficit);
+        CAEngine.supply(p, "crew", Math.max(0, s - 3), deficit);   // the Dives' 3 crew become the colony's size
         p.fx[1] += 1f; p.fx[3] += 0.2f; p.fx[4] += 0.2f;
-        CAEngine.demand(p, "heavy_machinery", s - 2, deficit); CAEngine.demand(p, "supplies", s, deficit); CAEngine.demand(p, "fuel", s - 2, deficit);
-        p.lines.add("Union HQ: mines deposits within 6 light-years, stability +1, patrols");
+        CAEngine.demand(p, "heavy_machinery", s - 3, deficit); CAEngine.demand(p, "supplies", s - 2, deficit); CAEngine.demand(p, "fuel", s - 2, deficit);
+        p.lines.add("Union HQ: mines deposits within " + Math.round(hqRange() + add) + " light-years, stability +1, patrols");
         return true;
     }
 
@@ -173,14 +201,124 @@ public class CAMods {
         return on("Planetace_AstralAscension") && m.getPlanetEntity() == null && m.getSize() >= 10;
     }
 
+    // ---------------- Yunru Industries ----------------
+
+    static final String YUNRU = "yunruindustries", DRYDOCK = "yunru_heavyindustry", BAZAAR = "yunru_bazaar";
+    static final String[] DRYDOCK_OUT = {"heavy_machinery", "supplies", "hand_weapons", "ships"};
+
+    public static boolean yunruHas(String id) { return id.equals(DRYDOCK) && on(YUNRU); }
+
+    /**
+     * Secondary Drydocks' output per line (YunruIndustry): a Heavy Industry's size - 2 on its own; next to a working Heavy
+     * Industry or Orbital Works (only those two ids), that building's bonuses (+1 improved, +1 Alpha core, +1 corrupted or
+     * +3 pristine nanoforge) are added and everything is x1.5. Pure, for the checks.
+     */
+    static int drydockOutput(int size, boolean nextToForge, int forgeBonus) {
+        int base = size - 2;
+        return nextToForge ? Math.round((base + forgeBonus) * 1.5f) : base;
+    }
+
+    static Industry forge(MarketAPI m) {
+        for (String id : new String[]{"orbitalworks", "heavyindustry"}) {
+            Industry ind = m.getIndustry(id);
+            if (ind != null && ind.isFunctional()) return ind;
+        }
+        return null;
+    }
+
+    static int forgeBonus(Industry f) {
+        if (f == null) return 0;
+        int b = (f.isImproved() ? 1 : 0) + ("alpha_core".equals(f.getAICoreId()) ? 1 : 0);
+        if (f.getSpecialItem() != null) {
+            String it = f.getSpecialItem().getId();
+            b += "pristine_nanoforge".equals(it) ? 3 : "corrupted_nanoforge".equals(it) ? 1 : 0;
+        }
+        return b;
+    }
+
+    /**
+     * Secondary Drydocks: a colony only counts its best source of each commodity, so next to a Heavy Industry it's worth
+     * what it makes beyond that building, and on its own it's a Heavy Industry that never pollutes and takes no nanoforge.
+     * Its hand weapons aren't legal for your faction (it doesn't make them legally the way vanilla's forge does), so they
+     * only count without a free port where the colony is short (CAEngine.illegalUnits).
+     */
+    static boolean drydockApply(MarketAPI m, CAEngine.Pick p, Map<String, Integer> deficit) {
+        int s = m.getSize();
+        Industry f = forge(m);
+        int out = drydockOutput(s, f != null, forgeBonus(f));
+        int added = 0;
+        for (String com : DRYDOCK_OUT) {
+            int have = 0;
+            if (f != null) try { have = f.getSupply(com).getQuantity().getModifiedInt(); } catch (Throwable ignored) { }
+            int gain = out - have;
+            if (gain > 0) { CAEngine.supply(p, com, gain, deficit); added += gain; }
+        }
+        if (added <= 0) return false;
+        float mult = f != null ? 1.5f : 1f;
+        CAEngine.demand(p, "metals", Math.round(s * mult), deficit); CAEngine.demand(p, "rare_metals", Math.round((s - 2) * mult), deficit);
+        p.lines.add(f != null ? "Secondary Drydocks next to " + f.getCurrentName() + ": " + out + " of each line, what it adds beyond that building counts"
+                : "Secondary Drydocks: a Heavy Industry without pollution; takes no nanoforge");
+        return true;
+    }
+
+    // ---------------- Slightly Better Tech-Mining ----------------
+
+    static final String SBTM_PLUGIN = "data.scripts.industry.YunruTechMining";
+
+    /** SBTM replaces vanilla's Tech-Mining code: finds valued at TechMineValue x a ruins factor x colony size a month. */
+    public static boolean sbtm() {
+        try { return SBTM_PLUGIN.equals(Global.getSettings().getIndustrySpec("techmining").getPluginClass()); } catch (Throwable t) { return false; }
+    }
+
+    /** SBTM's ruins factor (YunruTechMining): vast 2.5, extensive 1.5, widespread 1, scattered 0.5. Pure. */
+    static float sbtmRuins(boolean vast, boolean extensive, boolean widespread) { return vast ? 2.5f : extensive ? 1.5f : widespread ? 1f : 0.5f; }
+
+    /**
+     * A month of SBTM finds in credits: its budget (TechMineValue x ruins x size x what's left of the ruins) is a random draw
+     * of AI cores, weapons, blueprints and colony items worth that at base price, counted at half (what selling them gets).
+     */
+    static float sbtmMonthly(MarketAPI m, float left) {
+        float v = CAConst.num(SBTM_PLUGIN, "YUNRU_DVALUE", 10000f);
+        float r = sbtmRuins(m.hasCondition("ruins_vast"), m.hasCondition("ruins_extensive"), m.hasCondition("ruins_widespread"));
+        return 0.5f * v * r * m.getSize() * left;
+    }
+
     // ---------------- engine hooks ----------------
 
-    public static boolean has(String id) { return vicHas(id) || roiderHas(id); }
+    public static boolean has(String id) { return vicHas(id) || roiderHas(id) || yunruHas(id); }
 
     /** Effects of a building handled here; false when it isn't worth building at this colony. */
     public static boolean apply(MarketAPI m, String id, CAEngine.Pick p, Map<String, Integer> deficit) {
         if (vicHas(id)) return vicApply(m, id, p);
         if (roiderHas(id)) return roiderApply(m, id, p, deficit);
+        if (id.equals(DRYDOCK)) return drydockApply(m, p, deficit);
         return false;
     }
+
+    // ---------------- left to you ----------------
+
+    /**
+     * Mod buildings Autopilot never builds or upgrades into, and never puts on a probe colony, with why. Diagnostics lists
+     * them as left to you; you can still build them yourself, and Autopilot leaves them alone once built (2.38.0).
+     */
+    static final Map<String, String> LEFT = new LinkedHashMap<String, String>();
+    static {
+        LEFT.put("NSI_blastCoreMining", "it permanently lowers the colony's ore, rare ore, organics and volatiles deposits every 60 days");
+        LEFT.put("NSI_SpyBureau", "it sabotages other factions' colonies, takes two industry slots and can't be tested on a probe colony");
+        LEFT.put("NSI_SpyBureauSecondInd", "the Spy Bureau's hidden second slot");
+        LEFT.put("NSI_SpyOutpost", "it sabotages other factions' colonies and can't be tested on a probe colony");
+        LEFT.put("NSI_cryosanctum", "it starts the Nomios protest crisis and a pirate raid on the colony");
+        LEFT.put("NSI_outpostDefense", "it stops the colony growing past size 5");
+        LEFT.put("NSI_luddicMonument", "its main effect needs Patchlib");
+        LEFT.put("NSI_ASBUplink", "it works through an area that damages fleets, which a probe colony can't show");
+        LEFT.put("NSI_expertDockworks", "it takes a nanoforge of its own for fleet s-mods, a military choice");
+        LEFT.put("roider_nomadBase", "only Roider nomads build it");
+        LEFT.put(BAZAAR, "it's a market for you to trade at; it does nothing for the colony");
+    }
+
+    /** Why Autopilot leaves this building to you, or null. */
+    public static String leftToYou(String id) { return LEFT.get(id); }
+
+    /** Buildings a story point improvement does nothing for: Yunru's Advent Outreach (its improvement has no effect). */
+    public static boolean noImprove(String id) { return id.equals("yunru_advent"); }
 }

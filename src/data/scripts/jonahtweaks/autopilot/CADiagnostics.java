@@ -25,6 +25,13 @@ public class CADiagnostics {
     /** Buildings the manager may score and build: supported, or measured on a probe colony. */
     public static boolean usable(String id) { Level l = industryLevel(id); return l == Level.SUPPORTED || l == Level.MEASURED; }
 
+    /** Buildings Auto actually builds: supported, or measured unless "Mod buildings with measured effects" is Ignore (2.38.0). */
+    public static boolean autopilotBuilds(String id) {
+        Level l = industryLevel(id);
+        if (l == Level.SUPPORTED) return true;
+        try { return l == Level.MEASURED && CAData.settings().measuredMode != 2; } catch (Throwable t) { return l == Level.MEASURED; }
+    }
+
     public static class Issue {
         public String kind, id, name, mod, detail;
         public Level level;
@@ -83,6 +90,12 @@ public class CADiagnostics {
                 continue;
             }
             if (spec.hasTag("parent_item")) { industries.put(spec.getId(), Level.ANALYZED); continue; }
+            String left = CAMods.leftToYou(spec.getId());
+            if (left != null) {   // never test-built: some of these throw or reach into the sector on a probe colony
+                industries.put(spec.getId(), Level.ANALYZED);
+                addIssue("building", spec.getId(), spec.getName(), mod, Level.ANALYZED, "Left to you: " + left);
+                continue;
+            }
             if (CATasc.unsafeToProbe(spec)) {   // spawns entities, removes itself, or fails without a planet: never test-built
                 industries.put(spec.getId(), Level.ANALYZED);
                 addIssue("building", spec.getId(), spec.getName(), mod, Level.ANALYZED, "TASC building whose effects need its planet or time; left to you");
@@ -119,6 +132,8 @@ public class CADiagnostics {
                 ? Global.getSector().getClock().getDateString() : new Date().toString();
         LOG.info(TAG + "scan done: " + industries.size() + " buildings, " + conditions.size() + " conditions, "
                 + items.size() + " items; " + count(Level.MEASURED) + " measured, " + count(Level.ANALYZED) + " analyzed, " + count(Level.QUARANTINED) + " quarantined");
+        try { CAModWatch.run(); }   // how each colony mod is doing in this game (2.38.0)
+        catch (Throwable t) { LOG.warn(TAG + "mod watch failed", t); }
         writeReport();
     }
 
@@ -203,6 +218,7 @@ public class CADiagnostics {
                 arr.put(o);
             }
             root.put("issues", arr);
+            try { root.put("modWatch", CAModWatch.json()); } catch (Throwable t) { LOG.warn(TAG + "mod watch report failed", t); }
             Global.getSettings().writeTextFileToCommon(REPORT, root.toString(2));
         } catch (Throwable t) {
             LOG.warn(TAG + "could not write diagnostics report", t);

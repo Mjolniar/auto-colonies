@@ -24,6 +24,8 @@ import java.util.Map;
 public class CASiege {
     static final float NEAR = 2000f;   // about a planet's gravity well; a fleet this close is at the colony
     static final float SYSTEM_FP = 150f;
+    /** Days hostiles only somewhere in the system count as a siege before they're taken as part of the system (2.38.0). */
+    static final float SYSTEM_DAYS = 30f;
     static final String KEY = "siege:";
     static final Map<String, String> cache = new HashMap<String, String>();
     static float cachedDay = -1f;
@@ -53,7 +55,16 @@ public class CASiege {
             if (Misc.getDistance(f.getLocation(), m.getPrimaryEntity().getLocation()) < NEAR) near += f.getFleetPoints();
         }
         if (near > 0f) return "hostile fleets at the colony";
-        if (all > Math.max(SYSTEM_FP, CAItems.defenseFP(m) + friendlyFP(sys))) return (int) all + " fleet points of hostiles in the system";
+        if (all > Math.max(SYSTEM_FP, CAItems.defenseFP(m) + friendlyFP(sys))) {
+            // hostiles that live in the system (Remnant, IX patrols, a pirate base's fleets) made it a siege forever, and a
+            // colony under siege only builds defenses (2.38.0): after SYSTEM_DAYS of only that, it's how the system is
+            Map<String, Long> since = CAData.get().siegeSystem();
+            Long t = since.get(m.getId());
+            if (t == null) since.put(m.getId(), Global.getSector().getClock().getTimestamp());
+            else if (Global.getSector().getClock().getElapsedDaysSince(t) >= SYSTEM_DAYS) return incoming(sys);
+            return (int) all + " fleet points of hostiles in the system";
+        }
+        CAData.get().siegeSystem().remove(m.getId());
         return incoming(sys);
     }
 

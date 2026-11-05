@@ -54,6 +54,7 @@ public class CAPlan {
      */
     static boolean hasOrBetter(MarketAPI m, String id) {
         if (inChain(m, id)) return true;
+        if (id.equals("farming") && m.hasIndustry("aquaculture")) return true;   // a water world's farming (vanilla Farming can't go there)
         for (Industry i : m.getIndustries()) if (leadsTo(id, i.getId())) return true;
         return false;
     }
@@ -181,7 +182,9 @@ public class CAPlan {
             b(p, "tme_unification_center", "Unification Center"); c(p, "tme_fortress_world", "Fortress World");
         } else if (hab && (inc || grow || prof == CAData.Profile.BALANCED)) {
             p.name = "Paradise";
-            if (farm) b(p, "farming", "Farming");   // Farming needs farmland; without it the step could never be done and held the plan's first rank b(p, "lightindustry", "Light Industry"); b(p, "commerce", "Commerce"); b(p, "waystation", "Waystation");
+            if (farm) b(p, "farming", "Farming");   // Farming needs farmland; without it the step could never be done and held the plan's first rank
+            // (2.38.0: these three had slipped into the comment above in 2.30.0, so a Paradise plan was nearly empty)
+            b(p, "lightindustry", "Light Industry"); b(p, "commerce", "Commerce"); b(p, "waystation", "Waystation");
             b(p, "tme_agricultural_laboratory", "Agricultural Laboratory"); c(p, farm ? "farmland_bountiful" : "farmland_adequate", "Better farmland");
             c(p, "mild_climate", "Mild climate (Stellar Manufactory, start it yourself)");
             b(p, "tme_unification_center", "Unification Center"); c(p, "tme_paradise_world", "Paradise World");
@@ -254,7 +257,7 @@ public class CAPlan {
     public static float bonusFor(MarketAPI m, Plan plan, String industryId, boolean skipBlocked) {
         int rank = 0;
         for (Step s : plan.steps) {
-            if (s.kind != Kind.BUILD || s.done(m) || (skipBlocked && BLOCKED.contains(m.getId() + ":" + s.id))) continue;
+            if (s.kind != Kind.BUILD || s.done(m) || (skipBlocked && (BLOCKED.contains(m.getId() + ":" + s.id) || dead(m, s.id)))) continue;
             boolean match = s.id.equals(industryId) || (s.id.equals("station") && stationTier(spec(industryId)) > 0)
                     || leadsTo(industryId, s.id);
             if (match) return rank == 0 ? 60000f : rank == 1 ? 40000f : 20000f;
@@ -263,16 +266,158 @@ public class CAPlan {
         return 0f;
     }
 
-    /** Open plan steps that are industries (they each need a slot), not counting ones research blocks for now. */
+    /** Open plan steps that will each take a new industry slot (needsSlot). */
     public static int openIndustrySteps(MarketAPI m, Plan plan) {
         int n = 0;
+        for (Step s : plan.steps) if (needsSlot(m, plan, s)) n++;
+        return n;
+    }
+
+    static boolean industry(String id) {
+        IndustrySpecAPI sp = spec(id);
+        return sp != null && sp.hasTag(com.fs.starfarer.api.impl.campaign.ids.Industries.TAG_INDUSTRY);
+    }
+
+    /**
+     * Whether an open step will take a new industry slot: an industry, not blocked by research or out of reach (dead), and
+     * not an upgrade of an industry the colony has or an earlier open step builds (one slot per chain: Heavy Industry and
+     * Orbital Works were two before 2.38.0, and a step that could never be built held its slot forever).
+     */
+    static boolean needsSlot(MarketAPI m, Plan plan, Step s) {
+        if (s.kind != Kind.BUILD || s.done(m) || !industry(s.id)) return false;
+        if (BLOCKED.contains(m.getId() + ":" + s.id) || dead(m, s.id)) return false;
+        for (Industry i : m.getIndustries()) if (i.isIndustry() && (leadsTo(i.getId(), s.id) || inChainBelow(i.getId(), s.id))) return false;
+        for (Step t : plan.steps) {
+            if (t == s || t.kind != Kind.BUILD || t.done(m) || !industry(t.id)) continue;
+            if (leadsTo(t.id, s.id) || inChainBelow(t.id, s.id)) return false;
+        }
+        return true;
+    }
+
+    /** low comes before high in one of the fixed upgrade chains. */
+    static boolean inChainBelow(String low, String high) {
+        for (String[] chain : CHAINS) {
+            int a = -1, b = -1;
+            for (int i = 0; i < chain.length; i++) { if (chain[i].equals(low)) a = i; if (chain[i].equals(high)) b = i; }
+            if (a >= 0 && b > a) return true;
+        }
+        return false;
+    }
+
+    // ---------------- steps with no way to them (2.38.0) ----------------
+    // A plan is built from what's installed, but a step can still be out of reach in a game: a building research never
+    // unlocks, a blueprint you don't know, a deposit the planet lacks, a mod removed mid-save, a world that can't form.
+    // Such a step held the plan's top rank and an industry slot forever. Now every open build step is checked each pass;
+    // one with no way to it (it, or something on the way to it, can't be built or started here, and no research Autopilot
+    // is running would open it) for DEAD_DAYS stops counting: no plan rank, no reserved slot, a log line. It counts again
+    // the day a way opens. A special world (Terraforming Made Easy) whose own buildings go out of reach is dropped for
+    // WORLD_DEAD_DAYS, so the colony goes back to the plain plan for its goal.
+
+    public static final float DEAD_DAYS = 60f, WORLD_DEAD_DAYS = 365f;
+
+    static String key(MarketAPI m, String id) { return m.getId() + ":" + id; }
+
+    static float daysSince(Long t) { return t == null ? 0f : Global.getSector().getClock().getElapsedDaysSince(t); }
+
+    /** Out of reach for DEAD_DAYS or more. */
+    public static boolean dead(MarketAPI m, String id) {
+        if (Global.getSector() == null) return false;
+        Long since = CAData.get().stepStuck().get(key(m, id));
+        return since != null && daysSince(since) >= DEAD_DAYS;
+    }
+
+    /** A special world dropped at this colony for now. */
+    public static boolean worldDead(MarketAPI m, String world) {
+        Long t = CAData.get().worldDead().get(key(m, world));
+        return t != null && daysSince(t) < WORLD_DEAD_DAYS;
+    }
+
+    /** Vaults of Knowledge research that Autopilot runs itself, so a research lock is a way forward. */
+    static boolean autoResearch() {
+        return CAData.settings().researchMode == 1 && Global.getSettings().getModManager().isModEnabled(CAResearch.MOD) && CAResearch.link();
+    }
+
+    /** It can be built or started here now, ignoring money, slots and what's under construction; a research lock counts while Autopilot researches. */
+    static boolean reachable(MarketAPI m, String id) {
+        try {
+            IndustrySpecAPI sp = spec(id);
+            if (sp == null) return false;
+            if (!CADiagnostics.autopilotBuilds(id) && !CAEngine.isSupported(id)) return false;   // Autopilot doesn't build it
+            if (CAMods.leftToYou(id) != null) return false;
+            Industry inst = sp.getNewPluginInstance(m);
+            if (!(CATasc.isTasc(sp) ? CATasc.available(m, inst) : inst.isAvailableToBuild())) return false;
+            if (CAAotD.enabled() && !CAAotD.allows(id, m)) return autoResearch();
+            return true;
+        } catch (Throwable t) { return false; }
+    }
+
+    /** A way to the step: it or something on the way to it can be built, or is being built, here. */
+    static boolean wayTo(MarketAPI m, Step s) {
+        if (s.id.equals("station")) return true;
+        String cur = s.id;
+        for (int k = 0; k < 8 && cur != null; k++) {
+            Industry have = m.getIndustry(cur);
+            if (have != null) { if (have.isBuilding() || have.isUpgrading()) return true; }
+            else if (reachable(m, cur)) return true;
+            IndustrySpecAPI sp = spec(cur);
+            cur = sp == null ? null : sp.getDowngrade();
+        }
+        for (String[] chain : CHAINS) for (int i = 1; i < chain.length; i++)   // a fixed chain's earlier step, buildable here
+            if (chain[i].equals(s.id) && !m.hasIndustry(chain[i - 1]) && reachable(m, chain[i - 1])) return true;
+        return false;
+    }
+
+    /** Daily, from every evaluation: which open steps have no way to them, and since when. */
+    public static void track(MarketAPI m, Plan plan) {
+        if (Global.getSector() == null || plan == null) return;
+        CAData d = CAData.get();
+        long now = Global.getSector().getClock().getTimestamp();
+        java.util.Set<String> open = new java.util.HashSet<String>();
         for (Step s : plan.steps) {
             if (s.kind != Kind.BUILD || s.done(m)) continue;
-            try {
-                com.fs.starfarer.api.loading.IndustrySpecAPI sp = Global.getSettings().getIndustrySpec(s.id);
-                if (sp != null && sp.hasTag(com.fs.starfarer.api.impl.campaign.ids.Industries.TAG_INDUSTRY)) n++;
-            } catch (Throwable ignored) { }
+            String k = key(m, s.id);
+            open.add(k);
+            if (wayTo(m, s)) {
+                Long was = d.stepStuck().remove(k);
+                if (was != null && daysSince(was) >= DEAD_DAYS) {
+                    CALog.forget("plan:dead:" + k);
+                    CALog.add(m.getName() + ": the plan's " + s.label + " step can be reached again, so it counts again");
+                }
+            } else if (!d.stepStuck().containsKey(k)) d.stepStuck().put(k, now);
+            else if (dead(m, s.id) && CALog.once("plan:dead:" + k))
+                CALog.add(m.getName() + ": the plan's " + s.label + " step can't be reached here (no way to build it for " + Math.round(DEAD_DAYS)
+                        + " days), so the plan goes on without it. It counts again if that changes");
         }
+        String pre = m.getId() + ":";
+        for (java.util.Iterator<String> it = d.stepStuck().keySet().iterator(); it.hasNext(); ) {
+            String k = it.next();
+            if (k.startsWith(pre) && !open.contains(k)) it.remove();   // done, or no longer in the plan
+        }
+        if (plan.world == null) return;
+        for (Step s : plan.steps) {
+            if (s.kind != Kind.BUILD || s.done(m) || !(WORLD_STEPS.contains(s.id) || plan.exact.contains(s.id)) || !dead(m, s.id)) continue;
+            d.worldDead().put(key(m, plan.world), now);
+            CALog.add(m.getName() + ": the " + plan.name + " can't form here (" + s.label + " is out of reach), so for a year the colony follows the plain plan for its goal");
+            break;
+        }
+    }
+
+    /** Research-locked open steps at any colony, from the last tracking passes (a Research Facility is worth having for them). */
+    static int lockedCache = 0, lockedDay = -1;
+
+    public static int lockedSteps() {
+        if (Global.getSector() == null || !CAAotD.enabled()) return 0;
+        com.fs.starfarer.api.campaign.CampaignClockAPI clock = Global.getSector().getClock();
+        int day = clock.getCycle() * 400 + clock.getMonth() * 32 + clock.getDay();
+        if (day == lockedDay) return lockedCache;
+        lockedDay = day;
+        int n = 0;
+        for (MarketAPI m : CAItems.autoMarkets()) {
+            CAPlan.Plan p;
+            try { p = build(m, CAData.get().colony(m.getId()).profile); } catch (Throwable t) { continue; }
+            for (Step s : p.steps) if (s.kind == Kind.BUILD && !s.done(m) && spec(s.id) != null && !CAAotD.allows(s.id, m)) n++;
+        }
+        lockedCache = n;
         return n;
     }
 

@@ -70,7 +70,7 @@ Viral contamination treatment comes first, tier by tier, to stop a colony shrink
 
 ## Roider Union
 
-Dives and the Union HQ are valued by the deposits they can mine nearby.
+Dives and the Union HQ are valued by the deposits they can mine nearby, with the Historical Roider Charter's extra output and range counted when one's in. Its Charter gets placed like any colony item. Rockpiper Shipworks only shows up once you've bought its blueprint at a Union HQ, and then it's valued like any other building. Roider stations count like vanilla ones.
 
 ## Planetary Shield: Access Control
 
@@ -78,7 +78,38 @@ The shield is valued as ground defense plus lower Pather interest, and a colony 
 
 ## Unknown Skies, What We Left Behind, Astral Ascension
 
-Their extra mining conditions count toward Mining, their water worlds count as water worlds, and planetless colonies (Astral Ascension) never get pushed past size 10 by hazard pay, since they crash there.
+Their extra mining conditions count toward Mining, their water worlds count as water worlds, and planetless colonies (the original Astral Ascension) never get pushed past size 10 by hazard pay, since they crash there.
+
+## Omega Core Everywhere and Astral Ascension Renewed
+
+Drop Omega cores into Autopilot Storage and the manager finds them a home. Without one of these two mods an Omega core barely does anything in a colony, so storage won't take them.
+
+- **Omega Core Everywhere**: an Omega core goes into whichever building it does the most in, going by that mod's own table. Doubled output from half the inputs (at double upkeep) in production buildings, doubled income in Commerce and the like, doubled fleets in military buildings, and so on. A core in a building doesn't count toward Hegemony inspections, so it fits any colony. If you switch the mod's building effects off in LunaLib, the manager leaves Omega cores out of buildings.
+- **Astral Ascension Renewed**: an Omega core can govern a colony instead, which is huge (every building makes twice as much, +3 stability, an extra industry slot, and it's the only way past size 10). It counts 10 Hegemony inspection points as an administrator though, so it only goes where your **Inspection risk** setting allows that. Otherwise you get a log line and it's your call.
+- Once a colony governed by an Omega core is past size 10, taking the core away starts that mod's Great Civil War. The manager never touches an AI core administrator, and it warns you when an inspection is heading for one.
+
+## Niko's Scavengable Industries
+
+Its buildings need their blueprint learned first (right click it in your cargo), and the manager only ever builds what you know. A lot of them do things you'd want to decide yourself, so these are **left to you** and never built automatically: Blast-Core Mining (it eats your deposits over time), the Spy Bureau and Spy Outposts (they go after other factions), the Cryosanctum (starts the Nomios crisis), the Planetary Defense Network (caps the colony at size 5), the Orbital Flak Cannons, the Innovation Shipworks and the Artificial Shrine. The rest (Training Grounds and so on) get measured and built when they pay.
+
+## Junk Yard Dogs and Carter's Freetraders
+
+Their resource forges and Biolab get measured and built like anything else. Heads up on Carter's: the drugs and hand weapons it makes are illegal for your faction, so unless the colony is a free port they don't export, and the manager only counts them for what that colony needs itself.
+
+## Vulpoids
+
+- **Organ Farms** and the **Biotech Facility** upgrade get built when they pay.
+- Its colony items get placed: the Midas Nanoforge (like a pristine nanoforge, but never in a forge on a habitable world, since it pollutes like vanilla's), the Mangonut Mother Tree, the Mutated Bioforge, the Nanofiltration Core (only where it actually clears pollution, bad weather or toxic air and the colony has the volatiles and transplutonics it eats), and the Lobster Bioforge (only in a Biotech Facility, since it stops an Organ Farm's organs).
+- **Profecto Vulpoid administrators** you've hired get placed like any other administrator, with their own skill counted.
+- **Left to you**: the Vulpoid Bioforge itself (it kicks off the whole vulpoid acceptance story, with sanctions and the Knights of Ludd coming for that colony), vulpoid workforces, and anything you'd do in person with the Profectos.
+
+## Yunru Industries, Slightly Better Tech-Mining, Yunru's Worlds
+
+- **Secondary Drydocks** is valued by what it adds next to your Heavy Industry or Orbital Works (it doesn't stack with them, a colony only counts its best source) or as a Heavy Industry that never pollutes on its own. It can't take a nanoforge.
+- **Auxiliary Shipbays** and **Advent Outreach** get measured like anything else. Advent's story point improvement does nothing, so it's never improved.
+- The **Bazaar** is a market for you to trade at and does nothing for the colony, so it's left to you.
+- **Slightly Better Tech-Mining** makes Tech-Mining a lot richer, and the manager values it with that mod's numbers instead of vanilla's.
+- Yunru's world conditions are read through the colony's own stats.
 
 ## United Aurora Federation
 

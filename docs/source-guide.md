@@ -287,6 +287,7 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
 |---|---|
 | [CASimulator](../src/data/scripts/jonahtweaks/autopilot/CASimulator.java) | Measures a mod building on a probe colony |
 | [CADiagnostics](../src/data/scripts/jonahtweaks/autopilot/CADiagnostics.java) | Load-time scan, quarantine, report |
+| [CAModWatch](../src/data/scripts/jonahtweaks/autopilot/CAModWatch.java) | Mod watch: how each colony mod with an integration is doing in your game (measured against real output, formula checks, its items and conditions), a verdict per mod in the report and on the Diagnostics page |
 | [CACompat](../src/data/scripts/jonahtweaks/autopilot/CACompat.java), [CAConst](../src/data/scripts/jonahtweaks/autopilot/CAConst.java), [CACalibrate](../src/data/scripts/jonahtweaks/autopilot/CACalibrate.java), [CABreaker](../src/data/scripts/jonahtweaks/autopilot/CABreaker.java) | The mod-update safeguards |
 | [CARefl](../src/data/scripts/jonahtweaks/autopilot/CARefl.java) | Reflection through method handles |
 | [CAConditions](../src/data/scripts/jonahtweaks/autopilot/CAConditions.java) | What a condition change is worth |
@@ -313,7 +314,8 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
 | [CATasc](../src/data/scripts/jonahtweaks/autopilot/CATasc.java) | Terraforming & Station Construction | Terraforming projects, prerequisites, estimates |
 | [CAGrand](../src/data/scripts/jonahtweaks/autopilot/CAGrand.java) | Grand.Colonies | 12-building screen limit; extra upkeep past the threshold |
 | [CABrewery](../src/data/scripts/jonahtweaks/autopilot/CABrewery.java) | Substance.Abuse | Brewery only with a recipe in storage |
-| [CAMods](../src/data/scripts/jonahtweaks/autopilot/CAMods.java) | VIC, Planetary Shield, Roider Union, Unknown Skies, What We Left Behind, Astral Ascension | Small integrations by id |
+| [CAMods](../src/data/scripts/jonahtweaks/autopilot/CAMods.java) | VIC, Planetary Shield, Roider Union, Unknown Skies, What We Left Behind, Astral Ascension, Yunru Industries, Slightly Better Tech-Mining, Niko's Scavengable Industries | Small integrations by id; the buildings left to you (`LEFT`) |
+| [CAOmega](../src/data/scripts/jonahtweaks/autopilot/CAOmega.java) | Omega Core Everywhere, Astral Ascension Renewed | Omega cores into buildings (valued from OCE's table) or as administrators (AAR) |
 
 ### UI and leftovers
 

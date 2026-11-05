@@ -51,6 +51,8 @@ public class CAData {
         public boolean buildout;
         public float buildoutFloor;
         public long buildoutProfitSince;
+        // 2.38.0: when it started (0: before 2.38.0, set on its next pass) and when it last found nothing that pays (0: it found something)
+        public long buildoutSince, buildoutIdleSince;
         // Autonomy (CAAutonomy): months in a row the colony has lost money, and the month last counted (year * 12 + month)
         public int lossStreak, lossMonth;
 
@@ -107,6 +109,15 @@ public class CAData {
     public Map<String, Long> endgameBuilt;
     public Map<String, Long> endgameBuilt() { if (endgameBuilt == null) endgameBuilt = new HashMap<String, Long>(); return endgameBuilt; }
     // Terraforming Made Easy structures surplus terraforming built ("marketId:structureId"); only these are taken down again
+    // 2.38.0, plan steps with no way to them (CAPlan.track): "marketId:stepId" -> when first seen so; and special worlds
+    // dropped for a year because their own steps can't be reached, "marketId:worldId" -> when
+    public Map<String, Long> stepStuck, worldDead;
+    // 2.38.0, CASiege: when hostiles only elsewhere in the system first made a colony's siege, marketId -> when
+    public Map<String, Long> siegeSystem;
+    public Map<String, Long> siegeSystem() { if (siegeSystem == null) siegeSystem = new HashMap<String, Long>(); return siegeSystem; }
+    public Map<String, Long> stepStuck() { if (stepStuck == null) stepStuck = new HashMap<String, Long>(); return stepStuck; }
+    public Map<String, Long> worldDead() { if (worldDead == null) worldDead = new HashMap<String, Long>(); return worldDead; }
+
     public Set<String> surplusBuilt;
     public Set<String> surplusBuilt() { if (surplusBuilt == null) surplusBuilt = new HashSet<String>(); return surplusBuilt; }
     // an enabler hazard surplus terraforming added on the way to a deposit that needs it ("marketId:condition" -> the deposit),

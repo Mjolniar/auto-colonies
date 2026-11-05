@@ -77,7 +77,24 @@ public class CASimulator {
             }
         }
         p.reapplyConditions();
+        stock(p);
         return p;
+    }
+
+    /**
+     * Every commodity on hand at the probe colony. It isn't in the economy, so nothing is ever available there, and a building
+     * that cuts its output by its input shortage (BaseIndustry.getMaxDeficit, applyDeficitToProduction) measured as making
+     * little or nothing: AotD's Artisanal Farming read no food at all. Inputs are valued separately (CAEngine.demand), so the
+     * measurement wants full output (2.38.0).
+     */
+    static void stock(MarketAPI p) {
+        List<com.fs.starfarer.api.campaign.econ.CommoditySpecAPI> all = null;
+        try { all = Global.getSettings().getAllCommoditySpecs(); } catch (Throwable ignored) { }
+        if (all == null) return;
+        for (com.fs.starfarer.api.campaign.econ.CommoditySpecAPI c : all) {
+            try { p.getCommodityData(c.getId()).getAvailableStat().modifyFlat("jt_ca_probe_stock", 999f); }
+            catch (Throwable ignored) { }
+        }
     }
 
     static float[] snapshot(MarketAPI p) {
