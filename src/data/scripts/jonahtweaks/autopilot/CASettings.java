@@ -114,6 +114,10 @@ public class CASettings {
     public boolean spyNoHiring = false;
     public int spyKeep = 0;
     public static final String[] SPY_NAMES = {"Off", "Defense", "Defense and offense"};
+    // research spends colony items (CAResearch, Vaults of Knowledge), only while credits are over the surplus line: 0 off
+    // (default, also older saves), 1 from storage (Autopilot Storage and colonies' Storage tabs), 2 also out of buildings
+    public int researchItemMode = 0;
+    public static final String[] RESEARCH_ITEM_NAMES = {"Off", "From storage", "From storage and buildings"};
     // Nexerelin emergency autonomy (CAAutonomy): 0 off (default, so older saves load as off), 1 recommend. Autonomy is your
     // call: 2 (the old Auto) now only recommends too.
     public int autonomyMode = 0;

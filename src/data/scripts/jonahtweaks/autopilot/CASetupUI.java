@@ -348,6 +348,13 @@ public class CASetupUI {
                 + ", hypershunt " + CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.hypershuntMode))].toLowerCase() : ""))) {
             if (tot) row(t, "Trade contracts", CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.contractMode))], "Auto", "contract", true);
             if (vok) row(t, "Research", CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.researchMode))], "Auto", "research", true);
+            if (vok) {
+                row(t, "Research spends colony items (surplus only)", CASettings.RESEARCH_ITEM_NAMES[Math.max(0, Math.min(2, s.researchItemMode))], "Off", "resitems", true);
+                t.addPara("Some research takes colony items (a Pristine Nanoforge, a Synchrotron Core...). Off: those techs are yours to start. "
+                        + "With credits over the surplus line, From storage lets Auto research take them from Autopilot Storage and your "
+                        + "colonies' Storage tabs; From storage and buildings also takes them out of buildings, the one where the item does "
+                        + "least first. Only when everything the tech needs is on hand.", Misc.getGrayColor(), 4f);
+            }
             if (vok) row(t, "Megastructures (Hypershunt, Pluto, Nidavelir)", CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.hypershuntMode))], "Follow colony mode", "hs", true);
         }
         if (CAAttacks.forThisStart() && group(t, "attacks", "Attacks on your colonies (Derelict Empire start)", "pirate and crisis fleets: "
@@ -490,6 +497,7 @@ public class CASetupUI {
         else if (k.equals("contract")) s.contractMode = (Math.max(0, Math.min(2, s.contractMode)) + 1) % 3;
         else if (k.equals("hs")) s.hypershuntMode = (Math.max(0, Math.min(2, s.hypershuntMode)) + 1) % 3;
         else if (k.equals("research")) s.researchMode = (Math.max(0, Math.min(2, s.researchMode)) + 1) % 3;
+        else if (k.equals("resitems")) { s.researchItemMode = (Math.max(0, Math.min(2, s.researchItemMode)) + 1) % 3; CAResearch.updateItemMode(s); CAResearch.cached = null; }
         else if (k.equals("screenbtn")) s.noScreenButton = !s.noScreenButton;
         else if (k.equals("screenlog")) s.screenLog = (Math.max(0, Math.min(2, s.screenLog)) + 1) % 3;
         else if (k.equals("hacap")) { s.haFleetCap = CASettings.next(CASettings.HA_CAPS, s.haFleetCap); CAAttacks.apply(s); }

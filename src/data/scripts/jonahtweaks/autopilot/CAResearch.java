@@ -174,7 +174,58 @@ public class CAResearch {
     static final Set<String> SPENDABLE = new HashSet<String>(Arrays.asList("fullerene_spool"));
     static boolean spendItems = false;   // set each day: spending freely
 
-    static boolean spendable(String id) { return spendItems && SPENDABLE.contains(id); }
+    /**
+     * Research spends colony items (2.36.1; Settings, Research spends colony items): while credits are over the surplus line,
+     * 1 from Autopilot Storage and your colonies' Storage tabs, 2 also out of buildings. 0 otherwise. Set each day, and when
+     * the setting changes.
+     */
+    static int itemMode = 0;
+
+    static void updateItemMode(CASettings s) { itemMode = CASurplus.on(s) ? Math.max(0, Math.min(2, s.researchItemMode)) : 0; }
+
+    /** A colony item (any special item that isn't an AI core), as opposed to a commodity. */
+    static boolean colonyItem(String id) { return !CORE_VALUE.containsKey(id) && !isCommodity(id); }
+
+    static boolean spendable(String id) { return (spendItems && SPENDABLE.contains(id)) || (itemMode > 0 && colonyItem(id)); }
+
+    /** How many of an item are installed in your colonies' buildings that Autopilot may take it from (not locked ones). */
+    static float installedCount(String id) {
+        float n = 0f;
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            CAData.Colony c = CAData.get().colony(m.getId());
+            for (Industry ind : m.getIndustries())
+                if (ind.getSpecialItem() != null && id.equals(ind.getSpecialItem().getId()) && !c.locks.contains(ind.getId())) n++;
+        }
+        return n;
+    }
+
+    /** Takes up to n of an item out of buildings, the one where it does least first, into cargo `to`; returns how many, and where in `where`. */
+    static int pullFromBuildings(String id, int n, CargoAPI to, List<String> where) {
+        List<Object[]> spots = new ArrayList<Object[]>();   // {market, industry, score}
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            CAData.Colony c = CAData.get().colony(m.getId());
+            for (Industry ind : m.getIndustries()) {
+                if (ind.getSpecialItem() == null || !id.equals(ind.getSpecialItem().getId()) || c.locks.contains(ind.getId())) continue;
+                float sc;
+                try { sc = CAItems.itemScore(id, m, c.profile, ind); } catch (Throwable t) { sc = 0f; }
+                spots.add(new Object[]{m, ind, sc});
+            }
+        }
+        Collections.sort(spots, new Comparator<Object[]>() {
+            public int compare(Object[] a, Object[] b) { return Float.compare((Float) a[2], (Float) b[2]); }
+        });
+        int got = 0;
+        for (Object[] sp : spots) {
+            if (got >= n) break;
+            Industry ind = (Industry) sp[1];
+            SpecialItemData data = ind.getSpecialItem();
+            ind.setSpecialItem(null);
+            to.addSpecial(data, 1f);
+            got++;
+            where.add(((MarketAPI) sp[0]).getName() + "'s " + ind.getCurrentName());
+        }
+        return got;
+    }
 
     /** How many of an item your colonies' Storage tabs hold. */
     static float colonyCount(String id) {
@@ -580,7 +631,8 @@ public class CAResearch {
         CargoAPI st = CAData.get().storage();
         for (Map.Entry<String, Integer> e : t.items.entrySet()) {
             float have = ((Number) CARefl.invoke(itemCount, mgr, e.getKey())).floatValue() + count(st, e.getKey())
-                    + (DATABANK.equals(e.getKey()) ? colonyDatabanks() + fleetDatabanks() : spendable(e.getKey()) ? colonyCount(e.getKey()) : 0f);
+                    + (DATABANK.equals(e.getKey()) ? colonyDatabanks() + fleetDatabanks() : spendable(e.getKey()) ? colonyCount(e.getKey())
+                    + (itemMode == 2 && colonyItem(e.getKey()) ? installedCount(e.getKey()) : 0f) : 0f);
             if (have < e.getValue()) return false;
         }
         return true;
@@ -596,6 +648,9 @@ public class CAResearch {
         com.fs.starfarer.api.campaign.CampaignFleetAPI fleet = Global.getSector().getPlayerFleet();
         Map<String, int[]> plan = new LinkedHashMap<String, int[]>();   // item -> {from storage, from your fleet's cargo}
         int fromColonies = 0;
+        // nothing moves (above all, no item comes out of a building) unless the whole tech is covered
+        if (itemMode > 0 && !covered(mgr, t)) return null;
+        List<String> pulled = new ArrayList<String>();
         for (Map.Entry<String, Integer> e : t.items.entrySet()) {
             int need = e.getValue() - (int) ((Number) CARefl.invoke(itemCount, mgr, e.getKey())).floatValue();
             if (need <= 0) continue;
@@ -609,6 +664,8 @@ public class CAResearch {
                     if (k > 0) { move(c, st, e.getKey(), k); left -= k; }
                 }
                 fromStorage += n;   // now in Autopilot Storage, moved on below
+                if (itemMode == 2 && colonyItem(e.getKey()) && need > fromStorage)   // and out of buildings, least useful first
+                    fromStorage += pullFromBuildings(e.getKey(), need - fromStorage, st, pulled);
             }
             int fromFleet = need - fromStorage - (DATABANK.equals(e.getKey()) ? fromColonies : 0);
             if (fromFleet > 0 && (!DATABANK.equals(e.getKey()) || fleet == null || fleet.getCargo() == null || fleetDatabanks() < fromFleet)) return null;
@@ -643,7 +700,8 @@ public class CAResearch {
             what.add((fromStorage + fromFleet) + " " + commodityName(e.getKey()) + (fromStorage > 0 && fromFleet > 0 ? " (" + fromFleet + " from your fleet's cargo)" : ""));
         }
         String from = anyStorage && anyFleet ? "from Autopilot Storage and your fleet's cargo" : anyFleet ? "from your fleet's cargo" : "from Autopilot Storage";
-        String msg = "moved " + CAContracts.join(what) + " " + from + " to " + best.getMarket().getName() + "'s Research Facility tab";
+        String msg = "moved " + CAContracts.join(what) + " " + from + " to " + best.getMarket().getName() + "'s Research Facility tab"
+                + (pulled.isEmpty() ? "" : " (taken out of " + CAContracts.join(pulled) + ")");
         CALog.add("Research: " + msg);
         return msg;
     }
@@ -723,6 +781,9 @@ public class CAResearch {
      */
     public static void run(CAData d, CASettings s) {
         spendItems = CASurplus.rich(s);
+        int was = itemMode;
+        updateItemMode(s);
+        if (was != itemMode) cached = null;   // which techs Auto may start changed
         if (s.researchMode != 1) return;
         try {
             Object mgr = mgr();
@@ -786,7 +847,7 @@ public class CAResearch {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         t.addPara("Mode: %s. Values each tech by the buildings it unlocks at your colonies (scored like any build), its other effects and "
                 + "what it leads to, against its databanks, AI cores and the facility upkeep it adds. Auto starts the best one when nothing is running "
-                + "or queued, only if it costs databanks and AI cores (cores from Autopilot Storage); techs that use colony items are yours. "
+                + "or queued, only if it costs databanks and AI cores (cores from Autopilot Storage); techs that use colony items are yours, unless Research spends colony items is on and credits are over the surplus line. "
                 + "When none pays for itself within a year, Auto starts the best of the rest anyway, so research doesn't sit idle. "
                 + "Starting a tech, by Auto or with Start, moves whatever it's short of from Autopilot Storage into the Research Facility tab "
                 + "(databanks also from your fleet's cargo). With surplus credits, the focus world's plan counts twice and upkeep a quarter.",

@@ -171,6 +171,8 @@ public class CAAuto {
         List<MarketAPI> auto = CASiege.free(allAuto);   // colonies under siege are left as they are
         try { CAItems.ensureStorageTabs(); CAItems.run(auto); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "item, core or administrator placement failed", t); }
+        try { CAStoragePlugin.evict(); }   // campaign consumables and blueprints don't belong in Autopilot Storage
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autopilot Storage clean-up failed", t); }
         if (!auto.isEmpty() && Global.getSettings().getModManager().isModEnabled("terraformingmadeeasy")) {
             try { CATerraform.run(auto); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "terraforming planner failed", t); }
