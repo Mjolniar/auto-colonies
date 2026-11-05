@@ -14,23 +14,28 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Emergency autonomy (Nexerelin; setting "Emergency autonomy", off until set). Nexerelin lets a colony be run autonomously:
+ * Autonomy (Nexerelin; setting "Autonomy": Off, Recommend (default), Auto). Nexerelin lets a colony be run autonomously:
  * you get 25% of its profit or loss (nex_autonomousIncomeMult), it no longer counts against your colony limit, and nothing
  * can be built there; taking it back adds 2 unrest (Nex_GrantAutonomy).
  *
- * Autonomy is the player's call: Autopilot never grants it (since 2.17.0). In a money emergency (net income negative, with
- * under RUNWAY months of it left above the credit reserve) Recommend logs the colony a year old or more (NEW_DAYS) that loses
- * the most, and the Mod features page's Grant autonomy button does it for you; colonies you make autonomous, by that button
- * or Nexerelin's dialog, are yours and never taken back. Going past the colony limit gets an administrator instead
- * (CAItems.adminsNeeded). Colonies an older Autopilot made autonomous (CAData.autonomous) are taken back, one a day, as
- * soon as there's no money emergency, taking one back wouldn't start one, and there's room under your colony limit or an
- * idle administrator to put there (installed in the same step), with Nexerelin's own no-unrest flag
- * (Nex_GrantAutonomy.setNoStabLossOnRevokeAutonomy), since they were never your choice.
+ * Only ever for money, never as a way past the colony limit (that gets an administrator, CAItems.adminsNeeded), and never
+ * for a colony under a year old (NEW_DAYS), a fast buildout, an outpost, a hypershunt, a megastructure or an AI core
+ * administrator. A colony that has lost money LOSS_MONTHS months in a row, or the one that saves the most in a money
+ * emergency (net income negative with under RUNWAY months of it left above the credit reserve), is:
+ * - Recommend: logged once and listed on the Mod features page with a Grant autonomy button;
+ * - Auto (2.34.3): made autonomous, one every GAP_DAYS at most. Outside an emergency not while spending freely
+ *   (CASurplus.rich): the pool pays for it, and an autonomous colony can't be built on.
+ * Colonies made autonomous by you or by Auto stay that way until you take them back (a button per colony; Nexerelin's
+ * unrest applies). Colonies an older Autopilot made autonomous (CAData.autonomous) are taken back, one a day, as soon as
+ * there's no money emergency, taking one back wouldn't start one, and there's room under your colony limit or an idle
+ * administrator to put there, without unrest (Nex_GrantAutonomy.setNoStabLossOnRevokeAutonomy).
  */
 final class CAAutonomy {
     static final String MOD = "nexerelin";
-    static final float RUNWAY = 3f, NEW_DAYS = 365f;
+    static final float RUNWAY = 3f, NEW_DAYS = 365f, GAP_DAYS = 30f;
     static final int REVOKE_UNREST = 2;   // Nex_GrantAutonomy.REVOKE_UNREST
+    /** Months in a row a colony must lose money before autonomy is suggested (or, on Auto, granted) outside an emergency. */
+    static final int LOSS_MONTHS = 3;
 
     private CAAutonomy() { }
 
@@ -41,7 +46,7 @@ final class CAAutonomy {
 
     static final class Cand {
         MarketAPI m;
-        float saving;   // credits a month: money only in a money emergency, money and stability in a governance one
+        float saving;   // credits a month you stop losing
     }
 
     static float incomeMult() {
@@ -56,13 +61,16 @@ final class CAAutonomy {
     /** Credits a month you stop gaining (or losing) when a colony with this net income becomes autonomous. */
     static float moneySaved(float colonyNet, float mult) { return -(1f - mult) * colonyNet; }
 
+    /** Outside an emergency: lost money long enough to suggest (or grant) autonomy. Pure. */
+    static boolean longLoss(int streak) { return streak >= LOSS_MONTHS; }
+
     /** A money emergency, or null. Going past the colony limit isn't one: that gets an administrator (CAItems.adminsNeeded). */
     static Emergency emergency(CASettings s) {
         float net = CABudget.netIncome(s);
         if (!moneyEmergency(net, CABuild.credits(), s.reserve)) return null;
         Emergency e = new Emergency();
         e.money = true;
-        e.why = "net income " + Misc.getDGSCredits(net) + " a month, with under " + (int) RUNWAY + " months of it left above the credit reserve";
+        e.why = "net income " + Misc.getDGSCredits(net) + " a month, under " + (int) RUNWAY + " months of reserve";
         return e;
     }
 
@@ -75,20 +83,22 @@ final class CAAutonomy {
         return m.getAdmin() == null || !m.getAdmin().isAICore();   // an AI core you put there would stay behind
     }
 
-    /** The colony whose autonomy saves the most in this emergency (one that loses money, a year old or more), or null. */
-    static Cand best(CAData d, Emergency e, boolean autoOnly) {
+    /** Colonies autonomy would save money at, biggest saving first: losing money now, a year old or more. */
+    static List<Cand> losers(CAData d, boolean autoOnly) {
         float mult = incomeMult();
-        Cand best = null;
+        List<Cand> out = new ArrayList<Cand>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             if (!eligible(d, m, autoOnly)) continue;
             float v = moneySaved(colonyNet(m), mult);
             if (v <= 0f) continue;
-            if (best == null || v > best.saving) { best = new Cand(); best.m = m; best.saving = v; }
+            Cand k = new Cand(); k.m = m; k.saving = v;
+            out.add(k);
         }
-        return best;
+        java.util.Collections.sort(out, new java.util.Comparator<Cand>() { public int compare(Cand a, Cand b) { return Float.compare(b.saving, a.saving); } });
+        return out;
     }
 
-    /** What keeps a colony Autopilot made autonomous from being taken back, or null if nothing does. */
+    /** What keeps a colony an older Autopilot made autonomous from being taken back, or null if nothing does. */
     static String waitReason(CAData d, CASettings s, MarketAPI m) {
         if (emergency(s) != null) return "the money emergency isn't over";
         float after = CABudget.netIncome(s) + (1f - incomeMult()) * colonyNet(m);
@@ -106,8 +116,20 @@ final class CAAutonomy {
         }
     }
 
+    /** Counts each colony's months in a row of losing money, once a month. */
+    static void countLosses(CAData d) {
+        int month = Global.getSector().getClock().getCycle() * 12 + Global.getSector().getClock().getMonth();
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            CAData.Colony c = d.colony(m.getId());
+            if (c.lossMonth == month) continue;
+            c.lossMonth = month;
+            c.lossStreak = colonyNet(m) < 0f ? c.lossStreak + 1 : 0;
+        }
+    }
+
     public static void run(CAData d, CASettings s) {
         tidy(d);
+        countLosses(d);
         // colonies an older Autopilot made autonomous come back as soon as they can, one a day, whatever the setting
         for (String id : new ArrayList<String>(d.autonomous().keySet())) {
             MarketAPI m = Global.getSector().getEconomy().getMarket(id);
@@ -117,19 +139,29 @@ final class CAAutonomy {
         }
         if (s.autonomyMode == 0) return;
         Emergency e = emergency(s);
-        if (e == null) return;
-        Cand k = best(d, e, false);
-        if (k == null) {
-            if (CALog.once("autonomy:none:" + Global.getSector().getClock().getMonth()))
-                CALog.add("Emergency (" + e.why + "), and no colony a year old or more loses money, so autonomy wouldn't help", true);
+        boolean rich = CASurplus.rich(s);
+        Cand pick = null;
+        for (Cand k : losers(d, s.autonomyMode == 2)) {
+            if (e == null && (rich || !longLoss(d.colony(k.m.getId()).lossStreak))) continue;   // outside an emergency: a long loss, and no pool paying for it
+            pick = k;
+            break;
+        }
+        if (pick == null) {
+            if (e != null && CALog.once("autonomy:none:" + Global.getSector().getClock().getMonth()))
+                CALog.add("Emergency (" + e.why + "): no colony a year old loses money, so autonomy wouldn't help", true);
             return;
         }
-        if (CALog.once("autonomy:rec:" + k.m.getId()))
-            CALog.add("Emergency (" + e.why + "): making " + k.m.getName() + " autonomous would save about " + Misc.getDGSCredits(k.saving)
-                    + " a month. That's your call: Grant autonomy is on the Colony Autopilot intel's Mod features page", true);
+        String why = e != null ? "money emergency" : "lost money " + d.colony(pick.m.getId()).lossStreak + " months in a row";
+        if (s.autonomyMode == 2) {
+            if (Global.getSector().getClock().getElapsedDaysSince(d.lastAutonomyChange) < GAP_DAYS && d.lastAutonomyChange != 0L) return;
+            grant(d, pick.m, "Auto: " + why, pick.saving);
+            return;
+        }
+        if (CALog.once("autonomy:rec:" + pick.m.getId()))
+            CALog.add(pick.m.getName() + ": autonomy would save " + Misc.getDGSCredits(pick.saving) + "/month (" + why + "); Grant on the Mod features page", true);
     }
 
-    /** Your order from the Mod features page. The colony is yours from then on: Autopilot doesn't track it or take it back. */
+    /** Your order, or Auto's. The colony stays autonomous until you take it back. */
     static void grant(CAData d, MarketAPI m, String why, float saving) {
         // a hired administrator would be replaced by a local one and keep drawing full salary, so free them first
         AdminData a = CAItems.adminAt(m);
@@ -141,14 +173,14 @@ final class CAAutonomy {
         d.clearPending(d.colony(m.getId()));   // nothing can be built there now
         d.lastAutonomyChange = Global.getSector().getClock().getTimestamp();
         CALog.forget("autonomy:rec:" + m.getId());
-        CALog.add(m.getName() + ": granted autonomy (" + why + ")" + (saving > 0f ? ", saving about " + Misc.getDGSCredits(saving) + " a month" : "")
-                + ". You get " + Math.round(incomeMult() * 100f) + " percent of its profit or loss and it doesn't count against your colony limit"
-                + (a != null ? "; its administrator " + a.getPerson().getNameString() + " is free for another colony" : "")
-                + ". It's yours to take back", true);
+        CALog.add(m.getName() + ": autonomous (" + why + ")" + (saving > 0f ? ", saves " + Misc.getDGSCredits(saving) + "/month" : "")
+                + (a != null ? "; " + a.getPerson().getNameString() + " is free" : ""), true);
     }
 
+    /** Taking one back: without unrest for a colony an older Autopilot made autonomous, with Nexerelin's for yours or Auto's. */
     static void reclaim(CAData d, MarketAPI m, String why) {
-        Nex_GrantAutonomy.setNoStabLossOnRevokeAutonomy(m);   // Autopilot made it autonomous, not you: no unrest for taking it back
+        boolean legacy = d.autonomous().containsKey(m.getId());
+        if (legacy) Nex_GrantAutonomy.setNoStabLossOnRevokeAutonomy(m);
         Nex_GrantAutonomy.revokeAutonomy(m);
         d.autonomous().remove(m.getId());
         d.lastAutonomyChange = Global.getSector().getClock().getTimestamp();
@@ -159,46 +191,47 @@ final class CAAutonomy {
             m.setAdmin(a.getPerson());
             a.setMarket(m);
         }
-        CALog.add(m.getName() + ": taken back from autonomy (" + why + "), without unrest since Autopilot made it autonomous"
-                + (a != null ? ". Administrator " + a.getPerson().getNameString() + " governs it" : ""), true);
+        CALog.add(m.getName() + ": taken back from autonomy (" + why + ")" + (legacy ? ", no unrest" : "")
+                + (a != null ? "; " + a.getPerson().getNameString() + " governs it" : ""), true);
     }
 
     /** Buttons on the Mod features page: grant autonomy to a colony, or take one back now. */
     static void handle(CAData d, String action, String marketId) {
         MarketAPI m = Global.getSector().getEconomy().getMarket(marketId);
         if (m == null || m.getFaction() == null || !m.getFaction().isPlayerFaction()) return;
-        if (action.equals("grant") && m.isPlayerOwned()) grant(d, m, "your order", 0f);
+        if (action.equals("grant") && m.isPlayerOwned()) grant(d, m, "your order", moneySaved(colonyNet(m), incomeMult()));
         else if (action.equals("back") && !m.isPlayerOwned()) reclaim(d, m, "your order");
     }
 
-    /** The Emergency autonomy section of the empire panel's Mod features page. */
+    /** The Autonomy section of the empire panel's Mod features page. */
     static void render(TooltipMakerAPI t, CAData d, CASettings s) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
-        t.addSectionHeading("Emergency autonomy (Nexerelin)", Alignment.MID, 0f);
-        t.addPara("Mode: %s. Autonomy is your call: an autonomous colony gives you %s of its profit or loss and no longer counts against "
-                + "your colony limit; taking it back costs %s unrest. Autopilot never grants it. In a money emergency it names the colony "
-                + "that would save the most.", 6f, hl,
-                CASettings.AUTONOMY_NAMES[Math.max(0, Math.min(2, s.autonomyMode))], Math.round(incomeMult() * 100f) + " percent", "" + REVOKE_UNREST);
+        t.addSectionHeading("Autonomy (Nexerelin)", Alignment.MID, 0f);
+        t.addPara("Mode: %s (Settings, Autonomy). An autonomous colony gives you %s of its profit or loss, doesn't count against your colony "
+                + "limit, and can't be built on; taking it back costs %s unrest. Only for money: colonies a year old that have lost money "
+                + "%s months in a row, or the best one in a money emergency.", 6f, hl,
+                CASettings.AUTONOMY_NAMES[Math.max(0, Math.min(2, s.autonomyMode))], Math.round(incomeMult() * 100f) + "%", "" + REVOKE_UNREST, "" + LOSS_MONTHS);
         tidy(d);
         Emergency e = emergency(s);
-        if (e == null) t.addPara("No emergency now.", gray, 6f);
-        else {
-            t.addPara("Emergency: " + CALog.esc(e.why) + ".", Misc.getNegativeHighlightColor(), 6f);
-            Cand k = best(d, e, false);
-            if (k == null) t.addPara("No colony a year old or more loses money, so autonomy wouldn't help.", gray, 4f);
-            else {
-                t.addPara("Best choice: %s, saving about %s a month.", 4f, hl, k.m.getName(), Misc.getDGSCredits(k.saving));
-                t.addButton("Grant autonomy", new String[]{"auton", "grant", k.m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 180f, 22f, 4f);
-            }
+        if (e != null) t.addPara("Money emergency: " + CALog.esc(e.why) + ".", Misc.getNegativeHighlightColor(), 6f);
+        List<Cand> losers = losers(d, false);
+        if (losers.isEmpty()) t.addPara("No colony a year old or more loses money now.", gray, 6f);
+        int shown = 0;
+        for (Cand k : losers) {
+            if (shown++ >= 6) break;
+            int streak = d.colony(k.m.getId()).lossStreak;
+            t.addPara("%s loses %s/month (%s months in a row): autonomy saves %s/month.", 6f, hl, k.m.getName(),
+                    Misc.getDGSCredits(-colonyNet(k.m)), "" + streak, Misc.getDGSCredits(k.saving));
+            t.addButton("Grant autonomy: " + k.m.getName(), new String[]{"auton", "grant", k.m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 260f, 22f, 4f);
         }
-        for (String id : new ArrayList<String>(d.autonomous().keySet())) {
-            MarketAPI m = Global.getSector().getEconomy().getMarket(id);
-            if (m == null) continue;
-            String why = waitReason(d, s, m);
-            t.addPara("%s was made autonomous by an older Autopilot (you get %s a month). " + (why == null ? "It's taken back today, without unrest."
-                    : "Taken back without unrest once it can: " + CALog.esc(why) + "."), 8f, hl,
-                    m.getName(), Misc.getDGSCredits(incomeMult() * colonyNet(m)));
-            t.addButton("Take it back now", new String[]{"auton", "back", id}, base, dark, Alignment.MID, CutStyle.ALL, 180f, 22f, 4f);
+        for (MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) {
+            if (m.isPlayerOwned() || m.getFaction() == null || !m.getFaction().isPlayerFaction() || m.isHidden()) continue;
+            boolean legacy = d.autonomous().containsKey(m.getId());
+            String why = legacy ? waitReason(d, s, m) : null;
+            t.addPara("%s is autonomous (you get %s/month)." + (legacy ? (why == null ? " Taken back today, no unrest." : " Taken back without unrest once " + CALog.esc(why) + ".") : ""),
+                    8f, hl, m.getName(), Misc.getDGSCredits(incomeMult() * colonyNet(m)));
+            t.addButton("Take back: " + m.getName() + (legacy ? "" : " (" + REVOKE_UNREST + " unrest)"), new String[]{"auton", "back", m.getId()}, base, dark,
+                    Alignment.MID, CutStyle.ALL, 260f, 22f, 4f);
         }
     }
 }

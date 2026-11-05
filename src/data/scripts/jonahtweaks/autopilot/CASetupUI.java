@@ -290,12 +290,14 @@ public class CASetupUI {
             }
         }
         if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("nexerelin")
-                && group(t, "autonomy", "Emergency autonomy (Nexerelin)", CASettings.AUTONOMY_NAMES[Math.max(0, Math.min(2, s.autonomyMode))].toLowerCase())) {
-            row(t, "Emergency autonomy", CASettings.AUTONOMY_NAMES[Math.max(0, Math.min(2, s.autonomyMode))], "Recommend", "autonomy", true);
-            t.addPara("Autonomy is yours to grant: in a money emergency (net income negative with under 3 months of it left above the "
-                    + "credit reserve), Recommend logs which colony a year old or more would save the most, and the Mod features page has "
-                    + "a Grant autonomy button. Colonies you make autonomous are never touched. Colonies an older version of Autopilot made "
-                    + "autonomous are taken back as soon as there's room under your colony limit, without Nexerelin's unrest.", Misc.getGrayColor(), 6f);
+                && group(t, "autonomy", "Autonomy (Nexerelin)", CASettings.AUTONOMY_NAMES[Math.max(0, Math.min(2, s.autonomyMode))].toLowerCase())) {
+            row(t, "Autonomy", CASettings.AUTONOMY_NAMES[Math.max(0, Math.min(2, s.autonomyMode))], "Recommend", "autonomy", true);
+            t.addPara("Only for money, never as a way past the colony limit (that gets an administrator), and never for a colony under a "
+                    + "year old: a colony that has lost money 3 months in a row, or the one that saves the most in a money emergency (net "
+                    + "income negative with under 3 months of it left above the reserve). Recommend logs it, and the Mod features page lists "
+                    + "money-losing colonies with a Grant button. Auto makes it autonomous, one every 30 days at most; outside an emergency not "
+                    + "while spending freely, since the pool pays for it. Autonomous colonies stay so until you take them back there.",
+                    Misc.getGrayColor(), 6f);
         }
         if (group(t, "industry", "Industry automation", "specialties " + (s.disableSpecialties ? "off" : "on") + ", VPC chips " + (s.disableVPC ? "off" : "on")
                 + ", shipping " + (s.disableShipping ? "off" : "on"))) {
@@ -466,7 +468,7 @@ public class CASetupUI {
         else if (k.equals("nexgap")) { s.nexAttackGap = CASettings.next(CASettings.NEX_GAPS, s.nexAttackGap); CAAttacks.apply(s); }
         else if (k.equals("spy")) s.spyMode = (Math.max(0, Math.min(2, s.spyMode)) + 1) % 3;
         else if (k.equals("spyhire")) s.spyNoHiring = !s.spyNoHiring;
-        else if (k.equals("autonomy")) s.autonomyMode = s.autonomyMode == 0 ? 1 : 0;
+        else if (k.equals("autonomy")) s.autonomyMode = (Math.max(0, Math.min(2, s.autonomyMode)) + 1) % 3;
         else if (k.equals("spykeep")) s.spyKeep = (Math.max(0, Math.min(4, s.spyKeep)) + 1) % 5;
         else if (k.equals("settleinc")) s.settlementMinIncome = Math.max(5000f, s.settlementMinIncome + 5000f * dir);
         return true;

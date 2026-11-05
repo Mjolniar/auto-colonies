@@ -49,6 +49,8 @@ public class CAData {
         public boolean buildout;
         public float buildoutFloor;
         public long buildoutProfitSince;
+        // Autonomy (CAAutonomy): months in a row the colony has lost money, and the month last counted (year * 12 + month)
+        public int lossStreak, lossMonth;
 
         public Map<String, Integer> megaSet() { if (megaSet == null) megaSet = new HashMap<String, Integer>(); return megaSet; }
 
