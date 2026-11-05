@@ -96,7 +96,7 @@ public class CASiege {
                 CALog.status("siege:" + m.getId(), m.getName() + ": under siege (" + w + "), defenses only");
             } else if (w == null && d.noted().contains(key)) {
                 CALog.forget(key);
-                CALog.quiet(m.getName() + ": siege over");
+                CALog.status("siegeend:" + m.getId(), m.getName() + ": siege over");
             }
         }
     }

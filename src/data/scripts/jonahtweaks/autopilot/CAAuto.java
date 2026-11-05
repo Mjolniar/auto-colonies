@@ -115,13 +115,13 @@ public class CAAuto {
             String key = k.m.getId() + ":" + k.p.id;
             float avail = Math.min(Math.max(0f, CABuild.credits() - s.reserve), CABudget.available(s) + CASurplus.extra(k.m, s));
             if (k.total > avail) {
-                if (CALog.once(key)) CALog.quiet(k.m.getName() + ": " + k.p.name + " waits for budget (" + Misc.getDGSCredits(k.total) + ", "
+                if (CALog.once(key)) CALog.add(k.m.getName() + ": " + k.p.name + " waits for budget (" + Misc.getDGSCredits(k.total) + ", "
                         + Misc.getDGSCredits(avail) + " left)");
                 continue;
             }
             float upCap = CASurplus.upkeepCap(k.m, s);
             if (!CABudget.upkeepFits(s.upkeepAdded, k.p.upkeep, upCap, k.p.planBonus > 0f)) {
-                if (CALog.once(key + ":upkeep")) CALog.quiet(k.m.getName() + ": " + k.p.name + " waits for next month's upkeep room ("
+                if (CALog.once(key + ":upkeep")) CALog.add(k.m.getName() + ": " + k.p.name + " waits for next month's upkeep room ("
                         + Misc.getDGSCredits(k.p.upkeep) + " of " + Misc.getDGSCredits(upCap) + ")");
                 continue;
             }

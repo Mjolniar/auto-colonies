@@ -39,15 +39,23 @@ public class CALog {
     /** starsector.log only: routine detail that doesn't belong in the panel log. */
     public static void quiet(String text) { CADiagnostics.LOG.info(CADiagnostics.TAG + text); }
 
-    public static void add(String text, boolean notify) {
-        List<String> log = CAData.settings().log;
+    /**
+     * A log entry: the panel log, starsector.log, and on screen as a short line (Settings, Interface: every entry, the
+     * default; important ones only; or none). important marks what shows in "important only": emergencies, defense
+     * fleets, wonders and gates, things that are yours to do.
+     */
+    public static void add(String text, boolean important) {
+        CASettings s = CAData.settings();
+        List<String> log = s.log;
         String date = Global.getSector().getClock().getDateString();
         log.add(0, date + ": " + text);
         while (log.size() > 100) log.remove(log.size() - 1);
         CADiagnostics.LOG.info(CADiagnostics.TAG + text);
-        if (notify) {
-            try { Global.getSector().getCampaignUI().addMessage("Colony Autopilot: " + text, Misc.getHighlightColor()); }
+        if (s.screenLog == 0 || (s.screenLog == 1 && important)) {
+            try { Global.getSector().getCampaignUI().addMessage("Autopilot: " + text, important ? Misc.getHighlightColor() : Misc.getTextColor()); }
             catch (Throwable ignored) { }
         }
     }
+
+    public static final String[] SCREEN_NAMES = {"Every entry", "Important only", "Off"};
 }
