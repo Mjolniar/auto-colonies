@@ -325,7 +325,8 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 String tag = !nextShown ? "Next" : "Planned";
                 nextShown = true;
                 String lock = st.kind == CAPlan.Kind.BUILD ? CAAotD.lockReason(st.id, market) : null;
-                t.addPara("%s  " + CALog.esc(st.label + (lock != null ? " (locked: " + lock + ")" : "")), 2f, tag.equals("Next") ? hl : base, tag);
+                if (lock == null && CAPlan.held(market, plan, st)) lock = "waits until the rest of the plan is ready";
+                t.addPara("%s  " + CALog.esc(st.label + (lock != null ? " (" + (lock.startsWith("waits") ? "" : "locked: ") + lock + ")" : "")), 2f, tag.equals("Next") ? hl : base, tag);
             }
             if (!nextShown) t.addPara("Every step is done.", hl, 4f);
             if (!doneSteps.isEmpty()) t.addPara(CALog.esc("Done: " + String.join(", ", doneSteps)), gray, 4f);
