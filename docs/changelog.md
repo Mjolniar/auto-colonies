@@ -17,11 +17,11 @@ Every version, newest first. If you're wondering why the first version on here i
 
 ## 2.41.2 - 2026-11-06
 
-- **Administrators for the colony limit actually show up now.** Turns out the game only puts an administrator up for hire when you dock at a market (5% a visit, more at big ones), so friendly markets you never visit never have one, and the manager just kept saying "none for hire" month after month. Now, past your colony limit with nothing on offer for 90 days, it pays a recruiter: a basic administrator for 250,000 on top of the normal hiring cost and fee, showing up 30 days later like any other hire. Expensive on purpose, and it still never dips under your reserve. The "needed" log line now says how many days are left before that happens.
+- **Administrators for the colony limit actually show up now.** Turns out the game only puts an administrator up for hire when you dock at a market (5% a visit, more at big ones), so friendly markets you never visit never have one, and the manager just kept saying "none for hire" month after month. Now, past your colony limit with nothing on offer for 90 days, it pays a recruiter: a basic administrator (no skills) for 250,000 on top of the normal hiring cost and fee, showing up 30 days later like any other hire. Expensive on purpose, and it still never dips under your reserve. The "Administrators needed" line now says how many days are left before that happens.
 
 ## 2.41.1 - 2026-11-06
 
-- **Easier to read on screen.** 2.41.0 went overboard: the hash tags, the `::` and `//` everywhere, the clipped lines and the blue-ish text made the on-screen lines hard to follow. Now each one is just a short code, a slash, and the normal sentence: `BUILD / Hot Springs: Planetary Shield (750k¢)`, `RECEIVED / Ming Adi: Gamma Core`, `SIEGE / Umuzi: hostile fleets at the colony, defenses only`. Nothing gets cut off, and the text is the game's normal white again (yellow for the important ones), pings included. A line it has no code for just shows the sentence. The panels and settings are unchanged.
+- **Easier to read on screen.** 2.41.0 went overboard: the hash tags, the `::` and `//` everywhere, the clipped lines and the blue-ish text made the on-screen lines hard to follow. Now each one is just a short code, a slash, and the normal sentence: `BUILD / Hot Springs: Planetary Shield (750k¢)`, `RECEIVED / Ming Adi: Gamma Core`, `SIEGE / Umuzi: hostile fleets at the colony, defenses only`. Nothing gets cut off, and every line, pings too, is back to the game's normal white (yellow for the important ones). Pings get their own `SCAN` code, and a line it has no code for just shows the sentence. The panels and settings are unchanged.
 
 ## 2.41.0 - 2026-11-06
 
@@ -44,11 +44,11 @@ Every version, newest first. If you're wondering why the first version on here i
 
 ## 2.39.3 - 2026-11-06
 
-- **Panopticon cores** (Emergent Threats: IX Revival). The Panopticon Instance and Panopticon Core couldn't go in Autopilot Storage at all. Now they can, and once a day one goes into a Surveillance Center that doesn't have one (the Instance first, and the colony with the most of your colonies in its system first), shipped over first if it's stored at another colony. Whatever regular core was in there goes back to storage. The Hegemony doesn't count either of them for inspections.
+- **Panopticon cores** (Emergent Threats: IX Revival). The Panopticon Instance and Panopticon Core couldn't go in Autopilot Storage at all. Now they can, and once a day one goes into an Auto colony's Surveillance Center that doesn't already have a better one (the Instance first, and the colony with the most of your colonies in its system first), shipped over first if it's stored at another colony. A regular core it replaces goes back to storage. The Hegemony doesn't count either of them for inspections.
 
 ## 2.39.2 - 2026-11-06
 
-- Fixed: Autopilot Storage took stuff the manager has no use for. UAF's Access Key Cards (the ones you turn in at the Aurorans for credits) went right in, and so did blueprint packages once you knew everything in them, Niko's building blueprints and so on. Now only things it can actually use go in: colony items it can install, AI cores, databanks, Antimatter Stabilizers, VPC chips and recipes. Anything else that's already in there gets moved to that colony's normal Storage, with one log line.
+- **Autopilot Storage only takes what it can use.** It used to take stuff the manager has no use for: UAF's Access Key Cards (the ones you turn in at the Aurorans for credits) went right in, and so did blueprint packages you'd already learned, Niko's building blueprints and so on. Now only colony items it can install, AI cores, databanks, Antimatter Stabilizers, VPC chips and recipes go in. Anything else already in there moves to that colony's normal Storage, with one log line.
 
 ## 2.39.1 - 2026-11-05
 
@@ -111,231 +111,296 @@ The fair play release. A review went through everything the mod does and anythin
 
 ## 2.36.3 - 2026-11-05
 
-- Wording: the storage cheat's description just says what it adds (commodities, weapons and fighters) instead of listing ships and ambassadors, which never went in storage like items anyway.
+- **Storage cheat wording.** Its description said Autopilot Storage "takes anything but ships and ambassadors", which read oddly, since neither of those ever moved through storage like items do. Now it just says what the cheat adds: commodities, weapons and fighters. Nothing else changed.
 
 ## 2.36.2 - 2026-11-05
 
-- A nanoforge that pollutes never goes into a forge on a habitable world anymore, whatever the colony's goal, threat or the endgame. Before, it only counted against it, and a War production colony barely minded, so it could happen.
-- If one is already in there and its pollution can still be undone (under 90 days), it comes back out to Autopilot Storage. Lock the building to keep it.
-- A forge upgrade that would pollute a habitable world again is shown but never started for you.
+- **No polluting nanoforge on a habitable world, ever.** A nanoforge that pollutes never goes into a forge on a habitable world now, whatever the colony's goal, threat or the endgame. Before, a habitable world only knocked a quarter off the item's score, and War production doubles what a nanoforge is worth, so a War colony could still take one.
+- **Waiting items skip those forges too.** An item sitting in Autopilot Storage doesn't count a habitable world's forge as a place to go, and no forge gets built there just to hold one.
+- **Ones already in come back out while they still can.** At an Auto colony, if the pollution can still be undone (it turns permanent after 90 days), the nanoforge goes back to Autopilot Storage. Lock the building to keep it.
+- **Forge upgrades that would pollute again are shown, never started.** Same for every goal.
 
 ## 2.36.1 - 2026-11-05
 
-- Campaign consumables and blueprints can't go into Autopilot Storage anymore (Industrial Evolution's consumables, ship and weapon blueprints, Random Assortment's Forge-Assisted Industry BP, anything that's used up on right click). Any already in there get moved to your biggest colony's normal Storage.
-- New option, off by default: **Research spends colony items**. With surplus credits, Auto research can spend items like Pristine Nanoforges, taken from storage, or also out of buildings (the one where the item does least first, never locked ones), but only once everything the tech needs is on hand.
+- **Campaign consumables stay out of Autopilot Storage.** Industrial Evolution's consumables, ship and weapon blueprints, Random Assortment's Forge-Assisted Industry BP, and anything else that gets used up on right click can't go in anymore, even with the storage cheat on. Any already in there get moved to your biggest colony's normal Storage.
+- **New option, Research spends colony items** (off by default). With credits over your surplus line, Auto research can spend colony items like Pristine Nanoforges on techs that need them. **From storage** only takes them out of storage; **From storage and buildings** can also pull them out of buildings, the one where the item does least first, never a locked one. Either way it only takes anything once everything the tech needs is on hand.
 
 ## 2.36.0 - 2026-11-05
 
-- **Endgame economy.** Once you're spending freely and making 1M a month or more, money stops being the goal. Credits count 5%, fleets, ship quality and defense count a lot more, and what a building makes is valued as production chains: goods none of your colonies make first, then your own shortages, then taking more of the sector's production, spread across your worlds.
-- With no free slot, an Auto colony can replace its weakest non-military industry with something worth a lot more, slowly (one a day, one a month per colony). Cores and items from the old building go back to storage.
-- It keeps at least a third of the net income it started at.
-- Research Facilities keep going up while research is left, and cores and items use the endgame weights.
+- **Endgame economy.** Once you're spending freely (10M+ over your surplus line) and making 1M a month or more, money stops being the goal at every colony that spends the surplus. Credits count 5%, and fleets, ship quality and defense count a lot more. It stays on while you've got 5M+ over the line and aren't losing money. Move the line to 2M or 500k, or switch it off, with **Endgame economy**.
+- **Production chains instead of profit.** What a building makes is valued by what it does for your whole economy: goods none of your colonies make come first, then your own shortages, then grabbing more of the sector's production, with a second producer on another world worth extra. War goods count 1.5x and Ashes of the Domain's advanced goods 2x.
+- **Weak industries get replaced.** With no free slot, an Auto colony can take down its weakest non-military industry for one worth at least 10,000 a month more. Slowly: one a day across your empire, one a month per colony. Its AI core and item go to Autopilot Storage, and ship producers or anything improved, locked or in the plan never get replaced. **Endgame replaces industries** turns this off.
+- **Income can drop, but only so far.** It keeps at least a third of the net income you had when the endgame started.
+- **Research and items follow along.** Research Facilities keep going up while there's research left, and AI cores and colony items are placed with the endgame's weights too.
 
 ## 2.35.0 - 2026-11-05
 
-- **War fleets** (Nexerelin). Relief fleets for colonies under siege, defense fleets where the threat is high or a crisis is coming, base strikes on known pirate and Pather bases near your colonies, and raids on whoever attacked you in the last 120 days. Never invasions or colony expeditions, and only against factions already hostile to you.
-- One a day normally, keeping 40% of your fleet request points for emergencies. While spending freely it's up to three a day, bigger, every known base, and a standing defense fleet at every colony.
+- **War fleets** (Nexerelin). New setting **War fleets** under Colony policies: Protect and strike back (the default), Protect, or Off. It orders fleets through Nexerelin, never invasions or colony expeditions, and anything aggressive only goes after factions already hostile to you.
+- **What it sends.** Relief fleets for colonies under siege, defense fleets where the threat is high or a crisis is coming, base strikes on known pirate and Pather bases within 15 light-years of your colonies, and on Protect and strike back, raids on whoever attacked your colonies in the last 120 days.
+- **How much.** Normally one a day, keeping 40% of your fleet request points for emergencies. Relief and defense fleets are paid like emergencies: past the budget if they have to be, never under your reserve.
+- **Past 10M it shotguns them out.** While spending freely it's up to three a day, 1.5x bigger, against every known base however far, plus a standing defense fleet at every colony, all paid from the surplus.
+- **War fleets section** on the Mod features page: fleet points, what's waiting, fleets on their way, and who's marked as an attacker.
 
 ## 2.34.3 - 2026-11-05
 
-- Autonomy recommendations are always visible now (they only showed in a money emergency before). Autonomy is Off, Recommend or Auto, money only, and never used to get around the colony limit.
+- **Autonomy recommendations always show now** (Nexerelin). They only appeared in a money emergency, so with a big surplus you'd never see one. The Mod features page always has the Autonomy section: colonies losing money with a Grant button, autonomous ones with Take back.
+- **Autonomy is Off, Recommend or Auto.** A colony at least a year old that's lost money 3 months in a row, or the best pick in a money emergency, gets logged on Recommend or made autonomous on Auto (one every 30 days, and not while spending freely unless it's an emergency). It's about money only, never a way around the colony limit.
+- **Taking one back** costs Nexerelin's normal unrest, unless an older version of the manager made it autonomous.
 
 ## 2.34.2 - 2026-11-05
 
-- Every log entry shows on screen again, just as one short line. 2.34.0 took most of them off the screen, which went too far. New setting to choose every entry, important only, or off.
+- **Every log entry shows on screen again, as one short line.** 2.34.0 took most of them off the screen, which went too far: the point was shorter entries, not fewer. New setting **Log entries on screen** under Interface: Every entry (recommended), Important only, or Off.
+- **A few lines are back.** Budget, upkeep and surplus terraforming waits show up in the log again (once each), and so do siege and threat endings, held to once every 10 days per colony like their starts.
 
 ## 2.34.1 - 2026-11-03
 
-- Spending freely runs on the pool, not on income. Removed the pause when net income dropped under half its best month (one weak month stopped everything with 60M in the bank), and new upkeep can now reach a sixtieth of the pool each month.
+- **Spending freely runs on the pool, not on income.** It used to pause whenever net income fell under half its best month, so one weak month stopped all spending with 60M sitting in the bank. That pause is gone. Spending freely only ends when you drop back under 10M over the line.
+- **New upkeep follows the pool too.** It was capped at a fifth of net income a month. Now each month's new upkeep can reach a sixtieth of the surplus (so the pool covers five years of it), shrinking as the pool does.
 
 ## 2.34.0 - 2026-11-03
 
-- **Wonders and gates** while spending freely (Ashes of the Domain): the Daedalus Array, and the Bifrost Control Center as a plan step followed by a gate in each of your systems, each only once your colonies make every good it needs.
-- Research can spend Fullerene Spools from any colony's Storage while spending freely.
-- Much shorter log. Things that flip back and forth (sieges, threat, policies) log at most every 10 days, and the day's trade contracts are one line.
+- **Wonders and gates** (Ashes of the Domain), while spending freely. The Daedalus Array gets built once your colonies make every good its construction needs. The Bifrost Control Center becomes a plan step at your focus world (research follows it), and after that a Bifrost gate goes up in each of your systems, one a day, once its goods are made too. Setting **Wonders and gates while spending freely**.
+- **Research can spend Fullerene Spools** from any colony's Storage while spending freely.
+- **Much shorter log.** Things that flip back and forth (sieges, threat, free port, hazard pay, station augments) log at most once every 10 days per colony, the day's trade contracts are one line, and build, core, administrator, terraforming and research lines got cut down. Routine lines also stopped popping up on screen, which 2.34.2 undid.
 
 ## 2.33.0 - 2026-11-03
 
-- Spending freely goes all out: build prices count 5%, every colony maxes its station, Heavy Batteries, Planetary Shield, Megaport and Patrol HQ, colonies re-plan daily with up to three upgrades at once.
-- Surplus terraforming goes for the richest deposits instead of trace ones, adding tectonic activity first when a deposit needs it.
-- Producers for Ashes of the Domain's advanced goods get built even with no special project running.
+- **Prices barely count.** While spending freely, build prices count 5% (they still counted a quarter), so anything that adds something gets built.
+- **Every colony maxes its defenses.** Its station to the top of its line (up to a star fortress), Heavy Batteries, Planetary Shield, Megaport and Patrol HQ go first in its plan.
+- **Faster.** Colonies re-plan every day instead of every 7 days, with up to three upgrades at once (never two on the same building).
+- **Terraforming goes for the richest deposits.** Surplus terraforming ranks by how much it gains instead of gain per credit, so it goes for plentiful and ultrarich instead of cheap trace ones. When a rich deposit needs tectonic activity first, it adds that first, and the plan's hazard cleanup leaves it alone until the deposit's in (or 540 days).
+- **Ashes of the Domain's goods producers** (Crystalizator, Enrichment Facility, High-tech Industry, Skunkworks or Civilian Heavy Production) get planned even with no special project running.
 
 ## 2.32.0 - 2026-11-03
 
-- **Spending freely.** Past 10M over the surplus line, every Approve and Auto colony spends from the surplus, not just the focus world. Defense, stability, growth and access buildings go up even when they cost more than they earn, hazard pay goes wherever it helps, and terraforming runs up to three projects per colony.
+- **Spending freely.** Once you're 10M past your surplus line, every Approve and Auto colony spends from the surplus, not just the focus world. Before, only the focus world got anything, and with over 60M past the line every other colony sat at "nothing worth starting".
+- **Money counts less, so useful stuff goes up.** Those colonies can go past the monthly budget and per-project cap, prices count a quarter, and credits count a quarter in what a building is worth, so defense, stability, growth and access buildings get built even when they cost more than they earn. New upkeep can reach a fifth of net income a month.
+- **Hazard pay wherever it helps,** with no limit, at any colony it speeds up by 5% or more.
+- **More terraforming.** The plan's best-value terraforming is paid from the surplus everywhere, and surplus terraforming runs up to three projects a day per colony, planned around the ones already running.
+- **New setting, Over 10,000,000 of surplus:** Every colony spends it, or Focus world only. It paused while net income was under half its best since it started (2.34.1 took that out).
 
 ## 2.31.0 - 2026-11-03
 
-- United Aurora Federation colony items, valued from what they actually do. The Rice Cooker, Dimensional Stove and Access Router are never installed since they don't help.
+- **United Aurora Federation colony items,** valued from what they actually do in UAF's code. The Dimensional Nanoforge (+2 output, better ship quality, and it clears pollution instead of causing it) goes to habitable worlds' forges ahead of the polluting nanoforges. The Servosync Pump (+2 fuel), Modular Purifier (+2 metals and transplutonics) and Garrison Transmitter (a port before ground defenses) are placed by value too.
+- **Three are never installed.** The Rice Cooker adds heavy machinery and transplutonics demand, the Dimensional Stove only helps a bakery, and the Access Router does nothing in 0.98a.
 
 ## 2.30.0 - 2026-11-03
 
-- Fixed daily checks only running once per loaded save (terraforming plans, research ranking, the focus world, siege checks and more), which caused some expensive loops.
-- Fixed surplus terraforming undoing its own work and looping (pollution and high gravity being added back).
-- **Special project supply** (Vaults of Knowledge): goods a black site project needs that nobody makes get their producer built as a plan step.
-- Research lists the techs that take colony items and where those items come from.
+- **Daily checks run daily again.** A bunch of things meant to refresh every day (surplus terraforming plans, research ranking, the focus world, siege and crisis checks, TASC lists, trade contract shortfalls) only got worked out once per loaded save, because of how the game answers "days since the start". They refresh every day now.
+- **Surplus terraforming stopped undoing its own work.** TME projects toggle a condition: the same project removes it if it's there and adds it if it isn't. An old plan kept starting "remove" projects on worlds that had just been cleaned, which put pollution (Gargor) and high gravity (Hiverne, Zendia) right back, over and over, about 7.3M worth. Now it re-plans whenever conditions change and never starts a project that goes the wrong way.
+- **One set of rules for both kinds of terraforming.** The plan's terraforming and surplus terraforming agree on what to keep and what to clear, projects are only charged once they start, and pollution isn't removed while a nanoforge forge is still upgrading (it would come right back).
+- **Special project supply** (Vaults of Knowledge). Goods the running black site project needs that none of your colonies make get their producer built as a first plan step at the best colony, along with producers for its own inputs, and research follows. Whatever it can't cover gets logged. Setting **Special project supply**: Auto, Warn only, or Off.
+- **Smaller fixes.** Plans use the colony's own goal everywhere, Paradise plans only add Farming with farmland, Forge plans skip the Terrestrial Engine without a TME world, and a research-blocked plan step keeps its value (it counted for nothing every other day). The Research section lists the techs that take colony items and where those items come from.
 
 ## 2.29.0 - 2026-11-03
 
-- AI cores in Research Facilities and Black Sites are valued by what they really do there, and Alpha cores go into research buildings first.
-- **Surplus research**: more Research Facilities from the surplus, up to 8.
+- **AI cores in research buildings are valued by what they really do.** In Vaults of Knowledge's Research Facility and Black Site, a core doesn't speed up research: it cuts the building's research, maintenance and cover-up costs (an Alpha by half, a Beta by a quarter, a Gamma by a tenth), and an Alpha on a pre-collapse facility world adds a databank a month. Black Sites take cores now; they never got one before.
+- **Alpha cores go there first.** New setting **Alpha cores in research buildings**: First (default) or By value. On First, Alphas go into research buildings before anywhere else, even with **Alpha cores** on Only where removable, and a colony at its inspection limit sends its least useful other core back to storage to make room.
+- **Surplus research.** With credits over your surplus line, more Research Facilities go up at Auto colonies, up to the 8 that Vaults of Knowledge counts toward research speed, while the research left is worth more than a quarter of their upkeep. They come back down once there's nothing left to research. Setting **Surplus research**.
 
 ## 2.28.0 - 2026-11-03
 
-- Station augments are valued by what each one does on that specific station (its guns, fighters, shields and AI core), instead of one rating for every station. A few useless or harmful ones are never picked.
+- **Station augments are valued by what they do on each station.** Before, every augment had one combat rating from Station Augments, the same on every station, so Macro Thrusters and Support Outfit could get picked, Command Center's command points counted in battle, and fighter augments went on gun stations. Now it reads each station's own ships (fighter wings, guns, point defense, shields, drones) and its AI core, and values each augment as a share of that station's power. The colony panel shows the station's loadout.
+- **Better picks.** Bubble Shield and the SotF weapon platforms are the core defensive picks. AI Fighter Uplink and Fighter Temporal Cores go on stations as much as they rely on fighters, and with the uplink known, an AI core in a carrier station counts what it gives the fighters. Midline stations get Axial Overclocking and Deep Shield Dissipators, and Warmind Refit is never used while the Dustkeepers are hostile.
+- **Never picked:** Macro Thrusters (the AI flies the station right into the enemy), Backline Deployment, Safety Shunt and Support Outfit. K-Type Shield Shunt and Deep Shield Dissipators never go on together.
+- **Combat loadout before the fight.** When a raid or blockade is on its way, the combat loadout goes on before the station's engaged, instead of everything freezing for the siege. Nothing changes mid-battle.
 
 ## 2.27.0 - 2026-11-02
 
-- Stations from other mods (Interstellar Imperium, Knights of Ludd, Ashes of the Domain) count like vanilla stations everywhere. New Imperium station line.
+- **Stations from other mods count like vanilla's.** Interstellar Imperium's stations (and Knights of Ludd's, or AotD's Star Citadel if you've got one) count by their station tags now. Before, an Imperium star fortress counted as no station at all in the defense estimate behind Hegemony inspections and AI core risk.
+- **AI cores in them are station cores.** A core in one counts for the station's fighting strength and gets the defensive priority under threat, instead of being valued as "+1 output".
+- **Plans and station lines.** The plan's station step counts any station, and **Station line** has a new Imperium choice when Interstellar Imperium is installed. Station Augments already worked on these stations; its augment points come from the same tags.
 
 ## 2.26.0 - 2026-11-02
 
-- **Surplus terraforming** at every Auto colony, planned on TME's own rules so it never trades away something the colony needs. Structures it builds come down again once their work is done.
+- **Surplus terraforming.** Whatever the focus world leaves of your surplus now goes into Terraforming Made Easy projects at every Auto colony, most value per credit first: richer deposits and farmland, harsh conditions cleared (a planet with none left turns habitable), building the structure first when the colony has none. Before, terraforming only ran on structures a colony already had and had to pay back in 3 years, so 15M of surplus just sat there.
+- **Planned on TME's own rules,** one or two projects ahead, so it never trades a habitable world's farmland and organics for richer ore, and never undoes what the colony's plan needs.
+- **Structures come back down.** One it builds is taken down once its work is done (TME's changes stay), so you only pay its upkeep while it's working.
+- **New setting, Surplus terraforming,** under Budget and spending: Max output (default, anything worth 1,000 a month), Pays back in 10 years, or Off. Paid from the surplus only, outside the monthly budget. With Vaults of Knowledge, structures research still locks aren't built yet, but research values their techs by what they'd allow.
 
 ## 2.25.0 - 2026-11-02
 
-- Auto research no longer sits idle when no tech pays for itself; it starts the best of the rest, and the log says why when nothing can start.
+- **Auto research doesn't sit idle anymore.** It used to stop at the first tech that didn't pay for itself within a year. When your colonies had no room for what the remaining techs unlock, research just sat there for months with nothing in the log. Techs that pay still go first, but after them it starts the best of the rest, with the same databank hold for plan techs and the same upkeep room.
+- **It tells you why when nothing can start.** Once: too few databanks (how many you have, and the cheapest tech), AI cores missing from Autopilot Storage, colony items, or this month's upkeep room. A start that fails gets logged too.
 
 ## 2.24.0 - 2026-11-02
 
-- The new upkeep cap is Automatic by default (10% of net income, at least 20,000) so it keeps up as you grow.
+- **The new upkeep cap follows your income.** **New upkeep cap per month** is Automatic by default now: 10% of last month's net income, at least 20,000, so it keeps up as you grow. A fixed amount set once at setup went stale fast (20,000 against 760,000 a month of income in one save). Older saves switch to Automatic once, with a log line, and Fixed is still one click away in Settings.
+- **What the cap is for:** a monthly brake on permanent upkeep, so a wrong estimate or a drop in income gets caught before a lot of fixed cost piles up. The Colonies page shows this month's new upkeep against it, and research and the Coronal Hypershunt use the same cap.
 
 ## 2.23.0 - 2026-11-02
 
-- A fix for another mod's Income report moved out into its own mod. Colony Manager only does colony stuff.
+- **Colony Manager only does colony stuff.** The fix for Industrial Evolution's unnamed Income report rows (sorting Command, Income could crash) isn't part of it anymore. Fixes for other mods live in their own mod now.
+- The Diagnostics page's Jonah's mods section only lists the ones you have installed.
 
 ## 2.22.0 - 2026-11-02
 
-- The colony screen button stays off the refit and fleet screens.
-- Surplus investment keeps back credits already promised to custom production.
-- Diagnostics gets a section for my other mods, and stuck colonies get a monthly explanation in the log.
+- **The colony screen button stays off the refit and fleet screens.** It only looks for its spot on the colonies tab and the docked colony screen now, so it never lands where Jonah's Auto Outfitting has its button, and those screens aren't searched four times a second anymore. With a full building grid it tries every free spot along the rows and beside the buildings.
+- **Surplus investment keeps back what's promised.** Credits already owed to custom production (the game's own, and Ashes of the Domain's orders) don't count as surplus.
+- **Diagnostics for my other mods.** The Diagnostics page gets a Jonah's mods section with each one's version, warnings and errors this session, and status line.
+- **Stuck colonies explain themselves.** Once a month, a colony with nothing worth starting writes its best options, and why they don't pay, to starsector.log.
+- **Less work in the background.** An old cleanup for a retired condition runs once per load instead of going over every colony every 5 seconds.
 
 ## 2.21.0 - 2026-11-02
 
-- **Surplus investment**: credits over a line go into one focus world.
-- Each colony offers several builds at once, so one held-back build doesn't stall it.
-- Better items swap in for lesser ones, and items waiting in storage can get the building they need built.
+- **Surplus investment.** Credits over a line (3M recommended; older saves get it switched on once) go into one focus world. It can spend past the monthly budget and the per-project cap, add upkeep up to 10% of net income, counts prices at a quarter, pays for its best terraforming from the surplus, and research counts its plan twice. The manager picks the Auto colony with the most to build on, or you pick it from the colony panel.
+- **Big plan steps stop waiting forever.** A plan step whose upkeep alone is over the new upkeep cap now goes as the month's first new upkeep. Before, it just waited (Altea's Geomorphology Station waited 7 months).
+- **One held-back build doesn't stall a colony.** Each colony offers its best 3 new builds and 2 upgrades, so when the best has to wait, the next one goes.
+- **Better items swap in.** A better colony item replaces a lesser one (a Pristine Nanoforge for a Corrupted one), and an item with nowhere to go makes a building that would take it worth what the item adds.
+- **Research can spend AI cores** from Autopilot Storage on Auto, and the panel says when it's waiting on research you queued yourself.
 
 ## 2.20.1 - 2026-11-01
 
-- The story point monthly cap counts story points instead of improvements, cheapest first.
+- **The story point monthly cap counts story points.** It counted improvements, and each improvement at a colony costs twice the last one there, so a cap of 4 spent 2 + 4 + 8 + 16 = 30 story points at one colony. Now it counts the points, and the cheapest improvement anywhere goes first.
 
 ## 2.20.0 - 2026-11-01
 
-- The Orbital Fusion Lamp only goes where it actually helps instead of just heating a planet up.
-- The hazard pay limit goes to 30% of net income.
+- **The Orbital Fusion Lamp only goes where it helps.** It cancels Cold, Very Cold, Poor Light and Dark, but it eats 10 volatiles and heats up any other world (Hot, or Extreme Heat on one that's already hot). It used to go in anywhere, and two hot desert worlds ended up at Extreme Heat. Now it's only placed where what it cancels beats the heat it adds, or where the colony's plan wants Extreme Heat. A lamp that only adds heat goes back to Autopilot Storage.
+- **Old saves get the new hazard pay limit.** Saves still on the old 10% limit move to 30% once (the recommendation since 2.17.0). And when one colony's hazard pay costs more than the whole hazard pay budget, the log says so instead of blaming other colonies.
 
 ## 2.19.0 - 2026-11-01
 
-- Growth techs count the growth they give, research stops waiting on databanks after 90 days, research-locked plan steps stop hogging the plan's priority, and plan terraforming can go past the per-project cap.
+- **Growth techs count.** Hazmat Equipment and Aquatic Agriculture are valued by the growth their hazard cut gives your colonies that aren't max size yet.
+- **Research has a backup.** After 90 days holding databanks for a plan tech it can't afford yet, the best tech you can afford goes ahead anyway. Research upkeep also counts the AI cores in your facilities (an Alpha halves it, a Beta takes a quarter off, a Gamma a tenth).
+- **Locked plan steps step aside.** A plan step research blocks for now gives up its spot at the top of the plan. And while the free industry slots are all the plan's industries have left, a new industry that isn't in the plan counts 30,000 a month less.
+- **Plan terraforming can go past the caps.** Terraforming projects that are plan steps, the world's final project included, go past the per-project cap and the monthly terraforming budget, paid from credits above your reserve.
 
 ## 2.18.1 - 2026-11-01
 
-- Fallbacks for any mix of mods: plan steps from mods you don't have are dropped, and a first Research Facility gets built when research is what's missing.
+- **Fallbacks for any mix of mods.** Plan steps for a building or condition your game doesn't have (its mod isn't installed) get dropped, so they never hold a plan's top spot. Plain plans get neutral names (Forge, Fortress, Paradise) instead of TME world names.
+- **A first Research Facility when research is what's missing.** Vaults of Knowledge's Research Facility has a value now: half of what your colony plans are waiting on in research when you have none, nothing for a second one. So Auto builds one when research is the holdup.
 
 ## 2.18.0 - 2026-11-01
 
-- Research works toward whole chains of techs that colony plans need, instead of just the next step.
-- Special-world plans only get picked when the colony can actually fit them.
+- **Research works toward whole chains.** It used to rank techs by what they unlock right now plus half of one step on, so a tech two or more steps from a plan step looked worthless, and Auto stopped at the first tech worth nothing. Now every open plan step that research locks is traced back through the whole chain of techs it needs, and the step's value is shared along the chain.
+- **Databanks go to the plan first.** While the best plan tech is short of databanks, the ones you have only go to techs a plan needs, and the log says what's next and how many databanks it takes. Databanks in colony Storage count and get used. Plan techs aren't held back by the new upkeep cap, and one over the cap doesn't block cheaper ones anymore.
+- **Special-world plans only when they fit.** A TME world is only picked if its industries plus the colony's others fit the slots it'll have at max size, and a year of its end conditions' value counts. TME structures and the Unification Center get the plan's priority even though they cost more than they earn (before, they never got built or researched). A colony with no reachable world keeps no world steps, only hazard cleanup.
 
 ## 2.17.0 - 2026-11-01
 
-- Hazard pay goes to the colonies it speeds up the most (new colonies never got it before).
-- Autonomy became the player's call.
+- **Hazard pay goes where it buys the most growth.** It used to switch on only when it cost under 25% of that colony's own net income, so new colonies (which gain the most) never got it, and in practice no colony had it. Now colonies are ranked by how much faster it makes them grow, and the best get it while the speed-up is at least **Hazard pay where growth is at least** (25%) and all of it fits in **Hazard pay limit, all colonies** (30% of net income recommended). The more you earn, the more colonies get it. Every goal wants growth, and the log gives the months to the next size with and without it.
+- **Autonomy is your call.** The manager never grants it anymore (the old Auto setting just recommends now). Colonies an older version made autonomous get taken back as soon as there's room, without Nexerelin's unrest.
 
 ## 2.16.1 - 2026-11-01
 
-- Colonies it made autonomous get taken back as soon as there's room.
+- **Autonomous colonies come back as soon as there's room.** A colony the manager made autonomous waited for stability 7, so Nexerelin's 2 unrest from taking it back couldn't drop it under 5, and a small colony might never get there (Gargor sat at 6 with room to spare). Now it's taken back once there's no money emergency, taking it back wouldn't start one, and there's room under your colony limit or an idle administrator, who's put in charge of it right away.
+- The log tells colonies past the limit apart from autonomous ones waiting to come back.
 
 ## 2.16.0 - 2026-11-01
 
-- Going past the colony limit gets an administrator, never autonomy. Founding a third colony made it autonomous right away before, which was bad.
+- **The colony limit gets an administrator, never autonomy.** Founding a colony past your limit made it autonomous right away: a new colony always starts under stability 5, and that counted as a colony limit emergency. On top of that, the administrator check valued the limit's stability as money, so a 2,500 administrator looked like a loss. Now going past the limit puts an idle administrator in charge or hires one, whatever the money says, past the monthly budget if it has to but never under your reserve. The log says when nobody's for hire.
+- **Emergency autonomy is for money emergencies only,** and never picks a colony under a year old. Taking one back costs 2 stability.
+- **Idle agents explain themselves.** The Agents section says why an agent the manager runs is idle: its Defense work is the same as Nexerelin's Internal security mode, run daily within budget.
 
 ## 2.15.0 - 2026-10-31
 
-- Station augments swap to combat when a colony is threatened and back to output when it calms down.
+- **Station augments swap with the threat.** While a colony plans for Security (high threat, or that's its goal), combat augments count ten times as much, so they take the augment points from Hydroponics Basins and the other output augments. When the threat drops, the output ones come back. Before, combat ratings were too small to beat output even under Security.
+- **It swaps the day the threat changes,** not at the weekly turn, so the combat loadout's on before a siege blocks refits. The log and the colony panel say which way it swapped.
 
 ## 2.14.1 - 2026-10-31
 
-- The colony screen button stays with the colony screen instead of floating over other screens.
+- **The colony screen button stays with the colony screen.** It was put on the screen once and never moved, so it stayed put when the buildings changed or you switched colonies, and could even show up over other screens. Now it sits in the panel right above the buildings, its spot gets worked out again four times a second and the button follows, hidden screens are skipped, and it's found from the colonies and docked screens too.
 
 ## 2.14.0 - 2026-10-31
 
-- **Colony crises** priced into everything, a Colony crises page, Hegemony inspection orders, and Never inspected became the recommended core limit.
+- **Colony crises are priced into everything.** Crisis progress costs about 640 a month per point now. An AI core pays for the Hegemony progress and Pather interest it adds (size 3 and under is free from the Hegemony, and 7 Pather interest at size 4+ means a Pather cell), a Patrol HQ, Military Base or High Command counts how much it slows crises, and Fuel Production counts the Sindrian Diktat progress it adds.
+- **It gets ready for what's coming.** The colony the next crisis is likely to hit plans for Security until it's over, a colony a Pather attack is coming for sheds AI cores until its cell can dissolve, and a coming Nexerelin police raid closes free ports.
+- **New setting, Hegemony inspection orders:** Advise (logs each inspection coming for an Auto colony with its strength and your defenses, so you can resist or bribe), Resist where defended, or Off. The game's default is to comply, which hands over every core there.
+- **Never inspected is the recommended Inspection risk now,** and there's a new choice, Small colonies only, that keeps cores out of colonies above size 3.
+- **Colony crises page** in the empire panel: the meter, the coming crisis and its likely target, your military multiplier, and each faction's monthly progress with what drives it.
 
 ## 2.13.1 - 2026-10-31
 
-- The attack spacing settings only show up in a Nexerelin Derelict Empire start.
+- **Attack settings only for a Derelict Empire start.** The Attacks on your colonies settings only show up and apply in a Nexerelin Derelict Empire (or Derelict Empire V2) start now, the one that hands every faction blockade points on day 0. There, the recommended settings turn them on (at most 4 pirate and crisis fleets per system, Nexerelin attacks 90 days apart). Any other game keeps the game's own values.
 
 ## 2.13.0 - 2026-10-31
 
-- Optional settings to cap pirate and crisis fleets per system and space out Nexerelin attacks on your colonies.
+- **New settings group, Attacks on your colonies.** Both are off unless you pick them, and never part of the recommended settings. (They were removed in 2.37.0.)
+- **Pirate and crisis fleets per system.** The game keeps up to 11 in a system with your colonies; pick 8, 6, 4 or 2. The game's own value is kept and put back, and a lower value from another mod is never raised.
+- **Nexerelin invasions, raids and blockades.** One at a time, 30 to 180 days apart, by holding Nexerelin's own attack cooldown on your faction while any attack on your colonies is on its way or under way. That covers IX Revival's blockades too, since they come through Nexerelin.
 
 ## 2.12.0 - 2026-10-31
 
-- **Sieges**: colonies under attack only get defenses until it's over. Trade contracts skip goods that can't be shipped.
+- **Sieges.** A colony that's blockaded, has hostile fleets at the planet, has hostiles in its system that outweigh its defenses, or has a raid, invasion or blockade headed its way is under siege. Until it's over, it only gets defense builds (none during a fast buildout), and its items, AI cores, administrators, policies, station augments and TASC projects are left alone.
+- **Trade contracts skip goods that can't ship.** Theory of Toolbox only delivers from colonies with a spaceport and accessibility above 0, and a blockade had Auto taking contracts that missed every delivery. Contracts don't count the surplus of colonies that can't deliver or are under siege anymore.
 
 ## 2.11.0 - 2026-10-31
 
-- Research moves to the Autopilot Storage page and takes what it needs from storage.
-- The storage cheat (off unless you turn it on).
+- **Research moves to the Autopilot Storage page** (Vaults of Knowledge). Starting a tech (Auto or the Start button) moves whatever the Research Facility is short of from Autopilot Storage (databanks, an Alpha core, colony items), then databanks from your fleet's cargo. Autopilot Storage takes research databanks now.
+- **Storage cheat** (new Cheats group, off unless you turn it on, never in the recommended settings). Autopilot Storage takes anything but ships, and your colonies cover shortages from it for free, like the game's own stockpiles. It was removed in 2.37.0.
 
 ## 2.10.0 - 2026-10-31
 
-- AI cores placed by value against Hegemony inspection risk, administrators placed by cost, and emergency autonomy.
-- One Mod features page instead of a page per mod.
+- **AI cores by value.** Cores get placed, upgraded, moved and sent back to storage by what they add in each building (output, upkeep, shortages, structure bonuses, weighted by the colony's goal), against Hegemony inspection risk. New setting **Inspection risk**: More where defended (default), Never inspected, or No limit. There's no limit at all once you've beaten the inspections, while you're in the Persean League, or when the Hegemony has no colonies, and a colony an inspection is coming for is left as it is.
+- **Administrators by cost.** They're hired, placed and moved only where Industrial Planning's output and the colony limit's stability are worth more than their salary and hiring cost. Each colony's Overview shows the salary against what the administrator adds.
+- **Emergency autonomy** (Nexerelin): new setting, Off, Recommend or Auto. In a money or colony limit emergency, the colony whose autonomy saves the most is made autonomous, and it's taken back once the emergency's over.
+- **One Mod features page** in both panels instead of a page per mod.
+- **Pather cells and mod buildings.** Mod buildings stopped being measured once a colony had Pather cells. This fix didn't actually hold in game; 2.39.0 fixed it for real.
 
 ## 2.9.0 - 2026-10-31
 
-- Panels show one page at a time from a list on the left instead of one giant scroll.
-- The Agents page shows every agent you have and lets you hand yours over.
+- **One page at a time.** The empire and colony panels were one long scroll with every mod's section in it. Now there's a page list down the left. Empire panel: Colonies, Autopilot Storage, one page per mod feature you use, Settings, Log and Diagnostics. Colony panel: Overview, Plan and builds, Locks, and one page per mod feature that applies. Settings groups open one at a time, the first-time setup page included.
+- **The Agents page shows every agent you have** (Nexerelin), not just the ones the manager hired, with type (Negotiator, Saboteur, Hybrid), level and current job. **Let Autopilot use it** hands one over, **Take it back** gets it back. And it won't hire another agent while one of yours that could do the job sits idle.
 
 ## 2.8.0 - 2026-10-30
 
-- The **Colony Autopilot button** right on the colony screen, and its own Intel filter.
-- Recommended settings that work if you only switch colonies to Auto, with the new Automatic budget.
-- Fixed upkeep being predicted 500 times too high, which had it building whatever had the least upkeep.
-- Only builds that pay for themselves get built, and Nexerelin outposts are left alone.
-- Fast buildout ranks by money only and never builds defenses.
+- **Colony Autopilot button on the colony screen.** It's right on your colony's own screen (Command tab or docked), in a spot that doesn't cover anything, with a setting to turn it off. The empire panel got its own **Colony Autopilot** filter in Intel too (it used to sit under "Colony threats"), and both panels got a cleanup.
+- **Recommended settings that work if you only switch colonies to Auto.** New Automatic budget (recommended): half of last month's net income plus 15% of your credits above the reserve, so a young colony that loses money still gets built and spending slows as savings fall. The rest: pause on loss off, a reserve of a quarter of your credits (50k-500k), AI cores and administrator hiring on, research, trade contracts and the RAT settlement on Auto, agents on Defense.
+- **Upkeep was predicted 500 times too high.** Every building's upkeep got multiplied by 500 a second time, so everything scored hugely negative (a Waystation at about -700k a month) and Auto built whatever had the least upkeep, which meant Research Facilities that did nothing. Fixed, and the bad upkeep corrections older saves learned from it are cleared once.
+- **Only builds that pay for themselves.** Approve, Auto and fast buildout only start something that pays back within about 3 years, never the least-bad option. The colony panel shows money a month after upkeep and a "Ranked" line with how each pick's score is made up. Nexerelin outposts are left alone completely.
+- **Fast buildout ranks by money only.** A threatened colony on fast buildout planned for Security and spent its buildout on Ground Defenses, Heavy Batteries and a Battlestation. Now the buildout ignores goal and threat and never builds defenses.
+- **Also:** Ashes of the Domain research can use databanks from your fleet's cargo, and sorting Command, Income with Industrial Evolution doesn't crash anymore.
 
 ## 2.7.0 - 2026-10-30
 
-- **Fast buildout** for new colonies.
-- **Nexerelin agents.**
-- Battle size and sticky combat autopilot moved out to a separate mod, so this one makes no balance changes.
+- **Fast buildout for new colonies.** After you found your first colony, a popup offers to build it up fast: it goes to Auto, planned for Money, and starts the fastest-paying builds every day with everything above a credit floor you pick (250,000 by default), outside the monthly budget, until it's made money for 30 days in a row. The colony panel can stop it, change the floor, or start one for any colony that's losing money.
+- **Nexerelin agents** (off by default). On Defense, agents run Nexerelin's own counter-insurgency, Pather cell and pirate base operations at the colonies that need them, then raise relations with factions running operations against you while you're not at war. Defense and offense adds sabotage of military industries, only against factions already hostile to you (never allies, ceasefires or the faction you're commissioned with). It hires level-1 agents (12,000 each) up to **Agents to keep**, only while there's work, and only gives orders to agents it hired. The empire panel lists your agents and enemy operations against your colonies.
+- **Balance changes moved out.** Battle size and sticky combat autopilot went to a separate mod, so this one doesn't change any game settings anymore.
 
 ## 2.6.0 - 2026-10-30
 
-- First downloadable release.
-- Fixed every reflected integration (Ashes of the Domain and others) failing in game because of the game's script loader. This fix was first built as 2.5.1, which only ever ran on my own game.
-- Health checks for each integration, calibration of estimates against your real buildings, and a breaker that pauses anything that keeps failing.
-- The Getting started guide.
+- **First downloadable release.** Extract the zip into `Starsector/mods/`.
+- **Ashes of the Domain and the other reflected integrations work in game now.** The game's script loader refuses mod code that uses Java's reflection classes, so every one of them failed in a real game (nothing got built under AotD at all). They go through a route the loader allows now, and the build checks for it so it can't come back. This fix was first built as 2.5.1, which only ever ran on my own game.
+- **Staying working through mod updates.** A health check at load for each integration (OK, newer version, partly off, or off, shown on the Diagnostics page), mod values read live where a mod exposes them, a weekly calibration of estimates against your real buildings, and a breaker that pauses an action for the session after it fails three times in a row.
+- **The Getting started guide,** with a first-colony walkthrough.
 
 ## 2.5.0 - 2026-10-30
 
-- Support for a bunch of colony mods from the Mod Index: Terraforming & Station Construction, Grand.Colonies, Substance.Abuse, Volkov Industrial Conglomerate, Roider Union, Planetary Shield: Access Control, Unknown Skies, What We Left Behind and Astral Ascension.
-- Any mod's deposits and colony items through the game's own tables, and no builds past 12 buildings.
+- **Colony mods from the Mod Index.** Support for Terraforming & Station Construction, Grand.Colonies, Substance.Abuse, Volkov Industrial Conglomerate, Roider Union, Planetary Shield: Access Control, Unknown Skies, What We Left Behind and Astral Ascension.
+- **What they get.** TASC's terraforming projects are valued by the conditions they leave behind, and its unsafe buildings are never test-built. Grand.Colonies' extra upkeep past its building threshold is counted on every build. A Brewery only goes up when you have a recipe for it. A colony with viral contamination gets Volkov's anti-EVC treatment first. Roider Dives and Union HQ count the deposits they mine in range, the Access Control shield counts as ground defense and less Pather interest, and with Astral Ascension, hazard pay never pushes a planetless colony past size 10, where it would crash.
+- **Any mod's deposits and colony items.** Deposits a mod adds to the game's own tables score like vanilla ones, and any mod's colony item can be placed through the game's item effect table.
+- **No builds past 12 buildings** without Grand.Colonies, since the colony screen can't show a 13th.
 
 ## 2.4.1 - 2026-10-30
 
-- Renamed from Jonah Tweaks to Jonah's Colony Manager. Same mod id, so saves keep working.
+- **Renamed from Jonah Tweaks to Jonah's Colony Manager.** Same mod id, so saves keep working.
 
 ## 2.4.0 - 2026-10-30
 
-- Ashes of the Domain: research, management styles, the Coronal Hypershunt, Pluto, Nidavelir and its colony items.
+- **Research** (Ashes of the Domain: Vaults of Knowledge). Each tech you can start is valued by what it unlocks for your colonies, scored by the same engine that picks builds. On Auto it starts techs that only need databanks, moving databanks from Autopilot Storage when the facility is short. Your own queue is never touched.
+- **Management styles** (Vaults of Knowledge's Colony Development). VoK only lets you pick one when founding a colony, so the manager never changes it, but it scores buildings with your style's real effects.
+- **Megastructures.** A Coronal Hypershunt colony gets nothing built or placed (AotD doesn't allow it), its wormhole range is kept at the smallest that reaches the receivers serving your colonies, restorations start within the budget, and the empire panel lists where receivers would pay off. Pluto's laser runs at full strength with the ore going to the forges, and Nidavelir's Nexus Core gets manpower while its inputs are supplied. Setting **Megastructures (Hypershunt, Pluto, Nidavelir)**.
+- **AotD colony items** (Tenebrian Nanoforge, Synchrotron, Atmospheric Driver, Catalytic Core, Turing Engine) are placed from Autopilot Storage like vanilla ones.
+- **Hidden buildings are never touched** (megastructure defenses, the hypershunt's port). Left to you: Bifrost gates, Grand Wonders, black site projects and custom production.
 
 ## 2.3.0 - 2026-10-30
 
-- Ashes of the Domain industry synergies and trade contracts.
+- **Industry synergies** (Ashes of the Domain: Vaults of Knowledge). A build's value includes the synergies it starts, ends or strengthens on that colony, like Ore-To-Core (Refining with Mining) or Rapid Transportation (Spaceport with Waystation), 19 in all. Only synergies researched at that colony count, and the colony panel shows the active ones and those one building away.
+- **Trade contracts** (Theory of Toolbox). Offers are listed with their pay and what they gain over just exporting. One is only taken when Theory of Toolbox's own figures leave 15% of production to spare and it pays more than the exports would have: through an Accept button on Advisor, or up to 3 a day on Auto. Goods your contracts are short of count as shortages, so colonies that make them score higher.
 
 ## 2.2.0 - 2026-10-30
 
-- Station Augments support.
+- **Station Augments support.** Installing augments is free and can be undone, so the manager picks the set of known augments worth the most within each station's augment points, weighted by the colony's goal. Auto colonies apply it, the others get an Apply button. Setting **Station augments**: Follow colony mode, Recommend only, or Off.
+- **Your picks stay yours.** Augments you installed are never changed, and one the manager added that you remove isn't put back.
 
 ## 2.1.1 - 2026-10-30
 
-- Fixed a crash in the colony panel when a colony was planning for Security.
+- **No more crash in the colony panel.** A stray percent sign in the threat line's text crashed the game when a colony on Approve or Auto was planning for Security.
 
 ## 2.1.0 - 2026-10-30
 
-- First version on GitHub: Colony Autopilot for Starsector 0.98a, with optional support for Terraforming Made Easy, Industrial Evolution, Nexerelin, Emergent Threats, Ashes of the Domain and Random Assortment of Things.
+- **First version on GitHub:** Colony Autopilot for Starsector 0.98a.
+- **Modes and goals.** Each colony runs Off, Advisor, Approve or Auto (Advisor by default, so nothing gets built until you pick Approve or Auto), with a goal: Balanced, Money, Security, War production, Rapid growth or Self-sufficiency. Plans lay out a target for each planet from its hazards and resources, and Auto builds within a monthly budget, a per-project cap and a credit reserve.
+- **Items, cores, administrators, threat.** Colony items and AI cores you put in Autopilot Storage get placed, idle administrators get assigned, and a colony switches to Security once its threat reaches 70% (and back below 65% after 60 days).
+- **Mod buildings it doesn't know** get measured on a throwaway probe colony and scored like vanilla ones. Diagnostics rates every building Supported, Measured, Analyzed or Quarantined.
+- **Optional support** for Terraforming Made Easy (special-world plans, terraforming), Industrial Evolution (ambassadors, edicts, VPC chips, courier shipping), Nexerelin (emergency defense fleets), Emergent Threats (Antimatter Stabilizer conversion), Ashes of the Domain (research locks, upgrade paths, starter buildings) and Random Assortment of Things (founding and running a Frontiers settlement).
