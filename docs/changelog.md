@@ -2,6 +2,16 @@
 
 Every version, newest first. If you're wondering why the first version on here is 2.1.0: this started as **Jonah Tweaks**, a personal mod of little tweaks for my own games (bigger battle size, sticky combat autopilot, that kind of thing), and Colony Autopilot grew inside it until it became the main thing. 2.1.0 is when it went up on GitHub, and 2.6.0 was the first version with a downloadable release. The balance tweaks moved out into their own mod in 2.7.0, so this one only manages colonies.
 
+## 2.42.2 - 2026-11-06
+
+- **A colony can't be left sitting at 0 stability anymore.** This one's bad and it's on me. The game decivilizes a colony that stays at 0 stability for months (it warns you once, then it's a dice roll every month), and an Auto colony could sit at 0 forever: Wind had 3 industries on 2 slots from the bug 2.42.1 fixed, which costs 5 stability, and it decivilized. Now:
+  - At 2 stability or less, a colony over its industry limit takes down an industry right away, whatever it earns (before it waited a month and compared income).
+  - Still at 0 after 20 days, it takes down whatever building costs it the most stability, read straight from the game's own numbers, so mod buildings count too (Commerce is -3, Bazaars and pirate havens cost some too). One every 10 days until it's off 0. A capital trade building taken down this way stays off the capital's plan for a year.
+  - Any colony at 0, Auto or not, gets an on-screen alert every month with its biggest stability drags, so you know what's going on.
+  - The capital's trade buildings wait while its stability is under 3, since most of them cost stability.
+- **Losing your capital doesn't move your stuff anymore.** When Wind got captured, Ming Adi became the capital for good, and once Wind was back the weekly gathering shipped Wind's whole Storage (853 weapons, 39 wings) to Ming Adi. Now a captured capital stays your capital: another colony only takes production deliveries until it's yours again, nothing gets gathered meanwhile, and it's the capital again the day you get it back. And with Storage logistics switched off, the gathering only ever ships to the capital, never to a hub you picked back when logistics was on.
+- **Agents actually do security now.** With Agents on, if you had an idle agent of your own, Autopilot only told you to hand it over and never recruited one, so nothing was stopping Pather cells. Now it takes your idle agent over for security (Pather cells, rebellions, hidden pirate bases) and tells you; you can take it back on the Mod features page. Saves from before this get Agents on Defense once if they had them off.
+
 ## 2.42.1 - 2026-11-06
 
 - **Never more industries than slots.** One weekly pass could start a new industry and an upgrade that turns a structure into an industry at the same time, and both counted the same free slot. That's how Wind ended up with 3 industries on 2 slots (the Junkyard Forge became a Scrapyard the same week Smelting went up). Now every build checks the slot count right before it starts, like the game's own build menu does.

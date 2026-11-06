@@ -57,7 +57,7 @@ The **War fleets** section on the Mod features page shows your points, what's wa
 
 The **Agents** setting is Off before setup, **Defense** with the recommended settings, or **Defense and offense**. Each agent gets a role, the way you'd set them up yourself:
 
-- **Security** (the first one) - handles rebellions, Pather cells and hidden pirate bases at the closest colony that needs it, the same things Nexerelin's Internal security mode does.
+- **Security** (the first one) - handles rebellions, Pather cells and hidden pirate bases at the closest colony that needs it, the same things Nexerelin's Internal security mode does. If you have an idle agent of your own and none is on security yet, Autopilot takes that one over for it (and says so) instead of recruiting; you can take it back on the Mod features page.
 - **Relations** (the second) - raises relations with your preferred factions. It picks them the same way ambassadors are picked (the faction priorities and focus under Administrators and ambassadors), and never a faction you're at war with.
 - **Offense** (a third, only with Defense and offense) - sabotages the military of the **Offense target**: whoever is attacking you (the default), a random enemy, or a faction at war with you that you pick. Only factions already hostile to you, never allies, a ceasefire or your commissioner, since a caught operation can start a war.
 
