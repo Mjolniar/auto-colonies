@@ -20,11 +20,10 @@ import java.util.regex.Pattern;
 /**
  * The autopilot's look and voice (2.41.0): an autonomous colony AI at work, not an admin utility.
  *
- * Voice: every log entry still goes to the panel log and starsector.log as the full sentence; on screen it's a short
- * machine line, "AP\\ #HOT_SPRINGS :: BUILD // Planetary Shield // 750k". The colony or system it's about becomes a
- * #TAG, what it's doing a code, credits get compact and the explanation is clipped (the panel log has all of it).
- * Settings, Interface: Announcement voice, Machine (default) or Plain. Short ping lines (Pings) report what it's
- * weighing as it goes, at most one per thing a week, on screen only.
+ * Voice: every log entry still goes to the panel log and starsector.log as the full sentence; on screen it starts with a
+ * code, "BUILD / Hot Springs: Planetary Shield (750k)", in the game's normal text colors (2.41.1; 2.41.0's tags, ::
+ * and // and player-color text were too hard to read). Settings, Interface: Announcement voice, Machine (default) or
+ * Plain. Short ping lines report what it's weighing as it goes, at most one per thing a week, on screen only.
  *
  * Look: section headings are left-aligned "// TITLE" bars, buttons cut at two corners, and the empire and colony panels
  * sit on a faint grid with cut-corner neon frames around the page list and the page, all in your faction's UI colors.
@@ -132,8 +131,6 @@ public final class CATheme {
 
     // ---------------- voice ----------------
 
-    static final int MAX = 110;
-
     /** What a log line is doing, by its wording: {pattern, CODE, strip}. The first match wins. */
     static final Object[][] CODES = {
             {"missed a delivery", "ALERT", false},
@@ -156,6 +153,7 @@ public final class CATheme {
             {"edict", "POLICY", false},
             {"^enacted ", "POLICY", true},
             {"^research: ", "RESEARCH", true},
+            {"^scan: ", "SCAN", true},
             {"^month: ", "LEDGER", true},
             {"^settlement: ", "SETTLE", true},
             {"construction crew", "CREW", false},
@@ -195,44 +193,47 @@ public final class CATheme {
     /** The on-screen machine line for a log entry. */
     public static String machine(String text) { return machine(text, places()); }
 
-    /** Pure: the machine line, with the places a "Name: ..." prefix may name. */
+    /**
+     * Pure: the on-screen line, "CODE / Place: what", with the places a "Name: ..." prefix may name. 2.41.1: one code and
+     * one slash, the rest in plain words with its own punctuation (2.41.0's "AP\\ #TAG :: CODE // ..." was hard to read).
+     * A line with no code is the sentence as it is.
+     */
     static String machine(String text, Set<String> places) {
-        if (text == null) return "AP\\\\";
-        String body = text.trim(), tag = null;
+        if (text == null) return "";
+        String body = text.trim(), place = null;
         int colon = body.indexOf(": ");
         if (colon > 0 && colon <= 40) {
             String head = body.substring(0, colon);
-            if (places.contains(head)) { tag = head; body = body.substring(colon + 2); }
+            if (places.contains(head)) { place = head; body = body.substring(colon + 2); }
         }
-        String code = "LOG", lower = body.toLowerCase(Locale.ROOT);
+        String code = null, lower = body.toLowerCase(Locale.ROOT);
         for (Object[] c : CODES) {
             Matcher m = Pattern.compile((String) c[0]).matcher(lower);
             if (!m.find()) continue;
             code = (String) c[1];
-            if ((Boolean) c[2] && m.start() == 0) { body = body.substring(m.end()); lower = body.toLowerCase(Locale.ROOT); }
+            if ((Boolean) c[2] && m.start() == 0) body = body.substring(m.end());
             break;
         }
-        if (code.equals("RECEIVED")) body = body.replaceAll("(?i) arrived in Autopilot Storage", "");
+        if ("RECEIVED".equals(code)) body = body.replaceAll("(?i) arrived in Autopilot Storage", "");
         body = compact(body);
-        StringBuilder sb = new StringBuilder("AP\\\\ ");
-        if (tag != null) sb.append('#').append(tag.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]+", "_")).append(' ');
-        sb.append(":: ").append(code);
-        if (!body.isEmpty()) sb.append(" // ").append(body);
-        String out = sb.toString();
-        return out.length() <= MAX ? out : out.substring(0, MAX - 2).trim() + "..";
+        if (place != null) body = body.isEmpty() ? place : place + ": " + body;
+        else if (!body.isEmpty()) body = Character.toUpperCase(body.charAt(0)) + body.substring(1);
+        if (code == null) return body;
+        return body.isEmpty() ? code : code + " / " + body;
     }
 
-    /** Staccato: credits shortened, asides set off by //, no trailing period. Pure. */
+    /** Credits shortened, an aside the code made the first thing unwrapped, no trailing period. Pure. */
     static String compact(String s) {
         Matcher m = CREDITS.matcher(s);
         StringBuffer sb = new StringBuffer();
         while (m.find()) m.appendReplacement(sb, Matcher.quoteReplacement(shortCredits(m.group(1)) + "¢"));
         m.appendTail(sb);
-        String out = sb.toString();
-        out = out.replace(" (", " // ").replace("(", "").replace(")", "").replace("; ", " // ").replace(": ", " :: ");
-        out = out.replaceAll("\\s+", " ").trim();
+        String out = sb.toString().replaceAll("\\s+", " ").trim();
+        if (out.startsWith("(")) {   // "under siege (a raid ...), defenses only" without its verb
+            int close = out.indexOf(')');
+            if (close > 0) out = (out.substring(1, close) + out.substring(close + 1)).trim();
+        }
         while (out.endsWith(".")) out = out.substring(0, out.length() - 1);
-        if (!out.isEmpty()) out = Character.toUpperCase(out.charAt(0)) + out.substring(1);
         return out;
     }
 

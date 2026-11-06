@@ -2,6 +2,10 @@
 
 Every version, newest first. If you're wondering why the first version on here is 2.1.0: this started as **Jonah Tweaks**, a personal mod of little tweaks for my own games (bigger battle size, sticky combat autopilot, that kind of thing), and Colony Autopilot grew inside it until it became the main thing. 2.1.0 is when it went up on GitHub, and 2.6.0 was the first version with a downloadable release. The balance tweaks moved out into their own mod in 2.7.0, so this one only manages colonies.
 
+## 2.41.1 - 2026-11-06
+
+- **Easier to read on screen.** 2.41.0 went overboard: the hash tags, the `::` and `//` everywhere, the clipped lines and the blue-ish text made the on-screen lines hard to follow. Now each one is just a short code, a slash, and the normal sentence: `BUILD / Hot Springs: Planetary Shield (750k¢)`, `RECEIVED / Ming Adi: Gamma Core`, `SIEGE / Umuzi: hostile fleets at the colony, defenses only`. Nothing gets cut off, and the text is the game's normal white again (yellow for the important ones), pings included. A line it has no code for just shows the sentence. The panels and settings are unchanged.
+
 ## 2.41.0 - 2026-11-06
 
 - **It talks like a machine now.** Everything the autopilot does still pops up on screen as it happens, but as a short readout instead of a sentence: `AP\\ #HOT_SPRINGS :: BUILD // Planetary Shield // 750k¢`. The colony gets a hash tag, the action gets a code (BUILD, INSTALL, SHIP, SIEGE, CLEAR, RESEARCH, LEDGER and so on), big numbers get shortened (750k, 1.25M) and long explanations get clipped. The Log page in the panel still has the full sentence for every entry, so nothing's lost. If you liked the old "Autopilot: ..." lines better, there's a new setting under Settings, Interface: **Announcement voice**, Machine or Plain.

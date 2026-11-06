@@ -392,8 +392,8 @@ public class CASetupUI {
             t.addPara("Opens this panel from your colony's own screen. Right-clicking Population & Infrastructure works either way.", Misc.getGrayColor(), 6f);
             row(t, "Log entries on screen", CALog.SCREEN_NAMES[Math.max(0, Math.min(2, s.screenLog))], "Every entry", "screenlog", true);
             row(t, "Announcement voice", CASettings.VOICE_NAMES[Math.max(0, Math.min(1, s.voice))], "Machine", "voice", true);
-            t.addPara("Machine: short lines like AP\\\\ #HOT_SPRINGS :: BUILD // Planetary Shield // 750k, plus a ping now and then about what "
-                    + "it's weighing. Plain: the full sentence. The panel log always has the full sentence.", Misc.getGrayColor(), 4f);
+            t.addPara("Machine: a code first, like BUILD / Hot Springs: Planetary Shield (750k), plus a ping now and then about what "
+                    + "it's weighing. Plain: Autopilot: and the full sentence. The panel log always has the full sentence.", Misc.getGrayColor(), 4f);
             t.addPara("Every entry shows each thing Autopilot does as one short line. States that flip back and forth (siege, threat, free port, "
                     + "hazard pay, station augments) show at most once every 10 days per colony. Important only: emergencies, defense fleets, "
                     + "wonders and gates, and what's yours to do.", Misc.getGrayColor(), 6f);
