@@ -24,6 +24,7 @@ public class CAPlan {
     public static class Step {
         public Kind kind; public String id, label;
         public boolean exact;   // the Unification Center checks this building by id, so upgraded versions don't count
+        public boolean extra;   // put in front of the colony's own plan (research, projects, spending freely, wonders): not the world's
         public Step(Kind k, String id, String label) { this.kind = k; this.id = id; this.label = label; }
         public boolean done(MarketAPI m) {
             if (kind == Kind.COND) return m.hasCondition(id);
@@ -134,7 +135,7 @@ public class CAPlan {
         if (extra.isEmpty()) return p;
         List<Step> steps = new ArrayList<Step>();
         java.util.Set<String> ids = new java.util.HashSet<String>();
-        for (Step s : extra) if (exists(s) && ids.add(s.id)) steps.add(s);
+        for (Step s : extra) if (exists(s) && ids.add(s.id)) { s.extra = true; steps.add(s); }
         for (Step s : p.steps) if (s.kind != Kind.BUILD || !ids.contains(s.id)) steps.add(s);
         p.steps = steps;
         return p;
@@ -259,12 +260,34 @@ public class CAPlan {
         int rank = 0;
         for (Step s : plan.steps) {
             if (s.kind != Kind.BUILD || s.done(m) || (skipBlocked && (BLOCKED.contains(m.getId() + ":" + s.id) || dead(m, s.id)))) continue;
+            if (held(m, plan, s)) continue;   // the Unification Center, until the rest of its world is ready (2.39.1)
             boolean match = s.id.equals(industryId) || (s.id.equals("station") && stationTier(spec(industryId)) > 0)
                     || leadsTo(industryId, s.id);
             if (match) return rank == 0 ? 60000f : rank == 1 ? 40000f : 20000f;
             rank++;
         }
         return 0f;
+    }
+
+    static final String UNIFICATION = "tme_unification_center";
+
+    /**
+     * The Unification Center waits for the rest of its world's plan (2.39.1). It only runs the world's conversion, which
+     * needs every other part of the plan in place (its buildings by exact id, the world's conditions); by itself it's +1
+     * stability for upkeep and marines and supplies. Ranked like any step, it went up as soon as research opened it, which is
+     * before the Geomorphology Station (Global Centralization comes before Surface Restructuring), then sat idle for months
+     * and held the colony's one construction slot. Now it waits until every step of the colony's own plan before it is done,
+     * out of reach, or a condition a running terraforming project is already making, so it's built during that last project.
+     */
+    public static boolean held(MarketAPI m, Plan plan, Step step) {
+        if (step == null || step.kind != Kind.BUILD || !UNIFICATION.equals(step.id) || plan == null) return false;
+        for (Step s : plan.steps) {
+            if (s == step) return false;
+            if (s.extra || s.done(m) || dead(m, s.id)) continue;
+            if (s.kind != Kind.BUILD && CATerraform.producing(m, s.id)) continue;
+            return true;
+        }
+        return false;
     }
 
     /** Open plan steps that will each take a new industry slot (needsSlot). */

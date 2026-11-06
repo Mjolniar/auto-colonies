@@ -2,6 +2,10 @@
 
 Every version, newest first. If you're wondering why the first version on here is 2.1.0: this started as **Jonah Tweaks**, a personal mod of little tweaks for my own games (bigger battle size, sticky combat autopilot, that kind of thing), and Colony Autopilot grew inside it until it became the main thing. 2.1.0 is when it went up on GitHub, and 2.6.0 was the first version with a downloadable release. The balance tweaks moved out into their own mod in 2.7.0, so this one only manages colonies.
 
+## 2.39.1 - 2026-11-05
+
+- **The Unification Center waits for the rest of its world.** By itself it's +1 stability for a pile of upkeep plus marines and supplies; its whole job is the final conversion (Hive World and so on), which needs every other building and condition in place first. It used to go up as soon as research unlocked it, which is way before the Geomorphology Station (Global Centralization comes before Surface Restructuring), then just sat there for months eating upkeep and hogging the colony's one construction slot. Now it waits until everything before it in the plan is done, or the last condition is already being made by a running project, so it's built during that last project and ready about when the world qualifies. The colony panel says "waits until the rest of the plan is ready" in the meantime.
+
 ## 2.39.0 - 2026-11-05
 
 - **Storage logistics** (new, off until you switch it on, under Settings). Pick a refit hub (your production gathering point by default) and once a week everything you'd refit a fleet with gets shipped there from your other Storage tabs: mothballed ships, weapons, fighter wings, blueprints and hull mod specs you don't know yet, and supplies, fuel, crew and marines if you want. Pick a sell hub too and blueprints and specs you already know, plus spare copies, go there, so you can sell them all in one place. Fair play like everything else: each load costs a shipping fee (plus 1,000 a ship) from the monthly budget and takes travel time.

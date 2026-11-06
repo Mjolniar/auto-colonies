@@ -201,6 +201,18 @@ public class CATerraform {
         }
     }
 
+    /** A Terraforming Made Easy project running at the colony now adds or removes this condition. */
+    static boolean producing(MarketAPI m, String condId) {
+        for (Industry raw : m.getIndustries()) {
+            if (!(raw instanceof BaseDevelopmentIndustry)) continue;
+            BaseDevelopmentIndustry ind = (BaseDevelopmentIndustry) raw;
+            try {
+                if (ind.hasOngoingProject() && ind.getProject() != null && condId.equals(ind.getProject().id)) return true;
+            } catch (Throwable ignored) { }
+        }
+        return false;
+    }
+
     static boolean planNeeds(CAPlan.Plan plan, String condId) {
         for (CAPlan.Step st : plan.steps) if (st.kind == CAPlan.Kind.COND && st.id.equals(condId)) return true;
         return false;

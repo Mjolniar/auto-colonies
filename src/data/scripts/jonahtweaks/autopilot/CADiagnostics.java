@@ -269,7 +269,7 @@ public class CADiagnostics {
                     JSONArray steps = new JSONArray();
                     for (CAPlan.Step s : plan.steps) {
                         String at = s.done(m) ? "done" : CAPlan.BLOCKED.contains(m.getId() + ":" + s.id) ? "waits on research"
-                                : CAPlan.dead(m, s.id) ? "out of reach" : "open";
+                                : CAPlan.dead(m, s.id) ? "out of reach" : CAPlan.held(m, plan, s) ? "waits for the rest of the plan" : "open";
                         steps.put(s.kind + " " + s.id + ": " + at + " (" + s.label + ")");
                     }
                     o.put("steps", steps);
