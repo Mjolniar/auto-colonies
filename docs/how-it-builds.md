@@ -32,6 +32,8 @@ Every colony also plans a **station** once its fast buildout is done and it's si
 
 It never builds more industries than the colony has slots for. If a colony ends up over anyway (it shrank, lost whatever gave it a slot, or an older version slipped up), it takes down the weakest industry, since being over costs 5 stability and under 5 every point cuts a fifth of the colony's income. It keeps them all if the weakest is worth more than that, or if the colony's about to grow into the room.
 
+**Stability never gets left at 0.** The game decivilizes a colony that sits at 0 stability for months, so at 2 or less a colony over its industry limit sheds an industry right away, and after 20 days at 0 it takes down whatever building costs it the most stability (read from the game's own numbers, mod buildings included), one every 10 days until it's off 0. Any colony at 0 gets an on-screen alert every month listing what's dragging it down.
+
 With Terraforming Made Easy, a plan can aim for one of its special worlds instead (Forge, Fortress, Paradise, Hive and the rest), and the steps include the terraforming to get there. That's in [Terraforming](terraforming.md).
 
 Plan steps get a priority boost, the next step most of all, but a plan never forces a bad building. If the next step is blocked by research or something else, the colony still builds whatever is worth the most on its own in the meantime. A step that research still locks shows what it needs, and with Vaults of Knowledge, research works toward it.

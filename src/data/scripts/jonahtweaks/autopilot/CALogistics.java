@@ -54,18 +54,25 @@ public class CALogistics {
     /** Runs weekly when you switched it on, or for the capital (2.42.0: its Storage gathering, on with it by default). */
     static boolean active(CASettings s) { return s.logisticsMode == 1 || CACapital.gathers(s); }
 
-    /** The refit hub: the market you picked, else the capital (2.42.0), else your production gathering point. */
+    /**
+     * The refit hub. With Storage logistics on: the market you picked, else the capital, else your production gathering
+     * point. With it off, only the capital's own gathering runs, and it only ever sends to the capital (2.42.2: never to a
+     * hub picked back when logistics was on, and never while a stand-in has the capital's deliveries).
+     */
     public static MarketAPI refitHub(CASettings s) {
-        MarketAPI m = market(s.logisticsHub);
-        if (m == null) m = CACapital.capital();
-        if (m == null) try { m = Global.getSector().getPlayerFaction().getProduction().getGatheringPoint(); } catch (Throwable ignored) { }
+        MarketAPI m;
+        if (s.logisticsMode == 1) {
+            m = market(s.logisticsHub);
+            if (m == null) m = CACapital.gatherTarget(s);
+            if (m == null) try { m = Global.getSector().getPlayerFaction().getProduction().getGatheringPoint(); } catch (Throwable ignored) { }
+        } else m = CACapital.gatherTarget(s);
         return access(m) ? m : null;
     }
 
-    /** The sell hub you picked, else the capital while it gathers your Storage (2.42.0: that's where you sell), or null. */
+    /** The sell hub you picked (Storage logistics on), else the capital while it gathers your Storage, or null. */
     public static MarketAPI sellHub(CASettings s) {
-        MarketAPI m = market(s.logisticsSellHub);
-        if (m == null && CACapital.gathers(s)) m = CACapital.capital();
+        MarketAPI m = s.logisticsMode == 1 ? market(s.logisticsSellHub) : null;
+        if (m == null) m = CACapital.gatherTarget(s);
         return access(m) ? m : null;
     }
 

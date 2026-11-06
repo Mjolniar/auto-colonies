@@ -63,6 +63,14 @@ public class CASpies {
 
     /** Daily, from CAAuto. */
     public static void run(CAData d, CASettings s) {
+        if (!s.spyChecked) {   // 2.42.2: saves set up before Defense was recommended had agents off, so Pather cells went unanswered
+            s.spyChecked = true;
+            if (s.spyMode == 0) {
+                s.spyMode = 1;
+                CALog.add("Agents: now on Defense (new in this version). One agent works security at your colonies: Pather cells, rebellions, "
+                        + "hidden pirate bases; an idle agent of yours is put on it, or one is recruited. Change it under Settings, Agents (Nexerelin)", true);
+            }
+        }
         if (s.spyMode == 0 || Misc.getPlayerMarkets(false).isEmpty()) return;
         CovertOpsManager mgr = CovertOpsManager.getManager();
         if (mgr == null) return;
@@ -426,9 +434,18 @@ public class CASpies {
         String role = null;
         for (String r : wanted(s)) if (!held.contains(r)) { role = r; break; }
         if (role == null || mine.size() + d.spyRecruits().size() >= keep(s)) return;
-        // one of your own idle agents could take it: don't pay for another, say how to hand it over
+        // one of your own idle agents could take it. Security (2.42.2): Autopilot takes it over, since an unanswered Pather cell
+        // wrecks a colony; you can take it back on the Mod features page. Other roles: don't pay for another, say how to hand it over
         for (AgentIntel a : agents(mgr)) {
             if (mine.contains(a) || busy(mgr, a)) continue;
+            if (SECURITY.equals(role) && canDo(a, "infiltrateCell")) {
+                d.spyAgents().add(a.getAgent().getId());
+                d.spyRoles().put(a.getAgent().getId(), SECURITY);
+                mine.add(a);
+                CALog.add("Agents: took over your idle agent " + name(a) + " (" + types(a) + ") for " + roleName(SECURITY)
+                        + ". Take it back on the Colony Autopilot intel's Mod features page, under Agents", true);
+                return;
+            }
             if (CALog.once("spy:yours")) CALog.add("Agents: your agent " + name(a) + " (" + types(a) + ") is idle, so Autopilot doesn't recruit one. "
                     + "To have Autopilot use it, click Let Autopilot use it on the Colony Autopilot intel's Mod features page, under Agents");
             return;

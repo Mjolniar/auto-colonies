@@ -14,7 +14,9 @@ Want a different one? Hit **Make this the capital** on that colony's panel, pick
 - **Your other Storage tabs.** Once a week, ships, weapons, fighter wings, blueprints and hull mod specs sitting in your other Storage tabs (colonies, plus any market where you rent storage) get shipped to the capital's Storage. Supplies, fuel, crew and marines go too. That's storage logistics doing it, so it costs the same: what an Autopilot Storage shipment costs plus 1,000 a ship, and it takes 2 days plus a day a light-year. Turn it off with **Gather your Storage there** if you'd rather keep things spread out.
 - Colony items and AI cores stay in Autopilot Storage like always. Those go where they do the most good, not home.
 
-If you've set your own refit hub or sell hub under Storage logistics, those still win.
+If you've switched Storage logistics on and set your own refit hub or sell hub there, those still win. With it off, the gathering only ever ships to the capital.
+
+If your capital gets captured, it stays your capital. Another colony takes production deliveries until you get it back, nothing gets gathered anywhere in the meantime, and the day it's yours again it's the capital again.
 
 ## Making it a place to trade
 
@@ -38,7 +40,7 @@ Like any plan step they reserve industry slots ahead of other industries, and th
 
 If every industry slot is already taken, the capital takes down its weakest ordinary industry to make room, at most one every 90 days. It never touches defenses, fleet buildings, anything that builds ships, mod buildings it can't value for sure, or buildings another plan needs (research, special projects, terraforming worlds). The building's core and item go to Autopilot Storage. Turn that off with **Make room for trade buildings** if you'd rather free slots yourself.
 
-If your net income drops below zero, the trade build-up waits until you're back in the black.
+If your net income drops below zero, or the capital's stability is under 3, the trade build-up waits (most trade buildings cost stability).
 
 ## Settings
 

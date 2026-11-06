@@ -79,7 +79,8 @@ public class CASetupUI {
         s.contractMode = 1;     // Auto: only contracts with 15% to spare that beat exporting
         s.researchMode = 1;     // Auto: databank-only techs, ranked by what they unlock
         s.hypershuntMode = 0;
-        s.spyMode = 1;          // Defense: an agent is hired only when there's a rebellion, Pather cell, pirate base or enemy operation
+        s.spyMode = 1;          // Defense: one agent on security (Pather cells, rebellions, pirate bases), an idle one of yours or a recruit
+        s.spyChecked = true;
         s.spyNoHiring = false;
         s.spyKeep = 0;
         s.autonomyMode = 1;     // Recommend: autonomy is your call; Autopilot only says which colony would help in a money emergency

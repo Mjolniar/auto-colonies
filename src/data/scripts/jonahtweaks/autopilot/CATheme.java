@@ -144,6 +144,7 @@ public final class CATheme {
             {"^shipping ", "SHIP", true},
             {" arrived in autopilot storage", "RECEIVED", false},
             {"(^| )took down ", "DEMOLISH", true},
+            {"decivilize", "ALERT", false},
             {"^built a ", "BUILT", true},
             {"(^| )recommends? ", "ADVISE", true},
             {"^suggested ", "ADVISE", true},

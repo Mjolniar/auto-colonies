@@ -114,6 +114,9 @@ public class CASettings {
     public int researchMode = 0;
     // Nexerelin agents (CASpies): 0 off (default), 1 defense, 2 defense and offense; hiring on unless spyNoHiring; agents to keep, 0 = auto
     public int spyMode = 0;
+    // 2.42.2: false in saves from before it (the field is missing, so it loads false): Agents go to Defense once, since with
+    // them off nothing stops a Pather cell. New saves start true and get Defense from the recommended settings
+    public boolean spyChecked = true;
     public boolean spyNoHiring = false;
     public int spyKeep = 0;
     public static final String[] SPY_NAMES = {"Off", "Defense", "Defense and offense"};

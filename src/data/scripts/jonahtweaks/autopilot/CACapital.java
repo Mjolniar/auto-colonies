@@ -66,8 +66,15 @@ public class CACapital {
 
     static String pickedId;
     static float pickedAt = -99f;
+    /**
+     * 2.42.2: true while the capital (yours or Autopilot's pick) is still a market but not yours (captured): a stand-in
+     * colony takes production deliveries, nothing is gathered anywhere, and the capital is the old one again the day it's
+     * yours. In 2.42.0 a captured Wind made Ming Adi the capital for good, and once Wind was retaken its whole Storage (853
+     * weapons, 39 wings) was shipped to Ming Adi.
+     */
+    static boolean standIn = false;
 
-    public static void reset() { pickedId = null; pickedAt = -99f; }
+    public static void reset() { pickedId = null; pickedAt = -99f; standIn = false; }
 
     static MarketAPI market(String id) { return id == null ? null : CAAuto.market(id); }
 
@@ -98,10 +105,13 @@ public class CACapital {
 
     static void compute(CASettings s, float now) {
         pickedAt = now;
+        standIn = false;
         MarketAPI mine = market(s.capitalId);
         if (valid(mine)) { pickedId = mine.getId(); return; }
         MarketAPI last = market(s.capitalAuto);
         if (valid(last)) { pickedId = last.getId(); return; }   // Autopilot's pick stays put: moving home is your call
+        // the capital still exists but isn't yours (captured): a stand-in for deliveries only, and the capital stays put
+        boolean lost = (mine != null && mine.getPrimaryEntity() != null) || (s.capitalId == null && last != null && last.getPrimaryEntity() != null);
         MarketAPI best = null;
         float bestScore = -Float.MAX_VALUE;
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
@@ -110,7 +120,15 @@ public class CACapital {
             if (sc > bestScore) { bestScore = sc; best = m; }
         }
         pickedId = best == null ? null : best.getId();
-        if (best != null) s.capitalAuto = best.getId();
+        if (lost) { standIn = best != null; return; }
+        if (best != null) s.capitalAuto = best.getId();   // gone for good (decivilized, abandoned) or never picked: a new capital
+    }
+
+    /** The capital that's lost for now (captured), or null. */
+    static MarketAPI lostCapital(CASettings s) {
+        if (!standIn) return null;
+        MarketAPI m = market(s.capitalId);
+        return m != null ? m : market(s.capitalAuto);
     }
 
     /** Where your things already are counts most: the production gathering point, then what's in Storage; then size and reach. */
@@ -137,6 +155,14 @@ public class CACapital {
     public static void daily(CAData d, CASettings s) {
         MarketAPI cap = capital();
         if (cap == null) return;
+        MarketAPI lost = lostCapital(s);
+        if (lost != null) {
+            if (CALog.once("capital:lost:" + lost.getId()))
+                CALog.add(lost.getName() + ": capital: no longer yours. Production deliveries go to " + cap.getName() + " until it is again; "
+                        + "nothing is gathered anywhere meanwhile, and it's the capital again the day you get it back", true);
+            deliveries(s, cap);
+            return;
+        }
         if (CALog.once("capital:" + cap.getId()))
             CALog.add(cap.getName() + ": capital: your home port. Production deliveries come here" + (gathers(s) ? ", your other Storage gathers here weekly" : "")
                     + (s.capitalMode == 0 ? ", and once your colonies have ramped up it builds itself into a trade hub" : "")
@@ -176,12 +202,18 @@ public class CACapital {
         } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "couldn't move the production gathering point to " + cap.getName(), t); }
     }
 
-    /** Whether storage logistics runs for the capital even with Storage logistics itself off. */
-    public static boolean gathers(CASettings s) { return on(s) && !s.capitalNoGather; }
+    /** Whether storage logistics runs for the capital even with Storage logistics itself off: never while a stand-in has it. */
+    public static boolean gathers(CASettings s) { return on(s) && !s.capitalNoGather && capital() != null && !standIn; }
+
+    /** Where the capital's Storage gathering sends things: the capital, or null (off, none, or a stand-in). */
+    public static MarketAPI gatherTarget(CASettings s) { return gathers(s) ? capital() : null; }
+
+    /** Below this stability the capital's trade buildings wait: most of them cost stability, and at 0 a colony can decivilize. */
+    static final float COMMERCE_MIN_STABILITY = 3f;
 
     /** Whether the commerce build-up is running now: started, and not in a money emergency. */
     public static boolean commerce(CASettings s) {
-        return s.capitalMode == 0 && s.capitalStarted && !(s.lastNetKnown && s.lastNet < 0f);
+        return s.capitalMode == 0 && s.capitalStarted && !standIn && !(s.lastNetKnown && s.lastNet < 0f);
     }
 
     // ---------------- the plan ----------------
@@ -199,7 +231,16 @@ public class CACapital {
     public static List<CAPlan.Step> stepsFor(MarketAPI m) {
         List<CAPlan.Step> out = new ArrayList<CAPlan.Step>();
         if (m == null || !commerce(CAData.settings()) || !is(m)) return out;
-        for (String[] w : wanted()) out.add(new CAPlan.Step(CAPlan.Kind.BUILD, w[0], w[1] + " (capital)"));
+        if (m.getStabilityValue() < COMMERCE_MIN_STABILITY) {   // 2.42.2: Commerce and the Bazaars cost stability
+            if (CALog.once("capital:lowstab:" + m.getId()))
+                CALog.add(m.getName() + ": capital: trade buildings wait while stability is under " + Math.round(COMMERCE_MIN_STABILITY) + " (most of them cost stability)");
+            return out;
+        }
+        CALog.forget("capital:lowstab:" + m.getId());
+        for (String[] w : wanted()) {
+            if (CAOverLimit.shedRecently(m, w[0])) continue;   // taken down at 0 stability this year: not built again yet
+            out.add(new CAPlan.Step(CAPlan.Kind.BUILD, w[0], w[1] + " (capital)"));
+        }
         return out;
     }
 
