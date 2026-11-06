@@ -50,6 +50,8 @@ Covers Building Menu Overhaul, Vaults of Knowledge and Theory of Toolbox.
 
 With an Antimatter Stabilizer in Autopilot Storage, it upgrades Fuel Production to Advanced Fuel Production the way the mod's portmaster does, keeping the core, item and improvement. This replaces a building, so it needs **Allow removals** on.
 
+Drop a **Panopticon Instance** or **Panopticon Core** in Autopilot Storage and it goes into your Surveillance Center (the Instance wins, and the colony with the most of your colonies in its system gets it). The Instance works like an Alpha core there and the mod says it covers your whole system with Panopticon Monitoring; the Core is Beta-level and bumps the center's stability bonus to +3. Neither counts for Hegemony inspections.
+
 ## Random Assortment of Things
 
 [Forum thread](https://fractalsoftworks.com/forum/index.php?topic=26260.0)

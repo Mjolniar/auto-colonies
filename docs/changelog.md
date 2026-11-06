@@ -2,6 +2,10 @@
 
 Every version, newest first. If you're wondering why the first version on here is 2.1.0: this started as **Jonah Tweaks**, a personal mod of little tweaks for my own games (bigger battle size, sticky combat autopilot, that kind of thing), and Colony Autopilot grew inside it until it became the main thing. 2.1.0 is when it went up on GitHub, and 2.6.0 was the first version with a downloadable release. The balance tweaks moved out into their own mod in 2.7.0, so this one only manages colonies.
 
+## 2.39.3 - 2026-11-06
+
+- **Panopticon cores** (Emergent Threats: IX Revival). The Panopticon Instance and Panopticon Core couldn't go in Autopilot Storage at all. Now they can, and once a day one goes into a Surveillance Center that doesn't have one (the Instance first, and the colony with the most of your colonies in its system first), shipped over first if it's stored at another colony. Whatever regular core was in there goes back to storage. The Hegemony doesn't count either of them for inspections.
+
 ## 2.39.2 - 2026-11-06
 
 - Fixed: Autopilot Storage took stuff the manager has no use for. UAF's Access Key Cards (the ones you turn in at the Aurorans for credits) went right in, and so did blueprint packages once you knew everything in them, Niko's building blueprints and so on. Now only things it can actually use go in: colony items it can install, AI cores, databanks, Antimatter Stabilizers, VPC chips and recipes. Anything else that's already in there gets moved to that colony's normal Storage, with one log line.
