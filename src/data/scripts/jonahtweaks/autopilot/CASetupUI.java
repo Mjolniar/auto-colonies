@@ -331,6 +331,14 @@ public class CASetupUI {
             row(t, "Commodity Forge may use up chips", s.disableForgeVPC ? "No" : "Yes", "Yes", "forge", true);
             row(t, "Supply shipping (Courier Port)", s.disableShipping ? "Off" : "Cover shortages", "Cover shortages", "ship", true);
         }
+        if (CATasc.enabled() && group(t, "tascstations", "Station construction (Terraforming & Station Construction)",
+                CASettings.TASC_STATION_NAMES[Math.max(0, Math.min(2, s.stationMode))].toLowerCase())) {
+            row(t, "Mining and siphon stations", CASettings.TASC_STATION_NAMES[Math.max(0, Math.min(2, s.stationMode))], "Recommend only", "tascst", true);
+            t.addPara("Founds a mining station in an asteroid belt or a siphon station over a gas giant as a new colony, in systems with "
+                    + "your Auto colonies that are calm or well defended, when there's room under your colony limit and TASC's research "
+                    + "for it is done. A crew does it for TASC's own costs (500,000 credits and materials by default) plus a fee, in 60 "
+                    + "days; the new colony runs in Auto with the Money goal. Recommend only logs the best site.", Misc.getGrayColor(), 6f);
+        }
         if (group(t, "objectives", "Stable locations", CASettings.OBJECTIVE_NAMES[Math.max(0, Math.min(2, s.objectiveMode))].toLowerCase())) {
             row(t, "Comm relays, nav buoys, sensor arrays", CASettings.OBJECTIVE_NAMES[Math.max(0, Math.min(2, s.objectiveMode))], "Auto", "objectives", true);
             t.addPara("In systems with your Auto colonies, a construction crew builds what the stable locations there are worth most "
@@ -526,6 +534,7 @@ public class CASetupUI {
         else if (k.equals("spytarget")) s.spyTarget = nextSpyTarget(s.spyTarget);
         else if (k.equals("logi")) s.logisticsMode = s.logisticsMode == 1 ? 0 : 1;
         else if (k.equals("objectives")) s.objectiveMode = (Math.max(0, Math.min(2, s.objectiveMode)) + 1) % 3;
+        else if (k.equals("tascst")) s.stationMode = (Math.max(0, Math.min(2, s.stationMode)) + 1) % 3;
         else if (k.equals("logihub")) s.logisticsHub = CALogistics.next(s.logisticsHub, false);
         else if (k.equals("logisell")) s.logisticsSellHub = CALogistics.next(s.logisticsSellHub, true);
         else if (k.equals("logiships")) s.logisticsShips = !s.logisticsShips;

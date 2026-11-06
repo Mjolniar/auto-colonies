@@ -143,6 +143,9 @@ public class CASettings {
     public int logisticsMode = 0;
     /** Stable locations (2.40.0, CAObjectives): 0 Auto (also what older saves get), 1 Recommend only, 2 Off. */
     public int objectiveMode = 0;
+    /** Terraforming & Station Construction's stations (2.40.1, CATascStations): 0 Recommend only (also older saves), 1 Auto, 2 Off. */
+    public int stationMode = 0;
+    public static final String[] TASC_STATION_NAMES = {"Recommend only", "Auto", "Off"};
     public static final String[] OBJECTIVE_NAMES = {"Auto", "Recommend only", "Off"};
     public String logisticsHub, logisticsSellHub;
     public boolean logisticsShips = true, logisticsSupplies = true;
