@@ -128,7 +128,9 @@ public class CAPlan {
     /** The colony's plan, with any producer a special project needs from it first (CAProjects). */
     public static Plan build(MarketAPI m, CAData.Profile prof) {
         Plan p = buildOwn(m, prof);
-        List<Step> extra = new ArrayList<Step>(CAResearch.stepsFor(m));   // a Research Facility when there's none and research is Auto
+        List<Step> extra = new ArrayList<Step>(CACapital.stepsFor(m));   // the capital's commerce build-up first (2.42.0)
+        extra.addAll(CAStations.stepsFor(m));   // and a station at every colony, a bigger one at bigger colonies (2.42.0)
+        extra.addAll(CAResearch.stepsFor(m));   // a Research Facility when there's none and research is Auto
         extra.addAll(CAProjects.stepsFor(m));
         extra.addAll(CASurplus.richSteps(m));   // spending freely: every station and defense maxed
         extra.addAll(CAWonders.stepsFor(m));    // and the Bifrost Control Center at one colony
@@ -367,7 +369,7 @@ public class CAPlan {
             IndustrySpecAPI sp = spec(id);
             if (sp == null) return false;
             if (!CADiagnostics.autopilotBuilds(id) && !CAEngine.isSupported(id)) return false;   // Autopilot doesn't build it
-            if (CAMods.leftToYou(id) != null) return false;
+            if (CAMods.leftToYou(id) != null && !CACapital.isStep(m, id)) return false;   // Yunru's Bazaar: only the capital's (2.42.0)
             Industry inst = sp.getNewPluginInstance(m);
             if (!(CATasc.isTasc(sp) ? CATasc.available(m, inst) : inst.isAvailableToBuild())) return false;
             if (CAAotD.enabled() && !CAAotD.allows(id, m)) return autoResearch();

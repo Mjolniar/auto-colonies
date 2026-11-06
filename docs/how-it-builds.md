@@ -28,6 +28,8 @@ A colony in danger gets planned as Security on its own until things calm down (s
 
 Each colony gets a plan: a target layout worked out from the planet itself and its goal. A barren world with ore and transplutonics becomes a Forge (mining, refining, heavy industry, orbital works). A habitable world on Security becomes a Fortress. A habitable world on Money or Growth becomes a Paradise. A cold world with volatiles becomes a Fuel Depot, and so on. Hazard clean-up gets added to any plan when the planet needs it.
 
+Every colony also plans a **station** once its fast buildout is done and it's size 4 (or half a year old), a Battlestation from size 6 and a Star Fortress from size 8 (a size sooner at your [capital](capital.md)). A station fights alongside your fleets, and anything raiding, bombarding or invading the colony has to beat it first, so it gets built even though it costs more than it earns. Which kind follows your station line setting.
+
 With Terraforming Made Easy, a plan can aim for one of its special worlds instead (Forge, Fortress, Paradise, Hive and the rest), and the steps include the terraforming to get there. That's in [Terraforming](terraforming.md).
 
 Plan steps get a priority boost, the next step most of all, but a plan never forces a bad building. If the next step is blocked by research or something else, the colony still builds whatever is worth the most on its own in the meantime. A step that research still locks shows what it needs, and with Vaults of Knowledge, research works toward it.
@@ -93,4 +95,4 @@ With **Terraforming Made Easy**, a makeshift one you own gets upgraded to Domain
 
 The **Stable locations** setting turns this to Recommend only or Off.
 
-Next: [Money, surplus and the endgame](money.md).
+Next: [Your capital](capital.md).

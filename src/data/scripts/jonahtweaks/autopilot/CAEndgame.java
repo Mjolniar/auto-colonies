@@ -264,6 +264,7 @@ public class CAEndgame {
         if (id == null) return false;
         if (id.startsWith("tme_") || CAPlan.WORLD_STEPS.contains(id) || (plan != null && plan.exact.contains(id))) return true;
         if (CAProjects.isStep(m, id) || CASurplus.isRichStep(m, id) || CAResearch.isFacilityStep(m, id)) return true;
+        if (CACapital.isStep(m, id) || CAStations.isStep(m, id)) return true;   // the capital's trade buildings and every colony's station (2.42.0)
         return CAWonders.BFC.equals(id);
     }
 
@@ -355,7 +356,8 @@ public class CAEndgame {
         d.endgameBuilt().put(m.getId() + ":replaced", ts);
         lastReplaceDay = now();
         chains = null;
-        CALog.add(m.getName() + ": took down " + oldName + " for " + p.name + " (endgame, worth " + CAEngine.valueText(p.score - wk.keep) + " more"
+        String why = !at(m) && CACapital.isStep(m, p.id) ? "room for the capital's trade" : "endgame";
+        CALog.add(m.getName() + ": took down " + oldName + " for " + p.name + " (" + why + ", worth " + CAEngine.valueText(p.score - wk.keep) + " more"
                 + (core != null || item != null ? "; its " + (core != null && item != null ? "core and item" : core != null ? "core" : "item") + " to Autopilot Storage" : "") + ")", true);
     }
 

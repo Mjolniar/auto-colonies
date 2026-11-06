@@ -30,6 +30,8 @@ Groups for mods you don't have don't show up.
 - **Story points** - Player only (recommended), One per colony, or Monthly cap.
 - **Story point monthly cap** - how many story points a month, with Monthly cap.
 
+- **Station at every colony** - Yes (recommended) or No. Every colony plans a station from size 4 (or half a year old) once its fast buildout is done, a Battlestation from size 6 and a Star Fortress from size 8, a size sooner at the capital.
+
 ## Items and AI cores
 
 - **Use AI cores** - On (recommended) or Off. Cores only come from Autopilot Storage.
@@ -39,6 +41,14 @@ Groups for mods you don't have don't show up.
 - **Hegemony inspection orders** - Advise (recommended), Resist where defended, or Off.
 - **Special project supply** - Auto (recommended), Warn only, or Off (Vaults of Knowledge).
 - **Antimatter Stabilizers to Advanced Fuel Production** - Convert or Off (Emergent Threats). Needs Allow removals.
+
+## Capital
+
+- **Capital** - Autopilot picks (recommended), or one of your colonies. See [Your capital](capital.md).
+- **Capital does** - Deliveries and commerce (recommended), Deliveries only, or Off.
+- **Commerce starts** - Net income over 100,000 (recommended), over 50,000, over 250,000, or Right away.
+- **Make room for trade buildings** - Yes (recommended) or No.
+- **Gather your Storage there** - Yes (recommended) or No.
 
 ## Administrators and ambassadors
 

@@ -51,16 +51,21 @@ public class CALogistics {
 
     static MarketAPI market(String id) { return id == null ? null : Global.getSector().getEconomy().getMarket(id); }
 
-    /** The refit hub: the market you picked, or your production gathering point. */
+    /** Runs weekly when you switched it on, or for the capital (2.42.0: its Storage gathering, on with it by default). */
+    static boolean active(CASettings s) { return s.logisticsMode == 1 || CACapital.gathers(s); }
+
+    /** The refit hub: the market you picked, else the capital (2.42.0), else your production gathering point. */
     public static MarketAPI refitHub(CASettings s) {
         MarketAPI m = market(s.logisticsHub);
+        if (m == null) m = CACapital.capital();
         if (m == null) try { m = Global.getSector().getPlayerFaction().getProduction().getGatheringPoint(); } catch (Throwable ignored) { }
         return access(m) ? m : null;
     }
 
-    /** The sell hub you picked, or null. */
+    /** The sell hub you picked, else the capital while it gathers your Storage (2.42.0: that's where you sell), or null. */
     public static MarketAPI sellHub(CASettings s) {
         MarketAPI m = market(s.logisticsSellHub);
+        if (m == null && CACapital.gathers(s)) m = CACapital.capital();
         return access(m) ? m : null;
     }
 
@@ -84,6 +89,8 @@ public class CALogistics {
     public static String hubName(String id, boolean refit) {
         MarketAPI m = market(id);
         if (m != null) return m.getName();
+        MarketAPI cap = CACapital.capital();
+        if (cap != null && (refit || CACapital.gathers(CAData.settings()))) return "Capital (" + cap.getName() + ")";
         if (!refit) return "None";
         MarketAPI g = null;
         try { g = Global.getSector().getPlayerFaction().getProduction().getGatheringPoint(); } catch (Throwable ignored) { }
@@ -124,7 +131,7 @@ public class CALogistics {
 
     public static void daily(CAData d, CASettings s, float now) {
         deliver(d);
-        if (s.logisticsMode != 1 || now - lastRun < 7f) return;
+        if (!active(s) || now - lastRun < 7f) return;
         lastRun = now;
         MarketAPI refit = refitHub(s), sell = sellHub(s);
         if (refit == null && sell == null) {
@@ -150,13 +157,15 @@ public class CALogistics {
         Map<String, Integer> kept = new HashMap<String, Integer>();
         List<CargoStackAPI> toRefit = new ArrayList<CargoStackAPI>(), toSell = new ArrayList<CargoStackAPI>();
         Map<CargoStackAPI, Integer> splitKeep = new HashMap<CargoStackAPI, Integer>();   // unknown blueprints: one copy to the refit hub, the rest to sell
+        boolean oneHub = sell != null && sell == refit;   // the capital is both (2.42.0): one load, one fee
         for (CargoStackAPI x : st.getStacksCopy()) {
             String where = destination(x, s, f, kept);
             if (where == null) continue;
+            if (oneHub && where.equals("sell")) where = "refit";
             if (where.equals("refit") && x.isSpecialStack()) {
                 SpecialItemData sd = x.getSpecialDataIfSpecial();
                 kept.put(sd.getId() + ":" + sd.getData(), 1);
-                if (x.getSize() > 1f && sell != null && sell != m) splitKeep.put(x, (int) x.getSize() - 1);
+                if (x.getSize() > 1f && sell != null && sell != m && !oneHub) splitKeep.put(x, (int) x.getSize() - 1);
             }
             if (where.equals("refit") && refit != null && refit != m) toRefit.add(x);
             else if (where.equals("sell") && sell != null && sell != m) toSell.add(x);

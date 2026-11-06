@@ -26,7 +26,7 @@ public class CAEngine {
 
     /** Buildings the engine can score: vanilla formulas plus estimated effects for mapped mod buildings. */
     public static boolean isSupported(String id) {
-        return VANILLA.contains(id) || CAEstimates.has(id) || CATasc.has(id) || CABrewery.has(id) || CAMods.has(id);
+        return VANILLA.contains(id) || CAEstimates.has(id) || CATasc.has(id) || CABrewery.has(id) || CAMods.has(id) || CACapital.has(id);
     }
 
     public static String credits(float v) { return Misc.getDGSCredits(v); }
@@ -102,7 +102,7 @@ public class CAEngine {
     }
 
     /** Buildings scored from Autopilot's own estimates rather than the game's formulas or a probe measurement. */
-    static boolean estimated(String id) { return CATasc.has(id) || CABrewery.has(id) || CAMods.has(id) || CAEstimates.has(id); }
+    static boolean estimated(String id) { return CATasc.has(id) || CABrewery.has(id) || CAMods.has(id) || CAEstimates.has(id) || CACapital.has(id); }
 
     /**
      * What a building does here by the game's formulas or Autopilot's estimates, with its output lines recorded (p.supplied);
@@ -124,6 +124,7 @@ public class CAEngine {
         if (CATasc.has(id)) return CATasc.apply(m, id, p, deficit);   // TASC: scored here, never test-built
         if (CABrewery.has(id)) return CABrewery.apply(m, p, deficit);   // Substance.Abuse: only with a recipe on hand
         if (CAMods.has(id)) return CAMods.apply(m, id, p, deficit);   // VIC treatment, Roider Dives and Union HQ
+        if (CACapital.has(id)) return CACapital.apply(m, id, p, deficit);   // mod trade buildings: only at the capital (2.42.0)
         if (CAEstimates.has(id)) { CAEstimates.apply(m, id, p, deficit); return true; }
         return false;
     }
@@ -346,7 +347,9 @@ public class CAEngine {
         // the plan only orders buildings that are worth something on their own, except Terraforming Made Easy's structures
         // and the Unification Center: they cost more than they earn, but they're how the plan's world is reached
         // and producers a special project needs (CAProjects): nothing else makes those goods
+        // and the capital's trade buildings (2.42.0): what they're for is a place to trade at home, not income
         boolean enabler = p.id.startsWith("tme_") || CAProjects.isStep(m, p.id) || CASurplus.isRichStep(m, p.id) || CAResearch.isFacilityStep(m, p.id)
+                || CACapital.isStep(m, p.id) || CAStations.isStep(m, p.id)
                 || (CAWonders.BFC.equals(p.id) && !CAWonders.stepsFor(m).isEmpty());
         float planBonus = (value > 0f || enabler) && !profitOnly ? CAPlan.bonusFor(m, plan, p.id) : 0f;
         if (endgame && planBonus > 0f && !CAEndgame.keepsPlanBonus(m, plan, p.id)) planBonus = 0f;   // a money plan's steps stand on their own

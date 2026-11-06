@@ -41,6 +41,8 @@ public class CAAuto {
         CACrisis.daily(d, s);   // inspection orders, and a log line when a colony crisis is picked
         try { CASurplus.daily(s); }   // the focus world for credits over the surplus line
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus investment step failed", t); }
+        try { CACapital.daily(d, s); }   // the capital: deliveries there, and its commerce build-up once colonies ramp up (2.42.0)
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "capital step failed", t); }
         try { CAEndgame.daily(s); }   // after spending freely is known: the endgame economy starts or ends
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "endgame economy step failed", t); }
         try { CAProjects.update(); }   // before any plan is read: a special project's producers are plan steps
@@ -77,6 +79,11 @@ public class CAAuto {
             if (c.mode == CAData.Mode.AUTO && !building && !siege && r.blocked == null && CAEngine.worthwhile(r.bestNoSlot)) {
                 try { wk = CAEndgame.replacement(m, c, r.bestNoSlot, used); }
                 catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "endgame replacement check failed at " + m.getName(), t); }
+            }
+            // the capital: with every industry slot taken, a trade building may replace its weakest ordinary industry (2.42.0)
+            if (wk == null && c.mode == CAData.Mode.AUTO && !building && !siege && r.blocked == null && CAEngine.worthwhile(r.bestNoSlot)) {
+                try { wk = CACapital.replacement(m, c, r.bestNoSlot, used); }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "capital room check failed at " + m.getName(), t); }
             }
             if (wk != null) {
                 Cand k = new Cand();

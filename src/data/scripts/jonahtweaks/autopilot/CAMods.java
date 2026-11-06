@@ -330,7 +330,7 @@ public class CAMods {
         LEFT.put("NSI_ASBUplink", "it works through an area that damages fleets, which a probe colony can't show");
         LEFT.put("NSI_expertDockworks", "it takes a nanoforge of its own for fleet s-mods, a military choice");
         LEFT.put("roider_nomadBase", "only Roider nomads build it");
-        LEFT.put(BAZAAR, "it's a market for you to trade at; it does nothing for the colony");
+        LEFT.put(BAZAAR, "it's a market for you to trade at; it does nothing for the colony, so Autopilot builds it only at your capital (2.42.0)");
     }
 
     /** Why Autopilot leaves this building to you, or null. */
