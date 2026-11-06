@@ -15,11 +15,25 @@ public class CABuild {
         return Global.getSector().getPlayerFleet().getCargo().getCredits().get();
     }
 
+    /** Whether starting this pick adds an industry: a new one, or an upgrade that turns a structure into one. */
+    static boolean takesSlot(MarketAPI m, CAEngine.Pick p) {
+        try {
+            com.fs.starfarer.api.loading.IndustrySpecAPI spec = Global.getSettings().getIndustrySpec(p.id);
+            if (spec == null || !spec.getNewPluginInstance(m).isIndustry()) return false;
+            return !p.upgrade || p.existing == null || !p.existing.isIndustry();
+        } catch (Throwable t) { return false; }
+    }
+
     /** Returns null on success, or the reason it couldn't start. */
     public static String start(MarketAPI m, CAEngine.Pick p) {
         if (!p.upgrade && Misc.getCurrentlyBeingConstructed(m) != null) return "A new building is already under construction here (upgrades can still run)";
         if (credits() < p.cost) return "Not enough credits (" + Misc.getDGSCredits(p.cost) + " needed)";
         if (!CADiagnostics.usable(p.id)) return "Not supported by Colony Autopilot";
+        // 2.42.0: the build menu's industry limit. Picks are scored with the slots free when the pass began, and one pass can
+        // start a new building and an upgrade, so a structure upgraded into an industry (Junkyard Forge -> Scrapyard) and a
+        // new industry both took Wind's one free slot: 3 of 2, -5 stability, its income cut to nothing
+        if (takesSlot(m, p) && Misc.getNumIndustries(m) >= Misc.getMaxIndustries(m))
+            return "No free industry slot (" + Misc.getNumIndustries(m) + " of " + Misc.getMaxIndustries(m) + " used)";
         String action = "building " + p.name;
         if (!CABreaker.allowed(action)) return "Paused for this session: it didn't take effect three times (see Diagnostics)";
         try {
