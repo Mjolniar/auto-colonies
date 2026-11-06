@@ -77,6 +77,9 @@ public class CAData {
     public com.fs.starfarer.api.campaign.CargoAPI storage;
     public Map<String, Long> ambTransit;
     public Map<String, Long> adminTransit;
+    // 2.41.2: when the colony limit first needed an administrator and none was on offer anywhere (0: not waiting); a recruiter
+    // finds one after CAItems.RECRUIT_DAYS
+    public long adminNeedSince;
     public Set<String> noted;
     // Random Assortment of Things settlement proposal waiting for approval: kind "found" (planet id) or "facility" (facility id)
     public String settlePendingKind, settlePendingId, settlePendingName;

@@ -86,4 +86,6 @@ A hire always takes 30 days to show up, since they're hired from another market'
 
 Past your colony limit, one is always placed or hired whatever the money says, since every colony past the limit costs every colony you govern 2 stability. That hire can go over the monthly budget but never under the reserve. An idle administrator who isn't worth their salary anywhere just stays unassigned, and dismissing them is up to you.
 
+Heads up on where they come from: the game only puts an administrator up for hire when you dock at a market, and not often (5% a visit, plus 5% for every size over 3, and they leave after 2 to 4 months). Friendly markets you never visit never get one. So if you're past your colony limit and nothing's been on offer for 90 days, the manager pays a recruiter to find one: a basic administrator (no skill, 2,500 a month) for 250,000 on top of the normal hiring cost and fee. Pricey on purpose. Docking around still gets you a cheaper one, and a skilled one if you're lucky.
+
 Next: [War and security](war-and-security.md).

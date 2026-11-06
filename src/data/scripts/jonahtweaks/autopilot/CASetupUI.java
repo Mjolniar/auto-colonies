@@ -263,7 +263,9 @@ public class CASetupUI {
             row(t, "Ambassadors (Industrial Evolution)", s.disableAmbassadors ? "Off" : "Hire and install", "Hire and install", "amb", true);
             t.addPara("An administrator is hired, placed or moved only where they add more than they cost: Industrial Planning's "
                     + "+1 output (worth more at a productive colony) and the stability from your colony limit, against their salary "
-                    + "(2,500 or 20,000 a month) and the hiring cost spread over three years.", Misc.getGrayColor(), 6f);
+                    + "(2,500 or 20,000 a month) and the hiring cost spread over three years. The game only offers one at a market you "
+                    + "dock at, so past your colony limit with none on offer for 90 days, a recruiter finds a basic one for 250,000 more.",
+                    Misc.getGrayColor(), 6f);
             if (!s.disableAmbassadors) {
                 row(t, "Ambassador focus", CASettings.FOCUS_NAMES[Math.max(0, Math.min(3, s.ambassadorFocus))], "Worst relations first", "ambfocus", true);
                 row(t, "Stop raising a faction at", CASettings.STOP_NAMES[Math.max(0, Math.min(3, s.ambassadorStopAt))], "Cooperative", "ambstop", true);

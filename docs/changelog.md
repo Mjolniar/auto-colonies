@@ -2,6 +2,10 @@
 
 Every version, newest first. If you're wondering why the first version on here is 2.1.0: this started as **Jonah Tweaks**, a personal mod of little tweaks for my own games (bigger battle size, sticky combat autopilot, that kind of thing), and Colony Autopilot grew inside it until it became the main thing. 2.1.0 is when it went up on GitHub, and 2.6.0 was the first version with a downloadable release. The balance tweaks moved out into their own mod in 2.7.0, so this one only manages colonies.
 
+## 2.41.2 - 2026-11-06
+
+- **Administrators for the colony limit actually show up now.** Turns out the game only puts an administrator up for hire when you dock at a market (5% a visit, more at big ones), so friendly markets you never visit never have one, and the manager just kept saying "none for hire" month after month. Now, past your colony limit with nothing on offer for 90 days, it pays a recruiter: a basic administrator for 250,000 on top of the normal hiring cost and fee, showing up 30 days later like any other hire. Expensive on purpose, and it still never dips under your reserve. The "needed" log line now says how many days are left before that happens.
+
 ## 2.41.1 - 2026-11-06
 
 - **Easier to read on screen.** 2.41.0 went overboard: the hash tags, the `::` and `//` everywhere, the clipped lines and the blue-ish text made the on-screen lines hard to follow. Now each one is just a short code, a slash, and the normal sentence: `BUILD / Hot Springs: Planetary Shield (750k¢)`, `RECEIVED / Ming Adi: Gamma Core`, `SIEGE / Umuzi: hostile fleets at the colony, defenses only`. Nothing gets cut off, and the text is the game's normal white again (yellow for the important ones), pings included. A line it has no code for just shows the sentence. The panels and settings are unchanged.
