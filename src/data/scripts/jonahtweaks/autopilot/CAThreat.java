@@ -18,6 +18,41 @@ public class CAThreat {
     /** The colony the coming colony crisis is likely to hit: with the meter at 500 or more (+0.33) that's past THRESHOLD. */
     static final float CRISIS_TARGET = 0.4f;
 
+    /** Military presence that makes a system protected (protection). */
+    public static final float PROTECTED = 1f;
+
+    /**
+     * Military presence in the colony's system (2.40.1): every market there that isn't hostile to you (yours or anyone's)
+     * counts its military buildings and stations. A Military Base or High Command is worth 0.5, a Patrol HQ 0.25, a
+     * battlestation 0.5, a star fortress or bigger 0.75, an orbital station 0.25; PROTECTED or more is protected. Not part
+     * of the threat estimate: only what's built for an economic role (station augments, TASC stations) asks for it.
+     * notOwnStation: leave out the colony's own station (the one being refitted).
+     */
+    public static float protection(MarketAPI m, boolean notOwnStation) {
+        if (m == null || m.getStarSystem() == null) return 0f;
+        float total = 0f;
+        for (MarketAPI o : Global.getSector().getEconomy().getMarketsCopy()) {
+            if (o.getStarSystem() != m.getStarSystem() || o.getFaction() == null || o.getFaction().isHostileTo(Factions.PLAYER)) continue;
+            for (com.fs.starfarer.api.campaign.econ.Industry ind : o.getIndustries()) {
+                if (!ind.isFunctional()) continue;
+                int tier = CAPlan.stationTier(ind.getSpec());
+                if (notOwnStation && o == m && tier > 0) continue;
+                total += militaryWeight(ind.getId(), tier);
+            }
+        }
+        return total;
+    }
+
+    /** Pure: a building's share of a system's protection. */
+    static float militaryWeight(String id, int stationTier) {
+        if (stationTier >= 3) return 0.75f;
+        if (stationTier == 2) return 0.5f;
+        if (stationTier == 1) return 0.25f;
+        if ("militarybase".equals(id) || "highcommand".equals(id)) return 0.5f;
+        if ("patrolhq".equals(id)) return 0.25f;
+        return 0f;
+    }
+
     public static float estimate(MarketAPI m) {
         float t = 0f;
         try {

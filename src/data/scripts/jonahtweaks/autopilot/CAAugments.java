@@ -93,10 +93,23 @@ public class CAAugments {
 
     static String ap(float v) { return v == Math.round(v) ? "" + Math.round(v) : String.valueOf(Math.round(v * 10f) / 10f); }
 
-    /** The profile to plan with: Security while the threat is high, as buildings do, for Approve and Auto colonies. */
+    /**
+     * The profile to plan with: Security while the threat is high, as buildings do, for Approve and Auto colonies. A station
+     * in a system with heavy military presence of its own (protected) stays on its colony's goal anyway (2.40.1): other
+     * stations and military bases there take the fight, so this one can go economic (Mining Station, Hydroponics, Economy
+     * Conversion). Only the augments: buildings and fleets still go by the colony's threat. A raid or blockade on its way
+     * still puts the combat loadout on (CASiege, in run).
+     */
     static CAData.Profile profileFor(MarketAPI m, CAData.Colony c) {
-        return c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO ? CAThreat.effective(m, c.profile) : c.profile;
+        if (c.mode != CAData.Mode.APPROVE && c.mode != CAData.Mode.AUTO) return c.profile;
+        CAData.Profile p = CAThreat.effective(m, c.profile);
+        if (p == CAData.Profile.SECURITY && c.profile != CAData.Profile.SECURITY && protection(m) >= PROTECTED) return c.profile;
+        return p;
     }
+
+    static final float PROTECTED = CAThreat.PROTECTED;
+
+    static float protection(MarketAPI m) { return CAThreat.protection(m, true); }
 
     // ---------------- scoring ----------------
 
@@ -128,6 +141,21 @@ public class CAAugments {
     }
 
     /** The most of a commodity any other building here makes. */
+    static final String MINING = "SA_miningStation";
+
+    /** What the Mining Station augment would mine on this station, from Station Augments' own code, or null. */
+    @SuppressWarnings("unchecked")
+    static Map<String, Integer> miningOutput(MarketAPI m, Industry station) {
+        try {
+            if (!(station instanceof OrbitalStation)) return null;
+            com.fs.starfarer.api.campaign.SectorEntityToken entity = m.getPrimaryEntity() != null && m.getPrimaryEntity().hasTag("station")
+                    ? m.getPrimaryEntity() : ((OrbitalStation) station).getStationEntity();
+            com.fs.starfarer.api.campaign.CampaignFleetAPI fleet = Misc.getStationFleet(m);
+            if (entity == null || fleet == null) return null;
+            return (Map<String, Integer>) (Map<?, ?>) niko_SA.augments.miningStation.Companion.getOutput(entity, station, m, fleet);
+        } catch (Throwable t) { return null; }
+    }
+
     static int otherSupply(MarketAPI m, Industry station, String com) {
         int best = 0;
         for (Industry ind : m.getIndustries()) {
@@ -197,6 +225,21 @@ public class CAAugments {
             CAEngine.supply(p, "food", food, deficit);
             CAEngine.supply(p, "organics", organics, deficit);
             if (food <= 0 && organics <= 0) p.lines.add("Food and organics are already made here in larger amounts");
+        }
+        else if (id.equals(MINING)) {
+            // Station Augments' own formula (miningStation.getOutput): the asteroid belts and rings within reach of the
+            // station, each with the yield the mod rolls and keeps for it, times the station's mining strength. Like
+            // Hydroponics, only what it makes above the colony's own largest source of each good counts (2.40.1)
+            Map<String, Integer> out = miningOutput(m, station);
+            int added = 0;
+            if (out != null) for (Map.Entry<String, Integer> e : out.entrySet()) {
+                int u = e.getValue() == null ? 0 : e.getValue();
+                if (u == 1) u = 2;   // the mod turns 1 into 2 when it applies
+                int more = u - otherSupply(m, station, e.getKey());
+                if (more > 0) { CAEngine.supply(p, e.getKey(), more, deficit); added += more; }
+            }
+            if (out == null) return null;   // Station Augments couldn't say (it needs Nexerelin for this augment)
+            p.lines.add(added > 0 ? "Mines the asteroid belts and rings near the station" : "Nothing to mine within reach of the station, or no more than the colony already makes");
         }
         else if (id.equals("SA_ecmPackage")) { p.fx[3] += 0.05f; p.lines.add("Ground defense x1.05"); }
         else if (id.equals("SA_navRelay")) p.lines.add("+1 burn for friendly fleets near the station");
@@ -531,6 +574,8 @@ public class CAAugments {
         }
         if (profile == CAData.Profile.SECURITY) t.addPara(c.profile == CAData.Profile.SECURITY ? "Security goal: combat augments come first." :
                 "The threat is high, so combat augments come first; output augments such as Hydroponics come back once it drops.", gray, 6f);
+        else if (CAThreat.effective(m, c.profile) == CAData.Profile.SECURITY && c.profile != CAData.Profile.SECURITY)
+            t.addPara("The threat is high, but other military in this system protects it, so the station stays economic: output augments such as the Mining Station and Hydroponics come first. A raid or blockade on its way still gets the combat loadout.", gray, 6f);
         else t.addPara("Calm: augments that add accessibility, output or cut upkeep come first. When a raid, blockade or high threat comes, "
                 + "the combat loadout goes on before the station is engaged (Bubble Shield, weapon platforms, fighter augments on carrier stations).", gray, 6f);
         if (!c.augSkip().isEmpty()) {

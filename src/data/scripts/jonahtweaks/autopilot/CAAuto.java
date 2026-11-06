@@ -222,6 +222,10 @@ public class CAAuto {
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story point step failed", t); }
         try { CAObjectives.run(d, s, auto); }   // stable locations: comm relays, nav buoys, sensor arrays, receivers (2.40.0)
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "stable location step failed", t); }
+        if (Global.getSettings().getModManager().isModEnabled(CATasc.MOD)) {
+            try { CATascStations.run(d, s, auto); }   // TASC mining and siphon stations (2.40.1)
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "TASC station step failed", t); }
+        }
         if (Global.getSettings().getModManager().isModEnabled(CASettlement.MOD)) {
             try { CASettlement.run(d, s); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "settlement step failed", t); }

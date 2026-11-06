@@ -245,6 +245,8 @@ public class CAIntel extends BaseIntelPlugin {
             }
             for (String o : CAObjectives.inTransit(data))   // stable locations (2.40.0)
                 t.addPara("Construction crew: %s.", 3f, hl, o);
+            if (Global.getSettings().getModManager().isModEnabled(CATasc.MOD))
+                for (String o : CATascStations.inTransit(data)) t.addPara("Station crew: %s.", 3f, hl, o);   // TASC stations (2.40.1)
             for (CALogistics.Load l : CALogistics.inTransit()) {   // storage logistics (2.39.0)
                 float left = Math.max(0f, l.days - Global.getSector().getClock().getElapsedDaysSince(l.sent));
                 t.addPara("Storage logistics: %s to %s's Storage (" + CALog.esc(l.why) + "), %s days left.", 3f, hl,

@@ -63,7 +63,7 @@ Founds your one Frontiers settlement on the best surveyed site once it would mak
 
 [Forum thread](https://fractalsoftworks.com/forum/index.php?topic=30583.0)
 
-Picks the best set of augments each station can fit, scored by what each one actually does on that station (its own guns, fighters, shields and AI core). Output augments while things are calm, combat when the colony is threatened. Augments you installed yourself are never changed. Station Augments only lets you change them while docked, so from afar a refit crew makes the change 7 days later (at once while your fleet is in the system). Works on any mod's stations.
+Picks the best set of augments each station can fit (the Mining Station augment included, valued with the mod's own mining formula), scored by what each one actually does on that station (its own guns, fighters, shields and AI core). Output augments while things are calm, combat when the colony is threatened. Augments you installed yourself are never changed. Station Augments only lets you change them while docked, so from afar a refit crew makes the change 7 days later (at once while your fleet is in the system). Works on any mod's stations.
 
 ## Stations from other mods
 
@@ -71,11 +71,15 @@ Picks the best set of augments each station can fit, scored by what each one act
 
 Interstellar Imperium, Knights of Ludd and Ashes of the Domain stations count like vanilla ones everywhere (defense, cores, the plan's station step). With Interstellar Imperium you can pick the Imperium station line.
 
+A station in a well-defended system (other stations and military bases there that aren't hostile to you) stays economic even when the colony's threat is high, since the military there takes the fight; a raid or blockade on its way still gets the combat loadout.
+
 ## Terraforming & Station Construction (Boggled)
 
 [Forum thread](https://fractalsoftworks.com/forum/index.php?topic=17094.0)
 
 Its terraforming projects are valued and started, with the prerequisite buildings built when needed. Some of its buildings are scored from estimates. See [Terraforming](terraforming.md#terraforming--station-construction-boggled).
+
+Its **mining stations** (asteroid belts and fields) and **siphon stations** (gas giants) can be founded as new colonies too: in systems with your Auto colonies that are calm or well defended, once TASC's research for them is done and you've got room under your colony limit. A crew does it for TASC's own costs plus a fee and 60 days, placed the way TASC's own abilities do it, and the new colony runs in Auto with the Money goal. The **Station construction** setting is Recommend only to start with (it just points out the best site); switch it to Auto to have it build them. Astropolis stations are left to you.
 
 ## Grand.Colonies
 

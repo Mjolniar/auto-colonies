@@ -85,6 +85,7 @@ Groups for mods you don't have don't show up.
 ## Station augments (Station Augments)
 
 - **Station augments** - Follow colony mode (recommended), Recommend only, or Off.
+- **Station construction** (Terraforming & Station Construction) - Recommend only (default), Auto, or Off. Founds TASC mining and siphon stations as new colonies in calm or well-defended systems.
 
 ## Ashes of the Domain
 
