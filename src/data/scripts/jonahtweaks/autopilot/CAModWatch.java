@@ -36,6 +36,7 @@ public class CAModWatch {
             {"yunruindustries", "Yunru Industries"}, {"SBTM", "Slightly Better Tech-Mining"}, {"yunruworlds", "Yunru's Worlds"}};
 
     static final List<JSONObject> last = new ArrayList<JSONObject>();
+    static final Map<String, String> logged = new HashMap<String, String>();
     static float lastRun = -99f;
 
     public static List<JSONObject> latest() { return last; }
@@ -58,6 +59,9 @@ public class CAModWatch {
                 JSONObject o = watch(mod[0], mod[1], mine);
                 last.add(o);
                 String line = CADiagnostics.TAG + "mod watch " + mod[1] + ": " + o.optString("verdict") + " - " + o.optString("summary");
+                // a line when it changes (and the first time each session), not ten identical lines a week (2.39.0)
+                if (line.equals(logged.get(mod[0]))) continue;
+                logged.put(mod[0], line);
                 if ("OK".equals(o.optString("verdict"))) CADiagnostics.LOG.info(line); else CADiagnostics.LOG.warn(line);
             } catch (Throwable t) {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "mod watch for " + mod[1] + " failed", t);
@@ -207,8 +211,9 @@ public class CAModWatch {
                     if (q.getQuantity().getModifiedInt() > 0) makes = true;
                     if (q.getQuantity().getMultMods().containsKey("oce_supply") || q.getQuantity().getFlatMods().containsKey("oce_supply")) seen = true;
                 }
-                ch.add(!makes || seen || !fx || !ind.isFunctional() ? "PASS" : "WARN", "Omega core in " + m.getName() + "'s " + ind.getCurrentName()
-                        + (makes && fx && ind.isFunctional() ? (seen ? ": its x2 output is applied" : ": its x2 output isn't applied (Omega Core Everywhere's effect missing)") : ""));
+                boolean doubles = makes && fx && ind.isFunctional() && CAOmega.doublesOutput(m, ind);   // not Patrol HQ or High Command: fleet size there
+                ch.add(!doubles || seen ? "PASS" : "WARN", "Omega core in " + m.getName() + "'s " + ind.getCurrentName()
+                        + (doubles ? (seen ? ": its x2 output is applied" : ": its x2 output isn't applied (Omega Core Everywhere's effect missing)") : ""));
             }
         } else {
             for (MarketAPI m : mine) {
@@ -244,11 +249,38 @@ public class CAModWatch {
                 Industry ind = m.getIndustry(id);
                 if (ind == null || !ind.isFunctional()) continue;
                 int total = 0;
-                for (MutableCommodityQuantity q : ind.getAllSupply()) if (!q.getCommodityId().equals("crew")) total += Math.max(0, q.getQuantity().getModifiedInt());
-                int predicted = CAMods.output(m, id.equals("roider_dives") ? CAMods.divesRange() + (CAMods.charter(m) ? CAMods.charterRange() : 0f)
-                        : CAMods.hqRange() + (CAMods.charter(m) ? CAMods.charterRange() : 0f), null, null, false);
-                ch.add(Math.abs(total - predicted) <= 2 ? "PASS" : "WARN", ind.getCurrentName() + " at " + m.getName() + " mines " + total
-                        + " units; Autopilot's formula says " + predicted + (CAMods.charter(m) ? " (with the Charter)" : ""));
+                boolean oce = false;
+                Map<String, Integer> real = new LinkedHashMap<String, Integer>();
+                for (MutableCommodityQuantity q : ind.getAllSupply()) {
+                    if (q.getCommodityId().equals("crew")) continue;
+                    int u = Math.max(0, q.getQuantity().getModifiedInt());
+                    total += u;
+                    if (u > 0) real.put(q.getCommodityId(), u);
+                    if (q.getQuantity().getMultMods().containsKey("oce_supply") || q.getQuantity().getFlatMods().containsKey("oce_supply")) oce = true;
+                }
+                float range = id.equals("roider_dives") ? CAMods.divesRange() + (CAMods.charter(m) ? CAMods.charterRange() : 0f)
+                        : CAMods.hqRange() + (CAMods.charter(m) ? CAMods.charterRange() : 0f);
+                // a heavy machinery shortage comes off every mined output (2.39.0): checked against what's left after it
+                int need = id.equals("roider_dives") ? 1 : Math.max(1, m.getSize() - 2), shortBy = 0;
+                try { shortBy = Math.min(need, Math.max(0, m.getCommodityData("heavy_machinery").getDeficitQuantity())); }
+                catch (Throwable ignored) { }
+                // an Alpha or Omega core adds 1 to each output, and Omega Core Everywhere's Omega doubles it (2.39.0: Umuzi's
+                // Union HQ mined 36, (14 + 4) x 2, against a formula that left the core out)
+                String core = ind.getAICoreId();
+                int plus = "alpha_core".equals(core) || CAOmega.CORE.equals(core) ? 1 : 0, times = CAOmega.CORE.equals(core) && oce ? 2 : 1;
+                int predicted = CAMods.output(m, range, null, null, false), expect = 0;
+                StringBuilder per = new StringBuilder();
+                for (String com : CAMods.MINED) {
+                    int base = CAMods.mined(m, com, range, CAMods.extra(m) - shortBy);
+                    int u = base > 0 ? (base + plus) * times : 0;
+                    expect += u;
+                    Integer r = real.get(com);
+                    if (u > 0 || r != null) per.append(per.length() > 0 ? ", " : "").append(com).append(" ").append(r == null ? 0 : r).append(" of ").append(u);
+                }
+                String why = (shortBy > 0 ? "; " + shortBy + " heavy machinery short, taken off each output" : "")
+                        + (plus > 0 ? "; " + (times > 1 ? "Omega core: +1 each, then x2" : "AI core: +1 each") : "");
+                ch.add(Math.abs(total - expect) <= 2 ? (shortBy > 0 ? "INFO" : "PASS") : "WARN", ind.getCurrentName() + " at " + m.getName() + " mines " + total
+                        + " units; Autopilot expects " + expect + " (formula " + predicted + (CAMods.charter(m) ? " with the Charter" : "") + why + ") [" + per + "]");
             }
         }
     }

@@ -168,9 +168,9 @@ public class CAIntel extends BaseIntelPlugin {
             t.addPara("Every colony starts in Advisor mode. Open a colony's own panel with the Colony Autopilot button on its colony "
                     + "screen, or by right-clicking its Population & Infrastructure.", gray, 0f);
             t.addSectionHeading("Budget", Alignment.MID, 12f);
-            t.addPara("This month: %s of %s spent (%s in fees), %s available. Never spends below %s.", 6f, hl,
+            t.addPara("This month: %s of %s spent (%s in fees), %s saved up from earlier months, %s available. Never spends below %s.", 6f, hl,
                     Misc.getDGSCredits(s.spent), Misc.getDGSCredits(CABudget.limit(s)), Misc.getDGSCredits(s.fees),
-                    Misc.getDGSCredits(CABudget.available(s)), Misc.getDGSCredits(s.reserve));
+                    Misc.getDGSCredits(CABudget.saved(s)), Misc.getDGSCredits(CABudget.available(s)), Misc.getDGSCredits(s.reserve));
             if (CABudget.paused(s)) t.addPara("Spending is paused: net income is negative.", Misc.getNegativeHighlightColor(), 4f);
             t.addPara("New upkeep this month: %s of %s (%s).", 4f, hl, Misc.getDGSCredits(s.upkeepAdded), Misc.getDGSCredits(CABudget.upkeepCap(s)),
                     s.upkeepCapAuto ? "automatic: 10% of last month's net income, at least 20,000" : "fixed");
@@ -242,6 +242,11 @@ public class CAIntel extends BaseIntelPlugin {
                 float left = Math.max(0f, sh.days - Global.getSector().getClock().getElapsedDaysSince(sh.sent));
                 t.addPara("On the way: %s to %s, %s days left.", 3f, hl, (sh.qty > 1 ? sh.qty + " " : "") + sh.name(),
                         to == null ? "your biggest colony" : to.getName(), "" + (int) Math.ceil(left));
+            }
+            for (CALogistics.Load l : CALogistics.inTransit()) {   // storage logistics (2.39.0)
+                float left = Math.max(0f, l.days - Global.getSector().getClock().getElapsedDaysSince(l.sent));
+                t.addPara("Storage logistics: %s to %s's Storage (" + CALog.esc(l.why) + "), %s days left.", 3f, hl,
+                        CALogistics.describe(l), l.toName, "" + (int) Math.ceil(left));
             }
             t.addPara("AI cores: %s, inspection risk %s.", 6f, hl, s.useAICores ? "used" : "not used",
                     CASettings.CORE_RISK_NAMES[Math.max(0, Math.min(3, s.coreRisk))].toLowerCase());

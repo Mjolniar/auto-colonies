@@ -60,6 +60,21 @@ public class CASimulator {
         return e;
     }
 
+    /**
+     * Vanilla conditions that only work with the intel or event they were added with: Pather cells, pirate and hostile
+     * activity, a blockade, a food shortage, smuggling, a system bounty. Copied onto the probe without it they throw on
+     * every apply (LuddicPathCells.apply reads intel.isSleeper()), which failed every building's measurement at a colony
+     * with Pather cells (2.39.0). They're events, not deposits or hazards, so they're never copied.
+     */
+    static final Set<String> INTEL_BOUND = new HashSet<String>(Arrays.asList("pather_cells", "pirate_activity",
+            "hostile_activity", "blockaded", "event_food_shortage", "event_smuggling", "event_bounty"));
+
+    static boolean intelBound(String id, MarketConditionSpecAPI spec) {
+        if (INTEL_BOUND.contains(id) || id.startsWith("event_")) return true;
+        String cls = spec.getScriptClass();
+        return cls != null && cls.contains(".campaign.intel.");
+    }
+
     static MarketAPI probe(MarketAPI colony) {
         MarketAPI p = Global.getFactory().createMarket("jt_ca_sim", "Autopilot Simulation", colony == null ? 6 : colony.getSize());
         p.setFactionId(Factions.PLAYER);
@@ -67,16 +82,24 @@ public class CASimulator {
             for (MarketConditionAPI c : colony.getConditions()) {
                 MarketConditionSpecAPI spec = Global.getSettings().getMarketConditionSpec(c.getId());
                 if (spec == null || spec.getSourceMod() != null) continue;   // vanilla deposits and hazards only; mod conditions may touch the sector
-                // some vanilla conditions only work with the intel they were added with (Pather cells, pirate activity, a
-                // blockade); copied without it they fail on every apply, and every measurement with them, so they're left off
+                if (intelBound(c.getId(), spec)) continue;
+                // any other condition that fails here is taken back off. addCondition applies it right away, so when that's
+                // what throws there's no token, and it's removed by id
                 String token = null;
                 try { token = p.addCondition(c.getId()); p.reapplyCondition(token); }
                 catch (Throwable t) {
-                    if (token != null) try { p.removeSpecificCondition(token); } catch (Throwable ignored) { }
+                    try { if (token != null) p.removeSpecificCondition(token); else p.removeCondition(c.getId()); } catch (Throwable ignored) { }
                 }
             }
         }
-        p.reapplyConditions();
+        try { p.reapplyConditions(); }
+        catch (Throwable t) {
+            // a copied condition still fails: measure on a bare probe rather than fail every building
+            List<MarketConditionAPI> on = p.getConditions();
+            if (on != null) for (MarketConditionAPI c : new ArrayList<MarketConditionAPI>(on))
+                try { p.removeSpecificCondition(c.getIdForPluginModifications()); } catch (Throwable ignored) { }
+            try { p.reapplyConditions(); } catch (Throwable ignored) { }
+        }
         stock(p);
         return p;
     }

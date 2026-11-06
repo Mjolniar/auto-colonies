@@ -48,6 +48,42 @@ public class CAResearch {
     /** Days Auto keeps databanks for a plan tech short of them before the best tech it can afford goes ahead anyway. */
     static final float WAIT_DAYS = 90f;
     static final String START = "starting research";
+
+    /** AotD's Research Facility (and its Black Site, which counts as one): research needs at least one, working. */
+    static final String FACILITY = "aotd_research_facility", BLACKSITE = "aotd_blacksite";
+
+    /**
+     * With research on Auto and no Research Facility anywhere, one goes first in a colony's plan (2.39.0): nothing can be
+     * researched without one, and research opens other plan steps. It was left to its own score, and spending freely put
+     * every defense structure first in the plan, so Hot Springs went months building Planetary Shield and Patrol HQ while
+     * the Research Facility, its best option, waited and the plan's Bifrost step ran out of time. The host is the focus world,
+     * else the biggest Auto colony.
+     */
+    static List<CAPlan.Step> stepsFor(MarketAPI m) {
+        CASettings s = CAData.settings();
+        if (m == null || s.researchMode != 1 || !Global.getSettings().getModManager().isModEnabled(MOD)) return Collections.emptyList();
+        try { if (Global.getSettings().getIndustrySpec(FACILITY) == null) return Collections.emptyList(); }
+        catch (Throwable t) { return Collections.emptyList(); }
+        MarketAPI host = facilityHost();
+        if (host == null || !host.getId().equals(m.getId())) return Collections.emptyList();
+        return Collections.singletonList(new CAPlan.Step(CAPlan.Kind.BUILD, FACILITY,
+                "Research Facility (research is on Auto and nothing can be researched without one)"));
+    }
+
+    static boolean isFacilityStep(MarketAPI m, String id) { return FACILITY.equals(id) && !stepsFor(m).isEmpty(); }
+
+    static MarketAPI facilityHost() {
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) if (m.hasIndustry(FACILITY) || m.hasIndustry(BLACKSITE)) return null;   // one is built or on the way
+        List<MarketAPI> auto = CAItems.autoMarkets();
+        MarketAPI f = CASurplus.focus();
+        if (f != null && auto.contains(f) && !CAHypershunt.is(f)) return f;
+        MarketAPI best = null;
+        for (MarketAPI m : auto) {
+            if (CAHypershunt.is(m)) continue;
+            if (best == null || m.getSize() > best.getSize()) best = m;
+        }
+        return best;
+    }
     /** Vanilla buildings VoK locks through Building Menu Overhaul, and the Bifrost Control Center, by tech. */
     static final String[][] GATES = {{"aotd_tech_rudimentary_eq", "aquaculture"}, {"aotd_tech_agriculture", "farming"},
             {"aotd_tech_exoskeletons", "mining"}, {"aotd_tech_nanometal", "refining"}, {"aotd_tech_nanometal", "lightindustry"},

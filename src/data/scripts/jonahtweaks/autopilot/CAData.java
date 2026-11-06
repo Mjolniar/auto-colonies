@@ -114,6 +114,9 @@ public class CAData {
     public Map<String, Long> stepStuck, worldDead;
     // 2.38.0, CASiege: when hostiles only elsewhere in the system first made a colony's siege, marketId -> when
     public Map<String, Long> siegeSystem;
+    // 2.39.0, storage logistics (CALogistics): loads on their way to the refit or sell hub
+    public List<CALogistics.Load> loads;
+    public List<CALogistics.Load> loads() { if (loads == null) loads = new ArrayList<CALogistics.Load>(); return loads; }
     public Map<String, Long> siegeSystem() { if (siegeSystem == null) siegeSystem = new HashMap<String, Long>(); return siegeSystem; }
     public Map<String, Long> stepStuck() { if (stepStuck == null) stepStuck = new HashMap<String, Long>(); return stepStuck; }
     public Map<String, Long> worldDead() { if (worldDead == null) worldDead = new HashMap<String, Long>(); return worldDead; }

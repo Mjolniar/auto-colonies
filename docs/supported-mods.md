@@ -70,7 +70,7 @@ Viral contamination treatment comes first, tier by tier, to stop a colony shrink
 
 ## Roider Union
 
-Dives and the Union HQ are valued by the deposits they can mine nearby, with the Historical Roider Charter's extra output and range counted when one's in. Its Charter gets placed like any colony item. Rockpiper Shipworks only shows up once you've bought its blueprint at a Union HQ, and then it's valued like any other building. Roider stations count like vanilla ones.
+Dives and the Union HQ are valued by the deposits they can mine nearby, with the Historical Roider Charter's extra output and range counted when one's in. Heads up: Roider takes a heavy machinery shortage off every good they mine, so being 1 short can zero out a Dives, and that's counted too. Its Charter gets placed like any colony item. Rockpiper Shipworks only shows up once you've bought its blueprint at a Union HQ, and then it's valued like any other building. Roider stations count like vanilla ones.
 
 ## Planetary Shield: Access Control
 

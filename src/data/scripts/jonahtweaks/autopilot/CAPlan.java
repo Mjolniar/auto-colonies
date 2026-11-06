@@ -127,7 +127,8 @@ public class CAPlan {
     /** The colony's plan, with any producer a special project needs from it first (CAProjects). */
     public static Plan build(MarketAPI m, CAData.Profile prof) {
         Plan p = buildOwn(m, prof);
-        List<Step> extra = new ArrayList<Step>(CAProjects.stepsFor(m));
+        List<Step> extra = new ArrayList<Step>(CAResearch.stepsFor(m));   // a Research Facility when there's none and research is Auto
+        extra.addAll(CAProjects.stepsFor(m));
         extra.addAll(CASurplus.richSteps(m));   // spending freely: every station and defense maxed
         extra.addAll(CAWonders.stepsFor(m));    // and the Bifrost Control Center at one colony
         if (extra.isEmpty()) return p;

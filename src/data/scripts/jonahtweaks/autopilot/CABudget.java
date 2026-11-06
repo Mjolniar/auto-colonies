@@ -14,6 +14,9 @@ public class CABudget {
         int m = Global.getSector().getClock().getMonth();
         if (s.month == m) return;
         boolean first = s.month < 0;
+        // what's left of the month's budget is saved up for next month (2.39.0): every building that cost more than one
+        // month's budget waited until savings had grown enough by themselves, months with credits piling up and nothing built
+        if (!first) s.budgetCarry = carried(limit(s), s.budgetCarry, s.spent);
         s.month = m;
         s.spent = 0f; s.fees = 0f; s.upkeepAdded = 0f; s.terraSpent = 0f; s.spMonth = 0; s.endgameLoss = 0f;
         s.monthCredits = CABuild.credits();
@@ -27,8 +30,20 @@ public class CABudget {
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "could not read last month's report", t);
         }
-        if (!first) CALog.add("Month: net " + Misc.getDGSCredits(netIncome(s)) + ", budget " + Misc.getDGSCredits(limit(s)));
+        if (!first) CALog.add("Month: net " + Misc.getDGSCredits(netIncome(s)) + ", budget " + Misc.getDGSCredits(limit(s))
+                + (s.budgetCarry > 0f ? " plus " + Misc.getDGSCredits(s.budgetCarry) + " saved up" : ""));
     }
+
+    /** Unspent budget is saved up for at most this many months' worth. */
+    public static final float CARRY_MONTHS = 6f;
+
+    /** What's saved up after a month with this budget, savings and spending: what's left, never below 0 or above CARRY_MONTHS budgets. Pure. */
+    static float carried(float limit, float carry, float spent) {
+        return Math.max(0f, Math.min(CARRY_MONTHS * limit, limit + carry - spent));
+    }
+
+    /** Budget saved up from earlier months (2.39.0). */
+    public static float saved(CASettings s) { return s.budgetCarry; }
 
     /** Last month's net income, or this month's colony net income until a full month has passed. */
     public static float netIncome(CASettings s) {
@@ -56,7 +71,7 @@ public class CABudget {
     /** Credits the manager may still spend this month. */
     public static float available(CASettings s) {
         if (paused(s)) return 0f;
-        float byBudget = limit(s) - s.spent;
+        float byBudget = limit(s) + s.budgetCarry - s.spent;
         float byReserve = CABuild.credits() - s.reserve;
         return Math.max(0f, Math.min(byBudget, byReserve));
     }

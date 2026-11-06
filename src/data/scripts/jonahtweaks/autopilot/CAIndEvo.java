@@ -172,33 +172,55 @@ public class CAIndEvo {
 
     static final String[] VPC_TARGETS = {"IndEvo_AdManuf", "IndEvo_AdAssem", "IndEvo_ComForge"};
 
+    /**
+     * One chip a day into a free VPC building, building by building (2.39.0). A chip already in that colony's Autopilot
+     * Storage goes in first; while one it can use is on its way there, nothing else is shipped for it; otherwise one is
+     * shipped from another colony. Before, chips went in storage order, so one that had arrived kept losing its turn to the
+     * next chip at Hot Springs, which shipped another, a different kind each day: every kind twice for one Commodity Forge.
+     */
     static boolean installVPC(CASettings s, List<MarketAPI> markets) {
-        for (CAStores.Held held : CAStores.stacks()) {
-            CargoStackAPI stack = held.stack;
-            CargoAPI st = CAStores.of(held.market);
-            SpecialItemData data = stack.isSpecialStack() ? stack.getSpecialDataIfSpecial() : null;
-            if (data == null || !data.getId().startsWith("IndEvo_vpc_")) continue;
-            for (String tid : VPC_TARGETS) {
-                if (tid.equals("IndEvo_ComForge") && s.disableForgeVPC) continue;
-                for (MarketAPI m : markets) {
-                    Industry ind = m.getIndustry(tid);
-                    if (ind == null || !ind.isFunctional() || ind.getSpecialItem() != null) continue;
-                    if (CAData.get().colony(m.getId()).locks.contains(tid) || !ind.wantsToUseSpecialItem(data)) continue;
-                    if (m != held.market) {   // stored at another colony: shipped here first (2.37.0)
-                        if (CAStores.inTransit(data.getId(), m.getId()) > 0) continue;
-                        if (CAStores.ship(held.market, m, null, data, 1, "for " + ind.getCurrentName())) return true;
-                        continue;
-                    }
+        for (String tid : VPC_TARGETS) {
+            if (tid.equals("IndEvo_ComForge") && s.disableForgeVPC) continue;
+            for (MarketAPI m : markets) {
+                Industry ind = m.getIndustry(tid);
+                if (ind == null || !ind.isFunctional() || ind.getSpecialItem() != null) continue;
+                if (CAData.get().colony(m.getId()).locks.contains(tid)) continue;
+                CargoAPI here = CAStores.of(m);
+                for (CargoStackAPI stack : here.getStacksCopy()) {   // one that's already here
+                    SpecialItemData data = chip(stack);
+                    if (data == null || !ind.wantsToUseSpecialItem(data)) continue;
                     float fee = CABudget.fee(s, MOVE_FEE);
                     if (!CAItems.canPay(s, fee)) return false;
                     ind.setSpecialItem(new SpecialItemData(data.getId(), data.getData()));
-                    st.removeItems(CargoAPI.CargoItemType.SPECIAL, data, 1f);
+                    here.removeItems(CargoAPI.CargoItemType.SPECIAL, data, 1f);
                     CABudget.charge(s, 0f, fee, 0f);
                     CALog.add(m.getName() + ": installed " + stack.getDisplayName() + " in " + ind.getCurrentName()
                             + (tid.equals("IndEvo_ComForge") ? " (the forge uses the chip up after three production cycles)" : ""));
                     return true;
                 }
+                if (chipComing(m, ind)) continue;   // it goes in once it's here
+                for (CAStores.Held held : CAStores.stacks()) {   // stored at another colony: shipped here first (2.37.0)
+                    if (held.market == m) continue;
+                    SpecialItemData data = chip(held.stack);
+                    if (data == null || !ind.wantsToUseSpecialItem(data)) continue;
+                    if (CAStores.ship(held.market, m, null, data, 1, "for " + ind.getCurrentName())) return true;
+                    break;   // couldn't pay for shipping today
+                }
             }
+        }
+        return false;
+    }
+
+    static SpecialItemData chip(CargoStackAPI stack) {
+        SpecialItemData data = stack.isSpecialStack() && stack.getSize() >= 1f ? stack.getSpecialDataIfSpecial() : null;
+        return data != null && data.getId().startsWith("IndEvo_vpc_") ? data : null;
+    }
+
+    /** A chip this building can use is on its way to the colony. */
+    static boolean chipComing(MarketAPI m, Industry ind) {
+        for (CAStores.Shipment sh : CAData.get().shipments()) {
+            if (sh.special == null || !m.getId().equals(sh.to) || !sh.special.getId().startsWith("IndEvo_vpc_")) continue;
+            try { if (ind.wantsToUseSpecialItem(sh.special)) return true; } catch (Throwable t) { return true; }
         }
         return false;
     }

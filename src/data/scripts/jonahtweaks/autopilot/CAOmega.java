@@ -162,6 +162,19 @@ public class CAOmega {
         return fx;
     }
 
+    /**
+     * Whether OCE doubles this building's output (its general case), rather than giving a building of its kind something
+     * else: fleet size for Patrol HQ and High Command, income for Commerce, and so on (2.39.0: mod watch expected doubled
+     * output from those and warned).
+     */
+    static boolean doublesOutput(MarketAPI m, Industry ind) {
+        String[] why = new String[1];
+        try {
+            float[] fx = buildingFx(m, ind, new HashMap<String, Integer>(), why);
+            return fx != null && why[0] != null && why[0].startsWith("output x2");
+        } catch (Throwable t) { return true; }
+    }
+
     /** What AAR's Omega administrator adds at this colony, in CAEngine's units. */
     static float[] adminFx(MarketAPI m, Map<String, Integer> deficit) {
         float[] fx = new float[7];

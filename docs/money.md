@@ -7,6 +7,7 @@ How much it spends, where the extra goes once you're doing well, and what change
 All of this is under Settings, **Budget and spending**.
 
 - **Budget type.** **Automatic** is recommended: each month it can spend half of last month's net income plus 15% of your credits above the reserve. That way a young colony that's still losing money gets built up anyway, and spending slows down on its own as your savings shrink. You can also use a share of net income or a fixed amount.
+- **Saving up.** Whatever's left of a month's budget carries over to the next one, up to six months' worth. So when the best thing to build costs more than a month's budget, the colony saves up and builds it, instead of sitting on a pile of credits.
 - **Credit reserve.** Never spent, by anything. The recommended amount is a quarter of your credits at setup, somewhere between 50,000 and 500,000.
 - **Per-project cap.** Anything more expensive gets proposed to you instead of built.
 - **New upkeep cap per month.** How much new monthly upkeep it can take on in one month, so a bad guess or a drop in income gets caught before a lot of permanent cost piles up. **Automatic** is 10% of last month's net income, at least 20,000, so it grows with you.
@@ -63,6 +64,8 @@ What changes:
 - mod buildings it can't value for certain;
 - the last producer of a good while your colonies would end up short;
 - anything it built itself in the last year.
+
+It also won't touch a building that makes something one of your trade contracts needs, as long as that contract's running.
 
 Whatever it took down isn't rebuilt there for a year either. The old building's AI core and item go to Autopilot Storage to be placed again. **Endgame replaces industries** turns this part off.
 
