@@ -28,6 +28,7 @@ public class JTModPlugin extends BaseModPlugin {
         step("daily script", new Runnable() { public void run() {
             data.scripts.jonahtweaks.autopilot.CAAuto.reset();
             data.scripts.jonahtweaks.autopilot.CASurplus.reset();
+            data.scripts.jonahtweaks.autopilot.CACapital.reset();
             data.scripts.jonahtweaks.autopilot.CATerraSim.reset();
             Global.getSector().addTransientScript(new data.scripts.jonahtweaks.autopilot.CAScript());
         } });

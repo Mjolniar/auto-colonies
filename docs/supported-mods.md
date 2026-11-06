@@ -154,7 +154,7 @@ Their resource forges and Biolab get measured and built like anything else. Head
 
 - **Secondary Drydocks** is valued by what it adds next to your Heavy Industry or Orbital Works (it doesn't stack with them, a colony only counts its best source) or as a Heavy Industry that never pollutes on its own. It can't take a nanoforge.
 - **Auxiliary Shipbays** and **Advent Outreach** get measured like anything else. Advent's story point improvement does nothing, so it's never improved.
-- The **Bazaar** is a market for you to trade at and does nothing for the colony, so it's left to you.
+- The **Bazaar** is a market for you to trade at and does nothing for the colony, so it only gets built at your [capital](capital.md), where that's the whole point.
 - **Slightly Better Tech-Mining** makes Tech-Mining a lot richer, and the manager values it with that mod's numbers instead of vanilla's.
 - Yunru's world conditions are read through the colony's own stats.
 

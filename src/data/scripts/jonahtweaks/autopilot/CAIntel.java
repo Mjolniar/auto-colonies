@@ -182,6 +182,8 @@ public class CAIntel extends BaseIntelPlugin {
                     s.upkeepCapAuto ? "automatic: 10% of last month's net income, at least 20,000" : "fixed");
             try { CASurplus.renderEmpire(t, s); }
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus line failed", e); }
+            try { CACapital.renderEmpire(t, s); }
+            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "capital line failed", e); }
 
             boolean anyPending = false;
             for (MarketAPI m : markets) if (data.colony(m.getId()).pendingId != null) anyPending = true;

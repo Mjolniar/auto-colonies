@@ -86,6 +86,11 @@ public class CASetupUI {
         s.noScreenButton = false;
         s.screenLog = 0;           // every log entry on screen, as one short line
         s.voice = 0;               // in the machine voice (2.41.0)
+        s.capitalMode = 0;         // the capital gets your deliveries and, once colonies ramp up, its trade buildings (2.42.0)
+        s.capitalStart = 0;        // from 100,000 a month of net income
+        s.capitalNoGather = false;
+        s.capitalNoRoom = false;
+        s.noStationPlan = false;   // a station at every colony (2.42.0)
     }
 
     /** Which group is expanded (UI state only, not saved); at most one. Budget starts open. */
@@ -210,6 +215,10 @@ public class CASetupUI {
         if (group(t, "build", "Building and planning", "stations: " + stationName(s.stationLine) + ", removals " + onOff(s.allowRemovals).toLowerCase()
                 + ", story points: " + CASettings.SP_NAMES[s.storyPointRule])) {
             row(t, "Station line", stationName(s.stationLine), "Pick by score", "station", true);
+            row(t, "Station at every colony", s.noStationPlan ? "No" : "Yes", "Yes", "stationplan", true);
+            if (!s.noStationPlan) t.addPara("A station fights next to your fleets and anything raiding, bombarding or invading has to beat it first. "
+                    + "Every colony plans one from size 4 (or half a year old) once its fast buildout is done, a Battlestation from size 6 and a "
+                    + "Star Fortress from size 8 (a size sooner at the capital).", Misc.getGrayColor(), 4f);
             row(t, "Allow removals", onOff(s.allowRemovals), "Off", "removals", true);
             row(t, "Mod buildings with measured effects", CASettings.MEASURED_NAMES[Math.max(0, Math.min(2, s.measuredMode))], "Build when best", "measured", true);
             row(t, "Story points", CASettings.SP_NAMES[s.storyPointRule], "Player only", "sp", true);
@@ -349,6 +358,22 @@ public class CASetupUI {
                     + "for vanilla's materials at base price plus a fee, 10 days after it's sent. With Terraforming Made Easy, a makeshift "
                     + "one is upgraded to Domain-era with a spare Beta core; with Ashes of the Domain, a Hypershunt Receiver goes up "
                     + "once researched, with a Coronal Hypershunt Tap in Autopilot Storage.", Misc.getGrayColor(), 6f);
+        }
+        if (group(t, "capital", "Capital", !CACapital.on(s) ? "off" : CACapital.name(s) + ", " + CACapital.MODE_NAMES[Math.max(0, Math.min(2, s.capitalMode))].toLowerCase())) {
+            row(t, "Capital", CACapital.name(s), "Autopilot picks", "cap", true);
+            row(t, "Capital does", CACapital.MODE_NAMES[Math.max(0, Math.min(2, s.capitalMode))], "Deliveries and commerce", "capmode", true);
+            if (s.capitalMode == 0) {
+                row(t, "Commerce starts", CACapital.START_NAMES[Math.max(0, Math.min(CACapital.START_NAMES.length - 1, s.capitalStart))], "Net income over 100,000", "capstart", true);
+                row(t, "Make room for trade buildings", s.capitalNoRoom ? "No" : "Yes", "Yes", "caproom", true);
+            }
+            if (s.capitalMode != 2) row(t, "Gather your Storage there", s.capitalNoGather ? "No" : "Yes", "Yes", "capgather", true);
+            t.addPara("Your home port. Custom production is delivered there (it moves the production gathering point; move that yourself "
+                    + "and the capital follows), and once a week your other Storage tabs ship their ships, weapons, wings and blueprints there, "
+                    + "at the storage logistics fee. Once your colonies have ramped up, the capital builds itself into a place to trade: "
+                    + "Spaceport and Megaport, Commerce, every installed mod building that lets you buy or sell there, and a Waystation, ahead "
+                    + "of its other plans. With every industry slot taken it takes down its weakest ordinary industry for one, at most one every "
+                    + "90 days, never defenses, fleets or ship production. Autopilot picks the colony where your things already are; pick "
+                    + "your own on its colony panel.", Misc.getGrayColor(), 6f);
         }
         if (group(t, "logistics", "Storage logistics", s.logisticsMode == 1 ? "on, refit hub " + CALogistics.hubName(s.logisticsHub, true)
                 + (s.logisticsSellHub != null ? ", sell hub " + CALogistics.hubName(s.logisticsSellHub, false) : "") : "off")) {
@@ -546,6 +571,12 @@ public class CASetupUI {
         else if (k.equals("logisell")) s.logisticsSellHub = CALogistics.next(s.logisticsSellHub, true);
         else if (k.equals("logiships")) s.logisticsShips = !s.logisticsShips;
         else if (k.equals("logigoods")) s.logisticsSupplies = !s.logisticsSupplies;
+        else if (k.equals("cap")) { s.capitalId = CACapital.next(s.capitalId); if (s.capitalId != null) s.capitalAuto = s.capitalId; CACapital.reset(); }
+        else if (k.equals("capmode")) { s.capitalMode = (Math.max(0, Math.min(2, s.capitalMode)) + 1) % 3; CACapital.reset(); }
+        else if (k.equals("capstart")) s.capitalStart = (Math.max(0, Math.min(CACapital.START_NAMES.length - 1, s.capitalStart)) + 1) % CACapital.START_NAMES.length;
+        else if (k.equals("caproom")) s.capitalNoRoom = !s.capitalNoRoom;
+        else if (k.equals("stationplan")) s.noStationPlan = !s.noStationPlan;
+        else if (k.equals("capgather")) s.capitalNoGather = !s.capitalNoGather;
         else if (k.equals("settleinc")) s.settlementMinIncome = Math.max(5000f, s.settlementMinIncome + 5000f * dir);
         return true;
     }

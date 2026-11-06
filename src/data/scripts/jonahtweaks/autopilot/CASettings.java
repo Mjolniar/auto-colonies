@@ -151,6 +151,15 @@ public class CASettings {
     public static final String[] TASC_STATION_NAMES = {"Recommend only", "Auto", "Off"};
     public static final String[] OBJECTIVE_NAMES = {"Auto", "Recommend only", "Off"};
     public String logisticsHub, logisticsSellHub;
+    // 2.42.0 the capital (CACapital): mode 0 deliveries and commerce (default, also older saves), 1 deliveries only, 2 off;
+    // when commerce starts (index into CACapital.START_NAMES, 0 recommended); your pick (null: Autopilot's, kept in
+    // capitalAuto); the gathering point Autopilot last set, to tell when you moved it yourself; whether the commerce build-up
+    // has started; and two inverted switches so older saves get them on: gather Storage there, take down an industry for room
+    public int capitalMode = 0, capitalStart = 0;
+    public String capitalId, capitalAuto, capitalGatherSet;
+    public boolean capitalStarted = false, capitalNoGather = false, capitalNoRoom = false;
+    // 2.42.0 a station at every colony (CAStations); inverted so older saves get it
+    public boolean noStationPlan = false;
     public boolean logisticsShips = true, logisticsSupplies = true;
     public int spMonth = 0;   // story points spent this month (counted improvements before 2.20.1)
     public float lastNet = 0f;

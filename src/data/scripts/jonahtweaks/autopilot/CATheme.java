@@ -136,6 +136,7 @@ public final class CATheme {
             {"missed a delivery", "ALERT", false},
             {"under siege,? ?", "SIEGE", true},
             {"siege over", "CLEAR", true},
+            {"^capital: ", "CAPITAL", true},
             {"(^| )building ", "BUILD", true},
             {"(^| )upgrading to ", "UPGRADE", true},
             {"(^| )installed ", "INSTALL", true},

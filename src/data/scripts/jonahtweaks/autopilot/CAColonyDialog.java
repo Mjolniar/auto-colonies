@@ -97,6 +97,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         else if (APPROVE.equals(id)) { String err = CAAuto.approve(market); message = err == null ? "Approved and started" : err; }
         else if (REJECT.equals(id)) { CAAuto.reject(market); message = "Rejected; it won't propose again for 30 days"; }
         else if (CASurplus.handle(market, id) != null) message = CASurplus.handle(market, id);
+        else if (CACapital.handle(market, id) != null) message = CACapital.handle(market, id);
         else if ((AUG_APPLY.equals(id) || AUG_UNSKIP.equals(id)) && Global.getSettings().getModManager().isModEnabled(CAAugments.MOD)) {
             try {
                 if (AUG_UNSKIP.equals(id)) { CAAugments.unskip(market); message = "Autopilot may add those augments again"; }
@@ -313,6 +314,10 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             if (c.mode == CAData.Mode.AUTO && !outpost && !shunt) {
                 try { CASurplus.renderColony(t, market, s, 12f); }
                 catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus section failed at " + market.getName(), e); }
+            }
+            if (!outpost && !shunt) {
+                try { CACapital.renderColony(t, market, s, 12f); }
+                catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "capital section failed at " + market.getName(), e); }
             }
             if (outpost) {
                 CATheme.heading(t, "Nexerelin outpost", 12f);
