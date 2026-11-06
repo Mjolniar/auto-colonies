@@ -24,6 +24,7 @@ Groups for mods you don't have don't show up.
 ## Building and planning
 
 - **Station line** - Pick by score (recommended), Low tech, Midline, High tech, or Imperium (Interstellar Imperium).
+- **Stable locations** - Auto (recommended), Recommend only, or Off. Builds comm relays, nav buoys and sensor arrays at stable spots in systems with your Auto colonies (and TME's Domain-era upgrade, AotD's Hypershunt Receivers). See [How it builds](how-it-builds.md#stable-locations).
 - **Allow removals** - lets it remove buildings to replace them. Recommended off, that's your call. Terraforming structures it built itself and the endgame's replacements don't need this.
 - **Mod buildings with measured effects** - Build when best (recommended), Recommend only, or Ignore.
 - **Story points** - Player only (recommended), One per colony, or Monthly cap.

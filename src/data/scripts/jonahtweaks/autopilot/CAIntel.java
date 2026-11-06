@@ -243,6 +243,8 @@ public class CAIntel extends BaseIntelPlugin {
                 t.addPara("On the way: %s to %s, %s days left.", 3f, hl, (sh.qty > 1 ? sh.qty + " " : "") + sh.name(),
                         to == null ? "your biggest colony" : to.getName(), "" + (int) Math.ceil(left));
             }
+            for (String o : CAObjectives.inTransit(data))   // stable locations (2.40.0)
+                t.addPara("Construction crew: %s.", 3f, hl, o);
             for (CALogistics.Load l : CALogistics.inTransit()) {   // storage logistics (2.39.0)
                 float left = Math.max(0f, l.days - Global.getSector().getClock().getElapsedDaysSince(l.sent));
                 t.addPara("Storage logistics: %s to %s's Storage (" + CALog.esc(l.why) + "), %s days left.", 3f, hl,

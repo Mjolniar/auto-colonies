@@ -316,6 +316,8 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
 | [CABrewery](../src/data/scripts/jonahtweaks/autopilot/CABrewery.java) | Substance.Abuse | Brewery only with a recipe in storage |
 | [CAMods](../src/data/scripts/jonahtweaks/autopilot/CAMods.java) | VIC, Planetary Shield, Roider Union, Unknown Skies, What We Left Behind, Astral Ascension, Yunru Industries, Slightly Better Tech-Mining, Niko's Scavengable Industries | Small integrations by id; the buildings left to you (`LEFT`) |
 | [CALogistics](../src/data/scripts/jonahtweaks/autopilot/CALogistics.java) | Any | Storage logistics: ships, weapons, wings and unknown blueprints to the refit hub, known blueprints and spares to the sell hub, shipped for a fee and travel time |
+| [CAObjectives](../src/data/scripts/jonahtweaks/autopilot/CAObjectives.java) | Any (TME and AotD add to it) | Stable locations: comm relays, nav buoys, sensor arrays, TME's Domain-era upgrade, AotD's Hypershunt Receivers, valued by the colonies in the system |
+| [CAPanopticon](../src/data/scripts/jonahtweaks/autopilot/CAPanopticon.java) | Emergent Threats: IX Revival | Panopticon Instance and Core into the Surveillance Center |
 | [CAOmega](../src/data/scripts/jonahtweaks/autopilot/CAOmega.java) | Omega Core Everywhere, Astral Ascension Renewed | Omega cores into buildings (valued from OCE's table) or as administrators (AAR) |
 
 ### UI and leftovers

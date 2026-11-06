@@ -2,6 +2,13 @@
 
 Every version, newest first. If you're wondering why the first version on here is 2.1.0: this started as **Jonah Tweaks**, a personal mod of little tweaks for my own games (bigger battle size, sticky combat autopilot, that kind of thing), and Colony Autopilot grew inside it until it became the main thing. 2.1.0 is when it went up on GitHub, and 2.6.0 was the first version with a downloadable release. The balance tweaks moved out into their own mod in 2.7.0, so this one only manages colonies.
 
+## 2.40.0 - 2026-11-06
+
+- **Stable locations.** The stable spots in a system (where comm relays, nav buoys and sensor arrays go) get used now. In any system with your Auto colonies, Colony Manager works out what each one is worth to the colonies there, going by their goals, and sends a construction crew to build the best one: a comm relay first for most goals (+1 stability at every colony of yours in the system), then a nav buoy (+2 burn, worth more to Security colonies), then a sensor array. It costs vanilla's materials at base price plus a fee, takes 10 days, and only builds one of each kind per system since they don't stack. If the spot gets taken before the crew shows up, you get the materials back.
+- With **Terraforming Made Easy**, makeshift ones you own get upgraded to Domain-era (twice the stability for the relay) when there's a spare Beta core in Autopilot Storage and it pays for itself.
+- With **Ashes of the Domain**, once you've researched them and have a Coronal Hypershunt Tap in Autopilot Storage, it builds Hypershunt Receivers (+2 industry slots at every colony in the system) in systems your hypershunt reaches. While you own a hypershunt, one stable spot per system is kept free for one.
+- New setting under Settings, **Stable locations**: Auto (default), Recommend only, or Off. Crews on their way show on the Autopilot Storage page.
+
 ## 2.39.3 - 2026-11-06
 
 - **Panopticon cores** (Emergent Threats: IX Revival). The Panopticon Instance and Panopticon Core couldn't go in Autopilot Storage at all. Now they can, and once a day one goes into a Surveillance Center that doesn't have one (the Instance first, and the colony with the most of your colonies in its system first), shipped over first if it's stored at another colony. Whatever regular core was in there goes back to storage. The Hegemony doesn't count either of them for inspections.
