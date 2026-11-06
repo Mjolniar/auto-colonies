@@ -9,7 +9,7 @@ import com.fs.starfarer.api.impl.campaign.submarkets.BaseSubmarketPlugin;
 /**
  * Autopilot Storage: a tab at every player colony holding that colony's own store (CAStores, per colony since 2.37.0;
  * before, one shared cargo let anything put in at one colony come out at any other). Colony items, AI cores, Antimatter
- * Stabilizers, research databanks, VPC chips and recipes go in. The manager uses only what is in these, ships what it
+ * Stabilizers, research databanks, VPC chips and recipes go in, and nothing else (usable, 2.39.2). The manager uses only what is in these, ships what it
  * needs elsewhere for a fee and travel time, and returns anything it takes out of a building to that colony's store.
  * (The storage cheat that let anything in and fed colonies' shortages moved to Jonah's Easy Sector in 2.37.0.)
  */
@@ -49,7 +49,7 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
     @Override
     public boolean isIllegalOnSubmarket(CargoStackAPI stack, TransferAction action) {
         if (action != TransferAction.PLAYER_SELL) return false;
-        if (stack.isSpecialStack()) return stack.getSpecialDataIfSpecial() != null && ("IndEvo_amb".equals(stack.getSpecialDataIfSpecial().getId()) || consumable(stack));
+        if (stack.isSpecialStack()) return !usable(stack);
         if (stack.isCommodityStack()) return !allowedCommodity(stack.getCommodityId());
         return true;   // weapons and fighter wings
     }
@@ -58,9 +58,34 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
     public String getIllegalTransferText(CargoStackAPI stack, TransferAction action) {
         if (stack.isSpecialStack() && stack.getSpecialDataIfSpecial() != null && "IndEvo_amb".equals(stack.getSpecialDataIfSpecial().getId()))
             return "Keep ambassadors in a colony's normal Storage; Autopilot installs them from there";
-        if (stack.isSpecialStack() && consumable(stack))
-            return "Campaign consumables and blueprints don't go in Autopilot Storage; keep them in your cargo or a colony's normal Storage";
+        if (stack.isSpecialStack())
+            return "Autopilot has no use for this, so it stays out of Autopilot Storage: only colony items it can install, VPC chips and recipes go in. "
+                    + "Keep blueprints, key cards and the like in your cargo or a colony's normal Storage";
         return "Only colony items, AI cores and research databanks can go in Autopilot Storage";
+    }
+
+    // ---------------- what goes in (2.39.2) ----------------
+
+    /**
+     * A special item Autopilot can use from here: any colony item the game can install (its item effects table, every mod's
+     * included), the items it values by hand, Industrial Evolution's VPC chips and Substance.Abuse's recipes and Recipe Book.
+     * Nothing else has a use here. Special items used to go in unless they were campaign consumables, so UAF's Access Key
+     * Cards (turned in at the Aurorans for credits) and blueprint packages whose blueprints you already know piled up in it.
+     * Research only takes databanks, AI cores and colony items, so it loses nothing. Pure.
+     */
+    static boolean usable(String id, boolean installable) {
+        if (id == null || "IndEvo_amb".equals(id)) return false;   // ambassadors are installed from normal Storage
+        return installable || CAItems.ITEM_VALUE.containsKey(id) || id.startsWith("IndEvo_vpc_")
+                || CABrewery.BOOK.equals(id) || (id.startsWith("alcoholism_") && id.endsWith("_item"));
+    }
+
+    static boolean usable(CargoStackAPI stack) {
+        try {
+            com.fs.starfarer.api.campaign.SpecialItemData data = stack.getSpecialDataIfSpecial();
+            if (data == null) return false;
+            boolean installable = com.fs.starfarer.api.impl.campaign.econ.impl.ItemEffectsRepo.ITEM_EFFECTS.containsKey(data.getId());
+            return usable(data.getId(), installable) && !consumable(stack);
+        } catch (Throwable t) { return false; }
     }
 
     // ---------------- campaign consumables (2.36.1) ----------------
@@ -102,22 +127,28 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
     }
 
     /**
-     * Daily: campaign consumables and blueprints in a colony's Autopilot Storage (from before 2.36.1) go to that colony's
-     * normal Storage, with a log line.
+     * Daily: special items Autopilot has no use for (see usable; campaign consumables and blueprints since 2.36.1) go from a
+     * colony's Autopilot Storage to its normal Storage, with one short log line.
      */
     public static void evict() {
         for (CAStores.Store s : CAStores.all()) {
             CargoAPI dest = com.fs.starfarer.api.util.Misc.getStorageCargo(s.market);
             if (dest == null) continue;
             java.util.List<String> moved = new java.util.ArrayList<String>();
+            int items = 0;
             for (CargoStackAPI stack : s.cargo.getStacksCopy()) {
-                if (!stack.isSpecialStack() || !consumable(stack)) continue;
+                if (!stack.isSpecialStack() || usable(stack)) continue;
                 float n = stack.getSize();
+                String name = stack.getDisplayName();
                 s.cargo.removeItems(CargoAPI.CargoItemType.SPECIAL, stack.getSpecialDataIfSpecial(), n);
                 dest.addSpecial(stack.getSpecialDataIfSpecial(), n);
-                moved.add((n > 1f ? (int) n + " " : "") + stack.getDisplayName());
+                items += Math.round(n);
+                moved.add((n > 1f ? (int) n + " " : "") + name);
             }
-            if (!moved.isEmpty()) CALog.add(s.market.getName() + ": moved " + CAContracts.join(moved) + " from Autopilot Storage to Storage (campaign consumables and blueprints don't go there)");
+            if (moved.isEmpty()) continue;
+            String what = moved.size() <= 3 ? CAContracts.join(moved)
+                    : CAContracts.join(moved.subList(0, 3)) + " and " + (moved.size() - 3) + " more kinds (" + items + " items)";
+            CALog.add(s.market.getName() + ": moved " + what + " from Autopilot Storage to Storage (Autopilot has no use for them)");
         }
     }
 

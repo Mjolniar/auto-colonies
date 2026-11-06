@@ -6,6 +6,8 @@ Every colony you own has its own **Autopilot Storage** tab. This is the only pla
 
 It uses an item at the colony it's stored at. If the best spot for it is at another colony, it ships it there first: that costs a fee (2,000 plus 300 a light-year, scaled by your convenience fee setting) and takes a couple of days plus a day a light-year, then it goes in once it arrives. Same for an AI core moved from one colony's building to another's. Nothing jumps across the sector for free. Whatever the manager takes out of a building goes into that colony's own Autopilot Storage.
 
+Only stuff the manager can actually use goes in: colony items it can install, AI cores, research databanks, Antimatter Stabilizers, VPC chips and recipes. Blueprints, blueprint packages, UAF's Access Key Cards and the like stay out (keep them in your cargo or the normal Storage), and anything like that already in there gets moved over to the colony's normal Storage.
+
 If you're coming from a version before 2.37.0, where it was one shared storage, everything that was in it gets moved into your biggest colony's Autopilot Storage once, and the log says so.
 
 What goes in:
