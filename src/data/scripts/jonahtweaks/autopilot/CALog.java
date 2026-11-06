@@ -55,7 +55,7 @@ public class CALog {
             Float at = pingAt.get(key);
             if (at != null && now - at < PING_DAYS && now >= at) return;
             pingAt.put(key, now);
-            Global.getSector().getCampaignUI().addMessage(CATheme.machine(text), Misc.getDarkPlayerColor().brighter());
+            Global.getSector().getCampaignUI().addMessage(CATheme.machine(text), Misc.getTextColor());
         } catch (Throwable ignored) { }
     }
 
@@ -73,7 +73,7 @@ public class CALog {
         CADiagnostics.LOG.info(CADiagnostics.TAG + text);
         if (s.screenLog == 0 || (s.screenLog == 1 && important)) {
             try {
-                if (s.voice == 0) Global.getSector().getCampaignUI().addMessage(CATheme.machine(text), important ? Misc.getHighlightColor() : Misc.getBasePlayerColor());
+                if (s.voice == 0) Global.getSector().getCampaignUI().addMessage(CATheme.machine(text), important ? Misc.getHighlightColor() : Misc.getTextColor());
                 else Global.getSector().getCampaignUI().addMessage("Autopilot: " + text, important ? Misc.getHighlightColor() : Misc.getTextColor());
             }
             catch (Throwable ignored) { }
