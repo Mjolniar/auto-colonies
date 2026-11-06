@@ -2,6 +2,10 @@
 
 Every version, newest first. If you're wondering why the first version on here is 2.1.0: this started as **Jonah Tweaks**, a personal mod of little tweaks for my own games (bigger battle size, sticky combat autopilot, that kind of thing), and Colony Autopilot grew inside it until it became the main thing. 2.1.0 is when it went up on GitHub, and 2.6.0 was the first version with a downloadable release. The balance tweaks moved out into their own mod in 2.7.0, so this one only manages colonies.
 
+## 2.42.3 - 2026-11-06
+
+- **Update notifications.** The mod ships a Version Checker file now, so if you have MagicLib (it has Version Checker built in) or a mod manager like TriOS, you'll get told when there's a new version, with a link to the download and the patch notes. Mod managers can grab the update for you too. Nothing changes in game; this version just has to be installed once by hand, and from here on you'll hear about the next one.
+
 ## 2.42.2 - 2026-11-06
 
 - **A colony can't be left sitting at 0 stability anymore.** This one's bad and it's on me. The game decivilizes a colony that stays at 0 stability for months (it warns you once, then it's a dice roll every month), and an Auto colony could sit at 0 forever: Wind had 3 industries on 2 slots from the bug 2.42.1 fixed, which costs 5 stability, and it decivilized. Now:
