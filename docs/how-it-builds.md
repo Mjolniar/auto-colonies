@@ -79,4 +79,18 @@ The **Station line** setting picks which station line new stations use: Pick by 
 
 Once you're spending freely (see [Money, surplus and the endgame](money.md)), every colony maxes out its station, Heavy Batteries, Planetary Shield, Megaport and Patrol HQ even if they cost more than they earn.
 
+## Stable locations
+
+Every system has a few stable spots where you can put a comm relay, nav buoy or sensor array. In any system with your Auto colonies, Colony Manager works out what each one would do for the colonies there, using their goals the same way it scores buildings, and sends a construction crew to build the best one:
+
+- **Comm relay** (+1 stability at every colony of yours in the system). Usually first.
+- **Nav buoy** (+2 burn for your fleets there, so patrols and defense fleets show up sooner). Security colonies care about this a lot more.
+- **Sensor array** (+400 sensor range, so raiders get spotted sooner).
+
+Only one of each kind counts in a system, so it never builds a second. It costs vanilla's materials (15 heavy machinery, 30 metals, 5 transplutonics) at base price plus a fee from the monthly budget, and goes up 10 days after the crew leaves. If someone grabs the spot first, the materials come back.
+
+With **Terraforming Made Easy**, a makeshift one you own gets upgraded to Domain-era (the relay gives +2 instead of +1) when there's a spare Beta core in Autopilot Storage and the upgrade pays for itself within three years. With **Ashes of the Domain**, Hypershunt Receivers get built too, once researched and with a Coronal Hypershunt Tap in Autopilot Storage, in systems your hypershunt reaches; while you own a hypershunt, one spot per system stays free for one.
+
+The **Stable locations** setting turns this to Recommend only or Off.
+
 Next: [Money, surplus and the endgame](money.md).

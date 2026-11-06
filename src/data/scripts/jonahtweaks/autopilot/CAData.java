@@ -115,6 +115,8 @@ public class CAData {
     // 2.38.0, CASiege: when hostiles only elsewhere in the system first made a colony's siege, marketId -> when
     public Map<String, Long> siegeSystem;
     // 2.39.0, storage logistics (CALogistics): loads on their way to the refit or sell hub
+    public List<CAObjectives.Order> objectiveOrders;   // construction crews on their way to stable locations (2.40.0)
+    public List<CAObjectives.Order> objectiveOrders() { if (objectiveOrders == null) objectiveOrders = new ArrayList<CAObjectives.Order>(); return objectiveOrders; }
     public List<CALogistics.Load> loads;
     public List<CALogistics.Load> loads() { if (loads == null) loads = new ArrayList<CALogistics.Load>(); return loads; }
     public Map<String, Long> siegeSystem() { if (siegeSystem == null) siegeSystem = new HashMap<String, Long>(); return siegeSystem; }

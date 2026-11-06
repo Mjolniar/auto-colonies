@@ -141,6 +141,9 @@ public class CASettings {
     // 2.39.0 storage logistics (CALogistics): 0 off (default), 1 on; refit hub market id (null: the production gathering
     // point), sell hub market id (null: none); ships and supplies/fuel/crew/marines go to the refit hub too
     public int logisticsMode = 0;
+    /** Stable locations (2.40.0, CAObjectives): 0 Auto (also what older saves get), 1 Recommend only, 2 Off. */
+    public int objectiveMode = 0;
+    public static final String[] OBJECTIVE_NAMES = {"Auto", "Recommend only", "Off"};
     public String logisticsHub, logisticsSellHub;
     public boolean logisticsShips = true, logisticsSupplies = true;
     public int spMonth = 0;   // story points spent this month (counted improvements before 2.20.1)

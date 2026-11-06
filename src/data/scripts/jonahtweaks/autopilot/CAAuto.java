@@ -220,6 +220,8 @@ public class CAAuto {
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony policy step failed", t); }
         try { CAStory.run(auto); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story point step failed", t); }
+        try { CAObjectives.run(d, s, auto); }   // stable locations: comm relays, nav buoys, sensor arrays, receivers (2.40.0)
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "stable location step failed", t); }
         if (Global.getSettings().getModManager().isModEnabled(CASettlement.MOD)) {
             try { CASettlement.run(d, s); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "settlement step failed", t); }

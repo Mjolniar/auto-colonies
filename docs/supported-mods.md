@@ -10,7 +10,7 @@ If a mod you use isn't here and you'd like it supported, throw it in the [issues
 
 [Forum thread](https://fractalsoftworks.com/forum/index.php?topic=29441.0)
 
-Special-world plans (Forge, Fortress, Paradise, Hive, Death, Waste) built from TME's own requirement table, the plan's terraforming, and surplus terraforming at every Auto colony. All in [Terraforming](terraforming.md).
+Special-world plans (Forge, Fortress, Paradise, Hive, Death, Waste) built from TME's own requirement table, the plan's terraforming, and surplus terraforming at every Auto colony. All in [Terraforming](terraforming.md). Its Domain-era upgrade for makeshift comm relays, nav buoys and sensor arrays gets used too, with a spare Beta core (see [Stable locations](how-it-builds.md#stable-locations)).
 
 ## Industrial Evolution
 
@@ -40,6 +40,7 @@ Covers Building Menu Overhaul, Vaults of Knowledge and Theory of Toolbox.
 - **Management styles** - new buildings are scored with the style's real effects. The style itself is never changed. On a Floating City nothing is built while fuel would run short.
 - **Research**, **special project supply**, **wonders and gates** - see [Research](research.md).
 - **Trade contracts** - takes an offer only when ToT's own numbers leave 15% to spare and it pays more than exporting would.
+- **Hypershunt Receivers** - built at stable spots in systems your hypershunt reaches, once researched and with a Coronal Hypershunt Tap in Autopilot Storage (see [Stable locations](how-it-builds.md#stable-locations)).
 - **Megastructures** - the Coronal Hypershunt (wormhole range kept to what reaches your receivers, the collector and wormhole restored when you can afford it), Pluto Mining Station and the Nidavelir Complex. Anything you change yourself is left alone until you click **Let Autopilot manage it**.
 - **Colony items** - AotD's items are placed like vanilla ones.
 - **Left to you**: Grand Wonders other than the Daedalus Array, Star Citadels, custom production, and picking a management style.

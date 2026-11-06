@@ -74,6 +74,7 @@ public class CASetupUI {
         s.disableForgeVPC = false;
         s.disableShipping = false;
         s.settlementMode = 2;   // Auto: founds RAT's settlement only once a site clears the income threshold
+        s.objectiveMode = 0;    // Auto: comm relays, nav buoys and sensor arrays at stable locations (2.40.0)
         s.augmentMode = 0;
         s.contractMode = 1;     // Auto: only contracts with 15% to spare that beat exporting
         s.researchMode = 1;     // Auto: databank-only techs, ranked by what they unlock
@@ -330,6 +331,14 @@ public class CASetupUI {
             row(t, "Commodity Forge may use up chips", s.disableForgeVPC ? "No" : "Yes", "Yes", "forge", true);
             row(t, "Supply shipping (Courier Port)", s.disableShipping ? "Off" : "Cover shortages", "Cover shortages", "ship", true);
         }
+        if (group(t, "objectives", "Stable locations", CASettings.OBJECTIVE_NAMES[Math.max(0, Math.min(2, s.objectiveMode))].toLowerCase())) {
+            row(t, "Comm relays, nav buoys, sensor arrays", CASettings.OBJECTIVE_NAMES[Math.max(0, Math.min(2, s.objectiveMode))], "Auto", "objectives", true);
+            t.addPara("In systems with your Auto colonies, a construction crew builds what the stable locations there are worth most "
+                    + "for those colonies' goals: a comm relay (+1 stability), nav buoy (+2 burn) or sensor array (+400 sensor range), "
+                    + "for vanilla's materials at base price plus a fee, 10 days after it's sent. With Terraforming Made Easy, a makeshift "
+                    + "one is upgraded to Domain-era with a spare Beta core; with Ashes of the Domain, a Hypershunt Receiver goes up "
+                    + "once researched, with a Coronal Hypershunt Tap in Autopilot Storage.", Misc.getGrayColor(), 6f);
+        }
         if (group(t, "logistics", "Storage logistics", s.logisticsMode == 1 ? "on, refit hub " + CALogistics.hubName(s.logisticsHub, true)
                 + (s.logisticsSellHub != null ? ", sell hub " + CALogistics.hubName(s.logisticsSellHub, false) : "") : "off")) {
             row(t, "Storage logistics", s.logisticsMode == 1 ? "On" : "Off", "Your call", "logi", true);
@@ -516,6 +525,7 @@ public class CASetupUI {
         else if (k.equals("spykeep")) s.spyKeep = (Math.max(0, Math.min(4, s.spyKeep)) + 1) % 5;
         else if (k.equals("spytarget")) s.spyTarget = nextSpyTarget(s.spyTarget);
         else if (k.equals("logi")) s.logisticsMode = s.logisticsMode == 1 ? 0 : 1;
+        else if (k.equals("objectives")) s.objectiveMode = (Math.max(0, Math.min(2, s.objectiveMode)) + 1) % 3;
         else if (k.equals("logihub")) s.logisticsHub = CALogistics.next(s.logisticsHub, false);
         else if (k.equals("logisell")) s.logisticsSellHub = CALogistics.next(s.logisticsSellHub, true);
         else if (k.equals("logiships")) s.logisticsShips = !s.logisticsShips;

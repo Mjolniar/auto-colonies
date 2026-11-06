@@ -284,7 +284,7 @@ public class CAPlan {
         for (Step s : plan.steps) {
             if (s == step) return false;
             if (s.extra || s.done(m) || dead(m, s.id)) continue;
-            if (s.kind != Kind.BUILD && CATerraform.producing(m, s.id)) continue;
+            if (s.kind != Kind.BUILD && Global.getSettings().getModManager().isModEnabled("terraformingmadeeasy") && CATerraform.producing(m, s.id)) continue;
             return true;
         }
         return false;
