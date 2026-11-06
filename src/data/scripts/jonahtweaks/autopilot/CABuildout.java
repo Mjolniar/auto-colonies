@@ -186,13 +186,13 @@ public class CABuildout {
         if (CAHypershunt.is(m) || CAEngine.isOutpost(m)) return;
         boolean losing = m.getNetIncome() < 0f;
         if (!c.buildout && !losing) return;
-        t.addSectionHeading("Fast buildout", Alignment.MID, 12f);
+        CATheme.heading(t, "Fast buildout", 12f);
         if (!c.buildout) {
             t.addPara("This colony loses %s a month. Fast buildout puts it in Auto and spends everything above a credit floor on the "
                     + "buildings that pay back fastest, until it has earned money for 30 days.", 6f, Misc.getNegativeHighlightColor(),
                     Misc.getDGSCredits(-m.getNetIncome()));
             t.addButton("Start fast buildout, keeping at least " + Misc.getDGSCredits(DEFAULT_FLOOR), PREFIX + "start",
-                    Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(), Alignment.MID, com.fs.starfarer.api.ui.CutStyle.ALL, 360f, 24f, 6f);
+                    Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(), Alignment.MID, com.fs.starfarer.api.ui.CutStyle.TL_BR, 360f, 24f, 6f);
             return;
         }
         float days = c.buildoutProfitSince == 0L ? 0f : Global.getSector().getClock().getElapsedDaysSince(c.buildoutProfitSince);

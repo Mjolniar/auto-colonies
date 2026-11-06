@@ -390,8 +390,8 @@ public class CASettlement {
         }
         if (d.settlePendingKind != null) {
             t.addPara("Waiting for your approval: %s for %s", 8f, hl, d.settlePendingName, Misc.getDGSCredits(d.settlePendingCost));
-            com.fs.starfarer.api.ui.ButtonAPI a = t.addButton("Approve", new String[]{"settle", "approve", ""}, hl, dark, com.fs.starfarer.api.ui.Alignment.MID, com.fs.starfarer.api.ui.CutStyle.ALL, 120f, 22f, 4f);
-            com.fs.starfarer.api.ui.ButtonAPI r = t.addButton("Reject", new String[]{"settle", "reject", ""}, base, dark, com.fs.starfarer.api.ui.Alignment.MID, com.fs.starfarer.api.ui.CutStyle.ALL, 120f, 22f, 0f);
+            com.fs.starfarer.api.ui.ButtonAPI a = t.addButton("Approve", new String[]{"settle", "approve", ""}, hl, dark, com.fs.starfarer.api.ui.Alignment.MID, com.fs.starfarer.api.ui.CutStyle.TL_BR, 120f, 22f, 4f);
+            com.fs.starfarer.api.ui.ButtonAPI r = t.addButton("Reject", new String[]{"settle", "reject", ""}, base, dark, com.fs.starfarer.api.ui.Alignment.MID, com.fs.starfarer.api.ui.CutStyle.TL_BR, 120f, 22f, 0f);
             r.getPosition().rightOfTop(a, 6f);
             CALog.endRow(t, a);
         }
@@ -411,7 +411,7 @@ public class CASettlement {
                 t.addPara("Next: %s for %s, +%s per month (pays back in %s months).", 4f, hl, f.name, Misc.getDGSCredits(f.cost), Misc.getDGSCredits(f.gain), "" + Math.round(f.cost / f.gain));
                 if (s.settlementMode == 0) {
                     com.fs.starfarer.api.ui.ButtonAPI b = t.addButton("Build " + f.name + " (" + Misc.getDGSCredits(f.cost) + ")", new String[]{"settle", "facility", f.id}, base, dark,
-                            com.fs.starfarer.api.ui.Alignment.MID, com.fs.starfarer.api.ui.CutStyle.ALL, 260f, 22f, 4f);
+                            com.fs.starfarer.api.ui.Alignment.MID, com.fs.starfarer.api.ui.CutStyle.TL_BR, 260f, 22f, 4f);
                     b.setEnabled(CABuild.credits() >= f.cost);
                 }
             }
@@ -427,7 +427,7 @@ public class CASettlement {
                     st.refinable ? Misc.getDGSCredits(st.refinedIncome) : "", st.distanceLY >= 999f ? "-" : "" + Math.round(st.distanceLY));
             if (s.settlementMode == 0 && i == 0) {
                 com.fs.starfarer.api.ui.ButtonAPI b = t.addButton("Found on " + st.planetName + " (" + Misc.getDGSCredits(foundingCost()) + ")", new String[]{"settle", "found", st.planetId}, base, dark,
-                        com.fs.starfarer.api.ui.Alignment.MID, com.fs.starfarer.api.ui.CutStyle.ALL, 260f, 22f, 4f);
+                        com.fs.starfarer.api.ui.Alignment.MID, com.fs.starfarer.api.ui.CutStyle.TL_BR, 260f, 22f, 4f);
                 b.setEnabled(CABuild.credits() >= foundingCost());
             }
         }

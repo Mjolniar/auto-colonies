@@ -98,5 +98,6 @@ Groups for mods you don't have don't show up.
 
 - **Button on the colony screen** - On (recommended) or Off.
 - **Log entries on screen** - Every entry (recommended, each as one short line), Important only, or Off.
+- **Announcement voice** - Machine (recommended) or Plain. Machine shows each entry on screen as a short readout, like `AP\\ #HOT_SPRINGS :: BUILD // Planetary Shield // 750k¢`, plus a ping now and then about what it's weighing (a colony's scan, inspection points), at most once a week each. Plain is the old "Autopilot: ..." sentence. The Log page has the full sentence either way.
 
 There are no cheat or balance settings. The mod only manages your colonies the way you could yourself.

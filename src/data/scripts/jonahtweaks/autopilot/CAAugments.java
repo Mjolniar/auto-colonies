@@ -567,7 +567,7 @@ public class CAAugments {
             }
             for (String n : pl.removeNames) t.addPara("Remove %s to make room", 6f, hl, n);
             t.addPara("Value of the change: about %s", 6f, hl, CAEngine.valueText(pl.gain));
-            t.addButton("Apply augment changes", CAColonyDialog.AUG_APPLY, base, dark, Alignment.MID, CutStyle.ALL, 240f, 24f, 6f);
+            t.addButton("Apply augment changes", CAColonyDialog.AUG_APPLY, base, dark, Alignment.MID, CutStyle.TL_BR, 240f, 24f, 6f);
             String when = s.augmentMode != 0 ? "Station augments are set to Recommend only, so they change when you click Apply."
                     : c.mode == CAData.Mode.AUTO ? "Auto applies this within a week." : "Auto colonies apply this by themselves; here it waits for you.";
             t.addPara(when, gray, 4f);
@@ -582,7 +582,7 @@ public class CAAugments {
             List<String> names = new ArrayList<String>();
             for (String id : c.augSkip()) { stationAugmentSpec sp = specs().get(id); names.add(sp == null ? id : sp.getName()); }
             t.addPara("Not added again because you removed them: %s", 8f, hl, join(names));
-            t.addButton("Allow again", CAColonyDialog.AUG_UNSKIP, base, dark, Alignment.MID, CutStyle.ALL, 140f, 22f, 4f);
+            t.addButton("Allow again", CAColonyDialog.AUG_UNSKIP, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 22f, 4f);
         }
         t.addPara("You know %s station augments. Augment blueprints from loot and markets teach more; ones that use up an item, "
                 + "or give AP back for a drawback, are left to you.", 6f, gray, hl, "" + known().size());
@@ -604,7 +604,7 @@ public class CAAugments {
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment plan failed at " + m.getName(), e); continue; }
             if (!pl.changes()) { t.addPara("%s, %s: %s of %s AP, best loadout.", 6f, hl, m.getName(), pl.station, ap(pl.used), ap(pl.budget)); continue; }
             t.addPara("%s, %s: %s of %s AP. Recommends: %s (%s).", 6f, hl, m.getName(), pl.station, ap(pl.used), ap(pl.budget), pl.summary(), CAEngine.valueText(pl.gain));
-            t.addButton("Apply", new String[]{"aug", "apply", m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 120f, 22f, 4f);
+            t.addButton("Apply", new String[]{"aug", "apply", m.getId()}, base, dark, Alignment.MID, CutStyle.TL_BR, 120f, 22f, 4f);
         }
         if (shown == 0) t.addPara("None of your managed colonies has an orbital station.", gray, 6f);
     }

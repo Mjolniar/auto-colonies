@@ -390,7 +390,7 @@ public class CAContracts {
                         6f, o.feasible ? hl : gray, o.name, "" + o.months, Misc.getDGSCredits(o.pay), Misc.getDGSCredits(o.gain));
                 if (!o.feasible) { t.addPara("    Can't fill: " + CALog.esc(o.why), gray, 2f); continue; }
                 if (s.contractMode == 0) {
-                    ButtonAPI b = t.addButton("Accept", new String[]{"contract", "accept", o.id}, base, dark, Alignment.MID, CutStyle.ALL, 120f, 22f, 4f);
+                    ButtonAPI b = t.addButton("Accept", new String[]{"contract", "accept", o.id}, base, dark, Alignment.MID, CutStyle.TL_BR, 120f, 22f, 4f);
                     b.setEnabled(o.gain > 0f);
                 }
             }

@@ -85,6 +85,7 @@ public class CASetupUI {
         s.autonomyMode = 1;     // Recommend: autonomy is your call; Autopilot only says which colony would help in a money emergency
         s.noScreenButton = false;
         s.screenLog = 0;           // every log entry on screen, as one short line
+        s.voice = 0;               // in the machine voice (2.41.0)
     }
 
     /** Which group is expanded (UI state only, not saved); at most one. Budget starts open. */
@@ -92,9 +93,9 @@ public class CASetupUI {
 
     static boolean group(TooltipMakerAPI t, String id, String title, String summary) {
         boolean isOpen = open.contains(id);
-        ButtonAPI b = t.addButton((isOpen ? "-  " : "+  ") + title, PREFIX + "group:" + id, isOpen ? Misc.getHighlightColor() : Misc.getBasePlayerColor(),
-                Misc.getDarkPlayerColor(), Alignment.LMID, CutStyle.TL_BR, 300f, 24f, 10f);
-        com.fs.starfarer.api.ui.LabelAPI l = t.addPara(CALog.esc(summary), Misc.getGrayColor(), 0f);
+        ButtonAPI b = t.addButton((isOpen ? "[-]  " : "[+]  ") + title.toUpperCase(java.util.Locale.ROOT), PREFIX + "group:" + id,
+                isOpen ? Misc.getHighlightColor() : Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(), Alignment.LMID, CutStyle.TL_BR, 300f, 24f, 10f);
+        com.fs.starfarer.api.ui.LabelAPI l = t.addPara(CALog.esc("// " + summary), Misc.getGrayColor(), 0f);
         l.getPosition().rightOfMid(b, 12f);
         CALog.endRow(t, b);
         return isOpen;
@@ -390,12 +391,15 @@ public class CASetupUI {
             row(t, "Button on the colony screen", s.noScreenButton ? "Off" : "On", "On", "screenbtn", true);
             t.addPara("Opens this panel from your colony's own screen. Right-clicking Population & Infrastructure works either way.", Misc.getGrayColor(), 6f);
             row(t, "Log entries on screen", CALog.SCREEN_NAMES[Math.max(0, Math.min(2, s.screenLog))], "Every entry", "screenlog", true);
+            row(t, "Announcement voice", CASettings.VOICE_NAMES[Math.max(0, Math.min(1, s.voice))], "Machine", "voice", true);
+            t.addPara("Machine: short lines like AP\\\\ #HOT_SPRINGS :: BUILD // Planetary Shield // 750k, plus a ping now and then about what "
+                    + "it's weighing. Plain: the full sentence. The panel log always has the full sentence.", Misc.getGrayColor(), 4f);
             t.addPara("Every entry shows each thing Autopilot does as one short line. States that flip back and forth (siege, threat, free port, "
                     + "hazard pay, station augments) show at most once every 10 days per colony. Important only: emergencies, defense fleets, "
                     + "wonders and gates, and what's yours to do.", Misc.getGrayColor(), 6f);
         }
         ButtonAPI rec = t.addButton("Use recommended settings", PREFIX + "recommend:x", Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
-                Alignment.MID, CutStyle.ALL, 260f, 24f, 14f);
+                Alignment.MID, CutStyle.TL_BR, 260f, 24f, 14f);
     }
 
     // ---- offense target (agents): Whoever attacks you (null), a random enemy, or one faction at war with you
@@ -428,13 +432,13 @@ public class CASetupUI {
         Color base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         ButtonAPI first, last;
         if (toggle) {
-            first = last = t.addButton("Change", PREFIX + key + ":next", base, dark, Alignment.MID, CutStyle.ALL, 86f, 20f, 4f);
+            first = last = t.addButton("CYCLE", PREFIX + key + ":next", base, dark, Alignment.MID, CutStyle.TL_BR, 86f, 20f, 4f);
         } else {
-            first = t.addButton("-", PREFIX + key + ":-", base, dark, Alignment.MID, CutStyle.ALL, 40f, 20f, 4f);
-            last = t.addButton("+", PREFIX + key + ":+", base, dark, Alignment.MID, CutStyle.ALL, 40f, 20f, 0f);
+            first = t.addButton("-", PREFIX + key + ":-", base, dark, Alignment.MID, CutStyle.TL_BR, 40f, 20f, 4f);
+            last = t.addButton("+", PREFIX + key + ":+", base, dark, Alignment.MID, CutStyle.TL_BR, 40f, 20f, 0f);
             last.getPosition().rightOfTop(first, 6f);
         }
-        com.fs.starfarer.api.ui.LabelAPI l = t.addPara("%s: %s   (recommended: " + CALog.esc(rec) + ")", 0f, Misc.getHighlightColor(), label, value);
+        com.fs.starfarer.api.ui.LabelAPI l = t.addPara("%s  ::  %s   // rec " + CALog.esc(rec), 0f, Misc.getHighlightColor(), label.toUpperCase(java.util.Locale.ROOT), value);
         l.getPosition().rightOfMid(last, 12f);
         CALog.endRow(t, first);
     }
@@ -527,6 +531,7 @@ public class CASetupUI {
         else if (k.equals("resitems")) { s.researchItemMode = (Math.max(0, Math.min(2, s.researchItemMode)) + 1) % 3; CAResearch.updateItemMode(s); CAResearch.cached = null; }
         else if (k.equals("screenbtn")) s.noScreenButton = !s.noScreenButton;
         else if (k.equals("screenlog")) s.screenLog = (Math.max(0, Math.min(2, s.screenLog)) + 1) % 3;
+        else if (k.equals("voice")) s.voice = s.voice == 0 ? 1 : 0;
         else if (k.equals("spy")) s.spyMode = (Math.max(0, Math.min(2, s.spyMode)) + 1) % 3;
         else if (k.equals("spyhire")) s.spyNoHiring = !s.spyNoHiring;
         else if (k.equals("autonomy")) s.autonomyMode = (Math.max(0, Math.min(2, s.autonomyMode)) + 1) % 3;

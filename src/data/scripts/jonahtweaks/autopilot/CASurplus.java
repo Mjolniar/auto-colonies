@@ -350,7 +350,7 @@ public class CASurplus {
     /** The colony panel's section: whether this is the focus world, and the buttons to pick it or hand it back. */
     public static void renderColony(TooltipMakerAPI t, MarketAPI m, CASettings s, float pad) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
-        t.addSectionHeading("Surplus investment", Alignment.MID, pad);
+        CATheme.heading(t, "Surplus investment", pad);
         if (line(s) <= 0f) { t.addPara("Off. Turn it on under Settings, Budget and spending.", gray, 6f); return; }
         MarketAPI f = focus();
         boolean here = f != null && f.getId().equals(m.getId()), mine = m.getId().equals(s.focusId);
@@ -364,9 +364,9 @@ public class CASurplus {
                 scores.containsKey(m.getId()) ? "" + Math.round(scores.get(m.getId())) : "nothing (Auto colonies only)",
                 f != null && scores.containsKey(f.getId()) ? "" + Math.round(scores.get(f.getId())) : "");
         if (mine) {
-            ButtonAPI b = t.addButton("Let Autopilot choose", AUTO, base, dark, Alignment.MID, CutStyle.ALL, 220f, 24f, 6f);
+            ButtonAPI b = t.addButton("Let Autopilot choose", AUTO, base, dark, Alignment.MID, CutStyle.TL_BR, 220f, 24f, 6f);
         } else if (scores.containsKey(m.getId())) {
-            ButtonAPI b = t.addButton("Make this the focus world", SET, here ? hl : base, dark, Alignment.MID, CutStyle.ALL, 220f, 24f, 6f);
+            ButtonAPI b = t.addButton("Make this the focus world", SET, here ? hl : base, dark, Alignment.MID, CutStyle.TL_BR, 220f, 24f, 6f);
         }
     }
 

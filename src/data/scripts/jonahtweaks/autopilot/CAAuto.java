@@ -277,6 +277,8 @@ public class CAAuto {
         if (r.bestNoSlot != null) b.append("; with a free industry slot: ").append(scoreText(r.bestNoSlot)).append(" (").append(r.noSlot).append(" need a slot)");
         if (r.locked > 0) b.append("; ").append(r.locked).append(" locked by research");
         CADiagnostics.LOG.info(CADiagnostics.TAG + b);
+        CALog.ping("scan:" + m.getId(), m.getName() + ": scan: " + r.picks.size() + " options, holding" + (building ? " (a build is under way)" : "")
+                + (r.picks.isEmpty() ? "" : "; best " + r.picks.get(0).verb + " " + r.picks.get(0).name));
     }
 
     static String scoreText(CAEngine.Pick p) {

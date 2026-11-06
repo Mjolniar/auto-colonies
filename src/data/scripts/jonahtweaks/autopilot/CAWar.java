@@ -254,7 +254,7 @@ public class CAWar {
 
     static void render(TooltipMakerAPI t, CAData d, CASettings s) {
         java.awt.Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor();
-        t.addSectionHeading("War fleets (Nexerelin)", Alignment.MID, 0f);
+        CATheme.heading(t, "War fleets (Nexerelin)", 0f);
         t.addPara("Mode: %s (Settings, Colony policies). Relief for sieges, defense where a threat or crisis is coming, base strikes on "
                 + "pirate and Pather bases" + (s.warMode == 0 ? ", raids on markets that attacked you" : "") + ". Never invasions or new "
                 + "colonies, and only against factions already hostile to you.", 6f, hl, CASettings.WAR_NAMES[Math.max(0, Math.min(2, s.warMode))]);

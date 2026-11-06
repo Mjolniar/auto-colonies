@@ -205,7 +205,7 @@ final class CAAutonomy {
     /** The Autonomy section of the empire panel's Mod features page. */
     static void render(TooltipMakerAPI t, CAData d, CASettings s) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
-        t.addSectionHeading("Autonomy (Nexerelin)", Alignment.MID, 0f);
+        CATheme.heading(t, "Autonomy (Nexerelin)", 0f);
         t.addPara("Mode: %s (Settings, Autonomy). An autonomous colony gives you %s of its profit or loss, doesn't count against your colony "
                 + "limit, and can't be built on; taking it back costs %s unrest. Only for money: colonies a year old that have lost money "
                 + "%s months in a row, or the best one in a money emergency.", 6f, hl,
@@ -221,7 +221,7 @@ final class CAAutonomy {
             int streak = d.colony(k.m.getId()).lossStreak;
             t.addPara("%s loses %s/month (%s months in a row): autonomy saves %s/month.", 6f, hl, k.m.getName(),
                     Misc.getDGSCredits(-colonyNet(k.m)), "" + streak, Misc.getDGSCredits(k.saving));
-            t.addButton("Grant autonomy: " + k.m.getName(), new String[]{"auton", "grant", k.m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 260f, 22f, 4f);
+            t.addButton("Grant autonomy: " + k.m.getName(), new String[]{"auton", "grant", k.m.getId()}, base, dark, Alignment.MID, CutStyle.TL_BR, 260f, 22f, 4f);
         }
         for (MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) {
             if (m.isPlayerOwned() || m.getFaction() == null || !m.getFaction().isPlayerFaction() || m.isHidden()) continue;
@@ -230,7 +230,7 @@ final class CAAutonomy {
             t.addPara("%s is autonomous (you get %s/month)." + (legacy ? (why == null ? " Taken back today." : " Taken back once " + CALog.esc(why) + ".") : ""),
                     8f, hl, m.getName(), Misc.getDGSCredits(incomeMult() * colonyNet(m)));
             t.addButton("Take back: " + m.getName() + " (" + REVOKE_UNREST + " unrest)", new String[]{"auton", "back", m.getId()}, base, dark,
-                    Alignment.MID, CutStyle.ALL, 260f, 22f, 4f);
+                    Alignment.MID, CutStyle.TL_BR, 260f, 22f, 4f);
         }
     }
 }

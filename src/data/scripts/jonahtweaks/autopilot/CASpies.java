@@ -457,7 +457,7 @@ public class CASpies {
     static void render(TooltipMakerAPI t, CAData d, CASettings s) {
         java.awt.Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor();
         java.awt.Color base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
-        t.addSectionHeading("Agents (Nexerelin)", Alignment.MID, 0f);
+        CATheme.heading(t, "Agents (Nexerelin)", 0f);
         CovertOpsManager mgr = CovertOpsManager.getManager();
         if (mgr == null) { t.addPara("Nexerelin's agents aren't running in this save.", gray, 6f); return; }
         if (s.spyMode == 0) t.addPara("Agents are off: Autopilot gives no orders and hires no one. Turn them on in Settings, under Agents (Nexerelin).", gray, 6f);
@@ -491,7 +491,7 @@ public class CASpies {
                     + ". %s", 8f, new java.awt.Color[]{hl, hl, hl, auto ? hl : gray},
                     CALog.esc(name(a)), "" + a.getLevel(), CALog.esc(types(a)), auto ? "Autopilot gives its orders" + (role != null ? ", " + roleName(role) : "") : "Yours; Autopilot leaves it alone");
             t.addButton(auto ? "Take it back" : "Let Autopilot use it", new String[]{"agent", auto ? "back" : "use", a.getAgent().getId()},
-                    base, dark, Alignment.MID, com.fs.starfarer.api.ui.CutStyle.ALL, 180f, 22f, 4f);
+                    base, dark, Alignment.MID, com.fs.starfarer.api.ui.CutStyle.TL_BR, 180f, 22f, 4f);
         }
     }
 }

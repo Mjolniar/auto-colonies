@@ -335,7 +335,7 @@ public class CATasc {
             String why = p.startable ? "" : p.blockedBy.equals(PROCESSOR) ? ", needs an Atmosphere Processor" : ", needs a Stellar Reflector Array";
             t.addPara("%s (%s days" + why + "): %s once done", 6f, p.startable ? hl : gray, p.name, "" + Math.round(p.days), CAEngine.valueText(p.value));
             for (int j = 0; j < Math.min(3, p.lines.size()); j++) t.addPara("    " + CALog.esc(p.lines.get(j)), gray, 2f);
-            if (p.startable && run == null) t.addButton("Start", CAColonyDialog.TASC + p.name, base, dark, Alignment.MID, CutStyle.ALL, 120f, 22f, 4f);
+            if (p.startable && run == null) t.addButton("Start", CAColonyDialog.TASC + p.name, base, dark, Alignment.MID, CutStyle.TL_BR, 120f, 22f, 4f);
         }
         t.addPara(c.mode == CAData.Mode.AUTO ? "Auto starts the best one when nothing is running; a running project is never cancelled."
                 : "Switch this colony to Auto to have projects started.", gray, 6f);

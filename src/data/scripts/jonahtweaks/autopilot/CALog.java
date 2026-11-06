@@ -39,6 +39,26 @@ public class CALog {
     /** starsector.log only: routine detail that doesn't belong in the panel log. */
     public static void quiet(String text) { CADiagnostics.LOG.info(CADiagnostics.TAG + text); }
 
+    /** Days before the same ping shows again. */
+    static final float PING_DAYS = 7f;
+    static final java.util.Map<String, Float> pingAt = new java.util.HashMap<String, Float>();
+
+    /**
+     * A ping (2.41.0): a short machine line on screen about what the autopilot is weighing or doing in the background, at
+     * most once per key a week. Only with the Machine voice and every entry on screen; never in the panel log.
+     */
+    public static void ping(String key, String text) {
+        try {
+            CASettings s = CAData.settings();
+            if (s.voice != 0 || s.screenLog != 0) return;
+            float now = CADay.now();
+            Float at = pingAt.get(key);
+            if (at != null && now - at < PING_DAYS && now >= at) return;
+            pingAt.put(key, now);
+            Global.getSector().getCampaignUI().addMessage(CATheme.machine(text), Misc.getDarkPlayerColor().brighter());
+        } catch (Throwable ignored) { }
+    }
+
     /**
      * A log entry: the panel log, starsector.log, and on screen as a short line (Settings, Interface: every entry, the
      * default; important ones only; or none). important marks what shows in "important only": emergencies, defense
@@ -52,7 +72,10 @@ public class CALog {
         while (log.size() > 100) log.remove(log.size() - 1);
         CADiagnostics.LOG.info(CADiagnostics.TAG + text);
         if (s.screenLog == 0 || (s.screenLog == 1 && important)) {
-            try { Global.getSector().getCampaignUI().addMessage("Autopilot: " + text, important ? Misc.getHighlightColor() : Misc.getTextColor()); }
+            try {
+                if (s.voice == 0) Global.getSector().getCampaignUI().addMessage(CATheme.machine(text), important ? Misc.getHighlightColor() : Misc.getBasePlayerColor());
+                else Global.getSector().getCampaignUI().addMessage("Autopilot: " + text, important ? Misc.getHighlightColor() : Misc.getTextColor());
+            }
             catch (Throwable ignored) { }
         }
     }
