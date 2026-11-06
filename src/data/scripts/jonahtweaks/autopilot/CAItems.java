@@ -1066,6 +1066,7 @@ public class CAItems {
         String gainText = first ? " (research buildings first, -" + Misc.getDGSCredits(bestTo.net[0]) + "/month costs)" : " (+" + Misc.getDGSCredits(real) + "/month)";
         CALog.add(where + what + gainText);
         CALog.quiet(where + aiPoints(bestTo.m) + " inspection points" + (lim == Integer.MAX_VALUE ? "" : " of " + lim));
+        CALog.ping("inspect:" + bestTo.m.getId(), where + aiPoints(bestTo.m) + " inspection points" + (lim == Integer.MAX_VALUE ? "" : " of " + lim));
         return true;
     }
 

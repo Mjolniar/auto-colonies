@@ -32,6 +32,9 @@ public class CASettings {
     public boolean surplusFocusOnly = false;
     public float richIncomeRef = 0f;   // best net income while spending freely (its floor is half of it)
     public boolean noWonders = false;  // false (also older saves): spending freely builds the Daedalus Array and Bifrost gates (CAWonders)
+    /** Announcement voice (2.41.0): 0 Machine (default, also older saves), 1 Plain. */
+    public int voice = 0;
+    public static final String[] VOICE_NAMES = {"Machine", "Plain"};
     public int screenLog = 0;          // log entries on screen: 0 every entry (default, also older saves), 1 important only, 2 off
     public boolean surplusChecked = true;
     public String focusId;        // the focus world you picked (null: Autopilot picks)

@@ -332,12 +332,12 @@ public class CAMegastructures {
             if (!now.isEmpty()) t.addPara("Now: " + CALog.esc(describe(g, now)) + ".", hl, 8f);
             if (!tgt.isEmpty() && !tgt.equals(now)) {
                 t.addPara("Best: " + CALog.esc(describe(g, tgt)) + ".", hl, 4f);
-                if (buttons) t.addButton("Apply these settings", CAColonyDialog.MEGA + "apply:x", base, dark, Alignment.MID, CutStyle.ALL, 200f, 22f, 4f);
+                if (buttons) t.addButton("Apply these settings", CAColonyDialog.MEGA + "apply:x", base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
             } else if (!now.isEmpty()) t.addPara("These are the best settings.", gray, 4f);
         } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "megastructure settings failed at " + m.getName(), e); }
         if (c.megaManual) {
             t.addPara("You set it yourself, so Autopilot leaves it.", gray, 4f);
-            t.addButton("Let Autopilot manage it", CAColonyDialog.MEGA + "manage:x", base, dark, Alignment.MID, CutStyle.ALL, 200f, 22f, 4f);
+            t.addButton("Let Autopilot manage it", CAColonyDialog.MEGA + "manage:x", base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
         }
         t.addPara(g.kind.equals(PLUTO) ? "The laser runs at full strength and every unit of ore goes to the forges: the Purification Core, "
                         + "except what the Fusion Forge needs to cover your metals and transplutonics shortages."

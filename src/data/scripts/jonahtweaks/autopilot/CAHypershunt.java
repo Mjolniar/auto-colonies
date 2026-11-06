@@ -488,7 +488,7 @@ public class CAHypershunt {
         }
         if (!needs.isEmpty()) t.addPara("    Each month: " + CALog.esc(CAContracts.join(needs)), gray, 2f);
         if (buttons && !s.restoring) {
-            com.fs.starfarer.api.ui.ButtonAPI b = t.addButton("Start restoration", restoreId, base, dark, Alignment.MID, CutStyle.ALL, 200f, 22f, 4f);
+            com.fs.starfarer.api.ui.ButtonAPI b = t.addButton("Start restoration", restoreId, base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
             b.setEnabled(s.canStart && researched(TECH_RESTORE));
         }
     }
@@ -529,11 +529,11 @@ public class CAHypershunt {
         if (h.effective < h.range) t.addPara("Short of purified transplutonics, so the range is cut to %s light-years.", 4f, Misc.getNegativeHighlightColor(), "" + h.reachLY());
         if (tgt > 0 && tgt != h.range) {
             t.addPara("Receivers serving your colonies need %s light-years.", 4f, hl, "" + tgt * h.mult);
-            if (buttons) t.addButton("Set range to " + tgt * h.mult + " ly", CAColonyDialog.HS + "range:" + tgt, base, dark, Alignment.MID, CutStyle.ALL, 200f, 22f, 4f);
+            if (buttons) t.addButton("Set range to " + tgt * h.mult + " ly", CAColonyDialog.HS + "range:" + tgt, base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
         }
         if (c.hsManual) {
             t.addPara("You set the range yourself, so Autopilot leaves it.", gray, 4f);
-            t.addButton("Let Autopilot manage it", CAColonyDialog.HS + "manage:x", base, dark, Alignment.MID, CutStyle.ALL, 200f, 22f, 4f);
+            t.addButton("Let Autopilot manage it", CAColonyDialog.HS + "manage:x", base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
         }
         receivers(t, h);
         String[] why = new String[1];
@@ -559,10 +559,10 @@ public class CAHypershunt {
             t.addPara("%s (%s): range %s ly, %s receivers working. %s", 8f, hl, h.m.getName(), c.mode.label, "" + h.reachLY(),
                     "" + working(h), next != null ? "Next: restore the " + next.name + "." : "Next: " + why[0] + ".");
             if (next != null && s.hypershuntMode != 2 && !next.restoring)
-                t.addButton("Start restoration", new String[]{"hs", "restore", h.m.getId(), next.id}, base, dark, Alignment.MID, CutStyle.ALL, 200f, 22f, 4f);
+                t.addButton("Start restoration", new String[]{"hs", "restore", h.m.getId(), next.id}, base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
             int tgt = target(h);
             if (tgt > 0 && tgt != h.range && s.hypershuntMode != 2)
-                t.addButton("Set range to " + tgt * h.mult + " ly", new String[]{"hs", "range", h.m.getId(), "" + tgt}, base, dark, Alignment.MID, CutStyle.ALL, 200f, 22f, 4f);
+                t.addButton("Set range to " + tgt * h.mult + " ly", new String[]{"hs", "range", h.m.getId(), "" + tgt}, base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
         }
         if (!researched(TECH_RECEIVER)) {
             t.addPara("Research %s to build Hypershunt Receivers: +2 industry slots for every colony in the receiver's system.", 8f, hl, techName(TECH_RECEIVER));

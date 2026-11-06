@@ -55,7 +55,8 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
 
     public CAColonyDialog(MarketAPI market) { this.market = market; }
 
-    class Plugin extends BaseCustomUIPanelPlugin {
+    class Plugin extends CATheme.Frame {   // the grid and neon frames behind the panel (2.41.0)
+        Plugin() { super(CANav.W, CANav.GAP); }
         @Override public void buttonPressed(Object id) {
             try { handle(id); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony panel button failed", t); message = "That didn't work; see starsector.log"; dirty = true; }
@@ -145,7 +146,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
 
     static ButtonAPI rowButton(TooltipMakerAPI t, ButtonAPI prev, String label, Object id, boolean on, float w) {
         Color hl = Misc.getHighlightColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
-        ButtonAPI b = t.addButton(label, id, on ? hl : base, dark, Alignment.MID, CutStyle.ALL, w, 24f, prev == null ? 8f : 0f);
+        ButtonAPI b = t.addButton(label, id, on ? hl : base, dark, Alignment.MID, CutStyle.TL_BR, w, 24f, prev == null ? 8f : 0f);
         if (prev != null) b.getPosition().rightOfTop(prev, 6f);
         return b;
     }
@@ -177,7 +178,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
         String title = id.equals("tasc") ? "Terraforming (Terraforming & Station Construction)" : id.equals("mega") ? "Megastructure (Ashes of the Domain)"
                 : id.equals("augments") ? "Station augments" : "Industry synergies (Ashes of the Domain)";
-        t.addSectionHeading(title, Alignment.MID, pad);
+        CATheme.heading(t, title, pad);
         try {
             if (id.equals("tasc")) CATasc.renderColony(t, market, c);
             else if (id.equals("mega") && mm.isModEnabled(CAHypershunt.MOD)) CAMegastructures.renderColony(t, market, c, s);
@@ -199,15 +200,16 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
 
         if (setupPage) {
+            plugin.navW = 0f;
             TooltipMakerAPI t = content.createUIElement(W, H, true);
-            t.addTitle("Colony Autopilot: first-time setup");
+            t.addTitle("AUTOPILOT\\\\ INITIALIZATION // FIRST-TIME SETUP");
             t.addPara("Every setting below is pre-filled with a recommendation from your current income. Click a group to open it. "
                     + "All of them can be changed later in the Intel screen, under its Colony Autopilot filter.", 6f);
-            t.addSectionHeading("Settings", Alignment.MID, 10f);
+            CATheme.heading(t, "Settings", 10f);
             CASetupUI.render(t, s, W);
             ButtonAPI save = t.addButton("Save and switch to " + (setupMode == null ? "Auto" : setupMode.label), SAVE_SETUP, hl, dark,
-                    Alignment.MID, CutStyle.ALL, 260f, 26f, 14f);
-            ButtonAPI back = t.addButton("Back", BACK, base, dark, Alignment.MID, CutStyle.ALL, 120f, 26f, 0f);
+                    Alignment.MID, CutStyle.TL_BR, 260f, 26f, 14f);
+            ButtonAPI back = t.addButton("Back", BACK, base, dark, Alignment.MID, CutStyle.TL_BR, 120f, 26f, 0f);
             back.getPosition().rightOfTop(save, 8f);
             CALog.endRow(t, save);
             content.addUIElement(t).inTL(0f, 0f);
@@ -219,9 +221,10 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         boolean shunt = CAHypershunt.is(market), outpost = CAEngine.isOutpost(market);
         List<String[]> pages = pages(c, s, shunt, outpost);
         page = CANav.valid(pages, page);
+        plugin.navW = CANav.W;
         TooltipMakerAPI nav = content.createUIElement(CANav.W, H, false);
-        nav.addTitle(market.getName());
-        nav.addPara("Colony Autopilot", gray, 2f);
+        nav.addTitle(market.getName().toUpperCase(java.util.Locale.ROOT));
+        CATheme.readout(nav, 2f, "AP\\\\ " + (c.mode == null ? "advisor" : c.mode.name()), c.profile == null ? null : c.profile.name());
         CANav.render(nav, pages, page);
         content.addUIElement(nav).inTL(0f, 0f);
 
@@ -282,16 +285,16 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             if (imp != null) t.addPara("Best story point improvement: %s" + (s.storyPointRule == 0 ? " (yours to do: story points are set to Player only)" : ""), 4f, hl, imp.getCurrentName());
 
             if (c.pendingId != null) {
-                t.addSectionHeading("Waiting for your approval", Alignment.MID, 10f);
+                CATheme.heading(t, "Waiting for your approval", 10f);
                 t.addPara("%s for %s (plus a %s fee)", 6f, hl, c.pendingName, Misc.getDGSCredits(c.pendingCost),
                         Misc.getDGSCredits(CABudget.constructionFee(s, c.pendingCost)));
-                ButtonAPI a = t.addButton("Approve", APPROVE, hl, dark, Alignment.MID, CutStyle.ALL, 140f, 24f, 6f);
-                ButtonAPI r = t.addButton("Reject", REJECT, base, dark, Alignment.MID, CutStyle.ALL, 140f, 24f, 0f);
+                ButtonAPI a = t.addButton("Approve", APPROVE, hl, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 6f);
+                ButtonAPI r = t.addButton("Reject", REJECT, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 0f);
                 r.getPosition().rightOfTop(a, 6f);
                 CALog.endRow(t, a);
             }
 
-            t.addSectionHeading("Goal", Alignment.MID, 12f);
+            CATheme.heading(t, "Goal", 12f);
             CAData.Profile[] goals = CAData.Profile.values();
             float goalW = (cw - 12f) / 3f;
             ButtonAPI prev = null, first = null;
@@ -301,7 +304,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 if (first == null) first = prev;
             }
             CALog.endRow(t, first);
-            t.addSectionHeading("Mode", Alignment.MID, 12f);
+            CATheme.heading(t, "Mode", 12f);
             prev = null; first = null;
             for (CAData.Mode mo : CAData.Mode.values()) { prev = rowButton(t, prev, mo.label, mo, mo == c.mode, (cw - 18f) / 4f); if (first == null) first = prev; }
             CALog.endRow(t, first);
@@ -312,12 +315,12 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus section failed at " + market.getName(), e); }
             }
             if (outpost) {
-                t.addSectionHeading("Nexerelin outpost", Alignment.MID, 12f);
+                CATheme.heading(t, "Nexerelin outpost", 12f);
                 t.addPara(CAEngine.OUTPOST_TEXT + ". Items, cores, policies and fast buildout skip it too, and its shortages don't count as your colonies'.", gray, 6f);
             }
         } else if (page.equals("builds")) {
             CAPlan.Plan plan = CAPlan.build(market, planWith);
-            t.addSectionHeading("Plan: " + plan.name + " (" + plan.doneCount(market) + " of " + plan.steps.size() + " done)", Alignment.MID, message != null ? 8f : 0f);
+            CATheme.heading(t, "Plan: " + plan.name + " (" + plan.doneCount(market) + " of " + plan.steps.size() + " done)", message != null ? 8f : 0f);
             List<String> doneSteps = new ArrayList<String>();
             boolean nextShown = false;
             for (CAPlan.Step st : plan.steps) {
@@ -332,19 +335,19 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             if (!doneSteps.isEmpty()) t.addPara(CALog.esc("Done: " + String.join(", ", doneSteps)), gray, 4f);
 
             if (shunt) {
-                t.addSectionHeading("Coronal Hypershunt (Ashes of the Domain)", Alignment.MID, 12f);
+                CATheme.heading(t, "Coronal Hypershunt (Ashes of the Domain)", 12f);
                 try { CAHypershunt.renderColony(t, market, c, s); }
                 catch (Throwable e) {
                     CADiagnostics.LOG.warn(CADiagnostics.TAG + "hypershunt section failed at " + market.getName(), e);
                     t.addPara("Hypershunt info unavailable; see starsector.log.", gray, 6f);
                 }
             } else {
-                t.addSectionHeading("Recommended builds", Alignment.MID, 12f);
+                CATheme.heading(t, "Recommended builds", 12f);
                 if (c.mode == CAData.Mode.OFF) t.addPara("Autopilot is off for this colony.", gray, 8f);
                 else renderPicks(t, data, planWith, buildout);
             }
         } else if (page.equals("locks")) {
-            t.addSectionHeading("Locks", Alignment.MID, message != null ? 8f : 0f);
+            CATheme.heading(t, "Locks", message != null ? 8f : 0f);
             t.addPara("Click a building to lock it (highlighted): Autopilot never upgrades, replaces or removes a locked building.", gray, 6f);
             ButtonAPI lockPrev = null, lockFirst = null;
             int inRow = 0;
@@ -397,7 +400,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             if (p.lines.size() > shown) t.addPara("    and " + (p.lines.size() - shown) + " more effects", gray, 2f);
             boolean waits = !p.upgrade && r.blocked != null, poor = CABuild.credits() < p.cost;
             ButtonAPI b = t.addButton(p.verb + " (" + Misc.getDGSCredits(p.cost) + ")", p, base, dark,
-                    Alignment.MID, CutStyle.ALL, 240f, 24f, 6f);
+                    Alignment.MID, CutStyle.TL_BR, 240f, 24f, 6f);
             b.setEnabled(!waits && !poor);
             if (waits || poor) {
                 LabelAPI why = t.addPara(waits ? "Waits for the current construction" : "Not enough credits", gray, 0f);

@@ -481,7 +481,7 @@ public class CACrisis {
 
     public static void render(TooltipMakerAPI t, CAData d, CASettings s) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), bad = Misc.getNegativeHighlightColor();
-        t.addSectionHeading("Colony crises", Alignment.MID, 0f);
+        CATheme.heading(t, "Colony crises", 0f);
         HostileActivityEventIntel ha = event();
         if (ha == null) { t.addPara("No crisis meter yet: it starts with your first colony.", gray, 6f); return; }
         int raw = rawMonthly(ha), monthly = ha.getMonthlyProgress();
@@ -503,7 +503,7 @@ public class CACrisis {
         t.addPara(best >= 1f ? "No Patrol HQ, Military Base or High Command yet: one slows every crisis (x0.9, x0.7, x0.5)."
                 : "Your best military structure slows every crisis to x%s.", 4f, hl, Misc.getRoundedValueMaxOneAfterDecimal(best));
 
-        t.addSectionHeading("Where it comes from", Alignment.MID, 12f);
+        CATheme.heading(t, "Where it comes from", 12f);
         boolean any = false;
         for (EventFactor f : ha.getFactors()) {
             if (!(f instanceof HostileActivityFactor) || f.isOneTime()) continue;
@@ -518,7 +518,7 @@ public class CACrisis {
         }
         if (!any) t.addPara("Nothing is adding to it now.", gray, 6f);
 
-        t.addSectionHeading("Hegemony inspections", Alignment.MID, 12f);
+        CATheme.heading(t, "Hegemony inspections", 12f);
         t.addPara("Inspection orders: %s. Inspections sent so far: %s; beaten: %s of 3.", 6f, hl,
                 CASettings.INSPECTION_NAMES[Math.max(0, Math.min(2, s.inspectionMode))].toLowerCase(),
                 "" + HegemonyHostileActivityFactor.getInspectionAttempts(), "" + HegemonyHostileActivityFactor.getInspectionsDefeated());

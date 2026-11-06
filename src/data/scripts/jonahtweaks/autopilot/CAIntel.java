@@ -109,7 +109,7 @@ public class CAIntel extends BaseIntelPlugin {
     static void renderMod(TooltipMakerAPI t, String id, CAData data, CASettings s) {
         com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
         if (id.equals("settle") && mm.isModEnabled(CASettlement.MOD)) {
-            t.addSectionHeading("Settlement (Random Assortment of Things)", Alignment.MID, 0f);
+            CATheme.heading(t, "Settlement (Random Assortment of Things)", 0f);
             CASettlement.render(t, data, s);
         } else if (id.equals("agents") && mm.isModEnabled(CASpies.MOD)) {
             CASpies.render(t, data, s);
@@ -118,16 +118,16 @@ public class CAIntel extends BaseIntelPlugin {
         } else if (id.equals("war") && mm.isModEnabled(CAWar.MOD)) {
             CAWar.render(t, data, s);
         } else if (id.equals("augments") && mm.isModEnabled(CAAugments.MOD)) {
-            t.addSectionHeading("Station augments", Alignment.MID, 0f);
+            CATheme.heading(t, "Station augments", 0f);
             CAAugments.renderEmpire(t, data, s);
         } else if (id.equals("contracts") && mm.isModEnabled(CAContracts.MOD)) {
-            t.addSectionHeading("Trade contracts (Ashes of the Domain)", Alignment.MID, 0f);
+            CATheme.heading(t, "Trade contracts (Ashes of the Domain)", 0f);
             CAContracts.render(t, data, s);
         } else if (id.equals("mega") && mm.isModEnabled(CAHypershunt.MOD)) {
-            t.addSectionHeading("Pluto and Nidavelir (Ashes of the Domain)", Alignment.MID, 0f);
+            CATheme.heading(t, "Pluto and Nidavelir (Ashes of the Domain)", 0f);
             CAMegastructures.renderEmpire(t, data, s);
         } else if (id.equals("shunt") && mm.isModEnabled(CAHypershunt.MOD)) {
-            t.addSectionHeading("Coronal Hypershunt (Ashes of the Domain)", Alignment.MID, 0f);
+            CATheme.heading(t, "Coronal Hypershunt (Ashes of the Domain)", 0f);
             CAHypershunt.renderEmpire(t, data, s);
         }
     }
@@ -144,8 +144,14 @@ public class CAIntel extends BaseIntelPlugin {
         try { if (page.equals(lastPage) && lastTooltip != null && lastTooltip.getExternalScroller() != null) scrollY = lastTooltip.getExternalScroller().getYOffset(); }
         catch (Throwable ignored) { }
 
+        // the grid and neon frames (2.41.0): drawn by an empty panel added first, so it sits behind and the buttons stay the intel's
+        CustomPanelAPI backdrop = panel.createCustomPanel(width, height, new CATheme.Frame(CANav.W, CANav.GAP));
+        panel.addComponent(backdrop).inTL(0f, 0f);
         TooltipMakerAPI nav = panel.createUIElement(CANav.W, height, false);
-        nav.addTitle("Colony Autopilot");
+        nav.addTitle("AUTOPILOT\\\\ CORE");
+        int auto = 0;
+        for (MarketAPI m : markets) if (data.colony(m.getId()).mode == CAData.Mode.AUTO) auto++;
+        CATheme.readout(nav, 2f, "online", auto + " of " + markets.size() + " auto");
         CANav.render(nav, pages, page);
         panel.addUIElement(nav).inTL(0f, 0f);
 
@@ -167,7 +173,7 @@ public class CAIntel extends BaseIntelPlugin {
         if (page.equals("colonies")) {
             t.addPara("Every colony starts in Advisor mode. Open a colony's own panel with the Colony Autopilot button on its colony "
                     + "screen, or by right-clicking its Population & Infrastructure.", gray, 0f);
-            t.addSectionHeading("Budget", Alignment.MID, 12f);
+            CATheme.heading(t, "Budget", 12f);
             t.addPara("This month: %s of %s spent (%s in fees), %s saved up from earlier months, %s available. Never spends below %s.", 6f, hl,
                     Misc.getDGSCredits(s.spent), Misc.getDGSCredits(CABudget.limit(s)), Misc.getDGSCredits(s.fees),
                     Misc.getDGSCredits(CABudget.saved(s)), Misc.getDGSCredits(CABudget.available(s)), Misc.getDGSCredits(s.reserve));
@@ -180,19 +186,19 @@ public class CAIntel extends BaseIntelPlugin {
             boolean anyPending = false;
             for (MarketAPI m : markets) if (data.colony(m.getId()).pendingId != null) anyPending = true;
             if (anyPending) {
-                t.addSectionHeading("Waiting for your approval", Alignment.MID, 12f);
+                CATheme.heading(t, "Waiting for your approval", 12f);
                 for (MarketAPI m : markets) {
                     CAData.Colony c = data.colony(m.getId());
                     if (c.pendingId == null) continue;
                     t.addPara("%s: %s for %s", 8f, hl, m.getName(), c.pendingName, Misc.getDGSCredits(c.pendingCost));
-                    ButtonAPI a = t.addButton("Approve", new String[]{"approve", m.getId()}, hl, dark, Alignment.MID, CutStyle.ALL, 120f, 22f, 4f);
-                    ButtonAPI r = t.addButton("Reject", new String[]{"reject", m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 120f, 22f, 0f);
+                    ButtonAPI a = t.addButton("Approve", new String[]{"approve", m.getId()}, hl, dark, Alignment.MID, CutStyle.TL_BR, 120f, 22f, 4f);
+                    ButtonAPI r = t.addButton("Reject", new String[]{"reject", m.getId()}, base, dark, Alignment.MID, CutStyle.TL_BR, 120f, 22f, 0f);
                     r.getPosition().rightOfTop(a, 6f);
                     CALog.endRow(t, a);
                 }
             }
 
-            t.addSectionHeading("Colonies", Alignment.MID, 12f);
+            CATheme.heading(t, "Colonies", 12f);
             if (markets.isEmpty()) t.addPara("You have no colonies yet.", gray, 8f);
             for (MarketAPI m : markets) {
                 CAData.Colony c = data.colony(m.getId());
@@ -217,13 +223,13 @@ public class CAIntel extends BaseIntelPlugin {
                 String flags = (c.buildout ? ", fast buildout" : "") + (c.threatHigh ? ", threatened" : "") + (CASiege.held(m) ? ", under siege" : "");
                 t.addPara("%s (size %s): %s, %s" + CALog.esc(flags), 12f, hl, m.getName(), "" + m.getSize(), c.profile.label, c.mode.label);
                 t.addPara("Next: " + CALog.esc(top), gray, 2f);
-                ButtonAPI b1 = t.addButton("Next goal", new String[]{"profile", m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 140f, 22f, 4f);
-                ButtonAPI b2 = t.addButton("Next mode", new String[]{"mode", m.getId()}, base, dark, Alignment.MID, CutStyle.ALL, 140f, 22f, 0f);
+                ButtonAPI b1 = t.addButton("Next goal", new String[]{"profile", m.getId()}, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 22f, 4f);
+                ButtonAPI b2 = t.addButton("Next mode", new String[]{"mode", m.getId()}, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 22f, 0f);
                 b2.getPosition().rightOfTop(b1, 6f);
                 CALog.endRow(t, b1);
             }
         } else if (page.equals("storage")) {
-            t.addSectionHeading("Autopilot Storage", Alignment.MID, 0f);
+            CATheme.heading(t, "Autopilot Storage", 0f);
             t.addPara("Each colony has its own Autopilot Storage tab: dock there and deposit colony items, AI cores and research databanks. "
                     + "Auto-mode colonies use what's in their own, and the manager ships what it needs at another colony for a fee and "
                     + "travel time (a couple of days plus a day a light-year). Nothing in your normal storage is used.", 6f);
@@ -270,7 +276,7 @@ public class CAIntel extends BaseIntelPlugin {
             }
             if (Global.getSettings().getModManager().isModEnabled(CAResearch.MOD) && s.researchMode != 2) {
                 t.addSpacer(16f);
-                t.addSectionHeading("Research (Ashes of the Domain)", Alignment.MID, 0f);
+                CATheme.heading(t, "Research (Ashes of the Domain)", 0f);
                 try { CAResearch.render(t, data, s); }
                 catch (Throwable e) {
                     CADiagnostics.LOG.warn(CADiagnostics.TAG + "research section failed", e);
@@ -279,7 +285,7 @@ public class CAIntel extends BaseIntelPlugin {
             }
             if (Global.getSettings().getModManager().isModEnabled(CAResearch.MOD) && s.projectSupplyMode != 2) {
                 t.addSpacer(16f);
-                t.addSectionHeading("Special projects (Ashes of the Domain)", Alignment.MID, 0f);
+                CATheme.heading(t, "Special projects (Ashes of the Domain)", 0f);
                 try { CAProjects.render(t, s); }
                 catch (Throwable e) {
                     CADiagnostics.LOG.warn(CADiagnostics.TAG + "special projects section failed", e);
@@ -301,12 +307,12 @@ public class CAIntel extends BaseIntelPlugin {
                 }
             }
         } else if (page.equals("settings")) {
-            t.addSectionHeading("Settings", Alignment.MID, 0f);
+            CATheme.heading(t, "Settings", 0f);
             if (!s.setupDone) t.addPara("First-time setup hasn't run yet; it opens when you first switch a colony to Approve or Auto.", gray, 6f);
             t.addPara("Click a group to open it.", gray, 6f);
             CASetupUI.render(t, s, width);
         } else if (page.equals("log")) {
-            t.addSectionHeading("Log", Alignment.MID, 0f);
+            CATheme.heading(t, "Log", 0f);
             if (s.log.isEmpty()) t.addPara("Nothing yet.", gray, 6f);
             for (int i = 0; i < Math.min(40, s.log.size()); i++) t.addPara(CALog.esc(s.log.get(i)), gray, 3f);
         } else if (page.equals("diag")) {
@@ -321,7 +327,7 @@ public class CAIntel extends BaseIntelPlugin {
     static void renderJonahsMods(TooltipMakerAPI t) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), bad = Misc.getNegativeHighlightColor();
         com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
-        t.addSectionHeading("Jonah's mods", Alignment.MID, 0f);
+        CATheme.heading(t, "Jonah's mods", 0f);
         for (String[] m : CALogWatch.MODS) {
             String ver = null;
             try { ver = mm.getModSpec(m[2]).getVersion(); } catch (Throwable ignored) { }
@@ -351,13 +357,13 @@ public class CAIntel extends BaseIntelPlugin {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         try { renderJonahsMods(t); }
         catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Jonah's mods section failed", e); }
-        t.addSectionHeading("Diagnostics", Alignment.MID, 0f);
+        CATheme.heading(t, "Diagnostics", 0f);
         t.addPara("Last scan: %s. Supported content is planned with; %s mod buildings were measured on a probe colony and are scored "
                         + "from those measurements; %s analyzed and %s quarantined entries are never acted on. "
                         + "Full report: saves/common/" + CADiagnostics.REPORT + ".data", 8f, hl,
                 CADiagnostics.getLastScan(), "" + CADiagnostics.count(CADiagnostics.Level.MEASURED),
                 "" + CADiagnostics.count(CADiagnostics.Level.ANALYZED), "" + CADiagnostics.count(CADiagnostics.Level.QUARANTINED));
-        t.addButton("Rescan now", RESCAN, base, dark, Alignment.MID, CutStyle.ALL, 140f, 22f, 6f);
+        t.addButton("Rescan now", RESCAN, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 22f, 6f);
         // mod integrations: does each still find what it relies on after mod updates
         List<CACompat.Entry> ints = CACompat.installed();
         if (!ints.isEmpty()) {
