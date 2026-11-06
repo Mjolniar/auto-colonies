@@ -38,7 +38,8 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
     public static boolean allowedCommodity(String id) {
         return "alpha_core".equals(id) || "beta_core".equals(id) || "gamma_core".equals(id) || "ix_antimatter_stabilizer".equals(id)
                 || "research_databank".equals(id)   // Vaults of Knowledge research takes them from here
-                || (CAOmega.CORE.equals(id) && CAOmega.enabled());   // Omega Core Everywhere / Astral Ascension Renewed (2.38.0)
+                || (CAOmega.CORE.equals(id) && CAOmega.enabled())   // Omega Core Everywhere / Astral Ascension Renewed (2.38.0)
+                || CAPanopticon.isCore(id);   // IX Revival's Panopticon Instance and Core, for its Surveillance Center (2.39.3)
     }
 
     @Override

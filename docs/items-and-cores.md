@@ -50,6 +50,10 @@ Off until you switch it on, under Settings. Pick a **refit hub** (your productio
 
 Nothing teleports: every load pays a shipping fee (plus 1,000 a ship) out of the monthly budget and takes a couple of days plus a day a light-year. Colony items and AI cores stay where they are, Autopilot Storage handles those.
 
+### Panopticon cores
+
+With **Emergent Threats: IX Revival**, the Panopticon Instance and Panopticon Core go in Autopilot Storage too. They only fit that mod's Surveillance Center, so that's where they go: the Instance first, at the colony with the most of your colonies in its system. Neither counts for Hegemony inspections.
+
 ### Omega cores
 
 With **Omega Core Everywhere** or **Astral Ascension Renewed** installed, you can drop Omega cores in Autopilot Storage too. Without either one, an Omega core barely does anything in a colony, so storage won't take them.
