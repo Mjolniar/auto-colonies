@@ -30,6 +30,8 @@ Each colony gets a plan: a target layout worked out from the planet itself and i
 
 Every colony also plans a **station** once its fast buildout is done and it's size 4 (or half a year old), a Battlestation from size 6 and a Star Fortress from size 8 (a size sooner at your [capital](capital.md)). A station fights alongside your fleets, and anything raiding, bombarding or invading the colony has to beat it first, so it gets built even though it costs more than it earns. Which kind follows your station line setting.
 
+It never builds more industries than the colony has slots for. If a colony ends up over anyway (it shrank, lost whatever gave it a slot, or an older version slipped up), it takes down the weakest industry, since being over costs 5 stability and under 5 every point cuts a fifth of the colony's income. It keeps them all if the weakest is worth more than that, or if the colony's about to grow into the room.
+
 With Terraforming Made Easy, a plan can aim for one of its special worlds instead (Forge, Fortress, Paradise, Hive and the rest), and the steps include the terraforming to get there. That's in [Terraforming](terraforming.md).
 
 Plan steps get a priority boost, the next step most of all, but a plan never forces a bad building. If the next step is blocked by research or something else, the colony still builds whatever is worth the most on its own in the meantime. A step that research still locks shows what it needs, and with Vaults of Knowledge, research works toward it.

@@ -91,6 +91,7 @@ public class CASetupUI {
         s.capitalNoGather = false;
         s.capitalNoRoom = false;
         s.noStationPlan = false;   // a station at every colony (2.42.0)
+        s.noOverLimitFix = false;  // and a colony over its industry limit takes down its weakest industry
     }
 
     /** Which group is expanded (UI state only, not saved); at most one. Budget starts open. */
@@ -219,6 +220,11 @@ public class CASetupUI {
             if (!s.noStationPlan) t.addPara("A station fights next to your fleets and anything raiding, bombarding or invading has to beat it first. "
                     + "Every colony plans one from size 4 (or half a year old) once its fast buildout is done, a Battlestation from size 6 and a "
                     + "Star Fortress from size 8 (a size sooner at the capital).", Misc.getGrayColor(), 4f);
+            row(t, "Fix colonies over the industry limit", s.noOverLimitFix ? "No" : "Yes", "Yes", "overlimit", true);
+            if (!s.noOverLimitFix) t.addPara("More industries than slots costs 5 stability, and under 5 every point cuts a fifth of the colony's income. "
+                    + "Weekly, an Auto colony over its limit takes down its weakest industry (core and item to Autopilot Storage), unless that "
+                    + "industry is worth more than the stability or the colony is about to grow into the room. One per colony every 30 days.",
+                    Misc.getGrayColor(), 4f);
             row(t, "Allow removals", onOff(s.allowRemovals), "Off", "removals", true);
             row(t, "Mod buildings with measured effects", CASettings.MEASURED_NAMES[Math.max(0, Math.min(2, s.measuredMode))], "Build when best", "measured", true);
             row(t, "Story points", CASettings.SP_NAMES[s.storyPointRule], "Player only", "sp", true);
@@ -576,6 +582,7 @@ public class CASetupUI {
         else if (k.equals("capstart")) s.capitalStart = (Math.max(0, Math.min(CACapital.START_NAMES.length - 1, s.capitalStart)) + 1) % CACapital.START_NAMES.length;
         else if (k.equals("caproom")) s.capitalNoRoom = !s.capitalNoRoom;
         else if (k.equals("stationplan")) s.noStationPlan = !s.noStationPlan;
+        else if (k.equals("overlimit")) s.noOverLimitFix = !s.noOverLimitFix;
         else if (k.equals("capgather")) s.capitalNoGather = !s.capitalNoGather;
         else if (k.equals("settleinc")) s.settlementMinIncome = Math.max(5000f, s.settlementMinIncome + 5000f * dir);
         return true;

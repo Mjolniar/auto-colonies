@@ -181,6 +181,7 @@ public class CAAuto {
         }
         List<MarketAPI> allAuto = CAItems.autoMarkets();
         List<MarketAPI> auto = CASiege.free(allAuto);   // colonies under siege are left as they are
+        CAOverLimit.run(auto);   // more industries than slots: -5 stability, so the weakest goes (2.42.0)
         try { CAItems.ensureStorageTabs(); CAItems.run(auto); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "item, core or administrator placement failed", t); }
         try { CAStoragePlugin.evict(); }   // campaign consumables and blueprints don't belong in Autopilot Storage

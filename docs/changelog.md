@@ -2,6 +2,11 @@
 
 Every version, newest first. If you're wondering why the first version on here is 2.1.0: this started as **Jonah Tweaks**, a personal mod of little tweaks for my own games (bigger battle size, sticky combat autopilot, that kind of thing), and Colony Autopilot grew inside it until it became the main thing. 2.1.0 is when it went up on GitHub, and 2.6.0 was the first version with a downloadable release. The balance tweaks moved out into their own mod in 2.7.0, so this one only manages colonies.
 
+## 2.42.1 - 2026-11-06
+
+- **Never more industries than slots.** One weekly pass could start a new industry and an upgrade that turns a structure into an industry at the same time, and both counted the same free slot. That's how Wind ended up with 3 industries on 2 slots (the Junkyard Forge became a Scrapyard the same week Smelting went up). Now every build checks the slot count right before it starts, like the game's own build menu does.
+- **Colonies already over the limit get fixed.** Going over costs a flat 5 stability, and under 5 stability every point cuts a fifth of the colony's income, so a colony sitting at 0 earns nothing from its industries at all. Wind was in exactly that spot. Now an Auto colony over its limit takes down its weakest industry (its AI core and item go to Autopilot Storage), unless that industry is worth more than the stability it costs, or the colony is about to grow a size that has room for everything. One per colony every 30 days, never defenses, fleets, ship-making, improved or locked buildings, or anything a plan needs. Switch it off with **Fix colonies over the industry limit** under Building and planning.
+
 ## 2.42.0 - 2026-11-06
 
 - **Your capital.** One colony is now your home port, where all your stuff ends up and where you come back to sell loot and refit. The manager picks the colony where your things already are (your production gathering point first), or you pick it on a colony's panel, in Settings, or just by moving your gathering point. Details in [Your capital](capital.md).
