@@ -219,9 +219,74 @@ public class CADiagnostics {
             }
             root.put("issues", arr);
             try { root.put("modWatch", CAModWatch.json()); } catch (Throwable t) { LOG.warn(TAG + "mod watch report failed", t); }
+            try { if (Global.getSector() != null) root.put("colonies", colonies()); } catch (Throwable t) { LOG.warn(TAG + "colony report failed", t); }
             Global.getSettings().writeTextFileToCommon(REPORT, root.toString(2));
         } catch (Throwable t) {
             LOG.warn(TAG + "could not write diagnostics report", t);
         }
+    }
+
+    /**
+     * Each of your colonies as Autopilot sees it (2.39.0), so a check of how the plans are going doesn't need the save:
+     * mode and goal, the plan and where each step stands, buildings with their items, cores and construction, the
+     * construction queue and what's waiting in its Autopilot Storage. Read only: nothing is created for a colony Autopilot
+     * hasn't seen.
+     */
+    static JSONArray colonies() throws Exception {
+        JSONArray out = new JSONArray();
+        CAData d = CAData.get();
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            JSONObject o = new JSONObject();
+            CAData.Colony c = d.colonies == null ? null : d.colonies.get(m.getId());
+            o.put("name", m.getName()); o.put("id", m.getId()); o.put("size", m.getSize());
+            o.put("mode", c == null || c.mode == null ? "none" : c.mode.name());
+            if (c != null && c.profile != null) o.put("goal", c.profile.name());
+            o.put("stability", Math.round(m.getStability().getModifiedValue()));
+            o.put("netIncome", Math.round(m.getNetIncome()));
+            o.put("industrySlots", Misc.getNumIndustries(m) + " of " + Misc.getMaxIndustries(m));
+            JSONArray inds = new JSONArray();
+            for (Industry ind : m.getIndustries()) {
+                if (ind.isHidden()) continue;
+                StringBuilder sb = new StringBuilder(ind.getId());
+                if (ind.isBuilding()) sb.append(ind.isUpgrading() ? " [upgrading]" : " [building]");
+                else if (!ind.isFunctional()) sb.append(" [not working]");
+                if (ind.getSpecialItem() != null) sb.append(" item=").append(ind.getSpecialItem().getId());
+                if (ind.getAICoreId() != null) sb.append(" core=").append(ind.getAICoreId());
+                if (ind.isImproved()) sb.append(" improved");
+                inds.put(sb.toString());
+            }
+            o.put("industries", inds);
+            try {
+                JSONArray q = new JSONArray();
+                for (com.fs.starfarer.api.impl.campaign.econ.impl.ConstructionQueue.ConstructionQueueItem it : m.getConstructionQueue().getItems()) q.put(it.id);
+                if (q.length() > 0) o.put("queue", q);
+            } catch (Throwable ignored) { }
+            if (c != null && c.profile != null) {
+                try {
+                    CAPlan.Plan plan = CAPlan.build(m, c.profile);
+                    o.put("plan", plan.name);
+                    if (plan.world != null) o.put("world", plan.world);
+                    JSONArray steps = new JSONArray();
+                    for (CAPlan.Step s : plan.steps) {
+                        String at = s.done(m) ? "done" : CAPlan.BLOCKED.contains(m.getId() + ":" + s.id) ? "waits on research"
+                                : CAPlan.dead(m, s.id) ? "out of reach" : "open";
+                        steps.put(s.kind + " " + s.id + ": " + at + " (" + s.label + ")");
+                    }
+                    o.put("steps", steps);
+                } catch (Throwable t) { o.put("plan", "failed: " + t); }
+            }
+            com.fs.starfarer.api.campaign.CargoAPI store = d.stores().get(m.getId());
+            if (store != null) {
+                JSONObject held = new JSONObject();
+                for (com.fs.starfarer.api.campaign.CargoStackAPI st : store.getStacksCopy()) {
+                    String id = st.isSpecialStack() && st.getSpecialDataIfSpecial() != null ? st.getSpecialDataIfSpecial().getId()
+                            : st.isCommodityStack() ? st.getCommodityId() : st.isWeaponStack() ? "weapon " + st.getWeaponSpecIfWeapon().getWeaponId() : "other";
+                    held.put(id, held.optInt(id, 0) + Math.round(st.getSize()));
+                }
+                o.put("autopilotStorage", held);
+            }
+            out.put(o);
+        }
+        return out;
     }
 }

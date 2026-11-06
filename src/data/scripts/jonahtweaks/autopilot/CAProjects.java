@@ -46,6 +46,20 @@ public class CAProjects {
             new Producer("purified_rare_metal", "aotd_enrichment_facility", "refining", null, 3),
             new Producer("ships", "heavyindustry", null, null, 3),
             new Producer("hand_weapons", "heavyindustry", null, null, 3),
+            // 2.39.0, for production orders: the vanilla goods, each at its vanilla building (its own build check says
+            // where it can go: Mining needs a deposit, Farming farmland)
+            new Producer("heavy_machinery", "heavyindustry", null, null, 3),
+            new Producer("supplies", "heavyindustry", null, null, 3),
+            new Producer("metals", "refining", null, null, 3),
+            new Producer("rare_metals", "refining", null, null, 3),
+            new Producer("fuel", "fuelprod", null, null, 3),
+            new Producer("domestic_goods", "lightindustry", null, null, 3),
+            new Producer("luxury_goods", "lightindustry", null, null, 3),
+            new Producer("ore", "mining", null, null, 3),
+            new Producer("rare_ore", "mining", null, null, 3),
+            new Producer("volatiles", "mining", null, null, 3),
+            new Producer("organics", "mining", null, null, 3),
+            new Producer("food", "farming", null, null, 3),
     };
 
     /** A colony as the planner sees it. */
@@ -153,7 +167,52 @@ public class CAProjects {
     static Result last;
     static boolean broken = false;
 
-    public static void reset() { STEPS.clear(); computedAt = -99f; project = null; last = null; monthly.clear(); left.clear(); other.clear(); }
+    public static void reset() { STEPS.clear(); computedAt = -99f; project = null; last = null; monthly.clear(); left.clear(); other.clear(); orders.clear(); }
+
+    /**
+     * 2.39.0: what Ashes of the Domain's open production orders still need, by good: each order line's remaining units times
+     * its goods per unit (AoTDProductionOrderData.reqResourcesPerUnit). Production waits on those goods, which come from
+     * your colonies' output, so a big order (Jonah's Auto Outfitting's weapons for a fleet) crawls when nobody makes one.
+     */
+    static Map<String, Integer> orders = new LinkedHashMap<String, Integer>();
+
+    @SuppressWarnings("unchecked")
+    static void readOrders() {
+        orders.clear();
+        try {
+            Class<?> mgr = Class.forName(CASurplus.AOTD_PRODUCTION, true, Global.getSettings().getScriptClassLoader());
+            Object inst = CARefl.invoke(CARefl.method(mgr, "getInstance"), null);
+            Object snaps = inst == null ? null : CARefl.call(inst, "getCurrentSnapshots");
+            if (!(snaps instanceof List)) return;
+            for (Object snap : (List<Object>) snaps) {
+                Object lines = CARefl.get(CARefl.field(snap.getClass(), "productionData"), snap);
+                if (!(lines instanceof List)) continue;
+                for (Object d : (List<Object>) lines) {
+                    int remaining = ((Number) CARefl.call(d, "getRemainingUnits")).intValue();
+                    if (remaining <= 0) continue;
+                    // the exact goods still to deliver (per unit x amount, less what's delivered); per unit x remaining
+                    // units if that can't be read, which counts goods already delivered for unfinished units again
+                    Map<String, Integer> need = null;
+                    try { Object r = CARefl.call(d, "getReqResources"); if (r instanceof Map) need = (Map<String, Integer>) r; } catch (Throwable ignored) { }
+                    int mult = 1;
+                    if (need == null) {
+                        Object per = CARefl.get(CARefl.field(d.getClass(), "reqResourcesPerUnit"), d);
+                        if (!(per instanceof Map)) continue;
+                        need = (Map<String, Integer>) per;
+                        mult = remaining;
+                    }
+                    for (Map.Entry<String, Integer> e : need.entrySet()) {
+                        // special items an order takes aren't goods your colonies make
+                        if (e.getValue() == null || e.getValue() <= 0 || Global.getSettings().getCommoditySpec(e.getKey()) == null) continue;
+                        Integer cur = orders.get(e.getKey());
+                        orders.put(e.getKey(), (cur == null ? 0 : cur) + e.getValue() * mult);
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            if (CALog.once("projorders:broken")) CADiagnostics.LOG.warn(CADiagnostics.TAG + "couldn't read Ashes of the Domain's production orders' goods", t);
+        }
+    }
 
     static boolean on() {
         return !broken && Global.getSettings().getModManager().isModEnabled(CAResearch.MOD) && CAData.settings().projectSupplyMode != 2;
@@ -289,15 +348,18 @@ public class CAProjects {
             // spending freely (CASurplus.rich): AotD's own goods get producers even with no project running, since Grand Wonders,
             // megastructure restoration, Bifrost gates and AotD production all take them from your colonies' exports
             boolean rich = CASurplus.rich(CAData.settings());
-            if (!running && !rich) return;
+            readOrders();   // and the goods open production orders still need (2.39.0)
+            if (!running && !rich && orders.isEmpty()) return;
             yours.clear(); sector.clear();
             Set<String> goods = new LinkedHashSet<String>(left.keySet());
             goods.addAll(monthly.keySet());
+            goods.addAll(orders.keySet());
             for (Producer p : PRODUCERS) { goods.add(p.good); for (String in : p.inputs) goods.add(in); }
             Map<String, Integer> made = new HashMap<String, Integer>();
             for (String g : goods) { int y = yours(g); yours.put(g, y); made.put(g, y); sector.put(g, others(g)); }
             Set<String> wanted = new LinkedHashSet<String>(left.keySet());
             if (rich) wanted.addAll(Arrays.asList(AOTD_GOODS));
+            wanted.addAll(orders.keySet());
             List<String> missing = new ArrayList<String>();
             for (String g : wanted) if (!madeAny(made, g)) missing.add(g);
             int ships = Math.max(0, yours.get("ships") == null ? 0 : yours.get("ships"));
@@ -339,6 +401,7 @@ public class CAProjects {
     /** What a good is needed for: the running special project, else AotD's wonders, gates and production (spending freely). */
     static String forWhat(String good) {
         if (project != null && left.containsKey(good)) return project;
+        if (orders.containsKey(good)) return "production orders";
         return "AotD wonders and gates";
     }
 

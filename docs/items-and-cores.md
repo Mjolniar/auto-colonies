@@ -21,7 +21,7 @@ The empire panel's **Autopilot Storage** page lists what's in each colony's stor
 
 ## Colony items
 
-Each item goes where it adds the most, at an Auto colony that can take it. A few specifics:
+Each item goes where it adds the most, at an Auto colony that can take it. When a few items want the same building, the best one gets it, and a copy that's already at that colony goes in before another one gets shipped over. A few specifics:
 
 - A better item swaps in for a lesser one of the same kind (a Pristine Nanoforge for a Corrupted one), and the lesser one goes back to storage.
 - An item waiting in storage counts toward building whatever would use it, so a nanoforge sitting there can get a Heavy Industry built somewhere.
@@ -41,6 +41,12 @@ Each item goes where it adds the most, at an Auto colony that can take it. A few
 A better core replaces a lesser one, which goes back to storage. Cores also add colony crisis progress, and that cost is counted (see [War and security](war-and-security.md)).
 
 **Alpha cores** can be **Only where removable** (recommended), Anywhere, or Never. **Alpha cores in research buildings** set to **First** puts Alphas into Vaults of Knowledge Research Facilities and Black Sites before anywhere else, since there they cut the research costs.
+
+### Storage logistics
+
+Off until you switch it on, under Settings. Pick a **refit hub** (your production gathering point unless you choose another) and once a week Colony Manager ships everything you'd refit a fleet with there from your other Storage tabs: mothballed ships, weapons, fighter wings, blueprints and hull mod specs you don't know yet, and supplies, fuel, crew and marines if you want those too. Pick a **sell hub** as well and the blueprints and specs you already know (and spare copies of ones you don't) go there instead, so selling them is one stop.
+
+Nothing teleports: every load pays a shipping fee (plus 1,000 a ship) out of the monthly budget and takes a couple of days plus a day a light-year. Colony items and AI cores stay where they are, Autopilot Storage handles those.
 
 ### Omega cores
 

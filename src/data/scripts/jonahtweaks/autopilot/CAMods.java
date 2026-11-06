@@ -145,13 +145,28 @@ public class CAMods {
     static int extra(MarketAPI m) { return (charter(m) ? 1 : 0) - (m.hasCondition("US_mind") ? 1 : 0); }
 
     static int output(MarketAPI m, float range, CAEngine.Pick p, Map<String, Integer> deficit, boolean add) {
-        int total = 0, x = extra(m);
+        return output(m, range, p, deficit, add, 0);
+    }
+
+    /**
+     * cut: heavy machinery the miners are short. Roider takes the whole shortage off every mined output
+     * (DivesSupplyInteractor.applySupplyAndDemand: applyDeficitToProduction over ore, transplutonic ore, organics and
+     * volatiles), so 1 short turns 1+1+1+1 into nothing: Umuzi's Dives mined 0 of a predicted 4 (2.39.0).
+     */
+    static int output(MarketAPI m, float range, CAEngine.Pick p, Map<String, Integer> deficit, boolean add, int cut) {
+        int total = 0, x = extra(m) - Math.max(0, cut);
         for (String com : MINED) {
             int u = mined(m, com, range, x);
             total += u;
             if (add && u > 0) CAEngine.supply(p, com, u, deficit);
         }
         return total;
+    }
+
+    /** Heavy machinery Roider miners needing this much would be short: what your colonies already lack, up to their need. */
+    static int machineryShort(Map<String, Integer> deficit, int need) {
+        Integer d = deficit == null ? null : deficit.get("heavy_machinery");
+        return d == null || d <= 0 ? 0 : Math.min(d, need);
     }
 
     /**
@@ -165,15 +180,17 @@ public class CAMods {
         float add = charter(m) ? charterRange() : 0f;
         int drugs = noDrugs(m) ? 0 : 3;
         if (id.equals("roider_dives")) {
-            if (output(m, divesRange() + add, p, deficit, true) <= 0) return false;
+            int cut = machineryShort(deficit, 1);
+            if (output(m, divesRange() + add, p, deficit, true, cut) <= 0) return false;
+            if (cut > 0) p.lines.add("Your colonies lack heavy machinery, and Roider miners lose the shortage from every output");
             CAEngine.supply(p, "crew", 3, deficit);
             CAEngine.demand(p, "heavy_machinery", 1, deficit); CAEngine.demand(p, "drugs", drugs, deficit); CAEngine.demand(p, "supplies", 2, deficit);
             p.lines.add("Roider miners work deposits within " + Math.round(divesRange() + add) + " light-years");
             return true;
         }
-        int x = extra(m);
+        int x = extra(m), cutWas = machineryShort(deficit, 1), cutNow = machineryShort(deficit, Math.max(1, s - 2));   // the HQ needs size - 2
         for (String com : MINED) {
-            int was = mined(m, com, divesRange() + add, x), u = mined(m, com, hqRange() + add, x);
+            int was = mined(m, com, divesRange() + add, x - cutWas), u = mined(m, com, hqRange() + add, x - cutNow);
             if (u > was) CAEngine.supply(p, com, u - was, deficit);
         }
         CAEngine.supply(p, "crew", Math.max(0, s - 3), deficit);   // the Dives' 3 crew become the colony's size

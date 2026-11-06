@@ -248,8 +248,9 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             t.addToGrid(3, 1, "Credits", Misc.getDGSCredits(CABuild.credits()));
             t.addGrid(message != null ? 8f : 0f);
             if (managed) {
-                t.addPara("Budget this month: %s of %s spent, %s available (fees %s).", 6f, hl, Misc.getDGSCredits(s.spent),
-                        Misc.getDGSCredits(CABudget.limit(s)), Misc.getDGSCredits(CABudget.available(s)), CASettings.FEE_NAMES[s.feeLevel].toLowerCase());
+                t.addPara("Budget this month: %s of %s spent, %s saved up, %s available (fees %s).", 6f, hl, Misc.getDGSCredits(s.spent),
+                        Misc.getDGSCredits(CABudget.limit(s)), Misc.getDGSCredits(CABudget.saved(s)), Misc.getDGSCredits(CABudget.available(s)),
+                        CASettings.FEE_NAMES[s.feeLevel].toLowerCase());
                 if (CABudget.paused(s)) t.addPara("Spending is paused: net income is negative.", Misc.getNegativeHighlightColor(), 4f);
             }
             if (!buildout && planWith != c.profile) t.addPara("Planning with Security until the threat drops below %s and has been high for %s days.", 4f,

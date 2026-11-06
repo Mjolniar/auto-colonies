@@ -137,6 +137,12 @@ public class CASettings {
     // this month
     public int month = -1;
     public float spent = 0f, fees = 0f, upkeepAdded = 0f, terraSpent = 0f;
+    public float budgetCarry = 0f;   // 2.39.0: unspent budget saved up from earlier months (CABudget.rollMonth), up to 6 months' worth
+    // 2.39.0 storage logistics (CALogistics): 0 off (default), 1 on; refit hub market id (null: the production gathering
+    // point), sell hub market id (null: none); ships and supplies/fuel/crew/marines go to the refit hub too
+    public int logisticsMode = 0;
+    public String logisticsHub, logisticsSellHub;
+    public boolean logisticsShips = true, logisticsSupplies = true;
     public int spMonth = 0;   // story points spent this month (counted improvements before 2.20.1)
     public float lastNet = 0f;
     public boolean lastNetKnown = false;

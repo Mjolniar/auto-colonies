@@ -315,6 +315,7 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
 | [CAGrand](../src/data/scripts/jonahtweaks/autopilot/CAGrand.java) | Grand.Colonies | 12-building screen limit; extra upkeep past the threshold |
 | [CABrewery](../src/data/scripts/jonahtweaks/autopilot/CABrewery.java) | Substance.Abuse | Brewery only with a recipe in storage |
 | [CAMods](../src/data/scripts/jonahtweaks/autopilot/CAMods.java) | VIC, Planetary Shield, Roider Union, Unknown Skies, What We Left Behind, Astral Ascension, Yunru Industries, Slightly Better Tech-Mining, Niko's Scavengable Industries | Small integrations by id; the buildings left to you (`LEFT`) |
+| [CALogistics](../src/data/scripts/jonahtweaks/autopilot/CALogistics.java) | Any | Storage logistics: ships, weapons, wings and unknown blueprints to the refit hub, known blueprints and spares to the sell hub, shipped for a fee and travel time |
 | [CAOmega](../src/data/scripts/jonahtweaks/autopilot/CAOmega.java) | Omega Core Everywhere, Astral Ascension Renewed | Omega cores into buildings (valued from OCE's table) or as administrators (AAR) |
 
 ### UI and leftovers

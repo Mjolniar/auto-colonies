@@ -36,6 +36,8 @@ public class CAAuto {
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "siege check failed", t); }
         try { CAStores.daily(); }   // shipments between colonies' Autopilot Storage arrive
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autopilot Storage shipping failed", t); }
+        try { CALogistics.daily(d, s, now); }   // storage logistics: loads to the refit and sell hubs (2.39.0)
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "storage logistics failed", t); }
         CACrisis.daily(d, s);   // inspection orders, and a log line when a colony crisis is picked
         try { CASurplus.daily(s); }   // the focus world for credits over the surplus line
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus investment step failed", t); }
@@ -137,7 +139,7 @@ public class CAAuto {
             float avail = Math.min(Math.max(0f, CABuild.credits() - s.reserve), CABudget.available(s) + CASurplus.extra(k.m, s));
             if (k.total > avail) {
                 if (CALog.once(key)) CALog.add(k.m.getName() + ": " + k.p.name + " waits for budget (" + Misc.getDGSCredits(k.total) + ", "
-                        + Misc.getDGSCredits(avail) + " left)");
+                        + Misc.getDGSCredits(avail) + " left; saving up)");
                 continue;
             }
             float upCap = CASurplus.upkeepCap(k.m, s);

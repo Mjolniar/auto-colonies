@@ -330,6 +330,19 @@ public class CASetupUI {
             row(t, "Commodity Forge may use up chips", s.disableForgeVPC ? "No" : "Yes", "Yes", "forge", true);
             row(t, "Supply shipping (Courier Port)", s.disableShipping ? "Off" : "Cover shortages", "Cover shortages", "ship", true);
         }
+        if (group(t, "logistics", "Storage logistics", s.logisticsMode == 1 ? "on, refit hub " + CALogistics.hubName(s.logisticsHub, true)
+                + (s.logisticsSellHub != null ? ", sell hub " + CALogistics.hubName(s.logisticsSellHub, false) : "") : "off")) {
+            row(t, "Storage logistics", s.logisticsMode == 1 ? "On" : "Off", "Your call", "logi", true);
+            row(t, "Refit hub", CALogistics.hubName(s.logisticsHub, true), "Production gathering point", "logihub", true);
+            row(t, "Sell hub", CALogistics.hubName(s.logisticsSellHub, false), "Your call", "logisell", true);
+            row(t, "Ships go to the refit hub", s.logisticsShips ? "Yes" : "No", "Yes", "logiships", true);
+            row(t, "Supplies, fuel, crew and marines go too", s.logisticsSupplies ? "Yes" : "No", "Yes", "logigoods", true);
+            t.addPara("Once a week, what you refit a fleet with (mothballed ships, weapons, fighter wings, blueprints and hull mod specs you "
+                    + "don't know yet) is shipped from every other Storage you have to the refit hub's Storage. Blueprints and specs you "
+                    + "already know, and spare copies, go to the sell hub, so you can sell them in one place. Each load costs what an Autopilot "
+                    + "Storage shipment does plus 1,000 a ship, from the monthly budget, and takes 2 days plus a day a light-year. Colony "
+                    + "items and AI cores stay where they are.", Misc.getGrayColor(), 6f);
+        }
         if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CASettlement.MOD)
                 && group(t, "settle", "Settlement (Random Assortment of Things)", CASettings.SETTLE_NAMES[Math.max(0, Math.min(3, s.settlementMode))].toLowerCase()
                 + ", found at " + Misc.getDGSCredits(s.settlementMinIncome) + "/month")) {
@@ -502,6 +515,11 @@ public class CASetupUI {
         else if (k.equals("autonomy")) s.autonomyMode = (Math.max(0, Math.min(2, s.autonomyMode)) + 1) % 3;
         else if (k.equals("spykeep")) s.spyKeep = (Math.max(0, Math.min(4, s.spyKeep)) + 1) % 5;
         else if (k.equals("spytarget")) s.spyTarget = nextSpyTarget(s.spyTarget);
+        else if (k.equals("logi")) s.logisticsMode = s.logisticsMode == 1 ? 0 : 1;
+        else if (k.equals("logihub")) s.logisticsHub = CALogistics.next(s.logisticsHub, false);
+        else if (k.equals("logisell")) s.logisticsSellHub = CALogistics.next(s.logisticsSellHub, true);
+        else if (k.equals("logiships")) s.logisticsShips = !s.logisticsShips;
+        else if (k.equals("logigoods")) s.logisticsSupplies = !s.logisticsSupplies;
         else if (k.equals("settleinc")) s.settlementMinIncome = Math.max(5000f, s.settlementMinIncome + 5000f * dir);
         return true;
     }

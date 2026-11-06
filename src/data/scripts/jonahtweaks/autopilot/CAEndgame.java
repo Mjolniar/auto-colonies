@@ -263,7 +263,7 @@ public class CAEndgame {
     static boolean keepsPlanBonus(MarketAPI m, CAPlan.Plan plan, String id) {
         if (id == null) return false;
         if (id.startsWith("tme_") || CAPlan.WORLD_STEPS.contains(id) || (plan != null && plan.exact.contains(id))) return true;
-        if (CAProjects.isStep(m, id) || CASurplus.isRichStep(m, id)) return true;
+        if (CAProjects.isStep(m, id) || CASurplus.isRichStep(m, id) || CAResearch.isFacilityStep(m, id)) return true;
         return CAWonders.BFC.equals(id);
     }
 
@@ -297,6 +297,7 @@ public class CAEndgame {
         if (ind.getSpec().hasTag("population") || ind.getSpec().hasTag("station") || col.locks.contains(id)) return true;
         if (keepsPlanBonus(m, plan, id) || CASurplusResearch.FACILITY.equals(id) || CASurplusResearch.BLACK_SITE.equals(id) || CAWonders.SITE.equals(id)) return true;
         if (!CAEngine.isSupportedVanilla(id) && !CAEstimates.has(id)) return true;   // only what the engine can value for certain
+        if (CAContracts.feeds(ind) != null) return true;   // a trade contract you hold needs what it makes (2.39.0)
         Long built = d.endgameBuilt().get(m.getId() + ":" + id);
         return built != null && Global.getSector().getClock().getElapsedDaysSince(built) < MEMORY_DAYS;
     }

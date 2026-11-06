@@ -192,10 +192,27 @@ public class CAItems {
      * it's stored in, it goes straight in; anywhere else it's shipped there first (CAStores, a fee and travel time) and goes
      * in once it has arrived, so an item never jumps across the sector for free.
      */
-    static boolean placeItem(CAData d, CASettings s, List<MarketAPI> markets) {
+    /** One way to use a waiting item: this stack's item into this free building. */
+    static class Placement {
+        final CAStores.Held held; final SpecialItemSpecAPI spec; final SpecialItemData data; final MarketAPI m; final Industry ind; final float score;
+        Placement(CAStores.Held held, SpecialItemSpecAPI spec, SpecialItemData data, MarketAPI m, Industry ind, float score) {
+            this.held = held; this.spec = spec; this.data = data; this.m = m; this.ind = ind; this.score = score;
+        }
+        boolean local() { return m == held.market; }
+    }
+
+    /**
+     * Best first (2.39.0): every waiting item is matched with every free building it fits, and the best-scoring pairs go
+     * first, each building to one item. Before, items went in storage order, each to its own best building, so a lesser
+     * item took a building a better one was waiting for and got swapped out a week later (an Auroran Dimensional
+     * Nanoforge in Heavy Industry, then the Tenebrian Nanoforge), and a second copy was shipped to a colony whose first copy
+     * had arrived but wasn't in yet (two Orbital Fusion Lamps to Umuzi). A copy already at the colony wins a tie with one
+     * that would have to be shipped there; a building with a copy on its way is left for it.
+     */
+    static List<Placement> placements(CAData d, List<MarketAPI> markets, List<CAStores.Held> unplaced) {
+        List<Placement> out = new ArrayList<Placement>();
         for (CAStores.Held held : CAStores.stacks()) {
             CargoStackAPI stack = held.stack;
-            CargoAPI st = CAStores.of(held.market);
             if (!stack.isSpecialStack() || stack.getSize() < 1f) continue;
             SpecialItemSpecAPI spec = stack.getSpecialItemSpecIfSpecial();
             SpecialItemData data = stack.getSpecialDataIfSpecial();
@@ -204,11 +221,10 @@ public class CAItems {
             InstallableItemEffect effect = ItemEffectsRepo.ITEM_EFFECTS.get(spec.getId());   // any mod's item, if it registers an effect
             String params = spec.getParams();
             if (effect == null || params == null) continue;
-            Set<String> targets = new HashSet<String>();
-            for (String p : params.split(",")) targets.add(p.trim());
+            Set<String> targets = targets(spec);
             int minSize = CABrewery.minSize(data);   // Substance.Abuse's Recipe Book makes nothing below its recipe count
             if (minSize < 0) continue;
-            Industry best = null; float bestScore = 0f; MarketAPI bestM = null;
+            boolean any = false;
             for (MarketAPI m : markets) {
                 if (CAHypershunt.is(m) || m.getSize() < minSize) continue;   // hypershunt: no buildings allowed, so an extra slot or output is wasted
                 if (!CAMods.itemFits(spec.getId(), m)) continue;   // VIC's nanites: vanilla farmland and genetech only
@@ -220,16 +236,58 @@ public class CAItems {
                         if (!effect.getUnmetRequirements(ind).isEmpty()) continue;
                     } catch (Throwable t) { CADiagnostics.quarantine(ind.getId(), "item requirement check", t); continue; }
                     float sc = itemScore(spec.getId(), m, c.profile, ind);
-                    if (sc > bestScore) { bestScore = sc; best = ind; bestM = m; }
+                    if (sc <= 0f) continue;
+                    out.add(new Placement(held, spec, data, m, ind, sc));
+                    any = true;
                 }
             }
-            if (best == null) {
-                if (swapItem(d, s, markets, held.market, spec, data, effect, targets)) return true;
-                continue;
-            }
-            if (bestM != held.market) {   // somewhere else: shipped there first, unless one is already on its way
-                if (CAStores.inTransit(spec.getId(), bestM.getId()) > 0) continue;
-                if (CAStores.ship(held.market, bestM, null, data, 1, "for " + best.getCurrentName())) return true;
+            if (!any && unplaced != null) unplaced.add(held);
+        }
+        Collections.sort(out, ORDER);
+        return out;
+    }
+
+    /** Best score first; on a tie, the copy already at that colony. */
+    static final Comparator<Placement> ORDER = new Comparator<Placement>() {
+        public int compare(Placement a, Placement b) {
+            int c = Float.compare(b.score, a.score);
+            return c != 0 ? c : Boolean.compare(b.local(), a.local());
+        }
+    };
+
+    /**
+     * From placements in ORDER: each building goes to the first (best) item that wants it, and each stack fills as many
+     * buildings as it has copies. A building whose item still has to be shipped is held for it.
+     */
+    static List<Placement> assign(List<Placement> sorted) {
+        List<Placement> out = new ArrayList<Placement>();
+        Set<String> taken = new HashSet<String>();
+        Map<CargoStackAPI, Integer> left = new IdentityHashMap<CargoStackAPI, Integer>();   // two stores' stacks of one item are equal()
+        for (Placement p : sorted) {
+            String key = p.m.getId() + ":" + p.ind.getId();
+            if (taken.contains(key)) continue;
+            Integer n = left.get(p.held.stack);
+            if (n == null) n = (int) p.held.stack.getSize();
+            if (n <= 0) continue;   // every copy in this stack already has a building
+            taken.add(key);
+            left.put(p.held.stack, n - 1);
+            out.add(p);
+        }
+        return out;
+    }
+
+    static Set<String> targets(SpecialItemSpecAPI spec) {
+        Set<String> targets = new HashSet<String>();
+        if (spec.getParams() != null) for (String p : spec.getParams().split(",")) targets.add(p.trim());
+        return targets;
+    }
+
+    static boolean placeItem(CAData d, CASettings s, List<MarketAPI> markets) {
+        List<CAStores.Held> unplaced = new ArrayList<CAStores.Held>();
+        for (Placement p : assign(placements(d, markets, unplaced))) {
+            if (!p.local()) {   // somewhere else: shipped there first, unless one is already on its way
+                if (CAStores.inTransit(p.spec.getId(), p.m.getId()) > 0) continue;
+                if (CAStores.ship(p.held.market, p.m, null, p.data, 1, "for " + p.ind.getCurrentName())) return true;
                 continue;
             }
             float fee = CABudget.fee(s, STANDARD_MOVE_FEE);
@@ -237,18 +295,25 @@ public class CAItems {
             try {
                 // the stack's own object: some mods keep state in a SpecialItemData subclass (a copy of Substance.Abuse's
                 // Recipe Book loses its recipes and crashes the colony on every update)
-                best.setSpecialItem(data);
-                st.removeItems(CargoAPI.CargoItemType.SPECIAL, data, 1f);
-                bestM.reapplyIndustries();   // the item's effect otherwise waits for the next economy update
+                p.ind.setSpecialItem(p.data);
+                CAStores.of(p.m).removeItems(CargoAPI.CargoItemType.SPECIAL, p.data, 1f);
+                p.m.reapplyIndustries();   // the item's effect otherwise waits for the next economy update
                 CABudget.charge(s, 0f, fee, 0f);
                 idleAt = -99f;
-                CALog.add(bestM.getName() + ": installed " + spec.getName() + " in " + best.getCurrentName()
+                CALog.add(p.m.getName() + ": installed " + p.spec.getName() + " in " + p.ind.getCurrentName()
                         + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : ""));
                 return true;
             } catch (Throwable t) {
-                CADiagnostics.quarantine(best.getId(), "installing " + spec.getId(), t);
+                CADiagnostics.quarantine(p.ind.getId(), "installing " + p.spec.getId(), t);
                 return false;
             }
+        }
+        // items with no free building anywhere: swapped in for a lesser one
+        for (CAStores.Held held : unplaced) {
+            SpecialItemSpecAPI spec = held.stack.getSpecialItemSpecIfSpecial();
+            SpecialItemData data = held.stack.getSpecialDataIfSpecial();
+            InstallableItemEffect effect = ItemEffectsRepo.ITEM_EFFECTS.get(spec.getId());
+            if (swapItem(d, s, markets, held.market, spec, data, effect, targets(spec))) return true;
         }
         return false;
     }
@@ -278,7 +343,9 @@ public class CAItems {
         }
         if (best == null) return false;
         if (bestM != holder) {   // shipped to that colony first; the swap happens once it's there
-            if (CAStores.inTransit(spec.getId(), bestM.getId()) > 0) return false;
+            // one on its way, or one already there waiting for its turn (it swaps itself in): no second copy (2.39.0)
+            if (CAStores.inTransit(spec.getId(), bestM.getId()) > 0
+                    || CAStores.of(bestM).getQuantity(CargoAPI.CargoItemType.SPECIAL, data) >= 1f) return false;
             return CAStores.ship(holder, bestM, null, data, 1, "to replace the " + name(best.getSpecialItem().getId()) + " in " + best.getCurrentName());
         }
         float fee = CABudget.fee(s, STANDARD_MOVE_FEE);

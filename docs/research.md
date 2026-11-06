@@ -10,6 +10,8 @@ Each tech you can start is valued by what it would unlock at your colonies. It d
 
 Your colonies' plans come first. If a plan step is locked by research, the whole chain of techs it still needs gets traced, and the value of that step is shared along the chain. So the first tech in a three-tech chain toward something a colony actually wants still gets picked.
 
+No Research Facility anywhere and research on Auto? Then one goes first in your focus world's plan (or your biggest colony's), ahead of everything else, since nothing gets researched without one.
+
 Auto starts the best tech whenever nothing is running or queued. If you have something queued yourself it waits, it never touches your queue. It also puts Sophia Anderson at the head of R&D before starting if you have her, since she knocks a databank off every tech.
 
 Databanks are usually the bottleneck. While the best plan tech is short of them, the ones you have only go to techs some plan needs, and the log says what's next and how many it needs. After 90 days of that, the best thing you can afford goes ahead anyway so research doesn't sit idle forever. Same if nothing pays for itself within a year: it starts the best of the rest rather than stopping.
@@ -39,7 +41,7 @@ With credits over the surplus line, more Research Facilities go up at Auto colon
 
 A black site project takes goods every month from your own colonies' production, and a stage stops if any of them isn't delivered at all. Some of those goods (Electronic Components, Domain-grade machinery, Refined Metal, Enriched Transplutonics) aren't made by any faction, so without your own producer the project just never moves.
 
-**Special project supply** on **Auto** (recommended) looks at the project you're running and, for each good none of your colonies make, puts its producer in as a first plan step at the best colony for it, along with the producers of that building's own inputs. Research then works toward it and it gets built. **Warn only** just tells you, and **Off** leaves it alone. Cores, items and ships a stage takes are always yours.
+**Special project supply** on **Auto** (recommended) looks at the project you're running and, for each good none of your colonies make, puts its producer in as a first plan step at the best colony for it, along with the producers of that building's own inputs. It does the same for your open **production orders**: a big order (like Jonah's Auto Outfitting's weapons for a fleet) takes goods from your colonies as it goes, so anything it needs that you don't make gets a producer planned too. Research then works toward it and it gets built. **Warn only** just tells you, and **Off** leaves it alone. Cores, items and ships a stage takes are always yours.
 
 While spending freely, it goes further and builds producers for all of those advanced goods even with no project running.
 

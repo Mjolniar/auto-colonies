@@ -278,6 +278,42 @@ public class CAContracts {
         return out;
     }
 
+    static Set<String> contractedCache;
+    static float contractedAt = -1f;
+
+    /** Commodities a trade contract you hold still delivers; refreshed daily. Empty without Theory of Toolbox. */
+    @SuppressWarnings("unchecked")
+    public static Set<String> contracted() {
+        float now = CADay.now();
+        if (contractedCache != null && now - contractedAt < 1f) return contractedCache;
+        Set<String> out = new HashSet<String>();
+        if (Global.getSettings().getModManager().isModEnabled(MOD) && active()) {
+            try {
+                for (Object c : ((Map<String, Object>) CARefl.invoke(activeMap, mgr())).values()) {
+                    if (c == null || !live(c)) continue;
+                    for (Object d : ((Map<String, Object>) CARefl.invoke(cData, c)).values()) out.add(String.valueOf(CARefl.invoke(dCom, d)));
+                }
+            } catch (Throwable t) {
+                CADiagnostics.LOG.warn(CADiagnostics.TAG + "trade contract goods check failed", t);
+            }
+        }
+        contractedCache = out; contractedAt = now;
+        return out;
+    }
+
+    /**
+     * What this building makes that a contract you hold needs, or null (2.39.0). Such a building isn't taken down while the
+     * contract runs: the endgame took down Hot Springs's Farming (Omega core, Tenebrian Atmospheric Driver) for Light
+     * Production, worth 43,000 a month more by itself, and the 207,000-a-month food contract it fed started missing deliveries.
+     */
+    public static String feeds(com.fs.starfarer.api.campaign.econ.Industry ind) {
+        Set<String> need = contracted();
+        if (need.isEmpty() || ind == null) return null;
+        for (com.fs.starfarer.api.campaign.econ.MutableCommodityQuantity q : ind.getAllSupply())
+            if (q.getQuantity().getModifiedInt() > 0 && need.contains(q.getCommodityId())) return q.getCommodityId();
+        return null;
+    }
+
     // ---------------- daily pass ----------------
 
     /** Auto: takes the best offers that fit and pay more than exporting. Any mode: logs a contract that misses a delivery. */
