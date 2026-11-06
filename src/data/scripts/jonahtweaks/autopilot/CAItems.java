@@ -1318,6 +1318,14 @@ public class CAItems {
     }
 
     static final float HIRE_FEE = 25000f;
+    /** 2.41.2: days the colony limit can go short of administrators with none on offer before a recruiter finds one. */
+    static final float RECRUIT_DAYS = 90f;
+    /** What the recruiter charges on top of the usual hiring bonus and fee; a price, not a service fee, so the fee level never waives it. */
+    static final float RECRUITER_PRICE = 250000f;
+
+    static String monthKey() {
+        return Global.getSector().getClock().getCycle() + ":" + Global.getSector().getClock().getMonth();
+    }
 
     /** Colonies the player still governs personally (no administrator). */
     static List<MarketAPI> selfGoverned(List<MarketAPI> markets) {
@@ -1332,10 +1340,13 @@ public class CAItems {
      * administrator is available or on the way; or, while the colony limit needs administrators (adminsNeeded) and not
      * enough are idle or on the way, whatever the money says, past the monthly budget if need be but never below the credit
      * reserve. Picks the candidate and colony that come out furthest ahead. Optional 30-day arrival delay.
+     * The game only puts administrators up for hire at a market when you dock there (OfficerManagerEvent), so when the
+     * colony limit has gone RECRUIT_DAYS with none on offer anywhere, a recruiter finds one instead (recruitAdmin, 2.41.2).
      */
     static boolean hireAdmin(CAData d, CASettings s, List<MarketAPI> markets) {
         List<MarketAPI> open = selfGoverned(markets);
         int need = adminsNeeded(d);
+        if (need <= 0) d.adminNeedSince = 0L;
         if (open.isEmpty()) {
             if (need > 0 && CALog.once("admin:need:none:" + need))
                 CALog.add("Administrators needed: " + limitText(need) + ". But none of your Auto colonies is governed by you, so Autopilot has nowhere to put an "
@@ -1344,7 +1355,10 @@ public class CAItems {
         }
         int idleOrComing = 0;
         for (AdminData a : Global.getSector().getCharacterData().getAdmins()) if (a.getMarket() == null) idleOrComing++;
-        if (idleOrComing >= (need > 0 ? Math.min(need, open.size()) : open.size())) return false;
+        if (idleOrComing >= (need > 0 ? Math.min(need, open.size()) : open.size())) {
+            if (need > 0) d.adminNeedSince = 0L;   // enough are idle or on the way
+            return false;
+        }
         int max = (int) Global.getSector().getPlayerStats().getAdminNumber().getModifiedValue();
         if (Global.getSector().getCharacterData().getAdmins().size() >= max) {
             if (need > 0 && CALog.once("admin:need:max:" + max))
@@ -1375,9 +1389,14 @@ public class CAItems {
             }
         }
         if (best == null) {
-            if (need > 0 && CALog.once("admin:need:" + Global.getSector().getClock().getMonth()))
-                CALog.add("Administrators needed: " + limitText(need) + ". None is for hire at a market that isn't hostile to you. "
-                        + "New ones appear in markets' comm directories over time; Autopilot hires one as soon as there is");
+            if (need <= 0) return false;
+            if (d.adminNeedSince == 0L) d.adminNeedSince = Global.getSector().getClock().getTimestamp();
+            float waited = Global.getSector().getClock().getElapsedDaysSince(d.adminNeedSince);
+            if (waited >= RECRUIT_DAYS) return recruitAdmin(d, s, open, need, waited);
+            if (CALog.once("admin:need:" + monthKey()))
+                CALog.add("Administrators needed: " + limitText(need) + ". None is for hire: the game only offers one at a market you dock at, "
+                        + "now and then. If none turns up in " + Math.max(1, Math.round(RECRUIT_DAYS - waited)) + " days, a recruiter finds one for "
+                        + Misc.getDGSCredits(RECRUITER_PRICE) + " more than a normal hire");
             return false;
         }
         if (bestNet <= 0f && need <= 0) {
@@ -1407,6 +1426,57 @@ public class CAItems {
             return true;
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "administrator hire failed", t);
+            return false;
+        }
+    }
+
+    /**
+     * 2.41.2: a recruiter finds an administrator when the colony limit has needed one for RECRUIT_DAYS and the game offered
+     * none (it only rolls for one when you dock at a market: 5% a visit, plus 5% per size over 3). A basic administrator, no
+     * skills, like the game's cheaper tier, for RECRUITER_PRICE on top of that tier's hiring bonus and the usual fee; arrives
+     * in 30 days like any remote hire. Past the monthly budget if need be, never below the credit reserve. Keeps going one a
+     * day until enough are on the way.
+     */
+    static boolean recruitAdmin(CAData d, CASettings s, List<MarketAPI> open, int need, float waited) {
+        int bonus = 5000;
+        try { bonus = Global.getSettings().getInt("adminHireTier0"); } catch (Throwable t) { }
+        float fee = CABudget.fee(s, HIRE_FEE), price = RECRUITER_PRICE + bonus;
+        if (CABuild.credits() - s.reserve < price + fee) {
+            if (CALog.once("admin:recruit:" + monthKey()))
+                CALog.add("Administrators needed: " + limitText(need) + ". A recruiter can find one for " + Misc.getDGSCredits(price + fee)
+                        + ", waiting for that much above your credit reserve");
+            return false;
+        }
+        PersonAPI p;
+        try {
+            com.fs.starfarer.api.campaign.FactionAPI indie = Global.getSector().getFaction(com.fs.starfarer.api.impl.campaign.ids.Factions.INDEPENDENT);
+            p = com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent.createAdmin(indie, 0, new java.util.Random());
+            p.setFaction(com.fs.starfarer.api.impl.campaign.ids.Factions.INDEPENDENT);
+            p.setPortraitSprite(com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent.pickPortraitPreferNonDuplicate(indie, p.getGender()));
+            p.setPostId(com.fs.starfarer.api.impl.campaign.ids.Ranks.POST_ADMINISTRATOR);
+        } catch (Throwable t) {
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "recruiting an administrator failed", t);
+            return false;
+        }
+        MarketAPI bestFor = open.get(0);
+        float bestWorth = -Float.MAX_VALUE;
+        for (MarketAPI m : open) {
+            float w = adminWorth(m, p);
+            if (w > bestWorth) { bestWorth = w; bestFor = m; }
+        }
+        float salary = Misc.getAdminSalary(p);
+        try {
+            Global.getSector().getCharacterData().addAdmin(p);
+            Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(price);
+            CABudget.charge(s, price, fee, salary);
+            d.adminTransit().put(p.getId(), Global.getSector().getClock().getTimestamp());
+            CALog.forget("admin:need:" + monthKey());
+            CALog.add("Hired administrator " + p.getNameString() + " through a recruiter for " + Misc.getDGSCredits(price)
+                    + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + ", salary " + Misc.getDGSCredits(salary) + "/month, for "
+                    + bestFor.getName() + ": " + limitText(need) + ", none on offer for " + Math.round(waited) + " days; arrives in 30 days");
+            return true;
+        } catch (Throwable t) {
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "recruited administrator hire failed", t);
             return false;
         }
     }
