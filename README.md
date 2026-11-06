@@ -22,6 +22,8 @@ This mod is currently working with most of the colony mods I could find on the m
 
 It's fine to add to an existing save. Don't remove it from a save that used it though, the Autopilot Storage tab lives on your markets.
 
+Got MagicLib (it has Version Checker built in) or a mod manager like TriOS? You'll get told when there's an update, from 2.42.3 on.
+
 ## Quick start
 
 1. Open a colony and hit the **Colony Autopilot** button.
