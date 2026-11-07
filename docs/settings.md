@@ -4,6 +4,10 @@ Settings live in the empire panel (Intel screen, **Colony Autopilot** filter, **
 
 Groups for mods you don't have don't show up.
 
+## Expansion style
+
+- **Expansion style** - Full expansion or Low profile. Your call, it's asked when you found your first colony. Full expansion builds whatever pays most and prices colony crises at their usual cost. Low profile keeps growing but stays under the radar: attention counts ten times as much, no AI cores above size 3, nothing that brings a Pather cell, no free ports, raids or sabotage. See [Low profile](low-profile.md).
+
 ## Budget and spending
 
 - **Budget type** - Automatic, Share of net income, or Fixed. Automatic (recommended) spends half of last month's net income plus 15% of your credits above the reserve each month.

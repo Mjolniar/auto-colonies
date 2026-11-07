@@ -56,8 +56,8 @@ public class CACrisis {
     /** Points between crises: the meter falls to 400/3 on average after one, and the next fires at 600. */
     static final float POINTS_PER_CRISIS = 600f - 400f / 3f;
 
-    /** Credits a month one point of monthly crisis progress costs (about 640). */
-    public static float pointCost() { return CRISIS_COST / POINTS_PER_CRISIS; }
+    /** Credits a month one point of monthly crisis progress costs (about 640; ten times that in Low profile, 2.43.0). */
+    public static float pointCost() { return CRISIS_COST / POINTS_PER_CRISIS * (CALowProfile.on() ? CALowProfile.PRICE_MULT : 1f); }
 
     public static HostileActivityEventIntel event() {
         try { return HostileActivityEventIntel.get(); } catch (Throwable t) { return null; }
@@ -417,7 +417,8 @@ public class CACrisis {
             if (d.colony(m.getId()).mode != CAData.Mode.AUTO || CAEngine.isOutpost(m)) continue;
             if (!CALog.once("inspect:" + m.getId() + ":" + HegemonyHostileActivityFactor.getInspectionAttempts())) continue;   // each inspection adds an attempt
             int fp = Math.round(CAItems.nextInspectionFP()), def = Math.round(CAItems.defenseFP(m));
-            HegemonyInspectionIntel.AntiInspectionOrders was = hi.getOrders(), now = orders(s.inspectionMode, CAItems.defended(m), was);
+            // Low profile never resists: resisting turns the Hegemony hostile (2.43.0)
+            HegemonyInspectionIntel.AntiInspectionOrders was = hi.getOrders(), now = orders(CALowProfile.on() ? 0 : s.inspectionMode, CAItems.defended(m), was);
             if (now != was) {
                 hi.setOrders(now);
                 CALog.add(m.getName() + ": a Hegemony AI inspection is coming; its defenses (about " + def + " fleet points) beat the "
@@ -491,7 +492,7 @@ public class CACrisis {
                 Misc.getRoundedValueMaxOneAfterDecimal(mult), "" + ha.getMaxMonthlyProgress());
         t.addPara("The next crisis is picked at 500 and fires at 600; after it the meter falls back to 0-400. A month with no progress "
                 + "empties it. Autopilot prices each point a month at about %s a month (a crisis every 467 points or so, held to cost %s).",
-                4f, gray, hl, Misc.getDGSCredits(pointCost()), Misc.getDGSCredits(CRISIS_COST));
+                4f, gray, hl, Misc.getDGSCredits(pointCost()), Misc.getDGSCredits(CRISIS_COST * (CALowProfile.on() ? CALowProfile.PRICE_MULT : 1f)));
         HostileActivityEventIntel.HAERandomEventData r = pending();
         if (r != null) {
             List<String> names = new ArrayList<String>();
@@ -502,6 +503,7 @@ public class CACrisis {
         float best = bestMilitaryMult();
         t.addPara(best >= 1f ? "No Patrol HQ, Military Base or High Command yet: one slows every crisis (x0.9, x0.7, x0.5)."
                 : "Your best military structure slows every crisis to x%s.", 4f, hl, Misc.getRoundedValueMaxOneAfterDecimal(best));
+        CALowProfile.render(t, s);   // 2.43.0
 
         CATheme.heading(t, "Where it comes from", 12f);
         boolean any = false;

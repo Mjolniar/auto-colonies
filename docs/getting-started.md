@@ -26,7 +26,7 @@ Both panels list their pages down the left side. In Settings, click a group to o
 
 ## Your first colony
 
-1. **Found the colony** like normal. When the founding dialog closes, it offers a **fast buildout** (more on that below). Say yes if you want it built up hands-off, or no to do it step by step.
+1. **Found the colony** like normal. When the founding dialog closes, it asks how you want to expand, **Full expansion** or **[Low profile](low-profile.md)**, then offers a **fast buildout** (more on that below). Say yes if you want it built up hands-off, or no to do it step by step.
 2. **Open its colony panel.** It opens on the Overview: size, stability, hazard, accessibility, industry slots, your credits and this month's budget.
 3. **Pick a goal.** Every colony starts on Balanced, and you can change it any time:
    - **Balanced** - a bit of everything.

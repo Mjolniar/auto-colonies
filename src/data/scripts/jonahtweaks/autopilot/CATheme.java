@@ -137,6 +137,8 @@ public final class CATheme {
             {"under siege,? ?", "SIEGE", true},
             {"siege over", "CLEAR", true},
             {"^capital: ", "CAPITAL", true},
+            {"^low profile: ", "QUIET", true},
+            {"expansion style", "QUIET", false},
             {"(^| )building ", "BUILD", true},
             {"(^| )upgrading to ", "UPGRADE", true},
             {"(^| )installed ", "INSTALL", true},

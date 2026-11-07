@@ -179,8 +179,9 @@ public class CAItems {
         if (placeItem(d, s, markets)) return;
         if (!s.disableStabilizers && s.allowRemovals && convertFuel(d, s, markets)) return;   // replaces a building, so only with Allow removals
         if (s.useAICores && placeCore(d, s, markets)) return;
-        if (s.useAICores && CAOmega.run(d, s, markets)) return;   // Omega Core Everywhere / Astral Ascension Renewed (2.38.0)
-        if (s.useAICores && CAPanopticon.run(d, s, markets)) return;   // Emergent Threats: IX Revival's Panopticon cores (2.39.3)
+        boolean quiet = CALowProfile.on();   // Low profile places no Omega or IX cores (2.43.0)
+        if (s.useAICores && !quiet && CAOmega.run(d, s, markets)) return;   // Omega Core Everywhere / Astral Ascension Renewed (2.38.0)
+        if (s.useAICores && !quiet && CAPanopticon.run(d, s, markets)) return;   // Emergent Threats: IX Revival's Panopticon cores (2.39.3)
         if (s.adminOptimal && (assignAdmin(d, markets) || moveAdmin(markets))) return;
         if (s.adminHiring) hireAdmin(d, s, markets);
         else if (adminsNeeded(d) > 0 && CALog.once("admin:need:off:" + adminsNeeded(d)))
@@ -226,9 +227,11 @@ public class CAItems {
             int minSize = CABrewery.minSize(data);   // Substance.Abuse's Recipe Book makes nothing below its recipe count
             if (minSize < 0) continue;
             boolean any = false;
+            int pather = CALowProfile.itemInterest(spec);
             for (MarketAPI m : markets) {
                 if (CAHypershunt.is(m) || m.getSize() < minSize) continue;   // hypershunt: no buildings allowed, so an extra slot or output is wasted
                 if (!CAMods.itemFits(spec.getId(), m)) continue;   // VIC's nanites: vanilla farmland and genetech only
+                if (CALowProfile.pathBlocked(m, pather)) continue;   // Low profile: never to a Pather cell's 7 interest (2.43.0)
                 CAData.Colony c = d.colony(m.getId());
                 for (Industry ind : m.getIndustries()) {
                     if (!targets.contains(ind.getId()) || ind.getSpecialItem() != null || !ind.isFunctional() || ind.isHidden()) continue;
@@ -338,6 +341,7 @@ public class CAItems {
                 if (old == null || !targets.contains(ind.getId()) || old.getId().equals(spec.getId()) || LAMP.equals(old.getId())) continue;
                 if (!ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId()) || ind.getSpec().hasTag("consumes")) continue;
                 try { if (!effect.getUnmetRequirements(ind).isEmpty()) continue; } catch (Throwable t) { continue; }
+                if (CALowProfile.pathBlocked(m, CALowProfile.itemInterest(spec) - CALowProfile.itemInterest(old.getId()))) continue;
                 float now = itemScore(old.getId(), m, c.profile, ind), then = itemScore(spec.getId(), m, c.profile, ind);
                 if (better(then, now) && then - now > bestGain) { bestGain = then - now; best = ind; bestM = m; }
             }
@@ -471,6 +475,7 @@ public class CAItems {
         for (Idle it : idleItems()) {
             if (!it.targets.contains(p.id) || !CAMods.itemFits(it.spec.getId(), m)) continue;
             if (wouldPollute(it.spec.getId(), m, inst)) continue;   // never goes in there, so no reason to build for it
+            if (CALowProfile.pathBlocked(m, CALowProfile.itemInterest(it.spec))) continue;   // nor past Low profile's Pather line
             try { if (!it.effect.getUnmetRequirements(inst).isEmpty()) continue; } catch (Throwable t) { continue; }
             float v = itemWorth(it, m, p, prof);
             if (v > bestV) { bestV = v; best = it; }
@@ -752,7 +757,8 @@ public class CAItems {
      * for m, few enough that its Pather interest falls under 7.
      */
     public static int coreLimit(CASettings s, MarketAPI m, String noInspections) {
-        int lim = hegemonyLimit(s, m, noInspections), relief = pathRelief(m);
+        int lim = hegemonyLimit(s, m, noInspections), relief = pathRelief(m), low = CALowProfile.coreLimit(m);
+        if (low >= 0) lim = Math.min(lim, low);   // Low profile: none above size 3, and under the Pather line (2.43.0)
         return relief >= 0 ? Math.min(lim, relief) : lim;
     }
 
@@ -770,6 +776,8 @@ public class CAItems {
     /** Why m's core limit is what it is, for the panels and the log. */
     public static String limitWhy(CASettings s, MarketAPI m, String none, int lim) {
         if (lim == pathRelief(m)) return "limit " + lim + ": a Pather attack is coming for it, so its Pather interest goes under 7 and its cell can dissolve";
+        String low = CALowProfile.limitWhy(m, lim);
+        if (low != null) return low;
         if (lim == 0) return "limit 0: above size " + HegemonyAICoresActivityCause.IGNORE_COLONY_THRESHOLD + " every core adds to the Hegemony's crisis (AI cores: Small colonies only)";
         if (lim != Integer.MAX_VALUE) return "limit " + lim + ", which the Hegemony never inspects";
         if (none != null) return "no limit: " + none;

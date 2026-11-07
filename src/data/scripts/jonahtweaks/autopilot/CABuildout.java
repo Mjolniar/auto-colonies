@@ -70,8 +70,26 @@ public class CABuildout {
         public void init(InteractionDialogAPI dialog) {
             this.dialog = dialog;
             dialog.setPromptText("Colony Autopilot");
+            // 2.43.0: first the expansion style (CALowProfile), then the buildout
             TextPanelAPI t = dialog.getTextPanel();
-            t.addPara("Colony Autopilot: " + m.getName() + " is your first colony. A new colony usually loses money for a while.");
+            t.addPara("Colony Autopilot: " + m.getName() + " is your first colony. First, how should your colonies expand?");
+            t.addPara("Full expansion builds whatever pays most. AI cores, rich industries and free ports draw the sector's attention "
+                    + "(Hegemony inspections, Pather cells, Tri-Tachyon's mercenaries, the Diktat over fuel, the Knights of Ludd), and "
+                    + "Autopilot weighs each against what it earns.");
+            t.addPara("Low profile keeps your colonies growing but stays under the radar: no AI cores above size 3, nothing that brings a "
+                    + "Pather cell, no free ports, no raids or sabotage, and attention counts ten times as much. It earns less. Pirates and "
+                    + "the Persean League count colony size, so nothing avoids them; Low profile defends against them sooner.");
+            t.addPara("You can change it any time: Colony Autopilot intel, Settings, Expansion style.", Misc.getGrayColor());
+            OptionPanelAPI o = dialog.getOptionPanel();
+            o.addOption("Full expansion", STYLE_FULL);
+            o.addOption("Low profile", STYLE_LOW);
+        }
+
+        static final String STYLE_FULL = "style:full", STYLE_LOW = "style:low";
+
+        void offerBuildout() {
+            TextPanelAPI t = dialog.getTextPanel();
+            t.addPara("A new colony usually loses money for a while.");
             t.addPara("Fast buildout puts it in Auto and spends everything you have above a credit floor on the buildings that pay "
                     + "back fastest, until the colony has earned money for 30 days in a row. Then it stays in Auto with the normal "
                     + "monthly budget. Convenience fees apply. You can stop it, or change the floor, in the colony's Colony Autopilot panel.");
@@ -83,6 +101,15 @@ public class CABuildout {
         }
 
         public void optionSelected(String text, Object data) {
+            if (STYLE_FULL.equals(data) || STYLE_LOW.equals(data)) {
+                boolean low = STYLE_LOW.equals(data);
+                CALowProfile.set(CAData.settings(), low, "your choice");
+                CALog.add(m.getName() + ": expansion style " + (low ? "Low profile" : "Full expansion")
+                        + "; change it under Settings, Expansion style", true);
+                dialog.getOptionPanel().clearOptions();
+                offerBuildout();
+                return;
+            }
             if (data instanceof Float) start(m, (Float) data);
             else CALog.add(m.getName() + ": fast buildout declined; the colony panel can start one while it loses money", true);
             dialog.dismiss();

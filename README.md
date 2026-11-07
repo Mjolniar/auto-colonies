@@ -37,6 +37,7 @@ That's really it. The [Getting started](docs/getting-started.md) guide walks thr
 
 - Builds and upgrades your colonies on its own, within a budget you control, following a plan for each planet.
 - Places your colony items and AI cores where they do the most, and keeps colonies under the Hegemony's inspection radar.
+- Has a **Low profile** mode if you'd rather not deal with colony crises: it keeps growing but stays clear of what draws inspections, Pather cells, mercenaries and the rest.
 - Turns one colony into your capital: production deliveries and your loot go there, and once you're making money it builds it up into a place to buy and sell.
 - Hires and places administrators, handles hazard pay, free ports and other policies.
 - Reacts to threats: plans for security when a colony is in danger, only builds defenses during a siege, and prices colony crises into everything.
@@ -49,6 +50,7 @@ That's really it. The [Getting started](docs/getting-started.md) guide walks thr
 
 - **[Getting started](docs/getting-started.md)** - install, the two panels, your first colony, and what to do if it isn't building anything.
 - **[How it builds](docs/how-it-builds.md)** - goals, plans, how it picks what to build, and how to keep control.
+- **[Low profile](docs/low-profile.md)** - expanding while drawing as little attention as possible, and what that costs.
 - **[Your capital](docs/capital.md)** - the home port: where your production and stuff goes, and how it becomes a place to trade.
 - **[Money, surplus and the endgame](docs/money.md)** - the budget, the focus world, spending freely, the endgame economy and autonomy.
 - **[Items, AI cores and administrators](docs/items-and-cores.md)** - Autopilot Storage, where things go, inspections and governors.
