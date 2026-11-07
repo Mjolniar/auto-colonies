@@ -706,7 +706,11 @@ public class CAResearch {
      * to that colony's Autopilot Storage for a fee and travel time, and the tech starts once it has all arrived. Nothing
      * moves unless the whole tech is covered. Returns what it did, or null if nothing.
      */
+    /** Set by topUp: some of what the tech needs is on its way to the facility (shipped now or earlier). */
+    static boolean topUpPending = false;
+
     static String topUp(Object mgr, Tech t) throws Exception {
+        topUpPending = false;
         if (!covered(mgr, t)) return null;
         SubmarketAPI tabSm = facilityTab();
         if (tabSm == null) return null;
@@ -759,6 +763,7 @@ public class CAResearch {
                 if (k > 0 && ship(fleet.getCargo(), fleet, "your fleet's cargo", f, id, k)) { need -= k; shipped += k; }
             }
         }
+        topUpPending = shipped + coming > 0;
         if (moved.isEmpty() && shipped == 0 && coming == 0) return null;
         String msg = (moved.isEmpty() ? "" : "moved " + CAContracts.join(moved) + " into " + f.getName() + "'s Research Facility tab"
                 + (pulled.isEmpty() ? "" : " (taken out of " + CAContracts.join(pulled) + ")"))
@@ -871,13 +876,28 @@ public class CAResearch {
             for (Tech t : all) if (t.needsItems && covered(mgr, t)) covered.add(t.id);
             Choice c = choose(all, have, waitedLong, CABudget.upkeepCap(s) - s.upkeepAdded, fac, covered);
             Tech waiting = c.waiting;
-            for (Tech t : c.tries) {
+            // 2.42.4: one tech at a time. Before, each pass went down the list: every tech short of databanks at the facility
+            // had them shipped over ("starts once they arrive"), five or six at once on screen, and then a cheap filler
+            // started and used the databanks just moved for the first. Now the tech whose databanks are on their way goes
+            // first, and once a tech's databanks are shipped, nothing else is shipped or started until they've arrived
+            List<Tech> order = new ArrayList<Tech>(c.tries);
+            Tech staged = null;
+            if (d.researchStaging != null) for (Tech t : order) if (t.id.equals(d.researchStaging)) { staged = t; break; }
+            if (staged != null) { order.remove(staged); order.add(0, staged); }
+            else d.researchStaging = null;   // gone from the list (researched, locked): nothing is held for it
+            for (Tech t : order) {
                 String who = c.pastWait.contains(t) ? "Auto (" + waiting.name + " has waited " + (int) WAIT_DAYS + " days for databanks)"
                         : c.filler.contains(t) ? "Auto (no tech pays for itself within a year yet, so the best of the rest keeps research going)" : "Auto";
+                topUpPending = false;
                 String failed = start(t, who);
                 if (failed == null) {
                     CABudget.charge(s, 0f, 0f, t.tier * TIER_UPKEEP * fac);
                     d.researchWaitSince = 0L;
+                    d.researchStaging = null;
+                    return;
+                }
+                if (topUpPending) {   // its databanks are on the way (topUp said so on screen once): wait for them, nothing else
+                    d.researchStaging = t.id;
                     return;
                 }
                 if (CALog.once("research:fail:" + t.id + ":" + failed)) CALog.add("Research: Auto couldn't start " + t.name + ": " + failed);

@@ -100,6 +100,7 @@ public class CAData {
     public Map<String, Long> autonomous;
     public long lastAutonomyChange;
     public long researchWaitSince;   // when Auto research began holding databanks for a plan tech short of them (0: not waiting)
+    public String researchStaging;   // 2.42.4: the tech whose databanks are on their way to the facility; nothing else starts meanwhile
     public Map<String, Long> autonomous() { if (autonomous == null) autonomous = new HashMap<String, Long>(); return autonomous; }
     // war fleets (CAWar): markets that sent raids, invasions or blockades at your colonies, to when they were last seen doing it
     public Map<String, Long> attackers;
