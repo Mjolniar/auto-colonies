@@ -2,6 +2,17 @@
 
 Every version, newest first. If you're wondering why the first version on here is 2.1.0: this started as **Jonah Tweaks**, a personal mod of little tweaks for my own games (bigger battle size, sticky combat autopilot, that kind of thing), and Colony Autopilot grew inside it until it became the main thing. 2.1.0 is when it went up on GitHub, and 2.6.0 was the first version with a downloadable release. The balance tweaks moved out into their own mod in 2.7.0, so this one only manages colonies.
 
+## 2.45.1 - 2026-11-06
+
+A bug-fix release. I had a bunch of agents go through the whole mod and my own logs while planning 3.0, and these turned up first:
+
+- **Shipping was charged twice.** Every item or AI core Autopilot shipped between colonies cost double what the log said. Recruiting agents had the same bug. Both pay once now.
+- **One error could skip the rest of the day**, including the step that keeps colonies off 0 stability. Every colony and every build now gets its own error guard, and the 0-stability and dead-weight steps run even if something before them fails.
+- **Colonies with something under construction were re-planned every single day.** Now it's weekly like everyone else, plus right away the day the build finishes. Saves a lot of work every day, and upgrades during construction may start up to a week later.
+- **A build or upgrade that didn't actually start was still paid for.** Now nothing's charged unless it took, and a building that got half-added when something broke comes back off.
+- **Weekly stuff stalled after loading a save** without restarting the game: calibration, storage logistics, the market check, the mod watch and augment re-plans sat out for as long as your previous session ran. Fixed.
+- **The Capital row in Settings didn't work.** Clicking it bumped your per-project cap by 500k instead. It picks the capital now (the buttons on the colony screen always worked).
+
 ## 2.45.0 - 2026-11-06
 
 - **Oddisz's mods are supported.** Oddisz stopped by the thread, so here's support for the colony side of [his mods](https://fractalsoftworks.com/forum/index.php?topic=36175.0), read straight from their source:

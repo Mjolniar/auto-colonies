@@ -464,7 +464,8 @@ public class CASpies {
             return;
         }
         if (CABuild.credits() - total < s.reserve) return;
-        Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(total);
+        // the hire cost here, the fee in CABudget.charge (2.45.1: the fee was taken twice)
+        Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(HIRE_FEE);
         CABudget.charge(s, HIRE_FEE, fee, 0f);
         d.spyRecruits().put(role, Global.getSector().getClock().getTimestamp());
         CALog.forget("spy:max"); CALog.forget("spy:yours");
