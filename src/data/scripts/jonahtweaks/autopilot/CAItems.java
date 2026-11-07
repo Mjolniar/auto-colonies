@@ -235,7 +235,7 @@ public class CAItems {
                 CAData.Colony c = d.colony(m.getId());
                 for (Industry ind : m.getIndustries()) {
                     if (!targets.contains(ind.getId()) || ind.getSpecialItem() != null || !ind.isFunctional() || ind.isHidden()) continue;
-                    if (c.locks.contains(ind.getId())) continue;
+                    if (c.locks.contains(ind.getId()) || CAMods.leftToYou(ind.getId()) != null) continue;   // left to you: never touched (2.45.0)
                     try {
                         if (!effect.getUnmetRequirements(ind).isEmpty()) continue;
                     } catch (Throwable t) { CADiagnostics.quarantine(ind.getId(), "item requirement check", t); continue; }
@@ -340,6 +340,7 @@ public class CAItems {
                 SpecialItemData old = ind.getSpecialItem();
                 if (old == null || !targets.contains(ind.getId()) || old.getId().equals(spec.getId()) || LAMP.equals(old.getId())) continue;
                 if (!ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId()) || ind.getSpec().hasTag("consumes")) continue;
+                if (CAMods.leftToYou(ind.getId()) != null) continue;   // left to you: its item stays (2.45.0)
                 try { if (!effect.getUnmetRequirements(ind).isEmpty()) continue; } catch (Throwable t) { continue; }
                 if (CALowProfile.pathBlocked(m, CALowProfile.itemInterest(spec) - CALowProfile.itemInterest(old.getId()))) continue;
                 float now = itemScore(old.getId(), m, c.profile, ind), then = itemScore(spec.getId(), m, c.profile, ind);
@@ -399,6 +400,7 @@ public class CAItems {
         CAData.Colony c = CAData.get().colony(m.getId());
         for (Industry ind : m.getIndustries()) {
             if (!it.targets.contains(ind.getId()) || ind.getSpecialItem() != null || !ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId())) continue;
+            if (CAMods.leftToYou(ind.getId()) != null) continue;   // left to you (2.45.0)
             if (wouldPollute(it.spec.getId(), m, ind)) continue;   // a forge on a habitable world is no home for a polluting item
             try { if (it.effect.getUnmetRequirements(ind).isEmpty()) return ind; } catch (Throwable ignored) { }
         }

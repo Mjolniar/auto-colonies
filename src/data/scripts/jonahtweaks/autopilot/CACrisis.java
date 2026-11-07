@@ -504,6 +504,7 @@ public class CACrisis {
         t.addPara(best >= 1f ? "No Patrol HQ, Military Base or High Command yet: one slows every crisis (x0.9, x0.7, x0.5)."
                 : "Your best military structure slows every crisis to x%s.", 4f, hl, Misc.getRoundedValueMaxOneAfterDecimal(best));
         CALowProfile.render(t, s);   // 2.43.0
+        CAOddisz.render(t);   // Sol Renewed's own crisis, when it's running (2.45.0)
 
         CATheme.heading(t, "Where it comes from", 12f);
         boolean any = false;

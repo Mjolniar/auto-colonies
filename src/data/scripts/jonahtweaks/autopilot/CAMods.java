@@ -361,10 +361,11 @@ public class CAMods {
 
     // ---------------- engine hooks ----------------
 
-    public static boolean has(String id) { return vicHas(id) || roiderHas(id) || yunruHas(id); }
+    public static boolean has(String id) { return vicHas(id) || roiderHas(id) || yunruHas(id) || CAOddisz.has(id); }
 
     /** Effects of a building handled here; false when it isn't worth building at this colony. */
     public static boolean apply(MarketAPI m, String id, CAEngine.Pick p, Map<String, Integer> deficit) {
+        if (CAOddisz.has(id)) return CAOddisz.apply(m, id, p, deficit);   // Cloning (2.45.0)
         if (vicHas(id)) return vicApply(m, id, p);
         if (roiderHas(id)) return roiderApply(m, id, p, deficit);
         if (id.equals(DRYDOCK)) return drydockApply(m, p, deficit);
@@ -390,6 +391,9 @@ public class CAMods {
         LEFT.put("NSI_expertDockworks", "it takes a nanoforge of its own for fleet s-mods, a military choice");
         LEFT.put("roider_nomadBase", "only Roider nomads build it");
         LEFT.put(BAZAAR, "it's a market for you to trade at; it does nothing for the colony, so Autopilot builds it only at your capital (2.42.0)");
+        // Reverse Engineered Private Arsenal (2.45.0): it only works on gear you put in it, and taking it down deletes both of
+        // its markets with everything in them, so it's never built or taken down, and its core and item stay where you put them
+        for (String h : CAOddisz.HUB) LEFT.put(h, "it reverse-engineers gear you feed it; taking it down deletes its markets and everything in them, so its core and item stay as you set them");
     }
 
     /** Why Autopilot leaves this building to you, or null. */

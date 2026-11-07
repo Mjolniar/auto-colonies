@@ -88,7 +88,7 @@ public class CAPrune {
         if (!ind.isIndustry() || ind.isHidden() || ind.isBuilding() || ind.isUpgrading() || ind.isImproved() || !ind.canShutDown()) return null;
         IndustrySpecAPI spec = ind.getSpec();
         if (spec.hasTag("population") || spec.hasTag("station") || spec.hasTag("military") || spec.hasTag("patrol") || spec.hasTag("command")
-                || col.locks.contains(id)) return null;
+                || col.locks.contains(id) || CAMods.leftToYou(id) != null) return null;   // left to you: never taken down (2.45.0)
         if (CAEndgame.keepsPlanBonus(m, plan, id) || CAContracts.feeds(ind) != null) return null;
         if (plan != null) for (CAPlan.Step st : plan.steps) if (id.equals(st.id) || CAPlan.inChainBelow(id, st.id)) return null;
         if (CAOverLimit.stabilityOf(m, ind) > 0f) return null;

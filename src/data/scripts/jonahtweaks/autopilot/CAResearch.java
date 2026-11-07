@@ -242,7 +242,8 @@ public class CAResearch {
             if (only != null && m != only) continue;
             CAData.Colony c = CAData.get().colony(m.getId());
             for (Industry ind : m.getIndustries()) {
-                if (ind.getSpecialItem() == null || !id.equals(ind.getSpecialItem().getId()) || c.locks.contains(ind.getId())) continue;
+                if (ind.getSpecialItem() == null || !id.equals(ind.getSpecialItem().getId()) || c.locks.contains(ind.getId())
+                        || CAMods.leftToYou(ind.getId()) != null) continue;   // left to you: its item stays (2.45.0)
                 float sc;
                 try { sc = CAItems.itemScore(id, m, c.profile, ind); } catch (Throwable t) { sc = 0f; }
                 spots.add(new Object[]{m, ind, sc});

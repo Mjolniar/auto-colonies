@@ -255,6 +255,7 @@ public class CAEngine {
                 float cramped = CAGrand.penalty(m, p.upkeep);
                 if (cramped > 0f) { p.fx[0] -= cramped; p.lines.add("Past Grand.Colonies' building limit: all upkeep here rises, about " + credits(cramped) + " per month"); }
                 CALowProfile.score(m, inst, null, p);   // Low profile: the Pather line and the attention it draws (2.43.0)
+                CAOddisz.score(m, inst, p);   // Sol Renewed: an industry in Sol feeds its crisis meter for good (2.45.0)
                 if (!finish(m, p, profile, minStability, plan)) continue;
                 if (inst.isIndustry() && slotsFree <= 0) r.noSlot(p);
                 else r.picks.add(p);
@@ -301,6 +302,7 @@ public class CAEngine {
                     CASynergies.score(syn, p);
                     upkeep(m, upSpec, ind.getSpec(), p);
                     CALowProfile.score(m, upInst, ind, p);
+                    CAOddisz.score(m, upInst, p);   // an upgrade's cost adds to Sol's meter too (2.45.0)
                     if (!finish(m, p, profile, minStability, plan)) continue;
                     if (needsSlot) r.noSlot(p);
                     else r.picks.add(p);
