@@ -79,6 +79,12 @@ public class CACompat {
         ENTRIES.add(new Entry("US", "Unknown Skies", "3.0.3", NONE, a("US_fluorescent"), NONE, NONE, null));
         ENTRIES.add(new Entry("niko_morePlanetaryConditions", "What We Left Behind", "4.5.3", NONE, a("MPC_fracturedWorld"), NONE, NONE, null));
         ENTRIES.add(new Entry("Planetace_AstralAscension", "Astral Ascension", "1.2.8", NONE, NONE, NONE, NONE, null));
+        // 2.45.0: Oddisz's colony mods (CAOddisz); the pack carries Cloning and the Private Arsenal under the same ids
+        ENTRIES.add(new Entry(CAOddisz.CLONING_MOD, "Cloning", "0.2.1", CAOddisz.CLONING, NONE, NONE, NONE, null));
+        ENTRIES.add(new Entry(CAOddisz.ARSENAL_MOD, "Reverse Engineered Private Arsenal", "1.3.1", CAOddisz.HUB, NONE, NONE, NONE, null));
+        ENTRIES.add(new Entry(CAOddisz.PACK, "Coalesced Little Mods", "0.4.0", CAOddisz.packIndustries(), NONE, NONE, NONE, null));
+        ENTRIES.add(new Entry(CAOddisz.CURVES_MOD, "Toolbox Economy Curves", "1.0.2", NONE, NONE, NONE, NONE, null));
+        ENTRIES.add(new Entry(CAOddisz.SOL_MOD, "Sol Renewed", "1.0.1", NONE, NONE, NONE, NONE, () -> CAOddisz.solLink()));
     }
 
     static final Map<String, Entry> BY_MOD = new HashMap<String, Entry>();

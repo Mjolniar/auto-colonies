@@ -188,6 +188,7 @@ public class CAOverLimit {
             String id = ind.getId();
             if (!ind.isIndustry() || ind.isHidden() || ind.isBuilding() || ind.isUpgrading() || ind.isImproved() || !ind.canShutDown()) continue;
             if (ind.getSpec().hasTag("population") || ind.getSpec().hasTag("station") || col.locks.contains(id)) continue;
+            if (CAMods.leftToYou(id) != null) continue;   // you built it, Autopilot never does: it stays (2.45.0)
             // one that holds up the colony's stability by 5 or more: taking it down wouldn't lift the colony at all (2.44.1)
             float stab = stabilityOf(m, ind);
             if (stab >= PENALTY) continue;

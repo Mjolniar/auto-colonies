@@ -164,6 +164,17 @@ Their resource forges and Biolab get measured and built like anything else. Head
 
 Its colony items are placed from what they actually do: the Dimensional Nanoforge, Servosync Pump, Modular Purifier and Garrison Transmitter. The Rice Cooker, Dimensional Stove and Access Router are never installed, since they cost more than they add or do nothing.
 
+## Oddisz's mods
+
+[Oddisz's mod list](https://fractalsoftworks.com/forum/index.php?topic=36175.0) (Omega Core Everywhere and Astral Ascension Renewed are covered [above](#omega-core-everywhere-and-astral-ascension-renewed))
+
+- **[Cloning](https://fractalsoftworks.com/forum/index.php?topic=35130.0)** - Clone Vat Experiments, the Cloning Industry and the Megafactory get built when the growth is worth it, valued by how much faster the colony grows on top of its own growth, using the mod's own numbers (and your LunaLib settings for them). Each one costs as much stability as the colony's size, and that goes up as it grows, so it only gets built where there's room for the penalty to grow a size, and never at a colony that's already at its size limit. If stability drops too far later, it gets taken down like anything else costing too much.
+- **[Reverse Engineered Private Arsenal](https://fractalsoftworks.com/forum/index.php?topic=35627.0)** - left to you. The Reverse Engineering Hub only works on gear you feed it, and taking it down deletes its markets and everything in them, so the manager never builds it, never upgrades it, never takes it down, and never moves the AI core or Drone Replicator you put in it.
+- **[Toolbox Economy Curves](https://fractalsoftworks.com/forum/index.php?topic=36178.0)** - nothing needed. It reshapes Theory of Toolbox through the same numbers the manager reads live, so whatever curve you pick is what it plans with.
+- **[Sol Renewed](https://fractalsoftworks.com/forum/index.php?topic=35983.0)** - Sol's own crisis (Discovering the Past) grows every month from each colony and each industry you have in Sol, never goes down, and its waves raid and saturation-bomb colonies there. Any industry in Sol is priced for what it adds to that meter for good, the Crises page shows the meter, and if you turn the crisis off in LunaLib the price goes away.
+- **[Coalesced Little Mods](https://github.com/andrzejsokolowski/starsector-coalesced-little-mods)** - the pack uses the same buildings as Cloning and the Private Arsenal, so it gets the same handling, with the pack's own LunaLib settings.
+- **Checked, nothing needed**: [Gambling Den](https://fractalsoftworks.com/forum/index.php?topic=35993.0), [Extra System Reloaded - Oddisz Edition](https://fractalsoftworks.com/forum/index.php?topic=36143.0), [Hullmods - Renewed](https://fractalsoftworks.com/forum/index.php?topic=35619.0), [Intel Renewed](https://fractalsoftworks.com/forum/index.php?topic=35978.0) (if you hide the Colony Autopilot intel there, it keeps running, you just won't see it), [StopBloatingMe](https://fractalsoftworks.com/forum/index.php?topic=35850.0), [StopStackingMe](https://fractalsoftworks.com/forum/index.php?topic=35952.0), [StarterPack](https://fractalsoftworks.com/forum/index.php?topic=35856.0) and [Discord Rich Presence](https://fractalsoftworks.com/forum/index.php?topic=35392.0).
+
 ## Jonah's Auto Outfitting
 
 [GitHub](https://github.com/Mjolniar/jonahs-auto-outfitting)

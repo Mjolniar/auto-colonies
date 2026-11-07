@@ -347,7 +347,7 @@ public class CALowProfile {
             int add = itemInterest(it.getId());
             if (add <= 0) continue;
             items += add;
-            if (c.locks.contains(ind.getId()) || ind.getSpec().hasTag("consumes")) continue;
+            if (c.locks.contains(ind.getId()) || ind.getSpec().hasTag("consumes") || CAMods.leftToYou(ind.getId()) != null) continue;
             float per = Math.max(0f, CAItems.itemScore(it.getId(), m, c.profile, ind)) / add;
             if (per < worstPer) { worstPer = per; worst = ind; }
         }

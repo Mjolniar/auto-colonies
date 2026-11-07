@@ -2,6 +2,15 @@
 
 Every version, newest first. If you're wondering why the first version on here is 2.1.0: this started as **Jonah Tweaks**, a personal mod of little tweaks for my own games (bigger battle size, sticky combat autopilot, that kind of thing), and Colony Autopilot grew inside it until it became the main thing. 2.1.0 is when it went up on GitHub, and 2.6.0 was the first version with a downloadable release. The balance tweaks moved out into their own mod in 2.7.0, so this one only manages colonies.
 
+## 2.45.0 - 2026-11-06
+
+- **Oddisz's mods are supported.** Oddisz stopped by the thread, so here's support for the colony side of [his mods](https://fractalsoftworks.com/forum/index.php?topic=36175.0), read straight from their source:
+  - **Cloning**: the three cloning industries get built when faster growth is worth it, valued against how fast the colony grows on its own and using your LunaLib numbers for them. They cost stability equal to the colony's size, and that grows with it, so it only builds one where there's room for that to grow a size, and never at a colony that's already maxed out.
+  - **Reverse Engineered Private Arsenal**: left to you. The hub only works on gear you feed it and taking it down wipes its markets, so the manager never builds, upgrades or takes it down, and never touches the core or Drone Replicator you put in it.
+  - **Sol Renewed**: Sol has its own crisis that grows every month from your colonies and industries there and never goes down, with waves that raid and saturation-bomb. Industries in Sol are priced for what they add to it, and the Crises page shows the meter.
+  - **Toolbox Economy Curves** needed nothing, the manager already plans with whatever curve you pick. **Coalesced Little Mods** gets the same handling as the standalone Cloning and Private Arsenal. The rest of his list (Gambling Den, Extra System Reloaded, Hullmods - Renewed, Intel Renewed, StopBloatingMe, StopStackingMe, StarterPack, Discord Rich Presence) checked out fine as is.
+- Also: the over-limit cleanup and the new dead-weight cleanup from 2.44.1 never take down a building that's left to you (a Spy Bureau, a Bazaar, the Reverse Engineering Hub and so on), since you built those yourself.
+
 ## 2.44.1 - 2026-11-06
 
 - **It cleans up the extra industries it builds.** Zenemosrae ended up with 5 industries on 3 slots and Ming Adi with 4 on 3, and it was the manager that did it. Ashes of the Domain lets a structure upgrade into an industry along more than one path (Biolab into Grey Industries, Junkyard Forge into Scrapyard, Trade Outpost into Commerce), and the game only counts the vanilla path against your slots while the upgrade is under way. So the manager thought it had room and started three of them in one go. Now upgrades into industries count against the limit the whole time they're under way, everywhere it checks for a free slot.
