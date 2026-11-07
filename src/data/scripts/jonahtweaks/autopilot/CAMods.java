@@ -110,13 +110,26 @@ public class CAMods {
             if (b != null && !(com.equals("ore") && c.getId().startsWith("rare_ore")) && (best == null || b > best)) best = b;
         }
         if (m.getLocationInHyperspace() == null) return best;
+        // Roider takes a void deposit only when it beats the colony's own, or -1 when there's none, so sparse or trace roids
+        // alone mine nothing (DivesSupplyInteractor.getMiningBonus; 2.43.1, was taken at -1 too)
+        int beat = best == null ? -1 : best;
         for (StarSystemAPI s : Global.getSector().getStarSystems()) {
             if (Misc.getDistanceLY(s.getLocation(), m.getLocationInHyperspace()) > range) continue;
             Object v = s.getMemoryWithoutUpdate().get("$roider_voidResource_" + com);
             Integer b = v == null ? null : bonus(com, String.valueOf(v));
-            if (b != null && (best == null || b > best)) best = b;
+            if (b != null && b > beat) { best = b; beat = b; }
         }
         return best;
+    }
+
+    /**
+     * Roider's own supply lines for one mined commodity, summed: base + deposit, -1 on a Psychoactive world; null when its
+     * miners take none of it. The game's layer on top (the building's supply bonus, a shortage) isn't in it (2.43.1, for
+     * CAModWatch's Roider check).
+     */
+    static Integer minedLines(MarketAPI m, String com, float range) {
+        Integer b = bestBonus(m, com, range);
+        return b == null ? null : base(com) + b + (m.hasCondition("US_mind") ? -1 : 0);
     }
 
     static final String CHARTER = "roider_charter";

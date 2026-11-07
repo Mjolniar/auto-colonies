@@ -62,11 +62,26 @@ public class CAModWatch {
                 // a line when it changes (and the first time each session), not ten identical lines a week (2.39.0)
                 if (line.equals(logged.get(mod[0]))) continue;
                 logged.put(mod[0], line);
-                if ("OK".equals(o.optString("verdict"))) CADiagnostics.LOG.info(line); else CADiagnostics.LOG.warn(line);
+                // a warning says what it is (2.43.1): the report holds only the latest week, so a line that said "1 warnings"
+                // and nothing else was gone by the time anyone looked
+                if ("OK".equals(o.optString("verdict"))) CADiagnostics.LOG.info(line); else CADiagnostics.LOG.warn(line + problems(o));
             } catch (Throwable t) {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "mod watch for " + mod[1] + " failed", t);
             }
         }
+    }
+
+    /** The WARN and FAIL checks of one mod's watch, for its log line. */
+    static String problems(JSONObject o) {
+        StringBuilder b = new StringBuilder();
+        JSONArray arr = o.optJSONArray("checks");
+        for (int i = 0; arr != null && i < arr.length(); i++) {
+            JSONObject c = arr.optJSONObject(i);
+            if (c == null) continue;
+            String r = c.optString("result");
+            if (r.equals("WARN") || r.equals("FAIL")) b.append(" | ").append(r).append(": ").append(c.optString("text"));
+        }
+        return b.toString();
     }
 
     // ---------------- one mod ----------------
@@ -243,46 +258,70 @@ public class CAModWatch {
         }
     }
 
+    /**
+     * Roider's Dives and Union HQ: Roider's own supply lines for each mined commodity (base, deposit, the -1 on a
+     * Psychoactive world) against Autopilot's copy of its formula (CAMods.minedLines), which is what drifts when Roider
+     * rebalances. What the game adds on top isn't Roider's and is only reported: the building's supply bonus (AI core,
+     * administrator, improvement, Charter) goes on every output with a positive base or deposit line, even one that nets
+     * to 0, and a heavy machinery shortage comes off each (BaseIndustry.supply, applyDeficitToProduction).
+     * 2.43.1: before, the whole output was checked against the formula with only an AI core added, so Wind's Industrial
+     * Planning administrator (+1 ore, +1 organics, +1 transplutonic ore from abundant roids that net to 0) read as 3 units
+     * off, and the warning came and went with Wind's heavy machinery shortage.
+     */
     static void roider(List<MarketAPI> mine, Checks ch) {
         for (MarketAPI m : mine) {
             for (String id : new String[]{"roider_dives", "roider_union_hq"}) {
                 Industry ind = m.getIndustry(id);
                 if (ind == null || !ind.isFunctional()) continue;
-                int total = 0;
-                boolean oce = false;
-                Map<String, Integer> real = new LinkedHashMap<String, Integer>();
-                for (MutableCommodityQuantity q : ind.getAllSupply()) {
-                    if (q.getCommodityId().equals("crew")) continue;
-                    int u = Math.max(0, q.getQuantity().getModifiedInt());
-                    total += u;
-                    if (u > 0) real.put(q.getCommodityId(), u);
-                    if (q.getQuantity().getMultMods().containsKey("oce_supply") || q.getQuantity().getFlatMods().containsKey("oce_supply")) oce = true;
-                }
                 float range = id.equals("roider_dives") ? CAMods.divesRange() + (CAMods.charter(m) ? CAMods.charterRange() : 0f)
                         : CAMods.hqRange() + (CAMods.charter(m) ? CAMods.charterRange() : 0f);
-                // a heavy machinery shortage comes off every mined output (2.39.0): checked against what's left after it
-                int need = id.equals("roider_dives") ? 1 : Math.max(1, m.getSize() - 2), shortBy = 0;
-                try { shortBy = Math.min(need, Math.max(0, m.getCommodityData("heavy_machinery").getDeficitQuantity())); }
-                catch (Throwable ignored) { }
-                // an Alpha or Omega core adds 1 to each output, and Omega Core Everywhere's Omega doubles it (2.39.0: Umuzi's
-                // Union HQ mined 36, (14 + 4) x 2, against a formula that left the core out)
-                String core = ind.getAICoreId();
-                int plus = "alpha_core".equals(core) || CAOmega.CORE.equals(core) ? 1 : 0, times = CAOmega.CORE.equals(core) && oce ? 2 : 1;
-                int predicted = CAMods.output(m, range, null, null, false), expect = 0;
+                Map<String, MutableCommodityQuantity> sup = new HashMap<String, MutableCommodityQuantity>();
+                for (MutableCommodityQuantity q : ind.getAllSupply()) sup.put(q.getCommodityId(), q);
+                int total = 0, off = 0;
                 StringBuilder per = new StringBuilder();
                 for (String com : CAMods.MINED) {
-                    int base = CAMods.mined(m, com, range, CAMods.extra(m) - shortBy);
-                    int u = base > 0 ? (base + plus) * times : 0;
-                    expect += u;
-                    Integer r = real.get(com);
-                    if (u > 0 || r != null) per.append(per.length() > 0 ? ", " : "").append(com).append(" ").append(r == null ? 0 : r).append(" of ").append(u);
+                    MutableCommodityQuantity q = sup.get(com);
+                    Integer want = CAMods.minedLines(m, com, range), have = q == null ? null : roiderLines(q.getQuantity(), com);
+                    int units = q == null ? 0 : Math.max(0, q.getQuantity().getModifiedInt());
+                    total += units;
+                    if (want == null && have == null) continue;
+                    boolean same = linesMatch(want, have);
+                    if (!same) off++;
+                    per.append(per.length() > 0 ? ", " : "").append(com).append(" ").append(have == null ? "none" : have)
+                            .append(same ? "" : " (formula " + (want == null ? "none" : want) + ")");
                 }
-                String why = (shortBy > 0 ? "; " + shortBy + " heavy machinery short, taken off each output" : "")
-                        + (plus > 0 ? "; " + (times > 1 ? "Omega core: +1 each, then x2" : "AI core: +1 each") : "");
-                ch.add(Math.abs(total - expect) <= 2 ? (shortBy > 0 ? "INFO" : "PASS") : "WARN", ind.getCurrentName() + " at " + m.getName() + " mines " + total
-                        + " units; Autopilot expects " + expect + " (formula " + predicted + (CAMods.charter(m) ? " with the Charter" : "") + why + ") [" + per + "]");
+                int bonus = 0, shortBy = 0;
+                StringBuilder from = new StringBuilder();
+                try {
+                    bonus = ind.getSupplyBonus().getModifiedInt();
+                    for (com.fs.starfarer.api.combat.MutableStat.StatMod s : ind.getSupplyBonus().getFlatMods().values())
+                        if (Math.round(s.value) != 0 && s.desc != null) from.append(from.length() > 0 ? ", " : "").append(s.desc);
+                } catch (Throwable ignored) { }
+                try { shortBy = Math.max(0, ind.getMaxDeficit("heavy_machinery").two); } catch (Throwable ignored) { }
+                String game = (bonus != 0 ? "; +" + bonus + " supply bonus" + (from.length() > 0 ? " (" + from + ")" : "") + " on each output with a positive line" : "")
+                        + (shortBy > 0 ? "; " + shortBy + " heavy machinery short, off each output" : "");
+                ch.add(off > 0 ? "WARN" : shortBy > 0 ? "INFO" : "PASS", ind.getCurrentName() + " at " + m.getName()
+                        + (off > 0 ? ": Roider's supply lines differ from Autopilot's formula" : ": Roider's supply lines match Autopilot's formula")
+                        + " [" + per + "]; mines " + total + " units" + game);
             }
         }
+    }
+
+    /** Roider's own lines on one mined output (roider_dives_&lt;commodity&gt; and its deposit and spore lines), summed; null when it has none. */
+    static Integer roiderLines(com.fs.starfarer.api.combat.MutableStat q, String com) {
+        String pre = "roider_dives_" + com;
+        Integer sum = null;
+        for (Map.Entry<String, com.fs.starfarer.api.combat.MutableStat.StatMod> e : q.getFlatMods().entrySet()) {
+            String k = e.getKey();
+            if (!k.equals(pre) && !k.startsWith(pre + "_")) continue;
+            sum = (sum == null ? 0 : sum) + Math.round(e.getValue().value);
+        }
+        return sum;
+    }
+
+    /** Formula against lines: both none, or the same number. */
+    static boolean linesMatch(Integer want, Integer have) {
+        return want == null ? have == null : have != null && have.intValue() == want.intValue();
     }
 
     /** Output your faction bans that a building makes without a free port: it exports nothing (CAEngine.illegalUnits). */
