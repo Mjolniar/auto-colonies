@@ -183,8 +183,8 @@ public class CAMods {
     }
 
     /**
-     * Dives (1 ly) or the step up to Union HQ (6 ly): what's mined, less for the HQ what the Dives already mined. False when
-     * nothing is in reach. Checked against Roider Union 2.3.1's code (2.38.0): the HQ's crew is the colony's size (not size - 3)
+     * Dives (1 ly) or the step up to Union HQ (6 ly): what's mined, less for the HQ what the Dives already mined, and only
+     * what's above the colony's own largest other source of each good (2.43.1). False when nothing is in reach. Checked against Roider Union 2.3.1's code (2.38.0): the HQ's crew is the colony's size (not size - 3)
      * and it needs 3 drugs too; neither needs drugs on Unknown Skies' Psychoactive or Shrooms worlds; a Charter adds 1 to each
      * output and 6 light-years of range.
      */
@@ -192,11 +192,21 @@ public class CAMods {
         int s = m.getSize();
         float add = charter(m) ? charterRange() : 0f;
         int drugs = noDrugs(m) ? 0 : 3;
+        int admin = adminBonus(m);
         if (id.equals("roider_dives")) {
-            int cut = machineryShort(deficit, 1);
-            if (output(m, divesRange() + add, p, deficit, true, cut) <= 0) return false;
+            int cut = machineryShort(deficit, 1), x = extra(m) - cut, total = 0, counted = 0;
+            for (String com : MINED) {
+                int u = mined(m, com, divesRange() + add, x);
+                total += u;
+                int more = above(u, otherSupply(m, "roider_dives", com) - admin);
+                counted += more;
+                if (more > 0) CAEngine.supply(p, com, more, deficit);
+            }
+            if (total <= 0) return false;
+            if (counted < total) p.lines.add(counted == 0 ? "Everything Roider miners would dig up here is already made here in larger amounts (a colony's supply is its largest single source)"
+                    : "Only " + counted + " of the " + total + " units Roider miners would dig up are more than this colony already makes");
             if (cut > 0) p.lines.add("Your colonies lack heavy machinery, and Roider miners lose the shortage from every output");
-            CAEngine.supply(p, "crew", 3, deficit);
+            CAEngine.supply(p, "crew", above(3, otherSupply(m, "roider_dives", "crew") - admin), deficit);
             CAEngine.demand(p, "heavy_machinery", 1, deficit); CAEngine.demand(p, "drugs", drugs, deficit); CAEngine.demand(p, "supplies", 2, deficit);
             p.lines.add("Roider miners work deposits within " + Math.round(divesRange() + add) + " light-years");
             return true;
@@ -204,13 +214,47 @@ public class CAMods {
         int x = extra(m), cutWas = machineryShort(deficit, 1), cutNow = machineryShort(deficit, Math.max(1, s - 2));   // the HQ needs size - 2
         for (String com : MINED) {
             int was = mined(m, com, divesRange() + add, x - cutWas), u = mined(m, com, hqRange() + add, x - cutNow);
-            if (u > was) CAEngine.supply(p, com, u - was, deficit);
+            int gain = hqGain(u, was, otherSupply(m, "roider_dives", com) - admin);
+            if (gain > 0) CAEngine.supply(p, com, gain, deficit);
         }
-        CAEngine.supply(p, "crew", Math.max(0, s - 3), deficit);   // the Dives' 3 crew become the colony's size
+        CAEngine.supply(p, "crew", hqGain(s, 3, otherSupply(m, "roider_dives", "crew") - admin), deficit);   // the Dives' 3 crew become the colony's size
         p.fx[1] += 1f; p.fx[3] += 0.2f; p.fx[4] += 0.2f;
         CAEngine.demand(p, "heavy_machinery", s - 3, deficit); CAEngine.demand(p, "supplies", s - 2, deficit); CAEngine.demand(p, "fuel", s - 2, deficit);
         p.lines.add("Union HQ: mines deposits within " + Math.round(hqRange() + add) + " light-years, stability +1, patrols");
         return true;
+    }
+
+    /*
+     * 2.43.1: a colony's supply of a good is its largest single source, so Roider miners only add what's above what the
+     * colony already makes (as station augments have counted since 2.40.1). Before, a Dives was credited with all of its
+     * ore and organics at Wind, Ming Adi, Godecifica and Zenemosrae, where Mining already made more, and came out as the
+     * best build there whenever money piled up.
+     */
+
+    /** The most this colony makes of a good from its buildings other than skip (the building being replaced). */
+    static int otherSupply(MarketAPI m, String skip, String com) {
+        int best = 0;
+        for (Industry ind : m.getIndustries()) {
+            if (skip != null && skip.equals(ind.getId())) continue;
+            for (com.fs.starfarer.api.campaign.econ.MutableCommodityQuantity q : ind.getAllSupply())
+                if (com.equals(q.getCommodityId())) best = Math.max(best, q.getQuantity().getModifiedInt());
+        }
+        return best;
+    }
+
+    /** The administrator's +supply on every building here (Industrial Planning): in the other sources' numbers, not in the formula's. */
+    static int adminBonus(MarketAPI m) {
+        try { return Math.max(0, Math.round(m.getAdmin().getStats().getDynamic().getValue(com.fs.starfarer.api.impl.campaign.ids.Stats.SUPPLY_BONUS_MOD, 0f))); }
+        catch (Throwable t) { return 0; }
+    }
+
+    /** What a new source of units adds over the colony's largest other source. */
+    static int above(int units, int other) { return Math.max(0, units - Math.max(0, other)); }
+
+    /** What an upgrade from was to now adds, when the colony's other largest source makes other. */
+    static int hqGain(int now, int was, int other) {
+        int floor = Math.max(was, Math.max(0, other));
+        return Math.max(0, now - floor);
     }
 
     // ---------------- conditions that add output straight to Mining ----------------
