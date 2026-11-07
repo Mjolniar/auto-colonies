@@ -74,6 +74,9 @@ public class CAData {
     /** 2.44.0 market model (CAMarket): buildings under construction, "market|building|replaced" -> each good's supply there once done, and since when. */
     public Map<String, Map<String, Integer>> marketPending;
     public Map<String, Float> marketPendingSince;
+    /** 2.44.1: "market|building" -> what a building being upgraded becomes (AotD upgrades have several), for CABuild.usedSlots. */
+    public Map<String, String> upgradeTargets;
+    public Map<String, String> upgradeTargets() { if (upgradeTargets == null) upgradeTargets = new HashMap<String, String>(); return upgradeTargets; }
     public Map<String, Map<String, Integer>> marketPending() { if (marketPending == null) marketPending = new HashMap<String, Map<String, Integer>>(); return marketPending; }
     public Map<String, Float> marketPendingSince() { if (marketPendingSince == null) marketPendingSince = new HashMap<String, Float>(); return marketPendingSince; }
     public float minStability = 5f;

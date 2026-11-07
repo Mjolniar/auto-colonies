@@ -210,7 +210,7 @@ public class CAEngine {
         for (IndustrySpecAPI s : Global.getSettings().getAllIndustrySpecs()) if (s.getUpgrade() != null) upgradeTargets.add(s.getUpgrade());
         boolean hasStation = false;
         for (Industry ind : m.getIndustries()) if (ind.getSpec().hasTag("station")) hasStation = true;
-        int slotsFree = Misc.getMaxIndustries(m) - Misc.getNumIndustries(m);
+        int slotsFree = CABuild.freeSlots(m);   // upgrades into industries under way count (2.44.1)
         boolean bmo = CAAotD.enabled();
         Set<String> hidden = CAAotD.hidden(m);
         CASynergies.Ctx syn = Global.getSettings().getModManager().isModEnabled(CASynergies.MOD) ? CASynergies.context(m, deficit) : null;
@@ -364,7 +364,7 @@ public class CAEngine {
         // a new industry the plan doesn't ask for, when the free slots are all the plan's industries have left
         float reserve = 0f;
         if (!p.upgrade && planBonus <= 0f && !profitOnly && isIndustry(p.id) && plan != null) {
-            int free = Misc.getMaxIndustries(m) - Misc.getNumIndustries(m);
+            int free = CABuild.freeSlots(m);
             int needed = endgame ? CAEndgame.openKeptIndustrySteps(m, plan) : CAPlan.openIndustrySteps(m, plan);
             if (needed > 0 && free <= needed) {
                 reserve = SLOT_RESERVE;

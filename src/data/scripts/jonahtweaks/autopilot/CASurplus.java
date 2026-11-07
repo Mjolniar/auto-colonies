@@ -149,7 +149,7 @@ public class CASurplus {
         for (MarketAPI m : cands) {
             try {
                 CAData.Colony c = CAData.get().colony(m.getId());
-                int free = Math.max(0, Misc.getMaxIndustries(m) - Misc.getNumIndustries(m));
+                int free = Math.max(0, CABuild.freeSlots(m));
                 int dep = depositPoints(m), fit = 0;
                 for (CAItems.Idle it : idle) if (CAItems.fitsAt(it, m) != null) fit++;
                 boolean hab = m.hasCondition("habitable");

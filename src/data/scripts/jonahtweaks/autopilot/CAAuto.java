@@ -20,7 +20,7 @@ public class CAAuto {
         float gain;                 // what ranks it: the score, less what a replaced industry was worth
     }
 
-    public static void reset() { wasBuilding.clear(); nextPass.clear(); lastTrace.clear(); lastNow = 0f; }
+    public static void reset() { wasBuilding.clear(); nextPass.clear(); lastTrace.clear(); lastNow = 0f; CAPrune.looked.clear(); CAMarket.invalidate(); }
 
     public static void runPass(float now) {
         lastNow = now;
@@ -197,6 +197,7 @@ public class CAAuto {
         List<MarketAPI> allAuto = CAItems.autoMarkets();
         List<MarketAPI> auto = CASiege.free(allAuto);   // colonies under siege are left as they are
         CAOverLimit.run(allAuto);   // more industries than slots (-5 stability), and colonies at 0 stability, sieges included (2.42.2)
+        CAPrune.run(auto);   // industries that stopped paying for 30 days, not under siege (2.44.1)
         try { CALowProfile.run(d, s, auto); }   // Low profile: items and AI administrators over its lines (2.43.0)
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "low profile step failed", t); }
         try { CAItems.ensureStorageTabs(); CAItems.run(auto); }

@@ -94,6 +94,7 @@ public class CASetupUI {
         s.noStationPlan = false;   // a station at every colony (2.42.0)
         s.noMarketModel = false;   // exports valued by your share of each sector market (2.44.0)
         s.noOverLimitFix = false;  // and a colony over its industry limit takes down its weakest industry
+        s.noPrune = false;         // and an industry that stopped paying for 30 days (2.44.1)
     }
 
     /** Which group is expanded (UI state only, not saved); at most one. Budget starts open. */
@@ -238,9 +239,14 @@ public class CASetupUI {
                     + "Star Fortress from size 8 (a size sooner at the capital).", Misc.getGrayColor(), 4f);
             row(t, "Fix colonies over the industry limit", s.noOverLimitFix ? "No" : "Yes", "Yes", "overlimit", true);
             if (!s.noOverLimitFix) t.addPara("More industries than slots costs 5 stability, and under 5 every point cuts a fifth of the colony's income. "
-                    + "Weekly, an Auto colony over its limit takes down its weakest industry (core and item to Autopilot Storage), unless that "
-                    + "industry is worth more than the stability or the colony is about to grow into the room. One per colony every 30 days.",
+                    + "An Auto colony over its limit takes down its weakest industry (core and item to Autopilot Storage), one a day until it's "
+                    + "back within the limit, unless it's about to grow into the room. Upgrades into industries count against the limit while "
+                    + "they're under way, so Autopilot doesn't start more than there's room for.",
                     Misc.getGrayColor(), 4f);
+            row(t, "Take down industries that stopped paying", s.noPrune ? "No" : "Yes", "Yes", "prune", true);
+            if (!s.noPrune) t.addPara("An industry at an Auto colony whose whole worth is what it makes, worth less than its upkeep for 30 days "
+                    + "(say a second source of ore where Mining already makes more), is taken down, one per colony every 30 days. Never one "
+                    + "you locked, a plan step or what's below one, military, defenses, ships, or one that adds stability.", Misc.getGrayColor(), 4f);
             row(t, "Allow removals", onOff(s.allowRemovals), "Off", "removals", true);
             row(t, "Mod buildings with measured effects", CASettings.MEASURED_NAMES[Math.max(0, Math.min(2, s.measuredMode))], "Build when best", "measured", true);
             row(t, "Story points", CASettings.SP_NAMES[s.storyPointRule], "Player only", "sp", true);
@@ -600,6 +606,7 @@ public class CASetupUI {
         else if (k.equals("stationplan")) s.noStationPlan = !s.noStationPlan;
         else if (k.equals("marketmodel")) { s.noMarketModel = !s.noMarketModel; CAMarket.invalidate(); CAAuto.nextPass.clear(); }
         else if (k.equals("overlimit")) s.noOverLimitFix = !s.noOverLimitFix;
+        else if (k.equals("prune")) s.noPrune = !s.noPrune;
         else if (k.equals("lowprofile")) CALowProfile.set(s, !s.lowProfile, "Settings");
         else if (k.equals("capgather")) s.capitalNoGather = !s.capitalNoGather;
         else if (k.equals("settleinc")) s.settlementMinIncome = Math.max(5000f, s.settlementMinIncome + 5000f * dir);

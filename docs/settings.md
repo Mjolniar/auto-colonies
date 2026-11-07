@@ -34,7 +34,8 @@ Groups for mods you don't have don't show up.
 - **Story points** - Player only (recommended), One per colony, or Monthly cap.
 - **Story point monthly cap** - how many story points a month, with Monthly cap.
 
-- **Fix colonies over the industry limit** - Yes (recommended) or No. An Auto colony with more industries than slots takes down its weakest one, unless it's worth more than the 5 stability it costs or the colony is about to grow into the room.
+- **Fix colonies over the industry limit** - Yes (recommended) or No. An Auto colony with more industries than slots takes down its weakest one, one a day until it's back within the limit, unless it's about to grow into the room. Never one that holds up its stability. Upgrades into industries count against the limit while they're under way.
+- **Take down industries that stopped paying** - Yes (recommended) or No. An industry at an Auto colony whose whole worth is what it makes, worth less than its upkeep for 30 days (like a second source of ore where Mining already makes more), is taken down, one per colony every 30 days. Never one you locked, a plan step or what upgrades into one, military, defenses, ships, or one that adds stability.
 - **Station at every colony** - Yes (recommended) or No. Every colony plans a station from size 4 (or half a year old) once its fast buildout is done, a Battlestation from size 6 and a Star Fortress from size 8, a size sooner at the capital.
 - **Exports valued by market share** - On (recommended) or Off. On: a building is worth what it adds to your share of each good's sector market, so your colonies spread out over different goods instead of piling into the same ones. Off: every unit of anything is worth one flat rate, like before 2.44.0. See [How it builds](how-it-builds.md#how-it-picks).
 

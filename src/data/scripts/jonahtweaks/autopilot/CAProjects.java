@@ -312,7 +312,7 @@ public class CAProjects {
                     || m.hasTag("market_no_industries_allowed")) continue;
             Host h = new Host();
             h.id = m.getId(); h.name = m.getName(); h.size = m.getSize(); h.auto = c.mode == CAData.Mode.AUTO;
-            h.freeSlots = Math.max(0, Misc.getMaxIndustries(m) - Misc.getNumIndustries(m));
+            h.freeSlots = Math.max(0, CABuild.freeSlots(m));
             h.ships = supply(m, "ships");
             for (Industry ind : m.getIndustries()) h.has.add(ind.getId());
             Set<String> exact = new HashSet<String>();

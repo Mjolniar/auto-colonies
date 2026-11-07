@@ -172,7 +172,7 @@ public class CAAugments {
         void compute(MarketAPI m, CAData.Profile profile) {
             if (done) return;
             done = true;
-            if (Misc.getMaxIndustries(m) > Misc.getNumIndustries(m)) return;   // a slot is already free
+            if (CABuild.freeSlots(m) > 0) return;   // a slot is already free
             CAEngine.Result r = CAEngine.evaluate(m, profile, CAData.get().minStability);
             if (r.bestNoSlot == null || r.bestNoSlot.score <= 0f) return;
             value = r.bestNoSlot.score; name = r.bestNoSlot.name;

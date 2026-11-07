@@ -20,15 +20,17 @@ import java.util.*;
  *
  * Daily, at every Auto colony (sieges included: this is an emergency, not a build):
  * - over the limit at 0 stability or below: its weakest industry Autopilot may take down goes at once, whatever it earns;
- * - over the limit otherwise: unless the colony is about to grow a size with room for them all, its weakest industry is
- *   compared with what the 5 stability is worth there and goes if it's worth less, one per colony every 30 days;
+ * - over the limit otherwise: unless the colony is about to grow a size with room for them all, its weakest industry goes,
+ *   one a day until it's back within the limit (2.44.1: it used to keep them when the weakest earned more than the 5
+ *   stability was worth, or when none was one it could value, so colonies Autopilot itself had put over sat there for months);
  * - at 0 stability, an important alert on screen (once a month a colony), Auto or not, with what to do.
- * Never a building being built or upgraded, improved, locked, a station, population, a plan's special step, a capital trade
- * building, a contract feeder, or one with defense, fleet, ship quality or ship output; its AI core and item go to the
- * colony's Autopilot Storage. Setting: Fix colonies over the industry limit (Building and planning).
+ * Never a building being built or upgraded, improved, locked, a station, population, or one holding up 5 or more stability;
+ * a plan's special step, a capital trade building, a contract feeder, or one with defense, fleet, ship quality or ship output
+ * only when nothing else can go, and one that adds stability last. Its AI core and item go to the colony's Autopilot
+ * Storage. Setting: Fix colonies over the industry limit (Building and planning).
  */
 public class CAOverLimit {
-    static final float PENALTY = 5f, GAP_DAYS = 30f, GROWS_SOON = 0.8f, ALERT_DAYS = 30f;
+    static final float PENALTY = 5f, GAP_DAYS = 1f, GROWS_SOON = 0.8f, ALERT_DAYS = 30f;
     /** At or under this stability a colony over its industry limit sheds an industry at once, whatever it earns. */
     static final float LOW = 2f;
     /** Days between two stability-costing buildings taken down at a colony at 0, and how long one stays off the capital's plan. */
@@ -158,22 +160,16 @@ public class CAOverLimit {
             if (last != null && Global.getSector().getClock().getElapsedDaysSince(last) < GAP_DAYS) return false;
         }
         CAData.Colony col = d.colony(m.getId());
+        // 2.44.1: an Auto colony over its limit always sheds one: the weakest of what a colony can do without first, then
+        // (defenses, fleets, ship-making, plan steps, mod buildings it can't value) the weakest of anything else that may go
         CAEndgame.Weakest wk = weakest(m, col, false);
-        if (wk == null && danger) wk = weakest(m, col, true);   // 2.42.2: in danger any industry may go, the weakest Autopilot can tell
+        if (wk == null) wk = weakest(m, col, true);
         if (wk == null) {
-            if (CALog.once(key + ":none")) CALog.add(m.getName() + ": " + over + ", which costs 5 stability. None of its industries is one Autopilot takes down "
-                    + "(defenses, fleets, ship-making, plan or mod buildings it can't value), so taking one down is up to you", true);
+            if (CALog.once(key + ":none")) CALog.add(m.getName() + ": " + over + ", which costs 5 stability, and every industry there is locked, "
+                    + "being built or upgraded, improved, or holds up its stability, so taking one down is up to you", true);
             return false;
         }
-        // what 5 stability is worth here; at 2 or under there's no comparing: income is mostly gone and 0 can decivilize it
-        float raw = m.getStability().getModifiedValue();
-        float gain = danger || m.getPrevStability() <= 0.5f ? Float.MAX_VALUE : CAItems.stabilityWorth(m, raw, PENALTY);
-        if (wk.keep >= gain) {
-            if (CALog.once(key + ":keep")) CALog.add(m.getName() + ": " + over + ", which costs 5 stability (about " + Misc.getDGSCredits(gain)
-                    + " a month here); keeping them, since its weakest, " + wk.ind.getCurrentName() + ", is worth more (" + CAEngine.valueText(wk.keep) + ")");
-            return false;
-        }
-        takeDown(d, m, wk, over, gain, zero);
+        takeDown(d, m, wk, over, danger ? Float.MAX_VALUE : 0f, zero);
         return true;
     }
 
@@ -187,14 +183,19 @@ public class CAOverLimit {
         CAPlan.Plan plan = CAPlan.build(m, col.profile);
         Map<String, Integer> deficit = CAEngine.empireDeficits();
         CAEndgame.Weakest out = null;
+        float outRank = 0f;
         for (Industry ind : m.getIndustries()) {
             String id = ind.getId();
             if (!ind.isIndustry() || ind.isHidden() || ind.isBuilding() || ind.isUpgrading() || ind.isImproved() || !ind.canShutDown()) continue;
             if (ind.getSpec().hasTag("population") || ind.getSpec().hasTag("station") || col.locks.contains(id)) continue;
+            // one that holds up the colony's stability by 5 or more: taking it down wouldn't lift the colony at all (2.44.1)
+            float stab = stabilityOf(m, ind);
+            if (stab >= PENALTY) continue;
             if (!any && (CAEndgame.keepsPlanBonus(m, plan, id) || CAContracts.feeds(ind) != null)) continue;
             CAEngine.Pick p = CAEngine.effectsOf(m, id, deficit);
             if (p == null && any) {   // a mod industry the engine can't value: worth 0, so it goes before anything that earns
-                if (out == null || 0f < out.keep) { out = new CAEndgame.Weakest(); out.ind = ind; out.keep = 0f; }
+                float r = rank(0f, stab);
+                if (out == null || r < outRank) { out = new CAEndgame.Weakest(); out.ind = ind; out.keep = 0f; outRank = r; }
                 continue;
             }
             if (p == null) continue;   // a building the engine can't value for sure
@@ -202,10 +203,14 @@ public class CAOverLimit {
             CAEngine.upkeep(m, ind.getSpec(), null, p);
             float v = 0f;
             for (int i = 0; i < 7; i++) v += w[i] * p.fx[i];
-            if (out == null || v < out.keep) { out = new CAEndgame.Weakest(); out.ind = ind; out.keep = v; out.money = p.fx[0]; out.upkeep = p.upkeep; }
+            float r = rank(v, stab);
+            if (out == null || r < outRank) { out = new CAEndgame.Weakest(); out.ind = ind; out.keep = v; out.money = p.fx[0]; out.upkeep = p.upkeep; outRank = r; }
         }
         return out;
     }
+
+    /** Ranking for weakest(): one that adds stability goes only when nothing else can (2.44.1). */
+    static float rank(float value, float stability) { return stability > 0f ? value + 1e9f : value; }
 
     static void takeDown(CAData d, MarketAPI m, CAEndgame.Weakest wk, String over, float gain, boolean zero) {
         Industry ind = wk.ind;
@@ -219,7 +224,7 @@ public class CAOverLimit {
         d.endgameBuilt().put(m.getId() + ":replaced", ts);   // and no make-room swap at the capital for a while
         CALog.add(m.getName() + ": took down " + name + ": " + over + " cost 5 stability" + (zero ? " and left it at 0, where a colony can decivilize"
                 : gain == Float.MAX_VALUE && m.getStabilityValue() <= LOW ? " and left it at " + Math.round(m.getStabilityValue()) + ", close to 0 where a colony can decivilize"
-                : gain == Float.MAX_VALUE ? " and all of its income" : " (about " + Misc.getDGSCredits(gain) + " a month)") + ", and " + name
+                : "") + ", and " + name
                 + " was worth least (" + CAEngine.valueText(wk.keep) + ")"
                 + (core != null || item != null ? "; its " + (core != null && item != null ? "core and item" : core != null ? "core" : "item") + " to Autopilot Storage" : ""), true);
     }
