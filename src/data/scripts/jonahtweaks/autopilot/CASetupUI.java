@@ -148,6 +148,15 @@ public class CASetupUI {
                 : Misc.getDGSCredits(s.budgetFixed);
         String type = s.budgetAuto ? "Automatic" : s.budgetPercentMode ? "Share of net income" : "Fixed amount";
 
+        if (group(t, "style", "Expansion style", s.lowProfile ? "low profile" : "full expansion")) {
+            row(t, "Expansion style", s.lowProfile ? "Low profile" : "Full expansion", "Your call", "lowprofile", true);
+            t.addPara("Full expansion builds whatever pays most and prices colony crises at their usual cost. Low profile keeps your colonies "
+                    + "growing but stays under the radar: attention counts ten times as much, no AI cores above size 3, nothing that takes a "
+                    + "colony to 7 Pather interest, no free ports, no raids on other factions' colonies or sabotage by agents, and inspections "
+                    + "are never resisted. Exports competing with Tri-Tachyon, fuel from 4 units and farming-only habitable colonies (Luddic "
+                    + "majorities) are priced in. Each faction's rule lifts once its crisis is over for good. Pirates and the Persean League "
+                    + "count colony size, so nothing avoids them; Low profile defends against them sooner. It earns less.", Misc.getGrayColor(), 4f);
+        }
         if (group(t, "budget", "Budget and spending", budget + ", reserve " + Misc.getDGSCredits(s.reserve) + ", fees " + CASettings.FEE_NAMES[s.feeLevel])) {
             row(t, "Budget type", type, "Automatic", "type", true);
             if (s.budgetAuto) {
@@ -584,6 +593,7 @@ public class CASetupUI {
         else if (k.equals("caproom")) s.capitalNoRoom = !s.capitalNoRoom;
         else if (k.equals("stationplan")) s.noStationPlan = !s.noStationPlan;
         else if (k.equals("overlimit")) s.noOverLimitFix = !s.noOverLimitFix;
+        else if (k.equals("lowprofile")) CALowProfile.set(s, !s.lowProfile, "Settings");
         else if (k.equals("capgather")) s.capitalNoGather = !s.capitalNoGather;
         else if (k.equals("settleinc")) s.settlementMinIncome = Math.max(5000f, s.settlementMinIncome + 5000f * dir);
         return true;

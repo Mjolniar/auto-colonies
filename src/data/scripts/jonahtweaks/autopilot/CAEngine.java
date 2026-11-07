@@ -92,6 +92,8 @@ public class CAEngine {
         public float[] fx = new float[7];
         public List<String> lines = new ArrayList<String>();
         public boolean pollution;
+        /** Low profile (2.43.0): why it never starts this (it crosses the Pather line), or null. */
+        public String lowProfile;
         public boolean measured;   // a mod building scored from probe-colony measurements (CASimulator)
         /** The building's own output lines, recorded while its effects are read, so a management style can adjust them. */
         public Map<String, Integer> supplied = new LinkedHashMap<String, Integer>();
@@ -249,6 +251,7 @@ public class CAEngine {
                 upkeep(m, spec, null, p);
                 float cramped = CAGrand.penalty(m, p.upkeep);
                 if (cramped > 0f) { p.fx[0] -= cramped; p.lines.add("Past Grand.Colonies' building limit: all upkeep here rises, about " + credits(cramped) + " per month"); }
+                CALowProfile.score(m, inst, null, p);   // Low profile: the Pather line and the attention it draws (2.43.0)
                 if (!finish(m, p, profile, minStability, plan)) continue;
                 if (inst.isIndustry() && slotsFree <= 0) r.noSlot(p);
                 else r.picks.add(p);
@@ -294,6 +297,7 @@ public class CAEngine {
                     trust(upSpec, p, p.measured);
                     CASynergies.score(syn, p);
                     upkeep(m, upSpec, ind.getSpec(), p);
+                    CALowProfile.score(m, upInst, ind, p);
                     if (!finish(m, p, profile, minStability, plan)) continue;
                     if (needsSlot) r.noSlot(p);
                     else r.picks.add(p);
@@ -373,6 +377,7 @@ public class CAEngine {
         if (cw < 1f && p.cost > 0f) p.lines.add("Focus world with surplus credits: the price counts a quarter");
         p.score = value + planBonus + followThrough - p.buildCost - reserve;
         if (p.pollution) p.score = Math.min(p.score, -1f);   // shown, never started: worthwhile() needs a positive score
+        if (p.lowProfile != null) { p.lines.add(0, p.lowProfile); p.score = Math.min(p.score, -1f); }   // the same for Low profile's Pather line
         return true;   // every option is ranked and shown; Approve and Auto only act on a positive score (worthwhile())
     }
 

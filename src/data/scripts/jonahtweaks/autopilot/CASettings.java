@@ -165,6 +165,9 @@ public class CASettings {
     public boolean noStationPlan = false;
     // 2.42.0 an Auto colony over its industry limit takes down its weakest industry (CAOverLimit); inverted so older saves get it
     public boolean noOverLimitFix = false;
+    // 2.43.0 Low profile (CALowProfile): grow while drawing as little attention as possible; off (Full expansion) for older saves,
+    // picked when your first colony is founded
+    public boolean lowProfile = false;
     public boolean logisticsShips = true, logisticsSupplies = true;
     public int spMonth = 0;   // story points spent this month (counted improvements before 2.20.1)
     public float lastNet = 0f;

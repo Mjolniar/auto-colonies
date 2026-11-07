@@ -26,6 +26,8 @@ The game's crisis meter is priced into everything, at about 640 credits a month 
 
 Once the next crisis is picked (the meter at 500), the colony it's likely to hit gets planned as Security, a Pather target sheds AI cores until its cell can dissolve, and a coming Nexerelin police raid closes free ports that would count. The **Colony crises** page in the empire panel shows the meter, what's coming and where, what's driving each faction's crisis, and how to end it. Deals, fights and memberships are up to you.
 
+If you'd rather draw as few crises as possible in the first place, that's what [Low profile](low-profile.md) is for.
+
 ## Station augments
 
 With Station Augments, stations get the best set of augments they can fit. While a colony's threat is high, or a raid or blockade is on its way, combat counts four times as much, and the output augments come back once things calm down. Nothing changes during a battle.

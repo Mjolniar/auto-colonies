@@ -82,7 +82,7 @@ public class CASpies {
             String role = role(d, s, a);
             if (SECURITY.equals(role)) defend(s, mgr, a);
             else if (RELATIONS.equals(role)) relations(s, a);
-            else if (OFFENSE.equals(role)) { if (s.spyMode == 2) attack(s, mgr, a, mine); }
+            else if (OFFENSE.equals(role)) { if (offense(s)) attack(s, mgr, a, mine); }
         }
     }
 
@@ -96,7 +96,7 @@ public class CASpies {
         Set<String> held = new HashSet<String>(d.spyRoles().values());
         if (!held.contains(SECURITY)) r = SECURITY;
         else if (!held.contains(RELATIONS) && canDo(a, "raiseRelations")) r = RELATIONS;
-        else if (s.spyMode == 2 && !held.contains(OFFENSE) && canDo(a, "sabotageIndustry")) r = OFFENSE;
+        else if (offense(s) && !held.contains(OFFENSE) && canDo(a, "sabotageIndustry")) r = OFFENSE;
         else r = canDo(a, "raiseRelations") ? RELATIONS : SECURITY;
         d.spyRoles().put(id, r);
         CALog.add("Agent " + name(a) + " (" + types(a) + ") takes the " + r + " role");
@@ -380,14 +380,17 @@ public class CASpies {
     // ---- recruiting
 
     /** Agents to keep: your setting, or Auto: security and relations, plus offense with "Defense and offense". */
-    static int keep(CASettings s) { return s.spyKeep > 0 ? s.spyKeep : (s.spyMode == 2 ? 3 : 2); }
+    static int keep(CASettings s) { return s.spyKeep > 0 ? s.spyKeep : (offense(s) ? 3 : 2); }
+
+    /** Defense and offense, unless Low profile is on: sabotage draws the faction it hits (2.43.0). */
+    static boolean offense(CASettings s) { return s.spyMode == 2 && !CALowProfile.on(); }
 
     /** The roles to fill, in order: security, relations, then offense (only with offense on), up to keep(). */
     static List<String> wanted(CASettings s) {
         List<String> out = new ArrayList<String>();
         out.add(SECURITY);
         out.add(RELATIONS);
-        if (s.spyMode == 2) out.add(OFFENSE);
+        if (offense(s)) out.add(OFFENSE);
         while (out.size() > keep(s)) out.remove(out.size() - 1);
         return out;
     }

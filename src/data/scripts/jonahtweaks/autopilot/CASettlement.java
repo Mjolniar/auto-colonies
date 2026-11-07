@@ -72,6 +72,7 @@ public class CASettlement {
         if (p == null || p.isStar() || p.isGasGiant() || p.hasTag("gas_giant") || p.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER)) return false;
         StarSystemAPI sys = p.getStarSystem();
         if (sys == null || sys.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER)) return false;
+        if (CALowProfile.remnantSystem(sys)) return false;   // Low profile: a Remnant nexus's crisis only ends with the nexus (2.43.0)
         MarketAPI m = p.getMarket();
         if (m == null || m.getSurveyLevel() != MarketAPI.SurveyLevel.FULL) return false;
         if (p.getFaction() == null || !p.getFaction().getRelToPlayer().isAtWorst(RepLevel.INHOSPITABLE)) return false;

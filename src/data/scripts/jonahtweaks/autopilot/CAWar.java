@@ -217,8 +217,8 @@ public class CAWar {
             if (launch(s, mgr, "strike", b, strikeFP(stationFP(b)), rich, false, b.getFaction().getDisplayName() + " base")) { left--; started++; }
             else waiting.add("strike on " + b.getName());
         }
-        // 4. strike back at the markets that attacked you
-        if (s.warMode == 0) for (String id : new ArrayList<String>(d.attackers().keySet())) {
+        // 4. strike back at the markets that attacked you (never in Low profile: raids on a faction's colonies draw it, 2.43.0)
+        if (s.warMode == 0 && !CALowProfile.on()) for (String id : new ArrayList<String>(d.attackers().keySet())) {
             if (left <= 0) break;
             MarketAPI t = Global.getSector().getEconomy().getMarket(id);
             Long at = d.attackers().get(id);
