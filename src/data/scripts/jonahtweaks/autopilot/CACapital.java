@@ -134,7 +134,7 @@ public class CACapital {
     /** Where your things already are counts most: the production gathering point, then what's in Storage; then size and reach. */
     static float score(MarketAPI m) {
         float sc = m.getSize() * 10f + Math.max(0f, m.getAccessibilityMod().computeEffective(0f)) * 20f
-                + Math.max(0, Misc.getMaxIndustries(m) - Misc.getNumIndustries(m)) * 5f;
+                + Math.max(0, CABuild.freeSlots(m)) * 5f;
         try {
             MarketAPI g = Global.getSector().getPlayerFaction().getProduction().getGatheringPoint();
             if (g != null && g.getId().equals(m.getId())) sc += 1000f;

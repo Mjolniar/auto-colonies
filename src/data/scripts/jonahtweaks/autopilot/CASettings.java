@@ -170,6 +170,8 @@ public class CASettings {
     public boolean lowProfile = false;
     // 2.44.0 exports valued by what they add to your share of each sector market (CAMarket); inverted so older saves get it
     public boolean noMarketModel = false;
+    // 2.44.1 an Auto colony takes down an industry that stopped paying for 30 days (CAPrune); inverted so older saves get it
+    public boolean noPrune = false;
     public boolean logisticsShips = true, logisticsSupplies = true;
     public int spMonth = 0;   // story points spent this month (counted improvements before 2.20.1)
     public float lastNet = 0f;

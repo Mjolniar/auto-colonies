@@ -440,7 +440,7 @@ public class CAItems {
         if (!CAMods.itemFits(it.spec.getId(), m)) return null;
         Industry has = emptyTarget(it, m);
         if (has != null) return has.getId();
-        boolean free = Misc.getMaxIndustries(m) - Misc.getNumIndustries(m) > 0;
+        boolean free = CABuild.freeSlots(m) > 0;
         for (String id : it.targets) {
             try {
                 com.fs.starfarer.api.loading.IndustrySpecAPI sp = Global.getSettings().getIndustrySpec(id);

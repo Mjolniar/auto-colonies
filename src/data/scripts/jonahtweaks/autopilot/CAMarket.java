@@ -213,6 +213,26 @@ public final class CAMarket {
         return g;
     }
 
+    // ---------------- a building already there (CAPrune, 2.44.1) ----------------
+
+    /** What a source of dw weight already in the market earns you: your income with it, less without it. */
+    static float keepValue(float V, float T, float wm, float incM, float othersIncW, float dw, float mult) {
+        float d = Math.min(dw, Math.max(0f, wm));
+        if (d <= 0f) return 0f;
+        return gain(V, Math.max(0f, T - d), wm - d, incM, othersIncW, d, mult);
+    }
+
+    /** A building's export worth at m: own units of the good where the colony's other biggest source makes other. Null without data. */
+    static Float keepExport(MarketAPI m, String com, int own, int other) {
+        Snap s = snap(com);
+        if (s == null) return null;
+        Mine here = s.at(m);
+        if (here == null || here.illegal) return 0f;
+        int without = Math.max(0, other), with = Math.max(own, without);
+        float dw = weightDelta(without, with, here.ship, here.acc);
+        return keepValue(s.value, s.total, here.w, here.inc, s.othersIncW(m), dw, s.mult);
+    }
+
     // ---------------- buildings under construction ----------------
 
     static String key(MarketAPI m, CAEngine.Pick p) {
