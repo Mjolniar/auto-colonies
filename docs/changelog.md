@@ -2,6 +2,10 @@
 
 Every version, newest first. If you're wondering why the first version on here is 2.1.0: this started as **Jonah Tweaks**, a personal mod of little tweaks for my own games (bigger battle size, sticky combat autopilot, that kind of thing), and Colony Autopilot grew inside it until it became the main thing. 2.1.0 is when it went up on GitHub, and 2.6.0 was the first version with a downloadable release. The balance tweaks moved out into their own mod in 2.7.0, so this one only manages colonies.
 
+## 2.42.4 - 2026-11-06
+
+- **Research goes one tech at a time.** Auto research went down its whole list every time: for each tech short of databanks at the Research Facility it shipped databanks over and posted "X starts once they arrive", so you'd get five or six research lines on screen at once (Element Nucleosynthesis, Climate Reformation, Megastructure Engineering, Consumer Goods Production...) and databanks headed over for all of them. Then it started some cheap filler tech that used up the databanks it had just moved for the first one, and the next pass did it all again. Now it picks one tech: if its databanks have to come from another colony, they get shipped, you get one line, and nothing else gets shipped or started until they arrive and that tech starts.
+
 ## 2.42.3 - 2026-11-06
 
 - **Update notifications.** The mod ships a Version Checker file now, so if you have MagicLib (it has Version Checker built in) or a mod manager like TriOS, you'll get told when there's a new version, with a link to the download and the patch notes. Mod managers can grab the update for you too. Nothing changes in game; this version just has to be installed once by hand, and from here on you'll hear about the next one.

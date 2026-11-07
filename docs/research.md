@@ -54,4 +54,7 @@ While spending freely, with **Wonders and gates while spending freely** on:
 
 Ashes of the Domain takes their construction goods out of your exports every month, so each one only starts once your colonies make every good it needs. The Garden of Elysium and Star Citadels are left to you.
 
+
+It works on one tech at a time. If the databanks for the next one are at another colony, they get shipped to the Research Facility (a fee and a couple of days), and nothing else gets started or shipped until they arrive and that tech starts.
+
 Next: [Terraforming](terraforming.md).
