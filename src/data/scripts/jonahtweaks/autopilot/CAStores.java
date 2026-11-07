@@ -146,10 +146,8 @@ public class CAStores {
             if (from.getQuantity(CargoAPI.CargoItemType.SPECIAL, special) < qty) return false;
             from.removeItems(CargoAPI.CargoItemType.SPECIAL, special, qty);
         }
-        if (fee > 0f) {
-            Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(fee);
-            CABudget.charge(s, 0f, fee, 0f);
-        }
+        // CABudget.charge takes the fee from your credits; 2.45.1: it was also subtracted here, so every shipment cost twice its fee
+        if (fee > 0f) CABudget.charge(s, 0f, fee, 0f);
         Shipment sh = new Shipment();
         sh.commodity = commodity; sh.special = special; sh.qty = qty; sh.from = fromName; sh.to = to.getId();
         sh.sent = Global.getSector().getClock().getTimestamp(); sh.days = days(ly); sh.why = why;

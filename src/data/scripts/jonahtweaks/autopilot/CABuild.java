@@ -64,6 +64,7 @@ public class CABuild {
             return "No free industry slot (" + usedSlots(m) + " of " + Misc.getMaxIndustries(m) + " used, upgrades under way included)";
         String action = "building " + p.name;
         if (!CABreaker.allowed(action)) return "Paused for this session: it didn't take effect three times (see Diagnostics)";
+        boolean added = false;
         try {
             if (p.upgrade) {
                 Industry ex = p.existing;
@@ -81,20 +82,39 @@ public class CABuild {
                 if (m.hasIndustry(p.id)) return "Already built";
                 if (CAAotD.enabled() && !CAAotD.allows(p.id, m)) return "Locked in the build menu: " + CAAotD.lockReason(p.id, m);
                 m.addIndustry(p.id);
+                added = true;
                 Industry ind = m.getIndustry(p.id);
                 if (ind == null) return "The game refused to add that building";
                 ind.startBuilding();
             }
-            if (p.upgrade && p.existing != null) CAData.get().upgradeTargets().put(m.getId() + "|" + p.existing.getId(), p.id);   // usedSlots (2.44.1)
+            String targetKey = p.upgrade && p.existing != null ? m.getId() + "|" + p.existing.getId() : null;
+            if (targetKey != null) CAData.get().upgradeTargets().put(targetKey, p.id);   // usedSlots (2.44.1)
             Industry now = p.upgrade ? p.existing : m.getIndustry(p.id);
-            CABreaker.check(action, now != null && (p.upgrade ? now.isUpgrading() : now.isBuilding()), m.getName());
+            boolean started = now != null && (p.upgrade ? now.isUpgrading() : now.isBuilding());
+            CABreaker.check(action, started, m.getName());
+            // 2.45.1: paid only when it took effect. An upgrade that didn't start (and didn't finish at once) costs nothing; a new
+            // building that exists is paid as before, instant ones included
+            if (!tookEffect(p.upgrade, started, p.upgrade && m.hasIndustry(p.id), now != null)) {
+                if (targetKey != null) CAData.get().upgradeTargets().remove(targetKey);
+                return "It didn't take effect, so nothing was charged";
+            }
             Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(p.cost);
             CADiagnostics.LOG.info(CADiagnostics.TAG + (p.upgrade ? "upgrade to " : "build ") + p.id + " at " + m.getName()
                     + " for " + Misc.getDGSCredits(p.cost));
             return null;
         } catch (Throwable t) {
+            // 2.45.1: a building half-added when something threw comes off again, so nothing is left unpaid or stuck
+            if (added) {
+                try { if (m.hasIndustry(p.id)) m.removeIndustry(p.id, MarketAPI.MarketInteractionMode.REMOTE, false); }
+                catch (Throwable ignored) { }
+            }
             CADiagnostics.quarantine(p.id, "starting construction at " + m.getName(), t);
             return "Error starting construction; logged in Diagnostics";
         }
+    }
+
+    /** Whether a start took effect and should be paid (2.45.1): an upgrade that's under way or already done, or a new building that exists. */
+    static boolean tookEffect(boolean upgrade, boolean started, boolean upgradeDone, boolean exists) {
+        return upgrade ? started || upgradeDone : exists;
     }
 }

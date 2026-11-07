@@ -388,7 +388,7 @@ public class CASetupUI {
                     + "once researched, with a Coronal Hypershunt Tap in Autopilot Storage.", Misc.getGrayColor(), 6f);
         }
         if (group(t, "capital", "Capital", !CACapital.on(s) ? "off" : CACapital.name(s) + ", " + CACapital.MODE_NAMES[Math.max(0, Math.min(2, s.capitalMode))].toLowerCase())) {
-            row(t, "Capital", CACapital.name(s), "Autopilot picks", "cap", true);
+            row(t, "Capital", CACapital.name(s), "Autopilot picks", "capid", true);   // 2.45.1: was "cap", the per-project cap's key
             row(t, "Capital does", CACapital.MODE_NAMES[Math.max(0, Math.min(2, s.capitalMode))], "Deliveries and commerce", "capmode", true);
             if (s.capitalMode == 0) {
                 row(t, "Commerce starts", CACapital.START_NAMES[Math.max(0, Math.min(CACapital.START_NAMES.length - 1, s.capitalStart))], "Net income over 100,000", "capstart", true);
@@ -599,7 +599,7 @@ public class CASetupUI {
         else if (k.equals("logisell")) s.logisticsSellHub = CALogistics.next(s.logisticsSellHub, true);
         else if (k.equals("logiships")) s.logisticsShips = !s.logisticsShips;
         else if (k.equals("logigoods")) s.logisticsSupplies = !s.logisticsSupplies;
-        else if (k.equals("cap")) { s.capitalId = CACapital.next(s.capitalId); if (s.capitalId != null) s.capitalAuto = s.capitalId; CACapital.reset(); }
+        else if (k.equals("capid")) { s.capitalId = CACapital.next(s.capitalId); if (s.capitalId != null) s.capitalAuto = s.capitalId; CACapital.reset(); }
         else if (k.equals("capmode")) { s.capitalMode = (Math.max(0, Math.min(2, s.capitalMode)) + 1) % 3; CACapital.reset(); }
         else if (k.equals("capstart")) s.capitalStart = (Math.max(0, Math.min(CACapital.START_NAMES.length - 1, s.capitalStart)) + 1) % CACapital.START_NAMES.length;
         else if (k.equals("caproom")) s.capitalNoRoom = !s.capitalNoRoom;
