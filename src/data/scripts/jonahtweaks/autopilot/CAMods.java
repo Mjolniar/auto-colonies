@@ -195,18 +195,20 @@ public class CAMods {
         int admin = adminBonus(m);
         if (id.equals("roider_dives")) {
             int cut = machineryShort(deficit, 1), x = extra(m) - cut, total = 0, counted = 0;
+            boolean nets = CAEngine.callerNets();   // the market model (2.44.0) counts the colony's largest source itself
             for (String com : MINED) {
                 int u = mined(m, com, divesRange() + add, x);
                 total += u;
                 int more = above(u, otherSupply(m, "roider_dives", com) - admin);
                 counted += more;
-                if (more > 0) CAEngine.supply(p, com, more, deficit);
+                if (nets) { if (more > 0) CAEngine.supply(p, com, more, deficit); }
+                else if (u > 0) CAEngine.supply(p, com, u, deficit);
             }
             if (total <= 0) return false;
-            if (counted < total) p.lines.add(counted == 0 ? "Everything Roider miners would dig up here is already made here in larger amounts (a colony's supply is its largest single source)"
+            if (nets && counted < total) p.lines.add(counted == 0 ? "Everything Roider miners would dig up here is already made here in larger amounts (a colony's supply is its largest single source)"
                     : "Only " + counted + " of the " + total + " units Roider miners would dig up are more than this colony already makes");
             if (cut > 0) p.lines.add("Your colonies lack heavy machinery, and Roider miners lose the shortage from every output");
-            CAEngine.supply(p, "crew", above(3, otherSupply(m, "roider_dives", "crew") - admin), deficit);
+            CAEngine.supply(p, "crew", nets ? above(3, otherSupply(m, "roider_dives", "crew") - admin) : 3, deficit);
             CAEngine.demand(p, "heavy_machinery", 1, deficit); CAEngine.demand(p, "drugs", drugs, deficit); CAEngine.demand(p, "supplies", 2, deficit);
             p.lines.add("Roider miners work deposits within " + Math.round(divesRange() + add) + " light-years");
             return true;
@@ -214,10 +216,10 @@ public class CAMods {
         int x = extra(m), cutWas = machineryShort(deficit, 1), cutNow = machineryShort(deficit, Math.max(1, s - 2));   // the HQ needs size - 2
         for (String com : MINED) {
             int was = mined(m, com, divesRange() + add, x - cutWas), u = mined(m, com, hqRange() + add, x - cutNow);
-            int gain = hqGain(u, was, otherSupply(m, "roider_dives", com) - admin);
+            int gain = CAEngine.callerNets() ? hqGain(u, was, otherSupply(m, "roider_dives", com) - admin) : u - was;
             if (gain > 0) CAEngine.supply(p, com, gain, deficit);
         }
-        CAEngine.supply(p, "crew", hqGain(s, 3, otherSupply(m, "roider_dives", "crew") - admin), deficit);   // the Dives' 3 crew become the colony's size
+        CAEngine.supply(p, "crew", CAEngine.callerNets() ? hqGain(s, 3, otherSupply(m, "roider_dives", "crew") - admin) : s - 3, deficit);   // the Dives' 3 crew become the colony's size
         p.fx[1] += 1f; p.fx[3] += 0.2f; p.fx[4] += 0.2f;
         CAEngine.demand(p, "heavy_machinery", s - 3, deficit); CAEngine.demand(p, "supplies", s - 2, deficit); CAEngine.demand(p, "fuel", s - 2, deficit);
         p.lines.add("Union HQ: mines deposits within " + Math.round(hqRange() + add) + " light-years, stability +1, patrols");
@@ -325,7 +327,7 @@ public class CAMods {
             int have = 0;
             if (f != null) try { have = f.getSupply(com).getQuantity().getModifiedInt(); } catch (Throwable ignored) { }
             int gain = out - have;
-            if (gain > 0) { CAEngine.supply(p, com, gain, deficit); added += gain; }
+            if (gain > 0) { CAEngine.supply(p, com, CAEngine.callerNets() ? gain : out, deficit); added += gain; }   // 2.44.0: the model nets the forge itself
         }
         if (added <= 0) return false;
         float mult = f != null ? 1.5f : 1f;

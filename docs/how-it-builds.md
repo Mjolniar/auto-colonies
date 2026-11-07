@@ -52,6 +52,16 @@ Only things that pay for themselves within about three years ever get built on A
 
 The numbers come from the game's own formulas wherever there is one: deposits, output, upkeep, the colony's size. Mod buildings with their own effects are estimated, then those estimates get checked against what your real buildings do and corrected over time.
 
+What a building makes is worth what it adds to your exports, and the game pays exports as a share of each good's market across the whole sector (since 2.44.0). Your colony's slice is what it can ship times its accessibility, out of every exporter's total, and the pot itself doesn't grow. So:
+
+- a good you barely make, or nobody makes, is worth the most;
+- more of something your colonies already dominate is worth very little, since it mostly splits a pot you already hold;
+- a building only counts what it makes above the colony's own biggest source of that good (a colony's supply is its largest single source, not the total);
+- only what the colony can ship off-world counts;
+- a building still under construction counts as already made, so another colony won't start the same thing in the meantime.
+
+Covering a shortage your own colonies have counts extra on top (your colonies selling to each other earns nothing, but it keeps their industries running and their upkeep down). That's what spreads your colonies across different goods instead of five planets making ore. You can turn it off under Settings, Building and planning, **Exports valued by market share**, to get the old flat rate per unit back. The Diagnostics report has a market section with your share of every good, and the log checks the model against the game's own shares once a week.
+
 Each colony is looked at every 7 days, or right after something finishes building. Across the whole empire, the best value per credit goes first. A colony starts at most one new building and one upgrade at a time (more upgrades while spending freely), and if the best thing has to wait for budget, the next best goes instead so the colony doesn't just sit there.
 
 A few things it avoids on its own:

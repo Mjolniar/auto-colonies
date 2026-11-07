@@ -219,6 +219,7 @@ public class CADiagnostics {
             }
             root.put("issues", arr);
             try { root.put("modWatch", CAModWatch.json()); } catch (Throwable t) { LOG.warn(TAG + "mod watch report failed", t); }
+            try { if (Global.getSector() != null && CAMarket.on()) root.put("market", CAMarket.json()); } catch (Throwable t) { LOG.warn(TAG + "market report failed", t); }
             try { if (Global.getSector() != null) root.put("colonies", colonies()); } catch (Throwable t) { LOG.warn(TAG + "colony report failed", t); }
             Global.getSettings().writeTextFileToCommon(REPORT, root.toString(2));
         } catch (Throwable t) {

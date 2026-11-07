@@ -71,6 +71,11 @@ public class CAData {
     public Map<String, Float> calUp() { if (calUp == null) calUp = new HashMap<String, Float>(); return calUp; }
     public Map<String, Integer> calOutN() { if (calOutN == null) calOutN = new HashMap<String, Integer>(); return calOutN; }
     public Map<String, Integer> calUpN() { if (calUpN == null) calUpN = new HashMap<String, Integer>(); return calUpN; }
+    /** 2.44.0 market model (CAMarket): buildings under construction, "market|building|replaced" -> each good's supply there once done, and since when. */
+    public Map<String, Map<String, Integer>> marketPending;
+    public Map<String, Float> marketPendingSince;
+    public Map<String, Map<String, Integer>> marketPending() { if (marketPending == null) marketPending = new HashMap<String, Map<String, Integer>>(); return marketPending; }
+    public Map<String, Float> marketPendingSince() { if (marketPendingSince == null) marketPendingSince = new HashMap<String, Float>(); return marketPendingSince; }
     public float minStability = 5f;
     public boolean buildoutOffered;   // the first-colony fast buildout dialog has been shown (or doesn't apply to this save)
     public CASettings settings;
