@@ -99,6 +99,9 @@ public class CAEngine {
         public Map<String, Integer> supplied = new LinkedHashMap<String, Integer>();
         boolean recording;
         float suppliedValue;   // value of those lines, for calibration
+        /** Market model (CAMarket, 2.44.0): units passed per good so far, the colony's supply of each once built, and each good's export value. */
+        Map<String, Integer> marketUnits = new HashMap<String, Integer>(), marketAfter = new LinkedHashMap<String, Integer>();
+        Map<String, Float> marketValue = new LinkedHashMap<String, Float>();
         /** How sure the value is: 1 for the game's own formulas, less for measurements and estimates (see finish()). */
         public float confidence = 1f;
     }
@@ -434,14 +437,44 @@ public class CAEngine {
             return;
         }
         float base = Global.getSettings().getCommoditySpec(com).getBasePrice();
+        String name = Global.getSettings().getCommoditySpec(com).getName();
         Integer d = deficit.get(com);
+        // 2.44.0: what it adds to your share of the good's sector market (CAMarket), plus the shortage it covers at the flat rate;
+        // the flat rate for everything only when the model is off or has no data for the good
+        CAMarket.Gain g = null;
+        if (supplierAt != null && CAMarket.on()) {
+            try { g = CAMarket.pickGain(supplierAt, p, com, units); } catch (Throwable t) { g = null; }
+        }
+        if (g != null) {
+            int lack = d != null && d > 0 ? d : 0;
+            int cover = Math.min(g.addedAfter, lack) - Math.min(g.addedBefore, lack);
+            float relief = base * unitValue * cover;
+            float v = g.value + relief;
+            p.fx[0] += v;
+            if (p.recording) { Integer was = p.supplied.get(com); p.supplied.put(com, (was == null ? 0 : was) + units); p.suppliedValue += v; }
+            if (g.addedAfter <= g.addedBefore) {
+                p.lines.add("+" + units + " " + name + ": already made here in larger amounts (a colony counts only its biggest source), adds nothing");
+                return;
+            }
+            String share = Math.round(g.shareBefore * 100f) + "% -> " + Math.round(g.shareAfter * 100f) + "%";
+            p.lines.add("+" + units + " " + name + ": about " + Misc.getDGSCredits(g.value) + " per month in exports (your share of the sector's "
+                    + name.toLowerCase(Locale.ROOT) + " " + share + ")" + (g.capped ? ", past what the colony can ship" : "")
+                    + (cover > 0 ? "; covers " + cover + " of your colonies' shortage, about " + Misc.getDGSCredits(relief) + " more" : ""));
+            return;
+        }
         float mult = (d != null && d > 0) ? 1.5f : 1f;
         float v = base * unitValue * units * mult;
         p.fx[0] += v;
         if (p.recording) { Integer was = p.supplied.get(com); p.supplied.put(com, (was == null ? 0 : was) + units); p.suppliedValue += v; }
-        p.lines.add("+" + units + " " + Global.getSettings().getCommoditySpec(com).getName()
-                + (mult > 1f ? " (your colonies are short)" : "") + ": about " + Misc.getDGSCredits(v) + " per month");
+        p.lines.add("+" + units + " " + name + (mult > 1f ? " (your colonies are short)" : "") + ": about " + Misc.getDGSCredits(v) + " per month");
     }
+
+    /**
+     * Whether a caller has to take what the colony already makes off its own line (Roider Dives, Yunru's drydocks): only
+     * while scoring without the market model, which counts a colony's largest single source itself (2.44.0). Outside scoring
+     * (calibration) a building's line is its whole output.
+     */
+    static boolean callerNets() { return supplierAt != null && !CAMarket.on(); }
 
     /** A change to output already counted, e.g. from the colony's management style; delta may be negative. */
     static void supplyChange(Pick p, String com, int delta, Map<String, Integer> deficit, String why) {

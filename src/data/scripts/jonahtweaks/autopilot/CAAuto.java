@@ -32,6 +32,8 @@ public class CAAuto {
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "calibration failed", t); }
         try { CAModWatch.weekly(now); }   // weekly: how each colony mod is doing, into the Diagnostics report (2.38.0)
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "mod watch failed", t); }
+        try { CAMarket.weekly(now); }   // weekly: the market model against the game's own shares, and where you hold most (2.44.0)
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "market model check failed", t); }
         try { CASiege.update(d); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "siege check failed", t); }
         try { CAStores.daily(); }   // shipments between colonies' Autopilot Storage arrive
@@ -132,9 +134,21 @@ public class CAAuto {
         Map<String, Integer> startedUp = new HashMap<String, Integer>();
         Set<Object> upgrading = new HashSet<Object>();
         int maxUps = rich ? 3 : 1;
+        // 2.44.0: goods a colony started making this pass; another colony's pick that's mostly worth the same goods waits a day
+        // and is scored again with that building counted (CAMarket), so two colonies don't start the same producer at once
+        Map<String, String> claimedBy = new HashMap<String, String>();
         for (Cand k : cands) {
             Integer ups = startedUp.get(k.m.getId());
             if (k.p.upgrade ? (ups != null && ups >= maxUps) || upgrading.contains(k.p.existing) : startedNew.contains(k.m.getId())) continue;
+            if (!claimedBy.isEmpty() && k.remove == null) {
+                Set<String> theirs = new HashSet<String>();
+                for (Map.Entry<String, String> e : claimedBy.entrySet()) if (!e.getValue().equals(k.m.getId())) theirs.add(e.getKey());
+                if (!theirs.isEmpty() && CAMarket.claimedPart(k.p, theirs) >= 0.5f) {
+                    CADiagnostics.LOG.info(CADiagnostics.TAG + k.m.getName() + ": " + k.p.name + " waits a day: another colony just started making most of what it's worth");
+                    nextPass.put(k.m.getId(), now + 1f);
+                    continue;
+                }
+            }
             float cap = CASurplus.projectCap(k.m, s);   // the focus world may go past it with surplus credits
             if (k.p.cost > cap) { propose(k.m, k.c, k.p, "over the per-project cap, needs your approval"); continue; }
             if (k.p.measured && s.measuredMode == 1) { propose(k.m, k.c, k.p, "a mod building scored from measurements, needs your approval"); continue; }
@@ -174,6 +188,7 @@ public class CAAuto {
                 catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "endgame replacement failed at " + k.m.getName(), t); continue; }
             }
             if (execute(k.m, k.c, k.p, "Auto") == null) {
+                for (Map.Entry<String, Float> e : k.p.marketValue.entrySet()) if (e.getValue() > 0f && !claimedBy.containsKey(e.getKey())) claimedBy.put(e.getKey(), k.m.getId());
                 if (!k.p.upgrade) startedNew.add(k.m.getId());
                 else { startedUp.put(k.m.getId(), (ups == null ? 0 : ups) + 1); upgrading.add(k.p.existing); }
                 if (eg) { CAEndgame.charge(s, loss); CAEndgame.built(k.m, k.p); }
@@ -311,6 +326,8 @@ public class CAAuto {
         String err = CABuild.start(m, p);
         if (err != null) { CALog.add(m.getName() + ": could not start " + p.name + ": " + err); return err; }
         CABudget.charge(s, p.cost, fee, p.upkeep);
+        try { CAMarket.claim(m, p); }   // what it'll make counts as made while it's under construction (2.44.0)
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "market model claim failed at " + m.getName(), t); }
         CALog.forget(m.getId() + ":" + p.id);
         CALog.forget(m.getId() + ":" + p.id + ":upkeep");
         CAData.get().clearPending(c);

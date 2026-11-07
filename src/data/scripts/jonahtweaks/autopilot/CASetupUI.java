@@ -92,6 +92,7 @@ public class CASetupUI {
         s.capitalNoGather = false;
         s.capitalNoRoom = false;
         s.noStationPlan = false;   // a station at every colony (2.42.0)
+        s.noMarketModel = false;   // exports valued by your share of each sector market (2.44.0)
         s.noOverLimitFix = false;  // and a colony over its industry limit takes down its weakest industry
     }
 
@@ -227,6 +228,11 @@ public class CASetupUI {
                 + ", story points: " + CASettings.SP_NAMES[s.storyPointRule])) {
             row(t, "Station line", stationName(s.stationLine), "Pick by score", "station", true);
             row(t, "Station at every colony", s.noStationPlan ? "No" : "Yes", "Yes", "stationplan", true);
+            row(t, "Exports valued by market share", onOff(!s.noMarketModel), "On", "marketmodel", true);
+            if (!s.noMarketModel) t.addPara("A colony's exports earn its share of each good's sector market, so the more of a market your "
+                    + "colonies already hold, the less one more producer adds, and a good few others make is worth the most. Buildings count "
+                    + "what they'd add to that share, only what's above the colony's own biggest source of the good, and a building under "
+                    + "construction counts as made. Off: every unit of anything is worth one flat rate, as before 2.44.0.", Misc.getGrayColor(), 4f);
             if (!s.noStationPlan) t.addPara("A station fights next to your fleets and anything raiding, bombarding or invading has to beat it first. "
                     + "Every colony plans one from size 4 (or half a year old) once its fast buildout is done, a Battlestation from size 6 and a "
                     + "Star Fortress from size 8 (a size sooner at the capital).", Misc.getGrayColor(), 4f);
@@ -592,6 +598,7 @@ public class CASetupUI {
         else if (k.equals("capstart")) s.capitalStart = (Math.max(0, Math.min(CACapital.START_NAMES.length - 1, s.capitalStart)) + 1) % CACapital.START_NAMES.length;
         else if (k.equals("caproom")) s.capitalNoRoom = !s.capitalNoRoom;
         else if (k.equals("stationplan")) s.noStationPlan = !s.noStationPlan;
+        else if (k.equals("marketmodel")) { s.noMarketModel = !s.noMarketModel; CAMarket.invalidate(); CAAuto.nextPass.clear(); }
         else if (k.equals("overlimit")) s.noOverLimitFix = !s.noOverLimitFix;
         else if (k.equals("lowprofile")) CALowProfile.set(s, !s.lowProfile, "Settings");
         else if (k.equals("capgather")) s.capitalNoGather = !s.capitalNoGather;
