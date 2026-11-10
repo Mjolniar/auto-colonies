@@ -83,11 +83,11 @@ There are no cheat or balance settings. The mod manages your colonies the way yo
 
 ## Coming in 3.0
 
-- **Back up your saves before updating.** A save made on 3.0 won't load in 2.45.x.
-- **About 20 main rows** (planned), with the rest under an **Advanced** section. Each main row is a preset that sets several of today's settings and shows **Custom** when you've mixed them. Planned spending presets: Thrifty (30% / 5%), Normal (50% / 15%, today), Lavish (80% / 30%).
-- **Rows that merge or go** (planned): War fleets becomes one War level (Retaliate is today's default), per-faction High/Normal/Ignore becomes a stance per faction, and the per-project cap follows your income. The admin delay switch is already gone.
-- **Shorter text and first-time setup** (planned): five rows (Spending, Extras, New colonies, War, Credit reserve), everything else recommended.
-- **Your settings carry over** (already built, being tested), and nothing gets more aggressive on its own.
+- Back up your save before updating. A save made in 3.0 can't be loaded in 2.45.x.
+- Planned: about 20 main rows, with the rest in an Advanced section. Each main row is a preset that sets several current settings, and shows Custom when they've been changed separately. Planned spending presets: Thrifty (30% / 5%), Normal (50% / 15%, current), Lavish (80% / 30%).
+- Planned: War fleets becomes one War level (default Retaliate, the current behavior). The per-faction High/Normal/Ignore setting becomes a stance per faction. The per-project cap follows your income.
+- Planned: first-time setup has 5 rows: Spending, Extras, New colonies, War, Credit reserve. Everything else uses recommended values.
+- Built, in testing: the Admin delay setting is removed. Existing settings carry over, and none becomes more aggressive on update.
 
 Plans can still change before release.
 

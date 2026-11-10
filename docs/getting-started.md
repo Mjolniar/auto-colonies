@@ -58,11 +58,12 @@ Next: [How it builds](how-it-builds.md), or [Settings](settings.md).
 
 ## Coming in 3.0
 
-- **Back up your saves before updating.** A save made on 3.0 won't load in 2.45.x.
-- **Steadier and safer** (already built, being tested): your old settings carry over and nothing gets more aggressive on its own. One bad step can't skip the day.
-- **One build queue and a payback window** (already built, being tested).
-- **Shorter menu and first-time setup** (planned).
-- **Auto-expansion, a money ladder, war and diplomacy** (planned). Auto-expansion is planned to start off.
+- Back up your save before updating. A save made in 3.0 can't be loaded in 2.45.x.
+- Built, in testing: old settings carry over, and no setting becomes more aggressive on update.
+- Built, in testing: a failing daily step no longer stops the other steps.
+- Built, in testing: one ranked build queue for all colonies, with a 36-month payback limit.
+- Planned: a shorter settings menu with a 5-row first-time setup.
+- Planned: auto-expansion (off by default), a money ladder, and war and diplomacy settings.
 
 Plans can still change before release.
 

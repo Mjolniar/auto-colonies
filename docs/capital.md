@@ -40,10 +40,10 @@ Under **Settings, Capital**: **Capital** (Autopilot picks), **Capital does** (De
 
 ## Coming in 3.0
 
-- **Already built, being tested:** the make-room swap uses the same math as a build, and leaves the capital's own plan alone.
-- **Already built, being tested:** anything Autopilot takes down stays off that colony's list for a year.
-- **Planned:** trade buildings that lose money wait for the economy step of the money ladder ([Money](money.md)).
-- **Planned:** ships Autopilot orders arrive in the capital's Storage.
+- Built, in testing: the make-room swap values buildings the same way new builds are valued, and doesn't remove the capital's own plan steps.
+- Built, in testing: buildings Autopilot removes aren't rebuilt at that colony for a year.
+- Planned: trade buildings that lose money are only built from the economy step of the money ladder ([Money](money.md)).
+- Planned: ships the mod orders are delivered to the capital's storage.
 
 Everything planned for 3.0: [roadmap](roadmap.md)
 

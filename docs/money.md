@@ -69,11 +69,11 @@ It only looks at colonies a year old or more that lost money three months runnin
 
 ## Coming in 3.0
 
-- **Already built, being tested:** budget runs on a 3-month median of what colonies really make, so one bad month doesn't move every cap.
-- **Already built, being tested:** builds must pay back within 36 months, stretching toward 120 as spare credits pile up.
-- **Planned:** a money ladder. The richer you are, the more it buys: stockpiles for shortages, growth, military, ships through custom production, new colonies, then the economy.
-- **Planned:** spending presets and an On / Recommend / Off switch per item. Planned default is Balanced, with ships and expansion on Recommend so you approve them first.
-- **Planned:** it stops ordering ships at 6 unclaimed hulls in your capital's Storage. Ships still cost credits.
+- Built, in testing: the budget uses the median colony income of the last 3 months.
+- Built, in testing: builds have to pay back within 36 months. The limit grows toward 120 months as spare credits increase.
+- Planned: a money ladder. Spare money goes to these uses in order: stockpiles for shortages, growth, military, ships through custom production, new colonies, economy.
+- Planned: spending presets, and an On / Recommend / Off setting for each ladder step. Planned defaults: Balanced preset, ships and expansion on Recommend (you approve each one).
+- Planned: ship orders stop at 6 unclaimed hulls in the capital's storage. Ships are paid for at normal prices.
 
 Everything planned for 3.0: [roadmap](roadmap.md)
 
