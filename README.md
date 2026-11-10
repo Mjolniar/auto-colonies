@@ -1,84 +1,76 @@
 # Jonah's Colony Manager
 
 > [!WARNING]
-> **AI-generated.** Mod, docs and build checks written by AI coding agents. Compiled and checked offline (bytecode
-> verification against every combination of the optional mods). Expect bugs. Report them as [issues](https://github.com/Mjolniar/jonahs-colony-manager/issues) with
-> `starsector-core/starsector.log` and `saves/common/colony_autopilot_diagnostics.json.data` if you have the time/willingness to dig logs, otherwise it's chill to just throw it in issues anyway, whatever problem is occurring with the mod installed. It would be good to know your modlist if you do have an issue to see what is incompatible with the mod so I can get that fixed.
+> **AI-generated.** The mod, docs and build checks were written by AI coding agents and checked offline (bytecode
+> verification against every combination of the optional mods). Expect bugs. Report them as [issues](https://github.com/Mjolniar/jonahs-colony-manager/issues),
+> ideally with `starsector-core/starsector.log`, `saves/common/colony_autopilot_diagnostics.json.data` and your modlist. If not, post the problem anyway.
 
-This is a mod I had Claude Code create for me due to always liking to have tons of colonies with lots of buildings, limits off, etc, but always getting way in over my head with management.
+I like lots of colonies with the limits off, and I kept getting in over my head managing them. So I had Claude Code make this. Flip a colony to **Auto** and it looks after itself, as long as you have the cash. The **Colony Autopilot** button is on the colony screen (or right click Population & Infrastructure).
 
-The goal of the mod is to let you simply flick the automatic switch on your colonies and have them take care of themselves, so long as you have the cash to keep them improving. There's a Colony Autopilot button right on the colony screen (or right click Population & Infrastructure, it's the bottom option). There's several modes to choose from, tons of options involving governors, buildings, how you want the colony to develop, and so on!
+## Quick version
 
-By default, most of the settings will try to optimize your colonies to protect them and make them profitable, for a small convenience fee per building placed and action taken. To have it add items to your colonies, there is a colony storage you can access at any of your owned colonies where you can put all colony augment items (nanoforges, AI cores, etc.) - this has extensive modded support as well. The manager will automatically work out a plan for each planet based on what it has to work with, and you can set each colony's goal (money, security, war production and so on) to steer it however you want. I highly suggest going through the options to your taste, and they're editable on the fly from the Colony Autopilot tab in the intel screen.
-
-Once you're rich it doesn't just sit on the money either. Past a certain point it starts pouring the extra cash into your best worlds, then into every colony, and once you're making a stupid amount a month it stops caring about money entirely and builds for production, research and military instead. With Nexerelin it'll also handle defense fleets, pirate base strikes and hitting back at whoever raids you, without ever trying to invade anyone.
-
-This mod is currently working with most of the colony mods I could find on the main Starsector mod page, but if you would like one added to its functionality please put it into the issues tab and I'll do it asap.
+- It builds, upgrades, places items and AI cores, hires administrators and handles policies, for a small fee per action.
+- Every action costs something, and the mod leaves game balance alone.
+- Settings are editable on the fly from the Colony Autopilot tab in the intel screen.
+- Works with 20+ colony mods. None are required. Want one added? Put it in issues.
 
 ## Install
 
 1. Grab the zip from the [latest release](https://github.com/Mjolniar/jonahs-colony-manager/releases/latest) and extract it into `Starsector/mods/`.
-2. Enable **Jonah's Colony Manager** in the launcher. No required mods, everything else it supports is optional.
+2. Enable **Jonah's Colony Manager** in the launcher.
 
-It's fine to add to an existing save. Don't remove it from a save that used it though, the Autopilot Storage tab lives on your markets.
-
-Got MagicLib (it has Version Checker built in) or a mod manager like TriOS? You'll get told when there's an update, from 2.42.3 on.
+Fine to add to an existing save. Don't remove it from a save that used it, because Autopilot Storage lives on your markets. MagicLib or TriOS will tell you about updates.
 
 ## Quick start
 
-1. Open a colony and hit the **Colony Autopilot** button.
-2. Pick a goal (Balanced, Money, Security, War production, Rapid growth, Self-sufficiency) or leave it on Balanced.
-3. Set the mode to **Auto**. The first time you do this it opens setup with the recommended settings already filled in. Just save it, they're meant to work without touching anything.
-4. Drop any colony items and AI cores you want it to use into **Autopilot Storage** at any of your colonies. It ships them where they're needed, for a fee and some travel time.
+1. Open a colony and hit **Colony Autopilot**.
+2. Pick a goal, or leave it on Balanced.
+3. Set the mode to **Auto** and save the recommended setup.
+4. Drop items and AI cores into **Autopilot Storage**. It ships them where they're needed, for a fee and travel time.
 
-That's really it. The [Getting started](docs/getting-started.md) guide walks through it properly, including the fast buildout it offers when you found your first colony.
+The [Getting started](docs/getting-started.md) guide covers it properly.
 
 ## What it does
 
-- Builds and upgrades your colonies on its own, within a budget you control, following a plan for each planet.
-- Places your colony items and AI cores where they do the most, and keeps colonies under the Hegemony's inspection radar.
-- Has a **Low profile** mode if you'd rather not deal with colony crises: it keeps growing but stays clear of what draws inspections, Pather cells, mercenaries and the rest.
-- Turns one colony into your capital: production deliveries and your loot go there, and once you're making money it builds it up into a place to buy and sell.
-- Hires and places administrators, handles hazard pay, free ports and other policies.
-- Reacts to threats: plans for security when a colony is in danger, only builds defenses during a siege, and prices colony crises into everything.
-- Spends big surpluses for you instead of letting money pile up, and switches to an endgame economy once money stops mattering.
-- Runs research, terraforming, trade contracts, megastructures and a lot more when the mods for them are installed.
-- Works with mod buildings it doesn't know by measuring them on a throwaway test colony first.
-- Doesn't change any balance. It only manages your colonies.
+- Builds and upgrades colonies within a budget you control.
+- Places items and AI cores, and keeps colonies under the Hegemony's inspection radar.
+- **Low profile** mode avoids inspections, Pather cells and mercenaries.
+- Builds one colony into your capital, and a trade hub once you're making money.
+- Plans for security and prices colony crises into what it builds.
+- Spends big surpluses, then switches to an endgame economy.
+- Runs research, terraforming, trade contracts and megastructures when their mods are installed.
+- With Nexerelin it handles defense fleets and pirate strikes. Invasions are left to you.
+
+## Coming in 3.0
+
+- **Already built, being tested:** a smarter planner. One build queue for all your colonies that saves up for big builds and builds once per shortage.
+- **Planned:** a money ladder for spare cash, auto-expansion, war and diplomacy, and a much shorter settings menu.
+- A save made on 3.0 won't load in 2.45.x, so keep a backup.
+
+Plans can still change. Everything planned: [roadmap](docs/roadmap.md).
 
 ## Guides
 
-- **[Getting started](docs/getting-started.md)** - install, the two panels, your first colony, and what to do if it isn't building anything.
-- **[How it builds](docs/how-it-builds.md)** - goals, plans, how it picks what to build, and how to keep control.
-- **[Low profile](docs/low-profile.md)** - expanding while drawing as little attention as possible, and what that costs.
-- **[Your capital](docs/capital.md)** - the home port: where your production and stuff goes, and how it becomes a place to trade.
-- **[Money, surplus and the endgame](docs/money.md)** - the budget, the focus world, spending freely, the endgame economy and autonomy.
-- **[Items, AI cores and administrators](docs/items-and-cores.md)** - Autopilot Storage, where things go, inspections and governors.
-- **[War and security](docs/war-and-security.md)** - threat, sieges, colony crises, defense and war fleets, agents.
-- **[Research](docs/research.md)** - Vaults of Knowledge research, special projects, wonders and gates.
+- **[Getting started](docs/getting-started.md)** - your first colony.
+- **[How it builds](docs/how-it-builds.md)** - goals, plans, keeping control.
+- **[Low profile](docs/low-profile.md)** - expanding quietly, and the cost.
+- **[Your capital](docs/capital.md)** - the home port and trade hub.
+- **[Money, surplus and the endgame](docs/money.md)** - budget, spending freely, autonomy.
+- **[Items, AI cores and administrators](docs/items-and-cores.md)** - storage, inspections, governors.
+- **[War and security](docs/war-and-security.md)** - threats, sieges, fleets, agents.
+- **[Research](docs/research.md)** - research, projects, wonders, gates.
 - **[Terraforming](docs/terraforming.md)** - special-world plans and surplus terraforming.
-- **[Settings](docs/settings.md)** - every setting, what it does and what's recommended.
-- **[Supported mods](docs/supported-mods.md)** - what it does with each mod you have.
-- **[Patch notes](docs/changelog.md)** - every version so far, all the way back to when it was Jonah Tweaks.
+- **[Settings](docs/settings.md)** - every setting and what's recommended.
+- **[Supported mods](docs/supported-mods.md)** - what it does with each mod.
+- **[Roadmap](docs/roadmap.md)** - what's coming in 3.0.
+- **[Patch notes](docs/changelog.md)** - every version, back to Jonah Tweaks.
 
-If you want every rule written down, that's in [details.md](docs/details.md). It's long.
-
-For the code side:
-- **[Auditing the mod](docs/audit.md)** - everything it can change in your game, what each thing costs, and what it never does, so you can check it's safe quickly.
-- **[Source guide](docs/source-guide.md)** - how the code is laid out and how it works, file by file.
-- **[Automating Starsector colonies](docs/automation-primer.md)** - the game API stuff and traps we hit, if you're automating colonies yourself.
+Every rule is in [details.md](docs/details.md). It's long. For the code side: [Auditing the mod](docs/audit.md), the [Source guide](docs/source-guide.md) and [Automating Starsector colonies](docs/automation-primer.md).
 
 ## Permissions
 
-Use it however you want. Modpacks, reuploads, forks, copying the whole thing, building on it, all fine, no need to ask or credit me. Just don't sell it. See [LICENSE](LICENSE).
+Use it however you want: modpacks, reuploads, forks, no need to ask or credit me. Just don't sell it. See [LICENSE](LICENSE).
 
 ## Building it yourself
 
-JDK 17, sources in `src/`:
-
-```
-javac --release 17 -cp "<core jars>;<optional mod jars>" -d build <all .java files under src>
-jar cf jars/jonahtweaks.jar -C build data
-```
-
-Core jars: `starfarer.api.jar`, `starfarer_obf.jar`, `fs.common_obf.jar`, `log4j-1.2.9.jar`, `json.jar`, `lwjgl.jar`, `lwjgl_util.jar`. Optional: Terraforming Made Easy, Industrial Evolution, Nexerelin, Random Assortment of Things, Station Augments (plus LazyLib's Kotlin runtime and LunaLib).
+JDK 17, sources in `src/`. Compile with `javac --release 17` against the core jars (`starfarer.api.jar`, `starfarer_obf.jar`, `fs.common_obf.jar`, `log4j-1.2.9.jar`, `json.jar`, `lwjgl.jar`, `lwjgl_util.jar`) plus any optional mod jars, then `jar cf jars/jonahtweaks.jar -C build data`.

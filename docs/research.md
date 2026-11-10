@@ -1,60 +1,60 @@
 # Research
 
-All of this needs Ashes of the Domain (Vaults of Knowledge). The settings are under **Ashes of the Domain**, and the Research section lives on the empire panel's Autopilot Storage page.
+Needs Ashes of the Domain (Vaults of Knowledge). Settings are under **Ashes of the Domain**.
+
+## Quick version
+
+- **Research** on **Auto** starts the best tech whenever nothing is running or queued. Your own queue is left alone.
+- Techs are valued by what they unlock at your colonies. Plan steps locked by research come first.
+- Databanks are the usual bottleneck, so they go to techs a plan needs.
 
 ## How it picks research
 
-The **Research** setting is Advisor before setup, **Auto** with the recommended settings, or Off.
+Setting: Advisor before setup, **Auto** with recommended settings, or Off.
 
-Each tech you can start is valued by what it would unlock at your colonies. It does that by pretending the tech is done for a moment and scoring your colonies' builds the same way it scores anything else, then putting it back. On top of that come the tech's other effects (more output, lower hazard, lower upkeep) and half the value of the best tech it leads to.
-
-Your colonies' plans come first. If a plan step is locked by research, the whole chain of techs it still needs gets traced, and the value of that step is shared along the chain. So the first tech in a three-tech chain toward something a colony actually wants still gets picked.
-
-No Research Facility anywhere and research on Auto? Then one goes first in your focus world's plan (or your biggest colony's), ahead of everything else, since nothing gets researched without one.
-
-Auto starts the best tech whenever nothing is running or queued. If you have something queued yourself it waits, it never touches your queue. It also puts Sophia Anderson at the head of R&D before starting if you have her, since she knocks a databank off every tech.
-
-Databanks are usually the bottleneck. While the best plan tech is short of them, the ones you have only go to techs some plan needs, and the log says what's next and how many it needs. After 90 days of that, the best thing you can afford goes ahead anyway so research doesn't sit idle forever. Same if nothing pays for itself within a year: it starts the best of the rest rather than stopping.
-
-When a tech starts, whatever the Research Facility tab is short of gets moved in. What's already at that colony (its Autopilot Storage, databanks in its Storage, your fleet's databanks while you're in that system) goes straight in. Anything at another colony, or in your fleet somewhere else, gets shipped there first for a fee and travel time, and the tech starts once it all arrives. Nothing moves unless everything the tech needs is somewhere it can be taken from.
+- **Value.** It pretends a tech is done and scores what that unlocks at your colonies, plus the tech's own effects and half the best tech it leads to.
+- **Plan chains.** If a plan step is locked, the whole chain of techs it needs shares its value.
+- **No Research Facility?** One goes first in your focus world's plan.
+- **Sophia Anderson** is put at the head of R&D first, since she knocks a databank off every tech.
+- **Databanks.** While the best plan tech is short, they only go to techs a plan needs. After 90 days of that, the best affordable tech goes anyway.
+- **Moving things.** Whatever the Research Facility is short of is shipped in for a fee and a couple of days. Nothing starts until it all arrives.
 
 ## Techs that take colony items
 
-Some techs eat colony items (a Pristine Nanoforge, a Synchrotron Core and so on). By default those are yours to start. The Research section lists each one with what it takes, how many you have, and where each item comes from.
+Some techs eat colony items (a Pristine Nanoforge and so on). Those are yours to start by default.
 
-If you'd rather it handled those too, turn on **Research spends colony items (surplus only)**:
+**Research spends colony items (surplus only)** lets Auto take them while credits are over the surplus line:
 
-- **From storage** - while your credits are over the surplus line, Auto research can take the items from Autopilot Storage and your colonies' Storage tabs.
-- **From storage and buildings** - same, but it can also pull them out of buildings, starting with the one where the item does the least. Buildings you've locked are never touched.
+- **From storage.** Autopilot Storage and Storage tabs.
+- **From storage and buildings.** Also buildings, starting where the item does least. Locked buildings are safe.
 
-Either way, nothing gets pulled until everything the tech needs is on hand, so you won't lose a nanoforge to a tech that can't start anyway. This is off by default.
+Nothing is pulled until the tech has everything it needs. Off by default.
 
 ## AI cores in research buildings
 
-A core in a Research Facility or Black Site doesn't speed up research. Vaults of Knowledge uses it to cut the building's own costs: half for an Alpha, a quarter for a Beta, a tenth for a Gamma. An Alpha also adds a databank a month on a world with a pre-collapse facility. With **Alpha cores in research buildings** on **First** (recommended), Alphas go there before anywhere else.
+A core there cuts the building's own costs (Alpha half, Beta a quarter, Gamma a tenth). **Alpha cores in research buildings** on **First** (recommended) puts Alphas there first.
 
 ## Surplus research
 
-With credits over the surplus line, more Research Facilities go up at Auto colonies, one at a time, up to the 8 that Vaults of Knowledge counts (each past the first is +10% research speed). Worlds with a pre-collapse facility go first. They only go up while the research left is worth it, or always during the [endgame economy](money.md#the-endgame-economy) as long as anything's left to research. The ones it built come down once there's nothing left. **Surplus research** under Budget and spending turns this off.
+With credits over the surplus line, more Research Facilities go up at Auto colonies, one at a time, up to 8 (each past the first is +10% research speed). They go up while research left is worth it, or always in the [endgame economy](money.md#the-endgame-economy). **Surplus research** under Budget and spending turns it off.
 
 ## Special project supply
 
-A black site project takes goods every month from your own colonies' production, and a stage stops if any of them isn't delivered at all. Some of those goods (Electronic Components, Domain-grade machinery, Refined Metal, Enriched Transplutonics) aren't made by any faction, so without your own producer the project just never moves.
-
-**Special project supply** on **Auto** (recommended) looks at the project you're running and, for each good none of your colonies make, puts its producer in as a first plan step at the best colony for it, along with the producers of that building's own inputs. It does the same for your open **production orders**: a big order (like Jonah's Auto Outfitting's weapons for a fleet) takes goods from your colonies as it goes, so anything it needs that you don't make gets a producer planned too. Research then works toward it and it gets built. **Warn only** just tells you, and **Off** leaves it alone. Cores, items and ships a stage takes are always yours.
-
-While spending freely, it goes further and builds producers for all of those advanced goods even with no project running.
+Black site projects take goods from your colonies each month, and some (Electronic Components, Refined Metal, Enriched Transplutonics) no faction makes. With **Special project supply** on **Auto** (recommended), a good none of your colonies make gets its producer planned as a first step at the best colony. Open production orders work the same way. **Warn only** just tells you. **Off** leaves it alone.
 
 ## Wonders and gates
 
-While spending freely, with **Wonders and gates while spending freely** on:
+While spending freely, with **Wonders and gates while spending freely** on, it builds the Daedalus Array and the Bifrost network (control center, then a gate per system). Each starts once your colonies make every good it needs.
 
-- **The Daedalus Array** goes up at a colony that qualifies.
-- **The Bifrost network**: the Bifrost Control Center becomes a plan step (so research works toward it), then a gate goes up in each of your systems.
+## Coming in 3.0
 
-Ashes of the Domain takes their construction goods out of your exports every month, so each one only starts once your colonies make every good it needs. The Garden of Elysium and Star Citadels are left to you.
+- **Already built, being tested:** no databanks on filler techs that don't pay back within a year, unless you have idle money.
+- **Already built, being tested:** extra Research Facilities must cover their whole upkeep.
+- **Already built, being tested:** ranking techs no longer changes your save.
+- **Planned:** research facilities get funded as part of the money ladder ([Money](money.md)).
 
+Everything planned for 3.0: [roadmap](roadmap.md)
 
-It works on one tech at a time. If the databanks for the next one are at another colony, they get shipped to the Research Facility (a fee and a couple of days), and nothing else gets started or shipped until they arrive and that tech starts.
+Plans can still change before release.
 
 Next: [Terraforming](terraforming.md).

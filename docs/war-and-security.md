@@ -1,70 +1,58 @@
 # War and security
 
-How it keeps your colonies safe, and with Nexerelin, how it handles fleets. It never invades anyone or takes colonies, that's always your call.
+## Quick version
+- **Keeps colonies safe.** It tracks threat, handles sieges and crises, and with Nexerelin sends defense fleets and agents.
+- **Invasions and taking colonies are left to you** in 2.45.x.
+- **Want fewer fights?** See [Low profile](low-profile.md).
 
 ## Threat
-
-Every colony has a threat estimate built from hostile neighbors, colony crises, raids, Pather cells and so on. Once it hits 70% the colony gets planned as Security, so defenses and fleets jump up its list. It goes back to its own goal once the threat is under 65% and at least 60 days have passed, so it doesn't flip back and forth.
+Each colony gets a threat estimate from hostile neighbors, crises, raids and Pather cells. At 70% it's planned as Security. It goes back to its own goal under 65% after at least 60 days.
 
 ## Sieges
+A colony is under siege when it's blockaded, has hostile fleets at the planet or stronger hostiles in the system, or has a hostile raid, invasion or blockade on the way. Meanwhile:
 
-A colony is under siege when it's blockaded, has hostile fleets at the planet, has hostiles in the system that outweigh its defenses, or has a hostile raid, invasion or blockade on the way. While that lasts:
-
-- only defenses get built there;
-- its items, AI cores, administrator, policies, station augments and terraforming are left as they are;
-- trade contracts don't count on its goods, since nothing can be shipped out.
-
-The log says when a siege starts and ends, and the colony panel says why.
+- **Only defenses get built.**
+- **Hands off** items, AI cores, administrator, policies, augments and terraforming.
+- **Trade contracts** don't count on its goods.
 
 ## Colony crises
+The crisis meter is priced into everything, at about 640 credits a month per point of monthly progress.
 
-The game's crisis meter is priced into everything, at about 640 credits a month per point of monthly progress. So:
+- **AI cores** pay for the Hegemony progress and Pather interest they add.
+- **Patrol HQ, Military Base, High Command** get credit for slowing every crisis.
+- **Fuel Production** counts the Diktat's interest.
+- **Once the next crisis is picked** (meter at 500), the colony it will hit is planned as Security, a Pather target sheds AI cores, and free ports that would count get closed.
 
-- AI cores pay for the Hegemony progress they add (colonies of size 3 or less are free) and the Pather interest they bring.
-- A Patrol HQ, Military Base or High Command counts how much it slows every crisis down.
-- Fuel Production counts the Sindrian Diktat's interest.
-
-Once the next crisis is picked (the meter at 500), the colony it's likely to hit gets planned as Security, a Pather target sheds AI cores until its cell can dissolve, and a coming Nexerelin police raid closes free ports that would count. The **Colony crises** page in the empire panel shows the meter, what's coming and where, what's driving each faction's crisis, and how to end it. Deals, fights and memberships are up to you.
-
-If you'd rather draw as few crises as possible in the first place, that's what [Low profile](low-profile.md) is for.
+The **Colony crises** page in the empire panel shows what's coming and how to end it. Deals and fights are up to you.
 
 ## Station augments
-
-With Station Augments, stations get the best set of augments they can fit. While a colony's threat is high, or a raid or blockade is on its way, combat counts four times as much, and the output augments come back once things calm down. Nothing changes during a battle.
+Stations get the best augments they can fit. Under high threat, or with a raid or blockade coming, combat counts four times as much. Output augments return when it calms down.
 
 ## Nexerelin
+- **Emergency defense fleets.** When hostiles target a colony's system or outweigh its defenses, it requests a Defense fleet. It can go over the monthly budget, never under the credit reserve.
+- **War fleets** (Colony policies): **Protect and strike back** (default), Protect, or Off. Daily, in order:
+  1. Relief to a besieged colony.
+  2. Defense to a colony with high threat or a crisis coming.
+  3. Strikes on pirate and Pather bases within 15 light-years.
+  4. Strikes on markets that attacked you in the last 120 days (not in Protect).
+- **Limits.** Only factions already hostile to you. No invasions or colony expeditions. One fleet a day, 40% of your fleet request points kept for emergencies, never under the credit reserve. When spending freely it sends more, but points are the real limit.
+- **Agents** (Off, **Defense**, or **Defense and offense**):
+  - Security: rebellions, Pather cells and hidden pirate bases.
+  - Relations: raises relations with your preferred factions.
+  - Offense: sabotages the **Offense target**, only if already hostile.
+  - Recruiting costs 12,000 plus the fee and takes 60 days. Agents you hired yourself wait until you click **Let Autopilot use it** on the Mod features page.
 
-### Emergency defense fleets
+The **War fleets** section on the Mod features page shows points, waiting fleets and strike-back targets.
 
-When a colony's system is targeted by a hostile raid, invasion or crisis fleet, or hostiles there outweigh its defenses, it requests a Defense fleet the same way Nexerelin's fleet request dialog does. This can go over the monthly budget since it's an emergency, but never under the credit reserve. It's the **Emergency defense fleets** setting under Colony policies.
+## Coming in 3.0
+- **War levels (planned).** Off, Defend, Retaliate (today's behavior, still the default), Hold them down, Conquer, Scorched. Offense never starts a war without a confirm on the War page.
+- **Faction stances (planned).** Per faction: Ally, Friendly, Neutral, Auto (today), Rival, Enemy, Destroy. They drive war targets, agents and who your diplomats keep close. Enemy means constant war, Destroy means invade until the faction is gone.
+- **Retaking lost colonies (planned).** Needs Retaliate or higher.
+- **Bombarding capitals (planned, opt-in).** Destroy factions only, after you confirm.
+- **Old saves (already built, being tested).** Protect and strike back becomes Retaliate, Protect becomes Defend, Off stays Off. Priorities High, Normal, Ignore become Friendly, Auto, Rival. Retaking lost colonies starts off.
 
-### War fleets
+Plans can still change before release.
 
-The **War fleets** setting (also under Colony policies) is **Protect and strike back** by default, or Protect, or Off. Every day it looks at what's needed, in this order:
-
-1. **Relief** - a relief fleet to a colony under siege (once every 60 days per colony), at Nexerelin's own price for one.
-2. **Proactive defense** - a Defense fleet to a colony whose threat is high or that a colony crisis is heading for, before anything shows up.
-3. **Pirate eradication** - base strikes on the pirate and Pather bases you know about within 15 light-years of a colony, at twice the strength of the base's station.
-4. **Strike back** - raids on the markets that sent raids, invasions or blockades at your colonies in the last 120 days, as long as they're still hostile. Protect mode skips this one.
-
-It never sends invasions or colony expeditions, and only goes after factions that are already hostile to you. Sending a raid at anyone else would start a war, so it just doesn't.
-
-Normally it sends one fleet a day and always keeps 40% of Nexerelin's fleet request points for emergencies. Relief and defense can go over the monthly budget like the emergency fleet. Strikes and raids come out of the budget or the surplus. Nothing ever goes under the credit reserve.
-
-While spending freely (10,000,000+ over the surplus line) it shotguns them out: up to three a day, half again as big, keeping only 10% of the points back, hitting every known base at any distance, and keeping a standing Defense fleet at every colony, all paid from the surplus. In practice Nexerelin's fleet request points are the real limit, they refill slowly no matter how rich you are.
-
-The **War fleets** section on the Mod features page shows your points, what's waiting, every fleet of yours that's out, and which markets are marked for a strike back.
-
-### Agents
-
-The **Agents** setting is Off before setup, **Defense** with the recommended settings, or **Defense and offense**. Each agent gets a role, the way you'd set them up yourself:
-
-- **Security** (the first one) - handles rebellions, Pather cells and hidden pirate bases at the closest colony that needs it, the same things Nexerelin's Internal security mode does. If you have an idle agent of your own and none is on security yet, Autopilot takes that one over for it (and says so) instead of recruiting; you can take it back on the Mod features page.
-- **Relations** (the second) - raises relations with your preferred factions. It picks them the same way ambassadors are picked (the faction priorities and focus under Administrators and ambassadors), and never a faction you're at war with.
-- **Offense** (a third, only with Defense and offense) - sabotages the military of the **Offense target**: whoever is attacking you (the default), a random enemy, or a faction at war with you that you pick. Only factions already hostile to you, never allies, a ceasefire or your commissioner, since a caught operation can start a war.
-
-Agents don't appear out of nowhere. Recruiting one costs 12,000 plus the convenience fee and takes 60 days before it reports for duty. The security one gets recruited as soon as you have a colony, the others once the budget has room.
-
-Agents you hired yourself don't get orders until you click **Let Autopilot use it** on the Mod features page, and **Take it back** returns one. It only uses what you can see in game, so enemy operations the game hides from you aren't shown or used.
+Everything planned for 3.0: [roadmap](roadmap.md)
 
 Next: [Research](research.md).
