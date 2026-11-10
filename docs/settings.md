@@ -3,7 +3,7 @@
 ## Quick version
 
 - Empire panel (Intel screen, **Colony Autopilot** filter), **Settings**. Click a group to open it.
-- **Use recommended settings** resets everything in one click. They're meant to work if you only ever switch colonies to Auto.
+- **Use recommended settings** resets everything in one click. They are set up for players who only switch colonies to Auto.
 - Groups for mods you don't have don't show up.
 
 ## Expansion style

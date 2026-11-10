@@ -3,9 +3,9 @@
 ## Quick version
 
 - Each month it spends from a budget. **Automatic** is recommended and grows with your income.
-- Past a surplus line, the extra goes into one **focus world**. Far past it, every colony spends freely.
-- Rich enough, it stops chasing money and builds for production, research and military.
-- The credit reserve is never touched.
+- Credits over the surplus line go to one **focus world**. Over 10M of surplus, every Auto colony spends from it (spending freely).
+- With the endgame economy on, it values production, research and military over income.
+- The credit reserve is never spent.
 
 ## The budget
 

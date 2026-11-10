@@ -1,10 +1,10 @@
 # Supported mods
 
 ## Quick version
-- **Nothing here is required.** Each mod turns on by itself when it's enabled, and any mix works.
-- **Check it** on the empire panel's **Diagnostics** page (OK, newer version, partly off, off).
-- **Colonies:** only Auto colonies are acted on, unless it says otherwise. Approve colonies get a proposal, Advisor colonies a recommendation. Everything follows your budget.
-- **Missing a mod?** Throw it in the [issues](https://github.com/Mjolniar/jonahs-colony-manager/issues).
+- None of these mods are required. Support for each one turns on when that mod is enabled. Any combination works.
+- The empire panel's **Diagnostics** page shows the status of each one: OK, newer version, partly off, off.
+- Only Auto colonies are acted on unless noted. Approve colonies get a proposal and Advisor colonies a recommendation. Everything is paid from the budget.
+- To request support for a mod, open an [issue](https://github.com/Mjolniar/jonahs-colony-manager/issues).
 
 ## Terraforming Made Easy
 

@@ -2,9 +2,9 @@
 
 ## Quick version
 
-- Items and cores live in each colony's **Autopilot Storage** tab and go where they help most.
+- Items and cores live in each colony's **Autopilot Storage** tab and are placed where they add the most.
 - Moving one between colonies costs a fee and a few days.
-- **Inspection risk** keeps Hegemony inspections away. Recommended is every colony at 7 points or under.
+- **Inspection risk** limits AI core points per colony to avoid Hegemony inspections. Recommended: 7 points or under at every colony.
 - Administrators are hired where they add more than they cost, and always past your colony limit.
 
 ## Autopilot Storage
