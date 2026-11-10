@@ -48,10 +48,10 @@ While spending freely, with **Wonders and gates while spending freely** on, it b
 
 ## Coming in 3.0
 
-- **Already built, being tested:** no databanks on filler techs that don't pay back within a year, unless you have idle money.
-- **Already built, being tested:** extra Research Facilities must cover their whole upkeep.
-- **Already built, being tested:** ranking techs no longer changes your save.
-- **Planned:** research facilities get funded as part of the money ladder ([Money](money.md)).
+- Built, in testing: databanks aren't spent on techs that don't pay back within a year, unless money is idle.
+- Built, in testing: extra Research Facilities have to cover their full upkeep.
+- Built, in testing: ranking techs no longer changes anything in your save.
+- Planned: Research Facilities are funded through the money ladder. See [Money](money.md).
 
 Everything planned for 3.0: [roadmap](roadmap.md)
 

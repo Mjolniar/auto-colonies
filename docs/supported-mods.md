@@ -186,8 +186,9 @@ Its big weapon orders go through Ashes of the Domain's production orders. Goods 
 [Better Colonies](https://fractalsoftworks.com/forum/index.php?topic=17103.0), [Supply Forging](https://fractalsoftworks.com/forum/index.php?topic=17503.0), [LOST_SECTOR](https://fractalsoftworks.com/forum/index.php?topic=27556.0), [Kon's Player Faction Bundles](https://fractalsoftworks.com/forum/index.php?topic=25040.0), [Galactic Constellate](https://fractalsoftworks.com/forum/index.php?topic=29622.0), [Tri-Tachyon Expansion](https://fractalsoftworks.com/forum/index.php?topic=30322.0), [Luddic Enhancement](https://fractalsoftworks.com/forum/index.php?topic=15084.0), [Hillock](https://fractalsoftworks.com/forum/index.php?topic=29727.0), [Hazard Mining](https://fractalsoftworks.com/forum/index.php?topic=13236.0), [Hiver Swarm](https://fractalsoftworks.com/forum/index.php?topic=22965.0) and [Adversary](https://fractalsoftworks.com/forum/index.php?topic=25821.0) all work as they are.
 
 ## Coming in 3.0
-- **Link check (already built, being tested).** On load, Diagnostics shows Partly off or Off if a Nexerelin, Industrial Evolution, Random Assortment of Things, Station Augments or Terraforming Made Easy update renamed something the manager uses.
-- **Boggled station builder (already built, being tested).** It now counts toward that mod's Diagnostics status.
+
+- Built, in testing: on load, Diagnostics shows Partly off or Off if an update to Nexerelin, Industrial Evolution, Random Assortment of Things, Station Augments or Terraforming Made Easy renamed something the manager uses.
+- Built, in testing: the Boggled station builder counts toward that mod's Diagnostics status.
 
 Plans can still change before release.
 

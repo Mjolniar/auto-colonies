@@ -1,64 +1,84 @@
-# What's coming in 3.0
+# 3.0 roadmap
 
-## Quick version
-- **3.0 is the next big update.** Smarter building, a money ladder, auto-expansion, war and diplomacy, and smaller menus.
-- **Two parts are built** and being tested. The rest is planned.
-- **Old saves get no more aggressive.** War stays as it is, auto-expansion is off.
-- **Fair play stays.** Every action still costs something, and cheats stay in Easy Sector.
+What the next major version changes, and how far along each part is. Current version: 2.45.2. 3.0 has no release date yet, and plans can still change before release.
 
-Plans can still change before release.
+## Status
 
-## Under the hood
-Already built, being tested.
+| Part | Status |
+|---|---|
+| Save format, reliability, stability checks, performance | Built, in testing |
+| Build planner | Built, in testing |
+| Money ladder | Planned |
+| Auto-expansion | Planned |
+| War and diplomacy | Planned |
+| Settings menu | Planned |
 
-- **Saves.** Data is stored under stable names, so later updates can't break them. Old saves load.
-- **One bad step can't wreck the day.** Each daily step runs alone, and Diagnostics reports failures.
-- **One stability rule.** Anything that can cost stability checks first that the colony stays at or above your minimum.
-- **Faster.** Plans and scores are worked out once a day, and panels stop re-scoring on every click.
+## Save format and reliability
 
-## Smarter building
-Already built, being tested. See [How it builds](how-it-builds.md).
+Built, in testing.
 
-- **One queue.** Everything is ranked together, and a colony's slot goes to whatever pays most per day.
-- **Payback window.** A build must pay back within 36 months (planned default), stretching as spare credits grow.
-- **Rebuilds.** Anything taken down stays off that colony's build list for a year.
-- **Duplicate builds.** Builds under way count toward a shortage, so one shortage doesn't get two buildings.
-- **Steadier decisions.** Savings for a big build stay put, and a paid-for world plan isn't dropped without good reason.
+- Saved data uses fixed short names, so later updates can rename code without breaking saves.
+- Saves from 2.45.x load in 3.0. Saves made in 3.0 don't load in 2.45.x.
+- Each daily step runs on its own. If one fails, it's logged in Diagnostics and the other steps still run.
+- Anything that can lower stability first checks that the colony stays at or above the minimum stability setting (default 5, never under 3).
+- Plans and scores are worked out once a day and reused until something changes.
 
-## Money ladder when you're rich
+## Build planner
+
+Built, in testing. See [How it builds](how-it-builds.md).
+
+- Builds, upgrades and projects for all colonies go into one ranked list.
+- A colony's construction slot goes to the option that earns the most per day of construction.
+- A build has to pay back its cost within 36 months. That grows to 120 months as spare credits go up.
+- Buildings the mod removes aren't rebuilt at that colony for a year. This part is already in 2.45.2.
+- Shortages count buildings already under construction, so two colonies don't both build for the same shortage.
+- The budget uses the median colony income of the last 3 months.
+
+## Money ladder
+
 Planned. See [Money](money.md).
 
-- **Spare money becomes power** once earning more stops mattering.
-- **Tiers** from Tight to Endgame, based on free cash.
-- **A ladder you can reorder:** stockpiles, growth, military, ships, expansion, economy.
-- **Ships at real prices** from your Doctrine list. Ships and expansion start on Recommend.
+- Five money tiers, T0 (Tight) to T4 (Endgame), based on colony income and free credits.
+- Spare money goes to a list of uses in order: stockpiles, growth, military, ships, expansion, economy. You can change the order.
+- Ships are bought from your Doctrine list at normal prices. Purchases stop at 6 unclaimed hulls at the capital.
+- Ship purchases and expansion start in Recommend mode: the mod proposes, and you approve.
 
 ## Auto-expansion
-Planned.
 
-- **One big on/off setting** using Nexerelin's colony expeditions.
-- **Off by default,** and it asks before it starts.
-- **Your own systems first.** Real costs and travel time, never past your colony limit without an administrator.
-- **Slow pace.** Planned default: one colony per 120 days when money is idle.
+Planned. Needs Nexerelin.
+
+- Uses Nexerelin's colony expeditions.
+- One on/off setting, off by default. It asks for confirmation before the first expedition.
+- Looks for targets in your own systems first. Normal costs and travel time apply.
+- Doesn't go past the colony limit unless an administrator is available.
+- Planned default rate: one new colony per 120 days at tier T2, one per 60 days at T3.
 
 ## War and diplomacy
-Planned. See [War and security](war-and-security.md).
 
-- **War levels** from Off to Scorched. Retaliate is today's behavior.
-- **Faction stances** from Ally to Destroy.
-- **Retaking lost colonies,** on in new games, off on old saves.
-- **Bombarding capitals** is opt-in and needs a confirm.
-- **Stand down button** that refunds unfinished operations.
+Planned. Needs Nexerelin. See [War and security](war-and-security.md).
 
-## Cleaner menus
+- One empire-wide war level: Off, Defend, Retaliate, Hold them down, Conquer, Scorched. Retaliate matches what 2.45.x does and is the default.
+- A stance for each faction: Ally, Friendly, Neutral, Auto, Rival, Enemy, Destroy. Auto matches what 2.45.x does.
+  - Enemy stays at war and turns down ceasefires.
+  - Destroy invades until the faction has no markets left.
+- Retaking your own lost colonies is on in new games and off in saves from 2.45.x.
+- Bombarding capitals is off by default and needs a confirmation.
+- A Stand down button sets the war level to Defend and cancels operations that haven't launched yet, with a full refund.
+- Old saves carry over:
+  - the old war mode becomes the matching war level;
+  - faction priorities become stances (High to Friendly, Normal to Auto, Ignore to Rival).
+
+## Settings menu
+
 Planned. See [Settings](settings.md).
 
-- **About 20 settings in 6 groups,** down from 76 rows.
-- **Shorter descriptions,** with detail in hover text.
-- **New pages** for Factions, War and Expansion.
-- **Five-row first setup,** and your old settings carry over.
+- About 20 main settings in 6 groups (14 without other mods), plus an Advanced section. 2.45.x has 76 rows.
+- Shorter descriptions, with the details moved to hover text.
+- New pages for Factions, War and Expansion.
+- First-time setup is 5 rows. Existing settings carry over.
 
-## Before you update
-A save made on 3.0 won't load in 2.45.x, so keep a backup.
+## Updating
+
+Back up your save before updating to 3.0. A save made in 3.0 can't be loaded in 2.45.x.
 
 [Back to the README](../README.md)

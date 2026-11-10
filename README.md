@@ -43,8 +43,8 @@ The [Getting started](docs/getting-started.md) guide covers it properly.
 
 ## Coming in 3.0
 
-- **Already built, being tested:** a smarter planner. One build queue for all your colonies that saves up for big builds and builds once per shortage.
-- **Planned:** a money ladder for spare cash, auto-expansion, war and diplomacy, and a much shorter settings menu.
+- Built, in testing: a new build planner. One ranked build queue for all colonies, a 36-month payback limit, and removed buildings stay off that colony's build list for a year.
+- Planned: a money ladder for spare credits, auto-expansion through Nexerelin (off by default), war levels and faction stances, and a settings menu of about 20 main rows.
 - A save made on 3.0 won't load in 2.45.x, so keep a backup.
 
 Plans can still change. Everything planned: [roadmap](docs/roadmap.md).

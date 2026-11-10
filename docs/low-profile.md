@@ -33,10 +33,11 @@ The Crises page shows which rules are still on.
 - **The Persean League.** At a size 5 colony it wants you to join and blockades you until you do. Joining at Kazeron also ends the Hegemony crisis. Joining is left to you.
 
 ## Coming in 3.0
-- **Gentler on stability (already built, being tested).** Pather items are only pulled at colonies at or above your minimum stability, and go back if pulling cost too much.
-- **Safer swaps (already built, being tested).** An AI core administrator is never swapped below 4 stability. Omega core administrators are never touched.
-- **War capped at Defend (planned).** See [War and security](war-and-security.md).
-- **Expansion stays in your systems (planned),** if you turn on Auto-expansion.
+
+- Built, in testing: Pather items are only removed at colonies at or above your minimum stability, and are put back if removing them lowered stability too far.
+- Built, in testing: an AI core administrator isn't swapped out below 4 stability. Omega core administrators aren't swapped.
+- Planned: Low profile limits the war level to Defend. See [War and security](war-and-security.md).
+- Planned: with auto-expansion on, Low profile only founds colonies in your own systems.
 
 Plans can still change before release.
 

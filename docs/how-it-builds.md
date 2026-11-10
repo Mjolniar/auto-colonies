@@ -85,11 +85,11 @@ Next: [Your capital](capital.md).
 
 ## Coming in 3.0
 
-- **One build queue** (already built, being tested). Builds, upgrades, terraforming, research facilities, wonder sites, crews and story point improvements are ranked together, and money goes where it pays most per credit.
-- **Payback window** (already built, being tested). A build has to pay back within a planned default of 36 months, stretching to 120 as spare credits pile up. A 360-day structure no longer blocks a better build.
-- **Rebuilds** (already built, being tested). Removals use the same math as building.
-- **Steadier decisions** (already built, being tested). Spending freely, free ports and hazard pay stop flipping back and forth. A world plan that paid for terraforming only changes for one worth twice as much.
-- **Auto-expansion** (planned). It would found colonies for you, off by default.
+- Built, in testing: builds, upgrades, terraforming, Research Facilities, wonder sites, crews and story point improvements are ranked in one queue. Money goes to the option with the best return per credit.
+- Built, in testing: a build has to pay back within 36 months (planned default). The limit grows to 120 months as spare credits increase. A 360-day structure can't take the construction slot while a better build is waiting.
+- Built, in testing: removals use the same calculation as builds, and removed buildings aren't rebuilt at that colony for a year.
+- Built, in testing: spending freely, free ports and hazard pay need a margin before they switch back. A colony that already paid for terraforming toward one world plan only switches to a plan worth at least twice as much.
+- Planned: auto-expansion, off by default.
 
 Plans can still change before release.
 

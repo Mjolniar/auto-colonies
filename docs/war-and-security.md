@@ -45,11 +45,12 @@ Stations get the best augments they can fit. Under high threat, or with a raid o
 The **War fleets** section on the Mod features page shows points, waiting fleets and strike-back targets.
 
 ## Coming in 3.0
-- **War levels (planned).** Off, Defend, Retaliate (today's behavior, still the default), Hold them down, Conquer, Scorched. Offense never starts a war without a confirm on the War page.
-- **Faction stances (planned).** Per faction: Ally, Friendly, Neutral, Auto (today), Rival, Enemy, Destroy. They drive war targets, agents and who your diplomats keep close. Enemy means constant war, Destroy means invade until the faction is gone.
-- **Retaking lost colonies (planned).** Needs Retaliate or higher.
-- **Bombarding capitals (planned, opt-in).** Destroy factions only, after you confirm.
-- **Old saves (already built, being tested).** Protect and strike back becomes Retaliate, Protect becomes Defend, Off stays Off. Priorities High, Normal, Ignore become Friendly, Auto, Rival. Retaking lost colonies starts off.
+
+- Planned: one war level for the whole empire: Off, Defend, Retaliate (current behavior and default), Hold them down, Conquer, Scorched. Offensive actions need a confirmation on the War page.
+- Planned: a stance for each faction: Ally, Friendly, Neutral, Auto (current behavior), Rival, Enemy, Destroy. Stances set war targets, agent actions and diplomacy. Enemy stays at war and turns down ceasefires. Destroy invades until the faction has no markets.
+- Planned: retaking lost colonies. Needs war level Retaliate or higher.
+- Planned: bombarding capitals. Only against Destroy factions, off by default, and needs a confirmation.
+- Built, in testing: old settings carry over. Protect and strike back becomes Retaliate, Protect becomes Defend, Off stays Off. Priorities High, Normal and Ignore become Friendly, Auto and Rival. Retaking lost colonies starts off on old saves.
 
 Plans can still change before release.
 

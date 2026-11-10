@@ -79,10 +79,10 @@ Build them on a fake colony from `createMarket(...)`. Copy the real colony's con
 
 ## Coming in 3.0
 
-- **Stable save names** (already built, being tested). Saved classes get fixed XStream aliases so code can move without breaking saves.
-- **Steps that fail alone** (already built, being tested). A step that fails 3 times in a row stops for the session, except the safety steps.
-- **One clock and one stability rule** (already built, being tested).
-- **One value service and one build queue** (already built, being tested).
+- Built, in testing: saved classes use fixed XStream aliases, so classes can be moved or renamed without breaking saves.
+- Built, in testing: each daily step runs separately. A step that fails 3 days in a row is stopped for the session. Safety steps are never stopped.
+- Built, in testing: all timers use the game clock, and every check that can lower stability uses one shared rule.
+- Built, in testing: new and existing buildings are valued by the same code, and all builds go through one ranked queue.
 
 Plans can still change before release.
 

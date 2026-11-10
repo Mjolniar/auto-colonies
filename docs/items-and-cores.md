@@ -57,10 +57,10 @@ The game rarely offers administrators. With none on offer for 90 days past your 
 
 ## Coming in 3.0
 
-- **Already built, being tested:** items go where their extra output really adds something, not where another building already makes more.
-- **Already built, being tested:** administrators aren't moved where it would cost stability.
-- **Already built, being tested:** item, core and administrator moves wait while the planner is saving for a big build. Administrators for your colony limit still go right away.
-- **Planned:** auto-expansion (off by default) only founds a colony when there's administrator or colony-limit room.
+- Built, in testing: items are placed only where their extra output raises the colony's supply of that good.
+- Built, in testing: administrators aren't moved if the move would cost stability.
+- Built, in testing: paid item, core and administrator moves wait while the planner is saving for a large build. Administrators needed for the colony limit are still hired right away.
+- Planned: auto-expansion (off by default) only founds a colony when an administrator or colony-limit room is available.
 
 Everything planned for 3.0: [roadmap](roadmap.md)
 
