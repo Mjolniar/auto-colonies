@@ -351,6 +351,7 @@ public class CAEndgame {
         CAStores.emptyInto(m, ind);   // core and item to this colony's Autopilot Storage
         String oldName = ind.getCurrentName(), oldId = ind.getId();
         m.removeIndustry(oldId, MarketAPI.MarketInteractionMode.REMOTE, false);
+        CAPrune.markGone(m, oldId);   // 2.45.2: not built here again for a year, endgame or not
         long ts = Global.getSector().getClock().getTimestamp();
         d.endgameBuilt().put(m.getId() + ":-" + oldId, ts);
         d.endgameBuilt().put(m.getId() + ":replaced", ts);

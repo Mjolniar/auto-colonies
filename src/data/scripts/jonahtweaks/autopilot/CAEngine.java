@@ -223,6 +223,7 @@ public class CAEngine {
             if (spec.hasTag("station") && hasStation) continue;
             if (spec.hasTag("station") && !"score".equals(line) && !stationMatches(id, line)) continue;
             if (id.equals(CAWonders.SITE)) continue;   // a Grand Wonder site is only ever built for a wonder (CAWonders)
+            if (CAPrune.goneRecently(m, id)) continue;   // 2.45.2 (from 3.0): Autopilot took it down here within the year
             boolean supported = CADiagnostics.industryLevel(id) == CADiagnostics.Level.SUPPORTED;
             boolean measurable = !supported && !noProbe && CADiagnostics.industryLevel(id) == CADiagnostics.Level.MEASURED && CAData.settings().measuredMode != 2;
             try {
@@ -373,7 +374,8 @@ public class CAEngine {
                 p.lines.add("Takes an industry slot this colony's " + plan.name + " plan needs (" + needed + " plan industr" + (needed == 1 ? "y" : "ies") + " to come)");
             }
         }
-        float followThrough = p.upgrade && value > 0f && !profitOnly ? 15000f : 0f;
+        // 2.45.2 (from 3.0): no flat +15k "follow-through" for upgrades; an upgrade stands on what it's worth (Heavy Batteries paid back in 25 years)
+        float followThrough = 0f;
         if (followThrough > 0f) p.lines.add("Follow-through: upgrades what's already built");
         p.worth = value; p.planBonus = planBonus; p.followThrough = followThrough;
         if (p.pollution) { planBonus = 0f; followThrough = 0f; p.planBonus = 0f; p.followThrough = 0f; }

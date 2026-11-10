@@ -124,6 +124,7 @@ public class CAOverLimit {
         SpecialItemData item = worst.getSpecialItem();
         CAStores.emptyInto(m, worst);
         m.removeIndustry(id, MarketAPI.MarketInteractionMode.REMOTE, false);
+        CAPrune.markGone(m, id);   // 2.45.2: not built here again for a year
         long ts = Global.getSector().getClock().getTimestamp();
         d.endgameBuilt().put(m.getId() + ":shed", ts);
         d.endgameBuilt().put(m.getId() + ":shed:" + id, ts);
@@ -220,6 +221,7 @@ public class CAOverLimit {
         String name = ind.getCurrentName(), id = ind.getId();
         CAStores.emptyInto(m, ind);   // core and item to this colony's Autopilot Storage
         m.removeIndustry(id, MarketAPI.MarketInteractionMode.REMOTE, false);
+        CAPrune.markGone(m, id);   // 2.45.2: not built here again for a year
         long ts = Global.getSector().getClock().getTimestamp();
         d.endgameBuilt().put(m.getId() + ":overlimit", ts);
         d.endgameBuilt().put(m.getId() + ":replaced", ts);   // and no make-room swap at the capital for a while

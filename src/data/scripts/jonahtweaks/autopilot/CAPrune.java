@@ -166,12 +166,36 @@ public class CAPrune {
         return n;
     }
 
+    /** 2.45.2 (from 3.0): days a building Autopilot took down stays off that colony's build list (Wind rebuilt its Junkyard Forge a month after it came down). */
+    static final float GONE_DAYS = 365f;
+
+    /** Marks a building Autopilot took down, and what it was upgraded from, so none of them is built at that colony again within GONE_DAYS. CAEndgame.tidy forgets it after a year. */
+    static void markGone(MarketAPI m, String id) {
+        try {
+            long ts = Global.getSector().getClock().getTimestamp();
+            java.util.Set<String> seen = new java.util.HashSet<String>();
+            String cur = id;
+            while (cur != null && seen.add(cur)) {
+                CAData.get().endgameBuilt().put(m.getId() + ":gone:" + cur, ts);
+                com.fs.starfarer.api.loading.IndustrySpecAPI spec = Global.getSettings().getIndustrySpec(cur);
+                cur = spec == null ? null : spec.getDowngrade();
+            }
+        } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "removal mark failed for " + id, t); }
+    }
+
+    /** Whether Autopilot took this building down at this colony within GONE_DAYS. */
+    static boolean goneRecently(MarketAPI m, String id) {
+        Long t = CAData.get().endgameBuilt().get(m.getId() + ":gone:" + id);
+        return t != null && Global.getSector().getClock().getElapsedDaysSince(t) < GONE_DAYS;
+    }
+
     static void takeDown(CAData d, MarketAPI m, Keep k) {
         Industry ind = k.ind;
         String core = ind.getAICoreId(), name = ind.getCurrentName(), id = ind.getId();
         SpecialItemData item = ind.getSpecialItem();
         CAStores.emptyInto(m, ind);   // core and item to this colony's Autopilot Storage
         m.removeIndustry(id, MarketAPI.MarketInteractionMode.REMOTE, false);
+        markGone(m, id);   // 2.45.2: not built here again for a year
         long ts = Global.getSector().getClock().getTimestamp();
         d.endgameBuilt().put(m.getId() + ":pruned", ts);
         d.endgameBuilt().remove(m.getId() + ":useless:" + id);
