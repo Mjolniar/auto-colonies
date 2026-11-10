@@ -10,9 +10,9 @@ I like lots of colonies with the limits off, and I kept getting in over my head 
 ## Quick version
 
 - It builds, upgrades, places items and AI cores, hires administrators and handles policies, for a small fee per action.
-- Every action costs something, and the mod leaves game balance alone.
+- Every action has a cost. The mod doesn't change game balance.
 - Settings are editable on the fly from the Colony Autopilot tab in the intel screen.
-- Works with 20+ colony mods. None are required. Want one added? Put it in issues.
+- Supports 20+ colony mods. None are required. Requests for mod support go in issues.
 
 ## Install
 

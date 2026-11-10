@@ -6,7 +6,7 @@ Needs Ashes of the Domain (Vaults of Knowledge). Settings are under **Ashes of t
 
 - **Research** on **Auto** starts the best tech whenever nothing is running or queued. Your own queue is left alone.
 - Techs are valued by what they unlock at your colonies. Plan steps locked by research come first.
-- Databanks are the usual bottleneck, so they go to techs a plan needs.
+- Databanks go to techs a colony plan needs first.
 
 ## How it picks research
 

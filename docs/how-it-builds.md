@@ -5,7 +5,7 @@
 - Each colony has a mode (Off, Advisor, Approve, Auto) and a goal.
 - Every option is scored by what it makes a month minus its price spread over three years. Only things that pay back in about that time get built on Approve or Auto.
 - **Recommended builds** on the colony panel shows every option and why it ranks where it does.
-- You stay in charge with locks, a per-project cap, and story points that stay yours.
+- Locks, the per-project cap and the Story points setting limit what it can do.
 
 ## Modes
 

@@ -1,10 +1,10 @@
 # Low profile
 
 ## Quick version
-- **What it is.** An expansion style that keeps colonies under the radar and avoids colony crises where it can.
-- **Default style** builds whatever pays most, AI cores everywhere, free ports. More money, constant crises.
-- **Turn it on** under **Settings, Expansion style**. Colonies replan right away.
-- **Cost:** less money, far fewer emergencies.
+- Low profile is an optional expansion style. It keeps Hegemony inspection risk, Pather interest and crisis progress low.
+- The default style builds whatever pays most, uses AI cores everywhere and opens free ports. It earns more and triggers more crises.
+- Set it under **Settings, Expansion style**. Colonies replan right away.
+- Low profile earns less money.
 
 ## What it changes
 - **Crisis cost.** Anything that raises crisis progress is valued at ten times the normal cost, so it has to earn much more to be built. Patrol HQ, Military Base and High Command slow every crisis, so they're worth ten times more and get built sooner.

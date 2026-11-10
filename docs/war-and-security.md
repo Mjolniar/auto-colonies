@@ -1,9 +1,9 @@
 # War and security
 
 ## Quick version
-- **Defense.** It tracks threat, handles sieges and crises, and with Nexerelin sends defense fleets and agents.
-- **Invasions and taking colonies are left to you** in 2.45.x.
-- **Fewer fights.** The optional [Low profile](low-profile.md) style avoids most of them.
+- It tracks threat at each colony and handles sieges and crises. With Nexerelin it also sends defense fleets and agents.
+- In 2.45.x it doesn't invade or take colonies.
+- The optional [Low profile](low-profile.md) style reduces fights with other factions.
 
 ## Threat
 Each colony gets a threat estimate from hostile neighbors, crises, raids and Pather cells. At 70% it's planned as Security. It goes back to its own goal under 65% after at least 60 days.

@@ -2,9 +2,9 @@
 
 ## Quick version
 
-- The manager picks a capital (where your stuff already is). You can change it.
+- The manager picks a capital. You can change it.
 - Production, and your other Storage tabs once a week, ship their gear there.
-- Once income ramps up, the capital builds trade buildings.
+- When income is high enough, the capital builds trade buildings.
 
 ## Which colony
 
