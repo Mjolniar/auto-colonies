@@ -14,7 +14,7 @@ Setting: Advisor before setup, **Auto** with recommended settings, or Off.
 
 - **Value.** It pretends a tech is done and scores what that unlocks at your colonies, plus the tech's own effects and half the best tech it leads to.
 - **Plan chains.** If a plan step is locked, the whole chain of techs it needs shares its value.
-- **No Research Facility?** One goes first in your focus world's plan.
+- **Research Facility.** If there is none, one goes first in your focus world's plan.
 - **Sophia Anderson** is put at the head of R&D first, since she knocks a databank off every tech.
 - **Databanks.** While the best plan tech is short, they only go to techs a plan needs. After 90 days of that, the best affordable tech goes anyway.
 - **Moving things.** Whatever the Research Facility is short of is shipped in for a fee and a couple of days. Nothing starts until it all arrives.

@@ -7,7 +7,7 @@
 - **Cost:** less money, far fewer emergencies.
 
 ## What it changes
-- **Attention costs ten times as much.** Anything that raises crisis progress has to earn much more. Patrol HQ, Military Base and High Command slow every crisis, so they're worth ten times more and get built sooner.
+- **Crisis cost.** Anything that raises crisis progress is valued at ten times the normal cost, so it has to earn much more to be built. Patrol HQ, Military Base and High Command slow every crisis, so they're worth ten times more and get built sooner.
 - **Hegemony.** No AI cores above size 3. Cores already there go back to Autopilot Storage, one a day. An AI core administrator is swapped for a human once one is free.
 - **Pather cells.** Nothing gets built, installed or slotted that takes a size 4+ colony to 7 Pather interest. Items holding it over go back to Storage, least useful first. Buildings are never torn down for this.
 - **Tri-Tachyon.** One competing good is free. Past that, a building must be worth it.
