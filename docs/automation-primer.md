@@ -11,7 +11,7 @@
 
 - Add an `EveryFrameScript` in `BaseModPlugin.onGameLoad` with `Global.getSector().addTransientScript(...)`. Transient scripts aren't saved, so they can't break a save ([JTModPlugin](../src/data/scripts/jonahtweaks/JTModPlugin.java), [CAScript](../src/data/scripts/jonahtweaks/autopilot/CAScript.java)).
 - Count days with `getClock().convertToDays(amount)` in `advance`.
-- **Trap:** `getClock().getElapsedDaysSince(0L)` returns `Float.MAX_VALUE`. Work out the day number from `getTimestamp()` ([CADay](../src/data/scripts/jonahtweaks/autopilot/CADay.java)).
+- **Clock:** `getClock().getElapsedDaysSince(0L)` returns `Float.MAX_VALUE`. Work out the day number from `getTimestamp()` ([CADay](../src/data/scripts/jonahtweaks/autopilot/CADay.java)).
 - An exception that reaches the game crashes it. Guard every step.
 
 ## Colonies and buildings
