@@ -34,7 +34,7 @@ The [Getting started](docs/getting-started.md) guide covers it properly.
 
 - Builds and upgrades colonies within a budget you control.
 - Places items and AI cores, and keeps colonies under the Hegemony's inspection radar.
-- **Low profile** mode avoids inspections, Pather cells and mercenaries.
+- Optional: the **Low profile** expansion style lowers the odds of inspections, Pather cells and mercenaries. You pick it in Settings.
 - Builds one colony into your capital, and a trade hub once you're making money.
 - Plans for security and prices colony crises into what it builds.
 - Spends big surpluses, then switches to an endgame economy.
