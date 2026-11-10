@@ -2,6 +2,14 @@
 
 Every version, newest first. If you're wondering why the first version on here is 2.1.0: this started as **Jonah Tweaks**, a personal mod of little tweaks for my own games (bigger battle size, sticky combat autopilot, that kind of thing), and Colony Autopilot grew inside it until it became the main thing. 2.1.0 is when it went up on GitHub, and 2.6.0 was the first version with a downloadable release. The balance tweaks moved out into their own mod in 2.7.0, so this one only manages colonies.
 
+## 2.45.2 - 2026-11-09
+
+Three fixes pulled forward from the 3.0 work, for the stuff that wastes the most money while 3.0 is still being built:
+
+- **Nothing gets built, torn down and built again.** Whatever Autopilot takes down at a colony (dead weight, over the industry limit, 0 stability, an endgame swap) stays off that colony's build list for a year, and so does whatever it was upgraded from. That's the Junkyard Forge Wind rebuilt a month after its Scrapyard came down.
+- **No more free +15k "follow-through" for upgrades.** An upgrade now has to be worth it on its own, so stuff like Heavy Batteries with a 25-year payback stops getting built.
+- **Spending freely stops flip-flopping.** It still starts at 10M of surplus but now stays on until you drop under 7M, so a couple of big buys don't flip everything back the same week.
+
 ## 2.45.1 - 2026-11-06
 
 A bug-fix release. I had a bunch of agents go through the whole mod and my own logs while planning 3.0, and these turned up first:

@@ -206,9 +206,19 @@ public class CASurplus {
     static final float RICH_UPKEEP_MONTHS = 60f;
 
     /** Spending freely: surplus spreading on and this far over the line. */
-    public static boolean rich(CASettings s) { return richAt(s.surplusFocusOnly, amount(s)); }
+    public static boolean rich(CASettings s) {
+        boolean was;
+        try { was = CAData.get().noted().contains("surplus:rich"); } catch (Throwable t) { was = false; }
+        return richAt(s.surplusFocusOnly, amount(s), was);
+    }
 
-    static boolean richAt(boolean focusOnly, float amount) { return !focusOnly && amount >= RICH; }
+    static boolean richAt(boolean focusOnly, float amount) { return richAt(focusOnly, amount, false); }
+
+    /** 2.45.2 (from 3.0): once on, spending freely stays on until the surplus drops under RICH_EXIT of the line (10M on, 7M off), so a couple of big buys don't flip everything back the same week. */
+    static boolean richAt(boolean focusOnly, float amount, boolean wasRich) { return !focusOnly && amount >= (wasRich ? RICH * RICH_EXIT : RICH); }
+
+    /** Spending freely ends under this share of RICH. */
+    static final float RICH_EXIT = 0.7f;
 
     /** Spends from the surplus: the focus world, or while rich every Approve or Auto colony that builds. */
     public static boolean spends(MarketAPI m) {
@@ -313,10 +323,10 @@ public class CASurplus {
         float a = amount(s);
         if (rich(s)) {
             if (CALog.once("surplus:rich")) CALog.add("Spending freely: " + Misc.getDGSCredits(a) + " surplus, every Auto colony spends it", true);
-        } else if (s.surplusFocusOnly || a < RICH) {
+        } else {
             if (CAData.get().noted().contains("surplus:rich")) {
                 CALog.forget("surplus:rich");
-                CALog.add("Spending freely ended (surplus under " + Misc.getDGSCredits(RICH) + ")");
+                CALog.add("Spending freely ended (" + (s.surplusFocusOnly ? "focus world only" : "surplus under " + Misc.getDGSCredits(RICH * RICH_EXIT)) + ")");
             }
         }
         s.richIncomeRef = 0f;   // the old pause's reference; unused since 2.34.1

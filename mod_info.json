@@ -2,7 +2,7 @@
   "id": "jonah_tweaks",
   "name": "Jonah's Colony Manager",
   "author": "Mjolniar",
-  "version": "2.45.1",
+  "version": "2.45.2",
   "description": "Colony Autopilot: flick a colony to Auto and it builds, places items and AI cores, hires administrators and handles policies on its own, within a budget you set. Optional support for Nexerelin, Ashes of the Domain, Terraforming Made Easy, Industrial Evolution and more. No balance changes.",
   "gameVersion": "0.98a-RC8",
   "utility": false,
