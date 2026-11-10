@@ -1,41 +1,41 @@
 # Terraforming
 
-This needs Terraforming Made Easy (TME), or Boggled's Terraforming & Station Construction for the part near the bottom.
+Needs Terraforming Made Easy (TME). Boggled's TASC is at the bottom.
 
-## Special worlds in the plan
+## Quick version
 
-With TME, a colony's plan can aim for one of TME's special worlds: Forge, Fortress, Paradise, Hive, Death or Waste. It only picks one the colony can actually reach, where the world's industries fit the slots the colony gets at max size, and it counts the hazard and deposits the world ends up with. The steps come straight from TME's own requirement table, worked back through the projects that create each condition, so the plan includes the structures to build and the terraforming to run, in order. TME's structures and the Unification Center get the plan's priority even though they cost more than they earn, because that's how the colony gets there. The Unification Center goes last though: it only runs the final conversion, so it waits until everything else in the plan is in place (or the last condition is already being made), and gets built during that last project instead of sitting around eating upkeep for months.
+- A colony's plan can aim for a TME special world (Forge, Fortress, Paradise, Hive, Death, Waste) and builds the steps in order.
+- Auto colonies also run TME projects, looking one or two ahead.
+- Credits over the surplus line go into terraforming at every Auto colony.
 
-If no special world is reachable, the colony gets a normal plan for its goal, and hazard clean-up (toxic atmosphere, radiation, high gravity and so on) still goes in when the planet needs it, since that lets it grow.
+## Special worlds
 
-## The plan's own terraforming
+It only picks a world the colony can reach, where the industries fit its max-size slots. Steps come from TME's own requirements. The Unification Center goes last, during the final project. With no reachable world, the colony gets a normal plan, plus hazard clean-up when the planet needs it.
 
-On Auto colonies, it runs TME projects using TME's own project lists and build checks, starting them the same way TME's dialog does. It looks one project ahead, and two ahead when swapping a deposit for a richer one. Side effects count: hazards a project adds are scored, and conditions TME removes as conflicts are simulated before a project is picked.
+## The plan's terraforming
 
-TME's projects toggle conditions on and off, so it re-plans as soon as a colony's conditions change and never starts something that would undo what the colony already is. Nothing removes what the plan needs, and nothing adds back a hazard the plan clears.
-
-This part spends up to 40% of the monthly budget.
+Uses up to 40% of the monthly budget. Hazards a project adds are scored, and it re-plans when conditions change. It keeps whatever the plan needs.
 
 ## Surplus terraforming
 
-With credits over the surplus line, whatever the focus world doesn't use goes into TME projects at every Auto colony, best value per credit first: richer deposits, better farmland, harsh conditions cleared. It builds the structure when a colony doesn't have one, and takes it back down once the work is done (TME's changes stay).
+Spare credits go into the best value per credit first: richer deposits, better farmland, cleared hazards. It builds the structure if missing and takes it down when done.
 
-It plans on TME's own rules, looking one or two projects ahead including TME's habitability updates, so it'll never trade a habitable world's farmland and organics for richer ore, and never undoes what the colony's plan needs.
+**Surplus terraforming** setting: **Max output** (recommended, 1,000 a month or more after upkeep), **Pays back in 10 years**, or **Off**.
 
-The **Surplus terraforming** setting:
-
-- **Max output** (recommended) - anything worth 1,000 a month or more after the structure's upkeep.
-- **Pays back in 10 years** - only what pays for itself within ten years.
-- **Off**.
-
-While spending freely it goes harder: up to three projects at once per colony on different structures, planned from what the colony will be once the running ones finish, and it goes for the richest deposits rather than the cheapest gains. When a richer deposit needs a hazard first (abundant ore wants extreme tectonic activity, for example), it adds that hazard as a stepping stone and then the deposit.
-
-With Vaults of Knowledge, structures that research still locks aren't built, but research values their techs by what they'd allow.
-
-Pollution from a nanoforge isn't cleared while a Heavy Industry with one is being upgraded on a habitable world, since the new building just adds it back.
+Spending freely runs up to three projects per colony at once and goes for the richest deposits.
 
 ## Terraforming & Station Construction (Boggled)
 
-Each project TASC offers is valued by the conditions it would leave behind. Auto starts the best one, and the colony panel lists the best four with a Start button. A running project is never cancelled. The Atmosphere Processor and Stellar Reflector Array get built when a worthwhile project is only waiting on them. Station construction is left to you, since it needs your fleet there.
+Each project is valued by the conditions it leaves. Auto starts the best, and the colony panel lists the best four with Start buttons. Station construction is yours.
+
+## Coming in 3.0
+
+- **Already built, being tested:** paid terraforming stays paid. A plan that undoes it needs to be worth 2x, so no paying to add a hazard and then remove it.
+- **Already built, being tested:** a 360-day TME structure only starts when nothing better is waiting for the colony's construction slot.
+- **Planned:** surplus terraforming can use idle budget, with a planned default payback of 24 months ([Money](money.md)).
+
+Everything planned for 3.0: [roadmap](roadmap.md)
+
+Plans can still change before release.
 
 Next: [Settings](settings.md).

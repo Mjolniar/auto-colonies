@@ -1,112 +1,96 @@
 # How it builds
 
-This is the core of the mod: how a colony decides what to build next, and how you stay in charge of it.
+## Quick version
+
+- Each colony has a mode (Off, Advisor, Approve, Auto) and a goal.
+- Every option is scored by what it makes a month minus its price spread over three years. Only things that pay back in about that time get built on Approve or Auto.
+- **Recommended builds** on the colony panel shows every option and why it ranks where it does.
+- You stay in charge with locks, a per-project cap, and story points that stay yours.
 
 ## Modes
 
-Every colony has its own mode:
-
-- **Off** - left completely alone.
-- **Advisor** - the default. It shows what it would build and why, and you click to build.
-- **Approve** - it proposes one thing at a time, and nothing happens until you approve it.
-- **Auto** - it builds by itself within your budget. Most of the other automation (items, cores, administrators, policies, terraforming) only runs on Auto colonies too.
+- **Off**: left alone.
+- **Advisor** (default): shows what it would build and why. You click to build.
+- **Approve**: proposes one thing at a time and waits for you.
+- **Auto**: builds within your budget. Items, cores, administrators, policies and terraforming also only run on Auto colonies.
 
 ## Goals
 
-The goal decides what a colony cares about besides money:
+- **Balanced**: a bit of everything.
+- **Money**: income and accessibility.
+- **Security**: ground defense, fleets, stability.
+- **War production**: ship quality and fleet size.
+- **Rapid growth**: population growth and accessibility.
+- **Self-sufficiency**: making what your colonies are short of.
 
-- **Balanced** - a bit of everything.
-- **Money** - income and accessibility.
-- **Security** - ground defense, fleets and stability.
-- **War production** - ship quality and fleet size.
-- **Rapid growth** - population growth and accessibility.
-- **Self-sufficiency** - making what your colonies are short of.
-
-A colony in danger gets planned as Security on its own until things calm down (see [War and security](war-and-security.md)), then goes back to its own goal.
+A colony in danger is planned as Security until things calm down (see [War and security](war-and-security.md)).
 
 ## Plans
 
-Each colony gets a plan: a target layout worked out from the planet itself and its goal. A barren world with ore and transplutonics becomes a Forge (mining, refining, heavy industry, orbital works). A habitable world on Security becomes a Fortress. A habitable world on Money or Growth becomes a Paradise. A cold world with volatiles becomes a Fuel Depot, and so on. Hazard clean-up gets added to any plan when the planet needs it.
+Each colony gets a target layout from its planet and goal. A barren world with ore and transplutonics becomes a Forge. A habitable world becomes a Fortress on Security, or a Paradise on Money or Growth. With Terraforming Made Easy a plan can aim for a special world ([Terraforming](terraforming.md)).
 
-Every colony also plans a **station** once its fast buildout is done and it's size 4 (or half a year old), a Battlestation from size 6 and a Star Fortress from size 8 (a size sooner at your [capital](capital.md)). A station fights alongside your fleets, and anything raiding, bombarding or invading the colony has to beat it first, so it gets built even though it costs more than it earns. Which kind follows your station line setting.
-
-It never builds more industries than the colony has slots for. If a colony ends up over anyway (it shrank, lost whatever gave it a slot, or an older version slipped up), it takes down the weakest industry, since being over costs 5 stability and under 5 every point cuts a fifth of the colony's income. It keeps them all if the weakest is worth more than that, or if the colony's about to grow into the room.
-
-**Stability never gets left at 0.** The game decivilizes a colony that sits at 0 stability for months, so at 2 or less a colony over its industry limit sheds an industry right away, and after 20 days at 0 it takes down whatever building costs it the most stability (read from the game's own numbers, mod buildings included), one every 10 days until it's off 0. Any colony at 0 gets an on-screen alert every month listing what's dragging it down.
-
-With Terraforming Made Easy, a plan can aim for one of its special worlds instead (Forge, Fortress, Paradise, Hive and the rest), and the steps include the terraforming to get there. That's in [Terraforming](terraforming.md).
-
-Plan steps get a priority boost, the next step most of all, but a plan never forces a bad building. If the next step is blocked by research or something else, the colony still builds whatever is worth the most on its own in the meantime. A step that research still locks shows what it needs, and with Vaults of Knowledge, research works toward it.
-
-And if a step can't be reached at all in your game (research you're not running, a blueprint you don't have, a deposit the planet doesn't have, a mod you took out), it doesn't hang around forever. After 60 days with no way to it, it stops getting the boost and stops holding an industry slot, and the log tells you. The moment a way opens up, it counts again. Same for a Terraforming Made Easy world that can't form: it gets dropped for a year and the colony goes back to the normal plan for its goal. So whatever mods you have or don't have, the plan only ever chases what it can actually get to.
+- **Stations.** After fast buildout, a colony plans a station at size 4 (or half a year old), a Battlestation from size 6 and a Star Fortress from size 8. That's a size sooner at your [capital](capital.md). They cost more than they earn but anything attacking has to beat one first. At calm colonies the station waits until after the first economy step.
+- **Slots.** It builds only as many industries as the colony has slots for. A colony that ends up over takes down its weakest, since being over costs 5 stability.
+- **Stability.** The game decivilizes a colony that stays at 0, so it keeps colonies off 0. At 2 or less, a colony over its limit sheds an industry right away. After 20 days at 0 it takes down the building costing the most stability, one every 10 days until it's off 0. You get a monthly on-screen alert.
+- **Blocked steps.** If the next step is blocked, the colony builds the best thing available. A step with no way to it for 60 days stops holding a slot until a way opens.
 
 ## How it picks
 
-Every option the colony could build or upgrade gets a score:
+Each option scores:
 
-- what it does a month: money after upkeep, plus everything else it adds (stability, accessibility, defense, fleets, ship quality, growth), weighted by the colony's goal;
+- what it does a month: money after upkeep plus stability, accessibility, defense, fleets, ship quality and growth, weighted by the goal;
 - a bonus if it's a plan step;
 - minus its price spread over three years.
 
-Only things that pay for themselves within about three years ever get built on Approve or Auto. The colony panel's **Recommended builds** shows every option with how its score is made up, so you can always see why it picked what it picked.
+Upgrades get no free bonus for leading somewhere.
 
-The numbers come from the game's own formulas wherever there is one: deposits, output, upkeep, the colony's size. Mod buildings with their own effects are estimated, then those estimates get checked against what your real buildings do and corrected over time.
+**Exports are valued by market share.** The game pays exports as your share of each good's sector market, so a good you barely make is worth the most, and more of something you already dominate is worth very little. Shortages your own colonies have count extra, which spreads colonies across different goods. Turn it off under Settings, Building and planning, **Exports valued by market share**. Diagnostics has a market section.
 
-What a building makes is worth what it adds to your exports, and the game pays exports as a share of each good's market across the whole sector (since 2.44.0). Your colony's slice is what it can ship times its accessibility, out of every exporter's total, and the pot itself doesn't grow. So:
+**When it looks.** Each colony every 7 days, or right after something finishes. The best value per credit goes first. A colony starts at most one new building and one upgrade at a time.
 
-- a good you barely make, or nobody makes, is worth the most;
-- more of something your colonies already dominate is worth very little, since it mostly splits a pot you already hold;
-- a building only counts what it makes above the colony's own biggest source of that good (a colony's supply is its largest single source, not the total);
-- only what the colony can ship off-world counts;
-- a building still under construction counts as already made, so another colony won't start the same thing in the meantime.
+**What it avoids:**
 
-Covering a shortage your own colonies have counts extra on top (your colonies selling to each other earns nothing, but it keeps their industries running and their upkeep down). That's what spreads your colonies across different goods instead of five planets making ore. You can turn it off under Settings, Building and planning, **Exports valued by market share**, to get the old flat rate per unit back. The Diagnostics report has a market section with your share of every good, and the log checks the model against the game's own shares once a week.
-
-Each colony is looked at every 7 days, or right after something finishes building. Across the whole empire, the best value per credit goes first. A colony starts at most one new building and one upgrade at a time (more upgrades while spending freely), and if the best thing has to wait for budget, the next best goes instead so the colony doesn't just sit there.
-
-A few things it avoids on its own:
-
-- polluting a habitable world. A nanoforge that pollutes never goes into a forge on a habitable world, whatever the colony's goal (War production and Security included), its threat, or the endgame. It waits for a forge on a world that isn't habitable instead. An upgrade that would pollute one again is shown but never started for you;
-- building past 12 buildings, since the colony screen can't show a 13th (Grand.Colonies changes this);
-- taking an industry slot the plan still needs for something else.
+- Putting a polluting nanoforge in a forge on a habitable world.
+- Building past 12 buildings (the colony screen can't show a 13th).
+- Taking a slot the plan still needs.
+- Rebuilding what it took down. Anything it removes at a colony stays off that colony's list for a year.
 
 ## Mod buildings it doesn't know
 
-A building from some mod with no formula gets measured. It's built on a throwaway test colony that nobody sees, its real effects are read off, and then it's scored like anything else. Anything that misbehaves on the test colony gets quarantined and never touched again.
-
-The empire panel's **Diagnostics** page rates every building:
-
-- **Supported** - formulas or estimates it trusts.
-- **Measured** - scored from the test colony. The **Mod buildings with measured effects** setting decides whether Auto builds these on its own, only proposes them, or ignores them.
-- **Analyzed** - looked at, but nothing it can value.
-- **Quarantined** - misbehaved, left alone.
+A mod building with no formula is measured on a throwaway test colony, then scored like anything else. **Diagnostics** rates every building: **Supported**, **Measured**, **Analyzed** or **Quarantined** (misbehaved, left alone). **Mod buildings with measured effects** decides whether Auto builds Measured ones, only proposes them, or ignores them.
 
 ## Staying in control
 
-- **Locks.** The colony panel's **Locks** page lists your buildings. A locked building is never upgraded, replaced, removed, or touched for items and cores.
-- **Removals.** It doesn't remove buildings unless a feature needs to (terraforming structures it built, or the endgame replacing weak industries) or you turn on **Allow removals**.
-- **Story points** are never spent unless you change **Story points** away from Player only. If you allow it, each improvement at a colony costs twice the last one there, so the cheapest ones go first.
-- **Big builds.** Anything over the **Per-project cap** gets proposed for your approval instead of built.
-- **Fees.** Approve and Auto add a small convenience fee to each project (Standard is 5% of the cost, at least 5,000). You can set fees to Off, Low, Standard or High.
+- **Locks.** The **Locks** page lists your buildings. A locked one is never upgraded, replaced, removed, or touched for items and cores.
+- **Removals.** It only removes buildings when a feature needs to (terraforming structures it built, endgame replacements) or you turn on **Allow removals**.
+- **Story points** are never spent unless you change **Story points** from Player only. Each improvement at a colony costs twice the last.
+- **Big builds.** Anything over the **Per-project cap** is proposed to you.
+- **Fees.** Approve and Auto add a convenience fee (Standard is 5%, at least 5,000). Set it to Off, Low, Standard or High.
 
 ## Stations
 
-The **Station line** setting picks which station line new stations use: Pick by score, Low tech, Midline, High tech, or Imperium with Interstellar Imperium installed. Pick by score chooses by what each one actually does at that colony. Stations from other mods count like vanilla ones.
-
-Once you're spending freely (see [Money, surplus and the endgame](money.md)), every colony maxes out its station, Heavy Batteries, Planetary Shield, Megaport and Patrol HQ even if they cost more than they earn.
+The **Station line** setting picks the line: Pick by score, Low tech, Midline, High tech, or Imperium. While you're spending freely ([Money](money.md)), every colony maxes its station, Heavy Batteries, Planetary Shield, Megaport and Patrol HQ.
 
 ## Stable locations
 
-Every system has a few stable spots where you can put a comm relay, nav buoy or sensor array. In any system with your Auto colonies, Colony Manager works out what each one would do for the colonies there, using their goals the same way it scores buildings, and sends a construction crew to build the best one:
+In systems with your Auto colonies, a construction crew builds the best of these at a stable spot:
 
-- **Comm relay** (+1 stability at every colony of yours in the system). Usually first.
-- **Nav buoy** (+2 burn for your fleets there, so patrols and defense fleets show up sooner). Security colonies care about this a lot more.
-- **Sensor array** (+400 sensor range, so raiders get spotted sooner).
+- **Comm relay**: +1 stability at every colony of yours there. Usually first.
+- **Nav buoy**: +2 burn for your fleets. Security colonies care more.
+- **Sensor array**: +400 sensor range.
 
-Only one of each kind counts in a system, so it never builds a second. It costs vanilla's materials (15 heavy machinery, 30 metals, 5 transplutonics) at base price plus a fee from the monthly budget, and goes up 10 days after the crew leaves. If someone grabs the spot first, the materials come back.
-
-With **Terraforming Made Easy**, a makeshift one you own gets upgraded to Domain-era (the relay gives +2 instead of +1) when there's a spare Beta core in Autopilot Storage and the upgrade pays for itself within three years. With **Ashes of the Domain**, Hypershunt Receivers get built too, once researched and with a Coronal Hypershunt Tap in Autopilot Storage, in systems your hypershunt reaches; while you own a hypershunt, one spot per system stays free for one.
-
-The **Stable locations** setting turns this to Recommend only or Off.
+One of each per system. It costs 15 heavy machinery, 30 metals and 5 transplutonics at base price plus a fee, and goes up 10 days after the crew leaves. The **Stable locations** setting turns this to Recommend only or Off.
 
 Next: [Your capital](capital.md).
+
+## Coming in 3.0
+
+- **One build queue** (already built, being tested). Builds, upgrades, terraforming, research facilities, wonder sites, crews and story point improvements are ranked together, and money goes where it pays most per credit.
+- **Payback window** (already built, being tested). A build has to pay back within a planned default of 36 months, stretching to 120 as spare credits pile up. A 360-day structure no longer blocks a better build.
+- **Rebuilds** (already built, being tested). Removals use the same math as building.
+- **Steadier decisions** (already built, being tested). Spending freely, free ports and hazard pay stop flipping back and forth. A world plan that paid for terraforming only changes for one worth twice as much.
+- **Auto-expansion** (planned). It would found colonies for you, off by default.
+
+Plans can still change before release.
+
+Everything planned for 3.0: [roadmap](roadmap.md)
