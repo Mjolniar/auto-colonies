@@ -76,7 +76,9 @@ public class CAEstimates {
             p.fx[3] += 2f; p.fx[4] += 1f; note(p, "Imperium fortress: ground defense x3 and the strongest station fleet");
         } else if (id.equals("IndEvo_AdAssem") || id.equals("IndEvo_AdManuf") || id.equals("IndEvo_ComForge")) {
             float per = id.equals("IndEvo_AdAssem") ? 900f : id.equals("IndEvo_AdManuf") ? 1500f : 2200f;
-            p.fx[0] += per * s; note(p, "Produces the commodity of a VPC chip from Autopilot Storage");
+            float share = CAValue.vpcShare(m, s);   // 0.3.0.0 (B1, 02 section 9): only the part above what the colony already makes of the chip's good
+            p.fx[0] += per * s * share;
+            note(p, "Produces the commodity of a VPC chip from Autopilot Storage" + (share < 1f ? " (" + Math.round(share * 100f) + "% above what the colony makes already)" : ""));
         } else if (id.equals("IndEvo_AdInfra")) {
             p.fx[0] += 1500f * s; note(p, "Boosts output of matching industries in this system");
         } else if (id.equals("IndEvo_ComArray")) {

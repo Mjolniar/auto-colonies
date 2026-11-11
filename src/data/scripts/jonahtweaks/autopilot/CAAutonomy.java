@@ -100,11 +100,18 @@ final class CAAutonomy {
 
     /** What keeps a colony an older Autopilot made autonomous from being taken back, or null if nothing does. */
     static String waitReason(CAData d, CASettings s, MarketAPI m) {
-        if (emergency(s) != null) return "the money emergency isn't over";
+        if (emergency(s) != null) return "the money emergency is over";
         float after = CABudget.netIncome(s) + (1f - incomeMult()) * colonyNet(m);
-        if (moneyEmergency(after, CABuild.credits(), s.reserve)) return "net income would be " + Misc.getDGSCredits(after) + " a month with it, a money emergency";
+        if (moneyEmergency(after, CABuild.credits(), s.reserve)) return "net income allows it";
         if (CAItems.overLimit() + 1 > 0 && CAItems.idleAdmin(d) == null)
-            return "it would put you over your colony limit; Autopilot is getting an administrator to make room";
+            return "an administrator is free";
+        // 0.3.0.0 (WS-E fix): one more colony governed by you costs every colony you govern CAStability.oneMoreGoverned() (2), under
+        // the colony limit too; an idle administrator placed there covers it (reclaim)
+        if (CAItems.idleAdmin(d) == null && !CAStability.canGovernedLose(-CAStability.oneMoreGoverned(), null))
+            return "your colonies can take the stability loss";
+        // 0.3.0.0 (WS-E fix): never 0 stability. Taking a colony back adds REVOKE_UNREST unless Nexerelin set its no-loss flag
+        if (!m.getMemoryWithoutUpdate().getBoolean(Nex_GrantAutonomy.MEMORY_KEY_NO_STAB_LOSS) && !CAStability.canLose(m, -REVOKE_UNREST, null))
+            return "its stability can take " + REVOKE_UNREST + " unrest";
         return null;
     }
 
@@ -180,12 +187,14 @@ final class CAAutonomy {
     /** Taking one back, with Nexerelin's usual unrest (0.2.37.0: no exception for colonies an older Autopilot made autonomous). */
     static void reclaim(CAData d, MarketAPI m, String why) {
         boolean legacy = d.autonomous().containsKey(m.getId());
+        // 0.3.0.0 (WS-E fix): decided before it comes back: past the colony limit, or the colonies you govern can't take one more
+        // governed colony (CAStability.oneMoreGoverned), an idle administrator governs it
+        boolean needAdmin = CAItems.overLimit() + 1 > 0 || !CAStability.canGovernedLose(-CAStability.oneMoreGoverned(), null);
         Nex_GrantAutonomy.revokeAutonomy(m);
         d.autonomous().remove(m.getId());
         d.lastAutonomyChange = Global.getSector().getClock().getTimestamp();
         CALog.forget("autonomy:back:" + m.getId());
-        // past the colony limit now: the idle administrator that made room for it governs it
-        AdminData a = CAItems.overLimit() > 0 ? CAItems.idleAdmin(d) : null;
+        AdminData a = needAdmin ? CAItems.idleAdmin(d) : null;
         if (a != null) {
             m.setAdmin(a.getPerson());
             a.setMarket(m);
@@ -206,15 +215,15 @@ final class CAAutonomy {
     static void render(TooltipMakerAPI t, CAData d, CASettings s) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         CATheme.heading(t, "Autonomy (Nexerelin)", 0f);
-        t.addPara("Mode: %s (Settings, Autonomy). An autonomous colony gives you %s of its profit or loss, doesn't count against your colony "
-                + "limit, and can't be built on; taking it back costs %s unrest. Only for money: colonies a year old that have lost money "
-                + "%s months in a row, or the best one in a money emergency.", 6f, hl,
-                CASettings.AUTONOMY_NAMES[Math.max(0, Math.min(2, s.autonomyMode))], Math.round(incomeMult() * 100f) + "%", "" + REVOKE_UNREST, "" + LOSS_MONTHS);
+        // 0.3.0.0 (WS-F3 fix, research 04 section 7 #6): the mode as a readout, one short line and who qualifies on hover (was 60 words)
+        CATheme.mode(t, CASettings.AUTONOMY_NAMES[Math.max(0, Math.min(2, s.autonomyMode))]);
+        t.addPara("Autonomous colonies give %s of profit or loss, outside the colony limit; taking one back costs %s unrest.",
+                4f, hl, Math.round(incomeMult() * 100f) + "%", "" + REVOKE_UNREST);
         tidy(d);
         Emergency e = emergency(s);
         if (e != null) t.addPara("Money emergency: " + CALog.esc(e.why) + ".", Misc.getNegativeHighlightColor(), 6f);
         List<Cand> losers = losers(d, false);
-        if (losers.isEmpty()) t.addPara("No colony a year old or more loses money now.", gray, 6f);
+        if (losers.isEmpty()) t.addPara("No colony a year old loses money.", gray, 6f);
         int shown = 0;
         for (Cand k : losers) {
             if (shown++ >= 6) break;

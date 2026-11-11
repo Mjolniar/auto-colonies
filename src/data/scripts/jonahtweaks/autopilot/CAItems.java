@@ -33,7 +33,7 @@ import java.util.*;
  * inspection risk; and places, moves and hires administrators where they earn their salary. Auto-mode colonies only.
  */
 public class CAItems {
-    static final float STANDARD_MOVE_FEE = 10000f;
+    static final float STANDARD_MOVE_FEE = CATuning.MOVE_FEE;   // 0.3.0.0 (A3): fees and day counts live in CATuning
 
     static final Map<String, Float> ITEM_VALUE = new HashMap<String, Float>();
     static {
@@ -134,6 +134,15 @@ public class CAItems {
     }
 
     /**
+     * 0.3.0.0 (B3 fix): canPay, and the move doesn't spend what the planner saves up for its earmarked pick (CAPlanner.setAside).
+     * For CAItems' own paid moves (item installs and swaps, the Antimatter Stabilizer, core moves), which don't offer the planner
+     * actions yet (0.3.0.x); canPay stays as it was for the other modules that call it.
+     */
+    static boolean canMove(CASettings s, float fee) {
+        return canPay(s, fee) && (fee <= 0f || CAPlanner.setAside(fee, fee, 0f, null) == null);
+    }
+
+    /**
      * Value of an item with no entry above: any mod's item that registers an effect in the game's own item table (the
      * same table the install menu checks). An output booster is worth what its extra output suggests next to the vanilla
      * ones (Catalytic Core: +3 for 50); anything else gets a small value, so it's still used rather than left in storage.
@@ -184,8 +193,8 @@ public class CAItems {
         if (s.useAICores && !quiet && CAPanopticon.run(d, s, markets)) return;   // Emergent Threats: IX Revival's Panopticon cores (0.2.39.3)
         if (s.adminOptimal && (assignAdmin(d, markets) || moveAdmin(markets))) return;
         if (s.adminHiring) hireAdmin(d, s, markets);
-        else if (adminsNeeded(d) > 0 && CALog.once("admin:need:off:" + adminsNeeded(d)))
-            CALog.add("Administrators needed: " + limitText(adminsNeeded(d)) + ". Administrator hiring is off, so hire one yourself, or turn on "
+        else if (adminsUncovered(d) > 0 && CALog.once("admin:need:off:" + adminsNeeded(d)))   // 0.3.0.0 (WS-D): not for an expedition's own administrator
+            CALog.add("Administrators needed: " + limitText(adminsNeeded(d), expansionsComing(d)) + ". Administrator hiring is off, so hire one yourself, or turn on "
                     + "Hire administrators under Administrators and ambassadors");
     }
 
@@ -211,7 +220,7 @@ public class CAItems {
      * had arrived but wasn't in yet (two Orbital Fusion Lamps to Umuzi). A copy already at the colony wins a tie with one
      * that would have to be shipped there; a building with a copy on its way is left for it.
      */
-    static List<Placement> placements(CAData d, List<MarketAPI> markets, List<CAStores.Held> unplaced) {
+    static List<Placement> placements(CAData d, List<MarketAPI> markets, List<CAStores.Held> unplaced, Map<String, Integer> deficit) {
         List<Placement> out = new ArrayList<Placement>();
         for (CAStores.Held held : CAStores.stacks()) {
             CargoStackAPI stack = held.stack;
@@ -239,7 +248,7 @@ public class CAItems {
                     try {
                         if (!effect.getUnmetRequirements(ind).isEmpty()) continue;
                     } catch (Throwable t) { CADiagnostics.quarantine(ind.getId(), "item requirement check", t); continue; }
-                    float sc = itemScore(spec.getId(), m, c.profile, ind);
+                    float sc = CAValue.itemPlacement(m, ind, spec.getId(), effect, itemScore(spec.getId(), m, c.profile, ind), c.profile, deficit);   // 0.3.0.0 (B1 fix, 02 section 9): credits a month, what its units really add here
                     if (sc <= 0f) continue;
                     out.add(new Placement(held, spec, data, m, ind, sc));
                     any = true;
@@ -287,15 +296,16 @@ public class CAItems {
     }
 
     static boolean placeItem(CAData d, CASettings s, List<MarketAPI> markets) {
+        Map<String, Integer> deficit = CAEngine.empireDeficits();   // 0.3.0.0 (B1 fix): read once a run
         List<CAStores.Held> unplaced = new ArrayList<CAStores.Held>();
-        for (Placement p : assign(placements(d, markets, unplaced))) {
+        for (Placement p : assign(placements(d, markets, unplaced, deficit))) {
             if (!p.local()) {   // somewhere else: shipped there first, unless one is already on its way
                 if (CAStores.inTransit(p.spec.getId(), p.m.getId()) > 0) continue;
                 if (CAStores.ship(p.held.market, p.m, null, p.data, 1, "for " + p.ind.getCurrentName())) return true;
                 continue;
             }
             float fee = CABudget.fee(s, STANDARD_MOVE_FEE);
-            if (!canPay(s, fee)) return false;
+            if (!canMove(s, fee)) return false;
             try {
                 // the stack's own object: some mods keep state in a SpecialItemData subclass (a copy of Substance.Abuse's
                 // Recipe Book loses its recipes and crashes the colony on every update)
@@ -317,7 +327,7 @@ public class CAItems {
             SpecialItemSpecAPI spec = held.stack.getSpecialItemSpecIfSpecial();
             SpecialItemData data = held.stack.getSpecialDataIfSpecial();
             InstallableItemEffect effect = ItemEffectsRepo.ITEM_EFFECTS.get(spec.getId());
-            if (swapItem(d, s, markets, held.market, spec, data, effect, targets(spec))) return true;
+            if (swapItem(d, s, markets, held.market, spec, data, effect, targets(spec), deficit)) return true;
         }
         return false;
     }
@@ -331,7 +341,7 @@ public class CAItems {
      * handles it), an item Autopilot can't value, or a building that uses its item up.
      */
     static boolean swapItem(CAData d, CASettings s, List<MarketAPI> markets, MarketAPI holder, SpecialItemSpecAPI spec, SpecialItemData data,
-                            InstallableItemEffect effect, Set<String> targets) {
+                            InstallableItemEffect effect, Set<String> targets, Map<String, Integer> deficit) {
         Industry best = null; MarketAPI bestM = null; float bestGain = 0f;
         for (MarketAPI m : markets) {
             if (CAHypershunt.is(m) || !CAMods.itemFits(spec.getId(), m)) continue;
@@ -343,8 +353,12 @@ public class CAItems {
                 if (CAMods.leftToYou(ind.getId()) != null) continue;   // left to you: its item stays (0.2.45.0)
                 try { if (!effect.getUnmetRequirements(ind).isEmpty()) continue; } catch (Throwable t) { continue; }
                 if (CALowProfile.pathBlocked(m, CALowProfile.itemInterest(spec) - CALowProfile.itemInterest(old.getId()))) continue;
-                float now = itemScore(old.getId(), m, c.profile, ind), then = itemScore(spec.getId(), m, c.profile, ind);
-                if (better(then, now) && then - now > bestGain) { bestGain = then - now; best = ind; bestM = m; }
+                float flatNow = itemScore(old.getId(), m, c.profile, ind), flatThen = itemScore(spec.getId(), m, c.profile, ind);
+                if (flatNow <= 0f || flatThen <= 0f) continue;   // one it can't value stays; one that can't go there never does (as before)
+                InstallableItemEffect oldEffect = ItemEffectsRepo.ITEM_EFFECTS.get(old.getId());
+                float now = CAValue.itemInstalled(m, ind, old.getId(), oldEffect, flatNow, c.profile, deficit);
+                float then = CAValue.itemSwap(m, ind, spec.getId(), effect, flatThen, old.getId(), oldEffect, c.profile, deficit);
+                if ((now > 0f ? better(then, now) : then > 0f) && then - now > bestGain) { bestGain = then - now; best = ind; bestM = m; }
             }
         }
         if (best == null) return false;
@@ -355,7 +369,7 @@ public class CAItems {
             return CAStores.ship(holder, bestM, null, data, 1, "to replace the " + name(best.getSpecialItem().getId()) + " in " + best.getCurrentName());
         }
         float fee = CABudget.fee(s, STANDARD_MOVE_FEE);
-        if (!canPay(s, fee)) return false;
+        if (!canMove(s, fee)) return false;
         SpecialItemData old = best.getSpecialItem();
         String oldName = name(old.getId());
         CargoAPI st = CAStores.of(bestM);
@@ -413,7 +427,7 @@ public class CAItems {
      */
     public static List<Idle> idleItems() {
         float now = CADay.now();
-        if (idle != null && now - idleAt < 1f) return idle;
+        if (idle != null && CATime.fresh(idleAt, now, 1f)) return idle;   // 0.3.0.0 (A1 fix): idleAt = -99 after an install read as fresh on the game's negative clock, for the session
         idleAt = now;
         List<Idle> out = new ArrayList<Idle>();
         List<MarketAPI> auto = autoMarkets();
@@ -462,10 +476,11 @@ public class CAItems {
         if (it.effect instanceof com.fs.starfarer.api.impl.campaign.econ.impl.BoostIndustryInstallableItemEffect) {
             int up = ((com.fs.starfarer.api.impl.campaign.econ.impl.BoostIndustryInstallableItemEffect) it.effect).getSupplyIncrease();
             float v = 0f;
-            for (String com : p.supplied.keySet()) {
-                try { v += up * Global.getSettings().getCommoditySpec(com).getBasePrice() * CAEngine.unitValue; } catch (Throwable ignored) { }
+            Map<String, Integer> deficit = CAEngine.empireDeficits();
+            for (Map.Entry<String, Integer> e : p.supplied.entrySet()) {
+                try { v += CAValue.boostLine(m, null, e.getValue(), e.getKey(), up, deficit); } catch (Throwable ignored) { }   // 0.3.0.0 (B1, 02 section 9): netted, by share
             }
-            if (v > 0f) return v;
+            if (!p.supplied.isEmpty()) return Math.max(0f, v);   // a boost that adds nothing netted is worth nothing, not the flat item points
         }
         return itemScore(it.spec.getId(), m, prof) * POINT_CREDITS * CAEngine.unitValue / 100f;
     }
@@ -625,7 +640,7 @@ public class CAItems {
             return holder != null && CAStores.ship(holder, best, "ix_antimatter_stabilizer", null, 1, "to upgrade Fuel Production");
         }
         float fee = CABudget.fee(s, STANDARD_MOVE_FEE);
-        if (!canPay(s, fee)) return false;
+        if (!canMove(s, fee)) return false;
         try {
             Industry fuel = best.getIndustry("fuelprod");
             boolean improved = fuel.isImproved();
@@ -787,18 +802,6 @@ public class CAItems {
         return "no limit: its defenses (about " + (int) defenseFP(m) + " fleet points) beat the next inspection's " + (int) nextInspectionFP();
     }
 
-    /** A nanoforge that pollutes (vanilla's; AotD's no_pollution ones don't) waits in Autopilot Storage. */
-    static boolean pollutingForgeWaiting() {
-        try {
-            for (CAStores.Held h : CAStores.stacks()) {
-                CargoStackAPI st = h.stack;
-                if (!st.isSpecialStack() || st.getSpecialDataIfSpecial() == null) continue;
-                if (st.getSpecialDataIfSpecial().getId().endsWith("_nanoforge") && CAConditions.polluting(st.getSpecialDataIfSpecial())) return true;
-            }
-        } catch (Throwable ignored) { }
-        return false;
-    }
-
     /** An Alpha core only goes where it can be taken out cleanly: vanilla buildings, never Population & Infrastructure or mod code. */
     static boolean alphaRemovable(Industry ind) {
         if (research(ind)) return true;   // VoK recomputes its research costs from whatever core is in
@@ -904,7 +907,7 @@ public class CAItems {
             CommodityOnMarketAPI com = m.getCommodityData(q.getCommodityId());
             if (dem <= 0 || com == null || com.getCommodity() == null || dem <= com.getAvailable()) continue;
             shortInput = true;
-            fx[0] += com.getCommodity().getBasePrice() * 30f;   // as CAEngine.demand counts an input your colonies lack
+            fx[0] += com.getCommodity().getBasePrice() * CATuning.SHORT_INPUT_PRICE;   // as CAEngine.demand counts an input your colonies lack
         }
         // output: a short input cuts it unit for unit, and an Alpha adds +1 outside structures
         String st = structure(ind);
@@ -913,8 +916,7 @@ public class CAItems {
             for (MutableCommodityQuantity q : ind.getAllSupply()) {
                 CommoditySpecAPI spec = Global.getSettings().getCommoditySpec(q.getCommodityId());
                 if (spec == null || q.getQuantity().getModifiedInt() <= 0) continue;
-                Integer d = deficit.get(q.getCommodityId());
-                fx[0] += spec.getBasePrice() * CAEngine.unitValue * more * (d != null && d > 0 ? 1.5f : 1f);
+                fx[0] += CAValue.boost(m, ind, q.getCommodityId(), more, deficit);   // 0.3.0.0 (B1, 02 section 9): only what it adds above the colony's other sources, by market share
             }
         }
         if (k == 0 && st != null) {
@@ -1058,7 +1060,7 @@ public class CAItems {
             return holder != null && CAStores.ship(holder, bestTo.m, coreId, null, 1, why);
         }
         float fee = CABudget.fee(s, STANDARD_MOVE_FEE);
-        if (!canPay(s, fee)) return false;
+        if (!canMove(s, fee)) return false;
         int old = bestTo.cur;
         // what the change adds, without research buildings' place in line
         float real = bestTo.net[bestK] - (old >= 0 ? bestTo.net[old] : 0f) - (bestFrom != null ? bestFrom.net[bestK] : 0f);
@@ -1159,22 +1161,62 @@ public class CAItems {
      * are placed or hired even when the money they add doesn't cover the salary: stability matters most in a new colony.
      */
     static int adminsNeeded(CAData d) {
+        // 0.3.0.0 (WS-D): Auto-expansion's colonies under way count too: each lands governed by you, and the administrator for one
+        // past the limit is hired when the expedition leaves, so it arrives with the colony (CAExpansion.launch)
+        return Math.max(0, overLimit() + comingBack(d) + expansionsComing(d));
+    }
+
+    /** 0.3.0.0 (WS-D): adminsNeeded without Auto-expansion's colonies under way: what the colonies you have now need. */
+    static int adminsNeededNow(CAData d) {
+        return Math.max(0, overLimit() + comingBack(d));
+    }
+
+    /** 0.3.0.0 (WS-D): colonies Autopilot made autonomous (Nexerelin) that come back once there's room (split out of adminsNeeded). */
+    static int comingBack(CAData d) {
         int back = 0;
         for (String id : d.autonomous().keySet()) {
             MarketAPI m = Global.getSector().getEconomy().getMarket(id);
             if (m != null && !m.isPlayerOwned()) back++;
         }
-        return Math.max(0, overLimit() + back);
+        return back;
+    }
+
+    /** 0.3.0.0 (WS-D): Auto-expansion's expeditions under way (Autopilot crews and Nexerelin colony fleets). */
+    static int expansionsComing(CAData d) {
+        try { return d.expandOrders().size(); } catch (Throwable t) { return 0; }
+    }
+
+    /**
+     * 0.3.0.0 (WS-D): administrators the colony limit needs that aren't idle or on the way. An expedition hires its own when it
+     * leaves, so with that one on the way this is 0 and the hiring and "needed" lines stay quiet.
+     */
+    static int adminsUncovered(CAData d) {
+        int need = adminsNeeded(d);
+        if (need <= 0) return 0;
+        int idleOrComing = 0;
+        try { for (AdminData a : Global.getSector().getCharacterData().getAdmins()) if (a.getMarket() == null) idleOrComing++; }
+        catch (Throwable t) { return need; }
+        return adminsNeededNow(d) > 0 ? need : Math.max(0, need - idleOrComing);
     }
 
     /** "1 more colony than your colony limit (...)" or, when it's colonies waiting to come back from autonomy, that. */
-    static String limitText(int need) {
+    static String limitText(int need) { return limitText(need, 0); }
+
+    /**
+     * As limitText(need), with `coming` Auto-expansion colonies under way (0.3.0.0, WS-D): the part of the need they make is
+     * named as new colonies on the way. With none coming the text is the same as before.
+     */
+    static String limitText(int need, int coming) {
         int over = Math.max(0, Math.min(need, overLimit()));
-        int back = need - over;
+        int rest = need - over;
+        int fromExpansion = Math.max(0, Math.min(rest, coming));
+        int back = rest - fromExpansion;
         String s = over > 0 ? over + " more " + (over == 1 ? "colony" : "colonies") + " than your colony limit (each costs every colony you govern "
                 + Math.round(Misc.getOutpostPenalty()) + " stability)" : "";
         if (back > 0) s += (s.isEmpty() ? "" : ", and ") + back + " autonomous " + (back == 1 ? "colony" : "colonies")
                 + " Autopilot takes back once there's room under your colony limit";
+        if (fromExpansion > 0) s += (s.isEmpty() ? "" : ", and ") + fromExpansion + " new " + (fromExpansion == 1 ? "colony" : "colonies")
+                + " on the way from Auto-expansion, past your colony limit";
         return s;
     }
 
@@ -1239,7 +1281,7 @@ public class CAItems {
         for (AdminData a : Global.getSector().getCharacterData().getAdmins()) {
             if (a.getMarket() != null || a.getPerson() == null || a.getPerson().isAICore()) continue;
             Long hired = d.adminTransit().get(a.getPerson().getId());
-            if (hired != null && Global.getSector().getClock().getElapsedDaysSince(hired) < 30f) continue;   // still travelling
+            if (hired != null && Global.getSector().getClock().getElapsedDaysSince(hired) < CATuning.TRAVEL_DAYS) continue;   // still travelling
             return a;
         }
         return null;
@@ -1254,7 +1296,7 @@ public class CAItems {
         for (AdminData a : Global.getSector().getCharacterData().getAdmins()) {
             if (a.getMarket() != null || a.getPerson() == null || a.getPerson().isAICore()) continue;
             Long hired = d.adminTransit().get(a.getPerson().getId());
-            if (hired != null && Global.getSector().getClock().getElapsedDaysSince(hired) < 30f) continue;   // still travelling
+            if (hired != null && Global.getSector().getClock().getElapsedDaysSince(hired) < CATuning.TRAVEL_DAYS) continue;   // still travelling
             d.adminTransit().remove(a.getPerson().getId());
             idle.add(a);
         }
@@ -1262,23 +1304,33 @@ public class CAItems {
         List<MarketAPI> open = selfGoverned(markets);
         if (open.isEmpty()) return false;
         float idleMult = idleSalaryMult();
-        int need = adminsNeeded(d);
+        // 0.3.0.0 (WS-D): only what the colonies you have now need. An administrator hired for an Auto-expansion colony under
+        // way stays unassigned until it's founded; CAExpansion then seats them on it
+        int need = adminsNeededNow(d);
+        float penalty = CAStability.governedPenalty();
         AdminData bestA = null;
         MarketAPI bestM = null;
         float bestNet = need > 0 ? -Float.MAX_VALUE : 0f, bestWorth = 0f;
+        boolean held = false;
         for (AdminData a : idle) {
             float cost = Misc.getAdminSalary(a.getPerson()) * (1f - idleMult);
             for (MarketAPI m : open) {
+                // 0.3.0.0: under the colony limit, a colony you govern gets the "Management bonus"; an administrator ends it there,
+                // so never where that takes the colony under the stability floor (CAStability; past the limit it only helps)
+                if (!CAStability.canLose(m, CAStability.adminArrives(CAStability.adminOwn(a.getPerson()), penalty), null)) { held = true; continue; }
                 float w = adminWorth(m, a.getPerson());
                 if (w - cost > bestNet) { bestNet = w - cost; bestWorth = w; bestA = a; bestM = m; }
             }
         }
         if (bestA == null) {
+            if (expansionsComing(d) > 0 && adminsNeeded(d) > 0) return false;   // 0.3.0.0 (WS-D): kept for the colony on the way, no "stays unassigned" line
             for (AdminData a : idle) {
                 float salary = Misc.getAdminSalary(a.getPerson());
                 if (CALog.once("admin:idle:" + a.getPerson().getId()))
                     CALog.add("Administrator " + a.getPerson().getNameString() + " stays unassigned: no Auto colony you govern gains more than their "
-                            + Misc.getDGSCredits(salary) + " a month. Unassigned they cost " + Misc.getDGSCredits(salary * idleMult) + "; dismissing them is up to you");
+                            + Misc.getDGSCredits(salary) + " a month" + (held ? " (or the colony would lose its management bonus and end under "
+                            + Math.round(CAStability.floor()) + " stability)" : "") + ". Unassigned they cost " + Misc.getDGSCredits(salary * idleMult)
+                            + "; dismissing them is up to you");
             }
             return false;
         }
@@ -1296,19 +1348,28 @@ public class CAItems {
         }
     }
 
-    /** Moves an administrator between Auto colonies when a colony you govern yourself gains clearly more from them. */
+    /**
+     * Moves an administrator between Auto colonies when a colony you govern yourself gains clearly more from them. 0.3.0.0: never
+     * when either colony would end under the stability floor (CAStability): the one left behind loses what the administrator
+     * brings and takes the colony limit's penalty (07 M4: a Vulpoid administrator alone is +1), and the one they go to loses
+     * the limit's "Management bonus" when you're under it.
+     */
     static boolean moveAdmin(List<MarketAPI> markets) {
         List<MarketAPI> open = selfGoverned(markets);
         if (open.isEmpty()) return false;
+        float penalty = CAStability.governedPenalty();   // a move doesn't change how many colonies you govern
         AdminData bestA = null;
         MarketAPI bestM = null;
         float bestGain = 0f;
         for (MarketAPI from : markets) {
             AdminData a = adminAt(from);
             if (a == null || a.getPerson() == null || a.getPerson().isAICore()) continue;
+            float own = CAStability.adminOwn(a.getPerson());
+            if (!CAStability.canLose(from, CAStability.adminLeaves(own, penalty), null)) continue;
             float here = adminWorth(from, a.getPerson());
             float margin = Math.max(MOVE_MARGIN, 0.25f * Misc.getAdminSalary(a.getPerson()));
             for (MarketAPI to : open) {
+                if (!CAStability.canLose(to, CAStability.adminArrives(own, penalty), null)) continue;
                 float gain = adminWorth(to, a.getPerson()) - here;
                 if (gain > margin && gain > bestGain) { bestGain = gain; bestA = a; bestM = to; }
             }
@@ -1327,11 +1388,11 @@ public class CAItems {
         }
     }
 
-    static final float HIRE_FEE = 25000f;
+    static final float HIRE_FEE = CATuning.HIRE_FEE;
     /** 0.2.41.2: days the colony limit can go short of administrators with none on offer before a recruiter finds one. */
-    static final float RECRUIT_DAYS = 90f;
+    static final float RECRUIT_DAYS = CATuning.ADMIN_RECRUIT_DAYS;
     /** What the recruiter charges on top of the usual hiring bonus and fee; a price, not a service fee, so the fee level never waives it. */
-    static final float RECRUITER_PRICE = 250000f;
+    static final float RECRUITER_PRICE = CATuning.RECRUITER_PRICE;
 
     static String monthKey() {
         return Global.getSector().getClock().getCycle() + ":" + Global.getSector().getClock().getMonth();
@@ -1356,23 +1417,26 @@ public class CAItems {
     static boolean hireAdmin(CAData d, CASettings s, List<MarketAPI> markets) {
         List<MarketAPI> open = selfGoverned(markets);
         int need = adminsNeeded(d);
+        // 0.3.0.0 (WS-D): what the colonies you have now need, without Auto-expansion's colonies under way; each expedition
+        // hires its own administrator when it leaves (CAExpansion.launch), who goes to the new colony when it's founded
+        int needNow = adminsNeededNow(d), coming = expansionsComing(d);
         if (need <= 0) d.adminNeedSince = 0L;
         if (open.isEmpty()) {
-            if (need > 0 && CALog.once("admin:need:none:" + need))
-                CALog.add("Administrators needed: " + limitText(need) + ". But none of your Auto colonies is governed by you, so Autopilot has nowhere to put an "
+            if (needNow > 0 && CALog.once("admin:need:none:" + need))
+                CALog.add("Administrators needed: " + limitText(need, coming) + ". But none of your Auto colonies is governed by you, so Autopilot has nowhere to put an "
                         + "administrator. Put one on a colony yourself, or switch a colony you govern to Auto");
             return false;
         }
         int idleOrComing = 0;
         for (AdminData a : Global.getSector().getCharacterData().getAdmins()) if (a.getMarket() == null) idleOrComing++;
-        if (idleOrComing >= (need > 0 ? Math.min(need, open.size()) : open.size())) {
+        if (idleOrComing >= (need > 0 ? Math.min(needNow, open.size()) + (need - needNow) : open.size())) {
             if (need > 0) d.adminNeedSince = 0L;   // enough are idle or on the way
             return false;
         }
         int max = (int) Global.getSector().getPlayerStats().getAdminNumber().getModifiedValue();
         if (Global.getSector().getCharacterData().getAdmins().size() >= max) {
             if (need > 0 && CALog.once("admin:need:max:" + max))
-                CALog.add("Administrators needed: " + limitText(need) + ". But you already have as many as you can employ (" + max + ")");
+                CALog.add("Administrators needed: " + limitText(need, coming) + ". But you already have as many as you can employ (" + max + ")");
             return false;
         }
         float fee = CABudget.fee(s, HIRE_FEE);
@@ -1404,7 +1468,7 @@ public class CAItems {
             float waited = Global.getSector().getClock().getElapsedDaysSince(d.adminNeedSince);
             if (waited >= RECRUIT_DAYS) return recruitAdmin(d, s, open, need, waited);
             if (CALog.once("admin:need:" + monthKey()))
-                CALog.add("Administrators needed: " + limitText(need) + ". None is for hire: the game only offers one at a market you dock at, "
+                CALog.add("Administrators needed: " + limitText(need, coming) + ". None is for hire: the game only offers one at a market you dock at, "
                         + "now and then. If none turns up in " + Math.max(1, Math.round(RECRUIT_DAYS - waited)) + " days, a recruiter finds one for "
                         + Misc.getDGSCredits(RECRUITER_PRICE) + " more than a normal hire");
             return false;
@@ -1417,21 +1481,23 @@ public class CAItems {
             return false;
         }
         float total = best.hiringBonus + fee;
-        if (need > 0 ? CABuild.credits() - s.reserve < total : total > CABudget.available(s) || CABuild.credits() < total) {
+        // 0.3.0.0 (B3 fix): a hire the colony limit doesn't need keeps to what the planner saves up and keeps (CAPlanner.setAside)
+        String held = need > 0 ? null : CAPlanner.setAside(total, total, best.salary, bestFor);
+        if (need > 0 ? CABuild.credits() - s.reserve < total : total > CABudget.available(s) || CABuild.credits() < total || held != null) {
             if (CALog.once("admin:" + best.person.getId()))
-                CALog.add("An administrator is for hire at " + bestAt.getName() + " (" + Misc.getDGSCredits(best.hiringBonus) + " + fee), waiting for budget");
+                CALog.add("An administrator is for hire at " + bestAt.getName() + " (" + Misc.getDGSCredits(best.hiringBonus) + " + fee), "
+                        + (held != null ? "waiting: " + held : "waiting for budget"));
             return false;
         }
         try {
             best.person.setPostId(com.fs.starfarer.api.impl.campaign.ids.Ranks.POST_ADMINISTRATOR);
             bestEvent.removeAvailable(best);
             Global.getSector().getCharacterData().addAdmin(best.person);
-            Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(best.hiringBonus);
-            CABudget.charge(s, best.hiringBonus, fee, best.salary);
+            CABudget.pay(s, null, best.hiringBonus, fee, best.salary);
             d.adminTransit().put(best.person.getId(), Global.getSector().getClock().getTimestamp());
             CALog.add("Hired administrator " + best.person.getNameString() + " from " + bestAt.getName() + " for " + Misc.getDGSCredits(best.hiringBonus)
                     + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + ", salary " + Misc.getDGSCredits(best.salary) + "/month, for "
-                    + bestFor.getName() + (need > 0 ? ": " + limitText(need) : " (adds about " + Misc.getDGSCredits(bestWorth) + " a month)")
+                    + bestFor.getName() + (need > 0 ? ": " + limitText(need, coming) : " (adds about " + Misc.getDGSCredits(bestWorth) + " a month)")
                     + "; arrives in 30 days");
             return true;
         } catch (Throwable t) {
@@ -1453,7 +1519,7 @@ public class CAItems {
         float fee = CABudget.fee(s, HIRE_FEE), price = RECRUITER_PRICE + bonus;
         if (CABuild.credits() - s.reserve < price + fee) {
             if (CALog.once("admin:recruit:" + monthKey()))
-                CALog.add("Administrators needed: " + limitText(need) + ". A recruiter can find one for " + Misc.getDGSCredits(price + fee)
+                CALog.add("Administrators needed: " + limitText(need, expansionsComing(d)) + ". A recruiter can find one for " + Misc.getDGSCredits(price + fee)
                         + ", waiting for that much above your credit reserve");
             return false;
         }
@@ -1477,16 +1543,147 @@ public class CAItems {
         float salary = Misc.getAdminSalary(p);
         try {
             Global.getSector().getCharacterData().addAdmin(p);
-            Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(price);
-            CABudget.charge(s, price, fee, salary);
+            // 0.3.0.0 (C4, research 03 F13): the recruiter's price is an obligation the colony limit needs; it does not use up the month's build budget
+            CABudget.take(price);
+            CABudget.charge(s, 0f, fee, salary);
+            CALog.spent(null, price, 0f, 0f);
             d.adminTransit().put(p.getId(), Global.getSector().getClock().getTimestamp());
             CALog.forget("admin:need:" + monthKey());
             CALog.add("Hired administrator " + p.getNameString() + " through a recruiter for " + Misc.getDGSCredits(price)
                     + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + ", salary " + Misc.getDGSCredits(salary) + "/month, for "
-                    + bestFor.getName() + ": " + limitText(need) + ", none on offer for " + Math.round(waited) + " days; arrives in 30 days");
+                    + bestFor.getName() + ": " + limitText(need, expansionsComing(d)) + ", none on offer for " + Math.round(waited) + " days; arrives in 30 days");
             return true;
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "recruited administrator hire failed", t);
+            return false;
+        }
+    }
+
+    // ---------------- 0.3.0.0 (WS-D): administrators for Auto-expansion (research 05 sections 6.2, 6.5, 6.6) ----------------
+    // A new colony that would go past the colony limit gets its administrator when the expedition leaves: one on offer at a
+    // market that isn't hostile (the cheapest over three years), else a recruiter at the same price as recruitAdmin but
+    // without its 90-day wait. Paid from the expedition's money (the money ladder's Expansion rung), never below the credit
+    // reserve (CAExpansion checks). The administrator arrives in 30 days like any remote hire and waits for the colony;
+    // CAExpansion seats them on it once it's founded (seatForExpansion).
+
+    /** Administrators you employ now (hired people; AI core administrators sit on colonies, not in this list). */
+    static int adminsEmployed() {
+        try { return Global.getSector().getCharacterData().getAdmins().size(); } catch (Throwable t) { return 0; }
+    }
+
+    /** How many administrators you can employ (playerStats.getAdminNumber, plus Nexerelin's bonus by total colony size). */
+    static int adminMax() {
+        try { return (int) Global.getSector().getPlayerStats().getAdminNumber().getModifiedValue(); } catch (Throwable t) { return 0; }
+    }
+
+    /** Administrators who govern nothing: idle, or still on their way after a hire. */
+    static int idleAdmins() {
+        int n = 0;
+        try {
+            for (AdminData a : Global.getSector().getCharacterData().getAdmins())
+                if (a.getMarket() == null && a.getPerson() != null && !a.getPerson().isAICore()) n++;
+        } catch (Throwable ignored) { }
+        return n;
+    }
+
+    /** An administrator Auto-expansion can hire now, with the price, the fee and the monthly salary. Not saved. */
+    static final class ExpansionHire {
+        float price, fee, salary;
+        com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent event;
+        com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent.AvailableOfficer offer;   // null: a recruiter
+        MarketAPI at;
+    }
+
+    /**
+     * What hiring an administrator for a new colony costs now: the cheapest on offer at a market that isn't hostile
+     * (hiring bonus plus three years of salary), else a recruiter (RECRUITER_PRICE plus the basic tier's hiring bonus).
+     * Null when you already employ as many administrators as you can.
+     */
+    static ExpansionHire expansionHire(CASettings s) {
+        if (adminsEmployed() >= adminMax()) return null;
+        ExpansionHire h = new ExpansionHire();
+        h.fee = CABudget.fee(s, HIRE_FEE);
+        float bestCost = Float.MAX_VALUE;
+        try {
+            for (MarketAPI src : Global.getSector().getEconomy().getMarketsCopy()) {
+                if (src.getFaction() == null || src.getFaction().isHostileTo(Factions.PLAYER) || src.getCommDirectory() == null) continue;
+                for (com.fs.starfarer.api.campaign.CommDirectoryEntryAPI e : src.getCommDirectory().getEntriesCopy()) {
+                    if (!(e.getEntryData() instanceof PersonAPI)) continue;
+                    PersonAPI p = (PersonAPI) e.getEntryData();
+                    Object ref = p.getMemoryWithoutUpdate().get("$ome_eventRef");
+                    if (!(ref instanceof com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent)) continue;
+                    com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent ev = (com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent) ref;
+                    com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent.AvailableOfficer ao = ev.getAdmin(p.getId());
+                    if (ao == null) continue;
+                    float c = ao.hiringBonus + 36f * ao.salary;
+                    if (c < bestCost) { bestCost = c; h.event = ev; h.offer = ao; h.at = src; }
+                }
+            }
+        } catch (Throwable t) { h.offer = null; h.event = null; h.at = null; }
+        if (h.offer != null) { h.price = h.offer.hiringBonus; h.salary = h.offer.salary; return h; }
+        int bonus = 5000, salary = 2500;
+        try { bonus = Global.getSettings().getInt("adminHireTier0"); } catch (Throwable t) { }
+        try { salary = Global.getSettings().getInt("adminSalaryTier0"); } catch (Throwable t) { }
+        h.price = RECRUITER_PRICE + bonus;
+        h.salary = salary;
+        return h;
+    }
+
+    /**
+     * Hires that administrator now for the new colony at `forName`, paid from the money ladder's Expansion rung
+     * (CABudget.payFromPool). The caller has checked the money. Returns whether one was hired.
+     */
+    static boolean hireForExpansion(CAData d, CASettings s, ExpansionHire h, String forName) {
+        if (h == null) return false;
+        PersonAPI p;
+        String how;
+        try {
+            if (h.offer != null) {
+                p = h.offer.person;
+                p.setPostId(com.fs.starfarer.api.impl.campaign.ids.Ranks.POST_ADMINISTRATOR);
+                h.event.removeAvailable(h.offer);
+                how = "from " + h.at.getName();
+            } else {
+                com.fs.starfarer.api.campaign.FactionAPI indie = Global.getSector().getFaction(Factions.INDEPENDENT);
+                p = com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent.createAdmin(indie, 0, new java.util.Random());
+                p.setFaction(Factions.INDEPENDENT);
+                p.setPortraitSprite(com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent.pickPortraitPreferNonDuplicate(indie, p.getGender()));
+                p.setPostId(com.fs.starfarer.api.impl.campaign.ids.Ranks.POST_ADMINISTRATOR);
+                how = "through a recruiter";
+            }
+            Global.getSector().getCharacterData().addAdmin(p);
+            CABudget.payFromPool(s, CAExpansion.RUNG, null, h.price, h.fee);
+            d.adminTransit().put(p.getId(), Global.getSector().getClock().getTimestamp());
+            CALog.add("Hired administrator " + p.getNameString() + " " + how + " for " + Misc.getDGSCredits(h.price)
+                    + (h.fee > 0f ? " + " + Misc.getDGSCredits(h.fee) + " fee" : "") + ", salary " + Misc.getDGSCredits(h.salary)
+                    + "/month, for the new colony at " + forName + "; arrives in 30 days");
+            return true;
+        } catch (Throwable t) {
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "administrator hire for Auto-expansion failed", t);
+            return false;
+        }
+    }
+
+    /**
+     * Puts an administrator who has arrived and governs nothing on a colony Auto-expansion founded, when the colony limit
+     * or the stability floor needs one there. Never when that takes the colony under the floor (it loses the colony limit's
+     * management bonus under the limit). Returns whether one was seated.
+     */
+    static boolean seatForExpansion(CAData d, MarketAPI m) {
+        if (m == null || !governedByYou(m)) return false;
+        AdminData a = idleAdmin(d);
+        if (a == null) return false;
+        if (!CAStability.canLose(m, CAStability.adminArrives(CAStability.adminOwn(a.getPerson()), CAStability.governedPenalty()), null)) return false;
+        try {
+            m.setAdmin(a.getPerson());
+            a.setMarket(m);
+            d.adminTransit().remove(a.getPerson().getId());
+            CALog.forget("admin:idle:" + a.getPerson().getId());
+            CALog.add(m.getName() + ": assigned administrator " + a.getPerson().getNameString() + " (new colony from Auto-expansion, salary "
+                    + Misc.getDGSCredits(Misc.getAdminSalary(a.getPerson())) + "/month)");
+            return true;
+        } catch (Throwable t) {
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "administrator for the new colony " + m.getName() + " failed", t);
             return false;
         }
     }

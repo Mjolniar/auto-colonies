@@ -30,7 +30,7 @@ public class CAOptionProvider extends BaseIndustryOptionProvider {
 
     @Override
     public void createTooltip(IndustryOptionData opt, TooltipMakerAPI tooltip, float width) {
-        tooltip.addPara("Open this colony's Autopilot panel: goal profile, mode, and recommended builds.", 0f);
+        tooltip.addPara("Open this colony's Autopilot panel.", 0f);   // 0.3.0.0 (WS-F3 fix pass 3): shorter
     }
 
     @Override

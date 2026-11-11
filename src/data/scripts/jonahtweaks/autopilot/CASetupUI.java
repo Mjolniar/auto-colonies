@@ -1,25 +1,45 @@
 package data.scripts.jonahtweaks.autopilot;
 
+import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.ui.Alignment;
 import com.fs.starfarer.api.ui.ButtonAPI;
 import com.fs.starfarer.api.ui.CutStyle;
+import com.fs.starfarer.api.ui.LabelAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 
 import java.awt.Color;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
-/** Settings rows with recommendations, used by the first-time setup window and the empire panel's settings section. */
+/**
+ * The settings screen (empire panel, Settings page) and the first-time setup rows.
+ * 0.3.0.0 (WS-F1, research 04 sections 3 and 6-7): 20 main rows in 6 groups (Playstyle, Money, Building, Items and people,
+ * Security and diplomacy, Interface), a collapsed Advanced group with one subgroup open at a time, and a link to the
+ * Factions page. Preset rows (CAPresets) write the old fields; every old field keeps a row in Advanced or a page. Each main
+ * row has one gray line of 20 words or fewer; longer explanations are hover text on the row and its line. The gray lines
+ * and hover text are in the DESC and HOVER tables, and the screen opens with a 5-line glossary. JTMenuTextCheck checks the
+ * row count, the keys and the word budgets; JTPresetsCheck the presets and Reset to recommended.
+ */
 public class CASetupUI {
     public static final String PREFIX = "ca:set:";
     /** Recommended surplus line: over 3,000,000. */
     static final int REC_SURPLUS = 2;
+    /** 0.3.0.0 (WS-F1): the empire panel page the Faction stances link opens (CANav id; the page is CAFactionsPage, WS-F2). */
+    public static final String FACTIONS_PAGE = "factions";
+    static final float TIP_W = 420f;
 
     static float round(float v, float step) { return Math.max(step, Math.round(v / step) * step); }
 
     /**
      * The recommended settings: what a player who only switches colonies to Auto should get. Everything that pays for
      * itself and can't hurt is on; choices that are hard to undo or are really the player's (removing buildings, story
-     * points, offense) stay off. Scaled to the empire's income and credits now.
+     * points, offense) stay off. Scaled to the empire's income and credits now. Lands every CAPresets row on its
+     * recommended value (JTPresetsCheck).
      */
     public static void applyRecommended(CASettings s) {
         float net = Math.max(0f, CABudget.netIncome(s)), credits = CABuild.credits();
@@ -32,9 +52,11 @@ public class CASetupUI {
         s.pauseOnLoss = false;   // the Automatic budget already tapers; pausing would stop every early colony
         s.reserve = Math.min(500000f, round(Math.max(50000f, credits * 0.25f), 50000f));   // a quarter of what you have, 50k-500k
         s.perProjectCap = Math.min(5000000f, round(Math.max(1000000f, net), 250000f));
+        s.projectCapFixed = false;   // 0.3.0.0 (WS-F1 fix, DECISIONS 13): the cap in effect follows net income (CAPresets.projectCap)
         s.newUpkeepCap = round(Math.max(20000f, net * 0.1f), 10000f);   // only used if you switch to Fixed
         s.upkeepCapAuto = true;    // follows net income: 10% of last month's, at least 20,000
         s.upkeepCapChecked = true;
+        s.upkeepShare = CATuning.UPKEEP_SHARE;   // 0.3.0.0 (WS-F1): the Spending preset Normal (10%)
         s.surplusLine = REC_SURPLUS;   // credits over 3,000,000 go into one focus world
         s.surplusChecked = true;
         s.surplusTerraform = 0;        // what the focus world leaves of it goes into terraforming, as much output as it buys
@@ -43,6 +65,10 @@ public class CASetupUI {
         s.noWonders = false;           // and builds the Daedalus Array and Bifrost gates once their goods are made
         s.endgameMode = 0;             // from 1,000,000 a month while spending freely, money stops being the goal
         s.endgameNoReplace = false;    // and weak industries make way for production chains, fleets and defense
+        // 0.3.0.0 (WS-F1): the money ladder's recommended order and rung modes (Shipyard and Expansion Recommend only, DECISIONS)
+        s.richPreset = 0;
+        s.rungMode = CASettings.defaultRungs();
+        s.shipyardStop = 6;
         s.monthCredits = credits;
         s.feeLevel = 2;
         s.stationLine = "score";
@@ -59,16 +85,16 @@ public class CASetupUI {
         s.disableStabilizers = false;
         s.adminHiring = true;
         s.adminOptimal = true;
-        s.adminDelay = true;
         s.disableAmbassadors = false;
         // policies and mod automation: each one only acts when it pays
         s.hazardPayMode = 0;
         s.freePortMode = 0;
-        s.hazardPayColonyShare = 0.25f;   // hazard pay where it speeds growth up by at least 25%
-        s.hazardPayEmpireShare = 0.30f;   // all of it within 30% of empire net income: the more you earn, the more colonies get it
+        s.hazardPayColonyShare = CATuning.HAZARD_COLONY_SHARE;   // hazard pay where it speeds growth up by at least 25%
+        s.hazardPayEmpireShare = CATuning.HAZARD_EMPIRE_SHARE;   // all of it within 30% of empire net income: the more you earn, the more colonies get it
         s.disableEdicts = false;
         s.disableDefenseFleets = false;
         s.warMode = 0;          // protect and strike back: security only, never invasions
+        s.warLevel = CAWarPolicy.RETALIATE;   // 0.3.0.0 (WS-E): the War level that matches warMode 0
         s.disableSpecialties = false;
         s.disableVPC = false;
         s.disableForgeVPC = false;
@@ -97,26 +123,139 @@ public class CASetupUI {
         s.noPrune = false;         // and an industry that stopped paying for 30 days (0.2.44.1)
     }
 
-    /** Which group is expanded (UI state only, not saved); at most one. Budget starts open. */
-    static final java.util.Set<String> open = new java.util.HashSet<String>(java.util.Arrays.asList("budget"));
+    /**
+     * 0.3.0.0 (WS-F1, research 04 section 5 item 6): the Reset to recommended button. applyRecommended, except that Expansion
+     * style, the War level, New colonies (Auto-expansion and its settings, TASC stations), faction stances, the Capital row
+     * (the pick, and None), Capital does and the focus world stay as they are. Make room for trade buildings is part of
+     * Take down buildings and is reset with it.
+     */
+    public static void resetToRecommended(CASettings s) {
+        int warLevel = s.warLevel, warMode = s.warMode, capitalMode = s.capitalMode;
+        applyRecommended(s);
+        s.warLevel = warLevel;
+        s.warMode = warMode;
+        s.capitalMode = capitalMode;   // 0.3.0.0 (WS-F1 fix): None, Deliveries only or Deliveries and commerce, as you set it
+        // applyRecommended doesn't touch lowProfile, expand*, stationMode, factionStance, capitalId, capitalModeBeforeNone or focusId
+    }
+
+    // ---------------- text (JTMenuTextCheck: a gray line is 20 words or fewer, a paragraph 40 or fewer) ----------------
+
+    /** The gray line under each main row, by row key. */
+    static final Map<String, String> DESC = new LinkedHashMap<String, String>();
+    /** Hover text by row key: on the row's label and its gray line. */
+    static final Map<String, String[]> HOVER = new LinkedHashMap<String, String[]>();
+    static {
+        DESC.put("lowprofile", "Low profile avoids colony crises and earns less.");
+        DESC.put("p_spend", "Normal: 50% of net income and 15% of savings.");
+        DESC.put("p_extras", "Mod buildings and features.");
+        DESC.put("p_newcol", "Founds colonies with idle money.");
+        DESC.put("p_war", "How far war fleets go; stances cap it.");
+        DESC.put("reserve", "Credits Autopilot does not spend.");
+        DESC.put("surplus", "Credits over this go to one focus world.");
+        DESC.put("richpreset", "What idle money buys first.");
+        DESC.put("endgame", "At this income, build for production and defense.");
+        DESC.put("p_story", "Story points Autopilot may spend on improvements.");
+        DESC.put("p_station", "Stations from size 4, upgraded with growth.");
+        DESC.put("p_takedown", "Clean up removes industries that stopped paying.");
+        DESC.put("p_policy", "Hazard pay, free port and edicts.");
+        DESC.put("p_cores", "AI cores from Autopilot Storage.");
+        DESC.put("p_admins", "Hires and places administrators.");
+        DESC.put("capid", "Deliveries and Storage gather here.");
+        DESC.put("logi", "Refit gear goes to one refit hub.");
+        DESC.put("spy", "Security and relations; offense adds sabotage.");
+        DESC.put("amb", "Ally and Friendly factions first.");
+        DESC.put("stances", "One stance per faction. Agents, ambassadors, ceasefires and war fleets follow it.");
+        DESC.put("screenlog", "Short lines on screen.");
+
+        HOVER.put("lowprofile", new String[]{"No AI cores above size 3, no Pather interest, free ports, raids or sabotage."});
+        HOVER.put("p_spend", new String[]{"Thrifty 30% and 5%, Normal 50% and 15%, Lavish 80% and 30%. The per-project cap is half, all or twice net income. Surplus terraforming: 10-year payback on Thrifty."});
+        HOVER.put("p_war", new String[]{"Defend: relief. Retaliate: raids on attackers, retakes of your lost colonies. Hold them down: raids on Rival and up. Conquer: invasions. Scorched: bombardment."});
+        // Advanced
+        HOVER.put("fees", new String[]{"On remote building, shipping and orders."});
+        HOVER.put("rung", new String[]{"Off: its share goes to the next rung."});
+        HOVER.put("warcoal", new String[]{"Off: offensives stop before a coalition forms."});
+    }
+
+    /** The glossary at the top of the Settings page: term, then its line. */
+    static final String[][] GLOSSARY = {
+            {"Budget", "what Autopilot may spend a month."},
+            {"Reserve", "credits Autopilot does not spend."},
+            {"Surplus", "credits over the surplus line."},
+            {"Endgame", "building for production and defense at high income."},
+            {"Inspection points", "from AI cores; the Hegemony inspects over the line."}};
+    /** The box on the Settings page for 30 days after a save moves to 0.3.0 (WS-F4). */
+    static final String[] WHATS_NEW = {
+            "20 main rows; Advanced has every older setting.",
+            "Nothing you set changed.",
+            "New: War level, faction stances, New colonies, What to buy."};
+    static final float WHATS_NEW_DAYS = 30f;
+    static final String SETUP_REST = "Everything else uses the recommended settings.";
+    static final String RESET_NOTE = "Keeps Expansion style, War, New colonies, stances, Capital and Capital does.";
+
+    /** The main rows' keys, in menu order (20 with every supported mod; JTMenuTextCheck). */
+    static final String[] MAIN_KEYS = {"lowprofile", "p_spend", "p_extras", "p_newcol", "p_war", "reserve", "surplus", "richpreset", "endgame",
+            "p_story", "p_station", "p_takedown", "p_policy", "p_cores", "p_admins", "capid", "logi", "spy", "amb", "screenlog"};
+    /** Preset row keys to their CAPresets row. */
+    static final Map<String, String> PRESET_KEYS = new LinkedHashMap<String, String>();
+    static {
+        PRESET_KEYS.put("p_spend", CAPresets.SPENDING);
+        PRESET_KEYS.put("p_extras", CAPresets.EXTRAS);
+        PRESET_KEYS.put("p_newcol", CAPresets.NEW_COLONIES);
+        PRESET_KEYS.put("p_war", CAPresets.WAR);
+        PRESET_KEYS.put("p_story", CAPresets.STORY);
+        PRESET_KEYS.put("p_station", CAPresets.STATIONS);
+        PRESET_KEYS.put("p_takedown", CAPresets.TAKE_DOWN);
+        PRESET_KEYS.put("p_policy", CAPresets.POLICIES);
+        PRESET_KEYS.put("p_cores", CAPresets.AI_CORES);
+        PRESET_KEYS.put("p_admins", CAPresets.ADMINS);
+    }
+    /** Advanced subgroups: id, title. */
+    static final String[][] ADVANCED = {
+            {"adv_budget", "Budget"}, {"adv_rich", "Surplus and money ladder"}, {"adv_build", "Building"}, {"adv_cores", "AI cores and items"},
+            {"adv_policy", "Colony policies"}, {"adv_people", "People and diplomacy"}, {"adv_war", "War"}, {"adv_capital", "Capital and storage"},
+            {"adv_extras", "Extras"}, {"adv_expand", "New colonies"}, {"adv_ui", "Interface"}};
+
+    // ---------------- groups ----------------
+
+    /** Which groups are open (UI state only, not saved): one main group, or Advanced and one of its subgroups. */
+    static final Set<String> open = new HashSet<String>(Arrays.asList("playstyle"));
+
+    /** "budget" is what the first colony's setup page opened before 0.3.0; it opens Playstyle. */
+    static boolean isOpen(String id) { return open.contains(id) || ("playstyle".equals(id) && open.contains("budget")); }
 
     static boolean group(TooltipMakerAPI t, String id, String title, String summary) {
-        boolean isOpen = open.contains(id);
-        ButtonAPI b = t.addButton((isOpen ? "[-]  " : "[+]  ") + title.toUpperCase(java.util.Locale.ROOT), PREFIX + "group:" + id,
+        boolean isOpen = isOpen(id);
+        ButtonAPI b = t.addButton((isOpen ? "[-]  " : "[+]  ") + title.toUpperCase(Locale.ROOT), PREFIX + "group:" + id,
                 isOpen ? Misc.getHighlightColor() : Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(), Alignment.LMID, CutStyle.TL_BR, 300f, 24f, 10f);
-        com.fs.starfarer.api.ui.LabelAPI l = t.addPara(CALog.esc("// " + summary), Misc.getGrayColor(), 0f);
+        LabelAPI l = t.addPara(CALog.esc("// " + summary), Misc.getGrayColor(), 0f);
         l.getPosition().rightOfMid(b, 12f);
         CALog.endRow(t, b);
         return isOpen;
     }
 
+    /** An Advanced subgroup's button, smaller than a group's (one subgroup open at a time). */
+    static boolean subgroup(TooltipMakerAPI t, String id, String title) {
+        boolean isOpen = open.contains(id);
+        t.addButton((isOpen ? "   [-]  " : "   [+]  ") + title.toUpperCase(Locale.ROOT), PREFIX + "group:" + id,
+                isOpen ? Misc.getHighlightColor() : Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(), Alignment.LMID, CutStyle.TL_BR, 260f, 20f, 6f);
+        return isOpen;
+    }
+
     static String onOff(boolean on) { return on ? "On" : "Off"; }
+
+    static String lower(String v) { return v == null ? "" : v.toLowerCase(Locale.ROOT); }
+
+    static boolean mod(String id) {
+        try { return Global.getSettings().getModManager().isModEnabled(id); } catch (Throwable t) { return false; }
+    }
+
+    static boolean nex() { return mod(CASpies.MOD); }
 
     /** Factions that own markets and could receive an ambassador (not the player, not hidden factions). */
     static java.util.List<com.fs.starfarer.api.campaign.FactionAPI> ambassadorFactions() {
-        java.util.Set<String> seen = new java.util.HashSet<String>();
+        Set<String> seen = new HashSet<String>();
         java.util.List<com.fs.starfarer.api.campaign.FactionAPI> out = new java.util.ArrayList<com.fs.starfarer.api.campaign.FactionAPI>();
-        for (com.fs.starfarer.api.campaign.econ.MarketAPI m : com.fs.starfarer.api.Global.getSector().getEconomy().getMarketsCopy()) {
+        for (com.fs.starfarer.api.campaign.econ.MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) {
             com.fs.starfarer.api.campaign.FactionAPI f = m.getFaction();
             if (f == null || m.isPlayerOwned() || f.isPlayerFaction() || !f.isShowInIntelTab() || !seen.add(f.getId())) continue;
             out.add(f);
@@ -138,323 +277,353 @@ public class CASetupUI {
                 for (com.fs.starfarer.api.campaign.econ.Industry i : m.getIndustries()) if (i.getSpec().hasTag("station")) station = i;
                 String next = station == null ? starter : station.getSpec().getUpgrade();
                 if (next == null) continue;
-                total += com.fs.starfarer.api.Global.getSettings().getIndustrySpec(next).getNewPluginInstance(m).getBuildCost();
+                total += Global.getSettings().getIndustrySpec(next).getNewPluginInstance(m).getBuildCost();
             } catch (Throwable ignored) { }
         }
         return total;
     }
 
-    public static void render(TooltipMakerAPI t, CASettings s, float width) {
-        String budget = s.budgetAuto ? Misc.getDGSCredits(CABudget.limit(s)) + " this month"
-                : s.budgetPercentMode ? Math.round(s.budgetPercent * 100f) + "% of net income (" + Misc.getDGSCredits(CABudget.limit(s)) + " now)"
-                : Misc.getDGSCredits(s.budgetFixed);
-        String type = s.budgetAuto ? "Automatic" : s.budgetPercentMode ? "Share of net income" : "Fixed amount";
+    // ---------------- the Settings page ----------------
 
-        if (group(t, "style", "Expansion style", s.lowProfile ? "low profile" : "full expansion")) {
-            row(t, "Expansion style", s.lowProfile ? "Low profile" : "Full expansion", "Your call", "lowprofile", true);
-            t.addPara("Full expansion builds whatever pays most and prices colony crises at their usual cost. Low profile keeps your colonies "
-                    + "growing but stays under the radar: attention counts ten times as much, no AI cores above size 3, nothing that takes a "
-                    + "colony to 7 Pather interest, no free ports, no raids on other factions' colonies or sabotage by agents, and inspections "
-                    + "are never resisted. Exports competing with Tri-Tachyon, fuel from 4 units and farming-only habitable colonies (Luddic "
-                    + "majorities) are priced in. Each faction's rule lifts once its crisis is over for good. Pirates and the Persean League "
-                    + "count colony size, so nothing avoids them; Low profile defends against them sooner. It earns less.", Misc.getGrayColor(), 4f);
+    public static void render(TooltipMakerAPI t, CASettings s, float width) {
+        Color gray = Misc.getGrayColor(), hl = Misc.getHighlightColor();
+        whatsNew(t);
+        for (String[] g : GLOSSARY) t.addPara("%s: " + CALog.esc(g[1]), 2f, hl, g[0]);
+        boolean nex = nex(), indevo = mod(CAPresets.INDEVO);
+
+        if (group(t, "playstyle", "Playstyle", (s.lowProfile ? "low profile" : "full expansion") + ", "
+                + lower(CAPresets.name(s, CAPresets.SPENDING)) + " spending")) {
+            row(t, "Expansion style", s.lowProfile ? "Low profile" : "Full expansion", null, "lowprofile", true);
+            desc(t, "lowprofile");
+            preset(t, s, "Spending", "p_spend");
+            preset(t, s, "Extras", "p_extras");
+            newColonies(t, s);
+            if (nex) war(t, s);
         }
-        if (group(t, "budget", "Budget and spending", budget + ", reserve " + Misc.getDGSCredits(s.reserve) + ", fees " + CASettings.FEE_NAMES[s.feeLevel])) {
-            row(t, "Budget type", type, "Automatic", "type", true);
-            if (s.budgetAuto) {
-                row(t, "From net income", Math.round(s.budgetPercent * 100f) + "% of last month's", "50%", "budget", false);
-                row(t, "From savings", Math.round((s.savingsShare > 0f ? s.savingsShare : 0.15f) * 100f) + "% of credits above the reserve, each month ("
-                        + Misc.getDGSCredits(CABudget.fromSavings(s)) + " now)", "15%", "savings", false);
-            } else row(t, "Monthly budget", budget, "use the Automatic type", "budget", false);
-            row(t, "Per-project cap", Misc.getDGSCredits(s.perProjectCap), "monthly net income, 1M-5M", "cap", false);
-            row(t, "Credit reserve", Misc.getDGSCredits(s.reserve), "a quarter of your credits, 50,000-500,000", "reserve", false);
-            row(t, "New upkeep cap per month", s.upkeepCapAuto ? "Automatic: 10% of last month's net income, at least 20,000 ("
-                    + Misc.getDGSCredits(CABudget.upkeepCap(s)) + " now)" : "Fixed", "Automatic", "upkeeptype", true);
-            if (!s.upkeepCapAuto) row(t, "Fixed new upkeep cap", Misc.getDGSCredits(s.newUpkeepCap) + " a month", "use Automatic", "upkeep", false);
+        if (group(t, "money", "Money", "reserve " + Misc.getDGSCredits(s.reserve) + ", surplus " + lower(CASurplus.lineName(s)))) {
+            reserve(t, s);
             row(t, "Surplus investment", CASurplus.lineName(s), CASettings.SURPLUS_NAMES[REC_SURPLUS], "surplus", true);
-            t.addPara("Credits over the line go into one focus world, to make it the best colony it can be: past the monthly budget and the "
-                    + "per-project cap, new upkeep up to a tenth of net income a month, prices counted at a quarter, its terraforming paid from "
-                    + "the surplus, and research counting its plan twice. Pick the focus world on its colony panel, or let Autopilot pick "
-                    + "the Auto colony with the most to build on.", Misc.getGrayColor(), 4f);
-            row(t, "Over " + Misc.getDGSCredits(CASurplus.RICH) + " of surplus", s.surplusFocusOnly ? "Focus world only" : "Every colony spends it",
-                    "Every colony spends it", "surplusrich", true);
-            t.addPara("Past that, one focus world can't spend it all, so every Approve and Auto colony spends from the surplus: past the monthly "
-                    + "budget and the per-project cap, prices at a quarter, credits counting a quarter in what a building is worth (so what adds "
-                    + "defense, stability, growth or access goes up even if it costs more than it earns), new upkeep each month up to a sixtieth "
-                    + "of the surplus (paid from the pool, not from income), hazard pay wherever it speeds growth, and up to three terraforming "
-                    + "projects at once per colony.", Misc.getGrayColor(), 4f);
-            row(t, "Endgame economy", CAEndgame.NAMES[Math.max(0, Math.min(CAEndgame.NAMES.length - 1, s.endgameMode))], CAEndgame.NAMES[0], "endgame", true);
-            if (s.endgameMode < CAEndgame.ENTER_NET.length) {
-                row(t, "Endgame replaces industries", onOff(!s.endgameNoReplace), "On", "endgamerep", true);
-                t.addPara("Spending freely with net income at that level, money stops being the goal: a credit counts 5%%, fleets, ship quality "
-                        + "and defense count more, and what a building makes is valued as production chains: a good none of your colonies "
-                        + "make is worth most, then covering your own shortfalls, then a bigger share of the sector's production, spread over "
-                        + "more than one world; war goods count 1.5x and Ashes of the Domain's advanced goods 2x. Research Facilities go up "
-                        + "while any research is left, and AI cores and items go where they add most to fleets and defense. A money plan's "
-                        + "Commerce or Light Industry no longer gets plan priority. With no free industry slot, an Auto colony may take down "
-                        + "its weakest industry for a better one (one a day, one a month per colony; never a military, plan, project or improved one, "
-                        + "one you locked, nor a good's last producer while you'd be short; its core and item go to Autopilot Storage). It "
-                        + "gives up income only down to a third of the net income it started at.", Misc.getGrayColor(), 4f);
-            }
-            if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAResearch.MOD)) {
-                row(t, "Wonders and gates while spending freely", onOff(!s.noWonders), "On", "wonders", true);
-                t.addPara("The Daedalus Array (Grand Wonder) and the Bifrost network: the Control Center becomes a plan step, so research works "
-                        + "toward it, then a gate goes up in each of your systems. AotD takes their construction goods from your exports every "
-                        + "month, so each starts only once your colonies make every good it needs. The Garden of Elysium and Star Citadels stay yours.",
-                        Misc.getGrayColor(), 4f);
-            }
-            if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("terraformingmadeeasy")) {
-                row(t, "Surplus terraforming", CASettings.SURPLUS_TF_NAMES[Math.max(0, Math.min(2, s.surplusTerraform))], "Max output", "surplustf", true);
-                t.addPara("What the focus world leaves of the surplus goes into Terraforming Made Easy projects at every Auto colony, most value "
-                        + "per credit first: richer deposits and farmland, harsh conditions cleared, the structure built first when needed. "
-                        + "Planned on TME's own rules, so a project that loses more than it gains (extreme tectonic activity takes a habitable "
-                        + "world's farmland and organics) never goes, and nothing a colony's plan needs is undone. Max output: anything worth "
-                        + "1,000 a month or more after the structure's upkeep. Paid from the surplus only, outside the monthly budget.", Misc.getGrayColor(), 4f);
-            }
-            if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAResearch.MOD)) {
-                row(t, "Surplus research", onOff(!s.noSurplusResearch), "On", "surplusres", true);
-                t.addPara("The surplus also builds Research Facilities at Auto colonies that have no research building, one at a time, up to the "
-                        + CASurplusResearch.MAX + " Vaults of Knowledge counts (each past the first is +10%% research speed), while the research "
-                        + "left is worth more than a quarter of the upkeep (10,000 a month plus 10,000 x the tech's tier, half with an Alpha core). "
-                        + "Worlds with a pre-collapse facility go first. The ones it built come down once there's nothing left to research.",
-                        Misc.getGrayColor(), 4f);
-            }
-            row(t, "Pause on loss", onOff(s.pauseOnLoss), "Off", "pause", true);
-            row(t, "Convenience fees", CASettings.FEE_NAMES[s.feeLevel], "Standard", "fees", true);
-            float st = stationLineItem(s);
-            t.addPara("Station line item: about %s to give each of your colonies its next station tier (" + CALog.esc(stationName(s.stationLine))
-                    + "), within about 2-3 months of budget.", 8f, Misc.getHighlightColor(), Misc.getDGSCredits(st));
+            desc(t, "surplus");
+            row(t, "What to buy", CASettings.RICH_PRESET_NAMES[clamp(s.richPreset, CASettings.RICH_PRESET_NAMES.length)],
+                    CASettings.RICH_PRESET_NAMES[0], "richpreset", true, richTip());
+            desc(t, "richpreset", richTip());
+            row(t, "Endgame", CAEndgame.NAMES[clamp(s.endgameMode, CAEndgame.NAMES.length)], CAEndgame.NAMES[0], "endgame", true);
+            desc(t, "endgame");
+            preset(t, s, "Story points", "p_story");
         }
-        if (group(t, "build", "Building and planning", "stations: " + stationName(s.stationLine) + ", removals " + onOff(s.allowRemovals).toLowerCase()
-                + ", story points: " + CASettings.SP_NAMES[s.storyPointRule])) {
-            row(t, "Station line", stationName(s.stationLine), "Pick by score", "station", true);
-            row(t, "Station at every colony", s.noStationPlan ? "No" : "Yes", "Yes", "stationplan", true);
-            row(t, "Exports valued by market share", onOff(!s.noMarketModel), "On", "marketmodel", true);
-            if (!s.noMarketModel) t.addPara("A colony's exports earn its share of each good's sector market, so the more of a market your "
-                    + "colonies already hold, the less one more producer adds, and a good few others make is worth the most. Buildings count "
-                    + "what they'd add to that share, only what's above the colony's own biggest source of the good, and a building under "
-                    + "construction counts as made. Off: every unit of anything is worth one flat rate, as before 0.2.44.0.", Misc.getGrayColor(), 4f);
-            if (!s.noStationPlan) t.addPara("A station fights next to your fleets and anything raiding, bombarding or invading has to beat it first. "
-                    + "Every colony plans one from size 4 (or half a year old) once its fast buildout is done, a Battlestation from size 6 and a "
-                    + "Star Fortress from size 8 (a size sooner at the capital).", Misc.getGrayColor(), 4f);
-            row(t, "Fix colonies over the industry limit", s.noOverLimitFix ? "No" : "Yes", "Yes", "overlimit", true);
-            if (!s.noOverLimitFix) t.addPara("More industries than slots costs 5 stability, and under 5 every point cuts a fifth of the colony's income. "
-                    + "An Auto colony over its limit takes down its weakest industry (core and item to Autopilot Storage), one a day until it's "
-                    + "back within the limit, unless it's about to grow into the room. Upgrades into industries count against the limit while "
-                    + "they're under way, so Autopilot doesn't start more than there's room for.",
-                    Misc.getGrayColor(), 4f);
-            row(t, "Take down industries that stopped paying", s.noPrune ? "No" : "Yes", "Yes", "prune", true);
-            if (!s.noPrune) t.addPara("An industry at an Auto colony whose whole worth is what it makes, worth less than its upkeep for 30 days "
-                    + "(say a second source of ore where Mining already makes more), is taken down, one per colony every 30 days. Never one "
-                    + "you locked, a plan step or what's below one, military, defenses, ships, or one that adds stability.", Misc.getGrayColor(), 4f);
-            row(t, "Allow removals", onOff(s.allowRemovals), "Off", "removals", true);
-            row(t, "Mod buildings with measured effects", CASettings.MEASURED_NAMES[Math.max(0, Math.min(2, s.measuredMode))], "Build when best", "measured", true);
-            row(t, "Story points", CASettings.SP_NAMES[s.storyPointRule], "Player only", "sp", true);
-            if (s.storyPointRule == 2) row(t, "Story point monthly cap", "" + s.storyPointMonthlyCap, "2", "spcap", false);
+        if (group(t, "building", "Building", lower(CAPresets.name(s, CAPresets.TAKE_DOWN)) + ", policies " + lower(CAPresets.name(s, CAPresets.POLICIES)))) {
+            String[] st = stationTip(s);
+            row(t, "Stations", CAPresets.name(s, CAPresets.STATIONS), CAPresets.recName(CAPresets.STATIONS), "p_station", true, st);
+            desc(t, "p_station", st);
+            preset(t, s, "Take down buildings", "p_takedown");
+            preset(t, s, "Colony policies", "p_policy");
         }
-        if (group(t, "items", "Items and AI cores", "AI cores " + onOff(s.useAICores).toLowerCase()
-                + (s.useAICores ? ", Alpha: " + CASettings.ALPHA_NAMES[Math.max(0, Math.min(2, s.alphaMode))]
-                        + ", risk: " + CASettings.CORE_RISK_NAMES[Math.max(0, Math.min(3, s.coreRisk))].toLowerCase() : ""))) {
-            row(t, "Use AI cores", onOff(s.useAICores), "On", "cores", true);
-            if (s.useAICores) {
-                row(t, "Alpha cores", CASettings.ALPHA_NAMES[Math.max(0, Math.min(2, s.alphaMode))], "Only where removable", "alpha", true);
-                if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAResearch.MOD)) {
-                    row(t, "Alpha cores in research buildings", s.researchCoresByValue ? "By value" : "First", "First", "researchcores", true);
-                    t.addPara("A core in a Research Facility or Black Site doesn't speed research: it cuts the building's research, maintenance and "
-                            + "cover-up costs, by half for an Alpha (a quarter for a Beta, a tenth for a Gamma), and an Alpha adds a research "
-                            + "databank a month on a world with a pre-collapse facility. First puts Alpha cores there before anywhere else, "
-                            + "making inspection room by moving the colony's other cores out; By value weighs them like any other building.",
-                            Misc.getGrayColor(), 4f);
-                }
-                row(t, "Inspection risk", CASettings.CORE_RISK_NAMES[Math.max(0, Math.min(3, s.coreRisk))], "Never inspected", "corerisk", true);
-                t.addPara("Each core goes where it adds most for the colony's goal (output, upkeep, shortages, a structure's own bonus), "
-                        + "less the colony crisis progress it adds: the Hegemony counts every core at a colony above size 3 (size 3 or less "
-                        + "is free), and 7 Pather interest gives a colony of size 4 or more a Pather cell. A better core replaces a lesser "
-                        + "one, which goes back to storage. Never inspected keeps colonies at " + CAItems.safePoints() + " inspection points or "
-                        + "less, which the Hegemony never inspects; More where defended allows more where the defenses beat the next inspection "
-                        + "by 1.5 times (2 times while the threat is high), which only helps with Resist where defended below; Small colonies "
-                        + "only keeps cores out of colonies above size 3. There's no limit once you've defeated the Hegemony's inspections, "
-                        + "while you're in the Persean League, or when the Hegemony holds no colonies. A colony an inspection is coming for "
-                        + "is left as it is, and one a Pather attack is coming for drops under 7 Pather interest so its cell can dissolve.",
-                        Misc.getGrayColor(), 6f);
-                row(t, "Hegemony inspection orders", CASettings.INSPECTION_NAMES[Math.max(0, Math.min(2, s.inspectionMode))], "Advise", "inspect", true);
-                t.addPara("The game's default is to comply, which hands over every core at that colony. Advise logs each inspection coming for "
-                        + "an Auto colony with its strength and the colony's defenses, so you can resist or bribe from its intel. Resist where "
-                        + "defended resists at a colony whose defenses beat it by the margin above: the Hegemony turns hostile, and three beaten "
-                        + "inspections end them for good.", Misc.getGrayColor(), 6f);
-            }
-            if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAResearch.MOD)) {
-                row(t, "Special project supply", CASettings.PROJECT_SUPPLY_NAMES[Math.max(0, Math.min(2, s.projectSupplyMode))], "Auto", "projsupply", true);
-                t.addPara("A black site project takes goods every month from your own colonies, and a stage stops while one isn't delivered at "
-                        + "all. Several are AotD goods no faction makes (Electronic Components, Domain-grade machinery, Refined Metal, Enriched "
-                        + "Transplutonics). Auto makes the producer of each one your colonies lack a first plan step at the Approve or Auto "
-                        + "colony best placed for it, with the producers of its own inputs, so research works toward it and it gets built. "
-                        + "Warn only logs what to build where.", Misc.getGrayColor(), 4f);
-            }
-            row(t, "Antimatter Stabilizers to Advanced Fuel Production", s.disableStabilizers ? "Off" : "Convert", "Convert", "stab", true);
+        if (group(t, "people", "Items and people", "cores " + lower(CAPresets.name(s, CAPresets.AI_CORES)) + ", admins " + adminShort(s))) {
+            preset(t, s, "AI cores", "p_cores");
+            if (CAPresets.match(s, CAPresets.AI_CORES) == CAPresets.CORES_DEFENDED)
+                t.addPara("Defended makes the Hegemony hostile.", Misc.getNegativeHighlightColor(), 2f);
+            preset(t, s, "Administrators", "p_admins");
+            if (CACapital.on(s)) row(t, "Capital", CACapital.name(s), "Autopilot picks", "capid", true);
+            else row(t, "Capital", "None", "Autopilot picks", "capid", true);
+            desc(t, "capid");
+            row(t, "Storage logistics", s.logisticsMode == 1 ? "On" : "Off", null, "logi", true);
+            desc(t, "logi");
         }
-        if (group(t, "people", "Administrators and ambassadors", "hiring " + onOff(s.adminHiring).toLowerCase() + ", ambassadors "
-                + (s.disableAmbassadors ? "off" : "on, " + CASettings.FOCUS_NAMES[Math.max(0, Math.min(3, s.ambassadorFocus))].toLowerCase()))) {
-            row(t, "Administrator hiring", onOff(s.adminHiring), "On", "admin", true);
-            row(t, "Assign administrators optimally", onOff(s.adminOptimal), "On", "adminopt", true);
-            row(t, "Ambassadors (Industrial Evolution)", s.disableAmbassadors ? "Off" : "Hire and install", "Hire and install", "amb", true);
-            t.addPara("An administrator is hired, placed or moved only where they add more than they cost: Industrial Planning's "
-                    + "+1 output (worth more at a productive colony) and the stability from your colony limit, against their salary "
-                    + "(2,500 or 20,000 a month) and the hiring cost spread over three years. The game only offers one at a market you "
-                    + "dock at, so past your colony limit with none on offer for 90 days, a recruiter finds a basic one for 250,000 more.",
-                    Misc.getGrayColor(), 6f);
-            if (!s.disableAmbassadors) {
-                row(t, "Ambassador focus", CASettings.FOCUS_NAMES[Math.max(0, Math.min(3, s.ambassadorFocus))], "Worst relations first", "ambfocus", true);
-                row(t, "Stop raising a faction at", CASettings.STOP_NAMES[Math.max(0, Math.min(3, s.ambassadorStopAt))], "Cooperative", "ambstop", true);
-                t.addPara("Faction priority for ambassadors (High is always picked first; Ignore is never picked):", Misc.getGrayColor(), 8f);
-                for (com.fs.starfarer.api.campaign.FactionAPI f : ambassadorFactions()) {
-                    int p = s.priorityOf(f.getId());
-                    float rel = com.fs.starfarer.api.Global.getSector().getPlayerFaction().getRelationship(f.getId());
-                    row(t, f.getDisplayName(), CASettings.PRIORITY_NAMES[p] + ", now " + com.fs.starfarer.api.Global.getSector().getPlayerFaction().getRelationshipLevel(f.getId()).getDisplayName()
-                            + " (" + Math.round(rel * 100f) + ")", "Normal", "fprio_" + f.getId(), true);
-                }
+        if (group(t, "security", "Security and diplomacy", (nex ? "agents " + lower(CASettings.SPY_NAMES[clamp(s.spyMode, 3)]) + ", " : "")
+                + lower(stanceSummary(s)))) {
+            if (nex) {
+                row(t, "Agents", CASettings.SPY_NAMES[clamp(s.spyMode, 3)] + (s.spyMode == 2 && s.lowProfile ? " (Low profile: defense only)" : ""),
+                        "Defense", "spy", true);
+                desc(t, "spy");
+            }
+            if (indevo) {
+                row(t, "Ambassadors", s.disableAmbassadors ? "Off" : "Hire and install", "Hire and install", "amb", true);
+                desc(t, "amb");
+            }
+            ButtonAPI b = t.addButton("OPEN", CANav.PREFIX + FACTIONS_PAGE, Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
+                    Alignment.MID, CutStyle.TL_BR, 86f, 20f, 4f);
+            LabelAPI l = t.addPara("%s  ::  %s", 0f, hl, "FACTION STANCES", stanceSummary(s));
+            l.getPosition().rightOfMid(b, 12f);
+            CALog.endRow(t, b);
+            desc(t, "stances");
+        }
+        if (group(t, "interface", "Interface", "log " + lower(CALog.SCREEN_NAMES[clamp(s.screenLog, 3)]))) {
+            row(t, "On-screen log", CALog.SCREEN_NAMES[clamp(s.screenLog, 3)], "Every entry", "screenlog", true);
+            desc(t, "screenlog");
+        }
+        if (group(t, "advanced", "Advanced", "each setting on its own")) {
+            for (String[] sub : ADVANCED) {
+                if ("adv_war".equals(sub[0]) && !nex) continue;
+                if (subgroup(t, sub[0], sub[1])) advanced(t, s, sub[0]);
             }
         }
-        if (group(t, "policy", "Colony policies", "hazard pay " + CASettings.POLICY_NAMES[Math.max(0, Math.min(1, s.hazardPayMode))].toLowerCase()
-                + ", free port " + CASettings.POLICY_NAMES[Math.max(0, Math.min(1, s.freePortMode))].toLowerCase() + ", edicts " + (s.disableEdicts ? "off" : "on") + ", defense fleets " + (s.disableDefenseFleets ? "off" : "on")
-                + (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("nexerelin") ? ", war fleets " + CASettings.WAR_NAMES[Math.max(0, Math.min(2, s.warMode))].toLowerCase() : ""))) {
-            row(t, "Hazard pay", CASettings.POLICY_NAMES[Math.max(0, Math.min(1, s.hazardPayMode))], "Auto", "hazard", true);
-            if (s.hazardPayMode == 0) {
-                row(t, "Hazard pay where growth is at least", Math.round(s.hazardPayColonyShare * 100f) + "% faster", "25%", "hpcol", false);
-                row(t, "Hazard pay limit, all colonies", Math.round(s.hazardPayEmpireShare * 100f) + "% of empire net income", "30%", "hpemp", false);
-                t.addPara("Every goal wants growth. Hazard pay goes first to the colonies it speeds up the most (a new colony that barely "
-                        + "grows gains most), until all of it reaches the share of empire net income; the more you earn, the more colonies "
-                        + "get it. Off in a money emergency and at max size.", Misc.getGrayColor(), 6f);
-            }
-            row(t, "Free port", CASettings.POLICY_NAMES[Math.max(0, Math.min(1, s.freePortMode))], "Auto", "freeport", true);
-            row(t, "Senate edicts", s.disableEdicts ? "Off" : "Enact", "Enact", "edicts", true);
-            row(t, "Emergency defense fleets (Nexerelin)", s.disableDefenseFleets ? "Off" : "Send when threatened", "Send when threatened", "defense", true);
-            if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("nexerelin")) {
-                row(t, "War fleets (Nexerelin)", CASettings.WAR_NAMES[Math.max(0, Math.min(2, s.warMode))], "Protect and strike back", "war", true);
-                t.addPara("Relief fleets for sieges, defense fleets where the threat is high or a colony crisis is coming, base strikes on "
-                        + "pirate and Pather bases near your colonies, and (strike back) raids on the markets that attacked you. Never "
-                        + "invasions or new colonies, and only against factions already hostile to you. One a day, keeping 40%% of fleet "
-                        + "request points for emergencies; spending freely (10M or more), up to 3 a day, bigger, every known base, a "
-                        + "standing defense fleet at every colony, paid from the surplus.", Misc.getGrayColor(), 6f);
-            }
-        }
-        if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("nexerelin")
-                && group(t, "spies", "Agents (Nexerelin)", CASettings.SPY_NAMES[Math.max(0, Math.min(2, s.spyMode))].toLowerCase()
-                + (s.spyMode == 0 ? "" : ", hiring " + (s.spyNoHiring ? "off" : "on")))) {
-            row(t, "Agents", CASettings.SPY_NAMES[Math.max(0, Math.min(2, s.spyMode))], "Defense", "spy", true);
-            if (s.spyMode != 0) {
-                row(t, "Recruit agents", s.spyNoHiring ? "Off" : "On, 12,000 each, 60 days", "On", "spyhire", true);
-                row(t, "Agents to keep", s.spyKeep == 0 ? "Auto (2, or 3 with offense)" : "" + s.spyKeep, "Auto", "spykeep", true);
-                if (s.spyMode == 2) row(t, "Offense target", spyTargetName(s.spyTarget), "Whoever attacks you", "spytarget", true);
-                t.addPara("The first agent is on security: counter-insurgency, Pather cells and pirate bases. The second raises relations with "
-                        + "your preferred factions, picked like ambassadors (Administrators and ambassadors), never one at war with you. With "
-                        + "offense, a third sabotages the military of the offense target, only factions already at war with you. Recruiting "
-                        + "costs 12,000 plus the fee and takes 60 days; the first comes once you have a colony, the others once the budget allows. "
-                        + "Costs come out of the monthly budget; Nexerelin pays salaries. Only agents Autopilot recruited, or you hand over on the "
-                        + "Mod features page, are given orders, and only operations their type can run.", Misc.getGrayColor(), 6f);
-            }
-        }
-        if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled("nexerelin")
-                && group(t, "autonomy", "Autonomy (Nexerelin)", CASettings.AUTONOMY_NAMES[Math.max(0, Math.min(2, s.autonomyMode))].toLowerCase())) {
-            row(t, "Autonomy", CASettings.AUTONOMY_NAMES[Math.max(0, Math.min(2, s.autonomyMode))], "Recommend", "autonomy", true);
-            t.addPara("Only for money, never as a way past the colony limit (that gets an administrator), and never for a colony under a "
-                    + "year old: a colony that has lost money 3 months in a row, or the one that saves the most in a money emergency (net "
-                    + "income negative with under 3 months of it left above the reserve). Recommend logs it, and the Mod features page lists "
-                    + "money-losing colonies with a Grant button. Auto makes it autonomous, one every 30 days at most; outside an emergency not "
-                    + "while spending freely, since the pool pays for it. Autonomous colonies stay so until you take them back there.",
-                    Misc.getGrayColor(), 6f);
-        }
-        if (group(t, "industry", "Industry automation", "specialties " + (s.disableSpecialties ? "off" : "on") + ", VPC chips " + (s.disableVPC ? "off" : "on")
-                + ", shipping " + (s.disableShipping ? "off" : "on"))) {
-            row(t, "Specialized Mining and Refining", s.disableSpecialties ? "Off" : "Switch to best", "Switch to best", "spec", true);
-            row(t, "VPC chips", s.disableVPC ? "Off" : "Install", "Install", "vpc", true);
-            row(t, "Commodity Forge may use up chips", s.disableForgeVPC ? "No" : "Yes", "Yes", "forge", true);
-            row(t, "Supply shipping (Courier Port)", s.disableShipping ? "Off" : "Cover shortages", "Cover shortages", "ship", true);
-        }
-        if (CATasc.enabled() && group(t, "tascstations", "Station construction (Terraforming & Station Construction)",
-                CASettings.TASC_STATION_NAMES[Math.max(0, Math.min(2, s.stationMode))].toLowerCase())) {
-            row(t, "Mining and siphon stations", CASettings.TASC_STATION_NAMES[Math.max(0, Math.min(2, s.stationMode))], "Recommend only", "tascst", true);
-            t.addPara("Founds a mining station in an asteroid belt or a siphon station over a gas giant as a new colony, in systems with "
-                    + "your Auto colonies that are calm or well defended, when there's room under your colony limit and TASC's research "
-                    + "for it is done. A crew does it for TASC's own costs (500,000 credits and materials by default) plus a fee, in 60 "
-                    + "days; the new colony runs in Auto with the Money goal. Recommend only logs the best site.", Misc.getGrayColor(), 6f);
-        }
-        if (group(t, "objectives", "Stable locations", CASettings.OBJECTIVE_NAMES[Math.max(0, Math.min(2, s.objectiveMode))].toLowerCase())) {
-            row(t, "Comm relays, nav buoys, sensor arrays", CASettings.OBJECTIVE_NAMES[Math.max(0, Math.min(2, s.objectiveMode))], "Auto", "objectives", true);
-            t.addPara("In systems with your Auto colonies, a construction crew builds what the stable locations there are worth most "
-                    + "for those colonies' goals: a comm relay (+1 stability), nav buoy (+2 burn) or sensor array (+400 sensor range), "
-                    + "for vanilla's materials at base price plus a fee, 10 days after it's sent. With Terraforming Made Easy, a makeshift "
-                    + "one is upgraded to Domain-era with a spare Beta core; with Ashes of the Domain, a Hypershunt Receiver goes up "
-                    + "once researched, with a Coronal Hypershunt Tap in Autopilot Storage.", Misc.getGrayColor(), 6f);
-        }
-        if (group(t, "capital", "Capital", !CACapital.on(s) ? "off" : CACapital.name(s) + ", " + CACapital.MODE_NAMES[Math.max(0, Math.min(2, s.capitalMode))].toLowerCase())) {
-            row(t, "Capital", CACapital.name(s), "Autopilot picks", "capid", true);   // 0.2.45.1: was "cap", the per-project cap's key
-            row(t, "Capital does", CACapital.MODE_NAMES[Math.max(0, Math.min(2, s.capitalMode))], "Deliveries and commerce", "capmode", true);
-            if (s.capitalMode == 0) {
-                row(t, "Commerce starts", CACapital.START_NAMES[Math.max(0, Math.min(CACapital.START_NAMES.length - 1, s.capitalStart))], "Net income over 100,000", "capstart", true);
-                row(t, "Make room for trade buildings", s.capitalNoRoom ? "No" : "Yes", "Yes", "caproom", true);
-            }
-            if (s.capitalMode != 2) row(t, "Gather your Storage there", s.capitalNoGather ? "No" : "Yes", "Yes", "capgather", true);
-            t.addPara("Your home port. Custom production is delivered there (it moves the production gathering point; move that yourself "
-                    + "and the capital follows), and once a week your other Storage tabs ship their ships, weapons, wings and blueprints there, "
-                    + "at the storage logistics fee. Once your colonies have ramped up, the capital builds itself into a place to trade: "
-                    + "Spaceport and Megaport, Commerce, every installed mod building that lets you buy or sell there, and a Waystation, ahead "
-                    + "of its other plans. With every industry slot taken it takes down its weakest ordinary industry for one, at most one every "
-                    + "90 days, never defenses, fleets or ship production. Autopilot picks the colony where your things already are; pick "
-                    + "your own on its colony panel.", Misc.getGrayColor(), 6f);
-        }
-        if (group(t, "logistics", "Storage logistics", s.logisticsMode == 1 ? "on, refit hub " + CALogistics.hubName(s.logisticsHub, true)
-                + (s.logisticsSellHub != null ? ", sell hub " + CALogistics.hubName(s.logisticsSellHub, false) : "") : "off")) {
-            row(t, "Storage logistics", s.logisticsMode == 1 ? "On" : "Off", "Your call", "logi", true);
-            row(t, "Refit hub", CALogistics.hubName(s.logisticsHub, true), "Production gathering point", "logihub", true);
-            row(t, "Sell hub", CALogistics.hubName(s.logisticsSellHub, false), "Your call", "logisell", true);
-            row(t, "Ships go to the refit hub", s.logisticsShips ? "Yes" : "No", "Yes", "logiships", true);
-            row(t, "Supplies, fuel, crew and marines go too", s.logisticsSupplies ? "Yes" : "No", "Yes", "logigoods", true);
-            t.addPara("Once a week, what you refit a fleet with (mothballed ships, weapons, fighter wings, blueprints and hull mod specs you "
-                    + "don't know yet) is shipped from every other Storage you have to the refit hub's Storage. Blueprints and specs you "
-                    + "already know, and spare copies, go to the sell hub, so you can sell them in one place. Each load costs what an Autopilot "
-                    + "Storage shipment does plus 1,000 a ship, from the monthly budget, and takes 2 days plus a day a light-year. Colony "
-                    + "items and AI cores stay where they are.", Misc.getGrayColor(), 6f);
-        }
-        if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CASettlement.MOD)
-                && group(t, "settle", "Settlement (Random Assortment of Things)", CASettings.SETTLE_NAMES[Math.max(0, Math.min(3, s.settlementMode))].toLowerCase()
-                + ", found at " + Misc.getDGSCredits(s.settlementMinIncome) + "/month")) {
-            row(t, "Settlement mode", CASettings.SETTLE_NAMES[Math.max(0, Math.min(3, s.settlementMode))], "Auto", "settle", true);
-            row(t, "Found when a site makes at least", Misc.getDGSCredits(s.settlementMinIncome) + " per month", "20,000", "settleinc", false);
-        }
-        if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAAugments.MOD)
-                && group(t, "augments", "Station augments (Station Augments)", CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.augmentMode))].toLowerCase())) {
-            row(t, "Station augments", CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.augmentMode))], "Follow colony mode", "aug", true);
-        }
-        boolean tot = com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAContracts.MOD);
-        boolean vok = com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAHypershunt.MOD);
-        if ((tot || vok) && group(t, "aotd", "Ashes of the Domain", (tot ? "contracts " + CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.contractMode))].toLowerCase() : "")
-                + (tot && vok ? ", " : "") + (vok ? "research " + CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.researchMode))].toLowerCase()
-                + ", hypershunt " + CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.hypershuntMode))].toLowerCase() : ""))) {
-            if (tot) row(t, "Trade contracts", CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.contractMode))], "Auto", "contract", true);
-            if (vok) row(t, "Research", CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.researchMode))], "Auto", "research", true);
-            if (vok) {
-                row(t, "Research spends colony items (surplus only)", CASettings.RESEARCH_ITEM_NAMES[Math.max(0, Math.min(2, s.researchItemMode))], "Off", "resitems", true);
-                t.addPara("Some research takes colony items (a Pristine Nanoforge, a Synchrotron Core...). Off: those techs are yours to start. "
-                        + "With credits over the surplus line, From storage lets Auto research take them from Autopilot Storage and your "
-                        + "colonies' Storage tabs; From storage and buildings also takes them out of buildings, the one where the item does "
-                        + "least first. Only when everything the tech needs is on hand.", Misc.getGrayColor(), 4f);
-            }
-            if (vok) row(t, "Megastructures (Hypershunt, Pluto, Nidavelir)", CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.hypershuntMode))], "Follow colony mode", "hs", true);
-        }
-        if (group(t, "interface", "Interface", "colony screen button " + (s.noScreenButton ? "off" : "on"))) {
-            row(t, "Button on the colony screen", s.noScreenButton ? "Off" : "On", "On", "screenbtn", true);
-            t.addPara("Opens this panel from your colony's own screen. Right-clicking Population & Infrastructure works either way.", Misc.getGrayColor(), 6f);
-            row(t, "Log entries on screen", CALog.SCREEN_NAMES[Math.max(0, Math.min(2, s.screenLog))], "Every entry", "screenlog", true);
-            row(t, "Announcement voice", CASettings.VOICE_NAMES[Math.max(0, Math.min(1, s.voice))], "Machine", "voice", true);
-            t.addPara("Machine: a code first, like BUILD / Hot Springs: Planetary Shield (750k), plus a ping now and then about what "
-                    + "it's weighing. Plain: Autopilot: and the full sentence. The panel log always has the full sentence.", Misc.getGrayColor(), 4f);
-            t.addPara("Every entry shows each thing Autopilot does as one short line. States that flip back and forth (siege, threat, free port, "
-                    + "hazard pay, station augments) show at most once every 10 days per colony. Important only: emergencies, defense fleets, "
-                    + "wonders and gates, and what's yours to do.", Misc.getGrayColor(), 6f);
-        }
-        ButtonAPI rec = t.addButton("Use recommended settings", PREFIX + "recommend:x", Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
+        t.addButton("Reset to recommended", PREFIX + "recommend:x", Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
                 Alignment.MID, CutStyle.TL_BR, 260f, 24f, 14f);
+        t.addPara(CALog.esc(RESET_NOTE), gray, 4f);
+    }
+
+    /**
+     * 0.3.0.0 (WS-F1, DECISIONS 17): the first-time setup's rows: Spending, Extras, New colonies, War (Nexerelin) and the Credit
+     * reserve, then one line that everything else is recommended. Expansion style was asked when the first colony was founded.
+     */
+    public static void renderFirstTime(TooltipMakerAPI t, CASettings s, float width) {
+        preset(t, s, "Spending", "p_spend");
+        preset(t, s, "Extras", "p_extras");
+        newColonies(t, s);
+        if (nex()) war(t, s);
+        reserve(t, s);
+        t.addPara(CALog.esc(SETUP_REST), Misc.getGrayColor(), 10f);
+    }
+
+    /** The box for 30 days after a save moved to 0.3.0 (CAData.migratedAt; new 0.3.0 saves never show it). */
+    static void whatsNew(TooltipMakerAPI t) {
+        try {
+            long at = CAData.get().migratedAt;
+            if (at == 0L || Global.getSector().getClock().getElapsedDaysSince(at) >= WHATS_NEW_DAYS) return;
+        } catch (Throwable e) { return; }
+        CATheme.heading(t, "What's new in 0.3.0", 6f);
+        for (String p : WHATS_NEW) t.addPara(CALog.esc(p), Misc.getGrayColor(), 4f);
+        CATheme.heading(t, "Settings", 10f);
+    }
+
+    static void preset(TooltipMakerAPI t, CASettings s, String label, String key) {
+        String row = PRESET_KEYS.get(key);
+        row(t, label, CAPresets.name(s, row), CAPresets.recName(row), key, true);
+        desc(t, key);
+    }
+
+    static void newColonies(TooltipMakerAPI t, CASettings s) {
+        String v = CAPresets.name(s, CAPresets.NEW_COLONIES);
+        int m = CAPresets.match(s, CAPresets.NEW_COLONIES);
+        // the money ladder's Expansion rung on Recommend only makes Auto ask first (CAExpansion.mode)
+        if (m == 2 && CAExpansion.mode(s.expandMode, CAExpansion.lineIndex(s), s.rungMode(CARich.EXPANSION)) == 1) v += " (asks first: Expansion rung)";
+        else if (m > 0 && CAExpansion.mode(s.expandMode, CAExpansion.lineIndex(s), s.rungMode(CARich.EXPANSION)) == 0) v += " (Expansion rung is Off)";
+        row(t, "New colonies", v, CAPresets.recName(CAPresets.NEW_COLONIES), "p_newcol", true);
+        desc(t, "p_newcol");
+    }
+
+    static void war(TooltipMakerAPI t, CASettings s) {
+        String v = CAPresets.name(s, CAPresets.WAR);
+        if (s.lowProfile && CAWarPolicy.clamp(s.warLevel) > CAWarPolicy.DEFEND) v += " (Low profile: Defend)";
+        row(t, "War", v, CAPresets.recName(CAPresets.WAR), "p_war", true);
+        desc(t, "p_war");
+    }
+
+    static void reserve(TooltipMakerAPI t, CASettings s) {
+        row(t, "Credit reserve", Misc.getDGSCredits(s.reserve), "a quarter of your credits, 50,000-500,000", "reserve", false);
+        desc(t, "reserve");
+    }
+
+    // ---------------- Advanced ----------------
+
+    static void advanced(TooltipMakerAPI t, CASettings s, String id) {
+        boolean vok = mod(CAPresets.VOK), indevo = mod(CAPresets.INDEVO), nex = nex();
+        String on = "On", off = "Off", yes = "Yes";
+        if ("adv_budget".equals(id)) {
+            String auto = "Automatic";
+            String type = s.budgetAuto ? auto : s.budgetPercentMode ? "Share of net income" : "Fixed amount";
+            row(t, "Budget type", type, auto, "type", true);
+            if (s.budgetAuto) {
+                row(t, "From net income", Math.round(s.budgetPercent * 100f) + "%", "50%", "budget", false);
+                row(t, "From savings", Math.round((s.savingsShare > 0f ? s.savingsShare : 0.15f) * 100f) + "% ("
+                        + Misc.getDGSCredits(CABudget.fromSavings(s)) + " now)", "15%", "savings", false);
+            } else if (s.budgetPercentMode) row(t, "From net income", Math.round(s.budgetPercent * 100f) + "% ("
+                    + Misc.getDGSCredits(CABudget.limit(s)) + " now)", null, "budget", false);
+            else row(t, "Monthly budget", Misc.getDGSCredits(s.budgetFixed), null, "budget", false);
+            // 0.3.0.0 (WS-F1 fix, DECISIONS 13): the per-project cap is Automatic (follows net income and Spending) or Fixed
+            row(t, "Per-project cap", s.projectCapFixed ? "Fixed" : auto + " (" + Misc.getDGSCredits(CAPresets.projectCap(s)) + " now)",
+                    auto, "captype", true);
+            if (s.projectCapFixed) row(t, "Fixed cap", Misc.getDGSCredits(s.perProjectCap), null, "cap", false);
+            row(t, "New upkeep per month", s.upkeepCapAuto ? auto + ", " + Math.round(CAPresets.upkeepShare(s) * 100f) + "% ("
+                    + Misc.getDGSCredits(CABudget.upkeepCap(s)) + " now)" : "Fixed", auto, "upkeeptype", true);
+            if (!s.upkeepCapAuto) row(t, "Fixed upkeep", Misc.getDGSCredits(s.newUpkeepCap), null, "upkeep", false);
+            row(t, "Pause on loss", onOff(s.pauseOnLoss), off, "pause", true);
+            row(t, "Convenience fees", CASettings.FEE_NAMES[clamp(s.feeLevel, CASettings.FEE_NAMES.length)], CASettings.FEE_NAMES[2], "fees", true);
+        } else if ("adv_rich".equals(id)) {
+            String every = "Every colony";
+            row(t, "Over " + Misc.getDGSCredits(CASurplus.RICH) + " of surplus", s.surplusFocusOnly ? "Focus world only" : every, every, "surplusrich", true);
+            if (vok) row(t, "Wonders and gates", onOff(!s.noWonders), on, "wonders", true);
+            if (mod("terraformingmadeeasy"))
+                row(t, "Surplus terraforming", CASettings.SURPLUS_TF_NAMES[clamp(s.surplusTerraform, 3)], CASettings.SURPLUS_TF_NAMES[0], "surplustf", true);
+            if (vok) row(t, "Surplus research", onOff(!s.noSurplusResearch), on, "surplusres", true);
+            for (int r = CARich.STOCKPILES; r < CARich.RUNGS.length; r++)
+                row(t, CARich.RUNGS[r] + " rung", CASettings.RUNG_MODE_NAMES[clamp(s.rungMode(r), 3)],
+                        CASettings.RUNG_MODE_NAMES[CASettings.RUNG_DEFAULTS[r]], "rung_" + r, true, HOVER.get("rung"));
+            row(t, "Shipyard stops at", s.shipyardStop + " unclaimed hulls", "6", "shipyardstop", false);
+        } else if ("adv_build".equals(id)) {
+            row(t, "Over-limit fix", onOff(!s.noOverLimitFix), on, "overlimit", true);
+            row(t, "Exports valued by market share", onOff(!s.noMarketModel), on, "marketmodel", true);
+            row(t, "Take down unpaying industries", onOff(!s.noPrune), on, "prune", true);
+            row(t, "Endgame replaces industries", onOff(!s.endgameNoReplace), on, "endgamerep", true);
+            row(t, "Allow removals", onOff(s.allowRemovals), off, "removals", true);
+            if (s.storyPointRule == 2) row(t, "Story points a month", "" + s.storyPointMonthlyCap, "2", "spcap", false);
+        } else if ("adv_cores".equals(id)) {
+            row(t, "Use AI cores", onOff(s.useAICores), on, "cores", true);
+            row(t, "Alpha cores", CASettings.ALPHA_NAMES[clamp(s.alphaMode, 3)], CASettings.ALPHA_NAMES[0], "alpha", true);
+            row(t, "Inspection risk", CASettings.CORE_RISK_NAMES[clamp(s.coreRisk, 4)], CASettings.CORE_RISK_NAMES[1], "corerisk", true);
+            row(t, "Hegemony inspections", CASettings.INSPECTION_NAMES[clamp(s.inspectionMode, 3)], CASettings.INSPECTION_NAMES[0], "inspect", true);
+            if (vok) {
+                row(t, "Alphas in research buildings", s.researchCoresByValue ? "By value" : "First", "First", "researchcores", true);
+                row(t, "Research uses colony items", CASettings.RESEARCH_ITEM_NAMES[clamp(s.researchItemMode, 3)], CASettings.RESEARCH_ITEM_NAMES[0], "resitems", true);
+            }
+        } else if ("adv_policy".equals(id)) {
+            String auto = CASettings.POLICY_NAMES[0];
+            row(t, "Hazard pay", CASettings.POLICY_NAMES[clamp(s.hazardPayMode, 2)], auto, "hazard", true);
+            if (s.hazardPayMode == 0) {
+                row(t, "Hazard pay growth threshold", Math.round(s.hazardPayColonyShare * 100f) + "%", "25%", "hpcol", false);
+                row(t, "Hazard pay budget", Math.round(s.hazardPayEmpireShare * 100f) + "% of net income", "30%", "hpemp", false);
+            }
+            row(t, "Free port", CASettings.POLICY_NAMES[clamp(s.freePortMode, 2)], auto, "freeport", true);
+            if (indevo) row(t, "Senate edicts", onOff(!s.disableEdicts), on, "edicts", true);
+        } else if ("adv_people".equals(id)) {
+            row(t, "Administrator hiring", onOff(s.adminHiring), on, "admin", true);
+            row(t, "Assign administrators optimally", onOff(s.adminOptimal), on, "adminopt", true);
+            if (indevo || nex) {
+                row(t, "Among equal stances, first", CASettings.FOCUS_NAMES[clamp(s.ambassadorFocus, 4)], CASettings.FOCUS_NAMES[0], "ambfocus", true);
+                row(t, "Stop raising relations at", CASettings.STOP_NAMES[clamp(s.ambassadorStopAt, 4)], CASettings.STOP_NAMES[2], "ambstop", true);
+            }
+            if (nex) {
+                row(t, "Recruit agents", onOff(!s.spyNoHiring), on, "spyhire", true);
+                row(t, "Agents to keep", s.spyKeep == 0 ? "Auto" : "" + s.spyKeep, "Auto", "spykeep", true);
+                if (s.spyMode == 2) row(t, "Offense target", spyTargetName(s.spyTarget), spyTargetName(null), "spytarget", true);
+                row(t, "Autonomy", CASettings.AUTONOMY_NAMES[clamp(s.autonomyMode, 3)], CASettings.AUTONOMY_NAMES[1], "autonomy", true);
+            }
+        } else if ("adv_war".equals(id)) {
+            row(t, "Emergency defense fleets", onOff(!s.disableDefenseFleets), on, "defense", true);
+            row(t, "Retake your lost colonies", onOff(!s.noWarRetake), on, "warretake", true);
+            row(t, "Top hostile threat as Rival", onOff(s.warAutoRivals), off, "warrivals", true);
+            row(t, "Conquered colonies start in", CASettings.CONQUERED_NAMES[clamp(s.conqueredMode, CASettings.CONQUERED_NAMES.length)],
+                    CASettings.CONQUERED_NAMES[0], "warconq", true);
+            row(t, "Bombardment targets", CASettings.SCORCHED_TARGET_NAMES[clamp(s.scorchedTargets, CASettings.SCORCHED_TARGET_NAMES.length)],
+                    CASettings.SCORCHED_TARGET_NAMES[0], "warscorch", true);
+            row(t, "Coalition risk allowed", onOff(s.warCoalitionOK), off, "warcoal", true);
+        } else if ("adv_capital".equals(id)) {
+            if (CACapital.on(s)) {
+                row(t, "Capital does", CACapital.MODE_NAMES[clamp(s.capitalMode, 2)], CACapital.MODE_NAMES[0], "capmode", true);
+                if (s.capitalMode == 0) {
+                    row(t, "Trade hub starts at", CACapital.START_NAMES[clamp(s.capitalStart, CACapital.START_NAMES.length)], CACapital.START_NAMES[0], "capstart", true);
+                    row(t, "Make room for trade buildings", onOff(!s.capitalNoRoom), on, "caproom", true);
+                }
+                row(t, "Gather Storage at the capital", onOff(!s.capitalNoGather), on, "capgather", true);
+            }
+            row(t, "Refit hub", CALogistics.hubName(s.logisticsHub, true), null, "logihub", true);
+            row(t, "Sell hub", CALogistics.hubName(s.logisticsSellHub, false), null, "logisell", true);
+            row(t, "Ships to the refit hub", s.logisticsShips ? yes : "No", yes, "logiships", true);
+            row(t, "Supplies, fuel, crew, marines too", s.logisticsSupplies ? yes : "No", yes, "logigoods", true);
+        } else if ("adv_extras".equals(id)) {
+            row(t, "Stable locations", CASettings.OBJECTIVE_NAMES[clamp(s.objectiveMode, 3)], CASettings.OBJECTIVE_NAMES[0], "objectives", true);
+            row(t, "Measured mod buildings", CASettings.MEASURED_NAMES[clamp(s.measuredMode, 3)], CASettings.MEASURED_NAMES[0], "measured", true);
+            if (mod(CAPresets.TOT)) row(t, "Trade contracts", CASettings.CONTRACT_NAMES[clamp(s.contractMode, 3)], CASettings.CONTRACT_NAMES[1], "contract", true);
+            if (vok) {
+                row(t, "Research", CASettings.CONTRACT_NAMES[clamp(s.researchMode, 3)], CASettings.CONTRACT_NAMES[1], "research", true);
+                row(t, "Special project supply", CASettings.PROJECT_SUPPLY_NAMES[clamp(s.projectSupplyMode, 3)], CASettings.PROJECT_SUPPLY_NAMES[0], "projsupply", true);
+                row(t, "Megastructures", CASettings.AUGMENT_NAMES[clamp(s.hypershuntMode, 3)], CASettings.AUGMENT_NAMES[0], "hs", true);
+            }
+            if (mod(CAPresets.SA)) row(t, "Station augments", CASettings.AUGMENT_NAMES[clamp(s.augmentMode, 3)], CASettings.AUGMENT_NAMES[0], "aug", true);
+            if (mod(CAPresets.RAT)) {
+                row(t, "RAT settlement", CASettings.SETTLE_NAMES[clamp(s.settlementMode, 4)], CASettings.SETTLE_NAMES[2], "settle", true);
+                row(t, "Found when a site earns", Misc.getDGSCredits(s.settlementMinIncome), "20,000", "settleinc", false);
+            }
+            if (indevo) {
+                row(t, "IndEvo specialties", onOff(!s.disableSpecialties), on, "spec", true);
+                row(t, "VPC chips", onOff(!s.disableVPC), on, "vpc", true);
+                row(t, "Forge may use up chips", s.disableForgeVPC ? "No" : yes, yes, "forge", true);
+                row(t, "Courier shipping", onOff(!s.disableShipping), on, "ship", true);
+            }
+            if (mod(CAPresets.IX)) row(t, "Antimatter Stabilizers", onOff(!s.disableStabilizers), on, "stab", true);
+        } else if ("adv_expand".equals(id)) {
+            row(t, "Money for new colonies", CASettings.EXPAND_LINE_NAMES[clamp(s.expandLine, CASettings.EXPAND_LINE_NAMES.length)],
+                    CASettings.EXPAND_LINE_NAMES[0], "expline", true);
+            row(t, "Where", CASettings.EXPAND_SCOPE_NAMES[clamp(s.expandScope, CASettings.EXPAND_SCOPE_NAMES.length)]
+                    + (s.lowProfile && s.expandScope > 0 ? " (Low profile: systems you hold)" : ""), CASettings.EXPAND_SCOPE_NAMES[0], "expscope", true);
+            row(t, "Goal of a new colony", goalName(s.expandGoal), goalName(0), "expgoal", true);
+            if (nex) row(t, "Method", CASettings.EXPAND_METHOD_NAMES[clamp(s.expandMethod, CASettings.EXPAND_METHOD_NAMES.length)],
+                    CASettings.EXPAND_METHOD_NAMES[0], "expmethod", true);
+            row(t, "Most colonies", CASettings.EXPAND_MAX_NAMES[clamp(s.expandMax, CASettings.EXPAND_MAX_NAMES.length)],
+                    CASettings.EXPAND_MAX_NAMES[0], "expmax", true);
+            row(t, "Fast buildout", onOff(s.expandBuildout()), on, "expbuildout", true);
+            row(t, "Administrator past the limit", onOff(s.expandAdmins()), on, "expadmins", true);
+            // 0.3.0.0 (WS-F1 fix): Auto stations only recommend while New colonies on Auto asks first (CAPresets.tascMode)
+            if (CATasc.enabled()) row(t, "TASC stations", CASettings.TASC_STATION_NAMES[clamp(s.stationMode, 3)]
+                    + (CAPresets.tascMode(s) != clamp(s.stationMode, 3) ? " (recommends: Expansion rung)" : ""), CASettings.TASC_STATION_NAMES[0], "tascst", true);
+        } else if ("adv_ui".equals(id)) {
+            row(t, "Announcement voice", CASettings.VOICE_NAMES[clamp(s.voice, 2)], CASettings.VOICE_NAMES[0], "voice", true);
+            row(t, "Button on the colony screen", onOff(!s.noScreenButton), on, "screenbtn", true);
+        }
+    }
+
+    // ---------------- hover text built from the game's state ----------------
+
+    /** What to buy: each preset's rung order (CARich.ORDERS) and where what's left goes. */
+    static String[] richTip() {
+        String[] out = new String[CASettings.RICH_PRESET_NAMES.length + 1];
+        for (int p = 0; p < CASettings.RICH_PRESET_NAMES.length; p++) {
+            StringBuilder b = new StringBuilder(CASettings.RICH_PRESET_NAMES[p]).append(": ");
+            int[] order = CARich.order(p);
+            for (int i = 0; i < order.length; i++) b.append(i > 0 ? ", " : "").append(CARich.RUNGS[order[i]]);
+            int rest = CARich.rest(p);
+            b.append(". Left over: ").append(rest >= 0 ? CARich.RUNGS[rest] : "stays in your account").append('.');
+            out[p] = b.toString();
+        }
+        out[out.length - 1] = "Each rung: Advanced, Surplus and money ladder.";
+        return out;
+    }
+
+    static String[] stationTip(CASettings s) {
+        return new String[]{"Battlestation from size 6, Star Fortress from 8, a size sooner at the capital, where they pay.",
+                "Next tier everywhere: about " + Misc.getDGSCredits(stationLineItem(s)) + "."};
+    }
+
+    static String goalName(int goal) {
+        CAData.Profile[] all = CAData.Profile.values();
+        return goal >= 1 && goal <= all.length ? all[goal - 1].label : "Fits its plan";
+    }
+
+    static String adminShort(CASettings s) {
+        int v = CAPresets.match(s, CAPresets.ADMINS);
+        return v == 2 ? "on" : v == 1 ? "place only" : v == 0 ? "off" : "custom";
+    }
+
+    /** "2 Friendly, 1 Enemy", or "All Auto". */
+    static String stanceSummary(CASettings s) {
+        int[] n = new int[CAStance.NAMES.length];
+        int set = 0;
+        if (s.factionStance != null) for (Integer v : s.factionStance.values()) {
+            if (v == null || v == CAStance.AUTO) continue;
+            n[CAStance.clamp(v) + 3]++;
+            set++;
+        }
+        if (set == 0) return "All Auto";
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < n.length; i++) if (n[i] > 0) b.append(b.length() > 0 ? ", " : "").append(n[i]).append(' ').append(CAStance.NAMES[i]);
+        return b.toString();
+    }
+
+    static int clamp(int v, int n) { return Math.max(0, Math.min(n - 1, v)); }
+
+    // ---------------- the stance table (for the Factions page, WS-F2) ----------------
+
+    /**
+     * One stance row per faction that owns markets, sorted Ally to Destroy and then by name, and a Reset all to Auto button.
+     * Its buttons are handled by handle() ("stance_<faction id>", "stancereset").
+     */
+    public static void renderStances(TooltipMakerAPI t, final CASettings s) {
+        t.addPara(CALog.esc(DESC.get("stances") + " < friendlier, > more hostile."), Misc.getGrayColor(), 6f);
+        java.util.List<com.fs.starfarer.api.campaign.FactionAPI> list = ambassadorFactions();
+        java.util.Collections.sort(list, new java.util.Comparator<com.fs.starfarer.api.campaign.FactionAPI>() {
+            public int compare(com.fs.starfarer.api.campaign.FactionAPI a, com.fs.starfarer.api.campaign.FactionAPI b) {
+                int c = Integer.compare(s.stanceOf(a.getId()), s.stanceOf(b.getId()));
+                return c != 0 ? c : a.getDisplayName().compareTo(b.getDisplayName());
+            }
+        });
+        com.fs.starfarer.api.campaign.FactionAPI player = Global.getSector().getPlayerFaction();
+        for (com.fs.starfarer.api.campaign.FactionAPI f : list) {
+            float rel = player.getRelationship(f.getId());
+            stanceRow(t, f.getDisplayName(), s.stanceOf(f.getId()), player.getRelationshipLevel(f.getId()).getDisplayName()
+                    + " (" + Math.round(rel * 100f) + ")", "stance_" + f.getId());
+        }
+        t.addButton("Reset all to Auto", PREFIX + "stancereset:x", Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
+                Alignment.MID, CutStyle.TL_BR, 200f, 22f, 10f);
     }
 
     // ---- offense target (agents): Whoever attacks you (null), a random enemy, or one faction at war with you
@@ -462,7 +631,7 @@ public class CASetupUI {
     static String spyTargetName(String t) {
         if (t == null || t.isEmpty()) return "Whoever attacks you";
         if ("random".equals(t)) return "A random enemy";
-        com.fs.starfarer.api.campaign.FactionAPI f = com.fs.starfarer.api.Global.getSector().getFaction(t);
+        com.fs.starfarer.api.campaign.FactionAPI f = Global.getSector().getFaction(t);
         return f == null ? "Whoever attacks you" : f.getDisplayName() + (f.isHostileTo("player") ? "" : " (not at war with you: none)");
     }
 
@@ -471,7 +640,7 @@ public class CASetupUI {
         java.util.List<String> order = new java.util.ArrayList<String>();
         order.add(null);
         order.add("random");
-        for (com.fs.starfarer.api.campaign.FactionAPI f : com.fs.starfarer.api.Global.getSector().getAllFactions())
+        for (com.fs.starfarer.api.campaign.FactionAPI f : Global.getSector().getAllFactions())
             if (!f.isPlayerFaction() && f.isShowInIntelTab() && f.isHostileTo("player")) order.add(f.getId());
         int i = order.indexOf(cur);
         return order.get((i + 1) % order.size());
@@ -482,8 +651,14 @@ public class CASetupUI {
         return id;
     }
 
-    /** One compact line: the buttons on the left, then "Label: value (recommended: ...)". */
-    static void row(TooltipMakerAPI t, String label, String value, String rec, String key, boolean toggle) {
+    // ---------------- rows ----------------
+
+    /** One compact line: the buttons on the left, then "LABEL :: value", and "// rec ..." only when the value differs. */
+    static ButtonAPI row(TooltipMakerAPI t, String label, String value, String rec, String key, boolean toggle) {
+        return row(t, label, value, rec, key, toggle, HOVER.get(key));
+    }
+
+    static ButtonAPI row(TooltipMakerAPI t, String label, String value, String rec, String key, boolean toggle, String[] tip) {
         Color base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         ButtonAPI first, last;
         if (toggle) {
@@ -493,24 +668,75 @@ public class CASetupUI {
             last = t.addButton("+", PREFIX + key + ":+", base, dark, Alignment.MID, CutStyle.TL_BR, 40f, 20f, 0f);
             last.getPosition().rightOfTop(first, 6f);
         }
-        com.fs.starfarer.api.ui.LabelAPI l = t.addPara("%s  ::  %s   // rec " + CALog.esc(rec), 0f, Misc.getHighlightColor(), label.toUpperCase(java.util.Locale.ROOT), value);
+        // 0.3.0.0 (WS-F1, research 04 section 3): the recommendation shows only when the value differs from it
+        boolean showRec = rec != null && !rec.isEmpty() && !rec.equalsIgnoreCase(value);
+        LabelAPI l = t.addPara("%s  ::  %s" + (showRec ? "   // rec " + CALog.esc(rec) : ""), 0f, Misc.getHighlightColor(),
+                label.toUpperCase(Locale.ROOT), value);
         l.getPosition().rightOfMid(last, 12f);
+        if (tip != null) t.addTooltipToPrevious(tip(tip), TooltipMakerAPI.TooltipLocation.BELOW);
         CALog.endRow(t, first);
+        return first;
     }
+
+    /** The main row's gray line, with the row's hover text. */
+    static void desc(TooltipMakerAPI t, String key) { desc(t, key, HOVER.get(key)); }
+
+    static void desc(TooltipMakerAPI t, String key, String[] tip) {
+        String d = DESC.get(key);
+        if (d == null) return;
+        t.addPara(CALog.esc(d), Misc.getGrayColor(), 2f);
+        if (tip != null) t.addTooltipToPrevious(tip(tip), TooltipMakerAPI.TooltipLocation.BELOW);
+    }
+
+    static TooltipMakerAPI.TooltipCreator tip(final String[] lines) {
+        return new TooltipMakerAPI.TooltipCreator() {
+            public boolean isTooltipExpandable(Object o) { return false; }
+            public float getTooltipWidth(Object o) { return TIP_W; }
+            public void createTooltip(TooltipMakerAPI tt, boolean expanded, Object o) {
+                for (int i = 0; i < lines.length; i++) tt.addPara(CALog.esc(lines[i]), i == 0 ? 0f : 6f);
+            }
+        };
+    }
+
+    /** 0.3.0.0 (WS-E): one faction's stance line: < friendlier, > more hostile, the stance in its tone's colour, then the relation. */
+    static void stanceRow(TooltipMakerAPI t, String label, int stance, String relation, String key) {
+        Color base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
+        ButtonAPI lower = t.addButton("<", PREFIX + key + ":-", base, dark, Alignment.MID, CutStyle.TL_BR, 30f, 20f, 4f);
+        ButtonAPI higher = t.addButton(">", PREFIX + key + ":+", base, dark, Alignment.MID, CutStyle.TL_BR, 30f, 20f, 0f);
+        higher.getPosition().rightOfTop(lower, 4f);
+        int tone = CAStance.tone(stance);
+        Color c = tone > 0 ? Misc.getPositiveHighlightColor() : tone < 0 ? Misc.getNegativeHighlightColor() : Misc.getHighlightColor();
+        LabelAPI l = t.addPara("%s  ::  %s   // now " + CALog.esc(relation), 0f, new Color[]{Misc.getHighlightColor(), c},
+                label.toUpperCase(Locale.ROOT), CAStance.name(stance).toUpperCase(Locale.ROOT));
+        l.getPosition().rightOfMid(higher, 12f);
+        CALog.endRow(t, lower);
+    }
+
+    // ---------------- buttons ----------------
+
     /** Handles a settings button; returns true if the id was a settings button. */
     public static boolean handle(Object id, CASettings s) {
         if (!(id instanceof String) || !((String) id).startsWith(PREFIX)) return false;
         String[] a = ((String) id).substring(PREFIX.length()).split(":");
         String k = a[0], op = a.length > 1 ? a[1] : "next";
         float dir = "-".equals(op) ? -1f : 1f;
-        if (k.equals("group")) {   // one group open at a time, so the list stays short
+        if (k.equals("group")) {
             String g = a.length > 1 ? a[1] : "";
-            boolean was = open.contains(g);
-            open.clear();
-            if (!was) open.add(g);
+            if (g.startsWith("adv_")) {   // 0.3.0.0 (WS-F1): one Advanced subgroup open at a time, inside Advanced
+                boolean was = open.contains(g);
+                open.clear();
+                open.add("advanced");
+                if (!was) open.add(g);
+            } else {   // one group open at a time, so the list stays short
+                boolean was = isOpen(g);
+                open.clear();
+                if (!was) open.add(g);
+            }
             return true;
         }
-        if (k.equals("recommend")) applyRecommended(s);
+        CACache.bump("settings");   // 0.3.0.0 (A4): kept plans, evaluations and build menus are worked out again after a settings change
+        if (k.equals("recommend")) resetToRecommended(s);   // 0.3.0.0 (WS-F1): Reset to recommended
+        else if (PRESET_KEYS.containsKey(k)) applyPreset(s, PRESET_KEYS.get(k), CAPresets.next(s, PRESET_KEYS.get(k)));
         else if (k.equals("type")) {   // Automatic -> Share of net income -> Fixed amount -> Automatic
             if (s.budgetAuto) { s.budgetAuto = false; s.budgetPercentMode = true; }
             else if (s.budgetPercentMode) s.budgetPercentMode = false;
@@ -521,7 +747,14 @@ public class CASetupUI {
             else s.budgetFixed = Math.max(0f, s.budgetFixed + 250000f * dir);
         }
         else if (k.equals("savings")) s.savingsShare = Math.max(0.05f, Math.min(0.5f, (s.savingsShare > 0f ? s.savingsShare : 0.15f) + 0.05f * dir));
-        else if (k.equals("cap")) s.perProjectCap = Math.max(250000f, s.perProjectCap + 500000f * dir);
+        else if (k.equals("cap")) {   // 0.3.0.0 (WS-F1 fix): a number you set makes the cap Fixed, starting from the cap in effect
+            if (!s.projectCapFixed) { s.perProjectCap = CAPresets.projectCap(s); s.projectCapFixed = true; }
+            s.perProjectCap = Math.max(250000f, s.perProjectCap + 500000f * dir);
+        }
+        else if (k.equals("captype")) {   // 0.3.0.0 (WS-F1 fix): Automatic <-> Fixed; Fixed starts from the cap in effect now
+            if (!s.projectCapFixed) s.perProjectCap = CAPresets.projectCap(s);
+            s.projectCapFixed = !s.projectCapFixed;
+        }
         else if (k.equals("reserve")) s.reserve = Math.max(0f, s.reserve + 50000f * dir);
         else if (k.equals("upkeep")) s.newUpkeepCap = Math.max(0f, s.newUpkeepCap + 10000f * dir);
         else if (k.equals("upkeeptype")) {   // Automatic <-> Fixed; Fixed starts from today's automatic amount, not a stale one
@@ -533,7 +766,7 @@ public class CASetupUI {
         else if (k.equals("surplus")) { s.surplusLine = (Math.max(0, s.surplusLine) + 1) % CASettings.SURPLUS_LINES.length; s.surplusChecked = true; }
         else if (k.equals("surplustf")) { s.surplusTerraform = (Math.max(0, s.surplusTerraform) + 1) % CASettings.SURPLUS_TF_NAMES.length; CATerraSim.reset(); }
         else if (k.equals("fees")) s.feeLevel = (s.feeLevel + 1) % 4;
-        else if (k.equals("station")) {
+        else if (k.equals("station")) {   // the 0.2.45 station line row; the Stations preset row (p_station) replaced it
             int i = 0, n = CASettings.STATION_IDS.length;
             for (int j = 0; j < n; j++) if (CASettings.STATION_IDS[j].equals(s.stationLine)) i = j;
             for (int step = 1; step <= n; step++) {   // the next line whose station the game has (Imperium only with Interstellar Imperium)
@@ -565,13 +798,23 @@ public class CASetupUI {
         else if (k.equals("spec")) s.disableSpecialties = !s.disableSpecialties;
         else if (k.equals("stab")) s.disableStabilizers = !s.disableStabilizers;
         else if (k.equals("defense")) s.disableDefenseFleets = !s.disableDefenseFleets;
-        else if (k.equals("war")) s.warMode = (Math.max(0, Math.min(2, s.warMode)) + 1) % 3;
+        else if (k.equals("war")) s.warLevel = (CAWarPolicy.clamp(s.warLevel) + 1) % CAWarPolicy.LEVEL_NAMES.length;   // 0.3.0.0 (WS-E): War level
+        else if (k.equals("warretake")) s.noWarRetake = !s.noWarRetake;
+        else if (k.equals("warrivals")) s.warAutoRivals = !s.warAutoRivals;
+        else if (k.equals("warconq")) s.conqueredMode = (Math.max(0, Math.min(CASettings.CONQUERED_NAMES.length - 1, s.conqueredMode)) + 1) % CASettings.CONQUERED_NAMES.length;
+        else if (k.equals("warscorch")) s.scorchedTargets = (Math.max(0, Math.min(CASettings.SCORCHED_TARGET_NAMES.length - 1, s.scorchedTargets)) + 1) % CASettings.SCORCHED_TARGET_NAMES.length;
+        else if (k.equals("warcoal")) s.warCoalitionOK = !s.warCoalitionOK;
         else if (k.equals("ambfocus")) s.ambassadorFocus = (Math.max(0, Math.min(3, s.ambassadorFocus)) + 1) % 4;
         else if (k.equals("ambstop")) s.ambassadorStopAt = (Math.max(0, Math.min(3, s.ambassadorStopAt)) + 1) % 4;
-        else if (k.startsWith("fprio_")) {
-            String fid = ((String) id).substring((PREFIX + "fprio_").length()).replace(":next", "");
-            if (s.factionPriority == null) s.factionPriority = new java.util.HashMap<String, Integer>();
-            s.factionPriority.put(fid, (s.priorityOf(fid) + 2) % 3);   // Normal -> High -> Ignore -> Normal
+        else if (k.startsWith("stance_")) {   // 0.3.0.0 (WS-E): the stance table (CAStance); Auto removes the entry
+            String fid = k.substring("stance_".length());
+            int st = CAStance.step(s.stanceOf(fid), "-".equals(op) ? -1 : 1);
+            if (st == CAStance.AUTO) s.factionStance().remove(fid); else s.factionStance().put(fid, st);
+            CAStance.markSetByYou(fid);   // 0.3.0.0 (WS-E fix): a stance you set acts fully in diplomacy (CAStance.fromOldPriority)
+        }
+        else if (k.equals("stancereset")) {   // 0.3.0.0 (WS-F1): Reset all to Auto, each one marked as set by you
+            for (String fid : new java.util.ArrayList<String>(s.factionStance().keySet())) CAStance.markSetByYou(fid);
+            s.factionStance().clear();
         }
         else if (k.equals("hazard")) s.hazardPayMode = s.hazardPayMode == 0 ? 1 : 0;
         else if (k.equals("hpcol")) s.hazardPayColonyShare = Math.max(0.05f, Math.min(1f, s.hazardPayColonyShare + 0.05f * dir));
@@ -599,8 +842,17 @@ public class CASetupUI {
         else if (k.equals("logisell")) s.logisticsSellHub = CALogistics.next(s.logisticsSellHub, true);
         else if (k.equals("logiships")) s.logisticsShips = !s.logisticsShips;
         else if (k.equals("logigoods")) s.logisticsSupplies = !s.logisticsSupplies;
-        else if (k.equals("capid")) { s.capitalId = CACapital.next(s.capitalId); if (s.capitalId != null) s.capitalAuto = s.capitalId; CACapital.reset(); }
-        else if (k.equals("capmode")) { s.capitalMode = (Math.max(0, Math.min(2, s.capitalMode)) + 1) % 3; CACapital.reset(); }
+        else if (k.equals("capid")) {   // 0.3.0.0 (WS-F1): Autopilot picks, each colony, then None (capitalMode 2), then Autopilot picks
+            // 0.3.0.0 (WS-F1 fix): leaving None restores the Capital does in effect before it (an older save's None: Deliveries and commerce)
+            if (s.capitalMode == 2) { s.capitalMode = s.capitalModeBeforeNone == 1 ? 1 : 0; s.capitalId = null; }
+            else {
+                String next = CACapital.next(s.capitalId);
+                if (next == null) { s.capitalModeBeforeNone = s.capitalMode; s.capitalId = null; s.capitalMode = 2; }
+                else { s.capitalId = next; s.capitalAuto = next; }
+            }
+            CACapital.reset();
+        }
+        else if (k.equals("capmode")) { if (s.capitalMode != 2) s.capitalMode = s.capitalMode == 0 ? 1 : 0; CACapital.reset(); }   // None is on the Capital row
         else if (k.equals("capstart")) s.capitalStart = (Math.max(0, Math.min(CACapital.START_NAMES.length - 1, s.capitalStart)) + 1) % CACapital.START_NAMES.length;
         else if (k.equals("caproom")) s.capitalNoRoom = !s.capitalNoRoom;
         else if (k.equals("stationplan")) s.noStationPlan = !s.noStationPlan;
@@ -610,6 +862,31 @@ public class CASetupUI {
         else if (k.equals("lowprofile")) CALowProfile.set(s, !s.lowProfile, "Settings");
         else if (k.equals("capgather")) s.capitalNoGather = !s.capitalNoGather;
         else if (k.equals("settleinc")) s.settlementMinIncome = Math.max(5000f, s.settlementMinIncome + 5000f * dir);
+        // 0.3.0.0 (WS-F1): the 0.3.0 settings that had no row yet (money ladder, Auto-expansion)
+        else if (k.equals("richpreset")) s.richPreset = (clamp(s.richPreset, CASettings.RICH_PRESET_NAMES.length) + 1) % CASettings.RICH_PRESET_NAMES.length;
+        else if (k.startsWith("rung_")) {
+            int r = -1;
+            try { r = Integer.parseInt(k.substring("rung_".length())); } catch (NumberFormatException ignored) { }
+            if (r > CARich.OBLIGATIONS && r < CARich.RUNGS.length) {
+                if (s.rungMode == null || s.rungMode.length < CARich.RUNGS.length) s.fixNulls();
+                s.rungMode[r] = (clamp(s.rungMode(r), CASettings.RUNG_MODE_NAMES.length) + 1) % CASettings.RUNG_MODE_NAMES.length;
+            }
+        }
+        else if (k.equals("shipyardstop")) s.shipyardStop = Math.max(1, Math.min(30, s.shipyardStop + (int) dir));
+        else if (k.equals("expline")) s.expandLine = (clamp(s.expandLine, CASettings.EXPAND_LINE_NAMES.length) + 1) % CASettings.EXPAND_LINE_NAMES.length;
+        else if (k.equals("expscope")) s.expandScope = (clamp(s.expandScope, CASettings.EXPAND_SCOPE_NAMES.length) + 1) % CASettings.EXPAND_SCOPE_NAMES.length;
+        else if (k.equals("expgoal")) s.expandGoal = (clamp(s.expandGoal, CAData.Profile.values().length + 1) + 1) % (CAData.Profile.values().length + 1);
+        else if (k.equals("expmethod")) s.expandMethod = (clamp(s.expandMethod, CASettings.EXPAND_METHOD_NAMES.length) + 1) % CASettings.EXPAND_METHOD_NAMES.length;
+        else if (k.equals("expmax")) s.expandMax = (clamp(s.expandMax, CASettings.EXPAND_MAX_NAMES.length) + 1) % CASettings.EXPAND_MAX_NAMES.length;
+        else if (k.equals("expbuildout")) s.noExpandBuildout = !s.noExpandBuildout;
+        else if (k.equals("expadmins")) s.noExpandAdmins = !s.noExpandAdmins;
         return true;
+    }
+
+    /** 0.3.0.0 (WS-F1): a preset row's click: CAPresets writes the fields, then the caches those fields feed are dropped. */
+    static void applyPreset(CASettings s, String row, int value) {
+        CAPresets.apply(s, row, value);
+        if (CAPresets.SPENDING.equals(row)) CATerraSim.reset();                // surplus terraforming may have changed
+        else if (CAPresets.EXTRAS.equals(row)) CAProjects.computedAt = -99f;   // special project supply may have changed
     }
 }

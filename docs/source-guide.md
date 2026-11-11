@@ -2,7 +2,7 @@
 
 A tour of the code for anyone who wants to read it: how it's laid out, what happens each day in game, how a building gets its score, how the optional mod integrations stay optional, what goes in the save, and what every file does.
 
-All the code is Java 17, compiled against Starsector 0.98a-RC8's `starfarer.api.jar`. It's about 16,000 lines in 70 files. Every class opens with a comment saying what it does and why; this page links them together. For what the mod does as a player sees it, read [Getting started](getting-started.md), the other guides linked from the README, and [details.md](details.md).
+All the code is Java 17, compiled against Starsector 0.98a-RC8's `starfarer.api.jar`. In 0.3.0.0 it's about 41,000 lines in 118 files. Every class opens with a comment saying what it does and why; this page links them together. For what the mod does as a player sees it, read [Getting started](getting-started.md), the other guides linked from the README, and [details.md](details.md).
 
 Two companion pages:
 - **[Auditing the mod](audit.md)** lists every way the mod changes your game, what each one charges, and what it never does, so you can check it's safe without reading all of this.
@@ -43,59 +43,57 @@ The package and jar names are still `jonahtweaks` for the same reason as the mod
 
 ## The shape of it in one paragraph
 
-Once a day a script runs one pass over your colonies. For each colony on Approve or Auto, a scoring engine lists every building and upgrade the colony could start, values each one in credits a month (money after upkeep, plus everything else it does weighted by the colony's goal, plus a plan bonus, minus its price spread over three years), and the empire-wide budget funds the best value per credit. After the building pass, a row of independent steps runs, each in its own try/catch and each only when its mod is enabled: items and cores, administrators, policies, terraforming, research, Nexerelin fleets and agents, and so on. Every action goes through the same game calls the game's own UI (or the source mod's UI) uses, charges what that UI charges plus a convenience fee, and is written to the log. Anything that touches another mod is done by reflection or by class name, fails closed, and is checked when the game loads.
+Once a day a script runs one pass over your colonies, each step through `CAStep` so one failure can't skip the rest. For each colony on Approve or Auto, a scoring engine lists every building and upgrade the colony could start and values each one in credits a month (money after upkeep, plus everything else it does weighted by the colony's goal). The 0.3.0 planner turns that into a net present value over the payback horizon (36 months, up to 120 as surplus credits grow), puts it in one queue with every other module's offers (terraforming, research facilities, wonders, crews, story points), and starts the best value per construction day and per credit across the empire. After the planner come the money tiers and the money ladder (stockpiles, military upgrades, ship orders), Auto-expansion, and a row of independent steps, each only when its mod is enabled: items and cores, administrators, policies, terraforming, research, Nexerelin fleets, agents, diplomacy and conquered colonies, and so on. Every action goes through the same game calls the game's own UI (or the source mod's UI) uses, charges what that UI charges plus a convenience fee through `CABudget`, and is written to the log. Anything that touches another mod is done by reflection or by class name, fails closed, and is checked when the game loads.
 
 ## Where to start reading
 
 1. [JTModPlugin](../src/data/scripts/jonahtweaks/JTModPlugin.java). On every save load it creates the saved data, runs the diagnostics scan, registers the colony menu option and the intel panel, and adds the daily script.
 2. [CAScript](../src/data/scripts/jonahtweaks/autopilot/CAScript.java). Once per in-game day it calls `CAAuto.runPass`, and every frame it checks whether to offer the fast buildout.
-3. [CAAuto](../src/data/scripts/jonahtweaks/autopilot/CAAuto.java). The daily pass: what's built, what's proposed, and every other automated step.
+3. [CAAuto](../src/data/scripts/jonahtweaks/autopilot/CAAuto.java). The daily pass: the order of every step.
 4. [CAEngine](../src/data/scripts/jonahtweaks/autopilot/CAEngine.java). Scores every building a colony could build or upgrade to.
-5. [CAPlan](../src/data/scripts/jonahtweaks/autopilot/CAPlan.java). The target layout each colony works toward.
-6. [CABuild](../src/data/scripts/jonahtweaks/autopilot/CABuild.java). Starts a build the way the build menu does.
-7. [CAColonyDialog](../src/data/scripts/jonahtweaks/autopilot/CAColonyDialog.java) and [CAIntel](../src/data/scripts/jonahtweaks/autopilot/CAIntel.java). The two panels.
+5. [CAValue](../src/data/scripts/jonahtweaks/autopilot/CAValue.java) and [CAHorizon](../src/data/scripts/jonahtweaks/autopilot/CAHorizon.java). One value for building and for keeping; the payback horizon.
+6. [CAPlanner](../src/data/scripts/jonahtweaks/autopilot/CAPlanner.java). The one queue: what starts, what waits, what's saved up for.
+7. [CAPlan](../src/data/scripts/jonahtweaks/autopilot/CAPlan.java). The target layout each colony works toward.
+8. [CABuild](../src/data/scripts/jonahtweaks/autopilot/CABuild.java). Starts a build the way the build menu does.
+9. [CARich](../src/data/scripts/jonahtweaks/autopilot/CARich.java). Money tiers and the money ladder.
+10. [CAColonyDialog](../src/data/scripts/jonahtweaks/autopilot/CAColonyDialog.java) and [CAIntel](../src/data/scripts/jonahtweaks/autopilot/CAIntel.java). The two panels.
 
 After those, any integration class can be read on its own.
 
 ## A day in game
 
-`CAScript.advance` adds up in-game days and calls `CAAuto.runPass(now)` once a day. If Theory of Toolbox's background threads are reading markets, it waits, but never past a second day. The pass:
+`CAScript.advance` calls `CAAuto.runPass(now)` once a game day, on the game's own clock (`CATime`; before 0.3.0 it counted days since the session started). If Theory of Toolbox's background threads are reading markets, it waits, but not past a second day. Every step goes through [CAStep](../src/data/scripts/jonahtweaks/autopilot/CAStep.java): `CAStep.run` isolates and times the step and stops it for the session after 3 failed days in a row; `CAStep.guard` isolates without the breaker, for the safety steps. The pass, in order:
 
-1. **Month and calibration.** `CABudget.rollMonth` starts a new month's budget when the month changes. `CACalibrate.run` compares predictions with your real buildings once a week. Then `CASiege.update` (which colonies are under siege), `CAStores.daily` (shipments between colonies' Autopilot Storage arrive; an old save's shared storage is moved, once), `CACrisis.daily` (Hegemony inspection orders, and a log line when a colony crisis is picked), `CASurplus.daily` (today's focus world for credits over the surplus line) and `CAEndgame.daily` (whether the endgame economy runs).
-2. **Each colony in Approve or Auto:**
-   - A colony is re-planned every 7 days, or as soon as a build finishes.
-   - **Fast buildout:** a colony with one running goes to `CABuildout.pass` instead. That pass ranks with `CAEngine.evaluateForProfit`: the Money goal whatever the colony's goal or threat, with the `PROFIT` weights (defense, fleets and ship quality worth nothing) and no plan or upgrade bonus. It picks by value per credit, pays from credits above the floor, and repeats daily.
-   - **Scoring:** `CAEngine.evaluate(market, CAThreat.effective(market, goal), minStability)` returns the scored picks. `CAThreat.effective` swaps in Security while the colony's threat estimate is high.
-   - **Approve:** the best pick becomes a proposal (`CAAuto.propose`), and the player approves or rejects it in a panel.
-   - **Auto:** the best three new builds and the best two upgrades become candidates (`CAAuto.NEWS`, `UPS`), so one that has to wait doesn't stop the colony.
-3. **Funding Auto candidates.** All candidates across the empire are sorted by score per credit, so the budget goes where it does the most good; a plan step whose upkeep is over the whole cap goes first. Each is checked in turn, and each colony starts at most one new build and one upgrade a pass:
-   - over the per-project cap (`CASurplus.projectCap`: the surplus at the focus world) → proposed instead;
-   - a measured mod building while that setting asks for approval → proposed;
-   - a low-confidence estimate costing more than half the cap → proposed;
-   - not enough budget (plus `CASurplus.extra` at the focus world) → waits (logged once);
-   - over this month's new-upkeep cap (`CABudget.upkeepFits`, with `CASurplus.upkeepCap` over `CABudget.upkeepCap`: Automatic 10% of last month's net income, at least 20,000, or the Fixed amount) → waits; a plan step bigger than the whole cap fits as the month's first new upkeep.
-
-   Otherwise `CAAuto.execute` starts it through `CABuild.start`, charges the fee and logs it. A colony with no candidate at all gets `CAAuto.trace`: one starsector.log line a month with its best three options and their score parts.
-4. **Everything else**, each step in its own `try`/`catch` so one failing integration can't stop the rest:
+1. **Month and weekly steps.** `CABudget.rollMonth` (new month's budget), the upkeep cap check, `CACalibrate.run`, `CAModWatch.weekly`, `CATidy.weekly` (saved-data tidy-up), `CAMarket.weekly`.
+2. **Daily state.** `CASiege.update` (guarded), `CAStores.daily` (shipments arrive), `CALogistics.daily`, `CACrisis.daily`, `CASurplus.daily` (focus world), `CACapital.daily`, `CAEndgame.daily`, `CAProjects.update`.
+3. **Colony lists** (guarded): Auto colonies, those not under siege, and every colony not Off.
+4. **The 0-stability safety net** (guarded): `CAOverLimit.run`, before anything is built.
+5. **Planner.** `CAPlanner.run` collects `CAAction`s from every module (builds and upgrades from `CAEngine`, surplus terraforming, surplus research, the wonder site, stable-location crews, story points), scores each by NPV over the horizon (`CAValue.npv`, `CAHorizon`), then:
+   - per colony, new buildings go through its one construction queue by NPV per construction day; upgrades run beside it;
+   - across colonies, money goes by NPV per credit, with an earmark for the first pick that waits for money, so cheaper picks can't spend its savings;
+   - the new-upkeep cap counts only upkeep a building doesn't cover itself;
+   - after each start, actions that share a colony, a good, a building or a one-per-empire flag are re-scored;
+   - Approve colonies get the best pick as a proposal; a rejected one is held off for 30 days;
+   - removal marks (`CATombstone`) keep a building taken down in the last year out of that colony's list.
+   A colony gets a fresh look when something at it starts or finishes, a slot opens, its threat or siege changes, the month rolls over (picks that waited for money) or the money tier changes; otherwise weekly (`CAAuto.wait`). With the hidden `legacyPlanner` switch, or after 3 failed planner days, the 0.2.45 build pass (`CAAuto.buildPass`) runs.
+6. **Money tiers and the ladder.** `CARich.run`: the tier, stockpile deliveries, the Shipyard's free-cash guard, then the rungs in the preset's order (`CAStockpile`, `CAMilitary`, `CAShipyard`).
+7. **Auto-expansion.** `CAExpansion.run`: deliveries, administrators seated, then one expedition or proposal when every gate holds.
+8. **Removers and placement.** `CAPrune`, `CALowProfile`, then `CAItems.run` (guarded) and `CAStoragePlugin.evict`.
+9. **Mod steps**, each only when its mod is enabled:
 
    | Step | Class |
    |---|---|
-   | Items, AI cores and administrators | `CAItems.run` |
-   | Terraforming Made Easy projects | `CATerraform.run` |
-   | Industrial Evolution, then Courier Port shipping | `CAIndEvo.run`, `CACourier.run` |
-   | Surplus terraforming | `CATerraformSurplus.run` |
+   | Terraforming Made Easy projects, surplus terraforming | `CATerraform.run`, `CATerraformSurplus.run` |
    | Surplus research, wonders and gates | `CASurplusResearch.run`, `CAWonders.run` |
-   | Nexerelin emergency fleets, war fleets, agents, then autonomy | `CADefense.run`, `CAWar.run`, `CASpies.run`, `CAAutonomy.run` |
-   | Campaign consumables out of Autopilot Storage | `CAStoragePlugin.evict` |
-   | Hazard pay and free port | `CAPolicies.run` |
-   | Story points | `CAStory.run` |
-   | RAT settlement | `CASettlement.run` |
-   | Station augments | `CAAugments.run` |
-   | Trade contracts | `CAContracts.run` |
+   | Industrial Evolution, then Courier Port shipping | `CAIndEvo.run`, `CACourier.run` |
+   | Nexerelin: emergency fleets, war fleets, agents, diplomacy, conquered colonies, autonomy (all guarded) | `CADefense.run`, `CAWar.run`, `CASpies.run`, `CADiplomacy.run`, `CAConquest.tend`, `CAAutonomy.run` |
+   | Hazard pay and free port (guarded) | `CAPolicies.run` |
+   | Story points, stable locations, TASC stations | `CAStory.run`, `CAObjectives.run`, `CATascStations.run` |
+   | RAT settlement, station augments, trade contracts | `CASettlement.run`, `CAAugments.run`, `CAContracts.run` |
    | Hypershunt, megastructures, Floating City, research | `CAHypershunt`, `CAMegastructures`, `CADevelopment`, `CAResearch` |
    | TASC terraforming | `CATasc.run` |
 
-   Each runs only when its mod is enabled.
+10. **Panel scores and the report.** `CAEngine.fill` keeps every managed colony's score for the panels (they never evaluate while drawing); `CADiagnostics.flushReport` writes the report once a pass.
 
 Nothing in the pass spends below the credit reserve. A few emergencies may pass the monthly budget (emergency defense and relief fleets, an administrator for a colony past the colony limit), and they still keep the reserve. Anything that moves between colonies (an item, a core, research databanks) goes through `CAStores.ship`, which charges a fee and takes travel time; nothing is moved across the sector for free.
 
@@ -137,9 +135,14 @@ Positive value is scaled by confidence, so an uncertain gain has to beat a known
 **Weights.** `CAEngine.finish` combines `fx` with the goal's weights (the `WEIGHTS` table, one row per goal: Balanced, Money, Security, War production, Rapid growth, Self-sufficiency). It then applies:
 - the stability floor;
 - pollution: an upgrade that would pollute a habitable world again is shown with a negative score, so it's never started (the same for every goal). Polluting items never go into a habitable world's forge at all (`CAItems.wouldPollute`), and `CAItems.pullPollutingForge` takes one back while its pollution is still reversible;
-- the plan bonus from `CAPlan.bonusFor`, only for picks worth something on their own, so the plan orders good buildings but never makes a money-losing one look good;
+- the plan bonus from `CAPlan.bonusFor`. In 0.3.0 the flat bonus goes only to enabler steps (terraforming structures and special-world buildings, stations, project producers, the capital's trade buildings, the Research Facility, spending-freely structures, the Bifrost). Other plan steps count what they earn plus half of what they lead to (`CATuning.DOWNSTREAM_SHARE`);
+- the money weight: from the money tier Idle money a credit counts half at Approve and Auto colonies, a quarter while spending freely (`CASurplus.moneyWeight`), 5% in the endgame.
 
 A pick that breaks a rule (such as the stability floor) is dropped; everything else is ranked and shown, worthwhile or not.
+
+**The price side (0.3.0).** A pick's score is its net present value over the payback horizon H, as a monthly figure: score = worth - (price + fee) / H - worth x construction days / 30 / H (`CAHorizon.npvMonthly`, `CAValue.npv`). H is 36 months and slides up to 120 as surplus credits reach 10,000,000, falling only when they drop under 60% of what raised it (`CAHorizon.slide`). This replaced 0.2.45's three-year spread, the focus world's quarter price, the spending-freely 5% price and the +15,000 upgrade follow-through. The 0.2.45 score is still in `CAEngine` for the hidden `legacyPlanner` switch.
+
+**Keeping a building.** [CAValue](../src/data/scripts/jonahtweaks/autopilot/CAValue.java) values new builds (`add`) and existing buildings (`keep`) with one set of functions, so builders and removers agree. `keep` is the build math backwards: what the colony loses a month without the building, its live output above the colony's other sources, priced by export share, plus the shortage it would leave, plus the synergies it keeps going. [CATombstone](../src/data/scripts/jonahtweaks/autopilot/CATombstone.java) adds the teardown loss (the part of what Autopilot paid that hasn't paid back over H) and the one-year removal marks. `CAValue.deficits` counts buildings under construction as supply.
 
 **The result.** `Result` holds:
 - the sorted picks;
@@ -151,7 +154,7 @@ Any exception thrown by a building's code during scoring quarantines that buildi
 
 ## Plans
 
-[CAPlan](../src/data/scripts/jonahtweaks/autopilot/CAPlan.java) gives each colony a target layout from its planet, hazards, resources and goal. Steps are builds, conditions to reach, or notes. `bonusFor` favours picks that advance the plan, the earliest open step most. A pick that a plan building is upgraded from also counts; with AotD, Monoculture Plots count on the way to Farming. `hasOrBetter` and `leadsTo` follow upgrade chains and AotD's downgrade links, so an upgraded version counts as done.
+[CAPlan](../src/data/scripts/jonahtweaks/autopilot/CAPlan.java) gives each colony a target layout from its planet, hazards, resources and goal. Steps are builds, conditions to reach, or notes. `bonusFor` favours picks that advance the plan, the earliest open step most (enabler steps only, since 0.3.0). A step worth nothing for 30 days (`CATuning.WORTHLESS_DAYS`) gives up its slot and rank until it pays again. A world plan that already paid for terraforming switches only to one worth at least twice as much ([CAMark](../src/data/scripts/jonahtweaks/autopilot/CAMark.java) keeps the stamp). A pick that a plan building is upgraded from also counts; with AotD, Monoculture Plots count on the way to Farming. `hasOrBetter` and `leadsTo` follow upgrade chains and AotD's downgrade links, so an upgraded version counts as done.
 
 [CAWorldPlanner](../src/data/scripts/jonahtweaks/autopilot/CAWorldPlanner.java) adds a Terraforming Made Easy special world (Forge, Fortress, Paradise, Hive, Death, Waste) when one is reachable:
 - It reads TME's requirement CSV and resolves each needAll/needOne requirement back through the projects that create it.
@@ -183,7 +186,8 @@ If the building's code throws, or registers sector scripts or intel while being 
 No other mod is required, and any mix works. Three patterns make that true.
 
 **1. Compiled against the mod, called only when it's enabled.**
-- **Classes:** `CATerraform` (Terraforming Made Easy), `CAIndEvo` and `CACourier` (Industrial Evolution), `CADefense` and `CASpies` (Nexerelin), `CASettlement` (Random Assortment of Things) and `CAAugments` (Station Augments).
+- **Classes:** `CATerraform` (Terraforming Made Easy), `CAIndEvo` and `CACourier` (Industrial Evolution), `CADefense`, `CASpies`, `CAWar`, `CAConquest`, `CAScorched`, `CADiplomacy`, `CAWarListener`, `CAWarPage` and `CAExpansionNex` (Nexerelin), `CASettlement` (Random Assortment of Things) and `CAAugments` (Station Augments).
+- **0.3.0's pure halves:** `CAStance`, `CAWarPolicy` and `CAExpansion` hold the rules and settings with no Nexerelin imports, so the settings screen, the Factions page and Auto-expansion's crews load without Nexerelin. `CAWarListener` is transient (never saved), so a save loads without Nexerelin.
 - **Why it's safe:** each is compiled against that mod's jar and called only inside an `isModEnabled(...)` check. The JVM loads a class only when it's first used, so without the mod they're never loaded.
 - **The `MOD` constants:** these classes' mod-id constants are compile-time constants. They're copied into the calling code, so checking `CAAugments.MOD` doesn't load `CAAugments`.
 - **Rule:** never reference one of these classes outside its guard.
@@ -207,11 +211,13 @@ No other mod is required, and any mix works. Three patterns make that true.
 
 ## Surviving mod updates
 
-Five pieces keep a mod update from quietly breaking things:
+These pieces keep a mod update from quietly breaking things:
 
 | Class | What it does |
 |---|---|
 | [CACompat](../src/data/scripts/jonahtweaks/autopilot/CACompat.java) | Health check at load. Each integration lists its mod, the version it was written against, the ids it needs and a check that its reflected names resolve. Status: OK, Newer (still works, trusted a bit less), Partly off, or Off. |
+| [CALinkScan](../src/data/scripts/jonahtweaks/autopilot/CALinkScan.java) | 0.3.0: reads Colony Manager's own class files from the class loader (the constant pool: every class, method and field each class calls), keeps the names in Nexerelin's, Industrial Evolution's, RAT's, Station Augments' and TME's packages, and looks each one up with method handles without running anything. A renamed method shows in Diagnostics at load; only the part that calls it stops. |
+| [CAStep](../src/data/scripts/jonahtweaks/autopilot/CAStep.java) | 0.3.0: isolates and times every step of the daily pass. A step that fails 3 days in a row stops for the session with one log line and a Diagnostics entry; the safety steps use `guard` and keep running. |
 | [CAConst](../src/data/scripts/jonahtweaks/autopilot/CAConst.java) | Reads numbers from a mod's own public static fields, with the original value as the fallback. A rebalance is picked up, and the change is logged. |
 | [CACalibrate](../src/data/scripts/jonahtweaks/autopilot/CACalibrate.java) | Weekly, compares predicted upkeep and output with your real plain buildings. It smooths the ratio (70/30), clamps it to 0.5-2x, and applies it after two readings. Kept in the save. |
 | [CABreaker](../src/data/scripts/jonahtweaks/autopilot/CABreaker.java) | Checks that an action into another mod took effect. Three failures in a row stop that action for the session. |
@@ -229,12 +235,23 @@ Five pieces keep a mod update from quietly breaking things:
 | `noted` | Keys of messages already logged once (`CALog.once`) |
 | `calOut`, `calUp` and their counts | Calibration ratios |
 | `buildoutOffered`, `spyAgents`, `spyRoles`, `spyRecruits` | Whether the first-colony offer was shown; ids of the agents the manager gives orders, their roles, and agents being recruited |
-| `attackers`, `endgameBuilt`, `augRefit`, `settleExpedition*`, `surplusBuilt`, `surplusResearch`, `enablers` | War fleets' strike-back targets, what the endgame built or took down, booked station refit crews, a settlement expedition on its way, and what surplus terraforming and research built (so only those come down again) |
+| `attackers`, `endgameBuilt`, `augRefit`, `settleExpedition*`, `surplusBuilt`, `surplusResearch`, `enablers` | War fleets' strike-back targets, what the endgame built or took down (and, since 0.3.0, `CATombstone`'s build stamps `marketId:industryId@money\|rich\|endgame`), booked station refit crews, a settlement expedition on its way, and what surplus terraforming and research built (so only those come down again) |
+| `schema`, `migratedAt` | 0.3.0: the layout version, and when `CAMigrate` moved the save to 0.3.0 (the What's new box shows for 30 days after) |
+| `notedAt`, `overLimitAt`, `pruneAt`, `swapAt`, `monthLedger` | 0.3.0: once-keys with their time (`CALog`; `keep:` keys are `CAMark` stamps that don't expire), the over-limit, prune and make-room timers split out of `endgameBuilt`, and this month's spending per colony |
+| `tombstones`, `sunk` | 0.3.0: removal marks (market, building, until, why, what it cost) and what Autopilot paid per building |
+| `colonyNetHistory`, `idleMonths`, `richTier`, `richTierSince`, `rungSpent` | 0.3.0: the 3-month colony net, idle months, the money tier and when it last changed, and this month's spending per rung |
+| `shipyardOrders`, `stockpiles` | 0.3.0: the Shipyard's order lines (hull id, quantity, price, timestamp) and stockpile shipments (market id, commodity, quantity, cost, timestamps, fee, source) |
+| `expandOrders`, `expandSkip`, `expandFounded`, `expandLast`, `expandPending*` | 0.3.0: Auto-expansion's expeditions (planet and source ids, method, plan, numbers), skipped planets, founded colonies, the last launch and the proposal |
+| `warDeclared`, `warOps`, `conquered`, `warAuthorized`, `warStandDown` | 0.3.0: war declarations, operations launched (`kind:marketId` to time), conquered colonies, factions you declared war on, and the last Stand down |
+
+New settings fields for 0.3.0 (War level, stances, rung modes, Auto-expansion and the rest) are listed in `CASettings` with their defaults for new games and for older saves.
 
 Rules that keep saves working:
-- **New fields:** a field added in a later version is missing from older saves and loads as zero, false or null. So defaults are written to mean "off" or "default" at those values, and collections are created lazily by accessors such as `augAuto()` and `spyAgents()`.
-- **No removed fields:** the game's save loader fails on a field the class no longer has, so a feature that's taken out keeps its fields (`storageCheat`, `haFleetCap` and `nexAttackGap` since 0.2.37.0), unused.
-- **No other mods' objects:** nothing from another mod is ever stored, only ids. A save made with an optional mod still loads after that mod is removed.
+- **Short names (0.3.0).** [CAXStream](../src/data/scripts/jonahtweaks/autopilot/CAXStream.java) gives every saved class a fixed alias (`JCM-Data`, `JCM-Colony`, `JCM-Settings`, `JCM-Tombstone`, `JCM-ShipOrder` and so on), so a class can move or be renamed without breaking saves. An alias is not renamed or reused once released. Saves from before 0.3.0 still load (XStream falls back to the full class name); saves written with the aliases don't load in 0.2.45.
+- **One migration (0.3.0).** [CAMigrate](../src/data/scripts/jonahtweaks/autopilot/CAMigrate.java) moves a save from before 0.3.0 forward once: War fleets to the War level, faction priorities to stances, retake off, the per-project cap kept as Fixed when it differs from the Automatic one. It does not raise anything above what 0.2.45 did. The save is stamped as moved before the steps run, so a failure loads the save and is not retried.
+- **New fields:** a field added in a later version is missing from older saves and loads as zero, false or null. So defaults are written to mean "off" or "default" at those values (fields that must default on use an inverted `noX` name), and collections are created lazily by accessors such as `augAuto()` and `spyAgents()`.
+- **Removed fields:** the game's save loader fails on a field the class no longer has. Since 0.3.0, a retired field is deleted from the class and listed in `CAXStream` with `omitField` (`adminDelay`, `storageCheat`, `haFleetCap`, `nexAttackGap`, `richIncomeRef`); the line stays for good.
+- **No other mods' objects:** nothing from another mod is ever stored, only ids, numbers and timestamps. A save made with an optional mod still loads after that mod is removed.
 - **Exception:** Autopilot Storage is a market tab, so this mod itself can't be removed from a save that used it.
 
 ## The panels
@@ -243,10 +260,14 @@ Rules that keep saves working:
 |---|---|
 | [CAOptionProvider](../src/data/scripts/jonahtweaks/autopilot/CAOptionProvider.java) | Adds **Colony Autopilot...** to the right-click menu of Population & Infrastructure |
 | [CAColonyDialog](../src/data/scripts/jonahtweaks/autopilot/CAColonyDialog.java) | The colony panel, a custom dialog with a page list on the left (`pages()`): Overview (stats, approval, goal, mode, fast buildout), Plan and builds, Locks, and Mod features, one page with a section per integration that applies (`modSections()`, `renderMod()`). `build()` redraws the current page after every button; `handle(id)` routes button ids (`ca:page:...`, `ca:lock:...`, `ca:hs:...`, `ca:bo:...`, a `Pick`, a goal, a mode). The first switch to Approve or Auto shows the setup page. |
-| [CAIntel](../src/data/scripts/jonahtweaks/autopilot/CAIntel.java) | The empire panel, an intel item with its own **Colony Autopilot** filter (a tag of its own; older saves have its "important" flag cleared). Pages (`pages()`): Colonies (budget, approvals, every colony with its next build), Autopilot Storage, Mod features (a section per integration in use: `modSections()`, `renderMod()`), Settings, Log and Diagnostics |
+| [CAIntel](../src/data/scripts/jonahtweaks/autopilot/CAIntel.java) | The empire panel, an intel item with its own **Colony Autopilot** filter (a tag of its own; older saves have its "important" flag cleared). Pages (`pages()`): Colonies (budget with the money tier and ladder line, approvals, every colony with its next build), Autopilot Storage, Colony crises, Expansion, War (Nexerelin), Mod features (a section per integration in use: `modSections()`, `renderMod()`), Settings, Factions, Log and Diagnostics |
 | [CANav](../src/data/scripts/jonahtweaks/autopilot/CANav.java) | The page list both panels draw on the left, so one section shows at a time instead of one long scroll |
 | [CATheme](../src/data/scripts/jonahtweaks/autopilot/CATheme.java) | The look and the voice (0.2.41.0). Look: `heading` ("//  TITLE" bars), `button` (cut corners, caps), `readout`, and `Frame`, the panel plugin that draws the grid and cut-corner frames with GL in `renderBelow` (once a frame). Voice: `machine` turns a log line into `CODE / Place: what` (the colony or system from `places()`, the code from `CODES`, credits through `shortCredits`; a line with no code stays as it is) |
-| [CASetupUI](../src/data/scripts/jonahtweaks/autopilot/CASetupUI.java) | The settings rows, shared by the setup page and the empire panel, in groups that open one at a time. Each row shows its value and the recommendation. `applyRecommended` fills in the recommendations, which are chosen so that switching colonies to Auto and nothing else works out well; its comments give the reason for each. |
+| [CASetupUI](../src/data/scripts/jonahtweaks/autopilot/CASetupUI.java) | The Settings page (0.3.0: 20 main rows in 6 groups, a 5-line glossary, a collapsed Advanced group with 11 subgroups, one open at a time) and the 5-row first-time setup (`renderFirstTime`). Gray lines and hover text are in the `DESC` and `HOVER` tables. `applyRecommended` fills in the recommendations, with a comment giving the reason for each; `resetToRecommended` keeps Expansion style, War, New colonies, stances and the capital. |
+| [CAPresets](../src/data/scripts/jonahtweaks/autopilot/CAPresets.java) | 0.3.0: the preset rows (Spending, Extras, New colonies, War, Story points, Stations, Take down buildings, Colony policies, AI cores, Administrators). `apply` writes the older fields; `match` reads them back on every draw and returns Custom when they fit no value. Only enabled mods' fields count. |
+| [CAFactionsPage](../src/data/scripts/jonahtweaks/autopilot/CAFactionsPage.java) | 0.3.0: the stance table, one row per faction with `<` `>` buttons, relation, markets and (with Nexerelin) the War level its stance allows. No Nexerelin classes. |
+| [CAWarPage](../src/data/scripts/jonahtweaks/autopilot/CAWarPage.java) | 0.3.0 (Nexerelin): War level, fleet request points, infamy, money, Stand down, Recall all, Authorize bombardment, a block per faction with planned operations and what each waits for, conquered colonies. Drawing changes nothing. |
+| [CAExpansionPage](../src/data/scripts/jonahtweaks/autopilot/CAExpansionPage.java) | 0.3.0: Auto-expansion's page, drawn by `CAExpansion.render`. Found now asks first with the price, fee, days and administrator hire. |
 | `CABuildout.Offer` | The first-colony offer, an interaction dialog with the game's own option list |
 | [CAStoragePlugin](../src/data/scripts/jonahtweaks/autopilot/CAStoragePlugin.java), [CAStores](../src/data/scripts/jonahtweaks/autopilot/CAStores.java) | The Autopilot Storage tab, one store per colony (`CAStores.of`), and shipping between them (`CAStores.ship`: a fee and travel days, delivered by `CAStores.daily`); campaign consumables and blueprints are refused (`consumable`) |
 
@@ -260,7 +281,7 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
 |---|---|
 | [JTModPlugin](../src/data/scripts/jonahtweaks/JTModPlugin.java) | Mod plugin: starts everything on each save load |
 | [CAScript](../src/data/scripts/jonahtweaks/autopilot/CAScript.java) | The daily tick; offers the fast buildout |
-| [CAAuto](../src/data/scripts/jonahtweaks/autopilot/CAAuto.java) | The daily pass: proposals, funding, building, then every other automated step |
+| [CAAuto](../src/data/scripts/jonahtweaks/autopilot/CAAuto.java) | The daily pass: the order of every step; the 0.2.45 build pass (`buildPass`) behind `legacyPlanner` |
 | [CAEngine](../src/data/scripts/jonahtweaks/autopilot/CAEngine.java) | Scoring: candidates, effects, shortages, trust, upkeep, goal weights |
 | [CAEstimates](../src/data/scripts/jonahtweaks/autopilot/CAEstimates.java) | Hand-written effects for mod buildings with no formula |
 | [CAPlan](../src/data/scripts/jonahtweaks/autopilot/CAPlan.java) | Target layouts and the plan bonus |
@@ -275,13 +296,57 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
 | [CALogWatch](../src/data/scripts/jonahtweaks/autopilot/CALogWatch.java) | A log4j appender on the package loggers of Jonah's mods (`MODS`): warnings and errors this session, with the latest, for the Diagnostics page's Jonah's mods section (the other mods' status lines come from sector memory `$jonahs_status_<mod id>`) |
 | [CASurplus](../src/data/scripts/jonahtweaks/autopilot/CASurplus.java) | Surplus investment: credits over the line, less `committed` (custom production still to build plus Ashes of the Domain's orders, `aotdOrders`, by reflection), (`amount`) go into the focus world (`focus`: yours, or the best `score` among Auto colonies, kept by `pick` unless another beats it by `MARGIN`); `extra`, `projectCap`, `upkeepCap` and `costWeight` are what the build pass, scoring, terraforming and research use |
 | [CAEndgame](../src/data/scripts/jonahtweaks/autopilot/CAEndgame.java) | The endgame economy: when it runs (`decide`), the income it keeps (`floor`, `room`), its weights, production-chain values (`chainValue` over a daily `Chains` snapshot of your colonies' and the sector's supply), and replacing the weakest industry (`weakest`, `replacement`, `takeDown`) |
-| [CASurplusResearch](../src/data/scripts/jonahtweaks/autopilot/CASurplusResearch.java) | More Research Facilities from the surplus, up to the 8 Vaults of Knowledge counts, and taking them down once research is done |
+| [CASurplusResearch](../src/data/scripts/jonahtweaks/autopilot/CASurplusResearch.java) | More Research Facilities from the surplus (3 of its own below the money tier Rich, up to the 8 Vaults of Knowledge counts), and taking them down once research is done |
 | [CAWonders](../src/data/scripts/jonahtweaks/autopilot/CAWonders.java), [CAProjects](../src/data/scripts/jonahtweaks/autopilot/CAProjects.java) | Ashes of the Domain, by reflection: the Daedalus Array and Bifrost gates while spending freely; producers of the goods a special project needs as plan steps |
 | [CADay](../src/data/scripts/jonahtweaks/autopilot/CADay.java) | Today as a day number from the game clock, for daily caches (never `getElapsedDaysSince(0L)`) |
 | [CAPolicies](../src/data/scripts/jonahtweaks/autopilot/CAPolicies.java) | Hazard pay and free port, with minimum time between changes; raises an old save's 10% hazard pay limit to 30% once |
 | [CAStory](../src/data/scripts/jonahtweaks/autopilot/CAStory.java) | Story point improvements under the chosen rule; the monthly cap counts story points spent (`spMonth`), cheapest improvement first (`pick`) |
 | [CALog](../src/data/scripts/jonahtweaks/autopilot/CALog.java) | The action log; `once`/`forget` log a message once per save; `esc` makes dynamic text safe in format strings; on screen in the voice the settings pick (`CATheme.machine` or "Autopilot: "); `ping` is a screen-only machine line, once a week per key |
 | [CAData](../src/data/scripts/jonahtweaks/autopilot/CAData.java), [CASettings](../src/data/scripts/jonahtweaks/autopilot/CASettings.java), [CASettingsFile](../src/data/scripts/jonahtweaks/autopilot/CASettingsFile.java) | Saved data, settings, defaults file |
+
+### Added in 0.3.0: foundation
+
+| File | What it does |
+|---|---|
+| [CAStep](../src/data/scripts/jonahtweaks/autopilot/CAStep.java) | Runs, times and isolates every step of the daily pass. `run` stops a step after 3 failed days in a row for the session; `guard` never stops (safety net, siege check, emergencies). A failure's stack trace goes to starsector.log once, then a short line at most weekly. |
+| [CATime](../src/data/scripts/jonahtweaks/autopilot/CATime.java) | One clock: game days from the sector clock. `due` and `fresh` treat a stamp later than today as stale (an earlier save was loaded). The game clock's days are negative, so "never fired" is NaN. |
+| [CAReset](../src/data/scripts/jonahtweaks/autopilot/CAReset.java) | Clears every cache, timer and session flag kept in static fields, first thing on every load. `JTResetCheck` fails on a new static that isn't reset or listed. |
+| [CAStability](../src/data/scripts/jonahtweaks/autopilot/CAStability.java) | The one stability rule: `canLose` lets an action go when it costs no stability or the colony stays at or above the floor (minimum stability, at least 3) afterwards. Every takedown, move, pull, policy and new action asks it. |
+| [CATuning](../src/data/scripts/jonahtweaks/autopilot/CATuning.java) | Colony Manager's own numbers in one place (bonuses, fees, day counts, caps, stability margins, the horizon, tier lines). `JTTuningCheck` pins every value. |
+| [CAMigrate](../src/data/scripts/jonahtweaks/autopilot/CAMigrate.java) | Moves a save from before 0.3.0 forward once (`to3`). Translates old settings; raises nothing. |
+| [CAXStream](../src/data/scripts/jonahtweaks/autopilot/CAXStream.java) | Short aliases for saved classes, and `omitField` lines for retired fields. Called from `JTModPlugin.configureXStream`. |
+| [CACache](../src/data/scripts/jonahtweaks/autopilot/CACache.java) | Day caches behind the engine: an answer is kept with the game day, an empire-wide change counter and a signature of the colonies it read; any change is a miss. |
+| [CAPerf](../src/data/scripts/jonahtweaks/autopilot/CAPerf.java) | Milliseconds per step, shown in Diagnostics' Performance section; a pass over the slow line writes one quiet log line. |
+| [CATidy](../src/data/scripts/jonahtweaks/autopilot/CATidy.java) | Weekly tidy-up of saved data: expired once-keys, year-old timestamps nothing reads, leftovers of colonies that are gone (captured colonies keep everything). Splits the timers that shared `endgameBuilt`. |
+| [CAMark](../src/data/scripts/jonahtweaks/autopilot/CAMark.java) | Small saved stamps for decisions that hold across a load (a free port waiting to reopen, a world plan money went into, contracts signed, stances you set), kept as `keep:` once-keys. |
+
+### Added in 0.3.0: planner and money
+
+| File | What it does |
+|---|---|
+| [CAValue](../src/data/scripts/jonahtweaks/autopilot/CAValue.java) | One value service: `add` (a new build or upgrade), `keep` (an existing building, the build math backwards), `deficits` (shortages, builds under way counted), `boost` (more units on a line, for cores, items, story points, synergies), `npv`. |
+| [CAAction](../src/data/scripts/jonahtweaks/autopilot/CAAction.java) | One thing Autopilot could do this pass, offered to the planner: worth, price, fee, days, upkeep, NPV, what it ties up (queue, building, slot, stability room, story points) and where its money comes from. |
+| [CAPlanner](../src/data/scripts/jonahtweaks/autopilot/CAPlanner.java) | The one queue: per-colony construction slot by NPV per construction day, money by NPV per credit, the earmark for a pick that saves up, the upkeep hold, re-scoring after each start, event-driven looks, `setAside` for spending outside the pass. |
+| [CAHorizon](../src/data/scripts/jonahtweaks/autopilot/CAHorizon.java) | The payback horizon: 36 months sliding to 120 with surplus credits, with 60% hysteresis; the price side of a score. |
+| [CATombstone](../src/data/scripts/jonahtweaks/autopilot/CATombstone.java) | Removal marks (a year), what Autopilot paid per building, the teardown loss, `forRemoval` (what keeping a building is worth to a remover), and the 0.2.45.1 reading as a floor for pruning. |
+| [CARich](../src/data/scripts/jonahtweaks/autopilot/CARich.java) | Money tiers T0-T4 with 60% exit lines and idle months, the monthly pool, the rung waterfall in the preset's order, rung modes, the Budget panel's ladder line, proposals' Approve and Reject. |
+| [CAShipyard](../src/data/scripts/jonahtweaks/autopilot/CAShipyard.java) | The Shipyard rung: Doctrine priority hulls added to custom production (`FactionProductionAPI.addItem`), the 2% fee, the 6-hull stop, and the daily free-cash guard that takes its own hulls off the list. |
+| [CAStockpile](../src/data/scripts/jonahtweaks/autopilot/CAStockpile.java) | The Stockpiles rung and military goods: buys goods at the nearest non-hostile market and ships them into a colony's Local Resources when a shortage's lost output is worth more. |
+| [CAMilitary](../src/data/scripts/jonahtweaks/autopilot/CAMilitary.java) | The Military rung's upgrades: station tiers, Military Base to High Command, Patrol HQ to Military Base; one a day, within 15% of colony net in added upkeep. |
+| [CAEconomy](../src/data/scripts/jonahtweaks/autopilot/CAEconomy.java) | The Economy rung's rules: surplus research and terraforming gates, capital trade buildings at a loss, hazard pay a project saves, shipping worth its fee. |
+
+### Added in 0.3.0: expansion and war
+
+| File | Mod | What it does |
+|---|---|---|
+| [CAExpansion](../src/data/scripts/jonahtweaks/autopilot/CAExpansion.java) | Any | Auto-expansion: gates (money, pace, colony limit, sieges, crises), the target scan and value, launch, crew founding with the game's founding steps (`found`), deliveries, administrators, refunds, the Expansion page's content. No Nexerelin imports. |
+| [CAExpansionNex](../src/data/scripts/jonahtweaks/autopilot/CAExpansionNex.java) | Nexerelin | Colony fleets (`ColonyExpeditionIntel`), paid only after `init()` leaves the expedition running; hands the new colony to you (`fixAdmin`). |
+| [CAStance](../src/data/scripts/jonahtweaks/autopilot/CAStance.java) | Any | The stance scale (Ally -3 to Destroy +3): War level cap, relations rule, ceasefire answer. Pure. |
+| [CAWarPolicy](../src/data/scripts/jonahtweaks/autopilot/CAWarPolicy.java) | Any | The War level and war rules: `effective` (the level used on one faction), which operations each level allows, fees, payers, infamy line, bombardment penalties and invasion scores. Pure. |
+| [CADiplomacy](../src/data/scripts/jonahtweaks/autopilot/CADiplomacy.java) | Nexerelin | Ceasefire and peace answers by stance, alliance offer lines, keep-hostile, `declareWar` from the War page. |
+| [CAConquest](../src/data/scripts/jonahtweaks/autopilot/CAConquest.java) | Nexerelin | Invasions and retakes (`InvasionIntel`, 1.25x fleet and marines), their gates, and the conquered colonies (`tend`: autonomy, mode, goal, relief). |
+| [CAScorched](../src/data/scripts/jonahtweaks/autopilot/CAScorched.java) | Nexerelin | Saturation bombardment of Destroy capitals (player-faction `SatBombIntel`) and `applyAtrocity`, the reputation penalties applied once per bombardment. |
+| [CAWarListener](../src/data/scripts/jonahtweaks/autopilot/CAWarListener.java) | Nexerelin | Transient listener for captures and bombardments; daily scans catch what it missed. |
 
 ### Mod buildings and safeguards
 
@@ -290,7 +355,7 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
 | [CASimulator](../src/data/scripts/jonahtweaks/autopilot/CASimulator.java) | Measures a mod building on a probe colony |
 | [CADiagnostics](../src/data/scripts/jonahtweaks/autopilot/CADiagnostics.java) | Load-time scan, quarantine, report |
 | [CAModWatch](../src/data/scripts/jonahtweaks/autopilot/CAModWatch.java) | Mod watch: how each colony mod with an integration is doing in your game (measured against real output, formula checks, its items and conditions), a verdict per mod in the report and on the Diagnostics page |
-| [CACompat](../src/data/scripts/jonahtweaks/autopilot/CACompat.java), [CAConst](../src/data/scripts/jonahtweaks/autopilot/CAConst.java), [CACalibrate](../src/data/scripts/jonahtweaks/autopilot/CACalibrate.java), [CABreaker](../src/data/scripts/jonahtweaks/autopilot/CABreaker.java) | The mod-update safeguards |
+| [CACompat](../src/data/scripts/jonahtweaks/autopilot/CACompat.java), [CAConst](../src/data/scripts/jonahtweaks/autopilot/CAConst.java), [CACalibrate](../src/data/scripts/jonahtweaks/autopilot/CACalibrate.java), [CABreaker](../src/data/scripts/jonahtweaks/autopilot/CABreaker.java), [CALinkScan](../src/data/scripts/jonahtweaks/autopilot/CALinkScan.java) | The mod-update safeguards |
 | [CARefl](../src/data/scripts/jonahtweaks/autopilot/CARefl.java) | Reflection through method handles |
 | [CAConditions](../src/data/scripts/jonahtweaks/autopilot/CAConditions.java) | What a condition change is worth |
 
@@ -302,7 +367,7 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
 | [CATerraformSurplus](../src/data/scripts/jonahtweaks/autopilot/CATerraformSurplus.java), [CATerraSim](../src/data/scripts/jonahtweaks/autopilot/CATerraSim.java) | Terraforming Made Easy | Surplus terraforming at every Auto colony, planned on a simulation of TME's own rules (liked and hated conditions, habitability) |
 | [CAIndEvo](../src/data/scripts/jonahtweaks/autopilot/CAIndEvo.java), [CACourier](../src/data/scripts/jonahtweaks/autopilot/CACourier.java) | Industrial Evolution | Ambassadors, edicts, VPC chips, specialties; Courier Port shipping |
 | [CADefense](../src/data/scripts/jonahtweaks/autopilot/CADefense.java), [CASpies](../src/data/scripts/jonahtweaks/autopilot/CASpies.java), [CAAutonomy](../src/data/scripts/jonahtweaks/autopilot/CAAutonomy.java) | Nexerelin | Emergency defense fleets; agents; autonomy (`Nex_GrantAutonomy`) |
-| [CAWar](../src/data/scripts/jonahtweaks/autopilot/CAWar.java) | Nexerelin | War fleets: relief, proactive defense, base strikes and raids on attackers through Nexerelin's fleet request intel classes; never invasions |
+| [CAWar](../src/data/scripts/jonahtweaks/autopilot/CAWar.java) | Nexerelin | War fleets by War level and stance, one launch counter a day: relief, proactive defense, retake, base strikes, strikes back, respawn watch, raids and blockades, invasions, bombardment, standing guard; Stand down and Recall all |
 | [CAAotD](../src/data/scripts/jonahtweaks/autopilot/CAAotD.java) | AotD: Building Menu Overhaul | Research locks, hidden buildings, upgrade paths |
 | [CASynergies](../src/data/scripts/jonahtweaks/autopilot/CASynergies.java) | AotD: Vaults of Knowledge | Industry synergies in scoring |
 | [CADevelopment](../src/data/scripts/jonahtweaks/autopilot/CADevelopment.java) | AotD: Vaults of Knowledge | Management styles; Floating City fuel guard |
@@ -330,7 +395,7 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
 
 | File | What it does |
 |---|---|
-| [CAOptionProvider](../src/data/scripts/jonahtweaks/autopilot/CAOptionProvider.java), [CAScreenButton](../src/data/scripts/jonahtweaks/autopilot/CAScreenButton.java), [CANav](../src/data/scripts/jonahtweaks/autopilot/CANav.java), [CATheme](../src/data/scripts/jonahtweaks/autopilot/CATheme.java), [CAColonyDialog](../src/data/scripts/jonahtweaks/autopilot/CAColonyDialog.java), [CAIntel](../src/data/scripts/jonahtweaks/autopilot/CAIntel.java), [CASetupUI](../src/data/scripts/jonahtweaks/autopilot/CASetupUI.java), [CAStoragePlugin](../src/data/scripts/jonahtweaks/autopilot/CAStoragePlugin.java) | See [The panels](#the-panels) |
+| [CAOptionProvider](../src/data/scripts/jonahtweaks/autopilot/CAOptionProvider.java), [CAScreenButton](../src/data/scripts/jonahtweaks/autopilot/CAScreenButton.java), [CANav](../src/data/scripts/jonahtweaks/autopilot/CANav.java), [CATheme](../src/data/scripts/jonahtweaks/autopilot/CATheme.java), [CAColonyDialog](../src/data/scripts/jonahtweaks/autopilot/CAColonyDialog.java), [CAIntel](../src/data/scripts/jonahtweaks/autopilot/CAIntel.java), [CASetupUI](../src/data/scripts/jonahtweaks/autopilot/CASetupUI.java), [CAPresets](../src/data/scripts/jonahtweaks/autopilot/CAPresets.java), [CAFactionsPage](../src/data/scripts/jonahtweaks/autopilot/CAFactionsPage.java), [CAWarPage](../src/data/scripts/jonahtweaks/autopilot/CAWarPage.java), [CAExpansionPage](../src/data/scripts/jonahtweaks/autopilot/CAExpansionPage.java), [CAStoragePlugin](../src/data/scripts/jonahtweaks/autopilot/CAStoragePlugin.java) | See [The panels](#the-panels) |
 | [JTCampaignScript](../src/data/scripts/jonahtweaks/JTCampaignScript.java), [JTPatronageCondition](../src/data/scripts/jonahtweaks/JTPatronageCondition.java) | Remove the retired `jt_patronage` condition from old saves; it has no effect |
 
 ## Conventions
@@ -340,7 +405,11 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
   - It doesn't touch locked or hidden buildings, items or augments you installed, your research queue, or agents you hired.
   - Settings you change yourself on megastructures and the hypershunt stay yours until you hand them back.
 - **Do it the game's way.** Builds, projects, contracts, agent orders and settlements are started the same way the game or the mod's own UI starts them. Where a mod's UI charges credits, so does the manager.
-- **One step can't break the others.** Every integration call in the daily pass is wrapped in `try`/`catch` and logged.
+- **One step can't break the others.** Every step of the daily pass goes through `CAStep.run` or `CAStep.guard`.
+- **One stability rule.** Anything that can cost a colony stability asks `CAStability.canLose` first (0.3.0).
+- **One payment path.** Credits are taken and given back only in `CABudget` (`take`, `give`); callers use `pay`, `charge`, `payPrice`, `payFromPool` or `refund` (0.3.0). An offline check fails any other file that changes credits.
+- **Numbers in one place.** Colony Manager's own tuning numbers live in `CATuning` (0.3.0).
+- **Save safety.** Saved data holds only ids, numbers and timestamps; a newly saved class needs an alias in `CAXStream` (0.3.0).
 - **No `java.lang.reflect` or file classes** anywhere in mod code. Use `CARefl` or method handles.
 - **Format strings.** `addPara` treats its text as a format string. A literal `%` must be written `%%`, and dynamic text goes through `CALog.esc`. A stray `%` crashed the game once, which is why the build checks for it.
 - **Logging.** Waits and similar notes go through `CALog.once`, so a reload doesn't repeat them. Actions are logged when they happen.
@@ -365,4 +434,5 @@ Before each release the author's build checks (local scripts, not in this repo) 
 4. **Loader check:** the jar is loaded through Starsector's own script class loader, every class's members are resolved, and `CARefl` is exercised.
 5. **Combination audit:** shows that only the expected classes reference each optional mod, and that every caller checks `isModEnabled`. It then links the jar against all 32 combinations of the compiled-against mods.
 6. **Name checks:** every reflected name is checked against the AotD, TASC and LunaLib jars.
-7. **Offline tests:** the augment knapsack against brute force, synergy effects, management-style math, and the colony screen button's placement (against fake screen layouts).
+7. **Offline tests:** 75 suites in 0.3.0.0. Among them: the augment knapsack against brute force, synergy effects, management-style math, the colony screen button's placement, the planner over a recorded colony state (no duplicate producers, no build-then-remove inside a year), the money tiers and ladder waterfall, the Shipyard and stockpile limits, Auto-expansion costs and pacing, the stance and War level rules, a 2-year war simulation (infamy under 75, credits above the reserve, one invasion at a time), the presets round trip, the menu word budgets, the 0.2.45 migration, a 0.2.45 save loading with every value kept, and a scan that fails any file outside `CABudget` that changes credits.
+8. **Nexerelin names:** every Nexerelin class and method the war and expansion code calls is checked against the installed jar.

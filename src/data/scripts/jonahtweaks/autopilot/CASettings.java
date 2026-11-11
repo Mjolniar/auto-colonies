@@ -19,7 +19,11 @@ public class CASettings {
     public float budgetFixed = 1000000f;
     public float perProjectCap = 2000000f;
     public float reserve = 500000f;
+    // most of the monthly budget terraforming may use (colony_autopilot.json's terraformShare); fixNulls keeps it within 0-1
     public float terraformShare = 0.4f;
+    // 0.3.0.0 (A3, 07 L3): the stability floor the manager never builds below (colony_autopilot.json's minStability). It lived in
+    // CAData before 0.3.0; a save from before 0.3.0 loads 0 here and CAData.get() brings that one over, once
+    public float minStability = CATuning.MIN_STABILITY;
     public float newUpkeepCap = 50000f;   // the Fixed cap; the Automatic one follows net income (CABudget.upkeepCap)
     // new upkeep cap: Automatic (10% of last month's net income, at least 20,000) unless set to Fixed. upkeepCapChecked
     // is false loading a save from before 0.2.24.0, whose fixed cap (set once at setup) becomes Automatic once
@@ -30,7 +34,7 @@ public class CASettings {
     public int surplusLine = 2;
     // past CASurplus.RICH over the line every Approve/Auto colony spends from the surplus (false, also older saves); true: the focus world only
     public boolean surplusFocusOnly = false;
-    public float richIncomeRef = 0f;   // best net income while spending freely (its floor is half of it)
+    // 0.3.0.0 (A3): richIncomeRef (the old pause's reference, unused since 0.2.34.1) is gone; CAXStream drops it from older saves
     public boolean noWonders = false;  // false (also older saves): spending freely builds the Daedalus Array and Bifrost gates (CAWonders)
     /** Announcement voice (0.2.41.0): 0 Machine (default, also older saves), 1 Plain. */
     public int voice = 0;
@@ -65,7 +69,7 @@ public class CASettings {
     // special project supply (CAProjects, Vaults of Knowledge): 0 Auto (also older saves), 1 Warn only, 2 Off
     public int projectSupplyMode = 0;
     public static final String[] PROJECT_SUPPLY_NAMES = {"Auto", "Warn only", "Off"};
-    public boolean storageCheat = false;  // unused since 0.2.37.0 (the storage cheat moved to Jonah's Easy Sector); kept so older saves load
+    // 0.3.0.0 (A3): storageCheat (moved to Jonah's Easy Sector in 0.2.37.0) is gone; CAXStream drops it from older saves
     public int coreRisk = 1;              // 0 more where defenses beat the next inspection, 1 never inspected (default for new saves), 2 no limit, 3 small colonies only
     public int inspectionMode = 0;        // Hegemony inspections of Auto colonies: 0 advise (so older saves load as advise), 1 resist where defended, 2 off
     public boolean allowRemovals = false;
@@ -73,7 +77,8 @@ public class CASettings {
     public int storyPointMonthlyCap = 2;
     public boolean adminHiring = false;
     public boolean adminOptimal = true;
-    public boolean adminDelay = true;
+    // 0.3.0.0 (A3, 07 L2): adminDelay is gone: nothing read it, and hired administrators and ambassadors always travel
+    // CATuning.TRAVEL_DAYS (fair play). CAXStream drops it from older saves
     // ambassadors: focus 0 worst relations, 1 strongest factions, 2 nearest neighbors, 3 priority list only
     public int ambassadorFocus = 0;
     public int ambassadorStopAt = 2;   // index into STOP_NAMES/STOP_VALUES
@@ -83,14 +88,13 @@ public class CASettings {
     public static final float[] STOP_VALUES = {0.25f, 0.5f, 0.75f, 2f};
     public static final String[] PRIORITY_NAMES = {"Ignore", "Normal", "High"};
 
+    /** 0.3.0.0 (WS-E): the ambassador priority from the stance table (CAStance); factionPriority stays so old saves load. */
     public int priorityOf(String factionId) {
-        if (factionPriority == null) return 1;
-        Integer p = factionPriority.get(factionId);
-        return p == null ? 1 : p;
+        return CAStance.ambassadorPriority(stanceOf(factionId));
     }
 
     public int hazardPayMode = 0, freePortMode = 0;   // 0 auto, 1 don't touch
-    public float hazardPayColonyShare = 0.25f, hazardPayEmpireShare = 0.30f;
+    public float hazardPayColonyShare = CATuning.HAZARD_COLONY_SHARE, hazardPayEmpireShare = CATuning.HAZARD_EMPIRE_SHARE;
     public boolean hazardLimitChecked = true;   // false in saves from before 0.2.20.0, whose old 10% default CAPolicies raises once
     public static final String[] POLICY_NAMES = {"Auto", "Don't touch"};
     // Industrial Evolution automation (stored inverted so older saves default to on)
@@ -136,9 +140,8 @@ public class CASettings {
     public static final String[] WAR_NAMES = {"Protect and strike back", "Protect", "Off"};
     // the Colony Autopilot button on your colony's screen (CAScreenButton); on unless this is set
     public boolean noScreenButton = false;
-    // unused since 0.2.37.0, kept so older saves load (the save can't drop a field): the Derelict Empire "Attacks on your
-    // colonies" settings moved to Jonah's Easy Sector, and so did the storage cheat (storageCheat, above)
-    public int haFleetCap = 0, nexAttackGap = 0;
+    // 0.3.0.0 (A3): haFleetCap and nexAttackGap (the Derelict Empire "Attacks on your colonies" settings, in Jonah's Easy Sector
+    // since 0.2.37.0) are gone; CAXStream drops them from older saves
 
     // this month
     public int month = -1;
@@ -177,6 +180,86 @@ public class CASettings {
     public float lastNet = 0f;
     public boolean lastNetKnown = false;
 
+    // ---------------- 0.3.0.0 (A0): every new setting of the 0.3.0 workstreams, added at once (plans/cm-3.0 FIELDS.md) ----------------
+    // XStream skips constructors, so an older save loads a missing field as 0, false or null: "on by default" switches are
+    // inverted (noX), numbers that must not be 0 get their default in fixNulls, and CAMigrate.to3 translates the rest once.
+    /** Settings layout version: 3 for new saves; every save from before 0.3.0 loads 0, so CAMigrate.to3 runs once. */
+    public int settingsVersion = CAMigrate.SCHEMA;
+    /** B (hidden): the 0.2.45 build engine instead of the 0.3.0 planner, kept for 0.3.0.x in case the planner misbehaves. */
+    public boolean legacyPlanner = false;
+    /** B: payback horizon in months; the planner slides it up to CATuning.HORIZON_MAX as money piles up. Older saves: fixNulls. */
+    public int horizonMonths = 36;
+    /** C: "Surplus: what to buy" preset (index into RICH_PRESET_NAMES), 0 Balanced. */
+    public int richPreset = 0;
+    public static final String[] RICH_PRESET_NAMES = {"Balanced", "Fleet", "Expansion", "Economy", "Save"};
+    /** C: per rung (CARich.RUNGS order): 0 Off, 1 On, 2 Recommend only. Shipyard and Expansion start on Recommend only. */
+    public int[] rungMode = defaultRungs();
+    public static final String[] RUNG_MODE_NAMES = {"Off", "On", "Recommend only"};
+    static final int[] RUNG_DEFAULTS = {1, 1, 1, 1, 2, 2, 1, 1};
+    public static int[] defaultRungs() { return RUNG_DEFAULTS.clone(); }
+    /** C: the shipyard stops ordering at this many unclaimed hulls it ordered in the capital's Storage (DECISIONS 8). */
+    public int shipyardStop = 6;
+    /** C: convenience fee on remote ship orders, a share of their price (DECISIONS 9). */
+    public float shipyardFee = 0.02f;
+    /** C/F: the automatic upkeep cap's share of net income (0.2.24.0's 10%), set by the Spending preset. */
+    public float upkeepShare = CATuning.UPKEEP_SHARE;
+    /** D: Auto-expansion (EXPAND_NAMES), 0 Off for every save (DECISIONS 5). */
+    public int expandMode = 0;
+    /** F (WS-F1 fix, DECISIONS 13): true: the per-project cap is the Fixed number in perProjectCap. false: Automatic, it follows net income and Spending (CAPresets.projectCap). A save from before 0.3.0 loads false and CAMigrate.to3 sets true when its cap differs from the Automatic one. A new CASettings is Fixed until first-time setup (CASetupUI.applyRecommended) sets Automatic. */
+    public boolean projectCapFixed = true;
+    /** F (WS-F1 fix): Capital does (0 or 1) in effect before the Capital row went to None; leaving None restores it. Older saves load 0 (Deliveries and commerce, as 0.2.45.1 left Off). */
+    public int capitalModeBeforeNone = 0;
+    public static final String[] EXPAND_NAMES = {"Off", "Ask first", "Auto"};
+    /** D: indices into the names below; 0 is the recommended choice for each. */
+    public int expandLine = 0, expandScope = 0, expandGoal = 0, expandMethod = 0, expandMax = 0;
+    public static final String[] EXPAND_LINE_NAMES = {"Money ladder (Idle money and up)", "Over 5,000,000", "Over 25,000,000", "Over 50,000,000"};
+    public static final float[] EXPAND_LINES = {0f, 5000000f, 25000000f, 50000000f};   // 0: the money ladder decides (CARich)
+    public static final String[] EXPAND_SCOPE_NAMES = {"Systems you hold", "Those first, then nearby systems", "Within 15 ly of the capital"};
+    public static final String[] EXPAND_METHOD_NAMES = {"Nexerelin colony fleet when possible", "Autopilot crew only"};
+    public static final int[] EXPAND_MAX = {0, 5, 10, 15, 20};   // 0: your colony limit plus the administrators you can employ
+    public static final String[] EXPAND_MAX_NAMES = {"Colony limit and administrators", "5 colonies", "10 colonies", "15 colonies", "20 colonies"};
+    /** D: inverted so every save has them on: fast buildout on a new colony, and an administrator hired for it past the limit. */
+    public boolean noExpandBuildout = false, noExpandAdmins = false;
+    /** D: the first-time Auto-expansion dialog has been shown. */
+    public boolean expandConfirmed = false;
+    /** E: War level (CAWarPolicy.LEVEL_NAMES), 2 Retaliate = 0.2.45's "Protect and strike back". Older saves: CAMigrate from warMode. */
+    public int warLevel = 2;
+    public static final String[] WAR_LEVEL_NAMES = CAWarPolicy.LEVEL_NAMES;
+    /** E: false in saves from before 0.3.0 (missing field), so CAMigrate sets warLevel from warMode once. */
+    public boolean warLevelChecked = true;
+    /** E: inverted: retake your own lost colonies at Retaliate and up (DECISIONS 3). CAMigrate turns it off for older saves. */
+    public boolean noWarRetake = false;
+    /** E: treat the top-threat hostile Auto faction as Rival; a coalition against you is acceptable; saturation bombardment authorized. */
+    public boolean warAutoRivals = false, warCoalitionOK = false, warScorchedOK = false;
+    /** E: mode a conquered colony gets (CONQUERED_NAMES); what Scorched bombards (SCORCHED_TARGET_NAMES). */
+    public int conqueredMode = 0, scorchedTargets = 0;
+    public static final String[] CONQUERED_NAMES = {"Auto", "Approve", "Advisor"};
+    public static final String[] SCORCHED_TARGET_NAMES = {"Capitals only", "Capitals and small colonies"};
+    /** E: faction id -> stance (CAStance, -3 Ally .. +3 Destroy). A missing entry is Auto (0). Older saves: CAMigrate from factionPriority. */
+    public java.util.Map<String, Integer> factionStance;
+
+    public java.util.Map<String, Integer> factionStance() {
+        if (factionStance == null) factionStance = new java.util.HashMap<String, Integer>();
+        return factionStance;
+    }
+
+    /** A faction's stance, Auto (0) when none is set. */
+    public int stanceOf(String factionId) {
+        if (factionStance == null || factionId == null) return 0;
+        Integer v = factionStance.get(factionId);
+        return v == null ? 0 : v;
+    }
+
+    public boolean expandBuildout() { return !noExpandBuildout; }
+    public boolean expandAdmins() { return !noExpandAdmins; }
+    public boolean warRetake() { return !noWarRetake; }
+
+    /** A rung's mode (RUNG_MODE_NAMES); the default when the saved list is shorter. */
+    public int rungMode(int rung) {
+        if (rung < 0 || rung >= RUNG_DEFAULTS.length) return 0;
+        return rungMode != null && rung < rungMode.length ? rungMode[rung] : RUNG_DEFAULTS[rung];
+    }
+
     public List<String> log = new ArrayList<String>();
 
     public static final String[] FEE_NAMES = {"Off", "Low", "Standard", "High"};
@@ -203,8 +286,23 @@ public class CASettings {
     void fixNulls() {
         if (log == null) log = new ArrayList<String>();
         if (stationLine == null) stationLine = "score";
-        if (hazardPayColonyShare <= 0f) hazardPayColonyShare = 0.25f;   // older saves load these as 0
-        if (hazardPayEmpireShare <= 0f) hazardPayEmpireShare = 0.30f;
+        if (hazardPayColonyShare <= 0f) hazardPayColonyShare = CATuning.HAZARD_COLONY_SHARE;   // older saves load these as 0
+        if (hazardPayEmpireShare <= 0f) hazardPayEmpireShare = CATuning.HAZARD_EMPIRE_SHARE;
         if (settlementMinIncome <= 0f) settlementMinIncome = 20000f;
+        // 0.3.0.0 (A3, 07 L3): the floor is never 0 (as CAData's was: 0 meant the default), and terraforming never gets more than
+        // the whole budget or less than none (a broken json value can only make it spend less, never more)
+        if (!(minStability > 0f)) minStability = CATuning.MIN_STABILITY;
+        if (!(terraformShare >= 0f)) terraformShare = 0f;
+        if (terraformShare > 1f) terraformShare = 1f;
+        // 0.3.0.0: new numbers older saves load as 0 (and a rung list from before a rung was added) get their defaults
+        if (horizonMonths <= 0) horizonMonths = 36;
+        if (shipyardStop <= 0) shipyardStop = 6;
+        if (shipyardFee <= 0f) shipyardFee = 0.02f;
+        if (upkeepShare <= 0f) upkeepShare = CATuning.UPKEEP_SHARE;
+        if (rungMode == null || rungMode.length < RUNG_DEFAULTS.length) {
+            int[] r = defaultRungs();
+            if (rungMode != null) System.arraycopy(rungMode, 0, r, 0, rungMode.length);
+            rungMode = r;
+        }
     }
 }

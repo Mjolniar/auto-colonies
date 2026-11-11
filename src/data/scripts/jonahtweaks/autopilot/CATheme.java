@@ -18,7 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * The autopilot's look and voice (0.2.41.0): an autonomous colony AI at work, not an admin utility.
+ * The autopilot's look and voice (0.2.41.0), styled as a colony AI's console.
  *
  * Voice: every log entry still goes to the panel log and starsector.log as the full sentence; on screen it starts with a
  * code, "BUILD / Hot Springs: Planetary Shield (750k)", in the game's normal text colors (0.2.41.1; 0.2.41.0's tags, ::
@@ -54,6 +54,49 @@ public final class CATheme {
         StringBuilder sb = new StringBuilder();
         for (String p : parts) { if (p == null || p.isEmpty()) continue; if (sb.length() > 0) sb.append("  ::  "); sb.append(p.toUpperCase(Locale.ROOT)); }
         t.addPara(CALog.esc(sb.toString()), line(), pad);
+    }
+
+    /**
+     * 0.3.0.0 (WS-F3 fix, research 04 section 7 quick trims): a feature's mode as a readout line under its section heading,
+     * "MODE  AUTO". It replaces the "Mode: %s (Settings, X)." lead-in each Mod features paragraph started with.
+     */
+    public static void mode(TooltipMakerAPI t, String mode) {
+        if (mode != null && !mode.isEmpty()) readout(t, 2f, "mode  " + mode);
+    }
+
+    /** 0.3.0.0 (WS-F3 fix pass 2): the line a page or section shows when drawing it failed; one text for every panel. */
+    static final String NOT_SHOWN = "This part couldn't be shown; see starsector.log.";
+    /** 0.3.0.0 (WS-F3 fix pass 3): lines the colony panel and the empire panel both show, one text each. */
+    static final String PAUSED = "Spending paused: colony net is negative.", APPROVAL = "Waiting for approval";
+
+    // ---------------- hover text (0.3.0.0, WS-F3) ----------------
+
+    /** Width of a hover box. */
+    static final float HOVER_W = 420f;
+
+    /**
+     * 0.3.0.0 (WS-F3, research 04 sections 2 and 7): hover text on the element added last (a paragraph or a button), one
+     * paragraph per line, so a panel shows one short line and the detail moves to the hover. Null and empty lines are
+     * skipped; nothing is added when none is left.
+     */
+    public static void hover(TooltipMakerAPI t, String... lines) {
+        final List<String> l = hoverLines(lines);
+        if (l.isEmpty()) return;
+        t.addTooltipToPrevious(new TooltipMakerAPI.TooltipCreator() {
+            public boolean isTooltipExpandable(Object o) { return false; }
+            public float getTooltipWidth(Object o) { return HOVER_W; }
+            public void createTooltip(TooltipMakerAPI tt, boolean expanded, Object o) {
+                for (int i = 0; i < l.size(); i++) tt.addPara(CALog.esc(l.get(i)), i == 0 ? 0f : 6f);
+            }
+        }, TooltipMakerAPI.TooltipLocation.BELOW);
+    }
+
+    /** The lines a hover shows: the non-empty ones, in order. Pure. */
+    static List<String> hoverLines(String... lines) {
+        List<String> out = new ArrayList<String>();
+        if (lines == null) return out;
+        for (String s : lines) if (s != null && !s.trim().isEmpty()) out.add(s.trim());
+        return out;
     }
 
     // ---------------- frames (GL) ----------------
@@ -133,12 +176,23 @@ public final class CATheme {
 
     /** What a log line is doing, by its wording: {pattern, CODE, strip}. The first match wins. */
     static final Object[][] CODES = {
+            // 0.3.0.0 (WS-F4): "Settings: moved to the 0.3.0 menu, nothing you set changed" and the first-time setup's lines
+            {"^settings: ", "SETUP", false},
+            {"^setup saved", "SETUP", false},
+            {"^shipyard: ", "SHIPYARD", true},
+            {"^stockpile of ", "STOCK", true},
+            {"^recommends a stockpile", "STOCK", false},   // 0.3.0.0 (WS-F3): CAStockpile's proposal, ahead of ADVISE
+            {" arrived in local resources", "STOCK", false},
             {"missed a delivery", "ALERT", false},
             {"under siege,? ?", "SIEGE", true},
             {"siege over", "CLEAR", true},
             {"^capital: ", "CAPITAL", true},
             {"^low profile: ", "QUIET", true},
             {"expansion style", "QUIET", false},
+            // 0.3.0.0 (WS-F3): diplomacy (CADiplomacy offers, CAWar's stance line, CAIndEvo ambassadors, CASpies relations
+            // agents), ahead of BUILD, INSTALL and WAR, which their wording also matches
+            {"^war: (?=.* stance [a-z]+$)", "DIPLO", true},
+            {"offer (accepted|rejected|waits)|alliance offer|war confirmation cleared|ambassador|raise relations", "DIPLO", false},
             {"(^| )building ", "BUILD", true},
             {"(^| )upgrading to ", "UPGRADE", true},
             {"(^| )installed ", "INSTALL", true},
@@ -159,8 +213,14 @@ public final class CATheme {
             {"^research: ", "RESEARCH", true},
             {"^scan: ", "SCAN", true},
             {"^month: ", "LEDGER", true},
+            {"^money tier: ", "TIER", true},
             {"^settlement: ", "SETTLE", true},
+            {"^auto-expansion: ", "EXPAND", true},
+            {"colony expedition", "EXPAND", false},
             {"construction crew", "CREW", false},
+            {"^war: ", "WAR", true},
+            // 0.3.0.0 (WS-F3): "^captured" for a capture with no former owner (CAConquest: "Umuzi: captured. Mode Auto, ...")
+            {"invasion|blockade|saturation bombardment|war declared|ceasefire|peace treaty|made hostile again|^captured|captured from|conquered colony|after capture|infamy", "WAR", false},
             {"relief fleet|defense fleet|base strike|-pt raid|war fleets", "FLEET", false},
             {"contract", "CONTRACT", false},
             {"spending freely|fast buildout|endgame", "MODE", false},

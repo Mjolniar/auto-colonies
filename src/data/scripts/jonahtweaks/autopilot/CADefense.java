@@ -20,10 +20,12 @@ import java.util.*;
  * Emergency defense (Nexerelin): when an Auto colony's system is targeted by a hostile raid, invasion or crisis fleet,
  * or hostile fleets there outweigh its defenses, request a Defense fleet exactly as Nexerelin's fleet request dialog does.
  * Uses fleet request points and credits; may exceed the monthly budget (it's an emergency) but never the credit reserve.
+ * 0.3.0.0 (WS-E): its own setting (Defense fleets), whatever the War level; realThreat() is the test CAWar uses to decide
+ * whether proactive defense is an emergency (03 F10). No convenience fee, as in 0.2.45.
  */
 public class CADefense {
-    static final float MIN_FP = 100f;
-    static final float COOLDOWN_DAYS = 30f;
+    static final float MIN_FP = CATuning.DEFENSE_MIN_FP;   // 0.3.0.0 (A3): in CATuning
+    static final float COOLDOWN_DAYS = CATuning.DEFENSE_COOLDOWN_DAYS;
     static final Map<String, Long> lastSent = new HashMap<String, Long>();
     static final Set<String> warned = new HashSet<String>();
 
@@ -55,6 +57,17 @@ public class CADefense {
             }
         } catch (Throwable ignored) { }
         return false;
+    }
+
+    /**
+     * 0.3.0.0 (03 F10): a real attack on the colony's system: a hostile raid, invasion or crisis fleet targets it, or hostile
+     * fleets there outweigh its defenses (this class's own test). CAWar pays proactive defense as an emergency only then.
+     */
+    static boolean realThreat(MarketAPI m) {
+        StarSystemAPI sys = m == null ? null : m.getStarSystem();
+        if (sys == null) return false;
+        if (raidTargets(sys)) return true;
+        return hostileFP(sys) > Math.max(150f, CAItems.defenseFP(m) + friendlyFP(sys));
     }
 
     static boolean defenseUnderWay(MarketAPI m) {
@@ -110,9 +123,9 @@ public class CADefense {
             intel.setPlayerFee(Math.round(cost));
             intel.setPlayerSpawned(true);
             intel.init();
-            Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(cost);
+            // 0.3.0.0 (C1): paid through CABudget.pay, the one place credits move; counted against the month as before, no fee
+            CABudget.pay(s, target.getId(), cost, 0f, 0f);
             mgr.modifyFleetRequestStock(-(int) fp);
-            s.spent += cost;
             lastSent.put(target.getStarSystem().getId(), Global.getSector().getClock().getTimestamp());
             warned.remove(target.getId()); warned.remove(target.getId() + ":credits");
             CALog.add(target.getName() + ": sent a " + (int) fp + "-point defense fleet from " + source.getName() + " for "

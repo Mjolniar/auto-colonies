@@ -338,7 +338,7 @@ public class CAProjects {
     public static void update() {
         if (!on()) { STEPS.clear(); project = null; return; }
         float now = CADay.now();
-        if (now - computedAt < 1f) return;
+        if (CATime.fresh(computedAt, now, 1f)) return;   // 0.3.0.0 (A1 fix): the game's day is negative, so now - (-99) < 1 held every day and this never ran
         computedAt = now;
         STEPS.clear();
         last = null;
@@ -410,7 +410,7 @@ public class CAProjects {
         for (Producer x : PRODUCERS) if (x.id.equals(pl.building) && x.good.equals(pl.good)) p = x;
         String how = p == null || p.base == null ? "a new building" : pl.route == 2 ? "an upgrade of its " + buildingName(p.base)
                 : pl.route == 1 ? "upgrading its " + buildingName(p.root) + " to " + buildingName(p.base) + " first" : "building " + buildingName(p.base) + " first";
-        return how + (pl.locked ? "; research unlocks it first, which research now works toward" : "");
+        return how + (pl.locked ? "; research first" : "");
     }
 
     static String hostText(String good) {
@@ -423,14 +423,14 @@ public class CAProjects {
 
     public static void render(TooltipMakerAPI t, CASettings s) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), bad = Misc.getNegativeHighlightColor();
-        t.addPara("Mode: %s. A special project takes goods every month from your own colonies' production, and a stage stops while any of "
-                + "them isn't delivered at all. For the one you're running, each good no colony of yours makes gets a producer as a first plan "
-                + "step at the colony best placed for it (research works toward it first if it's locked), along with whatever AotD goods that "
-                + "producer needs itself.", 6f, hl, CASettings.PROJECT_SUPPLY_NAMES[Math.max(0, Math.min(2, s.projectSupplyMode))]);
+        // 0.3.0.0 (WS-F3 fix, research 04 section 7 #13): the mode as a readout, one short line and the plan rule on hover (was 70 words)
+        CATheme.mode(t, CASettings.PROJECT_SUPPLY_NAMES[Math.max(0, Math.min(2, s.projectSupplyMode))]);
+        t.addPara("A special project takes goods monthly; a stage stops while a good is missing.", 4f);
+        // 0.3.0.0 (WS-F3 fix pass 2): the producers it plans are listed below
         if (project == null) {
             t.addPara("No special project is running.", gray, 4f);
             if (last != null && !last.plans.isEmpty()) {   // spending freely: AotD's goods for wonders, gates and production
-                t.addPara("Spending freely: producers of AotD's own goods, for its wonders, gates and production:", 4f);
+                t.addPara("AotD goods (spending freely):", 4f);
                 for (Plan pl : last.plans) t.addPara("    " + CALog.esc(buildingName(pl.building) + " at " + pl.hostName + " for " + name(pl.good) + ": " + routeText(pl)), gray, 2f);
             }
             return;
@@ -440,12 +440,12 @@ public class CAProjects {
             String g = e.getKey();
             Integer y = yours.get(g), o = sector.get(g), mo = monthly.get(g);
             boolean none = y == null || y <= 0;
-            t.addPara("%s: %s still to deliver" + (mo != null ? ", %s this month" : "%s") + "; your colonies make %s a month, other factions %s", 3f,
+            t.addPara("%s: %s to deliver" + (mo != null ? ", %s this month" : "%s") + "; you make %s a month, others %s", 3f,
                     none ? bad : hl, name(g), "" + e.getValue(), mo != null ? "" + mo : "", "" + (y == null ? 0 : y), "" + (o == null ? 0 : o));
         }
         if (last != null) {
             for (Plan pl : last.plans) t.addPara("    " + CALog.esc(buildingName(pl.building) + " at " + pl.hostName + " for " + name(pl.good) + ": " + routeText(pl)), gray, 2f);
-            for (String g : last.unresolved) t.addPara("    " + CALog.esc(name(g) + ": no Approve or Auto colony can host what makes it (" + hostText(g) + "); yours to build"), bad, 2f);
+            for (String g : last.unresolved) t.addPara("    " + CALog.esc(name(g) + ": no Approve or Auto colony can host it (" + hostText(g) + ")"), bad, 2f);
         }
         if (!other.isEmpty()) t.addPara("Its stages also take " + CALog.esc(CAContracts.join(other)) + " (yours to find).", gray, 4f);
     }

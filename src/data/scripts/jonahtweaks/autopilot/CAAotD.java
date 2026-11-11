@@ -58,7 +58,7 @@ public class CAAotD {
             Object s = CARefl.invoke(hiddenSet, null, m);
             return s == null ? Collections.<String>emptySet() : new HashSet<String>((Collection<String>) s);
         } catch (Throwable t) {
-            CADiagnostics.LOG.warn(CADiagnostics.TAG + "Building Menu Overhaul's hidden-building check failed at " + m.getName(), t);
+            CAStep.warn("BMO rules", "Building Menu Overhaul's hidden-building check failed at " + m.getName(), t);   // 0.3.0.0 (07 M8): one trace, then a short line weekly
             return Collections.emptySet();
         }
     }
@@ -70,7 +70,7 @@ public class CAAotD {
         if (hidden.contains(id)) return false;
         try { return unmet(id, m).isEmpty(); }
         catch (Throwable t) {
-            CADiagnostics.LOG.warn(CADiagnostics.TAG + "Building Menu Overhaul's requirement check failed for " + id + " at " + m.getName(), t);
+            CAStep.warn("BMO rules", "Building Menu Overhaul's requirement check failed for " + id + " at " + m.getName(), t);   // 0.3.0.0 (07 M8): one trace, then a short line weekly
             return false;
         }
     }
@@ -104,7 +104,7 @@ public class CAAotD {
             if (!why.isEmpty()) return join(why);
             if (hidden(m).contains(id)) return "hidden in the build menu here";
         } catch (Throwable t) {
-            CADiagnostics.LOG.warn(CADiagnostics.TAG + "Building Menu Overhaul's requirement text failed for " + id, t);
+            CAStep.warn("BMO rules", "Building Menu Overhaul's requirement text failed for " + id, t);   // 0.3.0.0 (07 M8): one trace, then a short line weekly
         }
         return null;
     }

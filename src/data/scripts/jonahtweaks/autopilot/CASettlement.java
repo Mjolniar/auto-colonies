@@ -161,7 +161,7 @@ public class CASettlement {
         d.settleExpeditionPlanet = null;
         String err = found(planetId, false, false);
         if (err == null) { CALog.add("Settlement: the expedition founded the settlement", true); return; }
-        Global.getSector().getPlayerFleet().getCargo().getCredits().add(paid);
+        CABudget.refund(d.settings, null, paid);
         CALog.add("Settlement: the expedition couldn't found it (" + err + "); " + Misc.getDGSCredits(paid) + " refunded", true);
     }
 
@@ -198,7 +198,7 @@ public class CASettlement {
         }
         if (check) return null;
 
-        if (pay) Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(cost);
+        if (pay) CABudget.payPrice(cost);   // 0.3.0.0 (C12 fix): credits move only in CABudget (not booked, as before)
         SectorEntityToken ent = planet.getStarSystem().addCustomEntity("rat_frontiers_settlement_" + Misc.genUID(), planet.getName() + " Settlement",
                 "rat_frontiers_settlement", Factions.PLAYER);
         ent.setCircularOrbitPointingDown(planet, 1f, 1f, 360f);
@@ -280,7 +280,7 @@ public class CASettlement {
         return best;
     }
 
-    /** Builds an income facility in a free slot, paying RAT's price the way its management screen does. */
+    /** Builds an income facility in a free slot. 0.3.0.0 (C12 fix): the caller (execute) pays RAT's price and the fee with CABudget.pay once it's built. */
     public static String buildFacility(String id) {
         SettlementData data = settlement();
         if (data == null) return "No settlement";
@@ -289,7 +289,6 @@ public class CASettlement {
         if (CABuild.credits() < f.cost) return "Not enough credits (" + Misc.getDGSCredits(f.cost) + " needed)";
         for (SettlementFacilitySlot slot : data.getFacilitySlots()) {
             if (!slot.getFacilityID().isEmpty()) continue;
-            Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(f.cost);
             slot.installNewFacility(id);
             CADiagnostics.LOG.info(CADiagnostics.TAG + "settlement facility " + id + " for " + Misc.getDGSCredits(f.cost));
             return null;
@@ -323,7 +322,7 @@ public class CASettlement {
             kind = "facility"; id = f.id; cost = f.cost;
             name = "Build " + f.name + " at the settlement (+" + Misc.getDGSCredits(f.gain) + "/month)";
         }
-        if (approve || cost > s.perProjectCap) { propose(d, kind, id, name, cost, approve ? "waiting for your approval" : "over the per-project cap, needs your approval"); return; }
+        if (approve || cost > CAPresets.projectCap(s)) { propose(d, kind, id, name, cost, approve ? "waiting for your approval" : "over the per-project cap, needs your approval"); return; }
         float total = cost + CABudget.constructionFee(s, cost);
         if (total > CABudget.available(s)) {
             if (CALog.once("settle:" + kind + ":" + id)) CALog.add("Settlement: " + name + " waits for budget (" + Misc.getDGSCredits(total) + " needed, "
@@ -349,7 +348,6 @@ public class CASettlement {
             err = found(id, false, true);
             if (err == null) {
                 PlanetAPI planet = (PlanetAPI) Global.getSector().getEntityById(id);
-                Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(cost);
                 d.settleExpeditionPlanet = id;
                 d.settleExpeditionAt = Global.getSector().getClock().getTimestamp();
                 d.settleExpeditionDays = expeditionDays(planet);
@@ -358,7 +356,7 @@ public class CASettlement {
             }
         } else err = buildFacility(id);
         if (err != null) { CALog.add("Settlement: could not start " + name + ": " + err); return err; }
-        CABudget.charge(s, cost, fee, 0f);
+        CABudget.pay(s, null, cost, fee, 0f);   // 0.3.0.0 (C12 fix): price and fee in one payment, after the founding or facility started
         CALog.forget("settle:" + kind + ":" + id);
         if (kind.equals(d.settlePendingKind) && id.equals(d.settlePendingId)) clearPending(d);
         CALog.add("Settlement: " + who + " " + name.substring(0, 1).toLowerCase() + name.substring(1) + " for " + Misc.getDGSCredits(cost)
@@ -379,18 +377,18 @@ public class CASettlement {
 
     public static void render(com.fs.starfarer.api.ui.TooltipMakerAPI t, CAData d, CASettings s) {
         java.awt.Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
-        if (!active()) { t.addPara("Frontiers is off for this save (Random Assortment of Things setting).", gray, 6f); return; }
-        t.addPara("Mode: %s. Founds a settlement when a surveyed site makes at least %s per month; builds Refining and Trading Post when they pay "
-                + "for themselves within 2 years. Other facilities are yours to pick.", 6f, hl, CASettings.SETTLE_NAMES[Math.max(0, Math.min(3, s.settlementMode))],
-                Misc.getDGSCredits(s.settlementMinIncome));
+        if (!active()) { t.addPara("Frontiers is off (RAT setting).", gray, 6f); return; }
+        CATheme.mode(t, CASettings.SETTLE_NAMES[Math.max(0, Math.min(3, s.settlementMode))]);   // 0.3.0.0 (WS-F3 fix): the mode as a readout
+        t.addPara("Founds a settlement at a site making %s a month or more; builds facilities that pay.",
+                4f, hl, Misc.getDGSCredits(s.settlementMinIncome));
         if (d.settleExpeditionPlanet != null) {
             float left = Math.max(0f, d.settleExpeditionDays - Global.getSector().getClock().getElapsedDaysSince(d.settleExpeditionAt));
             SectorEntityToken pl = Global.getSector().getEntityById(d.settleExpeditionPlanet);
-            t.addPara("An expedition is on its way to found the settlement" + (pl != null ? " on " + CALog.esc(pl.getName()) : "") + ": %s days left.", 8f, hl,
+            t.addPara("Settlement expedition" + (pl != null ? " to " + CALog.esc(pl.getName()) : "") + ": %s days left.", 8f, hl,
                     "" + (int) Math.ceil(left));
         }
         if (d.settlePendingKind != null) {
-            t.addPara("Waiting for your approval: %s for %s", 8f, hl, d.settlePendingName, Misc.getDGSCredits(d.settlePendingCost));
+            t.addPara("Waiting for approval: %s for %s", 8f, hl, d.settlePendingName, Misc.getDGSCredits(d.settlePendingCost));
             com.fs.starfarer.api.ui.ButtonAPI a = t.addButton("Approve", new String[]{"settle", "approve", ""}, hl, dark, com.fs.starfarer.api.ui.Alignment.MID, com.fs.starfarer.api.ui.CutStyle.TL_BR, 120f, 22f, 4f);
             com.fs.starfarer.api.ui.ButtonAPI r = t.addButton("Reject", new String[]{"settle", "reject", ""}, base, dark, com.fs.starfarer.api.ui.Alignment.MID, com.fs.starfarer.api.ui.CutStyle.TL_BR, 120f, 22f, 0f);
             r.getPosition().rightOfTop(a, 6f);
@@ -407,9 +405,9 @@ public class CASettlement {
             }
             t.addPara("Settlement on %s: about %s per month. Facilities: %s.", 8f, hl, data.getPrimaryPlanet().getName(), Misc.getDGSCredits(income), fac.toString());
             Facility f = nextFacility();
-            if (f == null) t.addPara("No income facility left to build (or no free slot).", gray, 4f);
+            if (f == null) t.addPara("No facility left to build.", gray, 4f);
             else {
-                t.addPara("Next: %s for %s, +%s per month (pays back in %s months).", 4f, hl, f.name, Misc.getDGSCredits(f.cost), Misc.getDGSCredits(f.gain), "" + Math.round(f.cost / f.gain));
+                t.addPara("Next: %s for %s, +%s per month (payback %s months).", 4f, hl, f.name, Misc.getDGSCredits(f.cost), Misc.getDGSCredits(f.gain), "" + Math.round(f.cost / f.gain));
                 if (s.settlementMode == 0) {
                     com.fs.starfarer.api.ui.ButtonAPI b = t.addButton("Build " + f.name + " (" + Misc.getDGSCredits(f.cost) + ")", new String[]{"settle", "facility", f.id}, base, dark,
                             com.fs.starfarer.api.ui.Alignment.MID, com.fs.starfarer.api.ui.CutStyle.TL_BR, 260f, 22f, 4f);
@@ -419,11 +417,11 @@ public class CASettlement {
             return;
         }
         List<Site> list = sites(false);
-        if (list.isEmpty()) { t.addPara("No surveyed site can host a settlement yet. Survey unclaimed planets to find one.", gray, 6f); return; }
-        t.addPara("Best surveyed sites (founding costs %s):", 8f, hl, Misc.getDGSCredits(foundingCost()));
+        if (list.isEmpty()) { t.addPara("No site can host a settlement yet.", gray, 6f); return; }
+        t.addPara("Best sites (founding %s):", 8f, hl, Misc.getDGSCredits(foundingCost()));
         for (int i = 0; i < Math.min(3, list.size()); i++) {
             Site st = list.get(i);
-            t.addPara("%s. %s, %s: %s, about %s per month" + (st.refinable ? " (%s with Refining)" : "%s") + ", %s ly from your nearest colony", 4f, hl,
+            t.addPara("%s. %s, %s: %s, about %s per month" + (st.refinable ? " (%s with Refining)" : "%s") + ", %s ly away", 4f, hl,
                     "" + (i + 1), st.planetName, st.systemName, st.resourceName, Misc.getDGSCredits(st.income),
                     st.refinable ? Misc.getDGSCredits(st.refinedIncome) : "", st.distanceLY >= 999f ? "-" : "" + Math.round(st.distanceLY));
             if (s.settlementMode == 0 && i == 0) {

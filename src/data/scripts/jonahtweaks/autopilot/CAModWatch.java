@@ -41,13 +41,22 @@ public class CAModWatch {
 
     public static List<JSONObject> latest() { return last; }
 
-    /** Weekly from the daily pass; writes the report when it ran. */
+    /**
+     * Weekly from the daily pass; writes the report when it ran, else any report marked since (a quarantine).
+     * 0.3.0.0 (research 07 H2): timed on the game clock (CADay), not the pass's session clock that starts at 0 on every load,
+     * and a reload of an earlier save (the clock going back) runs it at once instead of waiting out the gap. `now` is kept
+     * for the caller and unused.
+     */
     public static void weekly(float now) {
-        if (now - lastRun < 7f) return;
-        lastRun = now;
+        float day = CADay.now();
+        if (day - lastRun < 7f && day >= lastRun) { CADiagnostics.flushReport(); return; }
+        lastRun = day;
         run();
         CADiagnostics.writeReport();
     }
+
+    /** 0.3.0.0 (07 H6): last week's results and log lines from another save, cleared on load (CAReset.onLoad). */
+    public static void reset() { last.clear(); logged.clear(); lastRun = -99f; }
 
     public static void run() {
         last.clear();

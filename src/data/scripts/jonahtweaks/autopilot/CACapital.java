@@ -28,8 +28,24 @@ import java.util.*;
  * Commerce, every installed mod's building that lets you buy or sell there (COMMERCE), and a Waystation. They take
  * industry slots like any plan step (reserved ahead of other industries), earn their plan rank even where they cost more
  * than they make, and with every industry slot taken the capital may take down its weakest ordinary industry for one
- * (one every 90 days; never a defense, fleet or ship-making building, a mod building, or another plan's special step).
+ * (one every 90 days; never a defense, fleet or ship-making building, a mod building, or another plan's special step;
+ * 0.3.0.0: nor one whose swap would leave the capital under the stability floor, CAStability).
  * In a money emergency (net income below zero) the commerce steps wait.
+ * 0.3.0.0 (WS-B4): the make-room swap is the endgame's math (CAEndgame.weakest, worthIt): what it takes down is valued by
+ * CAValue.keep with the teardown loss, it leaves a year's mark (CATombstone), the capital's own plan steps stay, and a trade
+ * building taken down here within the year isn't a step until the mark is gone.
+ * 0.3.0.0 (fix, B4 review): outside the endgame the old building's money counts at weight 1 in that keep, as 0.2.45.1 counted
+ * it (CATombstone.forRemoval with fullMoney): spending freely's quarter set a Refining earning 50,000 a month against
+ * Commerce's unweighted plan bonus, so nearly any capital earner could be swapped out, one every 90 days.
+ * 0.3.0.0 (WS-C4, research 03 F8): trade buildings that cost more than they earn are the money ladder's Economy rung. Once a
+ * day (daily) each trade step still to build is valued as a build there (CAValue.add); one worth less than 0 is a step
+ * only from the money tier Surplus up, with the Economy rung On, while the upkeep of the capital's trade buildings at a
+ * loss stays within 5% of colony net (CAEconomy.lossCommerceAllowed). Commerce itself, buildings already there and ones
+ * the engine can't value stay as in 0.2.45.1. The make-room swap waits for the money tier Idle money. Salvage Yards at Wind
+ * scored +23,226 on a plan bonus of 60,000 while worth -30,768 a month.
+ * 0.3.0.0 fix (C4 review 2): the valuation runs after the ramp-up check, so the planner's first pass after the build-up starts
+ * has values, and until today's values for the capital are in (a new capital, a failed valuation) every trade step still
+ * to build except Commerce waits (waits, valued).
  */
 public class CACapital {
     /** capitalMode: 0 deliveries and commerce (default, also older saves), 1 deliveries only, 2 off. */
@@ -38,7 +54,7 @@ public class CACapital {
     public static final String[] START_NAMES = {"Net income over 100,000", "Net income over 50,000", "Net income over 250,000", "Right away"};
     static final float[] START_NET = {100000f, 50000f, 250000f, -Float.MAX_VALUE};
     /** Days between two industries the capital takes down to make room for commerce. */
-    static final float ROOM_DAYS = 90f;
+    static final float ROOM_DAYS = CATuning.CAPITAL_ROOM_DAYS;   // 0.3.0.0 (A3): in CATuning
 
     /**
      * Buildings that make the capital a place to trade, in the order they're wanted, from a scan of what each one does on a
@@ -50,13 +66,13 @@ public class CACapital {
      */
     static final String[][] COMMERCE = {
             // id, label, what you can do there, "only" when nothing else scores it
-            {"commerce", "Commerce", "an Open Market to buy and sell at, and +25% income", ""},   // vanilla TradeCenter, IndEvo's too
-            {"aotd_trade_outpost", "Trade Outpost", "a no-tariff market for legal goods, open the first 7 days of each month", ""},
-            {"yunru_bazaar", "Bazaar", "an Open Market, plus a black market while it's a free port", "only"},
-            {"IndEvo_ReqCenter", "Requisitions Centre", "weapons to buy from factions that like you", ""},
-            {"roider_union_hq", "Union HQ", "the Roiders Market: military hardware, and it buys goods that are illegal elsewhere", ""},
-            {"IndEvo_ScrapYard", "Salvage Yards", "ships built to order from scrap, and hulls scrapped for credit", ""},
-            {"aotd_underworld", "Underworld", "a black market (needs a free port)", ""},
+            {"commerce", "Commerce", "an Open Market and +25% income", ""},   // vanilla TradeCenter, IndEvo's too
+            {"aotd_trade_outpost", "Trade Outpost", "a no-tariff market, the first 7 days of each month", ""},
+            {"yunru_bazaar", "Bazaar", "an Open Market and a black market", "only"},
+            {"IndEvo_ReqCenter", "Requisitions Centre", "weapons from factions that like you", ""},
+            {"roider_union_hq", "Union HQ", "the Roiders Market", ""},
+            {"IndEvo_ScrapYard", "Salvage Yards", "ships built from scrap", ""},
+            {"aotd_underworld", "Underworld", "a black market", ""},
     };
     static final Map<String, String> WHAT = new HashMap<String, String>();
     static final Set<String> MOD_IDS = new HashSet<String>();
@@ -74,7 +90,21 @@ public class CACapital {
      */
     static boolean standIn = false;
 
-    public static void reset() { pickedId = null; pickedAt = -99f; standIn = false; }
+    public static void reset() { pickedId = null; pickedAt = -99f; standIn = false; resetWorth(); }
+
+    // ---------------- 0.3.0.0 (C4, research 03 F8): trade buildings at a loss ----------------
+
+    /** Today's worth a month of each trade step still to build at the capital (CAValue.add, at the colony's weights). Session only. */
+    static final Map<String, Float> stepWorth = new HashMap<String, Float>();
+    /** Each one's upkeep a month, as the engine predicts it. */
+    static final Map<String, Float> stepUpkeep = new HashMap<String, Float>();
+    /** Upkeep a month of the trade buildings at the capital that cost more than they earn. */
+    static float lossUpkeep = 0f;
+    /** The colony and game day those were worked out for (null / NaN: not yet this session). */
+    static String worthAt;
+    static float worthDay = Float.NaN;
+
+    static void resetWorth() { stepWorth.clear(); stepUpkeep.clear(); lossUpkeep = 0f; worthAt = null; worthDay = Float.NaN; }
 
     static MarketAPI market(String id) { return id == null ? null : CAAuto.market(id); }
 
@@ -169,15 +199,26 @@ public class CACapital {
                     + (cap.getId().equals(s.capitalId) ? " (your pick)" : ""));
         deliveries(s, cap);
         cap = capital();   // the gathering point may have moved it
-        if (cap == null || s.capitalMode != 0 || s.capitalStarted) return;
-        CAData.Colony c = d.colony(cap.getId());
+        if (cap == null) return;
+        // the commerce build-up starts once the colonies have ramped up
+        boolean startsNow = false;
         float line = START_NET[Math.max(0, Math.min(START_NET.length - 1, s.capitalStart))];
-        boolean ramped = !c.buildout && (line == -Float.MAX_VALUE || (s.lastNetKnown && s.lastNet >= line));
-        if (!ramped) return;
-        s.capitalStarted = true;
+        if (s.capitalMode == 0 && !s.capitalStarted) {
+            CAData.Colony c = d.colony(cap.getId());
+            boolean ramped = !c.buildout && (line == -Float.MAX_VALUE || (s.lastNetKnown && CABudget.netIncome(s) >= line));
+            if (ramped) { s.capitalStarted = true; startsNow = true; }
+        }
+        // 0.3.0.0 (C4, research 03 F8): what each trade step still to build is worth today, before the planner reads the plan.
+        // 0.3.0.0 fix (C4 review 2): after the ramp-up check, so the planner's first pass after the build-up starts has values
+        // (until today's values are in, waits() holds every trade step but Commerce)
+        if (commerce(s)) {
+            try { valueSteps(cap, d.colony(cap.getId()), s); }
+            catch (Throwable t) { resetWorth(); CADiagnostics.LOG.warn(CADiagnostics.TAG + "capital trade building valuation failed at " + cap.getName(), t); }
+        }
+        if (!startsNow) return;
         List<String> left = stepLabels(cap);
         CALog.add(cap.getName() + ": capital: commerce build-up starts (" + (line == -Float.MAX_VALUE ? "right away" : "net income "
-                + Misc.getDGSCredits(s.lastNet) + " a month") + "): " + (left.isEmpty() ? "every trade building is already here"
+                + Misc.getDGSCredits(CABudget.netIncome(s)) + " a month") + "): " + (left.isEmpty() ? "every trade building is already here"
                 : CAContracts.join(left) + " go first"), true);
     }
 
@@ -208,12 +249,15 @@ public class CACapital {
     /** Where the capital's Storage gathering sends things: the capital, or null (off, none, or a stand-in). */
     public static MarketAPI gatherTarget(CASettings s) { return gathers(s) ? capital() : null; }
 
-    /** Below this stability the capital's trade buildings wait: most of them cost stability, and at 0 a colony can decivilize. */
-    static final float COMMERCE_MIN_STABILITY = 3f;
+    /**
+     * Below this stability the capital's trade buildings wait: most of them cost stability, and at 0 a colony can decivilize.
+     * 0.3.0.0: CAStability's lowest floor (3, as before); each one that costs stability is held to the full floor when it's picked.
+     */
+    static final float COMMERCE_MIN_STABILITY = CAStability.MIN_FLOOR;
 
     /** Whether the commerce build-up is running now: started, and not in a money emergency. */
     public static boolean commerce(CASettings s) {
-        return s.capitalMode == 0 && s.capitalStarted && !standIn && !(s.lastNetKnown && s.lastNet < 0f);
+        return s.capitalMode == 0 && s.capitalStarted && !standIn && !(s.lastNetKnown && CABudget.netIncome(s) < 0f);
     }
 
     // ---------------- the plan ----------------
@@ -238,7 +282,10 @@ public class CACapital {
         }
         CALog.forget("capital:lowstab:" + m.getId());
         for (String[] w : wanted()) {
+            if (waits(m, w[0])) continue;   // 0.3.0.0 (C4, F8): costs more than it earns, and the money ladder doesn't allow it yet
             if (CAOverLimit.shedRecently(m, w[0])) continue;   // taken down at 0 stability this year: not built again yet
+            // 0.3.0.0 (B4): taken down here for any reason within the year (CATombstone): no plan rank or slot held for it meanwhile
+            if (CATombstone.blocked(m.getId(), w[0]) > 0f) continue;
             out.add(new CAPlan.Step(CAPlan.Kind.BUILD, w[0], w[1] + " (capital)"));
         }
         return out;
@@ -253,8 +300,144 @@ public class CACapital {
     /** A commerce step at the capital, or what leads to one (Ashes of the Domain's Trade Outpost before Commerce). */
     public static boolean isStep(MarketAPI m, String id) {
         if (id == null || m == null || !commerce(CAData.settings()) || !is(m)) return false;
-        for (String[] w : wanted()) if (w[0].equals(id) || CAPlan.leadsTo(id, w[0])) return true;
+        for (String[] w : wanted()) {
+            if (waits(m, w[0])) continue;   // 0.3.0.0 (C4, F8): not a step, so no plan rank, while it waits for the money ladder
+            if (w[0].equals(id) || CAPlan.leadsTo(id, w[0])) return true;
+        }
         return false;
+    }
+
+    /**
+     * 0.3.0.0 (C4, research 03 F8): today's worth of each trade step still to build at the capital (as a build there, at the
+     * colony's goal), and the upkeep of the trade buildings there that cost more than they earn (CAValue.keep below 0). A
+     * step that waits for the money ladder gets one log line. Commerce, and buildings the engine can't value, aren't valued:
+     * they stay steps as in 0.2.45.1. With legacyPlanner nothing is valued.
+     */
+    static void valueSteps(MarketAPI cap, CAData.Colony col, CASettings s) {
+        float day = CADay.now();
+        if (valued(worthAt, worthDay, cap.getId(), day)) return;
+        stepWorth.clear(); stepUpkeep.clear(); lossUpkeep = 0f;
+        worthAt = cap.getId(); worthDay = day;
+        if (CABudget.legacy(s)) return;
+        CAData.Profile prof = col == null || col.profile == null ? CAData.Profile.BALANCED : col.profile;
+        Map<String, Integer> deficit = CAEngine.empireDeficits();
+        for (String[] w : wanted()) {
+            String id = w[0];
+            if ("commerce".equals(id) || CAPlan.spec(id) == null) continue;   // Commerce earns (+25% income): as before
+            Industry ind = cap.getIndustry(id);
+            if (ind != null) {
+                if (ind.isBuilding() && !ind.isUpgrading()) continue;   // under construction: counted once it runs
+                CAValue.Kept k = CAValue.keepDetail(cap, ind, prof, deficit);
+                if (k != null && k.value < 0f) lossUpkeep += Math.max(0f, ind.getUpkeep().getModifiedValue());
+                continue;
+            }
+            if (CAPlan.hasOrBetter(cap, id)) continue;
+            CAEngine.Pick q = pickFor(cap, id, deficit);
+            if (q == null) continue;
+            stepWorth.put(id, CAValue.add(cap, q, prof));
+            stepUpkeep.put(id, Math.max(0f, q.upkeep));
+        }
+        int tier = CAEconomy.tier(s);
+        for (Map.Entry<String, Float> e : stepWorth.entrySet()) {
+            String key = "capital:loss:" + cap.getId() + ":" + e.getKey();
+            if (lossAllowed(e.getKey(), s, tier)) { CALog.forget(key); continue; }
+            if (CALog.once(key)) CALog.add(cap.getName() + ": capital: " + CAWorldPlanner.industryName(e.getKey()) + " waits (worth "
+                    + CAEngine.valueText(e.getValue()) + "; " + lossWhy(s, tier, e.getKey()) + ")");
+        }
+    }
+
+    /** 0.3.0.0 (C4): why a trade building at a loss waits, for the log. */
+    static String lossWhy(CASettings s, int tier, String id) {
+        if (tier < CARich.T1) return "trade buildings at a loss start at the money tier Surplus, now " + CARich.name(tier);
+        String closed = CAEconomy.closedWhy(s);   // 0.3.0.0 fix (C4 review 2): the Economy buyers' one gate and its wording
+        if (closed != null) return closed;
+        Float up = stepUpkeep.get(id);
+        return "trade buildings at a loss would cost " + Misc.getDGSCredits(lossUpkeep + (up == null ? 0f : up)) + " a month in upkeep, over "
+                + Misc.getDGSCredits(CAEconomy.COMMERCE_LOSS_SHARE * Math.max(0f, CABudget.netIncome(s))) + ", 5 percent of colony net";
+    }
+
+    /** 0.3.0.0 (C4): a trade step may be built: it earns, wasn't valued today, or the money ladder allows one at a loss now. */
+    static boolean lossAllowed(String id, CASettings s, int tier) {
+        Float w = stepWorth.get(id);
+        if (w == null || !(w < 0f)) return true;
+        Float up = stepUpkeep.get(id);
+        return CAEconomy.lossCommerceAllowed(tier, CAEconomy.economyMode(s), lossUpkeep, up == null ? 0f : up, CABudget.netIncome(s));
+    }
+
+    /**
+     * 0.3.0.0 (C4, F8): a trade step at this capital that waits today. 0.3.0.0 fix (C4 review 2): it also waits while today's
+     * values for this capital aren't in (waitsUnvalued): the first form let every trade step through then, ones worth less
+     * than 0 included, on the day the build-up started, the day the capital changed and after a failed valuation.
+     */
+    static boolean waits(MarketAPI m, String id) {
+        if (m == null || id == null) return false;
+        CASettings s = CAData.settings();
+        if (CABudget.legacy(s)) return false;   // as 0.2.45.1
+        if (!valued(worthAt, worthDay, m.getId(), CADay.now()))
+            return waitsUnvalued(id, m.getIndustry(id) != null || CAPlan.hasOrBetter(m, id));
+        return waitsForLoss(m, id, s);
+    }
+
+    /** 0.3.0.0 (C4, F8): a trade step valued today at less than 0 that the money ladder doesn't allow now. */
+    static boolean waitsForLoss(MarketAPI m, String id, CASettings s) {
+        if (m == null || id == null || !m.getId().equals(worthAt)) return false;
+        Float w = stepWorth.get(id);
+        if (w == null || !(w < 0f)) return false;
+        return !lossAllowed(id, s, CAEconomy.tier(s));
+    }
+
+    /**
+     * Pure, 0.3.0.0 fix (C4 review 2): the values were worked out for this capital within the last day (valueSteps keeps them
+     * that long). worthAt null or worthDay NaN: not yet this session, or the last valuation failed.
+     */
+    static boolean valued(String worthAt, float worthDay, String capId, float now) {
+        return capId != null && capId.equals(worthAt) && !Float.isNaN(worthDay) && now >= worthDay && now - worthDay < 1f;
+    }
+
+    /**
+     * Pure, 0.3.0.0 fix (C4 review 2): whether a trade step waits while it isn't valued today: every one still to build but
+     * Commerce (which earns; never valued, as in 0.2.45.1). One already there (built, or being built) isn't a step to wait on,
+     * and the capital's make-room swap still leaves it alone (CAEndgame.weakest reads isStep).
+     */
+    static boolean waitsUnvalued(String id, boolean there) {
+        return id != null && !"commerce".equals(id) && !there;
+    }
+
+    /**
+     * 0.3.0.0 (C4): a trade building as a new build here, valued the way the engine reads a pick: vanilla formulas and
+     * Autopilot's estimates on the market model (CAEngine.effectsAt), other estimated buildings by their own rules, then
+     * the engine's upkeep and trust. Null for one the engine can't value.
+     */
+    static CAEngine.Pick pickFor(MarketAPI m, String id, Map<String, Integer> deficit) {
+        IndustrySpecAPI spec = CAPlan.spec(id);
+        if (spec == null) return null;
+        Industry inst = spec.getNewPluginInstance(m);
+        String from = CAPlan.upgradedFrom(id, null);
+        Industry existing = from == null ? null : m.getIndustry(from);
+        CAEngine.Pick q;
+        if (CAEngine.isSupportedVanilla(id) || CAEstimates.has(id)) q = CAEngine.effectsAt(m, id, inst, existing, deficit);
+        else if (CAEngine.estimated(id)) {
+            q = new CAEngine.Pick();
+            q.id = id;
+            if (existing != null) { q.upgrade = true; q.existing = existing; }
+            q.recording = true;
+            boolean ok;
+            try { ok = CAEngine.estimate(m, id, q, deficit); } finally { q.recording = false; }
+            if (!ok) return null;
+        } else return null;
+        if (q == null) return null;
+        CAEngine.upkeep(m, spec, existing == null ? null : existing.getSpec(), q);
+        CAEngine.trust(spec, q, false);
+        return q;
+    }
+
+    /** 0.3.0.0 (C4): the trade steps at this capital that wait for the money ladder today (worth less than 0), by name. */
+    static List<String> waiting(MarketAPI m) {
+        List<String> out = new ArrayList<String>();
+        CASettings s = CAData.settings();
+        if (CABudget.legacy(s)) return out;
+        for (String[] w : wanted()) if (waitsForLoss(m, w[0], s)) out.add(w[1]);   // 0.3.0.0 fix (C4 review 2): not the ones still to be valued
+        return out;
     }
 
     // ---------------- mod buildings Autopilot only knows as trade buildings ----------------
@@ -266,35 +449,30 @@ public class CACapital {
     static boolean apply(MarketAPI m, String id, CAEngine.Pick p, Map<String, Integer> deficit) {
         if (!is(m) || !commerce(CAData.settings())) return false;
         String what = WHAT.get(id);
-        p.lines.add("Capital trade building" + (what != null ? ": " + what : "") + ". Its value is having a place to trade at home, so it counts as a capital plan step");
+        p.lines.add("Capital trade building" + (what != null ? ": " + what : "") + "; scored as a capital plan step");
         return true;
     }
 
     // ---------------- making room ----------------
 
-    /** At the capital with every industry slot taken: its weakest ordinary industry, if the commerce pick beats it. */
+    /**
+     * At the capital with every industry slot taken: its weakest ordinary industry, if the commerce pick beats it. 0.3.0.0 (WS-B4):
+     * the endgame's weakest() and rule (CAEndgame.weakest with capital set, CAEndgame.worthIt): valued by CAValue.keep plus the
+     * teardown loss, NPV(new) - keep x H - loss over the margin; never its own trade buildings, defenses, fleets or what builds
+     * your ships, one of its own plan's steps (research 02 section 11: the step would only open again), one built under another
+     * valuation within the year, one whose swap would leave the capital under the stability floor (CAStability; Commerce
+     * alone is -3), nor a trade building taken down here within the year.
+     */
     static CAEndgame.Weakest replacement(MarketAPI m, CAData.Colony col, CAEngine.Pick best, CAData.Profile profile) {
         CASettings s = CAData.settings();
         if (best == null || s.capitalNoRoom || !isStep(m, best.id) || col.mode != CAData.Mode.AUTO) return null;
-        Long last = CAData.get().endgameBuilt().get(m.getId() + ":replaced");
+        if (!CAEconomy.roomSwapAllowed(CAEconomy.tier(s))) return null;   // 0.3.0.0 (C4, research 03 F8): from the money tier Idle money up
+        Long last = CAData.get().swapAt().get(m.getId() + ":replaced");
         if (last != null && Global.getSector().getClock().getElapsedDaysSince(last) < ROOM_DAYS) return null;
+        if (CAEndgame.rebuildBlocked(m, best.id)) return null;   // 0.3.0.0 (B4): taken down here within the year
         CAPlan.Plan plan = CAPlan.build(m, col.profile);
-        CAData d = CAData.get();
-        float[] w = CAEngine.WEIGHTS[profile.ordinal()];
-        Map<String, Integer> deficit = CAEngine.empireDeficits();
-        CAEndgame.Weakest out = null;
-        for (Industry ind : m.getIndustries()) {
-            if (CAEndgame.protectedHere(m, col, plan, ind, d) || isStep(m, ind.getId())) continue;
-            CAEngine.Pick p = CAEngine.effectsOf(m, ind.getId(), deficit);
-            if (p == null) continue;
-            // the home port keeps its defenses, fleets and what builds your ships
-            if (p.fx[3] > 0f || p.fx[4] > 0f || p.fx[5] > 0f || p.supplied.containsKey("ships")) continue;
-            CAEngine.upkeep(m, ind.getSpec(), null, p);
-            float v = 0f;
-            for (int i = 0; i < 7; i++) v += w[i] * p.fx[i];
-            if (out == null || v < out.keep) { out = new CAEndgame.Weakest(); out.ind = ind; out.keep = v; out.money = p.fx[0]; out.upkeep = p.upkeep; }
-        }
-        if (out == null || !CAEndgame.beats(best.score, out.keep)) return null;
+        CAEndgame.Weakest out = CAEndgame.weakest(m, col, plan, profile, best, true);
+        if (out == null || !CAEndgame.worthIt(best, out)) return null;
         return out;
     }
 
@@ -317,7 +495,7 @@ public class CACapital {
     static String status(CASettings s, MarketAPI cap) {
         if (s.capitalMode == 1) return "deliveries only";
         if (commerce(s)) return "commerce " + doneSteps(cap) + " of " + allSteps() + " built";
-        if (s.capitalStarted) return "commerce waits (net income below zero)";
+        if (s.capitalStarted) return "commerce waits (net income negative)";
         return "commerce starts at " + START_NAMES[Math.max(0, Math.min(START_NAMES.length - 1, s.capitalStart))].toLowerCase(Locale.ROOT);
     }
 
@@ -326,9 +504,9 @@ public class CACapital {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor();
         if (!on(s)) { t.addPara("Capital: off (Settings, Capital).", gray, 4f); return; }
         MarketAPI cap = capital();
-        if (cap == null) { t.addPara("Capital: none yet (no colony with a Storage tab).", gray, 4f); return; }
-        t.addPara("Capital: %s" + (cap.getId().equals(s.capitalId) ? " (your pick)" : "") + ". Production deliveries come here"
-                + (gathers(s) ? ", other Storage gathers here weekly" : "") + "; " + CALog.esc(status(s, cap)) + ".", 4f, hl, cap.getName());
+        if (cap == null) { t.addPara("Capital: none yet.", gray, 4f); return; }
+        t.addPara("Capital: %s" + (cap.getId().equals(s.capitalId) ? " (your pick)" : "") + ", deliveries"
+                + (gathers(s) ? " and Storage" : "") + "; " + CALog.esc(status(s, cap)) + ".", 4f, hl, cap.getName());
     }
 
     /** The colony panel's section. */
@@ -339,14 +517,17 @@ public class CACapital {
         MarketAPI cap = capital();
         boolean here = cap != null && cap.getId().equals(m.getId()), mine = m.getId().equals(s.capitalId);
         if (here) {
-            t.addPara("This is your capital" + (mine ? " (your pick)" : " (Autopilot's pick)") + ": production deliveries come here"
-                    + (gathers(s) ? " and your other Storage gathers here weekly" : "") + ". " + CALog.esc(Character.toUpperCase(status(s, cap).charAt(0)) + status(s, cap).substring(1)) + ".", 6f);
+            t.addPara("This is your capital" + (mine ? " (your pick)" : " (Autopilot's pick)") + ": deliveries"
+                    + (gathers(s) ? " and Storage gather here" : " come here") + ". " + CALog.esc(Character.toUpperCase(status(s, cap).charAt(0)) + status(s, cap).substring(1)) + ".", 6f);
             if (s.capitalMode == 0) {
                 List<String> left = stepLabels(m);
                 if (!left.isEmpty()) t.addPara("Still to build here: " + CALog.esc(CAContracts.join(left)) + ".", gray, 2f);
+                // 0.3.0.0 (C4, research 03 F8)
+                List<String> held = waiting(m);
+                if (!held.isEmpty()) t.addPara("Waiting for the money ladder: " + CALog.esc(CAContracts.join(held)) + ".", gray, 2f);
             }
         } else {
-            t.addPara("Your capital is %s. Making this one the capital moves production deliveries and your gathered Storage here.", 6f, hl,
+            t.addPara("Your capital is %s.", 6f, hl,
                     cap == null ? "not set" : cap.getName());
         }
         if (mine) t.addButton("Let Autopilot choose", AUTO, base, dark, Alignment.MID, CutStyle.TL_BR, 220f, 24f, 6f);

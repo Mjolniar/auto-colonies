@@ -22,6 +22,8 @@ public class CABuild {
      * its vanilla upgrade, spec.getUpgrade) corrected by the upgrade actually under way, recorded when Autopilot started it:
      * Ashes of the Domain's other upgrade targets weren't counted, so Zenemosrae started Biolab -> Grey Industries, Junkyard
      * Forge -> Scrapyard and Trade Outpost -> Commerce in one pass on one free slot and ended up 5 of 3.
+     * 0.3.0.0: the only slot counter (research 07 M12): the build gate, the planner and CAOverLimit all count with it, so what
+     * one calls over the limit the others do too.
      */
     public static int usedSlots(MarketAPI m) {
         int n = Misc.getNumIndustries(m);
@@ -57,6 +59,11 @@ public class CABuild {
         if (!p.upgrade && Misc.getCurrentlyBeingConstructed(m) != null) return "A new building is already under construction here (upgrades can still run)";
         if (credits() < p.cost) return "Not enough credits (" + Misc.getDGSCredits(p.cost) + " needed)";
         if (!CADiagnostics.usable(p.id)) return "Not supported by Colony Autopilot";
+        // 0.3.0.0: the one stability rule (CAStability) as the last gate for a new building or upgrade: what it costs once built must
+        // leave the colony at or above the floor. The planner already holds such picks back; this catches any path that doesn't
+        if (p.fx != null && p.fx.length > 1 && p.fx[1] < 0f && !CAStability.canLose(m, p.fx[1], null))
+            return "It would take stability from " + Math.round(CAStability.now(m)) + " to " + Math.round(CAStability.now(m) + p.fx[1])
+                    + ", under Autopilot's floor of " + Math.round(CAStability.floor());
         // 0.2.42.0: the build menu's industry limit. Picks are scored with the slots free when the pass began, and one pass can
         // start a new building and an upgrade, so a structure upgraded into an industry (Junkyard Forge -> Scrapyard) and a
         // new industry both took Wind's one free slot: 3 of 2, -5 stability, its income cut to nothing
@@ -98,9 +105,13 @@ public class CABuild {
                 if (targetKey != null) CAData.get().upgradeTargets().remove(targetKey);
                 return "It didn't take effect, so nothing was charged";
             }
-            Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(p.cost);
+            CABudget.payPrice(p.cost);   // 0.3.0.0 (C12 fix, research 03 F3): credits move only in CABudget; the caller books the price and takes the fee with charge() or payFromPool() as before
             CADiagnostics.LOG.info(CADiagnostics.TAG + (p.upgrade ? "upgrade to " : "build ") + p.id + " at " + m.getName()
                     + " for " + Misc.getDGSCredits(p.cost));
+            // 0.3.0.0 (B4, 03 F12): sunk-cost memory: what it cost, when and under which valuation (CATombstone: removal log, teardown loss)
+            try { CATombstone.paid(m, p.id, p.upgrade && p.existing != null ? p.existing.getId() : null, p.cost); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "build record failed for " + p.id, t); }
+            CACache.bump("build");   // 0.3.0.0 (A4): kept evaluations are worked out again after a build (the colony signature catches it too)
             return null;
         } catch (Throwable t) {
             // 0.2.45.1: a building half-added when something threw comes off again, so nothing is left unpaid or stuck

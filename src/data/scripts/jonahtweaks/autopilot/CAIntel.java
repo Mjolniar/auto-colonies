@@ -25,9 +25,15 @@ import java.util.Set;
  * settings, the log and Diagnostics, one page at a time from the list on the left (CANav). It has its own filter in the Intel
  * screen, "Colony Autopilot" (a tag of its own, as mods like Treasure Hunt do), rather than sitting among colony threats
  * or important intel.
+ * 0.3.0.0 (WS-F2): three more pages. Expansion (CAExpansionPage, always listed), War (CAWarPage, with Nexerelin on; it
+ * replaces the War section of Mod features) and Factions (CAFactionsPage, under Autopilot; the settings screen's Faction
+ * stances link opens it). Buttons that ask first: the War page's (CAWar.needsConfirm), Reset all to Auto on the Factions
+ * page and Found now on the Expansion page.
  */
 public class CAIntel extends BaseIntelPlugin {
     static final String RESCAN = "jt_ca_rescan";
+    /** 0.3.0.0 (A4 fix): the Colonies page's Refresh picks button (CAEngine.refreshAll). */
+    static final String REFRESH = "jt_ca_refresh";
     public static final String TAG = "Colony Autopilot";
     /** UI handles are never saved with the game. */
     transient TooltipMakerAPI lastTooltip;
@@ -45,7 +51,33 @@ public class CAIntel extends BaseIntelPlugin {
     @Override public boolean hasLargeDescription() { return true; }
     @Override public boolean hasSmallDescription() { return false; }
     @Override public boolean shouldRemoveIntel() { return false; }
-    @Override public boolean doesButtonHaveConfirmDialog(Object buttonId) { return false; }
+    @Override public boolean doesButtonHaveConfirmDialog(Object buttonId) {
+        if (!(buttonId instanceof String[]) || ((String[]) buttonId).length < 2) return false;
+        String[] a = (String[]) buttonId;
+        try {
+            // 0.3.0.0 (WS-E): the War page's declarations, bombardment authorization, Recall all and Stand down ask first
+            if ("war".equals(a[0])) return Global.getSettings().getModManager().isModEnabled(CAWar.MOD) && CAWar.needsConfirm(a[1]);
+            // 0.3.0.0 (WS-F2): Reset all to Auto (Factions page) and Found now (Expansion page) ask first
+            if (CAFactionsPage.ID.equals(a[0])) return CAFactionsPage.needsConfirm(a[1]);
+            if ("expand".equals(a[0])) return CAExpansionPage.needsConfirm(a[1]);
+        } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "confirmation check failed", e); }
+        return false;
+    }
+
+    @Override
+    public void createConfirmationPrompt(Object buttonId, TooltipMakerAPI prompt) {
+        if (!(buttonId instanceof String[]) || ((String[]) buttonId).length < 2) return;
+        String[] a = (String[]) buttonId;
+        try {
+            if ("war".equals(a[0]) && Global.getSettings().getModManager().isModEnabled(CAWar.MOD)) CAWar.confirmPrompt(prompt, a[1], a.length > 2 ? a[2] : "");
+            else if (CAFactionsPage.ID.equals(a[0])) CAFactionsPage.confirmPrompt(prompt, a[1], CAData.settings());
+            else if ("expand".equals(a[0])) CAExpansionPage.confirmPrompt(prompt, a[1], a.length > 2 ? a[2] : null, CAData.get(), CAData.settings());
+        } catch (Throwable e) {
+            // 0.3.0.0 (WS-F2): a prompt that fails still opens, with a line instead of the details
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "confirmation text failed", e);
+            prompt.addPara("Go ahead? " + CATheme.NOT_SHOWN, 0f);
+        }
+    }
     @Override public String getSortString() { return "Colony Autopilot"; }
 
     @Override
@@ -68,7 +100,10 @@ public class CAIntel extends BaseIntelPlugin {
     static String page = "colonies";
     transient String lastPage;
 
-    /** The pages in the list on the left: always Colonies, Storage, Settings, Log and Diagnostics, plus Mod features when one is in use. */
+    /**
+     * The pages in the list on the left: always Colonies, Storage, Colony crises, Expansion, Settings, Factions, Log and
+     * Diagnostics, plus War with Nexerelin on and Mod features when one is in use.
+     */
     static List<String[]> pages(CAData data, CASettings s, List<MarketAPI> markets) {
         List<String[]> p = new ArrayList<String[]>();
         int pending = 0;
@@ -76,10 +111,14 @@ public class CAIntel extends BaseIntelPlugin {
         p.add(new String[]{"colonies", pending > 0 ? "Colonies (" + pending + " to approve)" : "Colonies"});
         p.add(new String[]{"storage", "Autopilot Storage"});
         p.add(new String[]{"crises", CACrisis.pending() != null ? "Colony crises (one coming)" : "Colony crises"});
+        p.add(new String[]{CAExpansionPage.PAGE, CAExpansionPage.label(data)});   // 0.3.0.0 (WS-F2)
+        // 0.3.0.0 (WS-F2): the War page, at every War level (Stand down and the stances are there); CAWarPolicy has no Nexerelin classes
+        if (Global.getSettings().getModManager().isModEnabled(CAWar.MOD)) p.add(new String[]{"war", "War (" + CAWarPolicy.levelName(s.warLevel) + ")"});
         if (!modSections(s, markets).isEmpty()) p.add(new String[]{"mods", "Mod features"});
         int issues = CADiagnostics.count(CADiagnostics.Level.ANALYZED) + CADiagnostics.count(CADiagnostics.Level.QUARANTINED);
         p.add(new String[]{null, "Autopilot"});
         p.add(new String[]{"settings", "Settings"});
+        p.add(new String[]{CAFactionsPage.PAGE, "Factions"});   // 0.3.0.0 (WS-F2): the stance table, also the settings screen's link
         p.add(new String[]{"log", "Log"});
         p.add(new String[]{"diag", issues > 0 ? "Diagnostics (" + issues + ")" : "Diagnostics"});
         return p;
@@ -97,7 +136,7 @@ public class CAIntel extends BaseIntelPlugin {
         if (mm.isModEnabled(CASettlement.MOD)) l.add("settle");
         if (mm.isModEnabled(CASpies.MOD)) l.add("agents");
         if (mm.isModEnabled(CAAutonomy.MOD)) l.add("autonomy");   // always: its Grant and Take back buttons work in any mode
-        if (mm.isModEnabled(CAWar.MOD) && s.warMode != 2) l.add("war");
+        // 0.3.0.0 (WS-F2): war has its own page now (pages, CAWarPage)
         if (mm.isModEnabled(CAAugments.MOD) && s.augmentMode != 2) l.add("augments");
         if (mm.isModEnabled(CAContracts.MOD) && s.contractMode != 2) l.add("contracts");
         if (anyMega && mm.isModEnabled(CAHypershunt.MOD) && s.hypershuntMode != 2) l.add("mega");
@@ -109,25 +148,23 @@ public class CAIntel extends BaseIntelPlugin {
     static void renderMod(TooltipMakerAPI t, String id, CAData data, CASettings s) {
         com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
         if (id.equals("settle") && mm.isModEnabled(CASettlement.MOD)) {
-            CATheme.heading(t, "Settlement (Random Assortment of Things)", 0f);
+            CATheme.heading(t, "Settlement (RAT)", 0f);
             CASettlement.render(t, data, s);
         } else if (id.equals("agents") && mm.isModEnabled(CASpies.MOD)) {
             CASpies.render(t, data, s);
         } else if (id.equals("autonomy") && mm.isModEnabled(CAAutonomy.MOD)) {
             CAAutonomy.render(t, data, s);
-        } else if (id.equals("war") && mm.isModEnabled(CAWar.MOD)) {
-            CAWar.render(t, data, s);
         } else if (id.equals("augments") && mm.isModEnabled(CAAugments.MOD)) {
             CATheme.heading(t, "Station augments", 0f);
             CAAugments.renderEmpire(t, data, s);
         } else if (id.equals("contracts") && mm.isModEnabled(CAContracts.MOD)) {
-            CATheme.heading(t, "Trade contracts (Ashes of the Domain)", 0f);
+            CATheme.heading(t, "Trade contracts (AotD)", 0f);
             CAContracts.render(t, data, s);
         } else if (id.equals("mega") && mm.isModEnabled(CAHypershunt.MOD)) {
-            CATheme.heading(t, "Pluto and Nidavelir (Ashes of the Domain)", 0f);
+            CATheme.heading(t, "Pluto and Nidavelir (AotD)", 0f);
             CAMegastructures.renderEmpire(t, data, s);
         } else if (id.equals("shunt") && mm.isModEnabled(CAHypershunt.MOD)) {
-            CATheme.heading(t, "Coronal Hypershunt (Ashes of the Domain)", 0f);
+            CATheme.heading(t, "Coronal Hypershunt (AotD)", 0f);
             CAHypershunt.renderEmpire(t, data, s);
         }
     }
@@ -156,11 +193,14 @@ public class CAIntel extends BaseIntelPlugin {
         panel.addUIElement(nav).inTL(0f, 0f);
 
         TooltipMakerAPI t = panel.createUIElement(width - CANav.W - CANav.GAP, height, true);
+        long t0 = System.nanoTime();
+        CAEngine.drawing(true);   // 0.3.0.0 (A4 fix, 07 M6): nothing drawn here evaluates a colony (CAAugments' slot value included)
         try { renderPage(t, data, s, markets, width - CANav.W - CANav.GAP); }
         catch (Throwable e) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "empire panel page " + page + " failed", e);
-            t.addPara("This page couldn't be shown; see starsector.log.", Misc.getGrayColor(), 6f);
-        }
+            t.addPara(CATheme.NOT_SHOWN, Misc.getGrayColor(), 6f);
+        } finally { CAEngine.drawing(false); }
+        CAPerf.record("empire panel: " + page, System.nanoTime() - t0);   // 0.3.0.0 (A4): what a page costs to draw
         panel.addUIElement(t).inTL(CANav.W + CANav.GAP, 0f);
         try { if (t.getExternalScroller() != null) t.getExternalScroller().setYOffset(scrollY); } catch (Throwable ignored) { }
         lastTooltip = t;
@@ -171,24 +211,34 @@ public class CAIntel extends BaseIntelPlugin {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
 
         if (page.equals("colonies")) {
-            t.addPara("Every colony starts in Advisor mode. Open a colony's own panel with the Colony Autopilot button on its colony "
-                    + "screen, or by right-clicking its Population & Infrastructure.", gray, 0f);
+            // 0.3.0.0 (WS-F2, research 04 section 7): shorter
+            t.addPara("Colony panels: the Autopilot button on each colony screen.", gray, 0f);   // 0.3.0.0 (WS-F3 fix pass 3)
             CATheme.heading(t, "Budget", 12f);
-            t.addPara("This month: %s of %s spent (%s in fees), %s saved up from earlier months, %s available. Never spends below %s.", 6f, hl,
+            t.addPara("Budget: %s of %s spent (%s fees), %s saved, %s free. Reserve %s.", 6f, hl,
                     Misc.getDGSCredits(s.spent), Misc.getDGSCredits(CABudget.limit(s)), Misc.getDGSCredits(s.fees),
                     Misc.getDGSCredits(CABudget.saved(s)), Misc.getDGSCredits(CABudget.available(s)), Misc.getDGSCredits(s.reserve));
-            if (CABudget.paused(s)) t.addPara("Spending is paused: net income is negative.", Misc.getNegativeHighlightColor(), 4f);
+            if (CABudget.paused(s)) t.addPara(CATheme.PAUSED, Misc.getNegativeHighlightColor(), 4f);   // 0.3.0.0 (WS-F3 fix pass 3): one text with the colony panel
+            // 0.3.0.0 (WS-F2): the share is the Spending preset's (CAPresets), so the line no longer names 10%
             t.addPara("New upkeep this month: %s of %s (%s).", 4f, hl, Misc.getDGSCredits(s.upkeepAdded), Misc.getDGSCredits(CABudget.upkeepCap(s)),
-                    s.upkeepCapAuto ? "automatic: 10% of last month's net income, at least 20,000" : "fixed");
+                    s.upkeepCapAuto ? "automatic, at least " + Misc.getDGSCredits(CABudget.UPKEEP_FLOOR) : "fixed");
+            // 0.3.0.0 (B5, research 03 F4): colony net runs the budget; cash flow (the whole report) is only for what you can afford
+            t.addPara("Colony net: %s a month (%s-month median); cash flow %s.", 4f, hl,
+                    Misc.getDGSCredits(CABudget.netIncome(s)), String.valueOf(CABudget.NET_MONTHS), Misc.getDGSCredits(CABudget.cashFlow(s)));
+            // 0.3.0.0 (B3): the planner's last pass, what it's saving up for and the upkeep room it keeps
+            try { for (String line : CAPlanner.status()) t.addPara(CALog.esc(line), gray, 4f); }
+            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "planner status line failed", e); }
             try { CASurplus.renderEmpire(t, s); }
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus line failed", e); }
+            // 0.3.0.0 (C3): the money ladder: tier, pool and rung allowances, proposals with Approve and Reject
+            try { CARich.render(t); CAShipyard.render(t); CAStockpile.render(t); CAMilitary.render(t); }
+            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "money ladder lines failed", e); }
             try { CACapital.renderEmpire(t, s); }
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "capital line failed", e); }
 
             boolean anyPending = false;
             for (MarketAPI m : markets) if (data.colony(m.getId()).pendingId != null) anyPending = true;
             if (anyPending) {
-                CATheme.heading(t, "Waiting for your approval", 12f);
+                CATheme.heading(t, CATheme.APPROVAL, 12f);   // 0.3.0.0 (WS-F3 fix pass 3): one text with the colony panel
                 for (MarketAPI m : markets) {
                     CAData.Colony c = data.colony(m.getId());
                     if (c.pendingId == null) continue;
@@ -202,6 +252,13 @@ public class CAIntel extends BaseIntelPlugin {
 
             CATheme.heading(t, "Colonies", 12f);
             if (markets.isEmpty()) t.addPara("You have no colonies yet.", gray, 8f);
+            else {
+                // 0.3.0.0 (A4 fix, 07 M6): the picks below are what the daily pass kept; this scores the out-of-date ones now
+                ButtonAPI rb = t.addButton("Refresh picks", REFRESH, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 22f, 6f);
+                com.fs.starfarer.api.ui.LabelAPI note = t.addPara("Scored daily.", gray, 0f);
+                note.getPosition().rightOfMid(rb, 10f);
+                CALog.endRow(t, rb);
+            }
             for (MarketAPI m : markets) {
                 CAData.Colony c = data.colony(m.getId());
                 String top = "nothing buildable";
@@ -210,16 +267,22 @@ public class CAIntel extends BaseIntelPlugin {
                     else if (c.mode == CAData.Mode.OFF) top = "autopilot off";
                     else if (CAHypershunt.is(m)) top = CAHypershunt.summary(m);
                     else {
-                        CAEngine.Result r = c.buildout && c.mode == CAData.Mode.AUTO ? CAEngine.evaluateForProfit(m, data.minStability)
-                                : CAEngine.evaluate(m, c.profile, data.minStability);
-                        CAEngine.Pick p = null;
-                        for (CAEngine.Pick q : r.picks) if (CAEngine.worthwhile(q)) { p = q; break; }
-                        if (p != null) top = p.verb + " " + p.name + " (" + CAEngine.signed(p.fx[0]) + " a month after upkeep)";
-                        else if (!r.picks.isEmpty()) top = "nothing pays for itself yet";
-                        if (r.blocked != null) top = r.blocked.toLowerCase() + "; next: " + top;
+                        // 0.3.0.0 (A4 fix, 07 M6): what's kept for the colony's goal (the daily pass, or Refresh picks); drawing never evaluates
+                        CAEngine.Kept k = CAEngine.kept(m, c.profile, data.settings.minStability, c.buildout && c.mode == CAData.Mode.AUTO);
+                        if (k == null) top = CAEngine.scoreFailed(m) ? "not scored; see starsector.log"   // 0.3.0.0 (A4 fix)
+                                : "not scored yet";
+                        else {
+                            CAEngine.Result r = k.result;
+                            CAEngine.Pick p = null;
+                            for (CAEngine.Pick q : r.picks) if (CAEngine.worthwhile(q)) { p = q; break; }
+                            if (p != null) top = p.verb + " " + p.name + " (" + CAEngine.signed(p.fx[0]) + " a month)";
+                            else if (!r.picks.isEmpty()) top = "nothing pays for itself yet";
+                            if (r.blocked != null) top = r.blocked.toLowerCase() + "; next: " + top;
+                            if (!k.current) top += " (out of date)";
+                        }
                     }
                 } catch (Throwable e) {
-                    CADiagnostics.LOG.warn(CADiagnostics.TAG + "evaluate failed for " + m.getName(), e);
+                    CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony line failed for " + m.getName(), e);
                     top = "error, see Diagnostics";
                 }
                 String flags = (c.buildout ? ", fast buildout" : "") + (c.threatHigh ? ", threatened" : "") + (CASiege.held(m) ? ", under siege" : "");
@@ -232,9 +295,8 @@ public class CAIntel extends BaseIntelPlugin {
             }
         } else if (page.equals("storage")) {
             CATheme.heading(t, "Autopilot Storage", 0f);
-            t.addPara("Each colony has its own Autopilot Storage tab: dock there and deposit colony items, AI cores and research databanks. "
-                    + "Auto-mode colonies use what's in their own, and the manager ships what it needs at another colony for a fee and "
-                    + "travel time (a couple of days plus a day a light-year). Nothing in your normal storage is used.", 6f);
+            // 0.3.0.0 (WS-F2, research 04 section 7): 58 words down to 33
+            t.addPara("Autopilot Storage: shipping costs a fee and days.", 6f);   // 0.3.0.0 (WS-F3 fix pass 3): shorter
             boolean any = false;
             for (CAStores.Store sto : CAStores.all()) {
                 if (sto.cargo.isEmpty()) continue;
@@ -263,39 +325,44 @@ public class CAIntel extends BaseIntelPlugin {
             t.addPara("AI cores: %s, inspection risk %s.", 6f, hl, s.useAICores ? "used" : "not used",
                     CASettings.CORE_RISK_NAMES[Math.max(0, Math.min(3, s.coreRisk))].toLowerCase());
             String none = CAItems.noInspections();
-            if (none != null) t.addPara("No Hegemony inspection can come now: %s. No limit on cores.", 4f, hl, none);
-            else t.addPara("The Hegemony inspects only a colony with more than %s inspection points, but counts every core at a colony above "
-                    + "size 3 toward its crisis (%s points now). Next inspection: %s fleet points. See Colony crises.", 4f, hl,
+            if (none != null) t.addPara("No inspection can come now: %s.", 4f, hl, none);
+            else t.addPara("Inspection line: %s points. Crisis points from cores: %s. Next inspection: %s fleet points.", 4f, hl,
                     "" + CAItems.safePoints(), "" + CACrisis.base().hegPoints, "" + (int) CAItems.nextInspectionFP());
             java.util.Set<MarketAPI> inspected = CAItems.inspected();
             for (MarketAPI m : CAItems.autoMarkets()) {
                 int pts = CAItems.aiPoints(m), lim = CAItems.coreLimit(s, m, none);
                 boolean coming = inspected.contains(m);
                 if (pts <= 0 && !coming) continue;
-                String why = coming ? "inspection coming: left as it is" : CAItems.limitWhy(s, m, none, lim);
+                String why = coming ? "inspection coming" : CAItems.limitWhy(s, m, none, lim);
                 t.addPara("%s: %s inspection points, %s", 3f, coming || pts > lim ? Misc.getNegativeHighlightColor() : hl,
                         CALog.esc(m.getName()), "" + pts, why);
             }
             if (Global.getSettings().getModManager().isModEnabled(CAResearch.MOD) && s.researchMode != 2) {
                 t.addSpacer(16f);
-                CATheme.heading(t, "Research (Ashes of the Domain)", 0f);
+                CATheme.heading(t, "Research (AotD)", 0f);
                 try { CAResearch.render(t, data, s); }
                 catch (Throwable e) {
                     CADiagnostics.LOG.warn(CADiagnostics.TAG + "research section failed", e);
-                    t.addPara("This section couldn't be shown; see starsector.log.", gray, 6f);
+                    t.addPara(CATheme.NOT_SHOWN, gray, 6f);
                 }
             }
             if (Global.getSettings().getModManager().isModEnabled(CAResearch.MOD) && s.projectSupplyMode != 2) {
                 t.addSpacer(16f);
-                CATheme.heading(t, "Special projects (Ashes of the Domain)", 0f);
+                CATheme.heading(t, "Special projects (AotD)", 0f);
                 try { CAProjects.render(t, s); }
                 catch (Throwable e) {
                     CADiagnostics.LOG.warn(CADiagnostics.TAG + "special projects section failed", e);
-                    t.addPara("This section couldn't be shown; see starsector.log.", gray, 6f);
+                    t.addPara(CATheme.NOT_SHOWN, gray, 6f);
                 }
             }
         } else if (page.equals("crises")) {
             CACrisis.render(t, data, s);
+        } else if (page.equals(CAExpansionPage.PAGE)) {   // 0.3.0.0 (WS-F2)
+            CAExpansionPage.render(t, data, s);
+        } else if (page.equals("war")) {   // 0.3.0.0 (WS-F2): Nexerelin's classes load only with it on
+            if (Global.getSettings().getModManager().isModEnabled(CAWar.MOD)) CAWarPage.render(t, data, s);
+        } else if (page.equals(CAFactionsPage.PAGE)) {   // 0.3.0.0 (WS-F2)
+            CAFactionsPage.render(t, data, s);
         } else if (page.equals("mods")) {
             boolean first = true;
             for (String id : modSections(s, markets)) {
@@ -305,13 +372,12 @@ public class CAIntel extends BaseIntelPlugin {
                 try { renderMod(t, id, data, s); }
                 catch (Throwable e) {
                     CADiagnostics.LOG.warn(CADiagnostics.TAG + "mod feature section " + id + " failed", e);
-                    t.addPara("This section couldn't be shown; see starsector.log.", gray, 6f);
+                    t.addPara(CATheme.NOT_SHOWN, gray, 6f);
                 }
             }
         } else if (page.equals("settings")) {
             CATheme.heading(t, "Settings", 0f);
-            if (!s.setupDone) t.addPara("First-time setup hasn't run yet; it opens when you first switch a colony to Approve or Auto.", gray, 6f);
-            t.addPara("Click a group to open it.", gray, 6f);
+            if (!s.setupDone) t.addPara("Setup opens when a colony goes to Approve or Auto.", gray, 6f);
             CASetupUI.render(t, s, width);
         } else if (page.equals("log")) {
             CATheme.heading(t, "Log", 0f);
@@ -339,19 +405,19 @@ public class CAIntel extends BaseIntelPlugin {
             t.addPara("%s " + CALog.esc(ver) + ": %s warnings, %s errors this session", 6f, c[0] + c[1] > 0 ? bad : hl, m[1], "" + c[0], "" + c[1]);
             String status;
             if (m[2].equals("jonah_tweaks")) {
-                status = CAItems.autoMarkets().size() + " Auto colonies, " + CABreaker.tripped().size() + " actions paused for the session, "
-                        + CADiagnostics.count(CADiagnostics.Level.QUARANTINED) + " quarantined, surplus investment " + CASurplus.lineName(CAData.settings()).toLowerCase();
+                status = CAItems.autoMarkets().size() + " Auto colonies, " + (CABreaker.tripped().size() + CAStep.broken().size()) + " actions paused, "
+                        + CADiagnostics.count(CADiagnostics.Level.QUARANTINED) + " quarantined, surplus " + CASurplus.lineName(CAData.settings()).toLowerCase();
             } else {
                 Object o = null;
                 try { o = Global.getSector().getMemoryWithoutUpdate().get("$jonahs_status_" + m[2]); } catch (Throwable ignored) { }
-                status = o instanceof String ? (String) o : "no status yet (it writes one when a game loads)";
+                status = o instanceof String ? (String) o : "no status yet";
             }
             t.addPara("    " + CALog.esc(status), gray, 2f);
             String last = CALogWatch.last(m[0]);
             if (last != null) t.addPara("    Latest: " + CALog.esc(last), bad, 2f);
         }
         float promised = CASurplus.committed();
-        if (promised > 0f) t.addPara("Credits promised to production and not paid yet: %s (surplus investment keeps them back).", 6f, hl, Misc.getDGSCredits(promised));
+        if (promised > 0f) t.addPara("Promised to production: %s.", 6f, hl, Misc.getDGSCredits(promised));
         t.addSpacer(12f);
     }
 
@@ -360,18 +426,19 @@ public class CAIntel extends BaseIntelPlugin {
         try { renderJonahsMods(t); }
         catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Jonah's mods section failed", e); }
         CATheme.heading(t, "Diagnostics", 0f);
-        t.addPara("Last scan: %s. Supported content is planned with; %s mod buildings were measured on a probe colony and are scored "
-                        + "from those measurements; %s analyzed and %s quarantined entries are never acted on. "
-                        + "Full report: saves/common/" + CADiagnostics.REPORT + ".data", 8f, hl,
+        t.addPara("Last scan: %s. Probe-measured: %s. Not acted on: %s analyzed, %s quarantined. "
+                        + "Report: saves/common/" + CADiagnostics.REPORT + ".data", 8f, hl,
                 CADiagnostics.getLastScan(), "" + CADiagnostics.count(CADiagnostics.Level.MEASURED),
                 "" + CADiagnostics.count(CADiagnostics.Level.ANALYZED), "" + CADiagnostics.count(CADiagnostics.Level.QUARANTINED));
         t.addButton("Rescan now", RESCAN, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 22f, 6f);
+        try { renderPerf(t); }   // 0.3.0.0 (A4)
+        catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "performance section failed", e); }
         // mod integrations: does each still find what it relies on after mod updates
         List<CACompat.Entry> ints = CACompat.installed();
         if (!ints.isEmpty()) {
             int ok = 0;
             for (CACompat.Entry e : ints) if (e.status == CACompat.Status.OK) ok++;
-            t.addPara("Mod integrations: %s of %s exactly as written for; the rest below.", 8f, hl, "" + ok, "" + ints.size());
+            t.addPara("Mod integrations: %s of %s OK.", 8f, hl, "" + ok, "" + ints.size());
             for (CACompat.Entry e : ints) {
                 if (e.status == CACompat.Status.OK) continue;
                 Color lc = e.status == CACompat.Status.NEWER ? hl : Misc.getNegativeHighlightColor();
@@ -381,7 +448,7 @@ public class CAIntel extends BaseIntelPlugin {
         // mod watch (0.2.38.0): each colony mod's verdict and its warnings in this game
         List<org.json.JSONObject> watch = CAModWatch.latest();
         if (!watch.isEmpty()) {
-            t.addPara("Mod watch (also in the report file, updated weekly):", 8f);
+            t.addPara("Mod watch (weekly):", 8f);
             for (org.json.JSONObject o : watch) {
                 String v = o.optString("verdict");
                 Color lc = "OK".equals(v) ? Misc.getPositiveHighlightColor() : "WARN".equals(v) ? hl : Misc.getNegativeHighlightColor();
@@ -395,8 +462,10 @@ public class CAIntel extends BaseIntelPlugin {
             }
         }
         for (Map.Entry<String, String> e : CABreaker.tripped().entrySet())
-            t.addPara("Paused this session: %s (didn't take effect three times; last at " + CALog.esc(e.getValue()) + ")", 4f, Misc.getNegativeHighlightColor(), e.getKey());
-        if (!CAConst.drift.isEmpty()) t.addPara("Mod values that changed since Autopilot was written (the new ones are used): " + CALog.esc(String.join("; ", CAConst.drift)), gray, 4f);
+            t.addPara("Paused: %s (no effect three times; last at " + CALog.esc(e.getValue()) + ")", 4f, Misc.getNegativeHighlightColor(), e.getKey());
+        for (Map.Entry<String, String> e : CAStep.broken().entrySet())
+            t.addPara("Stopped this session: %s (" + CALog.esc(e.getValue()) + ")", 4f, Misc.getNegativeHighlightColor(), e.getKey());
+        if (!CAConst.drift.isEmpty()) t.addPara("Mod values changed (new ones used): " + CALog.esc(String.join("; ", CAConst.drift)), gray, 4f);
         List<String> cal = CACalibrate.notable();
         if (!cal.isEmpty()) t.addPara("Corrected from your colonies: " + CALog.esc(String.join(", ", cal.subList(0, Math.min(12, cal.size())))), gray, 4f);
         int shown = 0;
@@ -414,6 +483,30 @@ public class CAIntel extends BaseIntelPlugin {
         if (total > shown) t.addPara((total - shown) + " more in the report file.", gray, 6f);
     }
 
+    /**
+     * 0.3.0.0 (A4, research 07 section 2 item 8): what the daily pass and its steps cost, measured this session (CAPerf), and
+     * how often the day caches answered instead of working something out again.
+     */
+    static void renderPerf(TooltipMakerAPI t) {
+        Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor();
+        CAPerf.Stat pass = CAPerf.get(CAPerf.PASS);
+        List<CAPerf.Stat> top = CAPerf.top(8);
+        if (pass == null && top.isEmpty()) return;
+        CATheme.heading(t, "Performance", 12f);
+        if (pass != null) t.addPara("Daily pass: %s ms last, %s average, %s max.", 6f,
+                pass.max > CAPerf.SLOW_PASS_MS ? Misc.getNegativeHighlightColor() : hl, CAPerf.ms(pass.last), CAPerf.ms(pass.avg), CAPerf.ms(pass.max));
+        for (CAPerf.Stat st : top)
+            t.addPara("    %s: %s ms average, %s max, %s runs", 2f, gray, hl, st.name, CAPerf.ms(st.avg), CAPerf.ms(st.max), "" + st.runs);
+        List<String> parts = new ArrayList<String>();
+        for (CACache.Memo<?> mo : CACache.ALL) if (mo.hits + mo.misses > 0) parts.add(mo.name + " " + mo.hitPercent() + "%");
+        if (CASimulator.hits + CASimulator.misses > 0)
+            parts.add("probe " + Math.round(100.0 * CASimulator.hits / (CASimulator.hits + CASimulator.misses)) + "%");
+        if (!parts.isEmpty()) t.addPara("Cache hits: " + CALog.esc(String.join(", ", parts)) + ".", gray, 4f);
+        // 0.3.0.0 (A4 fix): pages only read kept scores; a colony scored while one drew is a bug, with its caller in starsector.log
+        if (CAEngine.drawnEvals > 0) t.addPara("Scored while drawing: %s (should be 0).", 4f,
+                Misc.getNegativeHighlightColor(), "" + CAEngine.drawnEvals);
+    }
+
     @Override
     public void buttonPressConfirmed(Object buttonId, IntelUIAPI ui) {
         // every button goes through here: an error is logged and shown in the log instead of reaching the game (0.2.37.0)
@@ -426,10 +519,18 @@ public class CAIntel extends BaseIntelPlugin {
 
     void pressed(Object buttonId, IntelUIAPI ui) {
         CAData d = CAData.get();
+        String ladder = CARich.handle(buttonId);   // 0.3.0.0 (C3): the money ladder's Approve and Reject buttons
+        if (ladder != null) {
+            if (!ladder.isEmpty()) CALog.add(ladder, true);
+            ui.updateUIForItem(this);
+            return;
+        }
         if (CANav.page(buttonId) != null) {
             page = CANav.page(buttonId);
         } else if (RESCAN.equals(buttonId)) {
             CADiagnostics.runScan();
+        } else if (REFRESH.equals(buttonId)) {
+            CAEngine.refreshAll(d);   // 0.3.0.0 (A4 fix): a click scores the out-of-date colonies (no plan tracking); drawing never does
         } else if (CASetupUI.handle(buttonId, d.settings)) {
             if (!String.valueOf(buttonId).contains(":group:")) d.settings.setupDone = true;
         } else if (buttonId instanceof String[] && "agent".equals(((String[]) buttonId)[0])) {
@@ -472,6 +573,25 @@ public class CAIntel extends BaseIntelPlugin {
             if (m != null && Global.getSettings().getModManager().isModEnabled(CAAugments.MOD)) {
                 try { String err = CAAugments.applyNow(m); if (err != null) CALog.add(m.getName() + ": station augments: " + err); }
                 catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment action failed", t); CALog.add(m.getName() + ": station augments: that failed; see starsector.log", true); }
+            }
+        } else if (buttonId instanceof String[] && "expand".equals(((String[]) buttonId)[0])) {
+            String[] a = (String[]) buttonId;   // 0.3.0.0 (WS-D): Auto-expansion's buttons {"expand", action, id}
+            try {
+                String err = CAExpansion.handle(a[1], a[2], d, d.settings);
+                if (err != null) CALog.add("Auto-expansion: " + err, true);
+            } catch (Throwable t) {
+                CADiagnostics.LOG.warn(CADiagnostics.TAG + "expansion action failed", t);
+                CALog.add("Auto-expansion: that failed; see starsector.log", true);
+            }
+        } else if (buttonId instanceof String[] && CAFactionsPage.ID.equals(((String[]) buttonId)[0])) {
+            // 0.3.0.0 (WS-F2): the Factions page's stance steps and Reset all to Auto {"fac", ...}
+            try { CAFactionsPage.handle((String[]) buttonId, d); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "stance change failed", t); CALog.add("Factions: that failed; see starsector.log", true); }
+        } else if (buttonId instanceof String[] && "war".equals(((String[]) buttonId)[0])) {
+            String[] a = (String[]) buttonId;   // 0.3.0.0 (WS-E): the War page's buttons {"war", action, arg}
+            if (Global.getSettings().getModManager().isModEnabled(CAWar.MOD)) {
+                try { CAWar.handle(d, a[1], a.length > 2 ? a[2] : ""); }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "war action failed", t); CALog.add("War: that failed; see starsector.log", true); }
             }
         } else if (buttonId instanceof String[]) {
             String[] a = (String[]) buttonId;

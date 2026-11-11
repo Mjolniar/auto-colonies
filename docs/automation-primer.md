@@ -77,13 +77,14 @@ Build them on a fake colony from `createMarket(...)`. Copy the real colony's con
 - **Terraforming Made Easy.** Projects toggle a condition, so a stale plan can undo itself. Re-plan whenever conditions change.
 - **Ashes of the Domain.** Ask Building Menu Overhaul what's locked and what upgrades into what ([CAAotD](../src/data/scripts/jonahtweaks/autopilot/CAAotD.java)).
 
-## Coming in 0.3.0
+## Notes from 0.3.0
 
-- Built, in testing: saved classes use fixed XStream aliases, so classes can be moved or renamed without breaking saves.
-- Built, in testing: each daily step runs separately. A step that fails 3 days in a row is stopped for the session. Safety steps are never stopped.
-- Built, in testing: all timers use the game clock, and every check that can lower stability uses one shared rule.
-- Built, in testing: new and existing buildings are valued by the same code, and all builds go through one ranked queue.
-
-Plans can still change before release.
-
-Everything planned for 0.3.0: [roadmap](roadmap.md)
+- **Save aliases.** XStream saves full class names unless told otherwise. Give every saved class a short alias in `BaseModPlugin.configureXStream` before the first release, and `omitField` any field you delete; otherwise a later rename or removal breaks every save ([CAXStream](../src/data/scripts/jonahtweaks/autopilot/CAXStream.java)).
+- **The game clock is negative.** `getTimestamp()` counts milliseconds from 1970, so every game day is a negative number. A timer that starts at -1 or -99 meaning "never" looks recent on that clock; use NaN, and treat a stamp later than today as stale, because loading an earlier save sends the clock back ([CATime](../src/data/scripts/jonahtweaks/autopilot/CATime.java)).
+- **Clear statics on load.** Static caches survive loading another save in the same session. Reset them in `onGameLoad` ([CAReset](../src/data/scripts/jonahtweaks/autopilot/CAReset.java)).
+- **Custom production ignores your reserve.** `getPlayerFaction().getProduction().addItem(...)` queues ships the game charges at month end, whatever your credits. A mod that queues them should take its own items off again when money runs short ([CAShipyard](../src/data/scripts/jonahtweaks/autopilot/CAShipyard.java)).
+- **Local Resources.** Goods added to a colony's Local Resources as the player's own cargo cover shortages without the game's 10% stockpile charge ([CAStockpile](../src/data/scripts/jonahtweaks/autopilot/CAStockpile.java)).
+- **Nexerelin colony expeditions.** `ColonyExpeditionIntel.init()` can end the expedition at once (no jump point to the target), and Nexerelin refunds the player fee of an expedition that ends while organizing. Set the fee and take the price only after `init()` leaves it running. A colony Nexerelin founds gets a random administrator and does not count toward your colony limit until `ColonyManager.reassignAdminIfNeeded` hands it to you ([CAExpansionNex](../src/data/scripts/jonahtweaks/autopilot/CAExpansionNex.java)).
+- **Nexerelin bombardment.** A requested saturation bombardment (`SatBombIntel`) applies none of the reputation cost a bombardment in person has; Nexerelin adds only infamy. Apply the penalties yourself, once ([CAScorched](../src/data/scripts/jonahtweaks/autopilot/CAScorched.java)).
+- **Nexerelin and commissions.** While you hold a commission, a market a requested fleet captures goes to your commissioner.
+- **One step per try.** Wrap each daily step on its own and count its failures; one exception should not skip the rest of the day ([CAStep](../src/data/scripts/jonahtweaks/autopilot/CAStep.java)).

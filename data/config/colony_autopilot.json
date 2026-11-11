@@ -28,8 +28,7 @@
 
 	# Administrators
 	"adminHiring":true,
-	"adminOptimal":true,           # place idle administrators first
-	"adminDelay":true,             # 30-day arrival delay for hired administrators and ambassadors
+	"adminOptimal":true,           # place idle administrators first; hired administrators and ambassadors take 30 days to arrive
 
 	# Ambassadors (Industrial Evolution)
 	"ambassadorFocus":0,           # 0 worst relations first, 1 strongest factions, 2 nearest neighbors, 3 priority list only

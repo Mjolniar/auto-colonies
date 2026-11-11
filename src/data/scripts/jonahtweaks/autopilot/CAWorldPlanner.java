@@ -210,6 +210,7 @@ public class CAWorldPlanner {
             p.steps.addAll(done.steps);
             p.steps.add(new CAPlan.Step(CAPlan.Kind.BUILD, "tme_unification_center", industryName("tme_unification_center")));
             p.steps.add(new CAPlan.Step(CAPlan.Kind.COND, w, name(w)));
+            if (CAPlan.stepDropped(m, p)) continue;   // a structure it needs is out of reach here: dropped with the world that found it (0.3.0.0 test fix)
             // the world's industries, plus the colony's other industries, must fit the slots it can have at its max size
             int slots = 0;
             for (String ind : p.exact) if (isIndustry(ind)) slots++;

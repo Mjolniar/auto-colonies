@@ -394,7 +394,7 @@ public class CAHypershunt {
             if (CALog.once(key)) CALog.add(m.getName() + ": recommends restoring the " + next.name + " (" + cost + "); Start in the colony panel");
             return;
         }
-        if (next.total() > s.perProjectCap) {
+        if (next.total() > CAPresets.projectCap(s)) {   // 0.3.0.0 (WS-F1 fix): the cap in effect
             if (CALog.once(key + ":cap")) CALog.add(m.getName() + ": restoring the " + next.name + " (" + cost + ") is over the per-project cap; Start it in the colony panel");
             return;
         }
@@ -476,10 +476,10 @@ public class CAHypershunt {
         if (s == null) return;
         if (s.restored) { t.addPara("%s: restored" + (s.upkeep > 0f ? ", " + Misc.getDGSCredits(s.upkeep) + " a month upkeep." : "."), 6f, hl, s.name); return; }
         if (s.restoring) {
-            t.addPara("%s: restoring, %s done, %s days left at full deliveries, about %s a month.", 6f, hl, s.name,
+            t.addPara("%s: restoring, %s done, %s days left, about %s a month.", 6f, hl, s.name,
                     Math.round(s.progress * 100f) + "%", "" + (int) Math.ceil(s.daysLeft), Misc.getDGSCredits(s.monthlyCredits));
         } else {
-            t.addPara("%s: not restored. Restoring takes about %s a month for %s months.", 6f, hl, s.name, Misc.getDGSCredits(s.monthlyCredits), "" + s.months());
+            t.addPara("%s: not restored; about %s a month for %s months.", 6f, hl, s.name, Misc.getDGSCredits(s.monthlyCredits), "" + s.months());
         }
         List<String> needs = new ArrayList<String>();
         for (Map.Entry<String, Integer> e : s.monthly.entrySet()) {
@@ -503,46 +503,45 @@ public class CAHypershunt {
         for (SectorEntityToken r : h.serving) {
             float ly = Misc.getDistanceLY(h.m.getPrimaryEntity(), r);
             boolean on = h.collectorUp() && ly <= h.reachLY();
-            t.addPara("Receiver in %s, %s ly: %s, %s colonies get +2 industry slots.", 4f, on ? hl : bad, where(r), "" + Math.round(ly),
-                    on ? "working" : !h.collectorUp() ? "idle until the Coronal Collector is restored" : "out of range", "" + colonies(r.getContainingLocation()).size());
+            t.addPara("Receiver in %s, %s ly: %s, %s colonies +2 slots.", 4f, on ? hl : bad, where(r), "" + Math.round(ly),
+                    on ? "working" : !h.collectorUp() ? "idle (Collector not restored)" : "out of range", "" + colonies(r.getContainingLocation()).size());
         }
-        for (SectorEntityToken r : h.idle) t.addPara("Receiver in %s: no colony of yours there yet.", 4f, gray, where(r));
-        for (SectorEntityToken r : h.beyond) t.addPara("Receiver in %s: %s ly away, past the longest range (%s ly).", 4f, bad, where(r),
+        for (SectorEntityToken r : h.idle) t.addPara("Receiver in %s: no colony there yet.", 4f, gray, where(r));
+        for (SectorEntityToken r : h.beyond) t.addPara("Receiver in %s: %s ly, past the range (%s ly).", 4f, bad, where(r),
                 "" + Math.round(Misc.getDistanceLY(h.m.getPrimaryEntity(), r)), "" + h.steps * h.mult);
     }
 
     /** The colony panel's section for a hypershunt colony. */
     public static void renderColony(TooltipMakerAPI t, MarketAPI m, CAData.Colony c, CASettings s) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
-        t.addPara("Ashes of the Domain caps this colony at size 2 and allows no buildings, so Autopilot builds nothing here. Its port, "
-                + "patrol HQ and star fortress are built in and hidden; Autopilot never touches hidden buildings.", gray, 6f);
+        t.addPara("Size 2 cap, no buildings.", gray, 6f);   // 0.3.0.0 (WS-F3 fix pass 3): 33 words down to 5
         if (!Global.getSettings().getModManager().isModEnabled(MOD)) return;
         Shunt h = find(m);
-        if (h == null) { t.addPara("The hypershunt's state can't be read; see starsector.log.", gray, 6f); return; }
+        if (h == null) { t.addPara(CATheme.NOT_SHOWN, gray, 6f); return; }
         boolean buttons = s.hypershuntMode != 2;
         section(t, h, h.collector, buttons, CAColonyDialog.HS + "restore:" + COLLECTOR);
         section(t, h, h.wormhole, buttons, CAColonyDialog.HS + "restore:" + WORMHOLE);
         if (!researched(TECH_RESTORE)) t.addPara("Restoring sections needs %s researched.", 4f, hl, techName(TECH_RESTORE));
         int tgt = target(h);
-        t.addPara("Range: %s light-years (%s set), upkeep %s and %s purified transplutonics a month.", 8f, hl, "" + h.reachLY(),
+        t.addPara("Range %s ly (%s set); upkeep %s and %s transplutonics a month.", 8f, hl, "" + h.reachLY(),
                 "" + h.range * h.mult, Misc.getDGSCredits((h.effective - 1) * STEP_UPKEEP), "" + (h.range - 1) * STEP_PTM);
-        if (h.effective < h.range) t.addPara("Short of purified transplutonics, so the range is cut to %s light-years.", 4f, Misc.getNegativeHighlightColor(), "" + h.reachLY());
+        if (h.effective < h.range) t.addPara("Short of transplutonics: range %s ly.", 4f, Misc.getNegativeHighlightColor(), "" + h.reachLY());
         if (tgt > 0 && tgt != h.range) {
-            t.addPara("Receivers serving your colonies need %s light-years.", 4f, hl, "" + tgt * h.mult);
+            t.addPara("Your receivers need %s ly.", 4f, hl, "" + tgt * h.mult);
             if (buttons) t.addButton("Set range to " + tgt * h.mult + " ly", CAColonyDialog.HS + "range:" + tgt, base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
         }
         if (c.hsManual) {
-            t.addPara("You set the range yourself, so Autopilot leaves it.", gray, 4f);
+            t.addPara("You set the range; Autopilot leaves it.", gray, 4f);
             t.addButton("Let Autopilot manage it", CAColonyDialog.HS + "manage:x", base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
         }
         receivers(t, h);
         String[] why = new String[1];
         Section next = nextRestore(h, why);
         t.addPara(next != null ? "Next: restore the " + CALog.esc(next.name) + "." : "Next: nothing to restore; " + CALog.esc(why[0]) + ".", hl, 8f);
-        String when = s.hypershuntMode == 2 ? "Hypershunt management is off in Settings."
-                : s.hypershuntMode == 1 ? "Hypershunt is set to Recommend only, so nothing changes until you click."
-                : c.mode == CAData.Mode.AUTO ? "Auto sets the range and starts restorations within the budget."
-                : "Switch this colony to Auto to have the range and restorations handled.";
+        String when = s.hypershuntMode == 2 ? "Off in Settings."
+                : s.hypershuntMode == 1 ? "Recommend only: click to change."
+                : c.mode == CAData.Mode.AUTO ? "Auto sets the range and restores within the budget."
+                : "Auto colonies handle this.";
         t.addPara(when, gray, 4f);
     }
 
@@ -550,8 +549,8 @@ public class CAHypershunt {
     public static void renderEmpire(TooltipMakerAPI t, CAData d, CASettings s) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         List<Shunt> shunts = all();
-        t.addPara("Mode: %s. Keeps each hypershunt's range at the smallest that reaches every receiver serving your colonies and "
-                + "restores the next useful section within the budget.", 6f, hl, CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.hypershuntMode))]);
+        CATheme.mode(t, CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.hypershuntMode))]);   // 0.3.0.0 (WS-F3 fix): the mode as a readout
+        t.addPara("Sets the range to reach your receivers; restores useful sections.", 4f);
         for (Shunt h : shunts) {
             CAData.Colony c = d.colony(h.m.getId());
             String[] why = new String[1];
@@ -565,13 +564,12 @@ public class CAHypershunt {
                 t.addButton("Set range to " + tgt * h.mult + " ly", new String[]{"hs", "range", h.m.getId(), "" + tgt}, base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
         }
         if (!researched(TECH_RECEIVER)) {
-            t.addPara("Research %s to build Hypershunt Receivers: +2 industry slots for every colony in the receiver's system.", 8f, hl, techName(TECH_RECEIVER));
+            t.addPara("Research %s for Hypershunt Receivers.", 8f, hl, techName(TECH_RECEIVER));
             return;
         }
         List<Spot> spots = spots(shunts);
         if (spots.isEmpty()) return;
-        t.addPara("Where a receiver would pay off (build one in person at a stable location: 1 Coronal Hypershunt Tap, 1,000 refined metal, "
-                + "100 Domain-era machinery; you have %s taps):", 8f, hl, "" + taps());
+        t.addPara("Receiver sites (built in person; %s taps):", 8f, hl, "" + taps());
         int shown = 0;
         for (Spot sp : spots) {
             if (shown++ >= 5) break;

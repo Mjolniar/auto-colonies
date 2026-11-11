@@ -1,81 +1,36 @@
-# 0.3.0 roadmap
+# 0.3.0 overview
 
-What the next major version changes, and how far along each part is. Current version: 0.2.45.2. 0.3.0 has no release date yet, and plans can still change before release.
+What 0.3.0.0 changed, where each part is described, and what is still open. Full list: [patch notes](changelog.md).
 
-## Status
+## Parts
 
-| Part | Status |
-|---|---|
-| Save format, reliability, stability checks, performance | Built, in testing |
-| Build planner | Built, in testing |
-| Money ladder | Planned |
-| Auto-expansion | Planned |
-| War and diplomacy | Planned |
-| Settings menu | Planned |
+| Part | Status | Guide |
+|---|---|---|
+| Save format, reliability, one stability rule, performance | In 0.3.0.0 | [Source guide](source-guide.md#whats-saved) |
+| Build planner: one queue, payback horizon, removal marks | In 0.3.0.0 | [How it builds](how-it-builds.md) |
+| Money tiers and the money ladder: stockpiles, growth, military, shipyard, economy, wonders | In 0.3.0.0 | [Money](money.md) |
+| Auto-expansion (New colonies), off by default | In 0.3.0.0 | [New colonies](expansion.md) |
+| War level, faction stances, diplomacy, conquest, scorched earth (Nexerelin) | In 0.3.0.0 | [War and security](war-and-security.md) |
+| Settings menu: 20 main rows, Advanced, Factions, War and Expansion pages | In 0.3.0.0 | [Settings](settings.md) |
 
-## Save format and reliability
+## Defaults
 
-Built, in testing.
+| Setting | New game | Save from 0.2.45 |
+|---|---|---|
+| War level | Retaliate | The level matching War fleets (Protect and strike back: Retaliate; Protect: Defend; Off: Off) |
+| Retake your lost colonies | On | Off |
+| Faction stances | All Auto | From faction priorities (High: Friendly, Normal: Auto, Ignore: Rival) |
+| Bombardment | Not authorized | Not authorized |
+| New colonies | Off | Off |
+| What to buy | Balanced | Balanced |
+| Shipyard and Expansion rungs | Recommend only | Recommend only |
+| Payback horizon | 36 months, up to 120 | 36 months, up to 120 |
 
-- Saved data uses fixed short names, so later updates can rename code without breaking saves.
-- Saves from 0.2.45.x load in 0.3.0. Saves made in 0.3.0 don't load in 0.2.45.x.
-- Each daily step runs on its own. If one fails, it's logged in Diagnostics and the other steps still run.
-- Anything that can lower stability first checks that the colony stays at or above the minimum stability setting (default 5, never under 3).
-- Plans and scores are worked out once a day and reused until something changes.
+## Open items
 
-## Build planner
-
-Built, in testing. See [How it builds](how-it-builds.md).
-
-- Builds, upgrades and projects for all colonies go into one ranked list.
-- A colony's construction slot goes to the option that earns the most per day of construction.
-- A build has to pay back its cost within 36 months. That grows to 120 months as spare credits go up.
-- Buildings the mod removes aren't rebuilt at that colony for a year. This part is already in 0.2.45.2.
-- Shortages count buildings already under construction, so two colonies don't both build for the same shortage.
-- The budget uses the median colony income of the last 3 months.
-
-## Money ladder
-
-Planned. See [Money](money.md).
-
-- Five money tiers, T0 (Tight) to T4 (Endgame), based on colony income and free credits.
-- Spare money goes to a list of uses in order: stockpiles, growth, military, ships, expansion, economy. You can change the order.
-- Ships are bought from your Doctrine list at normal prices. Purchases stop at 6 unclaimed hulls at the capital.
-- Ship purchases and expansion start in Recommend mode: the mod proposes, and you approve.
-
-## Auto-expansion
-
-Planned. Needs Nexerelin.
-
-- Uses Nexerelin's colony expeditions.
-- One on/off setting, off by default. It asks for confirmation before the first expedition.
-- Looks for targets in your own systems first. Normal costs and travel time apply.
-- Doesn't go past the colony limit unless an administrator is available.
-- Planned default rate: one new colony per 120 days at tier T2, one per 60 days at T3.
-
-## War and diplomacy
-
-Planned. Needs Nexerelin. See [War and security](war-and-security.md).
-
-- One empire-wide war level: Off, Defend, Retaliate, Hold them down, Conquer, Scorched. Retaliate matches what 0.2.45.x does and is the default.
-- A stance for each faction: Ally, Friendly, Neutral, Auto, Rival, Enemy, Destroy. Auto matches what 0.2.45.x does.
-  - Enemy stays at war and turns down ceasefires.
-  - Destroy invades until the faction has no markets left.
-- Retaking your own lost colonies is on in new games and off in saves from 0.2.45.x.
-- Bombarding capitals is off by default and needs a confirmation.
-- A Stand down button sets the war level to Defend and cancels operations that haven't launched yet, with a full refund.
-- Old saves carry over:
-  - the old war mode becomes the matching war level;
-  - faction priorities become stances (High to Friendly, Normal to Auto, Ignore to Rival).
-
-## Settings menu
-
-Planned. See [Settings](settings.md).
-
-- About 20 main settings in 6 groups (14 without other mods), plus an Advanced section. 0.2.45.x has 76 rows.
-- Shorter descriptions, with the details moved to hover text.
-- New pages for Factions, War and Expansion.
-- First-time setup is 5 rows. Existing settings carry over.
+- The plan's own TME projects and paid item, core and administrator moves still spend in their own steps. They check the planner's savings first. Moving them into the planner's queue is planned for 0.3.0.x.
+- The 0.2.45 build engine stays behind a hidden switch (`legacyPlanner`) for 0.3.0.x.
+- 0.3.0.0 passed the offline checks and a short in-game test on one save ([patch notes](changelog.md#not-tested-in-a-running-game-yet)). Not tested in a game yet (they need a Nexerelin war, a commission or a new colony): player-faction saturation bombardment, Nexerelin colony fleets for the player, conquered-colony rebellions, invasions while commissioned, ceasefire answers, Stand down refunds, Autopilot crew founding. Report problems in the [issues](https://github.com/Mjolniar/jonahs-colony-manager/issues).
 
 ## Updating
 

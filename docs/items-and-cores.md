@@ -2,68 +2,56 @@
 
 ## Quick version
 
-- Items and cores live in each colony's **Autopilot Storage** tab and are placed where they add the most.
-- Moving one between colonies costs a fee and a few days.
-- **Inspection risk** limits AI core points per colony to avoid Hegemony inspections. Recommended: 7 points or under at every colony.
-- Administrators are hired where they add more than they cost, and always past your colony limit.
+- Items and cores in **Autopilot Storage** go to the Auto colony where they add most, for a fee and a few days.
+- **AI cores** on Safe keeps colonies at 7 AI core points or under, which avoids Hegemony inspections.
+- Administrators are hired where they pay, and always past your colony limit.
 
 ## Autopilot Storage
 
-Every colony has an **Autopilot Storage** tab. The manager only takes items and cores from there, and only places them at Auto colonies. Moving one to another colony costs 2,000 plus 300 a light-year (scaled by your convenience fee) and takes a couple of days plus a day a light-year.
+The empire panel's **Autopilot Storage** page shows stock and shipments.
 
-**Goes in:** colony items, AI cores, research databanks, Antimatter Stabilizers, VPC chips, recipes. **Stays out:** blueprints, access keys and campaign consumables. Keep those in your cargo or normal Storage.
-
-The empire panel's **Autopilot Storage** page shows what's where and what's on its way.
+- **Goes in:** colony items, AI cores, research databanks, Antimatter Stabilizers, VPC chips, recipes.
+- **Stays out:** blueprints, access keys, campaign consumables.
+- **Moves:** 2,000 plus 300 a light-year (scaled by your convenience fee); a couple of days plus a day a light-year. Loads on one route within 7 days share one fee.
 
 ## Colony items
 
-Each goes where it adds the most. A better item swaps in for a lesser one of the same kind. A nanoforge in storage can get a Heavy Industry built.
-
-A polluting nanoforge (Corrupted, Pristine) never goes into a forge on a habitable world, since the pollution is permanent after 90 days. Clean ones are fine. Lock a building to keep an item you placed. A few useless items are never installed ([details.md](details.md)).
+- An item goes where its extra output adds most to the colony's supply. A better item of the same kind replaces a lesser one.
+- A nanoforge in storage can get a Heavy Industry built.
+- Polluting nanoforges (Corrupted, Pristine) stay out of forges on habitable worlds (pollution is permanent after 90 days).
+- A few useless items are not installed ([details.md](details.md)).
 
 ## AI cores
 
-**Use AI cores** is on by default. Alpha goes where its +1 output or a structure bonus is worth most, Beta where upkeep is highest, Gamma only where an input is short. **Alpha cores** can be **Only where removable** (recommended), Anywhere, or Never. Cores add crisis progress, which is counted ([War and security](war-and-security.md)).
+Settings, Items and people. The Hegemony inspects only colonies over 7 inspection points. Cores over a colony's limit go back, one a day.
+
+| AI cores | Inspection risk | Hegemony inspections |
+|---|---|---|
+| Off | kept | kept |
+| **Safe** (recommended) | Never inspected | Advise |
+| Small colonies only | Small colonies only | Advise |
+| Defended | More where defended | Resist where defended (makes the Hegemony hostile) |
+| No limit | No limit | Advise |
+
+- **Advise** logs each inspection so you can resist or bribe.
+- Alpha: where +1 output or a structure bonus is worth most. Beta: highest upkeep. Gamma: only where an input is short.
+- **Alpha cores** (Settings, Advanced, AI cores and items): **Only where removable** (recommended), Anywhere, Never.
 
 ### Storage logistics
 
-Off until you switch it on. Pick a **refit hub** and a **sell hub**. Weekly, it ships refit gear (ships, weapons, wings, blueprints, specs, and supplies, fuel, crew and marines if you want) from your other Storage tabs to the refit hub. Known blueprints and specs go to the sell hub. Each load costs a fee plus 1,000 a ship, from the budget.
+Off by default. Set a **refit hub** and a **sell hub** (Settings, Advanced, Capital and storage). Weekly, refit gear (ships, weapons, wings, blueprints, specs; optionally supplies, fuel, crew, marines) goes from other Storage tabs to the refit hub. Known blueprints and specs go to the sell hub. Each load: a fee plus 1,000 a ship, from the budget.
 
 ### Omega cores
 
-Only stored with **Omega Core Everywhere** or **Astral Ascension Renewed**. The first puts one where it does most. The second can make one an administrator, which counts 10 inspection points, so **Inspection risk** has to allow it. Once placed, an AI core administrator is never swapped out.
-
-## Hegemony inspections
-
-They only inspect colonies over 7 inspection points. **Inspection risk**:
-
-- **Never inspected** (recommended)
-- **More where defended**
-- **Small colonies only**
-- **No limit**
-
-A colony over its limit sends cores back one a day. **Hegemony inspection orders**: **Advise** (recommended) logs each one so you can resist or bribe. **Resist where defended** turns the Hegemony hostile.
+Stored only with **Omega Core Everywhere** or **Astral Ascension Renewed** ([Supported mods](supported-mods.md#omega-core-everywhere-and-astral-ascension-renewed)). A placed AI core administrator is not swapped out.
 
 ## Administrators
 
-- **Administrator hiring** (on). Hires when one is worth it.
-- **Assign administrators optimally.** Places and moves them where they add most.
+**Administrators** (Settings, Items and people): Off, Place only, or **Hire and place** (recommended).
 
-They add +1 to everything a colony's industries make, plus stability from your colony limit, against 2,500 a month (20,000 with a skill) and the hiring cost. Hires take 30 days.
-
-**Past your colony limit**, one is always placed or hired, since each extra colony costs all colonies 2 stability. That can go over budget, never under the reserve.
-
-The game rarely offers administrators. With none on offer for 90 days past your limit, the manager pays a recruiter 250,000 on top of the normal cost. Docking around is cheaper.
-
-## Coming in 0.3.0
-
-- Built, in testing: items are placed only where their extra output raises the colony's supply of that good.
-- Built, in testing: administrators aren't moved if the move would cost stability.
-- Built, in testing: paid item, core and administrator moves wait while the planner is saving for a large build. Administrators needed for the colony limit are still hired right away.
-- Planned: auto-expansion (off by default) only founds a colony when an administrator or colony-limit room is available.
-
-Everything planned for 0.3.0: [roadmap](roadmap.md)
-
-Plans can still change before release.
+- Each adds +1 to everything the colony's industries make, plus stability from your colony limit. Cost: 2,500 a month (20,000 with a skill) plus hiring. Hires take 30 days.
+- A move that would take a colony under the stability floor waits. The management bonus a self-governed colony loses (under your limit) is counted.
+- Past your colony limit (each extra colony costs all colonies 2 stability), one is always placed or hired right away. This can go over budget. It does not go under the reserve. Colonies Auto-expansion is founding count ([New colonies](expansion.md)).
+- After 90 days past your limit with none on offer, a recruiter adds 250,000 to the normal cost.
 
 Next: [War and security](war-and-security.md).

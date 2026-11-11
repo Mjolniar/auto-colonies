@@ -4,8 +4,8 @@
   "modThreadId": "36266",
   "modVersion": {
     "major": 0,
-    "minor": 2,
-    "patch": "45.2"
+    "minor": 3,
+    "patch": "0.0"
   },
   "directDownloadURL": "https://github.com/Mjolniar/jonahs-colony-manager/releases/latest/download/JonahsColonyManager.zip",
   "changelogURL": "https://raw.githubusercontent.com/Mjolniar/jonahs-colony-manager/main/docs/changelog.md"

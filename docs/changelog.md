@@ -1,6 +1,106 @@
 # Patch notes
 
-Every version, newest first. If you're wondering why the first version on here is 0.2.1.0: this started as **Jonah Tweaks**, a personal mod of little tweaks for my own games (bigger battle size, sticky combat autopilot, that kind of thing), and Colony Autopilot grew inside it until it became the main thing. 0.2.1.0 is when it went up on GitHub, and 0.2.6.0 was the first version with a downloadable release. The balance tweaks moved out into their own mod in 0.2.7.0, so this one only manages colonies.
+Every version, newest first. The mod started as **Jonah Tweaks**, a personal mod of small tweaks (battle size, combat autopilot). Colony Autopilot grew inside it. 0.2.1.0 is the first version on GitHub and 0.2.6.0 the first with a downloadable release. The balance tweaks moved to their own mod in 0.2.7.0.
+
+Version numbers start with 0 since 0.3.0.0, because the mod is not at 1.0. Earlier versions are listed with the 0 added: 2.45.2 is 0.2.45.2. Release tags keep their old names (v2.45.2).
+
+## 0.3.0.0 - 2026-11-11
+
+Major version. A save made on 0.3.0 does not load in 0.2.45.x. Back up your save before updating.
+
+Version Checker and TriOS compare version numbers, so they read 0.3.0.0 as lower than 2.45.2 and do not show it as an update. Download it from the release page.
+
+### New
+
+- **Settings menu.** 20 main rows in 6 groups: Playstyle, Money, Building, Items and people, Security and diplomacy, Interface. Every older setting is under Advanced (11 subgroups) or on a page. Ten main rows are presets that set several older settings; a row shows Custom when its settings match no preset. Each main row has one line of 20 words or fewer, with the detail in hover text. Settings screen text: 1,458 words (0.2.45: 2,980). See [Settings](settings.md).
+- **First-time setup.** 5 rows: Spending, Extras, New colonies, War (Nexerelin) and Credit reserve. Everything else uses the recommended settings.
+- **Spending presets.** Thrifty (30% of net income, 5% of savings, new upkeep up to 5% of net income), Normal (50%, 15%, 10%; the 0.2.45 recommendation), Lavish (80%, 30%, 20%). The per-project cap is Automatic: half, all or twice net income by preset.
+- **New pages** in the empire panel: Expansion, War (Nexerelin) and Factions.
+- **Build planner.** One ranked queue for all colonies: builds, upgrades, surplus terraforming, extra Research Facilities, wonder sites, stable-location crews and story point improvements. See [How it builds](how-it-builds.md).
+  - A build must pay back its price, fee and build time within 36 months. The limit rises to 120 months as surplus credits reach 10,000,000.
+  - A colony's construction slot goes to the build that earns the most per day of construction.
+  - Money goes to the best return per credit across all colonies. A large build that waits for money is saved for, and smaller builds do not spend its savings.
+  - A building Autopilot takes down is not built again at that colony for a year. What Autopilot paid for a building counts against taking it down.
+- **Money tiers.** Tight, Surplus, Idle money, Rich, Endgame, from free cash (credits less the reserve, production still to pay and 2 months of upkeep and fleet costs), colony net income and idle months. Saved with the game. See [Money](money.md).
+- **Money ladder.** From Surplus up, a share of free cash each month (20%, 35%, 60% or 80% by tier) goes to rungs in order: Stockpiles, Growth, Military, Shipyard, Expansion, Economy, Wonders. Presets: Balanced, Fleet, Expansion, Economy, Save. Each rung is On, Recommend only or Off.
+- **Shipyard.** From Idle money, orders ships from your Doctrine priority list through the game's custom production, at the game's prices plus a 2% fee. One order a month. Stops at 6 unclaimed hulls. Default: Recommend only.
+- **Stockpiles.** Buys goods for a colony's Local Resources when a shortage cuts industry output or patrols and the lost output is worth more than price, tariff and shipping. Up to 3 months of cover.
+- **Military rung.** From Idle money, upgrades stations, Patrol HQ and Military Base at Auto colonies and buys military goods. New upkeep from it stays within 15% of colony net income.
+- **Auto-expansion** (the New colonies row). Off, Ask first or Auto. Founds colonies by Nexerelin colony fleet or an Autopilot crew, at cost plus the fee, with an administrator when the colony limit needs one. Default: Off. See [New colonies](expansion.md).
+- **War level** (Nexerelin). Off, Defend, Retaliate, Hold them down, Conquer, Scorched. Replaces the War fleets setting. Default: Retaliate, which is 0.2.45's Protect and strike back plus Retake (below). War fleets act whatever the colony modes are, Advisor included. See [War and security](war-and-security.md).
+- **Faction stances.** Ally, Friendly, Neutral, Auto, Rival, Enemy, Destroy, set on the Factions page. A stance caps the War level used on that faction and sets how agents, IndEvo ambassadors and ceasefire offers treat it. Default: Auto (relations and offers as in 0.2.45).
+- **Conquest** (War level Conquer). Invasions of Enemy and Destroy markets through Nexerelin's invasion fleets, one at a time. Conquered colonies get Nexerelin's autonomy taken back and the Security goal until stable. A conquered colony gets the mode from **Conquered colonies start in** (default Auto) and is kept above 0 stability only on Auto. On Approve or Advisor that is left to you.
+- **Scorched** (War level Scorched). Saturation bombardment of a Destroy faction's capital after you authorize it on the War page. Colony Manager applies the reputation penalties a bombardment in person has.
+- **Retake** (War level Retaliate and up). Invades colonies that were yours, your lost capital first, with the fee. On for new games and for saves without Colony Manager, off for saves from 0.2.45. A retaken colony keeps the mode it had before it was lost and is kept above 0 stability only on Auto.
+- **Stand down** on the War page: War level to Defend, declarations and bombardment authorization cleared, operations still organizing cancelled with Nexerelin's full refund.
+- **Fees on new war operations.** Retakes, raids and blockades from Hold them down, invasions and bombardments pay the fee level times 10% of Nexerelin's price. Relief, defense fleets, base strikes and strikes back pay no fee, as in 0.2.45.
+- **Diagnostics.** A Performance section (time per step of the daily pass) and a load-time link check for Nexerelin, Industrial Evolution, Random Assortment of Things, Station Augments and Terraforming Made Easy.
+- **On-screen log codes.** TIER, STOCK, SHIPYARD, EXPAND, WAR, DIPLO, SETUP.
+
+### Changed
+
+These rules also apply to saves from 0.2.45.
+
+- **Spending freely.** Starts at the money tier Rich with credits over the surplus line of at least half the line (1,500,000 over the 3,000,000 line). Ends when the tier drops under Rich or the credits over the line fall under a fifth of the line (600,000). Off with no credits over the line. 0.2.45.2: started at 10,000,000 over the line and ended under 7,000,000.
+- **Endgame economy.** Starts at the money tier Endgame (Rich, and colony net at the Endgame row's line) while spending freely. Ends when spending freely ends or colony net goes below 0. 0.2.45: ended when the credits over the surplus line fell under 5,000,000 or net income went below 0.
+- **Hazard pay.** Below the money tier Rich, a colony gets hazard pay only if it reaches its next size within 24 months with it (36 months when that size adds an industry slot). A colony already paying keeps it up to 25% past that. This applies whatever the Growth rung's mode. With the Growth rung On, the hazard pay budget rises to the tier's share of colony net (Surplus 40%, Idle money 60%, Rich and Endgame no tier cap), up to the rung's room for the month, and stays at least your setting's budget.
+- **Capital trade buildings.** A trade building that costs more than it earns is built only from the money tier Surplus up, with the Economy rung On, while the upkeep of all such buildings at the capital stays within 5% of colony net. Commerce and trade buildings already built are unchanged. The make-room swap (taking down an industry for a trade building) runs only from the money tier Idle money up.
+- **Surplus research and surplus terraforming.** They start something only from the money tier Surplus up with the Economy rung On. On Recommend only or Off they start nothing.
+- **Surplus research.** Below the money tier Idle money, another Research Facility must be worth more than its full upkeep (0.2.45: a quarter of it). From Idle money up, more than half its upkeep. Below Rich, surplus research builds at most 3 Research Facilities of its own. The endgame still builds them while research is left.
+- **Shipments between colonies.** A shipment on a route with a load sent in the last 7 days and still on the way joins that load and pays no new fee. The whole load arrives once the new part has travelled its full time, at most 7 days later than the earlier part's planned arrival.
+
+### Fixed
+
+The 0.3.0 planning read 58 game months of one campaign's logs (versions 2.41 to 2.44). These were the largest wastes, with the 0.3.0 change for each:
+
+| Found in the logs | 0.3.0 |
+|---|---|
+| 69 builds and upgrades for 17.77M; about 2.27M of that was later taken down | Taking down uses the same value math as building. A building taken down stays off that colony's list for a year. |
+| The budget sat at its 6-month carry cap in 15 of 58 months, peak 11.59M saved; up to 19.9M of budget room discarded | Budget room past the cap is kept while the credits are in your account above the reserve. The money ladder spends idle money. |
+| 95 of 133 "nothing worth starting" lines (71%) were a busy construction slot; two 360-day TME structures held a slot 11 months each while a Heavy Industry worth about 218,000 a month waited | The slot goes to the most value per day of construction. |
+| Ming Adi: 1.525M paid to add Toxic Atmosphere, then the plan wanted to pay to remove it | A world plan that already paid for terraforming switches only to a plan worth at least twice as much. |
+| 16 missed trade contract deliveries on 11 contracts | Colony Manager counts its own contracts against spare goods until Theory of Toolbox catches up. One new contract per commodity a month. |
+| Free port changed 37 times, hazard pay 24 | A closed free port reopens after its conditions hold 30 days. Hazard pay uses a 3-month median of colony net income. |
+| One month at -188,000 net switched hazard pay off at every colony for 30+ days | Budgets, caps and hazard pay use the 3-month median of colony net income. Custom production, AotD orders and your fleet's draw on colony stockpiles are not in it. |
+| Plan bonuses (60,000 / 40,000 / 20,000) and a flat +15,000 for upgrades outweighed the value math | Only enabler steps keep a plan bonus. Other plan steps are valued by what they earn, plus half of what they lead to. |
+| 52 sieges, 13 of them over in under 5 seconds | A passing fleet starts a siege only when it can threaten the colony or stays a day. |
+
+Other fixes:
+- Shortages count buildings already under construction, so two colonies do not build for the same shortage.
+- Every step of the daily pass runs on its own. A step that fails 3 days in a row stops for the session, with one log line and a Diagnostics entry. The 0-stability safety net and the other safety steps keep running.
+- The 0-stability safety net runs before the day's building.
+- One stability rule for every takedown, move, pull, policy and new action: the colony stays at or above the floor (minimum stability: 5 by default, at least 3).
+- Timers run on the game calendar. Loading an earlier save clears every cache and timer.
+- Colony Manager's own errors no longer quarantine buildings. Vanilla buildings are not quarantined.
+- The "logged once" list no longer resets at 2,000 entries.
+- starsector.log gets a repeated error's stack trace once, then a short line at most once a week.
+- The panels show the day's scores and re-score only on Refresh or after a change.
+- Research spends databanks on filler techs (no payback within a year) only with idle money: spending freely or the Idle money tier.
+- Credits move through one payment function. An offline check fails any other file that changes credits.
+- Special worlds: when a building the special worlds need is out of reach at a colony (the Unification Center, which all of them need), every special world that needs it is dropped there for a year, with one log line. Before, each world was dropped on its own, with a new log line every 1 to 7 days.
+
+### Saves from 0.2.45
+
+- Settings carry over. War fleets "Protect and strike back" becomes War level Retaliate, "Protect" becomes Defend, Off stays Off.
+- Faction priorities become stances: High to Friendly (Ally when Stop raising relations at is Never stop), Normal to Auto, Ignore to Rival. A stance from a priority keeps 0.2.45's diplomacy until you set it on the War page or the Factions page.
+- Retake is off. Auto-expansion is Off. No faction is set to Enemy or Destroy. Bombardment is not authorized.
+- Money ladder: Balanced. Shipyard and Expansion rungs: Recommend only. Stockpiles, Growth, Military, Economy and Wonders rungs: On.
+- The per-project cap stays a Fixed number unless it equals the Automatic cap.
+- The money tier starts at Tight and rises from there. A save that was spending freely starts at Rich.
+- One on-screen line: "SETUP / Settings: moved to the 0.3.0 menu, nothing you set changed". A What's new in 0.3.0 box shows on the Settings page for 30 days.
+- Removed settings: admin delay (hires always took 30 days) and four old fields that moved to Easy Sector in 0.2.37.0.
+- The 0.2.45 build engine is in 0.3.0.x behind a hidden switch (`legacyPlanner`) in case the new planner misbehaves. If the planner fails 3 days in a row, the old engine runs for the rest of the session.
+
+### Not tested in a running game yet
+
+0.3.0.0 passed the offline checks (it compiles, its bytecode verifies against every combination of the optional mods, 75 check suites) and a short in-game test on one save from 0.2.45.2. These parts have not run in a game yet. They need a Nexerelin war, a commission or a new colony:
+- Saturation bombardment by a player-faction fleet. Nexerelin has no fleet request type for it.
+- Nexerelin colony fleets for the player: crew capacity, and the hand-over of the new colony to you.
+- Conquered colonies: autonomy taken back, rebellions, a colony lost to rebels.
+- An invasion while you hold a commission (blocked by design).
+- Ceasefire offers accepted and rejected by stance.
+- Stand down and Recall all refunds.
+- An Autopilot crew founding a colony.
 
 ## 0.2.45.2 - 2026-11-09
 

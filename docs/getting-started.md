@@ -2,69 +2,58 @@
 
 ## Quick version
 
-- Extract the zip into `Starsector/mods/` and enable **Jonah's Colony Manager**.
-- Every colony starts in **Advisor**, which only recommends. Nothing builds until you pick Approve or Auto.
-- Found a colony, open its panel, pick a goal, then set the mode.
+- Colonies start in **Advisor** (recommendations only). **Approve**: one proposal at a time to approve or reject. **Auto**: builds within your budget.
+- The first switch to Approve or Auto opens a 5-row setup. The rest uses recommended settings.
+- With Nexerelin, emergency defense fleets, agents and war fleets act in every colony mode. Settings page: **War** (Playstyle), **Agents** (Security and diplomacy), **Emergency defense fleets** (Advanced, War).
 
 ## Install
 
-1. Download the [latest release](https://github.com/Mjolniar/jonahs-colony-manager/releases/latest) and extract it into `Starsector/mods/`.
-2. Enable it in the launcher. Support for other mods turns on by itself.
-3. Start a new game or load a save. Adding it mid-game is fine. Removing it from a save that used it breaks the save (Autopilot Storage is a tab on your markets).
+[Latest release](https://github.com/Mjolniar/jonahs-colony-manager/releases/latest). Install steps: [README](../README.md#install). Back up 0.2.45.x saves first. From 0.2.45.x, War keeps the level matching your War fleets setting; Retake and Auto-expansion start off ([Saves from 0.2.45](changelog.md#saves-from-0245)).
 
-## The two panels
+## Panels
 
-- **Colony panel**: one colony. Open it with the **Colony Autopilot** button on the colony screen, or right click Population & Infrastructure.
-- **Empire panel**: everything at once. Intel screen, **Colony Autopilot** filter. Pages: Colonies, Autopilot Storage, Colony crises, Mod features, Settings, Log, Diagnostics.
+- **Colony panel** (one colony): **Colony Autopilot** button on the colony screen, or right click Population & Infrastructure.
+- **Empire panel** (all colonies): Intel screen, **Colony Autopilot** filter. Pages: Colonies, Autopilot Storage, Colony crises, Expansion, War (Nexerelin), Mod features, Settings, Factions, Log, Diagnostics.
 
-## Your first colony
+## First colony
 
-1. **Found it.** You're asked **Full expansion** or **[Low profile](low-profile.md)**, then whether to do a [fast buildout](#fast-buildout).
-2. **Pick a goal** in its panel (default Balanced): Money, Security, War production, Rapid growth or Self-sufficiency. Money or Balanced is fine to start. Details in [How it builds](how-it-builds.md).
-3. **Read the plan.** It's the layout the colony is working toward. Steps show Done, Next or Planned.
-4. **Build by hand if you like.** In Advisor, **Recommended builds** lists options with their value. Click one to build it.
-5. **Hand it over.** Set the mode to **Approve** (one proposal at a time, you click Approve or Reject) or **Auto** (builds within your budget). The first time, setup opens with recommended settings filled in. Save it as is. **Use recommended settings** in the empire panel restores them.
+1. On founding, pick **Full expansion** or **[Low profile](low-profile.md)**, and whether to do a [fast buildout](#fast-buildout).
+2. Pick a goal: Balanced (default), Money, Security, War production, Rapid growth or Self-sufficiency ([How it builds](how-it-builds.md)).
+3. Plan steps show Done, Next or Planned.
+4. In Advisor, build by hand from **Recommended builds**.
+
+## First-time setup
+
+| Row | Recommended |
+|---|---|
+| Spending | Normal: 50% of net income and 15% of savings a month |
+| Extras | Auto: mod buildings and features |
+| New colonies | Off ([New colonies](expansion.md)) |
+| War (Nexerelin) | Retaliate ([War and security](war-and-security.md)) |
+| Credit reserve | A quarter of your credits, 50,000-500,000. Not spent by Autopilot. |
+
+All rows and choices: [Settings](settings.md).
 
 ## Fast buildout
 
-When you found your first colony it asks whether to build fast, and how many credits to keep: 250,000, 100,000, 500,000 or 1,000,000. If you say yes:
+Offered at your first colony, with a credit floor: 250,000, 100,000, 500,000 or 1,000,000. If accepted, the colony goes to Auto and each day starts the fastest payback (money only) with credits above the floor. After 30 days in a row of profit it returns to the normal budget.
 
-- the colony goes to Auto;
-- every day it starts whatever pays back fastest with everything above your floor, looking only at money;
-- it stops after 30 days in a row of making money, then carries on in Auto with the normal budget.
-
-The colony panel has buttons to change the floor or stop it. A colony losing money gets a **Start fast buildout** button.
-
-## If Auto isn't building anything
-
-Check the budget line on the colony panel. If it's zero, it's usually one of these, all under Settings, Budget and spending:
-
-- **Budget type** is a share of net income and your net income is negative. Switch to **Automatic**.
-- **Pause on loss** is on.
-- You're under your **credit reserve**, which is never spent.
-
-**Use recommended settings** fixes all three. The **Log** also says when something is waiting and why.
+The colony panel can change the floor or stop it. Colonies losing money get a **Start fast buildout** button.
 
 ## More colonies
 
-New colonies start as Balanced and Advisor. Use **Next goal** and **Next mode** in the empire panel's colony list. Past your colony limit, an administrator is placed or hired for you. Autonomy isn't used to get around the limit.
+New colonies start as Balanced and Advisor. Change them with **Next goal** and **Next mode** (empire panel, colony list). Past the colony limit, an administrator is placed or hired. Autonomy is not used. Auto-expansion: [New colonies](expansion.md).
 
-## If something looks wrong
+## Troubleshooting
 
-- The **Log** and **Diagnostics** show what's waiting and what's switched off.
-- For a bug, post in the [issues](https://github.com/Mjolniar/jonahs-colony-manager/issues) with `starsector.log`, `saves/common/colony_autopilot_diagnostics.json.data` if you can, and your modlist.
+If Auto builds nothing, check the budget line on the Colonies page. Usual causes of a zero line (Settings, Advanced, Budget):
+
+- **Budget type** is Share of net income and net income is negative. Use **Automatic**.
+- **Pause on loss** is on.
+- Credits are under the **credit reserve**.
+
+**Reset to recommended** fixes all three. Builds that miss the payback months (36 normally) score 0 or less and are not started.
+
+**Log** and **Diagnostics** show what waits, why, and what is off. Bug reports: [issues](https://github.com/Mjolniar/jonahs-colony-manager/issues), with the files the [README](../README.md) lists.
 
 Next: [How it builds](how-it-builds.md), or [Settings](settings.md).
-
-## Coming in 0.3.0
-
-- Back up your save before updating. A save made in 0.3.0 can't be loaded in 0.2.45.x.
-- Built, in testing: old settings carry over, and no setting becomes more aggressive on update.
-- Built, in testing: a failing daily step no longer stops the other steps.
-- Built, in testing: one ranked build queue for all colonies, with a 36-month payback limit.
-- Planned: a shorter settings menu with a 5-row first-time setup.
-- Planned: auto-expansion (off by default), a money ladder, and war and diplomacy settings.
-
-Plans can still change before release.
-
-Everything planned for 0.3.0: [roadmap](roadmap.md)

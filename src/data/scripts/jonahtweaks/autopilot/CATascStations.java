@@ -42,7 +42,7 @@ import java.util.*;
 public class CATascStations {
     static final String MINING = "mining", SIPHON = "siphon";
     static final String MINE_ABILITY = "boggled_construct_mining_station", SIPHON_ABILITY = "boggled_construct_siphon_station";
-    static final float CREW_DAYS = 60f, BASE_FEE = 25000f, RUNNING = 10000f, PAYBACK_MONTHS = 60f;
+    static final float CREW_DAYS = 60f, BASE_FEE = CATuning.TASC_BASE_FEE, RUNNING = 10000f, PAYBACK_MONTHS = CATuning.TASC_PAYBACK_MONTHS;   // 0.3.0.0 (A3): fee and payback in CATuning
     static final int GROWN_SIZE = 4;
 
     static MethodHandle intSetting, boolSetting, researchFor, researched, inBelt, inField, tooClose, beltFocus, fieldOrbit, fieldEntity,
@@ -259,9 +259,10 @@ public class CATascStations {
     }
 
     public static void run(CAData d, CASettings s, List<MarketAPI> auto) {
-        if (s.stationMode == 2 || !enabled() || !link() || Global.getSector() == null) return;
+        int mode = CAPresets.tascMode(s);   // 0.3.0.0 (WS-F1 fix): the mode in effect; New colonies on Auto that asks first keeps it on Recommend only
+        if (mode == 2 || !enabled() || !link() || Global.getSector() == null) return;
         deliver(d);
-        if (auto.isEmpty() || CABudget.paused(s) || CAItems.overLimit() >= 0 || !d.tascOrders().isEmpty()) return;   // one crew at a time, and room under the colony limit
+        if (auto.isEmpty() || CABudget.paused(s) || CAItems.overLimit() + d.expandOrders().size() >= 0 || !d.tascOrders().isEmpty()) return;   // one crew at a time, and room under the colony limit
         boolean mine = unlocked(MINE_ABILITY), siphon = unlocked(SIPHON_ABILITY);
         if (!mine && !siphon) return;
         boolean rich = CASurplus.rich(s);
@@ -283,10 +284,11 @@ public class CATascStations {
         }
         if (best == null) return;
         String what = (MINING.equals(best.kind) ? "mining station" : "siphon station") + " in " + best.sys.getBaseName();
-        if (s.stationMode == 0) {
+        if (mode == 0) {
             if (CALog.once("tasc:station:" + best.sys.getId() + ":" + best.kind))
                 CALog.add("Recommends a " + what + " (" + best.why + ", about " + Misc.getDGSCredits(best.monthly) + " a month once it grows; "
-                        + Misc.getDGSCredits(best.cost) + "). Station construction, under Settings, set to Auto has a crew build it");
+                        + Misc.getDGSCredits(best.cost) + "). " + (s.stationMode == 1 ? "Set the Expansion rung to On to have a crew build it"
+                        : "Station construction, under Settings, set to Auto has a crew build it"));
             return;
         }
         float fee = CABudget.fee(s, BASE_FEE);
@@ -294,8 +296,7 @@ public class CATascStations {
             if (CALog.once("tasc:station:budget:" + best.sys.getId())) CALog.add("A " + what + " waits for budget (" + Misc.getDGSCredits(best.cost + fee) + ")");
             return;
         }
-        Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(best.cost);
-        CABudget.charge(s, best.cost, fee, 0f);
+        CABudget.pay(s, null, best.cost, fee, 0f);
         Order o = new Order();
         o.system = best.sys.getId(); o.kind = best.kind; o.x = best.x; o.y = best.y; o.paid = best.cost; o.what = what; o.why = best.why;
         o.gasGiantId = best.gasGiant == null ? null : best.gasGiant.getId();
@@ -319,7 +320,7 @@ public class CATascStations {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "building a TASC " + o.kind + " station failed", t);
             }
             if (made == null) {
-                Global.getSector().getPlayerFleet().getCargo().getCredits().add(o.paid);
+                CABudget.refund(CAData.settings(), null, o.paid);
                 CALog.add("The " + o.what + " wasn't built (the site's gone, or you're at your colony limit); the " + Misc.getDGSCredits(o.paid) + " came back");
                 continue;
             }

@@ -28,12 +28,21 @@ import java.util.Map;
  * loss and new-upkeep cap don't apply to it; fees, the stability floor, locks and the measured-building approval do.
  * Any colony that loses money can start one from its colony panel. When it ends the colony stays in Auto under the
  * normal budget, with its own goal.
+ * 0.3.0.0 (WS-B5, research 02 section 10): the buildout keeps the plan's industry slots. While the free slots are all the
+ * plan's industries have left, a new industry the plan doesn't ask for must pay back per credit BUILDOUT_MARGIN times
+ * as fast as the plan's own best industry pick (the engine's slot reserve, CAEngine.finish, already counts against it):
+ * cheap Farming and Mining used to take a young Forge world's two slots for good, and Heavy Industry waited for size 6.
+ * 0.3.0.0 (WS-F3, research 04 section 7): shorter text. The first-colony dialog reuses the Settings row's Expansion style text
+ * (CASetupUI) and its fast buildout offer is 2 short paragraphs; the colony panel section moves its detail to hover text.
+ * 0.3.0.0 (WS-F4): checkOffer also shows the one-time line after a save moved to the 0.3.0 menu (movedNotice).
  */
 public class CABuildout {
     public static final String PREFIX = "ca:bo:";
     public static final float[] FLOORS = {50000f, 100000f, 250000f, 500000f, 1000000f, 2000000f};
     static final float[] OFFERED = {250000f, 100000f, 500000f, 1000000f};
     public static final float DEFAULT_FLOOR = 250000f, PROFIT_DAYS = 30f, OFFER_DAYS = 30f;
+    /** 0.3.0.0 (B5): how much faster per credit an off-plan industry must pay back to take a slot the plan's industries need. */
+    static final float BUILDOUT_MARGIN = CATuning.BUILDOUT_MARGIN;
     /** A buildout ends after this many days in a row with nothing that pays to build, or this long in all (0.2.38.0). */
     public static final float IDLE_DAYS = 60f, MAX_DAYS = 365f;
     static float checkTimer = 0f;
@@ -45,6 +54,7 @@ public class CABuildout {
         checkTimer -= amount;
         if (checkTimer > 0f) return;
         checkTimer = 1f;
+        checkMoved();   // 0.3.0.0 (WS-F4): this once-a-second check also carries the one-time 0.3.0 menu line
         CAData d = CAData.get();
         if (d.buildoutOffered) return;
         List<MarketAPI> mine = new java.util.ArrayList<MarketAPI>();
@@ -61,6 +71,70 @@ public class CABuildout {
         if (ui.showInteractionDialog(new Offer(m), m.getPrimaryEntity())) d.buildoutOffered = true;
     }
 
+    // ---------------- the 0.3.0 menu line (0.3.0.0, WS-F4) ----------------
+
+    /** The once-key (CAMark, kept in the save) of the line below. */
+    static final String MOVED_MARK = "menu3:notice";
+    /** On screen: "SETUP / Settings: moved to the 0.3.0 menu, nothing you set changed" (CATheme). */
+    static final String MOVED_LINE = "Settings: moved to the 0.3.0 menu, nothing you set changed";
+
+    /**
+     * What to do about the line for a save moved to 0.3.0 (CAMigrate stamps CAData.migratedAt; a save started on 0.3.0 has 0):
+     * 0 nothing (no move, or done already), 1 show it, 2 only mark it done (30 days or more after the move, when the
+     * Settings page's What's new box is gone too). Pure.
+     */
+    static int movedNotice(long migratedAt, boolean done, float daysSince) {
+        if (migratedAt == 0L || done) return 0;
+        return daysSince < CASetupUI.WHATS_NEW_DAYS ? 1 : 2;
+    }
+
+    /** Shows the line once per save, logged like every other entry; a failure leaves the game alone. */
+    static void checkMoved() {
+        try {
+            CAData d = CAData.get();
+            if (d.migratedAt == 0L || CAMark.at(MOVED_MARK) != null) return;
+            CampaignClockAPI clock = Global.getSector().getClock();
+            int act = movedNotice(d.migratedAt, false, clock.getElapsedDaysSince(d.migratedAt));
+            if (act == 0) return;
+            CAMark.set(MOVED_MARK, clock.getTimestamp());
+            if (act == 1) CALog.add(MOVED_LINE, true);
+        } catch (Throwable t) {
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "0.3.0 menu line failed", t);
+            try { CAMark.set(MOVED_MARK, 0L); } catch (Throwable ignored) { }   // tried once; not again every second
+        }
+    }
+
+    // ---------------- text (0.3.0.0, WS-F3: each paragraph 40 words or fewer, JTScreenButtonCheck) ----------------
+
+    static final String STYLE_ASK = "is your first colony. Pick an expansion style.",
+            STYLE_LATER = "Change it in Settings, Expansion style.";   // 0.3.0.0 fix pass 3: shorter
+    /** The fast buildout offer, before "You have X now": what it does, then what follows (gray). */
+    static final String[] OFFER_TEXT = {   // 0.3.0.0 (WS-F3 fix pass 2): shorter, for the mod-wide word budget
+            "Fast buildout: Auto, and credits above a floor go to the fastest payback until it earns money 30 days running.",
+            "Fees apply."};
+
+    /**
+     * The expansion style choice: the Settings row's line and its hover text (CASetupUI, Expansion style), so the two say
+     * the same thing once (research 04 section 7, item 5). A missing entry is left out.
+     */
+    static String[] styleText() {
+        List<String> out = new java.util.ArrayList<String>();
+        String desc = CASetupUI.DESC.get("lowprofile");
+        String[] hover = CASetupUI.HOVER.get("lowprofile");
+        if (desc != null) out.add(desc);
+        if (hover != null && hover.length > 0 && hover[0] != null && !hover[0].isEmpty())
+            out.add("Low profile: " + Character.toLowerCase(hover[0].charAt(0)) + hover[0].substring(1));
+        return out.toArray(new String[0]);
+    }
+
+    /** The colony panel section's hover: how the ranking works and when it ends (from IDLE_DAYS and MAX_DAYS). Pure. */
+    static String[] hoverText() {
+        return new String[]{
+                "Ranks by money only; defenses, fleets and the goal wait.",
+                "Ends after " + Math.round(PROFIT_DAYS) + " days of earning money, " + Math.round(IDLE_DAYS)
+                        + " days with nothing worth building, or " + Math.round(MAX_DAYS) + " days in all."};
+    }
+
     static class Offer implements InteractionDialogPlugin {
         final MarketAPI m;
         InteractionDialogAPI dialog;
@@ -71,15 +145,11 @@ public class CABuildout {
             this.dialog = dialog;
             dialog.setPromptText("Colony Autopilot");
             // 0.2.43.0: first the expansion style (CALowProfile), then the buildout
+            // 0.3.0.0 (WS-F3): the Settings row's text (styleText) in place of 3 paragraphs of 39, 58 and 13 words
             TextPanelAPI t = dialog.getTextPanel();
-            t.addPara("Colony Autopilot: " + m.getName() + " is your first colony. First, how should your colonies expand?");
-            t.addPara("Full expansion builds whatever pays most. AI cores, rich industries and free ports draw the sector's attention "
-                    + "(Hegemony inspections, Pather cells, Tri-Tachyon's mercenaries, the Diktat over fuel, the Knights of Ludd), and "
-                    + "Autopilot weighs each against what it earns.");
-            t.addPara("Low profile keeps your colonies growing but stays under the radar: no AI cores above size 3, nothing that brings a "
-                    + "Pather cell, no free ports, no raids or sabotage, and attention counts ten times as much. It earns less. Pirates and "
-                    + "the Persean League count colony size, so nothing avoids them; Low profile defends against them sooner.");
-            t.addPara("You can change it any time: Colony Autopilot intel, Settings, Expansion style.", Misc.getGrayColor());
+            t.addPara("Colony Autopilot: " + m.getName() + " " + STYLE_ASK);
+            for (String p : styleText()) t.addPara(p);
+            t.addPara(STYLE_LATER, Misc.getGrayColor());
             OptionPanelAPI o = dialog.getOptionPanel();
             o.addOption("Full expansion", STYLE_FULL);
             o.addOption("Low profile", STYLE_LOW);
@@ -89,14 +159,12 @@ public class CABuildout {
 
         void offerBuildout() {
             TextPanelAPI t = dialog.getTextPanel();
-            t.addPara("A new colony usually loses money for a while.");
-            t.addPara("Fast buildout puts it in Auto and spends everything you have above a credit floor on the buildings that pay "
-                    + "back fastest, until the colony has earned money for 30 days in a row. Then it stays in Auto with the normal "
-                    + "monthly budget. Convenience fees apply. You can stop it, or change the floor, in the colony's Colony Autopilot panel.");
+            t.addPara(OFFER_TEXT[0]);
+            t.addPara(OFFER_TEXT[1], Misc.getGrayColor());
             t.addPara("You have %s now.", Misc.getHighlightColor(), Misc.getDGSCredits(CABuild.credits()));
             OptionPanelAPI o = dialog.getOptionPanel();
-            for (float f : OFFERED) o.addOption("Build it up fast, keeping at least " + Misc.getDGSCredits(f), f);
-            o.addOption("No thanks, I'll manage it", "no");
+            for (float f : OFFERED) o.addOption("Fast buildout, keep at least " + Misc.getDGSCredits(f), f);
+            o.addOption("No fast buildout", "no");
             o.setShortcut("no", Keyboard.KEY_ESCAPE, false, false, false, true);
         }
 
@@ -104,14 +172,13 @@ public class CABuildout {
             if (STYLE_FULL.equals(data) || STYLE_LOW.equals(data)) {
                 boolean low = STYLE_LOW.equals(data);
                 CALowProfile.set(CAData.settings(), low, "your choice");
-                CALog.add(m.getName() + ": expansion style " + (low ? "Low profile" : "Full expansion")
-                        + "; change it under Settings, Expansion style", true);
+                CALog.add(m.getName() + ": expansion style " + (low ? "Low profile" : "Full expansion") + " (Settings, Playstyle)", true);
                 dialog.getOptionPanel().clearOptions();
                 offerBuildout();
                 return;
             }
             if (data instanceof Float) start(m, (Float) data);
-            else CALog.add(m.getName() + ": fast buildout declined; the colony panel can start one while it loses money", true);
+            else CALog.add(m.getName() + ": fast buildout declined. The colony panel offers it while the colony loses money", true);
             dialog.dismiss();
         }
 
@@ -128,7 +195,7 @@ public class CABuildout {
         if (!d.settings.setupDone) {
             CASetupUI.applyRecommended(d.settings);
             d.settings.setupDone = true;
-            CALog.add("Recommended settings applied; review them on the Settings page of the Colony Autopilot intel", true);
+            CALog.add("Settings: recommended values applied (Intel, Colony Autopilot, Settings)", true);   // 0.3.0.0 (WS-F3): SETUP on screen
         }
         c.mode = CAData.Mode.AUTO;
         c.buildout = true;
@@ -138,7 +205,7 @@ public class CABuildout {
         c.buildoutIdleSince = 0L;
         CAAuto.nextPass.remove(m.getId());
         CALog.add(m.getName() + ": fast buildout started; spends down to " + Misc.getDGSCredits(floor)
-                + " until the colony has earned money for 30 days", true);
+                + " until the colony earns money for 30 days", true);
     }
 
     static void stop(MarketAPI m, CAData.Colony c, String why) {
@@ -175,19 +242,30 @@ public class CABuildout {
         CAData d = CAData.get();
         CASettings s = d.settings;
         CAAuto.nextPass.put(m.getId(), now + 1f);
-        CAEngine.Result r = CAEngine.evaluateForProfit(m, d.minStability);
-        CAEngine.Pick bestUp = null, bestNew = null;
-        float upRatio = 0f, newRatio = 0f;
+        CAEngine.Result r = CAEngine.evaluateForProfit(m, d.settings.minStability);
+        CAEngine.Pick bestUp = null, bestNew = null, bestPlanInd = null;
+        float upRatio = 0f, newRatio = 0f, planRatio = 0f;
         for (CAEngine.Pick q : r.picks) {
             if (q.score <= 0f) continue;
+            // 0.3.0.0 (B4 fix): taken down here within the year (CATombstone's mark, or one on what it upgrades into): the buildout
+            // doesn't build it back either (it ranks CAEngine.evaluateForProfit picks and starts them through CAAuto.execute,
+            // which never read the marks, so a pruned or over-limit building could come back the day a slot opened)
+            if (CAEndgame.rebuildBlocked(m, q.id)) continue;
             float ratio = q.score / Math.max(1f, q.cost + CABudget.constructionFee(s, q.cost));
             if (q.upgrade) { if (bestUp == null || ratio > upRatio) { bestUp = q; upRatio = ratio; } }
             else if (!building && (bestNew == null || ratio > newRatio)) { bestNew = q; newRatio = ratio; }
+            if (!q.upgrade && !building && q.planStep && CAEngine.isIndustry(q.id) && (bestPlanInd == null || ratio > planRatio)) { bestPlanInd = q; planRatio = ratio; }
+        }
+        // 0.3.0.0 (B5, 02 section 10): an off-plan industry takes a slot the plan's industries need only when clearly better
+        if (bestNew != null && bestPlanInd != null && bestNew != bestPlanInd && !bestNew.planStep && CAEngine.isIndustry(bestNew.id)) {
+            boolean tight = true;
+            try { tight = CABuild.freeSlots(m) <= CAPlan.openIndustrySteps(m, CAPlan.build(m, c.profile)); } catch (Throwable ignored) { }
+            if (tight && !offPlanBeats(newRatio, planRatio)) { bestNew = bestPlanInd; newRatio = planRatio; }
         }
         if (bestUp == null && bestNew == null && !building) {
             if (c.buildoutIdleSince == 0L) c.buildoutIdleSince = clock.getTimestamp();
             else if (clock.getElapsedDaysSince(c.buildoutIdleSince) >= IDLE_DAYS) {
-                stop(m, c, "nothing that pays has been worth building for " + Math.round(IDLE_DAYS) + " days; its plan takes over");
+                stop(m, c, "nothing worth building for " + Math.round(IDLE_DAYS) + " days; its plan takes over");
             }
             return false;   // nothing that pays today: the normal pass runs
         }
@@ -208,26 +286,30 @@ public class CABuildout {
         return true;
     }
 
+    /** Pure, 0.3.0.0 (B5): an off-plan industry paying back offRatio per credit beats the plan's best industry at planRatio. */
+    static boolean offPlanBeats(float offRatio, float planRatio) { return planRatio <= 0f || offRatio >= BUILDOUT_MARGIN * planRatio; }
+
     /** The colony panel's section: status and controls while it runs, a start button while the colony loses money. */
     static void render(TooltipMakerAPI t, MarketAPI m, CAData.Colony c) {
         if (CAHypershunt.is(m) || CAEngine.isOutpost(m)) return;
         boolean losing = m.getNetIncome() < 0f;
         if (!c.buildout && !losing) return;
         CATheme.heading(t, "Fast buildout", 12f);
+        // 0.3.0.0 (WS-F3, research 04 section 7): one short line each; how it ranks and when it ends are hover text (hoverText).
+        // 0.3.0.0 fix pass 3: shorter lines, for the mod-wide word budget (JTScreenButtonCheck)
         if (!c.buildout) {
-            t.addPara("This colony loses %s a month. Fast buildout puts it in Auto and spends everything above a credit floor on the "
-                    + "buildings that pay back fastest, until it has earned money for 30 days.", 6f, Misc.getNegativeHighlightColor(),
-                    Misc.getDGSCredits(-m.getNetIncome()));
-            t.addButton("Start fast buildout, keeping at least " + Misc.getDGSCredits(DEFAULT_FLOOR), PREFIX + "start",
+            t.addPara("Loses %s a month. Fast buildout spends credits above a floor here.", 6f,
+                    Misc.getNegativeHighlightColor(), Misc.getDGSCredits(-m.getNetIncome()));
+            CATheme.hover(t, hoverText());
+            t.addButton("Start fast buildout, keep at least " + Misc.getDGSCredits(DEFAULT_FLOOR), PREFIX + "start",
                     Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(), Alignment.MID, com.fs.starfarer.api.ui.CutStyle.TL_BR, 360f, 24f, 6f);
             return;
         }
         float days = c.buildoutProfitSince == 0L ? 0f : Global.getSector().getClock().getElapsedDaysSince(c.buildoutProfitSince);
-        t.addPara("Spending everything above %s on the buildings that pay back fastest, ranked by money only: no defenses or "
-                        + "fleets, whatever the goal. Net income %s a month"
-                        + (days > 0f ? "; earning money for %s of 30 days." : "; it ends after 30 days of earning money."), 6f,
+        t.addPara("Floor %s. Net income %s a month" + (days > 0f ? "; %s of 30 days earning." : "."), 6f,
                 Misc.getHighlightColor(), Misc.getDGSCredits(floor(c)), Misc.getDGSCredits(m.getNetIncome()), "" + (int) days);
-        if (CAThreat.isHigh(m)) t.addPara("The threat is high. Defenses wait until the buildout ends; then the colony plans for Security.",
+        CATheme.hover(t, hoverText());
+        if (CAThreat.isHigh(m)) t.addPara("High threat: defenses wait until it ends.",
                 Misc.getNegativeHighlightColor(), 4f);
         ButtonAPI first = CAColonyDialog.rowButton(t, null, "Lower floor", PREFIX + "down", false, 140f);
         ButtonAPI prev = CAColonyDialog.rowButton(t, first, "Raise floor", PREFIX + "up", false, 140f);
@@ -240,7 +322,7 @@ public class CABuildout {
         CAData.Colony c = CAData.get().colony(m.getId());
         if (action.equals("start")) { start(m, DEFAULT_FLOOR); return "Fast buildout started"; }
         if (!c.buildout) return null;
-        if (action.equals("stop")) { stop(m, c, "stopped by you"); return "Fast buildout stopped; the colony stays in Auto"; }
+        if (action.equals("stop")) { stop(m, c, "stopped by you"); return "Fast buildout stopped; still Auto"; }
         float f = floor(c), n = f;
         if (action.equals("down")) { n = FLOORS[0]; for (float x : FLOORS) if (x < f) n = x; }   // next step below, or the lowest
         else if (action.equals("up")) { n = FLOORS[FLOORS.length - 1]; for (int k = FLOORS.length - 1; k >= 0; k--) if (FLOORS[k] > f) n = FLOORS[k]; }

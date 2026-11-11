@@ -92,8 +92,8 @@ public class CAOddisz {
         }
         int was = p.upgrade && p.existing != null ? tier(p.existing.getId()) : -1;
         boolean fresh = was < 0;
-        float floor = Math.max(3f, CAData.get().minStability);
-        if (!roomForPenalty(m.getStabilityValue(), size, fresh, floor)) {
+        float floor = CAStability.floor();   // 0.3.0.0: the one stability rule (CAStability, WS-A2); A3: the one floor, max(3, minStability)
+        if (!roomForPenalty(m.getStabilityValue(), size, fresh, floor) || (fresh && !CAStability.canLose(m, -size, true, null))) {
             p.lines.add("Cloning: costs " + size + " stability, one more each size it grows, and that would take this colony under "
                     + Math.round(floor) + " (" + Math.round(m.getStabilityValue()) + " now)");
             return false;
@@ -188,12 +188,13 @@ public class CAOddisz {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor();
         CATheme.heading(t, "Sol Renewed", 12f);
         try {
-            t.addPara("Discovering the Past: %s of %s, %s a month. Waves come at 200, 450, 700 and 1,000 and the meter never goes down; "
-                    + "every industry in Sol adds its build cost / 50,000 a month, which Autopilot prices in at about %s a point.", 6f, hl,
+            // 0.3.0.0 (WS-F3 fix): one line (was 43 words); how the meter works on hover
+            t.addPara("Discovering the Past: %s of %s, %s a month; a point is priced at %s.", 6f, hl,
                     "" + ev.getProgress(), "" + ev.getMaxProgress(), "+" + ev.getMonthlyProgress(),
                     Misc.getDGSCredits(solCost(1f, solStrength(), CALowProfile.on())));
+            CATheme.hover(t, "Waves at 200, 450, 700 and 1,000; the meter does not go down.");
         } catch (Throwable e) {
-            t.addPara("Discovering the Past is running at your colonies in Sol.", gray, 6f);
+            t.addPara("Discovering the Past is running in Sol.", gray, 6f);
         }
     }
 }

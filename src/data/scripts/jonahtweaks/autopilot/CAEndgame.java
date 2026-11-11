@@ -30,7 +30,8 @@ import java.util.*;
  * - with no free industry slot, an Auto colony replaces its weakest industry when the best one it has no slot for beats
  *   it by REPLACE_MARGIN (one a day across the empire, one a month per colony; never a plan or project building, a military
  *   one (fleets, ship quality, defense), a story point improvement, one you locked, one it built in the last year, nor a
- *   good's last producer while you'd be short).
+ *   good's last producer while you'd be short; 0.3.0.0: nor one whose swap would leave the colony under the stability floor,
+ *   CAStability).
  *   Its AI core and item go to Autopilot Storage, to be placed again;
  * - Research Facilities go up while any research is left, whatever the money says; colony items and AI cores are placed
  *   with these weights.
@@ -38,17 +39,37 @@ import java.util.*;
  * (3M a month keeps 1M); each month's changes that earn less draw on that room, and wait once it's used. It ends when the
  * surplus falls under 5M or net income goes below zero, and starts again while spending freely at the income it keeps.
  * Between 5M and 10M it stays on but, like spending freely, only the focus world spends.
+ *
+ * 0.3.0.0 (WS-B4, research 02 "Construction 0.3.0"): replacing is the build math backwards. The weakest industry is valued by
+ * CAValue.keep, the same numbers a build is scored with (what the colony loses a month without it), and a swap happens when
+ * NPV(new) - keep x H - teardown loss > REPLACE_MARGIN x H (CATombstone.worthReplacing; H the payback horizon, the loss the
+ * part of what Autopilot paid for the old one it hasn't paid back yet). Nothing built under another valuation (normally,
+ * spending freely) is swapped out within the year, nothing taken down here within the year is the replacement (CATombstone's
+ * marks), and every swap leaves a mark. The capital's make-room swap (CACapital) uses the same weakest() and rule.
+ * 0.3.0.0 (fix, B4 review): the keep is read as a remover reads it (CATombstone.forRemoval): the build side's charge for inputs
+ * your colonies lack doesn't count against a building that's there, and the shortage it would leave is read against today's
+ * supply, so a producer isn't swapped out the day a replacement elsewhere was started.
+ * 0.3.0.0 (WS-C2/C4, research 03 section 5.2): the endgame is the money tier Endgame (CARich T4: Rich, and colony net at the
+ * setting's line). It starts there, or once it has run at the income it keeps while the tier is Rich; it stays on while
+ * the tier is Rich or higher (Rich holds down to 60% of its line) and colony net isn't below zero (decideTier). With the
+ * hidden legacyPlanner switch it's 0.2.45.1's rule on the surplus (decide).
+ * 0.3.0.0 (WS-C4, research 03 F7): a second colony making a good only one of yours makes earns SECOND_SOURCE only when that
+ * one producer is under threat (siege, crisis target, high threat) or the good is a war good; otherwise the second source
+ * duplicates a producer for nothing. The units counted are the ones a build adds over the colony's other sources
+ * (CAValue.chainUnits, B1), so a duplicate gets no chain value.
  */
 public class CAEndgame {
     /** Net income a month needed to start, by setting (the last one is Off). */
     public static final float[] ENTER_NET = {1000000f, 2000000f, 500000f};
     public static final String[] NAMES = {"From 1,000,000/month", "From 2,000,000/month", "From 500,000/month", "Off"};
-    static final float KEEP = 1f / 3f;
-    static final float MONEY = 0.05f;
+    // 0.3.0.0 (A3): the numbers live in CATuning
+    static final float KEEP = CATuning.ENDGAME_KEEP;
+    static final float MONEY = CATuning.ENDGAME_MONEY;
     //                                          credits stab   access  defense fleet   quality growth
     static final float[] ENDGAME_WEIGHTS = {MONEY, 4000f, 10000f, 15000f, 40000f, 40000f, 2000f};
-    static final float NEW_CHAIN = 40000f, SECOND_SOURCE = 10000f, PER_UNIT = 2000f, REPLACE_MARGIN = 10000f;
-    static final float REPLACE_COLONY_DAYS = 30f, MEMORY_DAYS = 365f;
+    static final float NEW_CHAIN = CATuning.ENDGAME_NEW_CHAIN, SECOND_SOURCE = CATuning.ENDGAME_SECOND_SOURCE,
+            PER_UNIT = CATuning.ENDGAME_PER_UNIT, REPLACE_MARGIN = CATuning.ENDGAME_REPLACE_MARGIN;
+    static final float REPLACE_COLONY_DAYS = CATuning.ENDGAME_REPLACE_COLONY_DAYS, MEMORY_DAYS = CATuning.ENDGAME_MEMORY_DAYS;
     static final Set<String> WAR_GOODS = new HashSet<String>(Arrays.asList("ships", "hand_weapons", "supplies", "fuel", "heavy_machinery",
             "metals", "rare_metals", "marines"));
     static float lastReplaceDay = -99f;
@@ -66,6 +87,21 @@ public class CAEndgame {
         if (on) return amount >= CASurplus.RICH / 2f && net >= 0f;
         float need = refNet > 0f ? Math.min(ENTER_NET[mode], floor(refNet)) : ENTER_NET[mode];
         return rich && net >= need;
+    }
+
+    /**
+     * 0.3.0.0 (C2/C4): whether the endgame runs, on the money tier. rich: spending freely (CASurplus.rich: the tier is Rich or
+     * Endgame and the focus-world-only setting is off; it starts at half the surplus line over it and ends under a fifth of
+     * it, or with the tier (CASurplus.richStart, richHold)). It starts at the tier Endgame, or once it has run, while spending freely at the income it keeps (refNet), as decide(). Once on it stays on while spending
+     * freely and colony net isn't below zero: the Rich tier holds down to 60% of its line, as the old half-line did.
+     */
+    static boolean decideTier(boolean on, int mode, boolean rich, int tier, float net, float refNet) {
+        if (mode < 0 || mode >= ENTER_NET.length) return false;
+        if (on) return rich && net >= 0f;
+        if (!rich) return false;
+        if (tier >= CARich.T4) return net >= 0f;
+        float need = refNet > 0f ? Math.min(ENTER_NET[mode], floor(refNet)) : ENTER_NET[mode];
+        return net >= need;
     }
 
     /** Net income the endgame keeps: a third of what it was when it started. */
@@ -88,15 +124,26 @@ public class CAEndgame {
      * (war goods) or 2 (advanced goods).
      */
     static float chainValue(int units, float mine, float demand, float sector, int producers, boolean producesHere, float tier) {
+        return chainValue(units, mine, demand, sector, producers, producesHere, tier, true);
+    }
+
+    /**
+     * As above. 0.3.0.0 (C4, research 03 F7): spread: a second source is worth SECOND_SOURCE (the one producer is under
+     * threat, or the good is a war good); false: a second producer counts only for its units, like any other.
+     */
+    static float chainValue(int units, float mine, float demand, float sector, int producers, boolean producesHere, float tier, boolean spread) {
         if (units <= 0) return 0f;
         if (mine <= 0f) return tier * (NEW_CHAIN + units * PER_UNIT * 2f);
         float cover = Math.min(units, Math.max(0f, demand - mine));
         float rest = units - cover;
         float share = Math.min(1f, mine / Math.max(1f, sector));
         float v = cover * PER_UNIT * 1.5f + rest * PER_UNIT * (1f - share) * 0.5f;
-        if (producers == 1 && !producesHere) v += SECOND_SOURCE;
+        if (spread && producers == 1 && !producesHere) v += SECOND_SOURCE;
         return tier * v;
     }
+
+    /** Pure, 0.3.0.0 (C4, F7): a second source earns SECOND_SOURCE: with legacyPlanner (0.2.45.1), for a war good, or while the one producer is at risk. */
+    static boolean spreads(boolean legacy, boolean warGood, boolean producerAtRisk) { return legacy || warGood || producerAtRisk; }
 
     /** Replace when the new industry's score beats what the old one is worth by the margin. */
     static boolean beats(float newScore, float keepValue) { return newScore - keepValue > REPLACE_MARGIN; }
@@ -120,21 +167,30 @@ public class CAEndgame {
 
     /** Daily: starts or ends the endgame, with a log line each way. */
     public static void daily(CASettings s) {
+        // 0.3.0.0 fix (C4 review 2): the Economy rung's buyers spend outside the ladder's pool (DECISIONS 14b), so the rung wants
+        // nothing from it and its share goes down to the next rung, from before the planner reads any allowance today. This
+        // replaces CAEconomy.publish, which named the buyers' prices and changed the rung's want several times a day
+        try { CAEconomy.outsidePool(s); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Economy rung want failed", t); }
         boolean rich = CASurplus.rich(s);
         float net = CABudget.netIncome(s), amount = CASurplus.amount(s);
-        boolean next = decide(s.endgameOn, s.endgameMode, rich, amount, net, s.endgameRefNet);
+        // 0.3.0.0 (C2/C4): on the money tier (CARich); legacyPlanner keeps 0.2.45.1's surplus rule
+        boolean legacy = CABudget.legacy(s);
+        int tier = legacy ? CARich.T0 : CARich.tier();
+        boolean next = legacy ? decide(s.endgameOn, s.endgameMode, rich, amount, net, s.endgameRefNet)
+                : decideTier(s.endgameOn, s.endgameMode, rich, tier, net, s.endgameRefNet);
         if (next && !s.endgameOn) {
             s.endgameOn = true;
             s.endgameRefNet = Math.max(s.endgameRefNet, net);   // coming back doesn't lower what it keeps
             chains = null;
-            tidy(CAData.get());
             CALog.add("Endgame economy: " + Misc.getDGSCredits(net) + "/month and " + Misc.getDGSCredits(CASurplus.amount(s))
                     + " surplus; now building for production chains, military, research. Keeps " + Misc.getDGSCredits(floor(s)) + "/month", true);
         } else if (!next && s.endgameOn) {
             s.endgameOn = false;
             chains = null;
-            CALog.add("Endgame economy ended (" + (s.endgameMode >= ENTER_NET.length ? "turned off" : amount < CASurplus.RICH / 2f ? "surplus under "
-                    + Misc.getDGSCredits(CASurplus.RICH / 2f) : "net income below zero") + ")", true);
+            String why = s.endgameMode >= ENTER_NET.length ? "turned off"
+                    : legacy ? (amount < CASurplus.RICH / 2f ? "surplus under " + Misc.getDGSCredits(CASurplus.RICH / 2f) : "net income below zero")
+                    : !rich ? (tier < CARich.T3 ? "money tier " + CARich.name(tier) : "spending freely ended") : "colony net below zero";
+            CALog.add("Endgame economy ended (" + why + ")", true);
         }
         summary = s.endgameOn ? summaryText(s) : null;
     }
@@ -203,7 +259,8 @@ public class CAEndgame {
     /** A build started: its goods count as made from now on. */
     static void note(MarketAPI m, CAEngine.Pick p) {
         if (chains == null || m == null || p == null) return;
-        for (Map.Entry<String, Integer> e : p.supplied.entrySet()) chains.addMine(m.getId(), e.getKey(), e.getValue());
+        // 0.3.0.0 (B1, 02 section 9): the units it adds over the colony's other sources, not its whole lines (a duplicate adds none)
+        for (Map.Entry<String, Integer> e : CAValue.chainUnits(p).entrySet()) chains.addMine(m.getId(), e.getKey(), e.getValue());
     }
 
     static float tier(String com) {
@@ -213,6 +270,32 @@ public class CAEndgame {
 
     static String name(String com) {
         try { return Global.getSettings().getCommoditySpec(com).getName(); } catch (Throwable t) { return com; }
+    }
+
+    static boolean legacy() {
+        try { return CABudget.legacy(CAData.settings()); } catch (Throwable t) { return false; }
+    }
+
+    /** 0.3.0.0 (C4): the producer in the set that isn't this colony, or null. */
+    static String other(Set<String> producers, String here) {
+        if (producers == null) return null;
+        for (String id : producers) if (!id.equals(here)) return id;
+        return null;
+    }
+
+    /**
+     * 0.3.0.0 (C4, research 03 F7): a colony whose production could stop: under siege, a colony crisis's target, or in its
+     * high-threat state (read as saved, so this changes nothing).
+     */
+    static boolean atRisk(String marketId) {
+        if (marketId == null) return false;
+        try {
+            MarketAPI x = CAAuto.market(marketId);
+            if (x == null) return false;
+            if (CASiege.held(x)) return true;
+            try { if (CACrisis.targets().contains(x)) return true; } catch (Throwable ignored) { }
+            return CAData.get().colony(marketId).threatHigh;
+        } catch (Throwable t) { return false; }
     }
 
     /**
@@ -238,7 +321,9 @@ public class CAEndgame {
                 float hereUnits = at == null ? 0f : c.get(at, com);
                 if (here && hereUnits <= units) { producers--; here = false; }
             }
-            float v = chainValue(units, mine, c.get(c.demand, com), sector, producers, here, tier(com));
+            // 0.3.0.0 (C4, research 03 F7): the second-source bonus only where a second source protects something
+            boolean spread = producers != 1 || here || spreads(legacy(), WAR_GOODS.contains(com), atRisk(other(prod, m.getId())));
+            float v = chainValue(units, mine, c.get(c.demand, com), sector, producers, here, tier(com), spread);
             if (v <= 0f) continue;
             total += v;
             String what = mine <= 0f ? "a good none of your colonies make" : mine < c.get(c.demand, com) ? "your colonies are short"
@@ -280,7 +365,29 @@ public class CAEndgame {
 
     // ---------------- replacing industries ----------------
 
-    static class Weakest { Industry ind; float keep, money, upkeep; }
+    /**
+     * An industry a remover picked. keep: what taking it down gives up a month, its CAValue.keep (value) plus the teardown loss
+     * spread over the horizon (0.3.0.0, B4), so every comparison (best.score - keep, the planner's NPV of a swap) counts the loss;
+     * money and upkeep: its credits a month and its upkeep, for the endgame's income room and the upkeep cap.
+     */
+    static class Weakest {
+        Industry ind; float keep, money, upkeep;
+        /** 0.3.0.0 (B4): CAValue.keep alone, the teardown loss (credits), the horizon they were read at, and its build record. */
+        float value, loss, h;
+        CATombstone.Built built;
+    }
+
+    /** 0.3.0.0 (B4): a candidate from CAValue's reading of it (null: one it can't value, worth 0) and its build record, at horizon h. */
+    static Weakest of(Industry ind, CAValue.Kept k, CATombstone.Built b, float h) {
+        Weakest wk = new Weakest();
+        wk.ind = ind; wk.built = b; wk.h = h;
+        wk.value = k == null ? 0f : k.value;
+        wk.money = k == null ? 0f : k.money;
+        wk.upkeep = k == null ? 0f : k.upkeep;
+        wk.loss = b == null ? 0f : b.loss;
+        wk.keep = wk.value + wk.loss / Math.max(1f, h);
+        return wk;
+    }
 
     /** Why the new industry couldn't start once the old one is down (checked first, so nothing is taken down for nothing); null if it can. */
     static String cantStart(MarketAPI m, CAEngine.Pick p) {
@@ -303,31 +410,86 @@ public class CAEndgame {
         return built != null && Global.getSector().getClock().getElapsedDaysSince(built) < MEMORY_DAYS;
     }
 
+    /**
+     * 0.3.0.0: what a swap does to the colony's stability: the old building's share comes off at once, and a new one that costs
+     * stability costs it once it's built (one that adds stability only helps after it's built, so it isn't counted).
+     */
+    static float swapDelta(MarketAPI m, Industry old, CAEngine.Pick p) {
+        return CAStability.takeDownDelta(m, old) + Math.min(0f, p == null ? 0f : p.fx[1]);
+    }
+
     /** The industry here worth least in the endgame that may be replaced, or null. */
-    static Weakest weakest(MarketAPI m, CAData.Colony col, CAPlan.Plan plan, CAData.Profile profile) {
+    static Weakest weakest(MarketAPI m, CAData.Colony col, CAPlan.Plan plan, CAData.Profile profile) { return weakest(m, col, plan, profile, null); }
+
+    /** As above, for this new pick: never one whose swap the colony can't take (0.3.0.0, CAStability; research 07 M4). */
+    static Weakest weakest(MarketAPI m, CAData.Colony col, CAPlan.Plan plan, CAData.Profile profile, CAEngine.Pick next) {
+        return weakest(m, col, plan, profile, next, false);
+    }
+
+    /**
+     * The industry here that's cheapest to give up for `next`, or null. 0.3.0.0 (B4): valued by CAValue.keep at the colony's
+     * goal (the endgame's weights and chains where it runs, as a build is scored there), plus the teardown loss spread over
+     * the horizon; never one built under another valuation within the year (CATombstone.built). capital: the capital's
+     * make-room swap, which never takes down one of its own trade buildings (and, 0.3.0.0 fix, counts their money at weight 1
+     * outside the endgame, as 0.2.45.1). Fleets, ship quality, defense and ship production always stay: they're what the
+     * endgame builds up, and the home port keeps them.
+     */
+    static Weakest weakest(MarketAPI m, CAData.Colony col, CAPlan.Plan plan, CAData.Profile profile, CAEngine.Pick next, boolean capital) {
         CAData d = CAData.get();
-        float[] w = weights(CAEngine.WEIGHTS[profile.ordinal()]);
         Map<String, Integer> deficit = CAEngine.empireDeficits();
+        float h = CAHorizon.months();
+        String val = CATombstone.valuation(m);
         Weakest best = null;
         for (Industry ind : m.getIndustries()) {
             if (protectedHere(m, col, plan, ind, d)) continue;
-            CAEngine.Pick p = CAEngine.effectsOf(m, ind.getId(), deficit);
-            if (p == null) continue;
-            // fleets, ship quality, defense and ship production are what the endgame builds up
+            if (capital && CACapital.isStep(m, ind.getId())) continue;
+            // 0.3.0.0 (B4, research 02 section 11): nor one of the capital's own plan steps (or below one in its chain): taking it
+            // down would only open the step again, with a slot held for something the year's mark won't let it rebuild
+            if (capital && planStep(plan, ind.getId())) continue;
+            if (!CAStability.canLose(m, swapDelta(m, ind, next), null)) continue;
+            CATombstone.Built b = CATombstone.built(m, ind.getId(), h, val);
+            if (b.protect != null) continue;   // built under another valuation within the year (02 section 8)
+            // 0.3.0.0 (fix): as a remover reads it (CATombstone.forRemoval): no charge for inputs your colonies lack (a Mining
+            // read 36,000 a month weaker while any colony was short of drugs), relief against today's supply. 0.3.0.0 (fix, B4
+            // review): the capital's swap counts the old building's money at weight 1 outside the endgame, as 0.2.45.1 did
+            // (spending freely's quarter let Commerce's plan bonus swap out a Refining earning 50,000 a month)
+            CAValue.Kept k = CATombstone.forRemoval(m, CAValue.keepDetail(m, ind, profile, deficit), profile, false, capital);
+            if (k == null || k.p == null) continue;   // one the engine can't value
+            CAEngine.Pick p = k.p;
             if (p.fx[3] > 0f || p.fx[4] > 0f || p.fx[5] > 0f || p.supplied.containsKey("ships")) continue;
-            CAEngine.upkeep(m, ind.getSpec(), null, p);
-            float v = 0f;
-            for (int i = 0; i < 7; i++) v += w[i] * p.fx[i];
-            v += chainValue(m, p, true);
-            if (best == null || v < best.keep) { best = new Weakest(); best.ind = ind; best.keep = v; best.money = p.fx[0]; best.upkeep = p.upkeep; }
+            Weakest wk = of(ind, k, b, h);
+            if (best == null || wk.keep < best.keep) best = wk;
         }
         return best;
     }
 
+    /** 0.3.0.0 (B4): a step of this plan, or below one in its upgrade chain (as CAPrune leaves them). */
+    static boolean planStep(CAPlan.Plan plan, String id) {
+        if (plan == null || id == null) return false;
+        for (CAPlan.Step st : plan.steps) if (id.equals(st.id) || CAPlan.inChainBelow(id, st.id)) return true;
+        return false;
+    }
+
+    /**
+     * 0.3.0.0 (B4): the swap pays: NPV(new) - keep x H - teardown loss > the margin, both over the horizon (CATombstone.worthReplacing;
+     * the new pick's score is its NPV a month, as the planner counts it). The same as beats(score, keep + loss / H).
+     */
+    static boolean worthIt(CAEngine.Pick best, Weakest wk) {
+        if (best == null || wk == null) return false;
+        float h = wk.h > 0f ? wk.h : CAHorizon.months();
+        return CATombstone.worthReplacing(best.score * h, wk.value, h, wk.loss, REPLACE_MARGIN * h);
+    }
+
+    /** 0.3.0.0 (B4): taken down here within the year (its own mark, or one on what it upgrades into): not the replacement. */
+    static boolean rebuildBlocked(MarketAPI m, String id) {
+        try { return CAPlanner.tombstoneDays(m.getId(), id) > 0f; } catch (Throwable t) { return false; }
+    }
+
     /** Whether a replacement may happen today here (one a day empire-wide, one a month per colony). */
     static boolean replaceAllowed(MarketAPI m, CASettings s) {
+        if (!CARich.wondersOpen(s)) return false;   // 0.3.0.0 (C3 fix): replacements are the Wonders and endgame rung's: none while it's Off or Recommend only, or under Fleet, Expansion or Save
         if (s.endgameNoReplace || now() - lastReplaceDay < 1f && now() >= lastReplaceDay) return false;
-        Long last = CAData.get().endgameBuilt().get(m.getId() + ":replaced");
+        Long last = CAData.get().swapAt().get(m.getId() + ":replaced");
         return last == null || Global.getSector().getClock().getElapsedDaysSince(last) >= REPLACE_COLONY_DAYS;
     }
 
@@ -336,30 +498,39 @@ public class CAEndgame {
         if (best == null || best.measured || !at(m) || !replaceAllowed(m, CAData.settings())) return null;
         Long gone = CAData.get().endgameBuilt().get(m.getId() + ":-" + best.id);   // what it took down isn't built again there for a year
         if (gone != null && Global.getSector().getClock().getElapsedDaysSince(gone) < MEMORY_DAYS) return null;
+        if (rebuildBlocked(m, best.id)) return null;   // 0.3.0.0 (B4): any remover's mark, not only the endgame's own
         CAPlan.Plan plan = CAPlan.build(m, col.profile);
-        Weakest wk = weakest(m, col, plan, profile);
-        if (wk == null || !beats(best.score, wk.keep)) return null;
+        Weakest wk = weakest(m, col, plan, profile, best);
+        if (wk == null || !worthIt(best, wk)) return null;   // 0.3.0.0 (B4): NPV less keep and teardown loss over the horizon
         return wk;
     }
 
-    /** Takes the old industry down (its AI core and item to Autopilot Storage), to make room for the new one. */
-    static void takeDown(MarketAPI m, Weakest wk, CAEngine.Pick p) {
+    /**
+     * Takes the old industry down (its AI core and item to Autopilot Storage), to make room for the new one. 0.3.0.0: false (and
+     * nothing done) when the swap would leave the colony under the stability floor (CAStability), checked at the last moment.
+     */
+    static boolean takeDown(MarketAPI m, Weakest wk, CAEngine.Pick p) {
         Industry ind = wk.ind;
+        if (!CAStability.canLose(m, swapDelta(m, ind, p), "replacing " + ind.getCurrentName() + " with " + p.name)) return false;
         CAData d = CAData.get();
         String core = ind.getAICoreId();
         SpecialItemData item = ind.getSpecialItem();
         CAStores.emptyInto(m, ind);   // core and item to this colony's Autopilot Storage
         String oldName = ind.getCurrentName(), oldId = ind.getId();
+        boolean capital = !at(m) && CACapital.isStep(m, p.id);
+        CATombstone.Built b = wk.built != null ? wk.built : CATombstone.built(m, oldId, CAHorizon.months(), null);   // read before the mark clears it
         m.removeIndustry(oldId, MarketAPI.MarketInteractionMode.REMOTE, false);
-        CAPrune.markGone(m, oldId);   // 0.2.45.2: not built here again for a year, endgame or not
         long ts = Global.getSector().getClock().getTimestamp();
         d.endgameBuilt().put(m.getId() + ":-" + oldId, ts);
-        d.endgameBuilt().put(m.getId() + ":replaced", ts);
+        d.swapAt().put(m.getId() + ":replaced", ts);
+        CATombstone.add(m.getId(), oldId, capital ? CATombstone.CAPITAL : CATombstone.ENDGAME, b.paid);   // 0.3.0.0 (B4): not built back here for a year
         lastReplaceDay = now();
         chains = null;
-        String why = !at(m) && CACapital.isStep(m, p.id) ? "room for the capital's trade" : "endgame";
+        String why = capital ? "room for the capital's trade" : "endgame";
         CALog.add(m.getName() + ": took down " + oldName + " for " + p.name + " (" + why + ", worth " + CAEngine.valueText(p.score - wk.keep) + " more"
+                + CATombstone.paidText(b)
                 + (core != null || item != null ? "; its " + (core != null && item != null ? "core and item" : core != null ? "core" : "item") + " to Autopilot Storage" : "") + ")", true);
+        return true;
     }
 
     /** A build the endgame started: not replaced again for a year. */
@@ -368,25 +539,25 @@ public class CAEndgame {
         note(m, p);
     }
 
-    /** Forgets what's over a year old. */
-    static void tidy(CAData d) {
-        Iterator<Map.Entry<String, Long>> it = d.endgameBuilt().entrySet().iterator();
-        while (it.hasNext()) if (Global.getSector().getClock().getElapsedDaysSince(it.next().getValue()) > MEMORY_DAYS) it.remove();
-    }
-
     // ---------------- panel ----------------
 
     static String summaryText(CASettings s) {
         List<String> miss = missing();
         int n = 0;
         for (String k : CAData.get().endgameBuilt().keySet()) if (k.contains(":-")) n++;
-        return "Endgame economy (net income over " + Misc.getDGSCredits(ENTER_NET[Math.max(0, Math.min(ENTER_NET.length - 1, s.endgameMode))])
-                + " a month with " + Misc.getDGSCredits(CASurplus.RICH) + "+ surplus): credits count 5%; production chains, fleets, ship quality, defense "
-                + "and research decide. Keeps net income over " + Misc.getDGSCredits(floor(s)) + " (a third of " + Misc.getDGSCredits(s.endgameRefNet)
-                + "); " + Misc.getDGSCredits(room(s)) + " of income may still go this month. "
-                + (miss.isEmpty() ? "Your colonies make every good the sector makes." : miss.size() + " goods the sector makes and you don't: "
-                + CAContracts.join(miss.size() > 10 ? miss.subList(0, 10) : miss) + (miss.size() > 10 ? ", ..." : "") + ".")
+        // 0.3.0.0 (WS-F3 fix pass 2): one status line of 40 words or fewer; what decides, and the missing goods, on hover (HOVER, missingLine).
+        // 0.3.0.0 (WS-F3 fix pass 3): what turns it on (the money tier Endgame, or legacyPlanner's surplus line) is the Settings row's
+        return "Endgame economy on: net income kept over " + Misc.getDGSCredits(floor(s)) + "; " + Misc.getDGSCredits(room(s))
+                + " may still go this month. " + (miss.isEmpty() ? "Your colonies make every good." : miss.size() + " goods you don't make.")
                 + (n > 0 ? " Replaced " + n + " building" + (n == 1 ? "" : "s") + " this year." : "");
+    }
+
+    static final String HOVER = "Credits count 5%; production chains, fleets, ship quality, defense and research decide.";
+
+    /** The goods the sector makes and your colonies don't, up to 10, for the hover; null when none. */
+    static String missingLine() {
+        List<String> miss = missing();
+        return miss.isEmpty() ? null : "Missing: " + CAContracts.join(miss.size() > 10 ? miss.subList(0, 10) : miss) + (miss.size() > 10 ? ", ..." : "") + ".";
     }
 
     static void render(TooltipMakerAPI t, CASettings s) {
@@ -394,5 +565,6 @@ public class CAEndgame {
         if (summary == null) summary = summaryText(s);
         Color gray = Misc.getGrayColor();
         t.addPara(CALog.esc(summary), gray, 2f);
+        CATheme.hover(t, HOVER, missingLine());
     }
 }

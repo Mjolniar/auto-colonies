@@ -28,15 +28,28 @@ import java.util.*;
  * a plan's special step, a capital trade building, a contract feeder, or one with defense, fleet, ship quality or ship output
  * only when nothing else can go, and one that adds stability last. Its AI core and item go to the colony's Autopilot
  * Storage. Setting: Fix colonies over the industry limit (Building and planning).
+ *
+ * 0.3.0.0: slots are counted one way everywhere (CABuild.usedSlots, research 07 M12: upgrades into industries under way count,
+ * the way the build gate counts them), never one the colony can't lose (CAStability: taking it down would leave the colony
+ * under the floor), and the first day a colony goes over, the log says why (07 M4: the 0.2.44.1 log had Zenemosrae at "4
+ * industries on 3 slots ... left it at 0" and nothing about how it got there).
+ * 0.3.0.0 (WS-B4): the weakest is ranked by CAValue.keep plus the teardown loss (what Autopilot paid for it and hasn't paid
+ * back yet over the horizon), and every takedown here, shedding at 0 included, leaves a year's mark (CATombstone) so the
+ * planner doesn't build it back. Neither step ever waits for a mark: they keep their own rules.
+ * 0.3.0.0 (fix, B4 review): the over-limit check, 0-stability shedding and the alert run in their own try at each colony, so a
+ * failure in the ranking never skips the 0-stability safety net, and a building the ranking can't read only drops out of it;
+ * the ranking reads each one as a remover does (CATombstone.forRemoval: no charge for inputs your colonies lack, relief
+ * against today's supply).
  */
 public class CAOverLimit {
-    static final float PENALTY = 5f, GAP_DAYS = 1f, GROWS_SOON = 0.8f, ALERT_DAYS = 30f;
+    // 0.3.0.0 (A3): CM's own numbers live in CATuning; PENALTY is the game's over-limit stability penalty
+    static final float PENALTY = 5f, GAP_DAYS = CATuning.OVER_LIMIT_GAP_DAYS, GROWS_SOON = CATuning.OVER_LIMIT_GROWS_SOON, ALERT_DAYS = CATuning.OVER_LIMIT_ALERT_DAYS;
     /** At or under this stability a colony over its industry limit sheds an industry at once, whatever it earns. */
-    static final float LOW = 2f;
+    static final float LOW = CATuning.OVER_LIMIT_LOW;
     /** Days between two stability-costing buildings taken down at a colony at 0, and how long one stays off the capital's plan. */
-    static final float SHED_DAYS = 10f, SHED_HOLD_DAYS = 365f;
+    static final float SHED_DAYS = CATuning.OVER_LIMIT_SHED_DAYS, SHED_HOLD_DAYS = CATuning.OVER_LIMIT_SHED_HOLD_DAYS;
     /** Days at 0 before a stability-costing building is taken down (the game's decivilization needs months at 0). */
-    static final float ZERO_WAIT_DAYS = 20f;
+    static final float ZERO_WAIT_DAYS = CATuning.OVER_LIMIT_ZERO_WAIT_DAYS;
 
     /** Every colony: Auto ones are fixed, the rest get the alert. */
     public static void run(List<MarketAPI> auto) {
@@ -46,29 +59,98 @@ public class CAOverLimit {
         for (MarketAPI m : auto) autoIds.add(m.getId());
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             if (CAEngine.isOutpost(m)) continue;
-            try {
-                if (autoIds.contains(m.getId())) {
-                    boolean acted = check(d, s, m);
-                    if (!acted && atZero(m)) shed(d, m);   // still at 0: a building that costs stability goes
+            // 0.3.0.0 (fix, B4 review): the over-limit check, 0-stability shedding and the alert each in their own try, so a
+            // failure in the (much bigger since B4) over-limit ranking never skips the 0-stability safety net
+            boolean acted = false;
+            if (autoIds.contains(m.getId())) {
+                int had = m.getIndustries().size();
+                try { acted = check(d, s, m); }
+                catch (Throwable t) {
+                    acted = m.getIndustries().size() != had;   // it took one down before failing: no second one today
+                    CADiagnostics.LOG.warn(CADiagnostics.TAG + "industry limit check failed at " + m.getName(), t);
                 }
-                zeroAlert(d, m, autoIds.contains(m.getId()));
-            } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "industry limit / stability check failed at " + m.getName(), t); }
+                try { if (!acted && atZero(m)) shed(d, m); }   // still at 0: a building that costs stability goes
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "0-stability shedding failed at " + m.getName(), t); }
+            }
+            try { zeroAlert(d, m, autoIds.contains(m.getId())); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "0-stability alert failed at " + m.getName(), t); }
+            try { remember(m); } catch (Throwable ignored) { }
         }
     }
 
     static boolean atZero(MarketAPI m) { return m.getStabilityValue() <= 0f; }
 
+    // ---------------- what each colony looked like yesterday, for the cause of an over-limit day (0.3.0.0) ----------------
+
+    static final class Seen {
+        int used, max, size;
+        final Set<String> ids = new HashSet<String>();
+    }
+
+    /** Session memory only (CAReset.onLoad clears it): a missing day just means a shorter cause line. */
+    static final Map<String, Seen> seen = new HashMap<String, Seen>();
+
+    public static void reset() { seen.clear(); }
+
+    static void remember(MarketAPI m) {
+        Seen s = new Seen();
+        s.used = CABuild.usedSlots(m);
+        s.max = Misc.getMaxIndustries(m);
+        s.size = m.getSize();
+        for (Industry ind : m.getIndustries()) s.ids.add(ind.getId());
+        seen.put(m.getId(), s);
+    }
+
+    /**
+     * Why a colony is over its industry limit (0.3.0.0, 07 M4), for the log the first day it is: what's counted, upgrades and
+     * builds under way, what its size allows and what adds to that, and what changed since the day before.
+     */
+    static String cause(MarketAPI m, int used, int max) {
+        List<String> parts = new ArrayList<String>();
+        int game = Misc.getNumIndustries(m);
+        if (game != used) parts.add("the game counts " + game + " until its upgrades finish");
+        Map<String, String> rec = CAData.get().upgradeTargets();
+        for (Industry ind : m.getIndustries()) {
+            if (ind.isHidden()) continue;
+            if (ind.isUpgrading()) {
+                String to = rec.get(m.getId() + "|" + ind.getId());
+                if (to == null) to = ind.getSpec().getUpgrade();
+                String toName = to;
+                try { toName = Global.getSettings().getIndustrySpec(to).getName(); } catch (Throwable ignored) { }
+                parts.add(ind.getCurrentName() + " upgrading" + (toName != null ? " to " + toName : ""));
+            } else if (ind.isBuilding() && ind.isIndustry()) parts.add(ind.getCurrentName() + " being built");
+        }
+        int size = m.getSize(), base = PopulationAndInfrastructure.getMaxIndustries(size);
+        parts.add("size " + size + " allows " + base + (max > base ? ", +" + (max - base) + " from its buildings and conditions"
+                : max < base ? ", " + (max - base) + " from its conditions" : ""));
+        Seen y = seen.get(m.getId());
+        if (y != null) {
+            if (y.max > max) parts.add("its limit fell from " + y.max + (y.size > size ? " when it shrank from size " + y.size : ""));
+            List<String> added = new ArrayList<String>();
+            for (Industry ind : m.getIndustries()) if (ind.isIndustry() && !y.ids.contains(ind.getId())) added.add(ind.getCurrentName());
+            if (!added.isEmpty()) parts.add(CAContracts.join(added) + " new since yesterday");
+        }
+        return used + " of " + max + " slots (" + CAContracts.join(parts) + ")";
+    }
+
+    /** "costs 5 stability", or, while only an upgrade under way puts it over, what it will cost once that finishes. */
+    static String costText(MarketAPI m) {
+        float p = CAStability.overLimitPenalty(m);
+        return p > 0f ? "costs " + Math.round(p) + " stability" : "will cost " + Math.round(PENALTY) + " stability once its upgrades finish";
+    }
+
     /** An important line once a month while a colony sits at 0 stability. */
     static void zeroAlert(CAData d, MarketAPI m, boolean auto) {
         String key = m.getId() + ":zerostab";
-        if (!atZero(m)) { d.endgameBuilt().remove(key); d.endgameBuilt().remove(m.getId() + ":zerosince"); return; }
-        if (!d.endgameBuilt().containsKey(m.getId() + ":zerosince")) d.endgameBuilt().put(m.getId() + ":zerosince", Global.getSector().getClock().getTimestamp());
-        Long last = d.endgameBuilt().get(key);
+        if (!atZero(m)) { d.overLimitAt().remove(key); d.overLimitAt().remove(m.getId() + ":zerosince"); return; }
+        if (!d.overLimitAt().containsKey(m.getId() + ":zerosince")) d.overLimitAt().put(m.getId() + ":zerosince", Global.getSector().getClock().getTimestamp());
+        Long last = d.overLimitAt().get(key);
         if (last != null && Global.getSector().getClock().getElapsedDaysSince(last) < ALERT_DAYS) return;
-        d.endgameBuilt().put(key, Global.getSector().getClock().getTimestamp());
-        int num = Misc.getNumIndustries(m), max = Misc.getMaxIndustries(m);
+        d.overLimitAt().put(key, Global.getSector().getClock().getTimestamp());
+        int used = CABuild.usedSlots(m), max = Misc.getMaxIndustries(m);   // 0.3.0.0: one slot count (07 M12)
+        float penalty = CAStability.overLimitPenalty(m);
         CALog.add(m.getName() + ": stability is at 0, and the game decivilizes a colony that stays at 0 for months. Biggest drags: "
-                + causes(m) + (num > max ? ". It has " + num + " industries on " + max + " slots (-5)" : "")
+                + causes(m) + (used > max ? ". It has " + used + " industries on " + max + " slots" + (penalty > 0f ? " (-" + Math.round(penalty) + ")" : "") : "")
                 + (auto ? ". Autopilot sheds what costs stability until it's off 0" : ". It isn't on Auto, so raising it is up to you"), true);
     }
 
@@ -84,13 +166,14 @@ public class CAOverLimit {
         return out.isEmpty() ? "none listed" : CAContracts.join(out);
     }
 
-    /** What a building does to the colony's stability, read from the game's own modifiers ("ind_<id>", BaseIndustry.getModId). */
-    static float stabilityOf(MarketAPI m, Industry ind) {
-        String key = "ind_" + ind.getId();
-        float v = 0f;
-        for (Map.Entry<String, com.fs.starfarer.api.combat.MutableStat.StatMod> e : m.getStability().getFlatMods().entrySet())
-            if (e.getKey().equals(key) || e.getKey().startsWith(key + "_")) v += e.getValue().value;
-        return v;
+    /** What a building does to the colony's stability, read from the game's own modifiers (0.3.0.0: CAStability.of, one place). */
+    static float stabilityOf(MarketAPI m, Industry ind) { return CAStability.of(m, ind); }
+
+    /** Pure (0.3.0.0, JTOverLimitCheck): whether a stability-costing building goes today at a colony at 0 (days < 0: never stamped). */
+    static boolean shedDue(float daysAtZero, float daysSinceShed) {
+        // a short dip (a raid, a fresh capture) passes on its own; the game needs months at 0 before it decivilizes
+        if (daysAtZero < ZERO_WAIT_DAYS) return false;
+        return daysSinceShed < 0f || daysSinceShed >= SHED_DAYS;
     }
 
     /**
@@ -100,11 +183,9 @@ public class CAOverLimit {
      * capital's plan for a year. Never population, a station, one being built or upgraded, improved or locked.
      */
     static void shed(CAData d, MarketAPI m) {
-        // a short dip (a raid, a fresh capture) passes on its own; the game needs months at 0 before it decivilizes
-        Long since = d.endgameBuilt().get(m.getId() + ":zerosince");
-        if (since == null || Global.getSector().getClock().getElapsedDaysSince(since) < ZERO_WAIT_DAYS) return;
-        Long last = d.endgameBuilt().get(m.getId() + ":shed");
-        if (last != null && Global.getSector().getClock().getElapsedDaysSince(last) < SHED_DAYS) return;
+        Long since = d.overLimitAt().get(m.getId() + ":zerosince"), last = d.overLimitAt().get(m.getId() + ":shed");
+        if (!shedDue(since == null ? -1f : Global.getSector().getClock().getElapsedDaysSince(since),
+                last == null ? -1f : Global.getSector().getClock().getElapsedDaysSince(last))) return;
         CAData.Colony col = d.colony(m.getId());
         Industry worst = null;
         float worstV = 0f;
@@ -120,45 +201,77 @@ public class CAOverLimit {
             return;
         }
         CALog.forget("stab:none:" + m.getId());
+        // 0.3.0.0: through the one rule like every takedown; it only ever raises stability here, so it always passes
+        if (!CAStability.canLose(m, CAStability.takeDownDelta(m, worst), "taking down " + worst.getCurrentName())) return;
         String core = worst.getAICoreId(), name = worst.getCurrentName(), id = worst.getId();
         SpecialItemData item = worst.getSpecialItem();
+        float paid = CATombstone.sunk(m.getId(), id);
         CAStores.emptyInto(m, worst);
         m.removeIndustry(id, MarketAPI.MarketInteractionMode.REMOTE, false);
-        CAPrune.markGone(m, id);   // 0.2.45.2: not built here again for a year
         long ts = Global.getSector().getClock().getTimestamp();
-        d.endgameBuilt().put(m.getId() + ":shed", ts);
-        d.endgameBuilt().put(m.getId() + ":shed:" + id, ts);
+        d.overLimitAt().put(m.getId() + ":shed", ts);
+        d.overLimitAt().put(m.getId() + ":shed:" + id, ts);
+        // 0.3.0.0 (B4): shedding keeps its own rules and never reads a mark, but it leaves one: not built back here for a year
+        CATombstone.add(m.getId(), id, CATombstone.SHED, paid);
         CALog.add(m.getName() + ": took down " + name + " (" + Math.round(worstV) + " stability): the colony was at 0, where the game can decivilize it"
                 + (core != null || item != null ? "; its " + (core != null && item != null ? "core and item" : core != null ? "core" : "item") + " to Autopilot Storage" : ""), true);
     }
 
     /** A building shed at this colony for stability within the last year: the capital's plan leaves it out. */
     static boolean shedRecently(MarketAPI m, String id) {
-        Long t = CAData.get().endgameBuilt().get(m.getId() + ":shed:" + id);
+        Long t = CAData.get().overLimitAt().get(m.getId() + ":shed:" + id);
         return t != null && Global.getSector().getClock().getElapsedDaysSince(t) < SHED_HOLD_DAYS;
+    }
+
+    // ---------------- over the limit ----------------
+
+    /** What check() does at a colony (0.3.0.0, pure for JTOverLimitCheck). */
+    enum Act { WITHIN, OFF, GROWS, WAIT, SHED }
+
+    /**
+     * Pure: used and max industry slots (CABuild.usedSlots), stability as shown, the setting, whether the colony is about to
+     * grow (80% of the way to a size it can still reach), the limit at that size, and days since its last over-limit takedown
+     * (negative: never). At LOW stability or under it sheds at once; otherwise it waits for growth that makes room, and sheds at
+     * most one a GAP_DAYS.
+     */
+    static Act decide(int used, int max, float stability, boolean noFix, boolean growsSoon, int maxNextSize, float daysSinceLast) {
+        if (used <= max) return Act.WITHIN;
+        if (noFix) return Act.OFF;
+        if (stability > LOW) {
+            if (growsSoon && maxNextSize >= used) return Act.GROWS;
+            if (daysSinceLast >= 0f && daysSinceLast < GAP_DAYS) return Act.WAIT;
+        }
+        return Act.SHED;
     }
 
     /** Returns true when it took an industry down. */
     static boolean check(CAData d, CASettings s, MarketAPI m) {
-        int num = Misc.getNumIndustries(m), max = Misc.getMaxIndustries(m);
+        int used = CABuild.usedSlots(m), max = Misc.getMaxIndustries(m);   // 0.3.0.0: the build gate's count (07 M12)
         String key = "overlimit:" + m.getId();
-        if (num <= max) { CALog.forget(key + ":keep"); CALog.forget(key + ":grow"); CALog.forget(key + ":none"); CALog.forget(key + ":off"); return false; }
-        String over = num + " industries on " + max + " slots";
-        boolean zero = atZero(m), danger = m.getStabilityValue() <= LOW;
-        if (s.noOverLimitFix) {
-            if (CALog.once(key + ":off")) CALog.add(m.getName() + ": " + over + ", which costs 5 stability. Fixing it is off in Settings, so taking one down is up to you", zero);
+        if (used <= max) {
+            CALog.forget(key + ":keep"); CALog.forget(key + ":grow"); CALog.forget(key + ":none"); CALog.forget(key + ":off"); CALog.forget(key + ":cause");
             return false;
         }
-        if (!danger) {
-            // about to grow into the room it needs
-            int size = m.getSize();
-            if (size < Misc.getMaxMarketSize(m) && Misc.getMarketSizeProgress(m) >= GROWS_SOON
-                    && max + PopulationAndInfrastructure.getMaxIndustries(size + 1) - PopulationAndInfrastructure.getMaxIndustries(size) >= num) {
+        if (CALog.once(key + ":cause")) CALog.add(m.getName() + ": over the industry limit: " + cause(m, used, max));   // 0.3.0.0 (07 M4)
+        String over = used + " industries on " + max + " slots";
+        int size = m.getSize();
+        boolean growsSoon = size < Misc.getMaxMarketSize(m) && Misc.getMarketSizeProgress(m) >= GROWS_SOON;
+        int maxNext = max + PopulationAndInfrastructure.getMaxIndustries(size + 1) - PopulationAndInfrastructure.getMaxIndustries(size);
+        Long last = d.overLimitAt().get(m.getId() + ":overlimit");
+        float since = last == null ? -1f : Global.getSector().getClock().getElapsedDaysSince(last);
+        boolean zero = atZero(m), danger = m.getStabilityValue() <= LOW;
+        switch (decide(used, max, m.getStabilityValue(), s.noOverLimitFix, growsSoon, maxNext, since)) {
+            case OFF:
+                if (CALog.once(key + ":off")) CALog.add(m.getName() + ": " + over + ", which " + costText(m) + ". Fixing it is off in Settings, so taking one down is up to you", zero);
+                return false;
+            case GROWS:
                 if (CALog.once(key + ":grow")) CALog.add(m.getName() + ": " + over + " (5 stability), but it's about to grow to size " + (size + 1) + ", which has room for them all, so it waits");
                 return false;
-            }
-            Long last = d.endgameBuilt().get(m.getId() + ":overlimit");
-            if (last != null && Global.getSector().getClock().getElapsedDaysSince(last) < GAP_DAYS) return false;
+            case WAIT:
+            case WITHIN:
+                return false;
+            default:
+                break;
         }
         CAData.Colony col = d.colony(m.getId());
         // 0.2.44.1: an Auto colony over its limit always sheds one: the weakest of what a colony can do without first, then
@@ -166,69 +279,180 @@ public class CAOverLimit {
         CAEndgame.Weakest wk = weakest(m, col, false);
         if (wk == null) wk = weakest(m, col, true);
         if (wk == null) {
-            if (CALog.once(key + ":none")) CALog.add(m.getName() + ": " + over + ", which costs 5 stability, and every industry there is locked, "
+            if (CALog.once(key + ":none")) CALog.add(m.getName() + ": " + over + ", which " + costText(m) + ", and every industry there is locked, "
                     + "being built or upgraded, improved, or holds up its stability, so taking one down is up to you", true);
             return false;
         }
-        takeDown(d, m, wk, over, danger ? Float.MAX_VALUE : 0f, zero);
-        return true;
+        return takeDown(d, m, wk, over, danger, zero);
     }
 
     /**
      * The industry here worth least that may go: one the engine can value, and none of what a colony must keep. With any
      * (stability at 2 or under), also defense, fleet and ship-making ones and mod ones it can't value (counted as worth 0),
-     * but never population, a station, improved, locked, or one being built.
+     * but never population, a station, improved, locked, or one being built. 0.3.0.0: never one the colony can't lose
+     * (CAStability.canLose with what taking it down does now, or with what shedding back to the limit with it does: mayShed).
+     * 0.3.0.0 (WS-B4): worth is CAValue.keep, the numbers a build is scored with, plus the teardown loss spread over the horizon
+     * (what Autopilot paid for it and hasn't paid back yet, CATombstone), so a building put up last month at full price isn't
+     * the first to go when an older one does the same for less. A removal mark never holds this step up: it keeps its rules.
      */
     static CAEndgame.Weakest weakest(MarketAPI m, CAData.Colony col, boolean any) {
-        float[] w = CAEngine.WEIGHTS[CAThreat.effective(m, col.profile).ordinal()];
+        CAData.Profile prof = CAThreat.effective(m, col.profile);
+        float h = CAHorizon.months();
         CAPlan.Plan plan = CAPlan.build(m, col.profile);
         Map<String, Integer> deficit = CAEngine.empireDeficits();
-        CAEndgame.Weakest out = null;
-        float outRank = 0f;
+        List<CAEndgame.Weakest> cands = new ArrayList<CAEndgame.Weakest>();
+        List<float[]> keys = new ArrayList<float[]>();   // {value, stability it adds, holder 1/0}
+        // 0.3.0.0 (fix): everything over-limit may ever take down here and what each adds, so a holder is judged by shedding
+        // back to the limit, not by one takedown alone
+        List<Industry> pool = new ArrayList<Industry>();
+        List<Float> shares = new ArrayList<Float>();
         for (Industry ind : m.getIndustries()) {
+            if (!sheddable(m, col, ind)) continue;
+            pool.add(ind); shares.add(stabilityOf(m, ind));
+        }
+        for (int k = 0; k < pool.size(); k++) {
+            Industry ind = pool.get(k);
             String id = ind.getId();
-            if (!ind.isIndustry() || ind.isHidden() || ind.isBuilding() || ind.isUpgrading() || ind.isImproved() || !ind.canShutDown()) continue;
-            if (ind.getSpec().hasTag("population") || ind.getSpec().hasTag("station") || col.locks.contains(id)) continue;
-            if (CAMods.leftToYou(id) != null) continue;   // you built it, Autopilot never does: it stays (0.2.45.0)
-            // one that holds up the colony's stability by 5 or more: taking it down wouldn't lift the colony at all (0.2.44.1)
-            float stab = stabilityOf(m, ind);
-            if (stab >= PENALTY) continue;
+            float stab = shares.get(k);
             if (!any && (CAEndgame.keepsPlanBonus(m, plan, id) || CAContracts.feeds(ind) != null)) continue;
-            CAEngine.Pick p = CAEngine.effectsOf(m, id, deficit);
-            if (p == null && any) {   // a mod industry the engine can't value: worth 0, so it goes before anything that earns
-                float r = rank(0f, stab);
-                if (out == null || r < outRank) { out = new CAEndgame.Weakest(); out.ind = ind; out.keep = 0f; outRank = r; }
+            // 0.3.0.0: a stability holder (taking it down would leave the colony under the floor) is never picked; fix: one that
+            // adds stability isn't a holder when shedding back to the limit with it lifts the 5 and ends at or above the floor
+            boolean holder = !mayShed(m, ind, others(shares, k), null);
+            if (holder) {
+                CAEndgame.Weakest wk = new CAEndgame.Weakest();
+                wk.ind = ind;
+                cands.add(wk); keys.add(new float[]{0f, stab, 1f});
                 continue;
             }
-            if (p == null) continue;   // a building the engine can't value for sure
+            // 0.3.0.0 (B4): CAValue's reading (the same numbers a build is scored with) and what was paid for it; no valuation
+            // protection here: the limit is a stability rule, not a judgement of worth. 0.3.0.0 (fix): read as a remover reads
+            // it (CATombstone.forRemoval), and a failure reading one only drops that candidate
+            CAValue.Kept kv;
+            CATombstone.Built b;
+            try {
+                kv = CATombstone.forRemoval(m, CAValue.keepDetail(m, ind, prof, deficit), prof);
+                b = CATombstone.built(m, id, h, null);
+            } catch (Throwable t) {
+                CAStep.warn("industry limit", "industry limit: couldn't value " + ind.getCurrentName() + " at " + m.getName() + ", left out", t);
+                continue;
+            }
+            if (kv == null && any) {   // a mod industry the engine can't value: worth 0, so it goes before anything that earns
+                CAEndgame.Weakest wk = CAEndgame.of(ind, null, b, h);
+                cands.add(wk); keys.add(new float[]{wk.keep, stab, 0f});
+                continue;
+            }
+            if (kv == null || kv.p == null) continue;   // a building the engine can't value for sure
+            CAEngine.Pick p = kv.p;
             if (!any && (p.fx[3] > 0f || p.fx[4] > 0f || p.fx[5] > 0f || p.supplied.containsKey("ships"))) continue;
-            CAEngine.upkeep(m, ind.getSpec(), null, p);
-            float v = 0f;
-            for (int i = 0; i < 7; i++) v += w[i] * p.fx[i];
-            float r = rank(v, stab);
-            if (out == null || r < outRank) { out = new CAEndgame.Weakest(); out.ind = ind; out.keep = v; out.money = p.fx[0]; out.upkeep = p.upkeep; outRank = r; }
+            CAEndgame.Weakest wk = CAEndgame.of(ind, kv, b, h);
+            cands.add(wk); keys.add(new float[]{wk.keep, stab, 0f});
         }
-        return out;
+        float[] value = new float[keys.size()], stab = new float[keys.size()];
+        boolean[] holder = new boolean[keys.size()];
+        for (int i = 0; i < keys.size(); i++) { value[i] = keys.get(i)[0]; stab[i] = keys.get(i)[1]; holder[i] = keys.get(i)[2] > 0f; }
+        int i = pick(value, stab, holder);
+        return i < 0 ? null : cands.get(i);
+    }
+
+    /** Pure (0.3.0.0): the candidate to take down, by rank(), never a stability holder; -1 when there's none. */
+    static int pick(float[] value, float[] stability, boolean[] holder) {
+        int best = -1;
+        float bestRank = 0f;
+        for (int i = 0; i < value.length; i++) {
+            if (holder[i]) continue;
+            float r = rank(value[i], stability[i]);
+            if (best < 0 || r < bestRank) { best = i; bestRank = r; }
+        }
+        return best;
     }
 
     /** Ranking for weakest(): one that adds stability goes only when nothing else can (0.2.44.1). */
     static float rank(float value, float stability) { return stability > 0f ? value + 1e9f : value; }
 
-    static void takeDown(CAData d, MarketAPI m, CAEndgame.Weakest wk, String over, float gain, boolean zero) {
+    // ---------------- 0.3.0.0 (fix): holders judged by shedding back to the limit ----------------
+    // takeDownDelta alone only lifts the 5 for the last one over, so at a colony 2 or more over every building that adds
+    // stability (Military Base +2, a mod's +1) came out as a holder at 0-4 stability, and one with only those left sat at 0
+
+    /** Whether over-limit may ever take this one down (population, stations, locked, improved, under way and 5+ holders never). */
+    static boolean sheddable(MarketAPI m, CAData.Colony col, Industry ind) {
+        String id = ind.getId();
+        if (!ind.isIndustry() || ind.isHidden() || ind.isBuilding() || ind.isUpgrading() || ind.isImproved() || !ind.canShutDown()) return false;
+        if (ind.getSpec().hasTag("population") || ind.getSpec().hasTag("station") || col.locks.contains(id)) return false;
+        if (CAMods.leftToYou(id) != null) return false;   // you built it, Autopilot never does: it stays (0.2.45.0)
+        // one that holds up the colony's stability by 5 or more: taking it down wouldn't lift the colony at all (0.2.44.1)
+        return stabilityOf(m, ind) < PENALTY;
+    }
+
+    /** The shares of the pool without index k. */
+    static float[] others(List<Float> shares, int k) {
+        float[] o = new float[Math.max(0, shares.size() - 1)];
+        for (int i = 0, j = 0; i < shares.size(); i++) if (i != k) o[j++] = shares.get(i);
+        return o;
+    }
+
+    /** What the other buildings over-limit may take down here add, for takeDown's last-moment check. */
+    static float[] others(MarketAPI m, CAData.Colony col, Industry except) {
+        List<Float> s = new ArrayList<Float>();
+        for (Industry ind : m.getIndustries()) if (ind != except && sheddable(m, col, ind)) s.add(stabilityOf(m, ind));
+        float[] o = new float[s.size()];
+        for (int i = 0; i < o.length; i++) o[i] = s.get(i);
+        return o;
+    }
+
+    /**
+     * Pure (JTOverLimitCheck): what shedding back to the limit starting with this one does to stability. Its own share and those
+     * of the (gameCount - max - 1) others cheapest to lose come off, and the limit's penalty lifts at the end. When it alone
+     * gets the colony within the limit, or there aren't enough others to get there, it's just this one's takedown.
+     */
+    static float toLimitDelta(float own, float[] others, float penalty, int gameCount, int max) {
+        int more = gameCount - max - 1;
+        if (penalty <= 0f || more <= 0) return CAStability.takeDownDelta(own, penalty, gameCount, max, true);
+        if (others == null || others.length < more) return -own;
+        float[] o = Arrays.copyOf(others, others.length);
+        Arrays.sort(o);   // a building that costs stability first: taking it down raises it
+        float d = penalty - own;
+        for (int i = 0; i < more; i++) d -= o[i];
+        return d;
+    }
+
+    /** Pure (JTOverLimitCheck): the colony can take this takedown on its own, or shedding back to the limit with it ends where it can. */
+    static boolean mayShed(float stability, float own, float[] others, float penalty, int gameCount, int max, float floor) {
+        return CAStability.canLose(stability, CAStability.takeDownDelta(own, penalty, gameCount, max, true), 0f, floor)
+                || CAStability.canLose(stability, toLimitDelta(own, others, penalty, gameCount, max), 0f, floor);
+    }
+
+    /** mayShed at the colony, through CAStability's one rule. why: logged once when it can't (null: quiet, for rankings). */
+    static boolean mayShed(MarketAPI m, Industry ind, float[] others, String why) {
+        if (CAStability.canLose(m, CAStability.takeDownDelta(m, ind), null)) return true;
+        int num = Misc.getNumIndustries(m), max = Misc.getMaxIndustries(m);
+        return CAStability.canLose(m, toLimitDelta(stabilityOf(m, ind), others, CAStability.overLimitPenalty(m), num, max), why);
+    }
+
+    /** Takes it down; false when the one rule holds it after all (0.3.0.0: checked again at the last moment, with a log line). */
+    static boolean takeDown(CAData d, MarketAPI m, CAEndgame.Weakest wk, String over, boolean danger, boolean zero) {
         Industry ind = wk.ind;
+        String name = ind.getCurrentName(), id = ind.getId();
+        if (!mayShed(m, ind, others(m, d.colony(m.getId()), ind), "taking down " + name)) return false;   // 0.3.0.0 (fix): same test as weakest()
+        // 0.3.0.0 (fix): one that adds stability can go first of several; the log says the 5 makes up for it at the end
+        float own = stabilityOf(m, ind);
+        boolean first = own > 0f && Misc.getNumIndustries(m) - 1 > Misc.getMaxIndustries(m);
         String core = ind.getAICoreId();
         SpecialItemData item = ind.getSpecialItem();
-        String name = ind.getCurrentName(), id = ind.getId();
+        String cost = costText(m);
+        CATombstone.Built b = wk.built != null ? wk.built : CATombstone.built(m, id, CAHorizon.months(), null);   // read before the mark clears it
         CAStores.emptyInto(m, ind);   // core and item to this colony's Autopilot Storage
         m.removeIndustry(id, MarketAPI.MarketInteractionMode.REMOTE, false);
-        CAPrune.markGone(m, id);   // 0.2.45.2: not built here again for a year
         long ts = Global.getSector().getClock().getTimestamp();
-        d.endgameBuilt().put(m.getId() + ":overlimit", ts);
-        d.endgameBuilt().put(m.getId() + ":replaced", ts);   // and no make-room swap at the capital for a while
-        CALog.add(m.getName() + ": took down " + name + ": " + over + " cost 5 stability" + (zero ? " and left it at 0, where a colony can decivilize"
-                : gain == Float.MAX_VALUE && m.getStabilityValue() <= LOW ? " and left it at " + Math.round(m.getStabilityValue()) + ", close to 0 where a colony can decivilize"
+        d.overLimitAt().put(m.getId() + ":overlimit", ts);
+        d.swapAt().put(m.getId() + ":replaced", ts);   // and no make-room swap at the capital for a while
+        // 0.3.0.0 (B4): a year's mark, so it isn't built back here a month later (Wind's Junkyard Forge, research 01 section 3 item 4)
+        CATombstone.add(m.getId(), id, CATombstone.OVERLIMIT, b.paid);
+        CALog.add(m.getName() + ": took down " + name + ": " + over + " " + cost.replaceFirst("^costs", "cost") + (zero ? " and left it at 0, where a colony can decivilize"
+                : danger && m.getStabilityValue() <= LOW ? " and left it at " + Math.round(m.getStabilityValue()) + ", close to 0 where a colony can decivilize"
                 : "") + ", and " + name
-                + " was worth least (" + CAEngine.valueText(wk.keep) + ")"
+                + " was worth least (" + CAEngine.valueText(wk.built != null ? wk.value : wk.keep) + CATombstone.paidText(b) + ")"
+                + (first ? "; it added " + Math.round(own) + " stability, and the 5 lifts once the colony is within its limit" : "")
                 + (core != null || item != null ? "; its " + (core != null && item != null ? "core and item" : core != null ? "core" : "item") + " to Autopilot Storage" : ""), true);
+        return true;
     }
 }

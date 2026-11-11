@@ -45,19 +45,72 @@ public class CASimulator {
         static String sign(float v, int dec) { String s = dec == 0 ? "" + Math.round(v) : String.format(Locale.ROOT, "%." + dec + "f", v); return v > 0 ? "+" + s : s; }
     }
 
+    /**
+     * 0.3.0.0 (A4, research 07 M5): kept for the session, keyed by what a measurement depends on (the building, the colony's
+     * size and the vanilla conditions copied onto the probe), so colonies alike share one and nothing is measured again
+     * on the 1st. Before, the whole cache was wiped every month and the month's first pass re-measured every measured
+     * building at every colony (about 1 ms each). Each entry is still taken again after MEASURE_DAYS, so something that
+     * changes a building's output over time (research, faction bonuses) is picked up, one entry at a time. Nothing measured
+     * under research's what-if is kept (measure()).
+     */
     static final Map<String, Effects> cache = new HashMap<String, Effects>();
-    static int cacheMonth = -1;
+    static final Map<String, Long> measuredAt = new HashMap<String, Long>();
+    static final float MEASURE_DAYS = 90f;
+    static long hits, misses;
 
-    public static void reset() { cache.clear(); }
+    /** Clears the measurements. On load and on a rescan (CADiagnostics.runScan), so it also empties the engine's day caches,
+     *  which depend on what's measured and supported (0.3.0.0, A4). */
+    public static void reset() {
+        cache.clear(); measuredAt.clear(); hits = 0; misses = 0;
+        CAEngine.resetCaches();
+    }
 
-    /** Measured effects of building this at the colony (null colony: a generic size-6 colony). Cached for the month. */
+    /** Measured effects of building this at the colony (null colony: a generic size-6 colony). Kept for the session (above). */
     public static Effects measure(MarketAPI colony, String industryId) {
-        int month = Global.getSector().getClock().getMonth();
-        if (month != cacheMonth) { cache.clear(); cacheMonth = month; }
-        String key = industryId + "@" + (colony == null ? "generic" : colony.getId() + ":" + colony.getSize());
+        List<String> conds;
+        try { conds = colony == null ? Collections.<String>emptyList() : copied(colony); }
+        catch (Throwable t) { conds = Collections.singletonList("?" + colony.getId()); }   // unreadable: kept for this colony alone; run() reports what fails
+        String key = key(industryId, colony == null ? 6 : colony.getSize(), conds);
         Effects e = cache.get(key);
-        if (e == null) { e = run(colony, industryId); cache.put(key, e); }
+        Long at = measuredAt.get(key);
+        boolean clock = Global.getSector() != null && Global.getSector().getClock() != null;
+        if (e != null && (!clock || at == null || Global.getSector().getClock().getElapsedDaysSince(at) < maxAge(key))) { hits++; return e; }
+        misses++;
+        long t0 = System.nanoTime();
+        e = run(colony, industryId);
+        CAPerf.record("probe measurement", System.nanoTime() - t0);
+        // 0.3.0.0 (A4 fix): never kept from research's what-if (CAEngine.noProbe), where every candidate tech is only marked
+        // researched. AotD buildings read research in apply() (Mining Megaplex, Fuel Refinery), and an entry is shared by every
+        // colony alike for up to four months, so a bonus you don't have would have ranked real upgrades and builds. Read, never written.
+        if (!CAEngine.noProbe) {
+            cache.put(key, e);
+            if (clock) measuredAt.put(key, Global.getSector().getClock().getTimestamp());
+        }
         return e;
+    }
+
+    /** MEASURE_DAYS plus up to a month more by key, so measurements made the same day don't all come due on the same day. */
+    static float maxAge(String key) { return MEASURE_DAYS + (key.hashCode() & 31); }
+
+    /** The cache key: the building, the size, and the copied conditions in sorted order (a colony lists them in any order). */
+    static String key(String industryId, int size, Collection<String> copiedConditions) {
+        List<String> c = new ArrayList<String>(copiedConditions);
+        Collections.sort(c);
+        StringBuilder b = new StringBuilder(industryId).append('@').append(size).append(':');
+        for (int i = 0; i < c.size(); i++) { if (i > 0) b.append(','); b.append(c.get(i)); }
+        return b.toString();
+    }
+
+    /** The colony's conditions a probe copies: vanilla ones (mod conditions may touch the sector) that aren't run by intel. */
+    static List<String> copied(MarketAPI colony) {
+        List<String> out = new ArrayList<String>();
+        for (MarketConditionAPI c : colony.getConditions()) {
+            MarketConditionSpecAPI spec = Global.getSettings().getMarketConditionSpec(c.getId());
+            if (spec == null || spec.getSourceMod() != null) continue;
+            if (intelBound(c.getId(), spec)) continue;
+            out.add(c.getId());
+        }
+        return out;
     }
 
     /**
@@ -79,16 +132,14 @@ public class CASimulator {
         MarketAPI p = Global.getFactory().createMarket("jt_ca_sim", "Autopilot Simulation", colony == null ? 6 : colony.getSize());
         p.setFactionId(Factions.PLAYER);
         if (colony != null) {
-            for (MarketConditionAPI c : colony.getConditions()) {
-                MarketConditionSpecAPI spec = Global.getSettings().getMarketConditionSpec(c.getId());
-                if (spec == null || spec.getSourceMod() != null) continue;   // vanilla deposits and hazards only; mod conditions may touch the sector
-                if (intelBound(c.getId(), spec)) continue;
+            // vanilla deposits and hazards only (mod conditions may touch the sector), never one run by intel (copied())
+            for (String id : copied(colony)) {
                 // any other condition that fails here is taken back off. addCondition applies it right away, so when that's
                 // what throws there's no token, and it's removed by id
                 String token = null;
-                try { token = p.addCondition(c.getId()); p.reapplyCondition(token); }
+                try { token = p.addCondition(id); p.reapplyCondition(token); }
                 catch (Throwable t) {
-                    try { if (token != null) p.removeSpecificCondition(token); else p.removeCondition(c.getId()); } catch (Throwable ignored) { }
+                    try { if (token != null) p.removeSpecificCondition(token); else p.removeCondition(id); } catch (Throwable ignored) { }
                 }
             }
         }
@@ -136,8 +187,11 @@ public class CASimulator {
 
     static Effects run(MarketAPI colony, String industryId) {
         Effects e = new Effects();
-        List<EveryFrameScript> scripts = new ArrayList<EveryFrameScript>(Global.getSector().getScripts());
-        List<IntelInfoPlugin> intel = new ArrayList<IntelInfoPlugin>(Global.getSector().getIntelManager().getIntel());
+        // 0.3.0.0 (A4, 07 M5): identity sets, so the leak check below is one lookup per script instead of a list scan (it was O(n^2))
+        Set<EveryFrameScript> scripts = Collections.newSetFromMap(new IdentityHashMap<EveryFrameScript, Boolean>());
+        scripts.addAll(Global.getSector().getScripts());
+        Set<IntelInfoPlugin> intel = Collections.newSetFromMap(new IdentityHashMap<IntelInfoPlugin, Boolean>());
+        intel.addAll(Global.getSector().getIntelManager().getIntel());
         MarketAPI p = null;
         try {
             p = probe(colony);
