@@ -76,7 +76,7 @@ public class CAItems {
     }
 
     /**
-     * Never a polluting item in a forge on a habitable world (2.36.2), whatever the colony's goal, threat or the endgame:
+     * Never a polluting item in a forge on a habitable world (0.2.36.2), whatever the colony's goal, threat or the endgame:
      * vanilla's Heavy Industry (and every forge built on it) pollutes a habitable world the day such an item goes in, and
      * the pollution is permanent after 90 days (on a world already polluted, it makes that pollution permanent). Before,
      * this only cut the item's score by a quarter, and a War production goal doubled a nanoforge's, so it could happen.
@@ -92,7 +92,7 @@ public class CAItems {
     /** itemScore in a given building: UAF's Garrison Transmitter does a third as much in ground defenses as in a port; never a forge it would pollute. */
     static float itemScore(String id, MarketAPI m, CAData.Profile p, Industry ind) {
         if (ind != null && wouldPollute(id, m, ind)) return 0f;
-        // Vulpoids: the Lobster Bioforge ends an Organ Farm's organs; a Biotech Facility keeps them (OrganFarm, 2.38.0)
+        // Vulpoids: the Lobster Bioforge ends an Organ Farm's organs; a Biotech Facility keeps them (OrganFarm, 0.2.38.0)
         if (id.equals("lobster_bioforge") && (ind == null || !ind.getId().equals("biofacility"))) return 0f;
         float sc = itemScore(id, m, p);
         if (sc <= 0f || ind == null) return sc;
@@ -104,7 +104,7 @@ public class CAItems {
     static final Set<String> NEVER = new HashSet<String>(Arrays.asList("coronal_portal", "aotd_aquaorb", "omega_processor",
             "planetkiller", "jdp_lobster_eggs",   // JaydeePiracy: a story item, and +1 lobster for +8 Pather interest
             // Vulpoids' Vulpoid Bioforge starts its acceptance story: sector-wide vulpoid demand, then sanctions on the colony
-            // holding it, a Knights of Ludd fleet and a saturation bombardment. Where it goes is your call (2.38.0)
+            // holding it, a Knights of Ludd fleet and a saturation bombardment. Where it goes is your call (0.2.38.0)
             "vulpoid_biofactory"));
 
     /** True when Autopilot Storage holds an Industrial Evolution VPC chip. */
@@ -179,9 +179,9 @@ public class CAItems {
         if (placeItem(d, s, markets)) return;
         if (!s.disableStabilizers && s.allowRemovals && convertFuel(d, s, markets)) return;   // replaces a building, so only with Allow removals
         if (s.useAICores && placeCore(d, s, markets)) return;
-        boolean quiet = CALowProfile.on();   // Low profile places no Omega or IX cores (2.43.0)
-        if (s.useAICores && !quiet && CAOmega.run(d, s, markets)) return;   // Omega Core Everywhere / Astral Ascension Renewed (2.38.0)
-        if (s.useAICores && !quiet && CAPanopticon.run(d, s, markets)) return;   // Emergent Threats: IX Revival's Panopticon cores (2.39.3)
+        boolean quiet = CALowProfile.on();   // Low profile places no Omega or IX cores (0.2.43.0)
+        if (s.useAICores && !quiet && CAOmega.run(d, s, markets)) return;   // Omega Core Everywhere / Astral Ascension Renewed (0.2.38.0)
+        if (s.useAICores && !quiet && CAPanopticon.run(d, s, markets)) return;   // Emergent Threats: IX Revival's Panopticon cores (0.2.39.3)
         if (s.adminOptimal && (assignAdmin(d, markets) || moveAdmin(markets))) return;
         if (s.adminHiring) hireAdmin(d, s, markets);
         else if (adminsNeeded(d) > 0 && CALog.once("admin:need:off:" + adminsNeeded(d)))
@@ -204,7 +204,7 @@ public class CAItems {
     }
 
     /**
-     * Best first (2.39.0): every waiting item is matched with every free building it fits, and the best-scoring pairs go
+     * Best first (0.2.39.0): every waiting item is matched with every free building it fits, and the best-scoring pairs go
      * first, each building to one item. Before, items went in storage order, each to its own best building, so a lesser
      * item took a building a better one was waiting for and got swapped out a week later (an Auroran Dimensional
      * Nanoforge in Heavy Industry, then the Tenebrian Nanoforge), and a second copy was shipped to a colony whose first copy
@@ -231,11 +231,11 @@ public class CAItems {
             for (MarketAPI m : markets) {
                 if (CAHypershunt.is(m) || m.getSize() < minSize) continue;   // hypershunt: no buildings allowed, so an extra slot or output is wasted
                 if (!CAMods.itemFits(spec.getId(), m)) continue;   // VIC's nanites: vanilla farmland and genetech only
-                if (CALowProfile.pathBlocked(m, pather)) continue;   // Low profile: never to a Pather cell's 7 interest (2.43.0)
+                if (CALowProfile.pathBlocked(m, pather)) continue;   // Low profile: never to a Pather cell's 7 interest (0.2.43.0)
                 CAData.Colony c = d.colony(m.getId());
                 for (Industry ind : m.getIndustries()) {
                     if (!targets.contains(ind.getId()) || ind.getSpecialItem() != null || !ind.isFunctional() || ind.isHidden()) continue;
-                    if (c.locks.contains(ind.getId()) || CAMods.leftToYou(ind.getId()) != null) continue;   // left to you: never touched (2.45.0)
+                    if (c.locks.contains(ind.getId()) || CAMods.leftToYou(ind.getId()) != null) continue;   // left to you: never touched (0.2.45.0)
                     try {
                         if (!effect.getUnmetRequirements(ind).isEmpty()) continue;
                     } catch (Throwable t) { CADiagnostics.quarantine(ind.getId(), "item requirement check", t); continue; }
@@ -340,7 +340,7 @@ public class CAItems {
                 SpecialItemData old = ind.getSpecialItem();
                 if (old == null || !targets.contains(ind.getId()) || old.getId().equals(spec.getId()) || LAMP.equals(old.getId())) continue;
                 if (!ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId()) || ind.getSpec().hasTag("consumes")) continue;
-                if (CAMods.leftToYou(ind.getId()) != null) continue;   // left to you: its item stays (2.45.0)
+                if (CAMods.leftToYou(ind.getId()) != null) continue;   // left to you: its item stays (0.2.45.0)
                 try { if (!effect.getUnmetRequirements(ind).isEmpty()) continue; } catch (Throwable t) { continue; }
                 if (CALowProfile.pathBlocked(m, CALowProfile.itemInterest(spec) - CALowProfile.itemInterest(old.getId()))) continue;
                 float now = itemScore(old.getId(), m, c.profile, ind), then = itemScore(spec.getId(), m, c.profile, ind);
@@ -349,7 +349,7 @@ public class CAItems {
         }
         if (best == null) return false;
         if (bestM != holder) {   // shipped to that colony first; the swap happens once it's there
-            // one on its way, or one already there waiting for its turn (it swaps itself in): no second copy (2.39.0)
+            // one on its way, or one already there waiting for its turn (it swaps itself in): no second copy (0.2.39.0)
             if (CAStores.inTransit(spec.getId(), bestM.getId()) > 0
                     || CAStores.of(bestM).getQuantity(CargoAPI.CargoItemType.SPECIAL, data) >= 1f) return false;
             return CAStores.ship(holder, bestM, null, data, 1, "to replace the " + name(best.getSpecialItem().getId()) + " in " + best.getCurrentName());
@@ -400,7 +400,7 @@ public class CAItems {
         CAData.Colony c = CAData.get().colony(m.getId());
         for (Industry ind : m.getIndustries()) {
             if (!it.targets.contains(ind.getId()) || ind.getSpecialItem() != null || !ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId())) continue;
-            if (CAMods.leftToYou(ind.getId()) != null) continue;   // left to you (2.45.0)
+            if (CAMods.leftToYou(ind.getId()) != null) continue;   // left to you (0.2.45.0)
             if (wouldPollute(it.spec.getId(), m, ind)) continue;   // a forge on a habitable world is no home for a polluting item
             try { if (it.effect.getUnmetRequirements(ind).isEmpty()) return ind; } catch (Throwable ignored) { }
         }
@@ -493,7 +493,7 @@ public class CAItems {
      * Vanilla's Heavy Industry (HeavyIndustry.updatePollutionStatus) adds pollution to a habitable world the day a polluting
      * item goes in (addedPollution), makes it permanent after DAYS_BEFORE_POLLUTION_PERMANENT (90) days (permaPollution), and
      * takes it away again if the item comes out before then. So at an Auto colony, a polluting item whose pollution is still
-     * reversible goes back to Autopilot Storage (2.36.2): older versions could put one there. A locked building keeps it, as
+     * reversible goes back to Autopilot Storage (0.2.36.2): older versions could put one there. A locked building keeps it, as
      * does pollution that was already permanent or there before the item. One a day, like placements.
      */
     static boolean pullPollutingForge(CAData d, List<MarketAPI> markets) {
@@ -760,7 +760,7 @@ public class CAItems {
      */
     public static int coreLimit(CASettings s, MarketAPI m, String noInspections) {
         int lim = hegemonyLimit(s, m, noInspections), relief = pathRelief(m), low = CALowProfile.coreLimit(m);
-        if (low >= 0) lim = Math.min(lim, low);   // Low profile: none above size 3, and under the Pather line (2.43.0)
+        if (low >= 0) lim = Math.min(lim, low);   // Low profile: none above size 3, and under the Pather line (0.2.43.0)
         return relief >= 0 ? Math.min(lim, relief) : lim;
     }
 
@@ -1007,7 +1007,7 @@ public class CAItems {
             return true;
         }
 
-        // cores in any colony's Autopilot Storage: one at the colony goes straight in, one elsewhere is shipped there first (2.37.0)
+        // cores in any colony's Autopilot Storage: one at the colony goes straight in, one elsewhere is shipped there first (0.2.37.0)
         int[] have = new int[CORES.length];
         for (int k = 0; k < CORES.length; k++) have[k] = (int) CAStores.count(CORES[k]);
         if (s.alphaMode != 2 && makeRoom(slots, points, limit, have[0] > 0, s, none)) return true;
@@ -1328,7 +1328,7 @@ public class CAItems {
     }
 
     static final float HIRE_FEE = 25000f;
-    /** 2.41.2: days the colony limit can go short of administrators with none on offer before a recruiter finds one. */
+    /** 0.2.41.2: days the colony limit can go short of administrators with none on offer before a recruiter finds one. */
     static final float RECRUIT_DAYS = 90f;
     /** What the recruiter charges on top of the usual hiring bonus and fee; a price, not a service fee, so the fee level never waives it. */
     static final float RECRUITER_PRICE = 250000f;
@@ -1351,7 +1351,7 @@ public class CAItems {
      * enough are idle or on the way, whatever the money says, past the monthly budget if need be but never below the credit
      * reserve. Picks the candidate and colony that come out furthest ahead. Optional 30-day arrival delay.
      * The game only puts administrators up for hire at a market when you dock there (OfficerManagerEvent), so when the
-     * colony limit has gone RECRUIT_DAYS with none on offer anywhere, a recruiter finds one instead (recruitAdmin, 2.41.2).
+     * colony limit has gone RECRUIT_DAYS with none on offer anywhere, a recruiter finds one instead (recruitAdmin, 0.2.41.2).
      */
     static boolean hireAdmin(CAData d, CASettings s, List<MarketAPI> markets) {
         List<MarketAPI> open = selfGoverned(markets);
@@ -1441,7 +1441,7 @@ public class CAItems {
     }
 
     /**
-     * 2.41.2: a recruiter finds an administrator when the colony limit has needed one for RECRUIT_DAYS and the game offered
+     * 0.2.41.2: a recruiter finds an administrator when the colony limit has needed one for RECRUIT_DAYS and the game offered
      * none (it only rolls for one when you dock at a market: 5% a visit, plus 5% per size over 3). A basic administrator, no
      * skills, like the game's cheaper tier, for RECRUITER_PRICE on top of that tier's hiring bonus and the usual fee; arrives
      * in 30 days like any remote hire. Past the monthly budget if need be, never below the credit reserve. Keeps going one a

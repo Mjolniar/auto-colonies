@@ -51,7 +51,7 @@ public class CAData {
         public boolean buildout;
         public float buildoutFloor;
         public long buildoutProfitSince;
-        // 2.38.0: when it started (0: before 2.38.0, set on its next pass) and when it last found nothing that pays (0: it found something)
+        // 0.2.38.0: when it started (0: before 0.2.38.0, set on its next pass) and when it last found nothing that pays (0: it found something)
         public long buildoutSince, buildoutIdleSince;
         // Autonomy (CAAutonomy): months in a row the colony has lost money, and the month last counted (year * 12 + month)
         public int lossStreak, lossMonth;
@@ -71,10 +71,10 @@ public class CAData {
     public Map<String, Float> calUp() { if (calUp == null) calUp = new HashMap<String, Float>(); return calUp; }
     public Map<String, Integer> calOutN() { if (calOutN == null) calOutN = new HashMap<String, Integer>(); return calOutN; }
     public Map<String, Integer> calUpN() { if (calUpN == null) calUpN = new HashMap<String, Integer>(); return calUpN; }
-    /** 2.44.0 market model (CAMarket): buildings under construction, "market|building|replaced" -> each good's supply there once done, and since when. */
+    /** 0.2.44.0 market model (CAMarket): buildings under construction, "market|building|replaced" -> each good's supply there once done, and since when. */
     public Map<String, Map<String, Integer>> marketPending;
     public Map<String, Float> marketPendingSince;
-    /** 2.44.1: "market|building" -> what a building being upgraded becomes (AotD upgrades have several), for CABuild.usedSlots. */
+    /** 0.2.44.1: "market|building" -> what a building being upgraded becomes (AotD upgrades have several), for CABuild.usedSlots. */
     public Map<String, String> upgradeTargets;
     public Map<String, String> upgradeTargets() { if (upgradeTargets == null) upgradeTargets = new HashMap<String, String>(); return upgradeTargets; }
     public Map<String, Map<String, Integer>> marketPending() { if (marketPending == null) marketPending = new HashMap<String, Map<String, Integer>>(); return marketPending; }
@@ -85,21 +85,21 @@ public class CAData {
     public com.fs.starfarer.api.campaign.CargoAPI storage;
     public Map<String, Long> ambTransit;
     public Map<String, Long> adminTransit;
-    // 2.41.2: when the colony limit first needed an administrator and none was on offer anywhere (0: not waiting); a recruiter
+    // 0.2.41.2: when the colony limit first needed an administrator and none was on offer anywhere (0: not waiting); a recruiter
     // finds one after CAItems.RECRUIT_DAYS
     public long adminNeedSince;
     public Set<String> noted;
     // Random Assortment of Things settlement proposal waiting for approval: kind "found" (planet id) or "facility" (facility id)
     public String settlePendingKind, settlePendingId, settlePendingName;
     public float settlePendingCost;
-    // a Random Assortment of Things settlement expedition on its way (2.37.0): the planet, when it left, its days, and what it cost
+    // a Random Assortment of Things settlement expedition on its way (0.2.37.0): the planet, when it left, its days, and what it cost
     public String settleExpeditionPlanet;
     public long settleExpeditionAt;
     public float settleExpeditionDays, settleExpeditionCost;
     // Nexerelin agents Autopilot hired (person ids); only these are given orders
     public Set<String> spyAgents;
     public Set<String> spyAgents() { if (spyAgents == null) spyAgents = new HashSet<String>(); return spyAgents; }
-    // their roles (2.37.0: person id to security, relations or offense) and agents being recruited (role to when it began)
+    // their roles (0.2.37.0: person id to security, relations or offense) and agents being recruited (role to when it began)
     public Map<String, String> spyRoles;
     public Map<String, Long> spyRecruits;
     public Map<String, String> spyRoles() { if (spyRoles == null) spyRoles = new HashMap<String, String>(); return spyRoles; }
@@ -108,11 +108,11 @@ public class CAData {
     public Map<String, Long> autonomous;
     public long lastAutonomyChange;
     public long researchWaitSince;   // when Auto research began holding databanks for a plan tech short of them (0: not waiting)
-    public String researchStaging;   // 2.42.4: the tech whose databanks are on their way to the facility; nothing else starts meanwhile
+    public String researchStaging;   // 0.2.42.4: the tech whose databanks are on their way to the facility; nothing else starts meanwhile
     public Map<String, Long> autonomous() { if (autonomous == null) autonomous = new HashMap<String, Long>(); return autonomous; }
     // war fleets (CAWar): markets that sent raids, invasions or blockades at your colonies, to when they were last seen doing it
     public Map<String, Long> attackers;
-    // station augment refit crews booked (CAAugments, 2.37.0): market id to when
+    // station augment refit crews booked (CAAugments, 0.2.37.0): market id to when
     public Map<String, Long> augRefit;
     public Map<String, Long> augRefit() { if (augRefit == null) augRefit = new HashMap<String, Long>(); return augRefit; }
     public Map<String, Long> attackers() { if (attackers == null) attackers = new HashMap<String, Long>(); return attackers; }
@@ -121,15 +121,15 @@ public class CAData {
     public Map<String, Long> endgameBuilt;
     public Map<String, Long> endgameBuilt() { if (endgameBuilt == null) endgameBuilt = new HashMap<String, Long>(); return endgameBuilt; }
     // Terraforming Made Easy structures surplus terraforming built ("marketId:structureId"); only these are taken down again
-    // 2.38.0, plan steps with no way to them (CAPlan.track): "marketId:stepId" -> when first seen so; and special worlds
+    // 0.2.38.0, plan steps with no way to them (CAPlan.track): "marketId:stepId" -> when first seen so; and special worlds
     // dropped for a year because their own steps can't be reached, "marketId:worldId" -> when
     public Map<String, Long> stepStuck, worldDead;
-    // 2.38.0, CASiege: when hostiles only elsewhere in the system first made a colony's siege, marketId -> when
+    // 0.2.38.0, CASiege: when hostiles only elsewhere in the system first made a colony's siege, marketId -> when
     public Map<String, Long> siegeSystem;
-    // 2.39.0, storage logistics (CALogistics): loads on their way to the refit or sell hub
-    public List<CATascStations.Order> tascOrders;   // construction crews on their way to found TASC stations (2.40.1)
+    // 0.2.39.0, storage logistics (CALogistics): loads on their way to the refit or sell hub
+    public List<CATascStations.Order> tascOrders;   // construction crews on their way to found TASC stations (0.2.40.1)
     public List<CATascStations.Order> tascOrders() { if (tascOrders == null) tascOrders = new ArrayList<CATascStations.Order>(); return tascOrders; }
-    public List<CAObjectives.Order> objectiveOrders;   // construction crews on their way to stable locations (2.40.0)
+    public List<CAObjectives.Order> objectiveOrders;   // construction crews on their way to stable locations (0.2.40.0)
     public List<CAObjectives.Order> objectiveOrders() { if (objectiveOrders == null) objectiveOrders = new ArrayList<CAObjectives.Order>(); return objectiveOrders; }
     public List<CALogistics.Load> loads;
     public List<CALogistics.Load> loads() { if (loads == null) loads = new ArrayList<CALogistics.Load>(); return loads; }
@@ -173,7 +173,7 @@ public class CAData {
         return ambTransit;
     }
 
-    // Autopilot Storage per colony (CAStores, 2.37.0): market id to its cargo, and what's being shipped between them. The old
+    // Autopilot Storage per colony (CAStores, 0.2.37.0): market id to its cargo, and what's being shipped between them. The old
     // shared `storage` field stays so older saves load; CAStores.migrate empties it into the biggest colony's store once.
     public Map<String, com.fs.starfarer.api.campaign.CargoAPI> stores;
     public List<CAStores.Shipment> shipments;

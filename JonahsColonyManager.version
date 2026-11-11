@@ -3,9 +3,9 @@
   "modName": "Auto Colonies",
   "modThreadId": "36266",
   "modVersion": {
-    "major": 2,
-    "minor": 45,
-    "patch": 2
+    "major": 0,
+    "minor": 2,
+    "patch": "45.2"
   },
   "directDownloadURL": "https://github.com/Mjolniar/auto-colonies/releases/latest/download/AutoColonies.zip",
   "changelogURL": "https://raw.githubusercontent.com/Mjolniar/auto-colonies/main/docs/changelog.md"

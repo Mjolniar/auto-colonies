@@ -38,14 +38,14 @@ The build-up waits if net income is negative or capital stability is under 3.
 
 Under **Settings, Capital**: **Capital** (Autopilot picks), **Capital does** (Deliveries and commerce), **Commerce starts** (100,000 net income), **Make room for trade buildings**, **Gather your Storage there**.
 
-## Coming in 3.0
+## Coming in 0.3.0
 
 - Built, in testing: the make-room swap values buildings the same way new builds are valued, and doesn't remove the capital's own plan steps.
 - Built, in testing: buildings Autopilot removes aren't rebuilt at that colony for a year.
 - Planned: trade buildings that lose money are only built from the economy step of the money ladder ([Money](money.md)).
 - Planned: ships the mod orders are delivered to the capital's storage.
 
-Everything planned for 3.0: [roadmap](roadmap.md)
+Everything planned for 0.3.0: [roadmap](roadmap.md)
 
 Plans can still change before release.
 

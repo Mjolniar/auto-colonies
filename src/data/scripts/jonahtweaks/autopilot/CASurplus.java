@@ -194,7 +194,7 @@ public class CASurplus {
     // Past RICH over the line, one focus world can't spend it all (built out, one new building at a time), so every Approve
     // and Auto colony spends from the surplus like the focus world, and a credit counts RICH_MONEY in what a build is worth:
     // upkeep matters little against that much, so buildings that add defense, stability, growth or access go up even when
-    // they cost more than they earn. What it may spend comes from the pool, not from income (2.34.1): builds and projects draw
+    // they cost more than they earn. What it may spend comes from the pool, not from income (0.2.34.1): builds and projects draw
     // on the surplus, and the month's new upkeep may reach a sixtieth of it (the pool covers five years of it), shrinking as
     // the pool does. A weak month doesn't stop it (it used to pause under half the best month, and cap upkeep at a fifth of net income).
 
@@ -214,7 +214,7 @@ public class CASurplus {
 
     static boolean richAt(boolean focusOnly, float amount) { return richAt(focusOnly, amount, false); }
 
-    /** 2.45.2 (from 3.0): once on, spending freely stays on until the surplus drops under RICH_EXIT of the line (10M on, 7M off), so a couple of big buys don't flip everything back the same week. */
+    /** 0.2.45.2 (from 0.3.0): once on, spending freely stays on until the surplus drops under RICH_EXIT of the line (10M on, 7M off), so a couple of big buys don't flip everything back the same week. */
     static boolean richAt(boolean focusOnly, float amount, boolean wasRich) { return !focusOnly && amount >= (wasRich ? RICH * RICH_EXIT : RICH); }
 
     /** Spending freely ends under this share of RICH. */
@@ -329,7 +329,7 @@ public class CASurplus {
                 CALog.add("Spending freely ended (" + (s.surplusFocusOnly ? "focus world only" : "surplus under " + Misc.getDGSCredits(RICH * RICH_EXIT)) + ")");
             }
         }
-        s.richIncomeRef = 0f;   // the old pause's reference; unused since 2.34.1
+        s.richIncomeRef = 0f;   // the old pause's reference; unused since 0.2.34.1
     }
 
     // ---------------- panels ----------------

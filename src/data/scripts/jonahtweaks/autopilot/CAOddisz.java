@@ -12,7 +12,7 @@ import java.awt.Color;
 import java.util.Map;
 
 /**
- * Oddisz's colony mods (2.45.0), read from their source (github.com/andrzejsokolowski):
+ * Oddisz's colony mods (0.2.45.0), read from their source (github.com/andrzejsokolowski):
  * - Cloning (oddisz_cloning, also in Coalesced Little Mods with the same ids): three industries that add growth and cost
  *   stability equal to the colony's size. Valued by the growth they add against the colony's own (CAPolicies.growth), worth
  *   nothing at the size limit, and only built with room for the penalty to grow a size.

@@ -15,7 +15,7 @@ import com.fs.starfarer.api.util.Misc;
 import java.util.*;
 
 /**
- * Stable locations (2.40.0): what goes up at the stable locations in systems with your Auto colonies, picked the way the
+ * Stable locations (0.2.40.0): what goes up at the stable locations in systems with your Auto colonies, picked the way the
  * colony plans would, by what it adds at every colony of yours in the system, valued with each colony's goal weights.
  *
  * - Vanilla's makeshift comm relay (+1 stability at your colonies in the system), nav buoy (+2 burn for your fleets there)

@@ -1,6 +1,6 @@
-# 3.0 roadmap
+# 0.3.0 roadmap
 
-What the next major version changes, and how far along each part is. Current version: 2.45.2. 3.0 has no release date yet, and plans can still change before release.
+What the next major version changes, and how far along each part is. Current version: 0.2.45.2. 0.3.0 has no release date yet, and plans can still change before release.
 
 ## Status
 
@@ -18,7 +18,7 @@ What the next major version changes, and how far along each part is. Current ver
 Built, in testing.
 
 - Saved data uses fixed short names, so later updates can rename code without breaking saves.
-- Saves from 2.45.x load in 3.0. Saves made in 3.0 don't load in 2.45.x.
+- Saves from 0.2.45.x load in 0.3.0. Saves made in 0.3.0 don't load in 0.2.45.x.
 - Each daily step runs on its own. If one fails, it's logged in Diagnostics and the other steps still run.
 - Anything that can lower stability first checks that the colony stays at or above the minimum stability setting (default 5, never under 3).
 - Plans and scores are worked out once a day and reused until something changes.
@@ -30,7 +30,7 @@ Built, in testing. See [How it builds](how-it-builds.md).
 - Builds, upgrades and projects for all colonies go into one ranked list.
 - A colony's construction slot goes to the option that earns the most per day of construction.
 - A build has to pay back its cost within 36 months. That grows to 120 months as spare credits go up.
-- Buildings the mod removes aren't rebuilt at that colony for a year. This part is already in 2.45.2.
+- Buildings the mod removes aren't rebuilt at that colony for a year. This part is already in 0.2.45.2.
 - Shortages count buildings already under construction, so two colonies don't both build for the same shortage.
 - The budget uses the median colony income of the last 3 months.
 
@@ -57,11 +57,11 @@ Planned. Needs Nexerelin.
 
 Planned. Needs Nexerelin. See [War and security](war-and-security.md).
 
-- One empire-wide war level: Off, Defend, Retaliate, Hold them down, Conquer, Scorched. Retaliate matches what 2.45.x does and is the default.
-- A stance for each faction: Ally, Friendly, Neutral, Auto, Rival, Enemy, Destroy. Auto matches what 2.45.x does.
+- One empire-wide war level: Off, Defend, Retaliate, Hold them down, Conquer, Scorched. Retaliate matches what 0.2.45.x does and is the default.
+- A stance for each faction: Ally, Friendly, Neutral, Auto, Rival, Enemy, Destroy. Auto matches what 0.2.45.x does.
   - Enemy stays at war and turns down ceasefires.
   - Destroy invades until the faction has no markets left.
-- Retaking your own lost colonies is on in new games and off in saves from 2.45.x.
+- Retaking your own lost colonies is on in new games and off in saves from 0.2.45.x.
 - Bombarding capitals is off by default and needs a confirmation.
 - A Stand down button sets the war level to Defend and cancels operations that haven't launched yet, with a full refund.
 - Old saves carry over:
@@ -72,13 +72,13 @@ Planned. Needs Nexerelin. See [War and security](war-and-security.md).
 
 Planned. See [Settings](settings.md).
 
-- About 20 main settings in 6 groups (14 without other mods), plus an Advanced section. 2.45.x has 76 rows.
+- About 20 main settings in 6 groups (14 without other mods), plus an Advanced section. 0.2.45.x has 76 rows.
 - Shorter descriptions, with the details moved to hover text.
 - New pages for Factions, War and Expansion.
 - First-time setup is 5 rows. Existing settings carry over.
 
 ## Updating
 
-Back up your save before updating to 3.0. A save made in 3.0 can't be loaded in 2.45.x.
+Back up your save before updating to 0.3.0. A save made in 0.3.0 can't be loaded in 0.2.45.x.
 
 [Back to the README](../README.md)

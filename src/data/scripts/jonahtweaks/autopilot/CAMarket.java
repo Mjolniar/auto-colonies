@@ -14,7 +14,7 @@ import org.json.JSONObject;
 import java.util.*;
 
 /**
- * The sector market model (2.44.0): what more of a good is really worth to you, by the game's own export rule
+ * The sector market model (0.2.44.0): what more of a good is really worth to you, by the game's own export rule
  * (CommodityMarketData in the core jar):
  * - every market exporting a good gets a weight: what it can ship off-world, min(supply, available, shipping capacity),
  *   times its accessibility; its share of the good's sector market is its weight over everyone's;
@@ -213,7 +213,7 @@ public final class CAMarket {
         return g;
     }
 
-    // ---------------- a building already there (CAPrune, 2.44.1) ----------------
+    // ---------------- a building already there (CAPrune, 0.2.44.1) ----------------
 
     /** What a source of dw weight already in the market earns you: your income with it, less without it. */
     static float keepValue(float V, float T, float wm, float incM, float othersIncW, float dw, float mult) {

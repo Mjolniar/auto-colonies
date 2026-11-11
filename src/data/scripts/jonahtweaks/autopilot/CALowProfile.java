@@ -32,7 +32,7 @@ import java.awt.Color;
 import java.util.*;
 
 /**
- * Low profile (2.43.0): your colonies keep growing, but draw as little attention from the sector as the game allows.
+ * Low profile (0.2.43.0): your colonies keep growing, but draw as little attention from the sector as the game allows.
  * Pirates, and the Persean League once you could join it, count colony size alone, so nothing avoids those; every other
  * crisis comes from what your colonies have and make, and Low profile changes the plan to stay clear of it:
  * - every point of colony crisis progress is priced PRICE_MULT times higher (CACrisis.pointCost), so attention has to pay

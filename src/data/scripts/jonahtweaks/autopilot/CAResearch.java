@@ -53,7 +53,7 @@ public class CAResearch {
     static final String FACILITY = "aotd_research_facility", BLACKSITE = "aotd_blacksite";
 
     /**
-     * With research on Auto and no Research Facility anywhere, one goes first in a colony's plan (2.39.0): nothing can be
+     * With research on Auto and no Research Facility anywhere, one goes first in a colony's plan (0.2.39.0): nothing can be
      * researched without one, and research opens other plan steps. It was left to its own score, and spending freely put
      * every defense structure first in the plan, so Hot Springs went months building Planetary Shield and Patrol HQ while
      * the Research Facility, its best option, waited and the plan's Bifrost step ran out of time. The host is the focus world,
@@ -211,7 +211,7 @@ public class CAResearch {
     static boolean spendItems = false;   // set each day: spending freely
 
     /**
-     * Research spends colony items (2.36.1; Settings, Research spends colony items): while credits are over the surplus line,
+     * Research spends colony items (0.2.36.1; Settings, Research spends colony items): while credits are over the surplus line,
      * 1 from Autopilot Storage and your colonies' Storage tabs, 2 also out of buildings. 0 otherwise. Set each day, and when
      * the setting changes.
      */
@@ -243,7 +243,7 @@ public class CAResearch {
             CAData.Colony c = CAData.get().colony(m.getId());
             for (Industry ind : m.getIndustries()) {
                 if (ind.getSpecialItem() == null || !id.equals(ind.getSpecialItem().getId()) || c.locks.contains(ind.getId())
-                        || CAMods.leftToYou(ind.getId()) != null) continue;   // left to you: its item stays (2.45.0)
+                        || CAMods.leftToYou(ind.getId()) != null) continue;   // left to you: its item stays (0.2.45.0)
                 float sc;
                 try { sc = CAItems.itemScore(id, m, c.profile, ind); } catch (Throwable t) { sc = 0f; }
                 spots.add(new Object[]{m, ind, sc});
@@ -701,7 +701,7 @@ public class CAResearch {
 
     /**
      * Gets everything a tech is short of into the Research Facility tab (facilityTab), never for free across the sector
-     * (2.37.0): what's at that colony (its Autopilot Storage, databanks in its Storage, colony items there when allowed,
+     * (0.2.37.0): what's at that colony (its Autopilot Storage, databanks in its Storage, colony items there when allowed,
      * your fleet's databanks while it's in that system) goes straight in; anything elsewhere (another colony's Autopilot
      * Storage or Storage, a building there with From storage and buildings, your fleet's databanks away from it) is shipped
      * to that colony's Autopilot Storage for a fee and travel time, and the tech starts once it has all arrived. Nothing
@@ -799,7 +799,7 @@ public class CAResearch {
 
     /**
      * Techs that pay for themselves within a year come first, best first. After them come the rest, best first, so the
-     * Research Facility doesn't sit idle while there are databanks for something: before 2.25.0 Auto stopped at the first
+     * Research Facility doesn't sit idle while there are databanks for something: before 0.2.25.0 Auto stopped at the first
      * tech that didn't pay, and when no colony had room for what the remaining techs unlock, research sat idle without a word.
      * Databanks are held for a plan tech that's short of them (waiting) until it has waited WAIT_DAYS; a tech no plan needs
      * waits while its upkeep would pass this month's new-upkeep room. covered: the ids of techs short of items whose items
@@ -877,7 +877,7 @@ public class CAResearch {
             for (Tech t : all) if (t.needsItems && covered(mgr, t)) covered.add(t.id);
             Choice c = choose(all, have, waitedLong, CABudget.upkeepCap(s) - s.upkeepAdded, fac, covered);
             Tech waiting = c.waiting;
-            // 2.42.4: one tech at a time. Before, each pass went down the list: every tech short of databanks at the facility
+            // 0.2.42.4: one tech at a time. Before, each pass went down the list: every tech short of databanks at the facility
             // had them shipped over ("starts once they arrive"), five or six at once on screen, and then a cheap filler
             // started and used the databanks just moved for the first. Now the tech whose databanks are on their way goes
             // first, and once a tech's databanks are shipped, nothing else is shipped or started until they've arrived

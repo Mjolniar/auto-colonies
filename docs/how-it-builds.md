@@ -83,7 +83,7 @@ One of each per system. It costs 15 heavy machinery, 30 metals and 5 transpluton
 
 Next: [Your capital](capital.md).
 
-## Coming in 3.0
+## Coming in 0.3.0
 
 - Built, in testing: builds, upgrades, terraforming, Research Facilities, wonder sites, crews and story point improvements are ranked in one queue. Money goes to the option with the best return per credit.
 - Built, in testing: a build has to pay back within 36 months (planned default). The limit grows to 120 months as spare credits increase. A 360-day structure can't take the construction slot while a better build is waiting.
@@ -93,4 +93,4 @@ Next: [Your capital](capital.md).
 
 Plans can still change before release.
 
-Everything planned for 3.0: [roadmap](roadmap.md)
+Everything planned for 0.3.0: [roadmap](roadmap.md)

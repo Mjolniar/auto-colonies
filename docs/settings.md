@@ -81,9 +81,9 @@ See [Your capital](capital.md).
 
 There are no cheat or balance settings. The mod manages your colonies the way you could yourself.
 
-## Coming in 3.0
+## Coming in 0.3.0
 
-- Back up your save before updating. A save made in 3.0 can't be loaded in 2.45.x.
+- Back up your save before updating. A save made in 0.3.0 can't be loaded in 0.2.45.x.
 - Planned: about 20 main rows, with the rest in an Advanced section. Each main row is a preset that sets several current settings, and shows Custom when they've been changed separately. Planned spending presets: Thrifty (30% / 5%), Normal (50% / 15%, current), Lavish (80% / 30%).
 - Planned: War fleets becomes one War level (default Retaliate, the current behavior). The per-faction High/Normal/Ignore setting becomes a stance per faction. The per-project cap follows your income.
 - Planned: first-time setup has 5 rows: Spending, Extras, New colonies, War, Credit reserve. Everything else uses recommended values.
@@ -91,4 +91,4 @@ There are no cheat or balance settings. The mod manages your colonies the way yo
 
 Plans can still change before release.
 
-Everything planned for 3.0: [roadmap](roadmap.md)
+Everything planned for 0.3.0: [roadmap](roadmap.md)

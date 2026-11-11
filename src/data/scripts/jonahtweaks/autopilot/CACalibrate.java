@@ -29,7 +29,7 @@ public class CACalibrate {
     }
 
     /**
-     * Before 2.8.0 the engine's upkeep prediction was 500x too high (it multiplied the spec's upkeep, already in credits,
+     * Before 0.2.8.0 the engine's upkeep prediction was 500x too high (it multiplied the spec's upkeep, already in credits,
      * by 500 again), so every upkeep correction in older saves sits at the 0.5 floor. Clears them once; they're re-read
      * from your colonies within a couple of weeks.
      */

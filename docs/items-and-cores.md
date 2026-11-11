@@ -55,14 +55,14 @@ They add +1 to everything a colony's industries make, plus stability from your c
 
 The game rarely offers administrators. With none on offer for 90 days past your limit, the manager pays a recruiter 250,000 on top of the normal cost. Docking around is cheaper.
 
-## Coming in 3.0
+## Coming in 0.3.0
 
 - Built, in testing: items are placed only where their extra output raises the colony's supply of that good.
 - Built, in testing: administrators aren't moved if the move would cost stability.
 - Built, in testing: paid item, core and administrator moves wait while the planner is saving for a large build. Administrators needed for the colony limit are still hired right away.
 - Planned: auto-expansion (off by default) only founds a colony when an administrator or colony-limit room is available.
 
-Everything planned for 3.0: [roadmap](roadmap.md)
+Everything planned for 0.3.0: [roadmap](roadmap.md)
 
 Plans can still change before release.
 

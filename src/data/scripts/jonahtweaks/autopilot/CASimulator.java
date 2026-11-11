@@ -64,7 +64,7 @@ public class CASimulator {
      * Vanilla conditions that only work with the intel or event they were added with: Pather cells, pirate and hostile
      * activity, a blockade, a food shortage, smuggling, a system bounty. Copied onto the probe without it they throw on
      * every apply (LuddicPathCells.apply reads intel.isSleeper()), which failed every building's measurement at a colony
-     * with Pather cells (2.39.0). They're events, not deposits or hazards, so they're never copied.
+     * with Pather cells (0.2.39.0). They're events, not deposits or hazards, so they're never copied.
      */
     static final Set<String> INTEL_BOUND = new HashSet<String>(Arrays.asList("pather_cells", "pirate_activity",
             "hostile_activity", "blockaded", "event_food_shortage", "event_smuggling", "event_bounty"));
@@ -108,7 +108,7 @@ public class CASimulator {
      * Every commodity on hand at the probe colony. It isn't in the economy, so nothing is ever available there, and a building
      * that cuts its output by its input shortage (BaseIndustry.getMaxDeficit, applyDeficitToProduction) measured as making
      * little or nothing: AotD's Artisanal Farming read no food at all. Inputs are valued separately (CAEngine.demand), so the
-     * measurement wants full output (2.38.0).
+     * measurement wants full output (0.2.38.0).
      */
     static void stock(MarketAPI p) {
         List<com.fs.starfarer.api.campaign.econ.CommoditySpecAPI> all = null;
@@ -160,7 +160,7 @@ public class CASimulator {
             e.fleet = after[3] - before[3]; e.quality = after[4] - before[4]; e.incomeMult = after[5] - before[5];
             // the probe colony's upkeep multiplier rises by the same +25% whatever is built on it (all 57 measured buildings
             // in one game), so it's the probe, not the building: counting it cost every measured building a quarter of the
-            // colony's upkeep (2.37.0). A building's own upkeep is predicted separately (CAEngine.upkeep).
+            // colony's upkeep (0.2.37.0). A building's own upkeep is predicted separately (CAEngine.upkeep).
             e.upkeepMult = 0f;
         } catch (Throwable t) {
             e.error = "its code failed on a probe colony: " + t;

@@ -35,7 +35,7 @@ import java.util.*;
 /**
  * Nexerelin agents (setting "Agents", off before setup). Only agents Autopilot recruited, or ones you hand over on the
  * empire panel's Mod features page, are given orders; the rest are left alone, and you can take any of them back. Each
- * agent has a role, the way a player sets theirs up (2.37.0):
+ * agent has a role, the way a player sets theirs up (0.2.37.0):
  * - Security (the first): Nexerelin's own defensive operations, in the order its Internal security mode runs them:
  *   Counter-Insurgency on a rebellion, Infiltrate Cell on an active Pather cell, Find Pirate Base for a hidden base.
  * - Relations (the second, recruited once the budget allows): Raise Relations with your preferred factions, picked like
@@ -45,10 +45,10 @@ import java.util.*;
  *   target" (whoever attacks you, a random enemy, or one you pick), only factions already hostile to you, never allies, a
  *   ceasefire or your commissioner, at 60% estimated success or better, alert 0.2 or lower, one operation per faction.
  * An agent only gets operations its type can run (Nexerelin's agentConfig). Recruiting one costs Nexerelin's 12,000 plus
- * the convenience fee and takes RECRUIT_DAYS before the agent reports for duty; it never appears from nothing (before 2.37.0
+ * the convenience fee and takes RECRUIT_DAYS before the agent reports for duty; it never appears from nothing (before 0.2.37.0
  * one was created on the spot, the way Nexerelin's console command does). Operation costs and recruiting come out of the
  * monthly budget, never the credit reserve; Nexerelin pays salaries. Enemy operations the game doesn't show you are neither
- * shown nor used (they were before 2.37.0). Only person ids are saved, so the save loads without Nexerelin.
+ * shown nor used (they were before 0.2.37.0). Only person ids are saved, so the save loads without Nexerelin.
  */
 public class CASpies {
     public static final String MOD = "nexerelin";
@@ -63,7 +63,7 @@ public class CASpies {
 
     /** Daily, from CAAuto. */
     public static void run(CAData d, CASettings s) {
-        if (!s.spyChecked) {   // 2.42.2: saves set up before Defense was recommended had agents off, so Pather cells went unanswered
+        if (!s.spyChecked) {   // 0.2.42.2: saves set up before Defense was recommended had agents off, so Pather cells went unanswered
             s.spyChecked = true;
             if (s.spyMode == 0) {
                 s.spyMode = 1;
@@ -382,7 +382,7 @@ public class CASpies {
     /** Agents to keep: your setting, or Auto: security and relations, plus offense with "Defense and offense". */
     static int keep(CASettings s) { return s.spyKeep > 0 ? s.spyKeep : (offense(s) ? 3 : 2); }
 
-    /** Defense and offense, unless Low profile is on: sabotage draws the faction it hits (2.43.0). */
+    /** Defense and offense, unless Low profile is on: sabotage draws the faction it hits (0.2.43.0). */
     static boolean offense(CASettings s) { return s.spyMode == 2 && !CALowProfile.on(); }
 
     /** The roles to fill, in order: security, relations, then offense (only with offense on), up to keep(). */
@@ -437,7 +437,7 @@ public class CASpies {
         String role = null;
         for (String r : wanted(s)) if (!held.contains(r)) { role = r; break; }
         if (role == null || mine.size() + d.spyRecruits().size() >= keep(s)) return;
-        // one of your own idle agents could take it. Security (2.42.2): Autopilot takes it over, since an unanswered Pather cell
+        // one of your own idle agents could take it. Security (0.2.42.2): Autopilot takes it over, since an unanswered Pather cell
         // wrecks a colony; you can take it back on the Mod features page. Other roles: don't pay for another, say how to hand it over
         for (AgentIntel a : agents(mgr)) {
             if (mine.contains(a) || busy(mgr, a)) continue;
@@ -464,7 +464,7 @@ public class CASpies {
             return;
         }
         if (CABuild.credits() - total < s.reserve) return;
-        // the hire cost here, the fee in CABudget.charge (2.45.1: the fee was taken twice)
+        // the hire cost here, the fee in CABudget.charge (0.2.45.1: the fee was taken twice)
         Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(HIRE_FEE);
         CABudget.charge(s, HIRE_FEE, fee, 0f);
         d.spyRecruits().put(role, Global.getSector().getClock().getTimestamp());

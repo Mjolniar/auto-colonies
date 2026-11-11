@@ -18,7 +18,7 @@ public class CABuild {
     }
 
     /**
-     * Industry slots in use (2.44.1): the game's count (Misc.getNumIndustries counts a structure being upgraded only along
+     * Industry slots in use (0.2.44.1): the game's count (Misc.getNumIndustries counts a structure being upgraded only along
      * its vanilla upgrade, spec.getUpgrade) corrected by the upgrade actually under way, recorded when Autopilot started it:
      * Ashes of the Domain's other upgrade targets weren't counted, so Zenemosrae started Biolab -> Grey Industries, Junkyard
      * Forge -> Scrapyard and Trade Outpost -> Commerce in one pass on one free slot and ended up 5 of 3.
@@ -57,7 +57,7 @@ public class CABuild {
         if (!p.upgrade && Misc.getCurrentlyBeingConstructed(m) != null) return "A new building is already under construction here (upgrades can still run)";
         if (credits() < p.cost) return "Not enough credits (" + Misc.getDGSCredits(p.cost) + " needed)";
         if (!CADiagnostics.usable(p.id)) return "Not supported by Colony Autopilot";
-        // 2.42.0: the build menu's industry limit. Picks are scored with the slots free when the pass began, and one pass can
+        // 0.2.42.0: the build menu's industry limit. Picks are scored with the slots free when the pass began, and one pass can
         // start a new building and an upgrade, so a structure upgraded into an industry (Junkyard Forge -> Scrapyard) and a
         // new industry both took Wind's one free slot: 3 of 2, -5 stability, its income cut to nothing
         if (takesSlot(m, p) && usedSlots(m) >= Misc.getMaxIndustries(m))
@@ -88,11 +88,11 @@ public class CABuild {
                 ind.startBuilding();
             }
             String targetKey = p.upgrade && p.existing != null ? m.getId() + "|" + p.existing.getId() : null;
-            if (targetKey != null) CAData.get().upgradeTargets().put(targetKey, p.id);   // usedSlots (2.44.1)
+            if (targetKey != null) CAData.get().upgradeTargets().put(targetKey, p.id);   // usedSlots (0.2.44.1)
             Industry now = p.upgrade ? p.existing : m.getIndustry(p.id);
             boolean started = now != null && (p.upgrade ? now.isUpgrading() : now.isBuilding());
             CABreaker.check(action, started, m.getName());
-            // 2.45.1: paid only when it took effect. An upgrade that didn't start (and didn't finish at once) costs nothing; a new
+            // 0.2.45.1: paid only when it took effect. An upgrade that didn't start (and didn't finish at once) costs nothing; a new
             // building that exists is paid as before, instant ones included
             if (!tookEffect(p.upgrade, started, p.upgrade && m.hasIndustry(p.id), now != null)) {
                 if (targetKey != null) CAData.get().upgradeTargets().remove(targetKey);
@@ -103,7 +103,7 @@ public class CABuild {
                     + " for " + Misc.getDGSCredits(p.cost));
             return null;
         } catch (Throwable t) {
-            // 2.45.1: a building half-added when something threw comes off again, so nothing is left unpaid or stuck
+            // 0.2.45.1: a building half-added when something threw comes off again, so nothing is left unpaid or stuck
             if (added) {
                 try { if (m.hasIndustry(p.id)) m.removeIndustry(p.id, MarketAPI.MarketInteractionMode.REMOTE, false); }
                 catch (Throwable ignored) { }
@@ -113,7 +113,7 @@ public class CABuild {
         }
     }
 
-    /** Whether a start took effect and should be paid (2.45.1): an upgrade that's under way or already done, or a new building that exists. */
+    /** Whether a start took effect and should be paid (0.2.45.1): an upgrade that's under way or already done, or a new building that exists. */
     static boolean tookEffect(boolean upgrade, boolean started, boolean upgradeDone, boolean exists) {
         return upgrade ? started || upgradeDone : exists;
     }

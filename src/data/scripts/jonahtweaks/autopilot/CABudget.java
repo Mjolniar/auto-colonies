@@ -14,7 +14,7 @@ public class CABudget {
         int m = Global.getSector().getClock().getMonth();
         if (s.month == m) return;
         boolean first = s.month < 0;
-        // what's left of the month's budget is saved up for next month (2.39.0): every building that cost more than one
+        // what's left of the month's budget is saved up for next month (0.2.39.0): every building that cost more than one
         // month's budget waited until savings had grown enough by themselves, months with credits piling up and nothing built
         if (!first) s.budgetCarry = carried(limit(s), s.budgetCarry, s.spent);
         s.month = m;
@@ -42,7 +42,7 @@ public class CABudget {
         return Math.max(0f, Math.min(CARRY_MONTHS * limit, limit + carry - spent));
     }
 
-    /** Budget saved up from earlier months (2.39.0). */
+    /** Budget saved up from earlier months (0.2.39.0). */
     public static float saved(CASettings s) { return s.budgetCarry; }
 
     /** Last month's net income, or this month's colony net income until a full month has passed. */
@@ -88,7 +88,7 @@ public class CABudget {
      */
     public static float upkeepCap(CASettings s) { return s.upkeepCapAuto ? autoUpkeepCap(netIncome(s)) : s.newUpkeepCap; }
 
-    /** A save from before 2.24.0 had a fixed cap, set once at setup; it becomes Automatic once, with a log line. */
+    /** A save from before 0.2.24.0 had a fixed cap, set once at setup; it becomes Automatic once, with a log line. */
     static void migrateUpkeepCap(CASettings s) {
         if (s.upkeepCapChecked) return;
         s.upkeepCapChecked = true;

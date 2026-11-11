@@ -4,7 +4,7 @@ import com.fs.starfarer.api.Global;
 
 /**
  * Game days since the clock's epoch, for "once a day" caches. Don't use getElapsedDaysSince(0L): the game reads a 0
- * timestamp as "never" and returns Float.MAX_VALUE, which before 2.30.0 froze every daily cache for the whole session
+ * timestamp as "never" and returns Float.MAX_VALUE, which before 0.2.30.0 froze every daily cache for the whole session
  * (surplus terraforming's plans, research ranking, the focus world, siege and crisis checks).
  */
 public final class CADay {

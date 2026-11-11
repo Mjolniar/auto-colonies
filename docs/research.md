@@ -46,14 +46,14 @@ Black site projects take goods from your colonies each month, and some (Electron
 
 While spending freely, with **Wonders and gates while spending freely** on, it builds the Daedalus Array and the Bifrost network (control center, then a gate per system). Each starts once your colonies make every good it needs.
 
-## Coming in 3.0
+## Coming in 0.3.0
 
 - Built, in testing: databanks aren't spent on techs that don't pay back within a year, unless money is idle.
 - Built, in testing: extra Research Facilities have to cover their full upkeep.
 - Built, in testing: ranking techs no longer changes anything in your save.
 - Planned: Research Facilities are funded through the money ladder. See [Money](money.md).
 
-Everything planned for 3.0: [roadmap](roadmap.md)
+Everything planned for 0.3.0: [roadmap](roadmap.md)
 
 Plans can still change before release.
 

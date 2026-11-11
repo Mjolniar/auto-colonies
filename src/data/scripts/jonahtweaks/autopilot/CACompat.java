@@ -62,7 +62,7 @@ public class CACompat {
         ENTRIES.add(new Entry("vic", "Volkov Industrial Conglomerate", "1.6.3a", a("vic_antiEVCt1", "vic_antiEVCt2", "vic_antiEVCt3"), a("VIC_VBomb_scar"),
                 a("vic_soil_nanites2"), a("vic_genetech"), null));
         ENTRIES.add(new Entry("roider", "Roider Union", "2.3.1", a("roider_dives", "roider_union_hq"), NONE, a(CAMods.CHARTER), NONE, null));
-        // 2.38.0
+        // 0.2.38.0
         ENTRIES.add(new Entry("omega_core_everywhere", "Omega Core Everywhere", "1.2.2", NONE, NONE, NONE, a(CAOmega.CORE), () -> CAOmega.linkOce()));
         ENTRIES.add(new Entry("astral_ascension_renewed", "Astral Ascension Renewed", "1.0.1", NONE,
                 a("population_11", "aar_arcology_world", "aar_ecumenopolis", "aar_crowned_world"), NONE, a(CAOmega.CORE), () -> CAOmega.adminPlugin() != null));
@@ -79,7 +79,7 @@ public class CACompat {
         ENTRIES.add(new Entry("US", "Unknown Skies", "3.0.3", NONE, a("US_fluorescent"), NONE, NONE, null));
         ENTRIES.add(new Entry("niko_morePlanetaryConditions", "What We Left Behind", "4.5.3", NONE, a("MPC_fracturedWorld"), NONE, NONE, null));
         ENTRIES.add(new Entry("Planetace_AstralAscension", "Astral Ascension", "1.2.8", NONE, NONE, NONE, NONE, null));
-        // 2.45.0: Oddisz's colony mods (CAOddisz); the pack carries Cloning and the Private Arsenal under the same ids
+        // 0.2.45.0: Oddisz's colony mods (CAOddisz); the pack carries Cloning and the Private Arsenal under the same ids
         ENTRIES.add(new Entry(CAOddisz.CLONING_MOD, "Cloning", "0.2.1", CAOddisz.CLONING, NONE, NONE, NONE, null));
         ENTRIES.add(new Entry(CAOddisz.ARSENAL_MOD, "Reverse Engineered Private Arsenal", "1.3.1", CAOddisz.HUB, NONE, NONE, NONE, null));
         ENTRIES.add(new Entry(CAOddisz.PACK, "Coalesced Little Mods", "0.4.0", CAOddisz.packIndustries(), NONE, NONE, NONE, null));

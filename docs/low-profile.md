@@ -32,7 +32,7 @@ The Crises page shows which rules are still on.
 - **Pirates.** They grow with your biggest colony. Military goes up sooner, and beating one big raid ends pirate crises for good.
 - **The Persean League.** At a size 5 colony it wants you to join and blockades you until you do. Joining at Kazeron also ends the Hegemony crisis. Joining is left to you.
 
-## Coming in 3.0
+## Coming in 0.3.0
 
 - Built, in testing: Pather items are only removed at colonies at or above your minimum stability, and are put back if removing them lowered stability too far.
 - Built, in testing: an AI core administrator isn't swapped out below 4 stability. Omega core administrators aren't swapped.
@@ -41,6 +41,6 @@ The Crises page shows which rules are still on.
 
 Plans can still change before release.
 
-Everything planned for 3.0: [roadmap](roadmap.md)
+Everything planned for 0.3.0: [roadmap](roadmap.md)
 
 [Back to the README](../README.md)

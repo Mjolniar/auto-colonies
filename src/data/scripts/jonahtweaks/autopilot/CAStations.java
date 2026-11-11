@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A station at every colony (2.42.0). A station fights next to your fleet and patrols, and a raid, bombardment or
+ * A station at every colony (0.2.42.0). A station fights next to your fleet and patrols, and a raid, bombardment or
  * invasion has to beat it first, so it's how a colony holds off fleets; ground defenses only matter once troops land.
  * The engine's money-weighted score left most colonies without one: on Balanced a 250,000 Orbital Station came to about
  * -2,000 a month (its price spread over three years outweighed its defense and fleet value), so only the Security goal,

@@ -28,13 +28,13 @@ Spending freely runs up to three projects per colony at once and goes for the ri
 
 Each project is valued by the conditions it leaves. Auto starts the best, and the colony panel lists the best four with Start buttons. Station construction is yours.
 
-## Coming in 3.0
+## Coming in 0.3.0
 
 - Built, in testing: if a colony already paid for terraforming toward one world plan, it only switches to a plan that undoes it if the new plan is worth at least twice as much.
 - Built, in testing: a 360-day TME structure only starts when no better build is waiting for the colony's construction slot.
 - Planned: surplus terraforming can use idle budget, with a planned payback limit of 24 months. See [Money](money.md).
 
-Everything planned for 3.0: [roadmap](roadmap.md)
+Everything planned for 0.3.0: [roadmap](roadmap.md)
 
 Plans can still change before release.
 

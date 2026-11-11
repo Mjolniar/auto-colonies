@@ -35,7 +35,7 @@ public class CAIntel extends BaseIntelPlugin {
     public static void ensure() {
         com.fs.starfarer.api.campaign.comm.IntelManagerAPI mgr = Global.getSector().getIntelManager();
         if (!mgr.hasIntelOfClass(CAIntel.class)) mgr.addIntel(new CAIntel(), true);
-        // before 2.8.0 it was marked important; it has its own filter now
+        // before 0.2.8.0 it was marked important; it has its own filter now
         com.fs.starfarer.api.campaign.comm.IntelInfoPlugin i = mgr.getFirstIntel(CAIntel.class);
         if (i != null && i.isImportant()) i.setImportant(false);
     }
@@ -144,7 +144,7 @@ public class CAIntel extends BaseIntelPlugin {
         try { if (page.equals(lastPage) && lastTooltip != null && lastTooltip.getExternalScroller() != null) scrollY = lastTooltip.getExternalScroller().getYOffset(); }
         catch (Throwable ignored) { }
 
-        // the grid and neon frames (2.41.0): drawn by an empty panel added first, so it sits behind and the buttons stay the intel's
+        // the grid and neon frames (0.2.41.0): drawn by an empty panel added first, so it sits behind and the buttons stay the intel's
         CustomPanelAPI backdrop = panel.createCustomPanel(width, height, new CATheme.Frame(CANav.W, CANav.GAP));
         panel.addComponent(backdrop).inTL(0f, 0f);
         TooltipMakerAPI nav = panel.createUIElement(CANav.W, height, false);
@@ -251,11 +251,11 @@ public class CAIntel extends BaseIntelPlugin {
                 t.addPara("On the way: %s to %s, %s days left.", 3f, hl, (sh.qty > 1 ? sh.qty + " " : "") + sh.name(),
                         to == null ? "your biggest colony" : to.getName(), "" + (int) Math.ceil(left));
             }
-            for (String o : CAObjectives.inTransit(data))   // stable locations (2.40.0)
+            for (String o : CAObjectives.inTransit(data))   // stable locations (0.2.40.0)
                 t.addPara("Construction crew: %s.", 3f, hl, o);
             if (Global.getSettings().getModManager().isModEnabled(CATasc.MOD))
-                for (String o : CATascStations.inTransit(data)) t.addPara("Station crew: %s.", 3f, hl, o);   // TASC stations (2.40.1)
-            for (CALogistics.Load l : CALogistics.inTransit()) {   // storage logistics (2.39.0)
+                for (String o : CATascStations.inTransit(data)) t.addPara("Station crew: %s.", 3f, hl, o);   // TASC stations (0.2.40.1)
+            for (CALogistics.Load l : CALogistics.inTransit()) {   // storage logistics (0.2.39.0)
                 float left = Math.max(0f, l.days - Global.getSector().getClock().getElapsedDaysSince(l.sent));
                 t.addPara("Storage logistics: %s to %s's Storage (" + CALog.esc(l.why) + "), %s days left.", 3f, hl,
                         CALogistics.describe(l), l.toName, "" + (int) Math.ceil(left));
@@ -378,7 +378,7 @@ public class CAIntel extends BaseIntelPlugin {
                 t.addPara("%s " + CALog.esc(e.version) + ": " + CALog.esc(CACompat.describe(e)), 4f, lc, e.name);
             }
         }
-        // mod watch (2.38.0): each colony mod's verdict and its warnings in this game
+        // mod watch (0.2.38.0): each colony mod's verdict and its warnings in this game
         List<org.json.JSONObject> watch = CAModWatch.latest();
         if (!watch.isEmpty()) {
             t.addPara("Mod watch (also in the report file, updated weekly):", 8f);
@@ -416,7 +416,7 @@ public class CAIntel extends BaseIntelPlugin {
 
     @Override
     public void buttonPressConfirmed(Object buttonId, IntelUIAPI ui) {
-        // every button goes through here: an error is logged and shown in the log instead of reaching the game (2.37.0)
+        // every button goes through here: an error is logged and shown in the log instead of reaching the game (0.2.37.0)
         try { pressed(buttonId, ui); }
         catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "empire panel button failed", t);

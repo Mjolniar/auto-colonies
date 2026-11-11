@@ -56,9 +56,9 @@ New colonies start as Balanced and Advisor. Use **Next goal** and **Next mode** 
 
 Next: [How it builds](how-it-builds.md), or [Settings](settings.md).
 
-## Coming in 3.0
+## Coming in 0.3.0
 
-- Back up your save before updating. A save made in 3.0 can't be loaded in 2.45.x.
+- Back up your save before updating. A save made in 0.3.0 can't be loaded in 0.2.45.x.
 - Built, in testing: old settings carry over, and no setting becomes more aggressive on update.
 - Built, in testing: a failing daily step no longer stops the other steps.
 - Built, in testing: one ranked build queue for all colonies, with a 36-month payback limit.
@@ -67,4 +67,4 @@ Next: [How it builds](how-it-builds.md), or [Settings](settings.md).
 
 Plans can still change before release.
 
-Everything planned for 3.0: [roadmap](roadmap.md)
+Everything planned for 0.3.0: [roadmap](roadmap.md)

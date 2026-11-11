@@ -56,7 +56,7 @@ public class CACrisis {
     /** Points between crises: the meter falls to 400/3 on average after one, and the next fires at 600. */
     static final float POINTS_PER_CRISIS = 600f - 400f / 3f;
 
-    /** Credits a month one point of monthly crisis progress costs (about 640; ten times that in Low profile, 2.43.0). */
+    /** Credits a month one point of monthly crisis progress costs (about 640; ten times that in Low profile, 0.2.43.0). */
     public static float pointCost() { return CRISIS_COST / POINTS_PER_CRISIS * (CALowProfile.on() ? CALowProfile.PRICE_MULT : 1f); }
 
     public static HostileActivityEventIntel event() {
@@ -417,7 +417,7 @@ public class CACrisis {
             if (d.colony(m.getId()).mode != CAData.Mode.AUTO || CAEngine.isOutpost(m)) continue;
             if (!CALog.once("inspect:" + m.getId() + ":" + HegemonyHostileActivityFactor.getInspectionAttempts())) continue;   // each inspection adds an attempt
             int fp = Math.round(CAItems.nextInspectionFP()), def = Math.round(CAItems.defenseFP(m));
-            // Low profile never resists: resisting turns the Hegemony hostile (2.43.0)
+            // Low profile never resists: resisting turns the Hegemony hostile (0.2.43.0)
             HegemonyInspectionIntel.AntiInspectionOrders was = hi.getOrders(), now = orders(CALowProfile.on() ? 0 : s.inspectionMode, CAItems.defended(m), was);
             if (now != was) {
                 hi.setOrders(now);
@@ -503,8 +503,8 @@ public class CACrisis {
         float best = bestMilitaryMult();
         t.addPara(best >= 1f ? "No Patrol HQ, Military Base or High Command yet: one slows every crisis (x0.9, x0.7, x0.5)."
                 : "Your best military structure slows every crisis to x%s.", 4f, hl, Misc.getRoundedValueMaxOneAfterDecimal(best));
-        CALowProfile.render(t, s);   // 2.43.0
-        CAOddisz.render(t);   // Sol Renewed's own crisis, when it's running (2.45.0)
+        CALowProfile.render(t, s);   // 0.2.43.0
+        CAOddisz.render(t);   // Sol Renewed's own crisis, when it's running (0.2.45.0)
 
         CATheme.heading(t, "Where it comes from", 12f);
         boolean any = false;

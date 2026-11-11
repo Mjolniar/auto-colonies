@@ -12,7 +12,7 @@ import com.fs.starfarer.api.util.Misc;
 import java.util.*;
 
 /**
- * Autopilot Storage, one per colony (2.37.0), and paid shipping between them. Before 2.37.0 it was one shared cargo shown
+ * Autopilot Storage, one per colony (0.2.37.0), and paid shipping between them. Before 0.2.37.0 it was one shared cargo shown
  * at every colony, so whatever went in at one colony could come out at any other, and the manager installed items and
  * cores anywhere: free transport across the sector. Now each colony's tab holds what was put in there; the manager uses
  * an item at the colony it's in, and anything it wants somewhere else is shipped: a fee (SHIP_BASE plus SHIP_PER_LY a
@@ -20,7 +20,7 @@ import java.util.*;
  * destination colony's Autopilot Storage. The same goes for research items and databanks taken from your colonies'
  * normal Storage or your fleet's cargo for a Research Facility somewhere else. Anything the manager takes out of a
  * building (a core it moves, an item it pulls back) goes into that colony's own Autopilot Storage, which is free.
- * A save from before 2.37.0 has its shared storage moved into the biggest colony's, once, with a log line.
+ * A save from before 0.2.37.0 has its shared storage moved into the biggest colony's, once, with a log line.
  */
 public class CAStores {
     public static final float SHIP_BASE = 2000f, SHIP_PER_LY = 300f, SHIP_DAYS = 2f;
@@ -146,7 +146,7 @@ public class CAStores {
             if (from.getQuantity(CargoAPI.CargoItemType.SPECIAL, special) < qty) return false;
             from.removeItems(CargoAPI.CargoItemType.SPECIAL, special, qty);
         }
-        // CABudget.charge takes the fee from your credits; 2.45.1: it was also subtracted here, so every shipment cost twice its fee
+        // CABudget.charge takes the fee from your credits; 0.2.45.1: it was also subtracted here, so every shipment cost twice its fee
         if (fee > 0f) CABudget.charge(s, 0f, fee, 0f);
         Shipment sh = new Shipment();
         sh.commodity = commodity; sh.special = special; sh.qty = qty; sh.from = fromName; sh.to = to.getId();

@@ -22,7 +22,7 @@ public class CAAuto {
 
     public static void reset() {
         wasBuilding.clear(); nextPass.clear(); lastTrace.clear(); lastNow = 0f; CAPrune.looked.clear(); CAMarket.invalidate();
-        // 2.45.1: the pass clock starts at 0 again on every load, so weekly steps timed on the last session's clock sat out
+        // 0.2.45.1: the pass clock starts at 0 again on every load, so weekly steps timed on the last session's clock sat out
         // as long as that session ran (calibration, storage logistics, the market check, the mod watch, augment re-plans)
         CACalibrate.last = -99f; CALogistics.lastRun = -99f; CAMarket.lastWeek = -99f; CAModWatch.lastRun = -99f; CAAugments.nextRun.clear();
     }
@@ -35,20 +35,20 @@ public class CAAuto {
         CABudget.migrateUpkeepCap(s);
         try { CACalibrate.run(now); }   // weekly: compare estimates with what your buildings really do
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "calibration failed", t); }
-        try { CAModWatch.weekly(now); }   // weekly: how each colony mod is doing, into the Diagnostics report (2.38.0)
+        try { CAModWatch.weekly(now); }   // weekly: how each colony mod is doing, into the Diagnostics report (0.2.38.0)
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "mod watch failed", t); }
-        try { CAMarket.weekly(now); }   // weekly: the market model against the game's own shares, and where you hold most (2.44.0)
+        try { CAMarket.weekly(now); }   // weekly: the market model against the game's own shares, and where you hold most (0.2.44.0)
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "market model check failed", t); }
         try { CASiege.update(d); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "siege check failed", t); }
         try { CAStores.daily(); }   // shipments between colonies' Autopilot Storage arrive
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autopilot Storage shipping failed", t); }
-        try { CALogistics.daily(d, s, now); }   // storage logistics: loads to the refit and sell hubs (2.39.0)
+        try { CALogistics.daily(d, s, now); }   // storage logistics: loads to the refit and sell hubs (0.2.39.0)
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "storage logistics failed", t); }
         CACrisis.daily(d, s);   // inspection orders, and a log line when a colony crisis is picked
         try { CASurplus.daily(s); }   // the focus world for credits over the surplus line
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus investment step failed", t); }
-        try { CACapital.daily(d, s); }   // the capital: deliveries there, and its commerce build-up once colonies ramp up (2.42.0)
+        try { CACapital.daily(d, s); }   // the capital: deliveries there, and its commerce build-up once colonies ramp up (0.2.42.0)
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "capital step failed", t); }
         try { CAEndgame.daily(s); }   // after spending freely is known: the endgame economy starts or ends
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "endgame economy step failed", t); }
@@ -57,14 +57,14 @@ public class CAAuto {
         List<Cand> cands = new ArrayList<Cand>();
         boolean rich = CASurplus.rich(s);
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
-            try {   // 2.45.1: one colony's failure never skips the rest of the pass
+            try {   // 0.2.45.1: one colony's failure never skips the rest of the pass
                 CAData.Colony c = d.colony(m.getId());
                 if (c.buildout && c.mode != CAData.Mode.AUTO) CABuildout.stop(m, c, "the colony left Auto");
                 if (c.mode != CAData.Mode.APPROVE && c.mode != CAData.Mode.AUTO) continue;
                 boolean building = Misc.getCurrentlyBeingConstructed(m) != null;
                 Boolean was = wasBuilding.put(m.getId(), building);
                 Float next = nextPass.get(m.getId());
-                // a build that finished since the last look gets a pass now; 2.45.1: one still under way isn't "just finished",
+                // a build that finished since the last look gets a pass now; 0.2.45.1: one still under way isn't "just finished",
                 // which had every colony with something under construction re-planned every day
                 boolean justFinished = was != null && was && !building;
                 if (!justFinished && next != null && now < next) continue;
@@ -90,7 +90,7 @@ public class CAAuto {
                     try { wk = CAEndgame.replacement(m, c, r.bestNoSlot, used); }
                     catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "endgame replacement check failed at " + m.getName(), t); }
                 }
-                // the capital: with every industry slot taken, a trade building may replace its weakest ordinary industry (2.42.0)
+                // the capital: with every industry slot taken, a trade building may replace its weakest ordinary industry (0.2.42.0)
                 if (wk == null && c.mode == CAData.Mode.AUTO && !building && !siege && r.blocked == null && CAEngine.worthwhile(r.bestNoSlot)) {
                     try { wk = CACapital.replacement(m, c, r.bestNoSlot, used); }
                     catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "capital room check failed at " + m.getName(), t); }
@@ -125,7 +125,7 @@ public class CAAuto {
                     k.m = m; k.c = c; k.p = p; k.total = p.cost + CABudget.constructionFee(s, p.cost); k.gain = p.score;
                     cands.add(k);
                 }
-                // 2.45.1: no daily re-check while a build is under way; the colony gets a pass the day it finishes (justFinished above)
+                // 0.2.45.1: no daily re-check while a build is under way; the colony gets a pass the day it finishes (justFinished above)
             } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "pass failed at " + m.getName(), t); }
         }
         Collections.sort(cands, new Comparator<Cand>() {
@@ -143,11 +143,11 @@ public class CAAuto {
         Map<String, Integer> startedUp = new HashMap<String, Integer>();
         Set<Object> upgrading = new HashSet<Object>();
         int maxUps = rich ? 3 : 1;
-        // 2.44.0: goods a colony started making this pass; another colony's pick that's mostly worth the same goods waits a day
+        // 0.2.44.0: goods a colony started making this pass; another colony's pick that's mostly worth the same goods waits a day
         // and is scored again with that building counted (CAMarket), so two colonies don't start the same producer at once
         Map<String, String> claimedBy = new HashMap<String, String>();
         for (Cand k : cands) {
-            try {   // 2.45.1: one candidate's failure never skips the rest, nor the over-limit and 0-stability step below
+            try {   // 0.2.45.1: one candidate's failure never skips the rest, nor the over-limit and 0-stability step below
                 Integer ups = startedUp.get(k.m.getId());
                 if (k.p.upgrade ? (ups != null && ups >= maxUps) || upgrading.contains(k.p.existing) : startedNew.contains(k.m.getId())) continue;
                 if (!claimedBy.isEmpty() && k.remove == null) {
@@ -207,11 +207,11 @@ public class CAAuto {
         }
         List<MarketAPI> allAuto = CAItems.autoMarkets();
         List<MarketAPI> auto = CASiege.free(allAuto);   // colonies under siege are left as they are
-        try { CAOverLimit.run(allAuto); }   // more industries than slots (-5 stability), and colonies at 0 stability, sieges included (2.42.2)
+        try { CAOverLimit.run(allAuto); }   // more industries than slots (-5 stability), and colonies at 0 stability, sieges included (0.2.42.2)
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "industry limit / 0-stability step failed", t); }
-        try { CAPrune.run(auto); }   // industries that stopped paying for 30 days, not under siege (2.44.1)
+        try { CAPrune.run(auto); }   // industries that stopped paying for 30 days, not under siege (0.2.44.1)
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "prune step failed", t); }
-        try { CALowProfile.run(d, s, auto); }   // Low profile: items and AI administrators over its lines (2.43.0)
+        try { CALowProfile.run(d, s, auto); }   // Low profile: items and AI administrators over its lines (0.2.43.0)
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "low profile step failed", t); }
         try { CAItems.ensureStorageTabs(); CAItems.run(auto); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "item, core or administrator placement failed", t); }
@@ -259,10 +259,10 @@ public class CAAuto {
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony policy step failed", t); }
         try { CAStory.run(auto); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story point step failed", t); }
-        try { CAObjectives.run(d, s, auto); }   // stable locations: comm relays, nav buoys, sensor arrays, receivers (2.40.0)
+        try { CAObjectives.run(d, s, auto); }   // stable locations: comm relays, nav buoys, sensor arrays, receivers (0.2.40.0)
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "stable location step failed", t); }
         if (Global.getSettings().getModManager().isModEnabled(CATasc.MOD)) {
-            try { CATascStations.run(d, s, auto); }   // TASC mining and siphon stations (2.40.1)
+            try { CATascStations.run(d, s, auto); }   // TASC mining and siphon stations (0.2.40.1)
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "TASC station step failed", t); }
         }
         if (Global.getSettings().getModManager().isModEnabled(CASettlement.MOD)) {
@@ -340,7 +340,7 @@ public class CAAuto {
         String err = CABuild.start(m, p);
         if (err != null) { CALog.add(m.getName() + ": could not start " + p.name + ": " + err); return err; }
         CABudget.charge(s, p.cost, fee, p.upkeep);
-        try { CAMarket.claim(m, p); }   // what it'll make counts as made while it's under construction (2.44.0)
+        try { CAMarket.claim(m, p); }   // what it'll make counts as made while it's under construction (0.2.44.0)
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "market model claim failed at " + m.getName(), t); }
         CALog.forget(m.getId() + ":" + p.id);
         CALog.forget(m.getId() + ":" + p.id + ":upkeep");

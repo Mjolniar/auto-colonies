@@ -128,8 +128,8 @@ public class CAPlan {
     /** The colony's plan, with any producer a special project needs from it first (CAProjects). */
     public static Plan build(MarketAPI m, CAData.Profile prof) {
         Plan p = buildOwn(m, prof);
-        List<Step> extra = new ArrayList<Step>(CACapital.stepsFor(m));   // the capital's commerce build-up first (2.42.0)
-        extra.addAll(CAStations.stepsFor(m));   // and a station at every colony, a bigger one at bigger colonies (2.42.0)
+        List<Step> extra = new ArrayList<Step>(CACapital.stepsFor(m));   // the capital's commerce build-up first (0.2.42.0)
+        extra.addAll(CAStations.stepsFor(m));   // and a station at every colony, a bigger one at bigger colonies (0.2.42.0)
         extra.addAll(CAResearch.stepsFor(m));   // a Research Facility when there's none and research is Auto
         extra.addAll(CAProjects.stepsFor(m));
         extra.addAll(CASurplus.richSteps(m));   // spending freely: every station and defense maxed
@@ -187,7 +187,7 @@ public class CAPlan {
         } else if (hab && (inc || grow || prof == CAData.Profile.BALANCED)) {
             p.name = "Paradise";
             if (farm) b(p, "farming", "Farming");   // Farming needs farmland; without it the step could never be done and held the plan's first rank
-            // (2.38.0: these three had slipped into the comment above in 2.30.0, so a Paradise plan was nearly empty)
+            // (0.2.38.0: these three had slipped into the comment above in 0.2.30.0, so a Paradise plan was nearly empty)
             b(p, "lightindustry", "Light Industry"); b(p, "commerce", "Commerce"); b(p, "waystation", "Waystation");
             b(p, "tme_agricultural_laboratory", "Agricultural Laboratory"); c(p, farm ? "farmland_bountiful" : "farmland_adequate", "Better farmland");
             c(p, "mild_climate", "Mild climate (Stellar Manufactory, start it yourself)");
@@ -262,7 +262,7 @@ public class CAPlan {
         int rank = 0;
         for (Step s : plan.steps) {
             if (s.kind != Kind.BUILD || s.done(m) || (skipBlocked && (BLOCKED.contains(m.getId() + ":" + s.id) || dead(m, s.id)))) continue;
-            if (held(m, plan, s)) continue;   // the Unification Center, until the rest of its world is ready (2.39.1)
+            if (held(m, plan, s)) continue;   // the Unification Center, until the rest of its world is ready (0.2.39.1)
             boolean match = s.id.equals(industryId) || (s.id.equals("station") && stationTier(spec(industryId)) > 0)
                     || leadsTo(industryId, s.id);
             if (match) return rank == 0 ? 60000f : rank == 1 ? 40000f : 20000f;
@@ -274,7 +274,7 @@ public class CAPlan {
     static final String UNIFICATION = "tme_unification_center";
 
     /**
-     * The Unification Center waits for the rest of its world's plan (2.39.1). It only runs the world's conversion, which
+     * The Unification Center waits for the rest of its world's plan (0.2.39.1). It only runs the world's conversion, which
      * needs every other part of the plan in place (its buildings by exact id, the world's conditions); by itself it's +1
      * stability for upkeep and marines and supplies. Ranked like any step, it went up as soon as research opened it, which is
      * before the Geomorphology Station (Global Centralization comes before Surface Restructuring), then sat idle for months
@@ -307,7 +307,7 @@ public class CAPlan {
     /**
      * Whether an open step will take a new industry slot: an industry, not blocked by research or out of reach (dead), and
      * not an upgrade of an industry the colony has or an earlier open step builds (one slot per chain: Heavy Industry and
-     * Orbital Works were two before 2.38.0, and a step that could never be built held its slot forever).
+     * Orbital Works were two before 0.2.38.0, and a step that could never be built held its slot forever).
      */
     static boolean needsSlot(MarketAPI m, Plan plan, Step s) {
         if (s.kind != Kind.BUILD || s.done(m) || !industry(s.id)) return false;
@@ -330,7 +330,7 @@ public class CAPlan {
         return false;
     }
 
-    // ---------------- steps with no way to them (2.38.0) ----------------
+    // ---------------- steps with no way to them (0.2.38.0) ----------------
     // A plan is built from what's installed, but a step can still be out of reach in a game: a building research never
     // unlocks, a blueprint you don't know, a deposit the planet lacks, a mod removed mid-save, a world that can't form.
     // Such a step held the plan's top rank and an industry slot forever. Now every open build step is checked each pass;
@@ -369,7 +369,7 @@ public class CAPlan {
             IndustrySpecAPI sp = spec(id);
             if (sp == null) return false;
             if (!CADiagnostics.autopilotBuilds(id) && !CAEngine.isSupported(id)) return false;   // Autopilot doesn't build it
-            if (CAMods.leftToYou(id) != null && !CACapital.isStep(m, id)) return false;   // Yunru's Bazaar: only the capital's (2.42.0)
+            if (CAMods.leftToYou(id) != null && !CACapital.isStep(m, id)) return false;   // Yunru's Bazaar: only the capital's (0.2.42.0)
             Industry inst = sp.getNewPluginInstance(m);
             if (!(CATasc.isTasc(sp) ? CATasc.available(m, inst) : inst.isAvailableToBuild())) return false;
             if (CAAotD.enabled() && !CAAotD.allows(id, m)) return autoResearch();

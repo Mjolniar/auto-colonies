@@ -16,7 +16,7 @@ import org.json.JSONObject;
 import java.util.*;
 
 /**
- * Mod watch (2.38.0): how each colony mod Autopilot has an integration for is doing in this game, for the playthrough
+ * Mod watch (0.2.38.0): how each colony mod Autopilot has an integration for is doing in this game, for the playthrough
  * diagnostics. Weekly and at every Diagnostics scan, per installed mod:
  * - its integration health (CACompat), how Autopilot rated each of its buildings, and where they are at your colonies;
  * - measured buildings: what the probe colony said against what the building really makes now (a clean one: no core,
@@ -59,10 +59,10 @@ public class CAModWatch {
                 JSONObject o = watch(mod[0], mod[1], mine);
                 last.add(o);
                 String line = CADiagnostics.TAG + "mod watch " + mod[1] + ": " + o.optString("verdict") + " - " + o.optString("summary");
-                // a line when it changes (and the first time each session), not ten identical lines a week (2.39.0)
+                // a line when it changes (and the first time each session), not ten identical lines a week (0.2.39.0)
                 if (line.equals(logged.get(mod[0]))) continue;
                 logged.put(mod[0], line);
-                // a warning says what it is (2.43.1): the report holds only the latest week, so a line that said "1 warnings"
+                // a warning says what it is (0.2.43.1): the report holds only the latest week, so a line that said "1 warnings"
                 // and nothing else was gone by the time anyone looked
                 if ("OK".equals(o.optString("verdict"))) CADiagnostics.LOG.info(line); else CADiagnostics.LOG.warn(line + problems(o));
             } catch (Throwable t) {
@@ -264,7 +264,7 @@ public class CAModWatch {
      * rebalances. What the game adds on top isn't Roider's and is only reported: the building's supply bonus (AI core,
      * administrator, improvement, Charter) goes on every output with a positive base or deposit line, even one that nets
      * to 0, and a heavy machinery shortage comes off each (BaseIndustry.supply, applyDeficitToProduction).
-     * 2.43.1: before, the whole output was checked against the formula with only an AI core added, so Wind's Industrial
+     * 0.2.43.1: before, the whole output was checked against the formula with only an AI core added, so Wind's Industrial
      * Planning administrator (+1 ore, +1 organics, +1 transplutonic ore from abundant roids that net to 0) read as 3 units
      * off, and the warning came and went with Wind's heavy machinery shortage.
      */

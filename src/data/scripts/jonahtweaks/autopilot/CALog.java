@@ -44,7 +44,7 @@ public class CALog {
     static final java.util.Map<String, Float> pingAt = new java.util.HashMap<String, Float>();
 
     /**
-     * A ping (2.41.0): a short machine line on screen about what the autopilot is weighing or doing in the background, at
+     * A ping (0.2.41.0): a short machine line on screen about what the autopilot is weighing or doing in the background, at
      * most once per key a week. Only with the Machine voice and every entry on screen; never in the panel log.
      */
     public static void ping(String key, String text) {

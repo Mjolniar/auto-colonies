@@ -18,7 +18,7 @@ import java.lang.invoke.MethodType;
 import java.util.*;
 
 /**
- * Terraforming & Station Construction's stations (2.40.1): a mining station in an asteroid belt or field, or a siphon
+ * Terraforming & Station Construction's stations (0.2.40.1): a mining station in an asteroid belt or field, or a siphon
  * station over a gas giant, founded as a new colony of yours, the way TASC's own Construct abilities do it, only with a
  * construction crew instead of your fleet on site. Only when TASC is installed, its research for the station is done,
  * you're under your colony limit, and the system is one with your Auto colonies that's calm (none of them under a high

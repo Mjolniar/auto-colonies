@@ -34,7 +34,7 @@ public class CABuildout {
     public static final float[] FLOORS = {50000f, 100000f, 250000f, 500000f, 1000000f, 2000000f};
     static final float[] OFFERED = {250000f, 100000f, 500000f, 1000000f};
     public static final float DEFAULT_FLOOR = 250000f, PROFIT_DAYS = 30f, OFFER_DAYS = 30f;
-    /** A buildout ends after this many days in a row with nothing that pays to build, or this long in all (2.38.0). */
+    /** A buildout ends after this many days in a row with nothing that pays to build, or this long in all (0.2.38.0). */
     public static final float IDLE_DAYS = 60f, MAX_DAYS = 365f;
     static float checkTimer = 0f;
 
@@ -70,7 +70,7 @@ public class CABuildout {
         public void init(InteractionDialogAPI dialog) {
             this.dialog = dialog;
             dialog.setPromptText("Colony Autopilot");
-            // 2.43.0: first the expansion style (CALowProfile), then the buildout
+            // 0.2.43.0: first the expansion style (CALowProfile), then the buildout
             TextPanelAPI t = dialog.getTextPanel();
             t.addPara("Colony Autopilot: " + m.getName() + " is your first colony. First, how should your colonies expand?");
             t.addPara("Full expansion builds whatever pays most. AI cores, rich industries and free ports draw the sector's attention "
@@ -167,7 +167,7 @@ public class CABuildout {
     static boolean pass(MarketAPI m, CAData.Colony c, float now, boolean building) {
         if (finished(m, c)) return false;
         // a colony that can't turn a profit never ended its buildout, and the buildout skipped its plan, defenses and the
-        // endgame for good (2.38.0): a day with nothing that pays runs the normal pass, and the buildout ends after
+        // endgame for good (0.2.38.0): a day with nothing that pays runs the normal pass, and the buildout ends after
         // IDLE_DAYS of that, or after MAX_DAYS whatever happens
         CampaignClockAPI clock = Global.getSector().getClock();
         if (c.buildoutSince == 0L) c.buildoutSince = clock.getTimestamp();

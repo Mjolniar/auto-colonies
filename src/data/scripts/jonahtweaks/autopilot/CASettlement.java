@@ -72,7 +72,7 @@ public class CASettlement {
         if (p == null || p.isStar() || p.isGasGiant() || p.hasTag("gas_giant") || p.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER)) return false;
         StarSystemAPI sys = p.getStarSystem();
         if (sys == null || sys.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER)) return false;
-        if (CALowProfile.remnantSystem(sys)) return false;   // Low profile: a Remnant nexus's crisis only ends with the nexus (2.43.0)
+        if (CALowProfile.remnantSystem(sys)) return false;   // Low profile: a Remnant nexus's crisis only ends with the nexus (0.2.43.0)
         MarketAPI m = p.getMarket();
         if (m == null || m.getSurveyLevel() != MarketAPI.SurveyLevel.FULL) return false;
         if (p.getFaction() == null || !p.getFaction().getRelToPlayer().isAtWorst(RepLevel.INHOSPITABLE)) return false;
@@ -139,7 +139,7 @@ public class CASettlement {
     // ---------------- founding ----------------
 
     /**
-     * An expedition founds it (2.37.0): RAT's dialog founds a settlement when your fleet is at the planet, so from afar
+     * An expedition founds it (0.2.37.0): RAT's dialog founds a settlement when your fleet is at the planet, so from afar
      * Autopilot pays now and the settlement is founded once an expedition from your nearest colony gets there (SETUP_DAYS
      * plus the shipping travel time, a day a light-year). If the planet can't take it any more by then, the cost is refunded.
      */

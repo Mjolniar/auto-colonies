@@ -15,7 +15,7 @@ import java.awt.Color;
 import java.util.*;
 
 /**
- * The capital (2.42.0): your home port. One colony, yours to pick or Autopilot's, where everything you own ends up and
+ * The capital (0.2.42.0): your home port. One colony, yours to pick or Autopilot's, where everything you own ends up and
  * where you come back to trade.
  *
  * Deliveries: the game's production gathering point follows the capital, so custom production (ships, weapons, wings)
@@ -42,7 +42,7 @@ public class CACapital {
 
     /**
      * Buildings that make the capital a place to trade, in the order they're wanted, from a scan of what each one does on a
-     * player colony (2.42.0). A step whose building the game doesn't have is dropped (CAPlan.exists), and one that can't be
+     * player colony (0.2.42.0). A step whose building the game doesn't have is dropped (CAPlan.exists), and one that can't be
      * reached here (research, a blueprint, one per system) stops counting after 60 days (CAPlan.track). Column 4 "only":
      * nothing else scores it, so Autopilot builds it at the capital and nowhere else. Left out: Military Base and Free Port
      * (no market on a player colony), Interstellar Imperium's Bazaar (can't be built), Industrial Evolution's Animal
@@ -67,9 +67,9 @@ public class CACapital {
     static String pickedId;
     static float pickedAt = -99f;
     /**
-     * 2.42.2: true while the capital (yours or Autopilot's pick) is still a market but not yours (captured): a stand-in
+     * 0.2.42.2: true while the capital (yours or Autopilot's pick) is still a market but not yours (captured): a stand-in
      * colony takes production deliveries, nothing is gathered anywhere, and the capital is the old one again the day it's
-     * yours. In 2.42.0 a captured Wind made Ming Adi the capital for good, and once Wind was retaken its whole Storage (853
+     * yours. In 0.2.42.0 a captured Wind made Ming Adi the capital for good, and once Wind was retaken its whole Storage (853
      * weapons, 39 wings) was shipped to Ming Adi.
      */
     static boolean standIn = false;
@@ -231,7 +231,7 @@ public class CACapital {
     public static List<CAPlan.Step> stepsFor(MarketAPI m) {
         List<CAPlan.Step> out = new ArrayList<CAPlan.Step>();
         if (m == null || !commerce(CAData.settings()) || !is(m)) return out;
-        if (m.getStabilityValue() < COMMERCE_MIN_STABILITY) {   // 2.42.2: Commerce and the Bazaars cost stability
+        if (m.getStabilityValue() < COMMERCE_MIN_STABILITY) {   // 0.2.42.2: Commerce and the Bazaars cost stability
             if (CALog.once("capital:lowstab:" + m.getId()))
                 CALog.add(m.getName() + ": capital: trade buildings wait while stability is under " + Math.round(COMMERCE_MIN_STABILITY) + " (most of them cost stability)");
             return out;
