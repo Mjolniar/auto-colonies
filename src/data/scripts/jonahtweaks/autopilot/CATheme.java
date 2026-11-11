@@ -18,10 +18,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * The autopilot's look and voice (2.41.0): an autonomous colony AI at work, not an admin utility.
+ * The autopilot's look and voice (0.2.41.0): an autonomous colony AI at work, not an admin utility.
  *
  * Voice: every log entry still goes to the panel log and starsector.log as the full sentence; on screen it starts with a
- * code, "BUILD / Hot Springs: Planetary Shield (750k)", in the game's normal text colors (2.41.1; 2.41.0's tags, ::
+ * code, "BUILD / Hot Springs: Planetary Shield (750k)", in the game's normal text colors (0.2.41.1; 0.2.41.0's tags, ::
  * and // and player-color text were too hard to read). Settings, Interface: Announcement voice, Machine (default) or
  * Plain. Short ping lines report what it's weighing as it goes, at most one per thing a week, on screen only.
  *
@@ -198,8 +198,8 @@ public final class CATheme {
     public static String machine(String text) { return machine(text, places()); }
 
     /**
-     * Pure: the on-screen line, "CODE / Place: what", with the places a "Name: ..." prefix may name. 2.41.1: one code and
-     * one slash, the rest in plain words with its own punctuation (2.41.0's "AP\\ #TAG :: CODE // ..." was hard to read).
+     * Pure: the on-screen line, "CODE / Place: what", with the places a "Name: ..." prefix may name. 0.2.41.1: one code and
+     * one slash, the rest in plain words with its own punctuation (0.2.41.0's "AP\\ #TAG :: CODE // ..." was hard to read).
      * A line with no code is the sentence as it is.
      */
     static String machine(String text, Set<String> places) {

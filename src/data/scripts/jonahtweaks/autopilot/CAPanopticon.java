@@ -9,7 +9,7 @@ import com.fs.starfarer.api.util.Misc;
 import java.util.*;
 
 /**
- * Emergent Threats: IX Revival's Panopticon cores (2.39.3). They're AI cores with one home: its Surveillance Center. A
+ * Emergent Threats: IX Revival's Panopticon cores (0.2.39.3). They're AI cores with one home: its Surveillance Center. A
  * Panopticon Instance works there like an Alpha core and, by the mod's own description, projects Panopticon Monitoring
  * across the system; a Panopticon Core works like a Beta core and raises the center's stability bonus from 2 to 3. The
  * Hegemony counts neither for inspections (only alpha, beta and gamma cores, HegemonyAICoresActivityCause).

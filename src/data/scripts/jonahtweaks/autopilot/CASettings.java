@@ -22,17 +22,17 @@ public class CASettings {
     public float terraformShare = 0.4f;
     public float newUpkeepCap = 50000f;   // the Fixed cap; the Automatic one follows net income (CABudget.upkeepCap)
     // new upkeep cap: Automatic (10% of last month's net income, at least 20,000) unless set to Fixed. upkeepCapChecked
-    // is false loading a save from before 2.24.0, whose fixed cap (set once at setup) becomes Automatic once
+    // is false loading a save from before 0.2.24.0, whose fixed cap (set once at setup) becomes Automatic once
     public boolean upkeepCapAuto = true, upkeepCapChecked = true;
     public boolean pauseOnLoss = true;
     // surplus investment (CASurplus): credits over the line go into one focus world; index into SURPLUS_LINES (0 off).
-    // surplusChecked is false loading a save from before 2.21.0, which gets the recommended line once.
+    // surplusChecked is false loading a save from before 0.2.21.0, which gets the recommended line once.
     public int surplusLine = 2;
     // past CASurplus.RICH over the line every Approve/Auto colony spends from the surplus (false, also older saves); true: the focus world only
     public boolean surplusFocusOnly = false;
     public float richIncomeRef = 0f;   // best net income while spending freely (its floor is half of it)
     public boolean noWonders = false;  // false (also older saves): spending freely builds the Daedalus Array and Bifrost gates (CAWonders)
-    /** Announcement voice (2.41.0): 0 Machine (default, also older saves), 1 Plain. */
+    /** Announcement voice (0.2.41.0): 0 Machine (default, also older saves), 1 Plain. */
     public int voice = 0;
     public static final String[] VOICE_NAMES = {"Machine", "Plain"};
     public int screenLog = 0;          // log entries on screen: 0 every entry (default, also older saves), 1 important only, 2 off
@@ -65,7 +65,7 @@ public class CASettings {
     // special project supply (CAProjects, Vaults of Knowledge): 0 Auto (also older saves), 1 Warn only, 2 Off
     public int projectSupplyMode = 0;
     public static final String[] PROJECT_SUPPLY_NAMES = {"Auto", "Warn only", "Off"};
-    public boolean storageCheat = false;  // unused since 2.37.0 (the storage cheat moved to Jonah's Easy Sector); kept so older saves load
+    public boolean storageCheat = false;  // unused since 0.2.37.0 (the storage cheat moved to Jonah's Easy Sector); kept so older saves load
     public int coreRisk = 1;              // 0 more where defenses beat the next inspection, 1 never inspected (default for new saves), 2 no limit, 3 small colonies only
     public int inspectionMode = 0;        // Hegemony inspections of Auto colonies: 0 advise (so older saves load as advise), 1 resist where defended, 2 off
     public boolean allowRemovals = false;
@@ -91,7 +91,7 @@ public class CASettings {
 
     public int hazardPayMode = 0, freePortMode = 0;   // 0 auto, 1 don't touch
     public float hazardPayColonyShare = 0.25f, hazardPayEmpireShare = 0.30f;
-    public boolean hazardLimitChecked = true;   // false in saves from before 2.20.0, whose old 10% default CAPolicies raises once
+    public boolean hazardLimitChecked = true;   // false in saves from before 0.2.20.0, whose old 10% default CAPolicies raises once
     public static final String[] POLICY_NAMES = {"Auto", "Don't touch"};
     // Industrial Evolution automation (stored inverted so older saves default to on)
     public boolean disableAmbassadors = false, disableVPC = false, disableForgeVPC = false, disableEdicts = false, disableShipping = false, disableSpecialties = false, disableStabilizers = false, disableDefenseFleets = false;
@@ -114,13 +114,13 @@ public class CASettings {
     public int researchMode = 0;
     // Nexerelin agents (CASpies): 0 off (default), 1 defense, 2 defense and offense; hiring on unless spyNoHiring; agents to keep, 0 = auto
     public int spyMode = 0;
-    // 2.42.2: false in saves from before it (the field is missing, so it loads false): Agents go to Defense once, since with
+    // 0.2.42.2: false in saves from before it (the field is missing, so it loads false): Agents go to Defense once, since with
     // them off nothing stops a Pather cell. New saves start true and get Defense from the recommended settings
     public boolean spyChecked = true;
     public boolean spyNoHiring = false;
     public int spyKeep = 0;
     public static final String[] SPY_NAMES = {"Off", "Defense", "Defense and offense"};
-    // whom the offense agent sabotages (2.37.0): null whoever attacks you, else Nexerelin's pick; "random" a random enemy; or a faction id
+    // whom the offense agent sabotages (0.2.37.0): null whoever attacks you, else Nexerelin's pick; "random" a random enemy; or a faction id
     public String spyTarget = null;
     // research spends colony items (CAResearch, Vaults of Knowledge), only while credits are over the surplus line: 0 off
     // (default, also older saves), 1 from storage (Autopilot Storage and colonies' Storage tabs), 2 also out of buildings
@@ -136,44 +136,44 @@ public class CASettings {
     public static final String[] WAR_NAMES = {"Protect and strike back", "Protect", "Off"};
     // the Colony Autopilot button on your colony's screen (CAScreenButton); on unless this is set
     public boolean noScreenButton = false;
-    // unused since 2.37.0, kept so older saves load (the save can't drop a field): the Derelict Empire "Attacks on your
+    // unused since 0.2.37.0, kept so older saves load (the save can't drop a field): the Derelict Empire "Attacks on your
     // colonies" settings moved to Jonah's Easy Sector, and so did the storage cheat (storageCheat, above)
     public int haFleetCap = 0, nexAttackGap = 0;
 
     // this month
     public int month = -1;
     public float spent = 0f, fees = 0f, upkeepAdded = 0f, terraSpent = 0f;
-    public float budgetCarry = 0f;   // 2.39.0: unspent budget saved up from earlier months (CABudget.rollMonth), up to 6 months' worth
-    // 2.39.0 storage logistics (CALogistics): 0 off (default), 1 on; refit hub market id (null: the production gathering
+    public float budgetCarry = 0f;   // 0.2.39.0: unspent budget saved up from earlier months (CABudget.rollMonth), up to 6 months' worth
+    // 0.2.39.0 storage logistics (CALogistics): 0 off (default), 1 on; refit hub market id (null: the production gathering
     // point), sell hub market id (null: none); ships and supplies/fuel/crew/marines go to the refit hub too
     public int logisticsMode = 0;
-    /** Stable locations (2.40.0, CAObjectives): 0 Auto (also what older saves get), 1 Recommend only, 2 Off. */
+    /** Stable locations (0.2.40.0, CAObjectives): 0 Auto (also what older saves get), 1 Recommend only, 2 Off. */
     public int objectiveMode = 0;
-    /** Terraforming & Station Construction's stations (2.40.1, CATascStations): 0 Recommend only (also older saves), 1 Auto, 2 Off. */
+    /** Terraforming & Station Construction's stations (0.2.40.1, CATascStations): 0 Recommend only (also older saves), 1 Auto, 2 Off. */
     public int stationMode = 0;
     public static final String[] TASC_STATION_NAMES = {"Recommend only", "Auto", "Off"};
     public static final String[] OBJECTIVE_NAMES = {"Auto", "Recommend only", "Off"};
     public String logisticsHub, logisticsSellHub;
-    // 2.42.0 the capital (CACapital): mode 0 deliveries and commerce (default, also older saves), 1 deliveries only, 2 off;
+    // 0.2.42.0 the capital (CACapital): mode 0 deliveries and commerce (default, also older saves), 1 deliveries only, 2 off;
     // when commerce starts (index into CACapital.START_NAMES, 0 recommended); your pick (null: Autopilot's, kept in
     // capitalAuto); the gathering point Autopilot last set, to tell when you moved it yourself; whether the commerce build-up
     // has started; and two inverted switches so older saves get them on: gather Storage there, take down an industry for room
     public int capitalMode = 0, capitalStart = 0;
     public String capitalId, capitalAuto, capitalGatherSet;
     public boolean capitalStarted = false, capitalNoGather = false, capitalNoRoom = false;
-    // 2.42.0 a station at every colony (CAStations); inverted so older saves get it
+    // 0.2.42.0 a station at every colony (CAStations); inverted so older saves get it
     public boolean noStationPlan = false;
-    // 2.42.0 an Auto colony over its industry limit takes down its weakest industry (CAOverLimit); inverted so older saves get it
+    // 0.2.42.0 an Auto colony over its industry limit takes down its weakest industry (CAOverLimit); inverted so older saves get it
     public boolean noOverLimitFix = false;
-    // 2.43.0 Low profile (CALowProfile): grow while drawing as little attention as possible; off (Full expansion) for older saves,
+    // 0.2.43.0 Low profile (CALowProfile): grow while drawing as little attention as possible; off (Full expansion) for older saves,
     // picked when your first colony is founded
     public boolean lowProfile = false;
-    // 2.44.0 exports valued by what they add to your share of each sector market (CAMarket); inverted so older saves get it
+    // 0.2.44.0 exports valued by what they add to your share of each sector market (CAMarket); inverted so older saves get it
     public boolean noMarketModel = false;
-    // 2.44.1 an Auto colony takes down an industry that stopped paying for 30 days (CAPrune); inverted so older saves get it
+    // 0.2.44.1 an Auto colony takes down an industry that stopped paying for 30 days (CAPrune); inverted so older saves get it
     public boolean noPrune = false;
     public boolean logisticsShips = true, logisticsSupplies = true;
-    public int spMonth = 0;   // story points spent this month (counted improvements before 2.20.1)
+    public int spMonth = 0;   // story points spent this month (counted improvements before 0.2.20.1)
     public float lastNet = 0f;
     public boolean lastNetKnown = false;
 

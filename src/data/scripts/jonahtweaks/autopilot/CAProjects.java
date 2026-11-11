@@ -12,7 +12,7 @@ import java.awt.Color;
 import java.util.*;
 
 /**
- * Special project supply (2.30.0). Vaults of Knowledge's black site projects take goods every month from your own colonies'
+ * Special project supply (0.2.30.0). Vaults of Knowledge's black site projects take goods every month from your own colonies'
  * production (a Theory of Toolbox trade contract), and a stage stops dead while any good it takes isn't delivered at all.
  * Several are AotD goods no faction makes (Electronic Components, Domain-grade machinery, Refined Metal, Enriched
  * Transplutonics): only VoK's upgraded industries make them, and research unlocks those. For the project you're running,
@@ -46,7 +46,7 @@ public class CAProjects {
             new Producer("purified_rare_metal", "aotd_enrichment_facility", "refining", null, 3),
             new Producer("ships", "heavyindustry", null, null, 3),
             new Producer("hand_weapons", "heavyindustry", null, null, 3),
-            // 2.39.0, for production orders: the vanilla goods, each at its vanilla building (its own build check says
+            // 0.2.39.0, for production orders: the vanilla goods, each at its vanilla building (its own build check says
             // where it can go: Mining needs a deposit, Farming farmland)
             new Producer("heavy_machinery", "heavyindustry", null, null, 3),
             new Producer("supplies", "heavyindustry", null, null, 3),
@@ -170,7 +170,7 @@ public class CAProjects {
     public static void reset() { STEPS.clear(); computedAt = -99f; project = null; last = null; monthly.clear(); left.clear(); other.clear(); orders.clear(); }
 
     /**
-     * 2.39.0: what Ashes of the Domain's open production orders still need, by good: each order line's remaining units times
+     * 0.2.39.0: what Ashes of the Domain's open production orders still need, by good: each order line's remaining units times
      * its goods per unit (AoTDProductionOrderData.reqResourcesPerUnit). Production waits on those goods, which come from
      * your colonies' output, so a big order (Jonah's Auto Outfitting's weapons for a fleet) crawls when nobody makes one.
      */
@@ -348,7 +348,7 @@ public class CAProjects {
             // spending freely (CASurplus.rich): AotD's own goods get producers even with no project running, since Grand Wonders,
             // megastructure restoration, Bifrost gates and AotD production all take them from your colonies' exports
             boolean rich = CASurplus.rich(CAData.settings());
-            readOrders();   // and the goods open production orders still need (2.39.0)
+            readOrders();   // and the goods open production orders still need (0.2.39.0)
             if (!running && !rich && orders.isEmpty()) return;
             yours.clear(); sector.clear();
             Set<String> goods = new LinkedHashSet<String>(left.keySet());
@@ -370,7 +370,7 @@ public class CAProjects {
             for (Plan pl : last.plans) {
                 String forWhat = forWhat(pl.good);
                 // a producer Auto doesn't build (not rated, or measured with measured buildings set to Ignore) would sit
-                // first in the plan forever (2.38.0): it's yours to build instead
+                // first in the plan forever (0.2.38.0): it's yours to build instead
                 if (!CADiagnostics.autopilotBuilds(pl.building) && !CAEngine.isSupported(pl.building)) {
                     if (CALog.once("projn:" + forWhat + ":" + pl.good + ":" + pl.building))
                         CALog.add(pl.hostName + ": " + buildingName(pl.building) + " would make " + name(pl.good) + " (" + forWhat + "), but Autopilot doesn't build it; yours to build", true);

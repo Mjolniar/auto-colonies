@@ -79,7 +79,7 @@ public class CAAotD {
 
     /**
      * Building Menu Overhaul is on but its code can't be read (an update renamed something): instead of building nothing at
-     * all (before 2.38.0), what research would lock stays locked and the rest is open. Without Vaults of Knowledge, BMO
+     * all (before 0.2.38.0), what research would lock stays locked and the rest is open. Without Vaults of Knowledge, BMO
      * locks nothing by research. With it, Ashes of the Domain's own buildings stay locked, and the vanilla ones it gates
      * (CAResearch.GATES) only open once their tech is researched; another mod's building is open.
      */

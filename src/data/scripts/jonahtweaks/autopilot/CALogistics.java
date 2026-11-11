@@ -14,7 +14,7 @@ import com.fs.starfarer.api.util.Misc;
 import java.util.*;
 
 /**
- * Storage logistics (2.39.0, setting, off unless you switch it on): your Storage tabs gathered in two places, the way
+ * Storage logistics (0.2.39.0, setting, off unless you switch it on): your Storage tabs gathered in two places, the way
  * custom production already delivers to one.
  * - The refit hub (a colony or market you pick; by default your production gathering point) gets what you refit a fleet
  *   with from every other Storage you have: mothballed ships, weapons, fighter wings, hull mod specs you don't know yet,
@@ -51,12 +51,12 @@ public class CALogistics {
 
     static MarketAPI market(String id) { return id == null ? null : Global.getSector().getEconomy().getMarket(id); }
 
-    /** Runs weekly when you switched it on, or for the capital (2.42.0: its Storage gathering, on with it by default). */
+    /** Runs weekly when you switched it on, or for the capital (0.2.42.0: its Storage gathering, on with it by default). */
     static boolean active(CASettings s) { return s.logisticsMode == 1 || CACapital.gathers(s); }
 
     /**
      * The refit hub. With Storage logistics on: the market you picked, else the capital, else your production gathering
-     * point. With it off, only the capital's own gathering runs, and it only ever sends to the capital (2.42.2: never to a
+     * point. With it off, only the capital's own gathering runs, and it only ever sends to the capital (0.2.42.2: never to a
      * hub picked back when logistics was on, and never while a stand-in has the capital's deliveries).
      */
     public static MarketAPI refitHub(CASettings s) {
@@ -164,7 +164,7 @@ public class CALogistics {
         Map<String, Integer> kept = new HashMap<String, Integer>();
         List<CargoStackAPI> toRefit = new ArrayList<CargoStackAPI>(), toSell = new ArrayList<CargoStackAPI>();
         Map<CargoStackAPI, Integer> splitKeep = new HashMap<CargoStackAPI, Integer>();   // unknown blueprints: one copy to the refit hub, the rest to sell
-        boolean oneHub = sell != null && sell == refit;   // the capital is both (2.42.0): one load, one fee
+        boolean oneHub = sell != null && sell == refit;   // the capital is both (0.2.42.0): one load, one fee
         for (CargoStackAPI x : st.getStacksCopy()) {
             String where = destination(x, s, f, kept);
             if (where == null) continue;

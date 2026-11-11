@@ -67,7 +67,7 @@ The old building's core and item go to Autopilot Storage. **Endgame replaces ind
 
 It only looks at colonies a year old or more that lost money three months running, or at a money emergency. Auto does one every 30 days at most. I don't use it for the colony limit (that gets an administrator) or on new colonies. The Mod features page has **Grant autonomy** and **Take back** buttons.
 
-## Coming in 3.0
+## Coming in 0.3.0
 
 - Built, in testing: the budget uses the median colony income of the last 3 months.
 - Built, in testing: builds have to pay back within 36 months. The limit grows toward 120 months as spare credits increase.
@@ -75,7 +75,7 @@ It only looks at colonies a year old or more that lost money three months runnin
 - Planned: spending presets, and an On / Recommend / Off setting for each ladder step. Planned defaults: Balanced preset, ships and expansion on Recommend (you approve each one).
 - Planned: ship orders stop at 6 unclaimed hulls in the capital's storage. Ships are paid for at normal prices.
 
-Everything planned for 3.0: [roadmap](roadmap.md)
+Everything planned for 0.3.0: [roadmap](roadmap.md)
 
 Plans can still change before release.
 

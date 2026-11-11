@@ -4,7 +4,7 @@ import com.fs.starfarer.api.BaseModPlugin;
 import com.fs.starfarer.api.Global;
 
 /**
- * Starts Colony Autopilot on every save load. Each step is its own try (2.37.0), so one failing (the diagnostics scan,
+ * Starts Colony Autopilot on every save load. Each step is its own try (0.2.37.0), so one failing (the diagnostics scan,
  * say) can't stop the daily script or the colony screen button from starting; failures go to starsector.log.
  */
 public class JTModPlugin extends BaseModPlugin {

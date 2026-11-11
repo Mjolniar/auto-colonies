@@ -10,7 +10,7 @@ import com.fs.starfarer.api.util.Misc;
 import java.util.*;
 
 /**
- * Ashes of the Domain's Grand Wonders and Bifrost gates, while spending freely (2.34.0, CASurplus.rich). AotD charges for
+ * Ashes of the Domain's Grand Wonders and Bifrost gates, while spending freely (0.2.34.0, CASurplus.rich). AotD charges for
  * them with a trade contract that takes goods from your colonies' exports every month (10% of their price), and a build
  * stops while any good isn't delivered at all, so each starts only once your colonies make every good it takes (the
  * producers of AotD's own goods are planned by CAProjects while rich).

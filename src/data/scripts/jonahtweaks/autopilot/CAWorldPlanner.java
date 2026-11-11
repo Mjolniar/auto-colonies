@@ -161,7 +161,7 @@ public class CAWorldPlanner {
         for (String w : WORLDS) {
             float f = fit(w, prof);
             if (f <= 0f) continue;
-            if (CAPlan.worldDead(m, w)) continue;   // its own steps were out of reach: the plain plan for a year (2.38.0)
+            if (CAPlan.worldDead(m, w)) continue;   // its own steps were out of reach: the plain plan for a year (0.2.38.0)
             Row r = rows().get(w);
             if (r == null) continue;
             Sim sim = new Sim();
@@ -192,7 +192,7 @@ public class CAWorldPlanner {
             p.name = name(w); p.world = w;
             List<Boolean> ia = new ArrayList<Boolean>();
             // the world's industries must be possible once its projects are done: Mining needs a deposit and Farming farmland
-            // (a water world's Aquaculture counts), which Hive, Death and Waste worlds' projects never add (2.38.0)
+            // (a water world's Aquaculture counts), which Hive, Death and Waste worlds' projects never add (0.2.38.0)
             boolean possible = true;
             for (String[] g : groups(r.likedInd, new ArrayList<Boolean>())) for (String ind : g) {
                 if (ind.equals("mining") && !m.hasIndustry("mining") && !anyPrefix(done.conds, "ore_", "rare_ore_", "volatiles_", "organics_")) possible = false;

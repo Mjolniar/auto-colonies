@@ -10,18 +10,18 @@ import com.fs.starfarer.api.util.Misc;
 import java.util.*;
 
 /**
- * Colonies over their industry limit (2.42.1), and colonies at 0 stability (2.42.2).
+ * Colonies over their industry limit (0.2.42.1), and colonies at 0 stability (0.2.42.2).
  *
  * More industries than slots costs a flat 5 stability (vanilla PopulationAndInfrastructure, "Maximum number of industries
  * exceeded"), and below 5 stability every point cuts the colony's income by a fifth. Worse, the game decivilizes a colony
  * that sits at 0 stability (DecivTracker: about monthly samples over 16 months, at least half of them 0 including the first
  * and the latest 3 in a row; it warns once, then 10% a month per month of streak past 3). Wind was decivilized that way in
- * 2.42.0: 3 industries on 2 slots (two picks of one pass took one free slot, fixed in CABuild.start) kept it at 0 for months.
+ * 0.2.42.0: 3 industries on 2 slots (two picks of one pass took one free slot, fixed in CABuild.start) kept it at 0 for months.
  *
  * Daily, at every Auto colony (sieges included: this is an emergency, not a build):
  * - over the limit at 0 stability or below: its weakest industry Autopilot may take down goes at once, whatever it earns;
  * - over the limit otherwise: unless the colony is about to grow a size with room for them all, its weakest industry goes,
- *   one a day until it's back within the limit (2.44.1: it used to keep them when the weakest earned more than the 5
+ *   one a day until it's back within the limit (0.2.44.1: it used to keep them when the weakest earned more than the 5
  *   stability was worth, or when none was one it could value, so colonies Autopilot itself had put over sat there for months);
  * - at 0 stability, an important alert on screen (once a month a colony), Auto or not, with what to do.
  * Never a building being built or upgraded, improved, locked, a station, population, or one holding up 5 or more stability;
@@ -94,7 +94,7 @@ public class CAOverLimit {
     }
 
     /**
-     * 2.42.2: at 0 stability (and not over the industry limit, or with nothing there to take down), the building that costs
+     * 0.2.42.2: at 0 stability (and not over the industry limit, or with nothing there to take down), the building that costs
      * the most stability goes, read from the game's own modifiers so mod buildings count too (Commerce -3, a Bazaar, a
      * Privateer Base), one every SHED_DAYS until the colony is off 0. A capital trade building shed this way stays off the
      * capital's plan for a year. Never population, a station, one being built or upgraded, improved or locked.
@@ -124,7 +124,7 @@ public class CAOverLimit {
         SpecialItemData item = worst.getSpecialItem();
         CAStores.emptyInto(m, worst);
         m.removeIndustry(id, MarketAPI.MarketInteractionMode.REMOTE, false);
-        CAPrune.markGone(m, id);   // 2.45.2: not built here again for a year
+        CAPrune.markGone(m, id);   // 0.2.45.2: not built here again for a year
         long ts = Global.getSector().getClock().getTimestamp();
         d.endgameBuilt().put(m.getId() + ":shed", ts);
         d.endgameBuilt().put(m.getId() + ":shed:" + id, ts);
@@ -161,7 +161,7 @@ public class CAOverLimit {
             if (last != null && Global.getSector().getClock().getElapsedDaysSince(last) < GAP_DAYS) return false;
         }
         CAData.Colony col = d.colony(m.getId());
-        // 2.44.1: an Auto colony over its limit always sheds one: the weakest of what a colony can do without first, then
+        // 0.2.44.1: an Auto colony over its limit always sheds one: the weakest of what a colony can do without first, then
         // (defenses, fleets, ship-making, plan steps, mod buildings it can't value) the weakest of anything else that may go
         CAEndgame.Weakest wk = weakest(m, col, false);
         if (wk == null) wk = weakest(m, col, true);
@@ -189,8 +189,8 @@ public class CAOverLimit {
             String id = ind.getId();
             if (!ind.isIndustry() || ind.isHidden() || ind.isBuilding() || ind.isUpgrading() || ind.isImproved() || !ind.canShutDown()) continue;
             if (ind.getSpec().hasTag("population") || ind.getSpec().hasTag("station") || col.locks.contains(id)) continue;
-            if (CAMods.leftToYou(id) != null) continue;   // you built it, Autopilot never does: it stays (2.45.0)
-            // one that holds up the colony's stability by 5 or more: taking it down wouldn't lift the colony at all (2.44.1)
+            if (CAMods.leftToYou(id) != null) continue;   // you built it, Autopilot never does: it stays (0.2.45.0)
+            // one that holds up the colony's stability by 5 or more: taking it down wouldn't lift the colony at all (0.2.44.1)
             float stab = stabilityOf(m, ind);
             if (stab >= PENALTY) continue;
             if (!any && (CAEndgame.keepsPlanBonus(m, plan, id) || CAContracts.feeds(ind) != null)) continue;
@@ -211,7 +211,7 @@ public class CAOverLimit {
         return out;
     }
 
-    /** Ranking for weakest(): one that adds stability goes only when nothing else can (2.44.1). */
+    /** Ranking for weakest(): one that adds stability goes only when nothing else can (0.2.44.1). */
     static float rank(float value, float stability) { return stability > 0f ? value + 1e9f : value; }
 
     static void takeDown(CAData d, MarketAPI m, CAEndgame.Weakest wk, String over, float gain, boolean zero) {
@@ -221,7 +221,7 @@ public class CAOverLimit {
         String name = ind.getCurrentName(), id = ind.getId();
         CAStores.emptyInto(m, ind);   // core and item to this colony's Autopilot Storage
         m.removeIndustry(id, MarketAPI.MarketInteractionMode.REMOTE, false);
-        CAPrune.markGone(m, id);   // 2.45.2: not built here again for a year
+        CAPrune.markGone(m, id);   // 0.2.45.2: not built here again for a year
         long ts = Global.getSector().getClock().getTimestamp();
         d.endgameBuilt().put(m.getId() + ":overlimit", ts);
         d.endgameBuilt().put(m.getId() + ":replaced", ts);   // and no make-room swap at the capital for a while

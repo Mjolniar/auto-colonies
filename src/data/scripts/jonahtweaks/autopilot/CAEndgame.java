@@ -14,7 +14,7 @@ import java.awt.Color;
 import java.util.*;
 
 /**
- * Endgame economy (2.36.0). Once money is no longer the problem (spending freely, 10M or more over the surplus line, and last
+ * Endgame economy (0.2.36.0). Once money is no longer the problem (spending freely, 10M or more over the surplus line, and last
  * month's net income at least the setting's level, 1M by default), what a building is worth changes at every colony that
  * spends the surplus:
  * - a credit counts MONEY (5%) instead of a quarter: income hardly matters any more;
@@ -264,7 +264,7 @@ public class CAEndgame {
         if (id == null) return false;
         if (id.startsWith("tme_") || CAPlan.WORLD_STEPS.contains(id) || (plan != null && plan.exact.contains(id))) return true;
         if (CAProjects.isStep(m, id) || CASurplus.isRichStep(m, id) || CAResearch.isFacilityStep(m, id)) return true;
-        if (CACapital.isStep(m, id) || CAStations.isStep(m, id)) return true;   // the capital's trade buildings and every colony's station (2.42.0)
+        if (CACapital.isStep(m, id) || CAStations.isStep(m, id)) return true;   // the capital's trade buildings and every colony's station (0.2.42.0)
         return CAWonders.BFC.equals(id);
     }
 
@@ -272,7 +272,7 @@ public class CAEndgame {
     static int openKeptIndustrySteps(MarketAPI m, CAPlan.Plan plan) {
         int n = 0;
         for (CAPlan.Step st : plan.steps) {
-            if (!keepsPlanBonus(m, plan, st.id) || !CAPlan.needsSlot(m, plan, st)) continue;   // 2.38.0: not blocked, reachable, one per chain
+            if (!keepsPlanBonus(m, plan, st.id) || !CAPlan.needsSlot(m, plan, st)) continue;   // 0.2.38.0: not blocked, reachable, one per chain
             n++;
         }
         return n;
@@ -298,7 +298,7 @@ public class CAEndgame {
         if (ind.getSpec().hasTag("population") || ind.getSpec().hasTag("station") || col.locks.contains(id)) return true;
         if (keepsPlanBonus(m, plan, id) || CASurplusResearch.FACILITY.equals(id) || CASurplusResearch.BLACK_SITE.equals(id) || CAWonders.SITE.equals(id)) return true;
         if (!CAEngine.isSupportedVanilla(id) && !CAEstimates.has(id)) return true;   // only what the engine can value for certain
-        if (CAContracts.feeds(ind) != null) return true;   // a trade contract you hold needs what it makes (2.39.0)
+        if (CAContracts.feeds(ind) != null) return true;   // a trade contract you hold needs what it makes (0.2.39.0)
         Long built = d.endgameBuilt().get(m.getId() + ":" + id);
         return built != null && Global.getSector().getClock().getElapsedDaysSince(built) < MEMORY_DAYS;
     }
@@ -351,7 +351,7 @@ public class CAEndgame {
         CAStores.emptyInto(m, ind);   // core and item to this colony's Autopilot Storage
         String oldName = ind.getCurrentName(), oldId = ind.getId();
         m.removeIndustry(oldId, MarketAPI.MarketInteractionMode.REMOTE, false);
-        CAPrune.markGone(m, oldId);   // 2.45.2: not built here again for a year, endgame or not
+        CAPrune.markGone(m, oldId);   // 0.2.45.2: not built here again for a year, endgame or not
         long ts = Global.getSector().getClock().getTimestamp();
         d.endgameBuilt().put(m.getId() + ":-" + oldId, ts);
         d.endgameBuilt().put(m.getId() + ":replaced", ts);

@@ -3,7 +3,7 @@ package data.scripts.jonahtweaks.autopilot;
 import com.fs.starfarer.api.Global;
 
 /**
- * Another mod's LunaLib setting, read through reflection (2.45.0): null when LunaLib isn't there, the mod has no such
+ * Another mod's LunaLib setting, read through reflection (0.2.45.0): null when LunaLib isn't there, the mod has no such
  * setting, or it can't be read. Same route as CAGrand's (the game's script loader bans java.lang.reflect, so CARefl).
  */
 public class CALuna {

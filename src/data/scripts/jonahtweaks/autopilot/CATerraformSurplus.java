@@ -15,7 +15,7 @@ import terraformingmadeeasy.ui.plugins.ProjectListPlugin;
 import java.util.*;
 
 /**
- * Surplus terraforming (2.26.0): credits over the surplus line, after the focus world has had its pick, go into
+ * Surplus terraforming (0.2.26.0): credits over the surplus line, after the focus world has had its pick, go into
  * Terraforming Made Easy projects at every Auto colony, most value per credit first: richer deposits and farmland, harsh
  * conditions cleared (a planet with none left turns habitable), building the structure first when the colony has none.
  * Planned on TME's own rules (CATerraSim) one or two projects ahead, so an enabler such as tectonic activity counts with the
@@ -144,7 +144,7 @@ public class CATerraformSurplus {
         CAData d = CAData.get();
         CASettings s = d.settings;
         CATerraSim.lockedValue.clear();
-        // marks first: with surplus terraforming off they never expired, and a marked hazard stayed protected for good (2.38.0)
+        // marks first: with surplus terraforming off they never expired, and a marked hazard stayed protected for good (0.2.38.0)
         if (s.surplusTerraform >= 2) { d.enablers().clear(); d.enablerAt().clear(); }
         expireEnablers(d);
         if (s.surplusTerraform >= 2 || CASurplus.line(s) <= 0f) { CATerraSim.summary = null; return; }

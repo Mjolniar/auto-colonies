@@ -22,7 +22,7 @@ import exerelin.utilities.NexUtilsMarket;
 import java.util.*;
 
 /**
- * War fleets (Nexerelin, 2.35.0; Settings, Colony policies, "War fleets": Protect and strike back (default), Protect, Off).
+ * War fleets (Nexerelin, 0.2.35.0; Settings, Colony policies, "War fleets": Protect and strike back (default), Protect, Off).
  * On top of CADefense's emergency fleets it requests Nexerelin fleets exactly as the fleet request dialog does, for security
  * only: never an invasion or a colony expedition, and an aggressive fleet only against a faction already hostile to you (one
  * against anyone else would make them hostile). In order, each day:
@@ -142,7 +142,7 @@ public class CAWar {
             if (fp > mgr.getFleetRequestStock()) { relief.endImmediately(); return false; }
         }
         // Nexerelin's own prices (Nex_FleetRequest.updateCost): fleet points x the cost per point, but a relief fleet is twice the
-        // colony's stabilize package (needed credits plus the goods), whatever its size (2.37.0: it was priced by points, far too cheap)
+        // colony's stabilize package (needed credits plus the goods), whatever its size (0.2.37.0: it was priced by points, far too cheap)
         float cost = Math.round(relief != null ? 2f * com.fs.starfarer.api.impl.campaign.rulecmd.Nex_StabilizePackage.getNominalCost(target)
                 : fp * NexConfig.fleetRequestCostPerFP);
         String payer = payer(emergency, rich, cost, CABuild.credits(), s.reserve, CABudget.available(s), CASurplus.amount(s));
@@ -217,7 +217,7 @@ public class CAWar {
             if (launch(s, mgr, "strike", b, strikeFP(stationFP(b)), rich, false, b.getFaction().getDisplayName() + " base")) { left--; started++; }
             else waiting.add("strike on " + b.getName());
         }
-        // 4. strike back at the markets that attacked you (never in Low profile: raids on a faction's colonies draw it, 2.43.0)
+        // 4. strike back at the markets that attacked you (never in Low profile: raids on a faction's colonies draw it, 0.2.43.0)
         if (s.warMode == 0 && !CALowProfile.on()) for (String id : new ArrayList<String>(d.attackers().keySet())) {
             if (left <= 0) break;
             MarketAPI t = Global.getSector().getEconomy().getMarket(id);

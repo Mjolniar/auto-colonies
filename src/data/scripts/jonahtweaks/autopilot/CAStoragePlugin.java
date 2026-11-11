@@ -7,11 +7,11 @@ import com.fs.starfarer.api.fleet.FleetMemberAPI;
 import com.fs.starfarer.api.impl.campaign.submarkets.BaseSubmarketPlugin;
 
 /**
- * Autopilot Storage: a tab at every player colony holding that colony's own store (CAStores, per colony since 2.37.0;
+ * Autopilot Storage: a tab at every player colony holding that colony's own store (CAStores, per colony since 0.2.37.0;
  * before, one shared cargo let anything put in at one colony come out at any other). Colony items, AI cores, Antimatter
- * Stabilizers, research databanks, VPC chips and recipes go in, and nothing else (usable, 2.39.2). The manager uses only what is in these, ships what it
+ * Stabilizers, research databanks, VPC chips and recipes go in, and nothing else (usable, 0.2.39.2). The manager uses only what is in these, ships what it
  * needs elsewhere for a fee and travel time, and returns anything it takes out of a building to that colony's store.
- * (The storage cheat that let anything in and fed colonies' shortages moved to Jonah's Easy Sector in 2.37.0.)
+ * (The storage cheat that let anything in and fed colonies' shortages moved to Jonah's Easy Sector in 0.2.37.0.)
  */
 public class CAStoragePlugin extends BaseSubmarketPlugin {
     public static final String ID = "jt_ca_storage";
@@ -38,8 +38,8 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
     public static boolean allowedCommodity(String id) {
         return "alpha_core".equals(id) || "beta_core".equals(id) || "gamma_core".equals(id) || "ix_antimatter_stabilizer".equals(id)
                 || "research_databank".equals(id)   // Vaults of Knowledge research takes them from here
-                || (CAOmega.CORE.equals(id) && CAOmega.enabled())   // Omega Core Everywhere / Astral Ascension Renewed (2.38.0)
-                || CAPanopticon.isCore(id);   // IX Revival's Panopticon Instance and Core, for its Surveillance Center (2.39.3)
+                || (CAOmega.CORE.equals(id) && CAOmega.enabled())   // Omega Core Everywhere / Astral Ascension Renewed (0.2.38.0)
+                || CAPanopticon.isCore(id);   // IX Revival's Panopticon Instance and Core, for its Surveillance Center (0.2.39.3)
     }
 
     @Override
@@ -65,7 +65,7 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
         return "Only colony items, AI cores and research databanks can go in Autopilot Storage";
     }
 
-    // ---------------- what goes in (2.39.2) ----------------
+    // ---------------- what goes in (0.2.39.2) ----------------
 
     /**
      * A special item Autopilot can use from here: any colony item the game can install (its item effects table, every mod's
@@ -89,7 +89,7 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
         } catch (Throwable t) { return false; }
     }
 
-    // ---------------- campaign consumables (2.36.1) ----------------
+    // ---------------- campaign consumables (0.2.36.1) ----------------
 
     /**
      * A campaign consumable or blueprint, which Autopilot never uses: an item that is used up when right-clicked (blueprints,
@@ -128,7 +128,7 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
     }
 
     /**
-     * Daily: special items Autopilot has no use for (see usable; campaign consumables and blueprints since 2.36.1) go from a
+     * Daily: special items Autopilot has no use for (see usable; campaign consumables and blueprints since 0.2.36.1) go from a
      * colony's Autopilot Storage to its normal Storage, with one short log line.
      */
     public static void evict() {

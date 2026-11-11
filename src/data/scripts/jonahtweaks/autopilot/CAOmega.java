@@ -14,7 +14,7 @@ import com.fs.starfarer.api.util.Misc;
 import java.util.*;
 
 /**
- * Omega cores, with Omega Core Everywhere (OCE) and/or Astral Ascension Renewed (AAR) installed (2.38.0). Without either,
+ * Omega cores, with Omega Core Everywhere (OCE) and/or Astral Ascension Renewed (AAR) installed (0.2.38.0). Without either,
  * an Omega core only cuts a building's upkeep by a quarter, so Autopilot leaves them alone and Autopilot Storage refuses them.
  *
  * - OCE: an Omega core in a building does what OCE's table says (omegacoreeverywhere.effects.Effect/OmegaEffects 1.2.2):
@@ -164,7 +164,7 @@ public class CAOmega {
 
     /**
      * Whether OCE doubles this building's output (its general case), rather than giving a building of its kind something
-     * else: fleet size for Patrol HQ and High Command, income for Commerce, and so on (2.39.0: mod watch expected doubled
+     * else: fleet size for Patrol HQ and High Command, income for Commerce, and so on (0.2.39.0: mod watch expected doubled
      * output from those and warned).
      */
     static boolean doublesOutput(MarketAPI m, Industry ind) {

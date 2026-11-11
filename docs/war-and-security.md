@@ -2,7 +2,7 @@
 
 ## Quick version
 - It tracks threat at each colony and handles sieges and crises. With Nexerelin it also sends defense fleets and agents.
-- In 2.45.x it doesn't invade or take colonies.
+- In 0.2.45.x it doesn't invade or take colonies.
 - The optional [Low profile](low-profile.md) style reduces fights with other factions.
 
 ## Threat
@@ -44,7 +44,7 @@ Stations get the best augments they can fit. Under high threat, or with a raid o
 
 The **War fleets** section on the Mod features page shows points, waiting fleets and strike-back targets.
 
-## Coming in 3.0
+## Coming in 0.3.0
 
 - Planned: one war level for the whole empire: Off, Defend, Retaliate (current behavior and default), Hold them down, Conquer, Scorched. Offensive actions need a confirmation on the War page.
 - Planned: a stance for each faction: Ally, Friendly, Neutral, Auto (current behavior), Rival, Enemy, Destroy. Stances set war targets, agent actions and diplomacy. Enemy stays at war and turns down ceasefires. Destroy invades until the faction has no markets.
@@ -54,6 +54,6 @@ The **War fleets** section on the Mod features page shows points, waiting fleets
 
 Plans can still change before release.
 
-Everything planned for 3.0: [roadmap](roadmap.md)
+Everything planned for 0.3.0: [roadmap](roadmap.md)
 
 Next: [Research](research.md).

@@ -12,7 +12,7 @@ import com.fs.starfarer.api.util.Misc;
 import java.util.*;
 
 /**
- * Industries that stopped paying (2.44.1). Daily, at every Auto colony not under siege: an industry whose whole worth is
+ * Industries that stopped paying (0.2.44.1). Daily, at every Auto colony not under siege: an industry whose whole worth is
  * what it makes, read live and valued the way a build is (CAMarket: only what's above the colony's own biggest other
  * source of each good, what it adds to your share of each sector market, what your colonies would be short of without
  * it), worth less than nothing after upkeep for 30 days in a row, is taken down; one per colony every 30 days. Godecifica's
@@ -88,7 +88,7 @@ public class CAPrune {
         if (!ind.isIndustry() || ind.isHidden() || ind.isBuilding() || ind.isUpgrading() || ind.isImproved() || !ind.canShutDown()) return null;
         IndustrySpecAPI spec = ind.getSpec();
         if (spec.hasTag("population") || spec.hasTag("station") || spec.hasTag("military") || spec.hasTag("patrol") || spec.hasTag("command")
-                || col.locks.contains(id) || CAMods.leftToYou(id) != null) return null;   // left to you: never taken down (2.45.0)
+                || col.locks.contains(id) || CAMods.leftToYou(id) != null) return null;   // left to you: never taken down (0.2.45.0)
         if (CAEndgame.keepsPlanBonus(m, plan, id) || CAContracts.feeds(ind) != null) return null;
         if (plan != null) for (CAPlan.Step st : plan.steps) if (id.equals(st.id) || CAPlan.inChainBelow(id, st.id)) return null;
         if (CAOverLimit.stabilityOf(m, ind) > 0f) return null;
@@ -166,7 +166,7 @@ public class CAPrune {
         return n;
     }
 
-    /** 2.45.2 (from 3.0): days a building Autopilot took down stays off that colony's build list (Wind rebuilt its Junkyard Forge a month after it came down). */
+    /** 0.2.45.2 (from 0.3.0): days a building Autopilot took down stays off that colony's build list (Wind rebuilt its Junkyard Forge a month after it came down). */
     static final float GONE_DAYS = 365f;
 
     /** Marks a building Autopilot took down, and what it was upgraded from, so none of them is built at that colony again within GONE_DAYS. CAEndgame.tidy forgets it after a year. */
@@ -195,7 +195,7 @@ public class CAPrune {
         SpecialItemData item = ind.getSpecialItem();
         CAStores.emptyInto(m, ind);   // core and item to this colony's Autopilot Storage
         m.removeIndustry(id, MarketAPI.MarketInteractionMode.REMOTE, false);
-        markGone(m, id);   // 2.45.2: not built here again for a year
+        markGone(m, id);   // 0.2.45.2: not built here again for a year
         long ts = Global.getSector().getClock().getTimestamp();
         d.endgameBuilt().put(m.getId() + ":pruned", ts);
         d.endgameBuilt().remove(m.getId() + ":useless:" + id);

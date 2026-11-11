@@ -42,7 +42,7 @@ public class CAEstimates {
         if (com.fs.starfarer.api.Global.getSettings().getModManager().isModEnabled(CAResearch.MOD))
             for (CAResearch.Need n : CAResearch.needs) { waiting += n.value; steps++; }
         // research's own ranking only runs once there's a facility (or with surplus research on), so with none it knew of no
-        // plan step waiting and the first facility was never worth building (2.38.0): count the research-locked steps directly
+        // plan step waiting and the first facility was never worth building (0.2.38.0): count the research-locked steps directly
         int locked = steps > 0 ? 0 : CAPlan.lockedSteps();
         float v = steps > 0 ? 0.5f * waiting : locked > 0 ? 10000f * Math.min(5, locked) : 5000f;
         p.fx[0] += v;
@@ -135,7 +135,7 @@ public class CAEstimates {
     static void aotd(MarketAPI m, String id, CAEngine.Pick p, java.util.Map<String, Integer> deficit, float gross, int s) {
         if (id.equals("aotd_research_facility")) { researchFacility(p); return; }
         // the Bifrost Control Center does nothing on its own: it's built as the wonders plan step (CAWonders.stepsFor), which
-        // gives it its priority. Before 2.38.0 its spec's hide_in_codex tag kept it from being rated at all, so that step
+        // gives it its priority. Before 0.2.38.0 its spec's hide_in_codex tag kept it from being rated at all, so that step
         // could never be built and the Bifrost plan waited forever
         if (id.equals(CAWonders.BFC)) { note(p, "Lets Bifrost Gates be built; only while it's the wonders plan's step"); return; }
         if (id.equals("aotd_monoculture_plots")) {

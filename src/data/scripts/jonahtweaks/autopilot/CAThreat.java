@@ -22,7 +22,7 @@ public class CAThreat {
     public static final float PROTECTED = 1f;
 
     /**
-     * Military presence in the colony's system (2.40.1): every market there that isn't hostile to you (yours or anyone's)
+     * Military presence in the colony's system (0.2.40.1): every market there that isn't hostile to you (yours or anyone's)
      * counts its military buildings and stations. A Military Base or High Command is worth 0.5, a Patrol HQ 0.25, a
      * battlestation 0.5, a star fortress or bigger 0.75, an orbital station 0.25; PROTECTED or more is protected. Not part
      * of the threat estimate: only what's built for an economic role (station augments, TASC stations) asks for it.

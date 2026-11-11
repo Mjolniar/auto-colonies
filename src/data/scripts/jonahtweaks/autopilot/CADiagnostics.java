@@ -25,7 +25,7 @@ public class CADiagnostics {
     /** Buildings the manager may score and build: supported, or measured on a probe colony. */
     public static boolean usable(String id) { Level l = industryLevel(id); return l == Level.SUPPORTED || l == Level.MEASURED; }
 
-    /** Buildings Auto actually builds: supported, or measured unless "Mod buildings with measured effects" is Ignore (2.38.0). */
+    /** Buildings Auto actually builds: supported, or measured unless "Mod buildings with measured effects" is Ignore (0.2.38.0). */
     public static boolean autopilotBuilds(String id) {
         Level l = industryLevel(id);
         if (l == Level.SUPPORTED) return true;
@@ -132,7 +132,7 @@ public class CADiagnostics {
                 ? Global.getSector().getClock().getDateString() : new Date().toString();
         LOG.info(TAG + "scan done: " + industries.size() + " buildings, " + conditions.size() + " conditions, "
                 + items.size() + " items; " + count(Level.MEASURED) + " measured, " + count(Level.ANALYZED) + " analyzed, " + count(Level.QUARANTINED) + " quarantined");
-        try { CAModWatch.run(); }   // how each colony mod is doing in this game (2.38.0)
+        try { CAModWatch.run(); }   // how each colony mod is doing in this game (0.2.38.0)
         catch (Throwable t) { LOG.warn(TAG + "mod watch failed", t); }
         writeReport();
     }
@@ -228,7 +228,7 @@ public class CADiagnostics {
     }
 
     /**
-     * Each of your colonies as Autopilot sees it (2.39.0), so a check of how the plans are going doesn't need the save:
+     * Each of your colonies as Autopilot sees it (0.2.39.0), so a check of how the plans are going doesn't need the save:
      * mode and goal, the plan and where each step stands, buildings with their items, cores and construction, the
      * construction queue and what's waiting in its Autopilot Storage. Read only: nothing is created for a colony Autopilot
      * hasn't seen.

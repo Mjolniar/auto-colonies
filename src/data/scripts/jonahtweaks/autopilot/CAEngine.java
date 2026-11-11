@@ -92,14 +92,14 @@ public class CAEngine {
         public float[] fx = new float[7];
         public List<String> lines = new ArrayList<String>();
         public boolean pollution;
-        /** Low profile (2.43.0): why it never starts this (it crosses the Pather line), or null. */
+        /** Low profile (0.2.43.0): why it never starts this (it crosses the Pather line), or null. */
         public String lowProfile;
         public boolean measured;   // a mod building scored from probe-colony measurements (CASimulator)
         /** The building's own output lines, recorded while its effects are read, so a management style can adjust them. */
         public Map<String, Integer> supplied = new LinkedHashMap<String, Integer>();
         boolean recording;
         float suppliedValue;   // value of those lines, for calibration
-        /** Market model (CAMarket, 2.44.0): units passed per good so far, the colony's supply of each once built, and each good's export value. */
+        /** Market model (CAMarket, 0.2.44.0): units passed per good so far, the colony's supply of each once built, and each good's export value. */
         Map<String, Integer> marketUnits = new HashMap<String, Integer>(), marketAfter = new LinkedHashMap<String, Integer>();
         Map<String, Float> marketValue = new LinkedHashMap<String, Float>();
         /** How sure the value is: 1 for the game's own formulas, less for measurements and estimates (see finish()). */
@@ -129,7 +129,7 @@ public class CAEngine {
         if (CATasc.has(id)) return CATasc.apply(m, id, p, deficit);   // TASC: scored here, never test-built
         if (CABrewery.has(id)) return CABrewery.apply(m, p, deficit);   // Substance.Abuse: only with a recipe on hand
         if (CAMods.has(id)) return CAMods.apply(m, id, p, deficit);   // VIC treatment, Roider Dives and Union HQ
-        if (CACapital.has(id)) return CACapital.apply(m, id, p, deficit);   // mod trade buildings: only at the capital (2.42.0)
+        if (CACapital.has(id)) return CACapital.apply(m, id, p, deficit);   // mod trade buildings: only at the capital (0.2.42.0)
         if (CAEstimates.has(id)) { CAEstimates.apply(m, id, p, deficit); return true; }
         return false;
     }
@@ -180,7 +180,7 @@ public class CAEngine {
     public static Result evaluate(MarketAPI m, CAData.Profile profile, float minStability) {
         CAData.Colony col = CAData.get().colony(m.getId());
         String line = CAData.settings().stationLine;
-        // a station line whose first station can't be built here (a blueprint you don't have) meant no station at all (2.38.0)
+        // a station line whose first station can't be built here (a blueprint you don't have) meant no station at all (0.2.38.0)
         String starter = CASettings.stationStarter(line);
         if (starter != null && !"score".equals(line)) {
             try {
@@ -199,7 +199,7 @@ public class CAEngine {
         // the colony's own goal, not the threat-adjusted one the weights use: every other planner (terraforming, research)
         // reads the same plan, so a passing threat doesn't switch the world it's working toward (Zendia's gravity went back and forth)
         CAPlan.Plan plan = CAPlan.build(m, col.profile);
-        try { CAPlan.track(m, plan); }   // plan steps with no way to them stop holding rank and slots (2.38.0)
+        try { CAPlan.track(m, plan); }   // plan steps with no way to them stop holding rank and slots (0.2.38.0)
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "plan step check failed at " + m.getName(), t); }
         Industry building = Misc.getCurrentlyBeingConstructed(m);
         if (building != null) r.blocked = "Already building " + building.getCurrentName();
@@ -210,7 +210,7 @@ public class CAEngine {
         for (IndustrySpecAPI s : Global.getSettings().getAllIndustrySpecs()) if (s.getUpgrade() != null) upgradeTargets.add(s.getUpgrade());
         boolean hasStation = false;
         for (Industry ind : m.getIndustries()) if (ind.getSpec().hasTag("station")) hasStation = true;
-        int slotsFree = CABuild.freeSlots(m);   // upgrades into industries under way count (2.44.1)
+        int slotsFree = CABuild.freeSlots(m);   // upgrades into industries under way count (0.2.44.1)
         boolean bmo = CAAotD.enabled();
         Set<String> hidden = CAAotD.hidden(m);
         CASynergies.Ctx syn = Global.getSettings().getModManager().isModEnabled(CASynergies.MOD) ? CASynergies.context(m, deficit) : null;
@@ -223,7 +223,7 @@ public class CAEngine {
             if (spec.hasTag("station") && hasStation) continue;
             if (spec.hasTag("station") && !"score".equals(line) && !stationMatches(id, line)) continue;
             if (id.equals(CAWonders.SITE)) continue;   // a Grand Wonder site is only ever built for a wonder (CAWonders)
-            if (CAPrune.goneRecently(m, id)) continue;   // 2.45.2 (from 3.0): Autopilot took it down here within the year
+            if (CAPrune.goneRecently(m, id)) continue;   // 0.2.45.2 (from 0.3.0): Autopilot took it down here within the year
             boolean supported = CADiagnostics.industryLevel(id) == CADiagnostics.Level.SUPPORTED;
             boolean measurable = !supported && !noProbe && CADiagnostics.industryLevel(id) == CADiagnostics.Level.MEASURED && CAData.settings().measuredMode != 2;
             try {
@@ -255,8 +255,8 @@ public class CAEngine {
                 upkeep(m, spec, null, p);
                 float cramped = CAGrand.penalty(m, p.upkeep);
                 if (cramped > 0f) { p.fx[0] -= cramped; p.lines.add("Past Grand.Colonies' building limit: all upkeep here rises, about " + credits(cramped) + " per month"); }
-                CALowProfile.score(m, inst, null, p);   // Low profile: the Pather line and the attention it draws (2.43.0)
-                CAOddisz.score(m, inst, p);   // Sol Renewed: an industry in Sol feeds its crisis meter for good (2.45.0)
+                CALowProfile.score(m, inst, null, p);   // Low profile: the Pather line and the attention it draws (0.2.43.0)
+                CAOddisz.score(m, inst, p);   // Sol Renewed: an industry in Sol feeds its crisis meter for good (0.2.45.0)
                 if (!finish(m, p, profile, minStability, plan)) continue;
                 if (inst.isIndustry() && slotsFree <= 0) r.noSlot(p);
                 else r.picks.add(p);
@@ -303,7 +303,7 @@ public class CAEngine {
                     CASynergies.score(syn, p);
                     upkeep(m, upSpec, ind.getSpec(), p);
                     CALowProfile.score(m, upInst, ind, p);
-                    CAOddisz.score(m, upInst, p);   // an upgrade's cost adds to Sol's meter too (2.45.0)
+                    CAOddisz.score(m, upInst, p);   // an upgrade's cost adds to Sol's meter too (0.2.45.0)
                     if (!finish(m, p, profile, minStability, plan)) continue;
                     if (needsSlot) r.noSlot(p);
                     else r.picks.add(p);
@@ -357,7 +357,7 @@ public class CAEngine {
         // the plan only orders buildings that are worth something on their own, except Terraforming Made Easy's structures
         // and the Unification Center: they cost more than they earn, but they're how the plan's world is reached
         // and producers a special project needs (CAProjects): nothing else makes those goods
-        // and the capital's trade buildings (2.42.0): what they're for is a place to trade at home, not income
+        // and the capital's trade buildings (0.2.42.0): what they're for is a place to trade at home, not income
         boolean enabler = p.id.startsWith("tme_") || CAProjects.isStep(m, p.id) || CASurplus.isRichStep(m, p.id) || CAResearch.isFacilityStep(m, p.id)
                 || CACapital.isStep(m, p.id) || CAStations.isStep(m, p.id)
                 || (CAWonders.BFC.equals(p.id) && !CAWonders.stepsFor(m).isEmpty());
@@ -374,7 +374,7 @@ public class CAEngine {
                 p.lines.add("Takes an industry slot this colony's " + plan.name + " plan needs (" + needed + " plan industr" + (needed == 1 ? "y" : "ies") + " to come)");
             }
         }
-        // 2.45.2 (from 3.0): no flat +15k "follow-through" for upgrades; an upgrade stands on what it's worth (Heavy Batteries paid back in 25 years)
+        // 0.2.45.2 (from 0.3.0): no flat +15k "follow-through" for upgrades; an upgrade stands on what it's worth (Heavy Batteries paid back in 25 years)
         float followThrough = 0f;
         if (followThrough > 0f) p.lines.add("Follow-through: upgrades what's already built");
         p.worth = value; p.planBonus = planBonus; p.followThrough = followThrough;
@@ -418,7 +418,7 @@ public class CAEngine {
      * Output the colony's faction bans (drugs, hand weapons and organs for yours) and the building doesn't make legally: the
      * game gives it no export income unless the colony is a free port (CommodityMarketData: an illegal source exports
      * nothing), so it's only worth the shortage it covers at the colony itself (Carter's Freetraders' Biolab and Grey
-     * Industries, 2.38.0). Returns the units that count, or -1 when the output is legal.
+     * Industries, 0.2.38.0). Returns the units that count, or -1 when the output is legal.
      */
     static int illegalUnits(String com, int units) {
         if (supplier == null || supplierAt == null) return -1;
@@ -443,7 +443,7 @@ public class CAEngine {
         float base = Global.getSettings().getCommoditySpec(com).getBasePrice();
         String name = Global.getSettings().getCommoditySpec(com).getName();
         Integer d = deficit.get(com);
-        // 2.44.0: what it adds to your share of the good's sector market (CAMarket), plus the shortage it covers at the flat rate;
+        // 0.2.44.0: what it adds to your share of the good's sector market (CAMarket), plus the shortage it covers at the flat rate;
         // the flat rate for everything only when the model is off or has no data for the good
         CAMarket.Gain g = null;
         if (supplierAt != null && CAMarket.on()) {
@@ -475,7 +475,7 @@ public class CAEngine {
 
     /**
      * Whether a caller has to take what the colony already makes off its own line (Roider Dives, Yunru's drydocks): only
-     * while scoring without the market model, which counts a colony's largest single source itself (2.44.0). Outside scoring
+     * while scoring without the market model, which counts a colony's largest single source itself (0.2.44.0). Outside scoring
      * (calibration) a building's line is its whole output.
      */
     static boolean callerNets() { return supplierAt != null && !CAMarket.on(); }
@@ -514,7 +514,7 @@ public class CAEngine {
         } else if (id.equals("techmining")) {
             int r = m.hasCondition("ruins_vast") ? 4 : m.hasCondition("ruins_extensive") ? 3 : m.hasCondition("ruins_widespread") ? 2 : 1;
             float left = m.getMemoryWithoutUpdate().contains("$core_techMiningMult") ? m.getMemoryWithoutUpdate().getFloat("$core_techMiningMult") : 1f;   // ruins deplete 5% a month
-            // Slightly Better Tech-Mining: far richer finds, by colony size (2.38.0)
+            // Slightly Better Tech-Mining: far richer finds, by colony size (0.2.38.0)
             float v = (CAMods.sbtm() ? CAMods.sbtmMonthly(m, left) : 4000f * r * left) * CADevelopment.techMiningMult(m);   // x1.7 at an AotD Archeo-Site
             p.fx[0] += v;
             p.lines.add("Salvage from the ruins: about " + Misc.getDGSCredits(v) + " per month in value");
@@ -529,7 +529,7 @@ public class CAEngine {
             supply(p, "hand_weapons", s - 2, deficit); supply(p, "ships", s - 2, deficit);
             demand(p, "metals", s, deficit); demand(p, "rare_metals", s - 2, deficit);
             // a Heavy Industry pollutes only with a polluting item in it, and Autopilot never puts one in on a habitable
-            // world (CAItems.wouldPollute, 2.36.2), so building one here doesn't pollute
+            // world (CAItems.wouldPollute, 0.2.36.2), so building one here doesn't pollute
         } else if (id.equals("orbitalworks")) {
             p.fx[5] += 0.2f; p.fx[4] += 0.2f; p.lines.add("+20% ship quality and more ship output");
         } else if (id.equals("fuelprod")) {

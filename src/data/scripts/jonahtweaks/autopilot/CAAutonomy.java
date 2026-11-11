@@ -23,12 +23,12 @@ import java.util.List;
  * administrator. A colony that has lost money LOSS_MONTHS months in a row, or the one that saves the most in a money
  * emergency (net income negative with under RUNWAY months of it left above the credit reserve), is:
  * - Recommend: logged once and listed on the Mod features page with a Grant autonomy button;
- * - Auto (2.34.3): made autonomous, one every GAP_DAYS at most. Outside an emergency not while spending freely
+ * - Auto (0.2.34.3): made autonomous, one every GAP_DAYS at most. Outside an emergency not while spending freely
  *   (CASurplus.rich): the pool pays for it, and an autonomous colony can't be built on.
  * Colonies made autonomous by you or by Auto stay that way until you take them back (a button per colony; Nexerelin's
  * unrest applies). Colonies an older Autopilot made autonomous (CAData.autonomous) are taken back, one a day, as soon as
  * there's no money emergency, taking one back wouldn't start one, and there's room under your colony limit or an idle
- * administrator to put there, with Nexerelin's usual unrest (2.37.0: it used to skip the unrest, which a player can't).
+ * administrator to put there, with Nexerelin's usual unrest (0.2.37.0: it used to skip the unrest, which a player can't).
  */
 final class CAAutonomy {
     static final String MOD = "nexerelin";
@@ -177,7 +177,7 @@ final class CAAutonomy {
                 + (a != null ? "; " + a.getPerson().getNameString() + " is free" : ""), true);
     }
 
-    /** Taking one back, with Nexerelin's usual unrest (2.37.0: no exception for colonies an older Autopilot made autonomous). */
+    /** Taking one back, with Nexerelin's usual unrest (0.2.37.0: no exception for colonies an older Autopilot made autonomous). */
     static void reclaim(CAData d, MarketAPI m, String why) {
         boolean legacy = d.autonomous().containsKey(m.getId());
         Nex_GrantAutonomy.revokeAutonomy(m);

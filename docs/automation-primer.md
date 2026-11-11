@@ -77,7 +77,7 @@ Build them on a fake colony from `createMarket(...)`. Copy the real colony's con
 - **Terraforming Made Easy.** Projects toggle a condition, so a stale plan can undo itself. Re-plan whenever conditions change.
 - **Ashes of the Domain.** Ask Building Menu Overhaul what's locked and what upgrades into what ([CAAotD](../src/data/scripts/jonahtweaks/autopilot/CAAotD.java)).
 
-## Coming in 3.0
+## Coming in 0.3.0
 
 - Built, in testing: saved classes use fixed XStream aliases, so classes can be moved or renamed without breaking saves.
 - Built, in testing: each daily step runs separately. A step that fails 3 days in a row is stopped for the session. Safety steps are never stopped.
@@ -86,4 +86,4 @@ Build them on a fake colony from `createMarket(...)`. Copy the real colony's con
 
 Plans can still change before release.
 
-Everything planned for 3.0: [roadmap](roadmap.md)
+Everything planned for 0.3.0: [roadmap](roadmap.md)

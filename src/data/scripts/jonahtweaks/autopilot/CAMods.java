@@ -111,7 +111,7 @@ public class CAMods {
         }
         if (m.getLocationInHyperspace() == null) return best;
         // Roider takes a void deposit only when it beats the colony's own, or -1 when there's none, so sparse or trace roids
-        // alone mine nothing (DivesSupplyInteractor.getMiningBonus; 2.43.1, was taken at -1 too)
+        // alone mine nothing (DivesSupplyInteractor.getMiningBonus; 0.2.43.1, was taken at -1 too)
         int beat = best == null ? -1 : best;
         for (StarSystemAPI s : Global.getSector().getStarSystems()) {
             if (Misc.getDistanceLY(s.getLocation(), m.getLocationInHyperspace()) > range) continue;
@@ -124,7 +124,7 @@ public class CAMods {
 
     /**
      * Roider's own supply lines for one mined commodity, summed: base + deposit, -1 on a Psychoactive world; null when its
-     * miners take none of it. The game's layer on top (the building's supply bonus, a shortage) isn't in it (2.43.1, for
+     * miners take none of it. The game's layer on top (the building's supply bonus, a shortage) isn't in it (0.2.43.1, for
      * CAModWatch's Roider check).
      */
     static Integer minedLines(MarketAPI m, String com, float range) {
@@ -164,7 +164,7 @@ public class CAMods {
     /**
      * cut: heavy machinery the miners are short. Roider takes the whole shortage off every mined output
      * (DivesSupplyInteractor.applySupplyAndDemand: applyDeficitToProduction over ore, transplutonic ore, organics and
-     * volatiles), so 1 short turns 1+1+1+1 into nothing: Umuzi's Dives mined 0 of a predicted 4 (2.39.0).
+     * volatiles), so 1 short turns 1+1+1+1 into nothing: Umuzi's Dives mined 0 of a predicted 4 (0.2.39.0).
      */
     static int output(MarketAPI m, float range, CAEngine.Pick p, Map<String, Integer> deficit, boolean add, int cut) {
         int total = 0, x = extra(m) - Math.max(0, cut);
@@ -184,7 +184,7 @@ public class CAMods {
 
     /**
      * Dives (1 ly) or the step up to Union HQ (6 ly): what's mined, less for the HQ what the Dives already mined, and only
-     * what's above the colony's own largest other source of each good (2.43.1). False when nothing is in reach. Checked against Roider Union 2.3.1's code (2.38.0): the HQ's crew is the colony's size (not size - 3)
+     * what's above the colony's own largest other source of each good (0.2.43.1). False when nothing is in reach. Checked against Roider Union 2.3.1's code (0.2.38.0): the HQ's crew is the colony's size (not size - 3)
      * and it needs 3 drugs too; neither needs drugs on Unknown Skies' Psychoactive or Shrooms worlds; a Charter adds 1 to each
      * output and 6 light-years of range.
      */
@@ -195,7 +195,7 @@ public class CAMods {
         int admin = adminBonus(m);
         if (id.equals("roider_dives")) {
             int cut = machineryShort(deficit, 1), x = extra(m) - cut, total = 0, counted = 0;
-            boolean nets = CAEngine.callerNets();   // the market model (2.44.0) counts the colony's largest source itself
+            boolean nets = CAEngine.callerNets();   // the market model (0.2.44.0) counts the colony's largest source itself
             for (String com : MINED) {
                 int u = mined(m, com, divesRange() + add, x);
                 total += u;
@@ -227,8 +227,8 @@ public class CAMods {
     }
 
     /*
-     * 2.43.1: a colony's supply of a good is its largest single source, so Roider miners only add what's above what the
-     * colony already makes (as station augments have counted since 2.40.1). Before, a Dives was credited with all of its
+     * 0.2.43.1: a colony's supply of a good is its largest single source, so Roider miners only add what's above what the
+     * colony already makes (as station augments have counted since 0.2.40.1). Before, a Dives was credited with all of its
      * ore and organics at Wind, Ming Adi, Godecifica and Zenemosrae, where Mining already made more, and came out as the
      * best build there whenever money piled up.
      */
@@ -327,7 +327,7 @@ public class CAMods {
             int have = 0;
             if (f != null) try { have = f.getSupply(com).getQuantity().getModifiedInt(); } catch (Throwable ignored) { }
             int gain = out - have;
-            if (gain > 0) { CAEngine.supply(p, com, CAEngine.callerNets() ? gain : out, deficit); added += gain; }   // 2.44.0: the model nets the forge itself
+            if (gain > 0) { CAEngine.supply(p, com, CAEngine.callerNets() ? gain : out, deficit); added += gain; }   // 0.2.44.0: the model nets the forge itself
         }
         if (added <= 0) return false;
         float mult = f != null ? 1.5f : 1f;
@@ -365,7 +365,7 @@ public class CAMods {
 
     /** Effects of a building handled here; false when it isn't worth building at this colony. */
     public static boolean apply(MarketAPI m, String id, CAEngine.Pick p, Map<String, Integer> deficit) {
-        if (CAOddisz.has(id)) return CAOddisz.apply(m, id, p, deficit);   // Cloning (2.45.0)
+        if (CAOddisz.has(id)) return CAOddisz.apply(m, id, p, deficit);   // Cloning (0.2.45.0)
         if (vicHas(id)) return vicApply(m, id, p);
         if (roiderHas(id)) return roiderApply(m, id, p, deficit);
         if (id.equals(DRYDOCK)) return drydockApply(m, p, deficit);
@@ -376,7 +376,7 @@ public class CAMods {
 
     /**
      * Mod buildings Autopilot never builds or upgrades into, and never puts on a probe colony, with why. Diagnostics lists
-     * them as left to you; you can still build them yourself, and Autopilot leaves them alone once built (2.38.0).
+     * them as left to you; you can still build them yourself, and Autopilot leaves them alone once built (0.2.38.0).
      */
     static final Map<String, String> LEFT = new LinkedHashMap<String, String>();
     static {
@@ -390,8 +390,8 @@ public class CAMods {
         LEFT.put("NSI_ASBUplink", "it works through an area that damages fleets, which a probe colony can't show");
         LEFT.put("NSI_expertDockworks", "it takes a nanoforge of its own for fleet s-mods, a military choice");
         LEFT.put("roider_nomadBase", "only Roider nomads build it");
-        LEFT.put(BAZAAR, "it's a market for you to trade at; it does nothing for the colony, so Autopilot builds it only at your capital (2.42.0)");
-        // Reverse Engineered Private Arsenal (2.45.0): it only works on gear you put in it, and taking it down deletes both of
+        LEFT.put(BAZAAR, "it's a market for you to trade at; it does nothing for the colony, so Autopilot builds it only at your capital (0.2.42.0)");
+        // Reverse Engineered Private Arsenal (0.2.45.0): it only works on gear you put in it, and taking it down deletes both of
         // its markets with everything in them, so it's never built or taken down, and its core and item stay where you put them
         for (String h : CAOddisz.HUB) LEFT.put(h, "it reverse-engineers gear you feed it; taking it down deletes its markets and everything in them, so its core and item stay as you set them");
     }

@@ -156,7 +156,7 @@ public class CAIndEvo {
         AmbassadorPersonManager.removeAmbassadorFromMarket(src);
         CABudget.charge(s, 0f, fee, 0f);
         String who = src.getFaction().getDisplayName() + " ambassador " + person.getNameString();
-        if (true) {   // always travels (2.37.0): a hire made from afar arrives in 30 days, never on the spot
+        if (true) {   // always travels (0.2.37.0): a hire made from afar arrives in 30 days, never on the spot
             CargoAPI st = storageOf(target);
             if (st == null) { emb.setSpecialItem(data); CALog.add(target.getName() + ": hired and installed the " + who); return true; }
             st.addSpecial(data, 1f);
@@ -173,7 +173,7 @@ public class CAIndEvo {
     static final String[] VPC_TARGETS = {"IndEvo_AdManuf", "IndEvo_AdAssem", "IndEvo_ComForge"};
 
     /**
-     * One chip a day into a free VPC building, building by building (2.39.0). A chip already in that colony's Autopilot
+     * One chip a day into a free VPC building, building by building (0.2.39.0). A chip already in that colony's Autopilot
      * Storage goes in first; while one it can use is on its way there, nothing else is shipped for it; otherwise one is
      * shipped from another colony. Before, chips went in storage order, so one that had arrived kept losing its turn to the
      * next chip at Hot Springs, which shipped another, a different kind each day: every kind twice for one Commodity Forge.
@@ -199,7 +199,7 @@ public class CAIndEvo {
                     return true;
                 }
                 if (chipComing(m, ind)) continue;   // it goes in once it's here
-                for (CAStores.Held held : CAStores.stacks()) {   // stored at another colony: shipped here first (2.37.0)
+                for (CAStores.Held held : CAStores.stacks()) {   // stored at another colony: shipped here first (0.2.37.0)
                     if (held.market == m) continue;
                     SpecialItemData data = chip(held.stack);
                     if (data == null || !ind.wantsToUseSpecialItem(data)) continue;

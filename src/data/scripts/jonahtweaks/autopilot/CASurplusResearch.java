@@ -9,7 +9,7 @@ import com.fs.starfarer.api.util.Misc;
 import java.util.*;
 
 /**
- * Surplus research (2.29.0): with credits over the surplus line, Vaults of Knowledge's Research Facility goes up at Auto
+ * Surplus research (0.2.29.0): with credits over the surplus line, Vaults of Knowledge's Research Facility goes up at Auto
  * colonies that have no research building, one at a time, until 8 colonies have one (VoK counts 8 at most; each past the
  * first is +10% research speed). Only while the research left is worth it: +10% speed brings every tech still to come
  * forward, worth 0.1 / speed x what they add a month once done (CAResearch's ranking), which must beat a quarter of the new

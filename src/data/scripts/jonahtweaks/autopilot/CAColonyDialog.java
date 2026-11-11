@@ -55,7 +55,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
 
     public CAColonyDialog(MarketAPI market) { this.market = market; }
 
-    class Plugin extends CATheme.Frame {   // the grid and neon frames behind the panel (2.41.0)
+    class Plugin extends CATheme.Frame {   // the grid and neon frames behind the panel (0.2.41.0)
         Plugin() { super(CANav.W, CANav.GAP); }
         @Override public void buttonPressed(Object id) {
             try { handle(id); }
@@ -64,7 +64,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         @Override public void advance(float amount) { if (dirty) { dirty = false; safeBuild(); } }
     }
 
-    /** Builds the panel; an error shows a line instead of reaching the game's UI (2.37.0). */
+    /** Builds the panel; an error shows a line instead of reaching the game's UI (0.2.37.0). */
     void safeBuild() {
         try { build(); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony panel failed to draw", t); }

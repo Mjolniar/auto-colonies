@@ -302,7 +302,7 @@ public class CAContracts {
     }
 
     /**
-     * What this building makes that a contract you hold needs, or null (2.39.0). Such a building isn't taken down while the
+     * What this building makes that a contract you hold needs, or null (0.2.39.0). Such a building isn't taken down while the
      * contract runs: the endgame took down Hot Springs's Farming (Omega core, Tenebrian Atmospheric Driver) for Light
      * Production, worth 43,000 a month more by itself, and the 207,000-a-month food contract it fed started missing deliveries.
      */

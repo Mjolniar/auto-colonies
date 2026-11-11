@@ -41,11 +41,11 @@ The [Getting started](docs/getting-started.md) guide covers it properly.
 - Runs research, terraforming, trade contracts and megastructures when their mods are installed.
 - With Nexerelin it handles defense fleets and pirate strikes. Invasions are left to you.
 
-## Coming in 3.0
+## Coming in 0.3.0
 
 - Built, in testing: a new build planner. One ranked build queue for all colonies, a 36-month payback limit, and removed buildings stay off that colony's build list for a year.
 - Planned: a money ladder for spare credits, auto-expansion through Nexerelin (off by default), war levels and faction stances, and a settings menu of about 20 main rows.
-- A save made on 3.0 won't load in 2.45.x, so keep a backup.
+- A save made on 0.3.0 won't load in 0.2.45.x, so keep a backup.
 
 Plans can still change. Everything planned: [roadmap](docs/roadmap.md).
 
@@ -62,7 +62,7 @@ Plans can still change. Everything planned: [roadmap](docs/roadmap.md).
 - **[Terraforming](docs/terraforming.md)** - special-world plans and surplus terraforming.
 - **[Settings](docs/settings.md)** - every setting and what's recommended.
 - **[Supported mods](docs/supported-mods.md)** - what it does with each mod.
-- **[Roadmap](docs/roadmap.md)** - what's coming in 3.0.
+- **[Roadmap](docs/roadmap.md)** - what's coming in 0.3.0.
 - **[Patch notes](docs/changelog.md)** - every version, back to Jonah Tweaks.
 
 Every rule is in [details.md](docs/details.md). It's long. For the code side: [Auditing the mod](docs/audit.md), the [Source guide](docs/source-guide.md) and [Automating Starsector colonies](docs/automation-primer.md).

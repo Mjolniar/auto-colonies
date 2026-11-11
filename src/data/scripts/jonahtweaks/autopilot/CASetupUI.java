@@ -74,7 +74,7 @@ public class CASetupUI {
         s.disableForgeVPC = false;
         s.disableShipping = false;
         s.settlementMode = 2;   // Auto: founds RAT's settlement only once a site clears the income threshold
-        s.objectiveMode = 0;    // Auto: comm relays, nav buoys and sensor arrays at stable locations (2.40.0)
+        s.objectiveMode = 0;    // Auto: comm relays, nav buoys and sensor arrays at stable locations (0.2.40.0)
         s.augmentMode = 0;
         s.contractMode = 1;     // Auto: only contracts with 15% to spare that beat exporting
         s.researchMode = 1;     // Auto: databank-only techs, ranked by what they unlock
@@ -86,15 +86,15 @@ public class CASetupUI {
         s.autonomyMode = 1;     // Recommend: autonomy is your call; Autopilot only says which colony would help in a money emergency
         s.noScreenButton = false;
         s.screenLog = 0;           // every log entry on screen, as one short line
-        s.voice = 0;               // in the machine voice (2.41.0)
-        s.capitalMode = 0;         // the capital gets your deliveries and, once colonies ramp up, its trade buildings (2.42.0)
+        s.voice = 0;               // in the machine voice (0.2.41.0)
+        s.capitalMode = 0;         // the capital gets your deliveries and, once colonies ramp up, its trade buildings (0.2.42.0)
         s.capitalStart = 0;        // from 100,000 a month of net income
         s.capitalNoGather = false;
         s.capitalNoRoom = false;
-        s.noStationPlan = false;   // a station at every colony (2.42.0)
-        s.noMarketModel = false;   // exports valued by your share of each sector market (2.44.0)
+        s.noStationPlan = false;   // a station at every colony (0.2.42.0)
+        s.noMarketModel = false;   // exports valued by your share of each sector market (0.2.44.0)
         s.noOverLimitFix = false;  // and a colony over its industry limit takes down its weakest industry
-        s.noPrune = false;         // and an industry that stopped paying for 30 days (2.44.1)
+        s.noPrune = false;         // and an industry that stopped paying for 30 days (0.2.44.1)
     }
 
     /** Which group is expanded (UI state only, not saved); at most one. Budget starts open. */
@@ -233,7 +233,7 @@ public class CASetupUI {
             if (!s.noMarketModel) t.addPara("A colony's exports earn its share of each good's sector market, so the more of a market your "
                     + "colonies already hold, the less one more producer adds, and a good few others make is worth the most. Buildings count "
                     + "what they'd add to that share, only what's above the colony's own biggest source of the good, and a building under "
-                    + "construction counts as made. Off: every unit of anything is worth one flat rate, as before 2.44.0.", Misc.getGrayColor(), 4f);
+                    + "construction counts as made. Off: every unit of anything is worth one flat rate, as before 0.2.44.0.", Misc.getGrayColor(), 4f);
             if (!s.noStationPlan) t.addPara("A station fights next to your fleets and anything raiding, bombarding or invading has to beat it first. "
                     + "Every colony plans one from size 4 (or half a year old) once its fast buildout is done, a Battlestation from size 6 and a "
                     + "Star Fortress from size 8 (a size sooner at the capital).", Misc.getGrayColor(), 4f);
@@ -388,7 +388,7 @@ public class CASetupUI {
                     + "once researched, with a Coronal Hypershunt Tap in Autopilot Storage.", Misc.getGrayColor(), 6f);
         }
         if (group(t, "capital", "Capital", !CACapital.on(s) ? "off" : CACapital.name(s) + ", " + CACapital.MODE_NAMES[Math.max(0, Math.min(2, s.capitalMode))].toLowerCase())) {
-            row(t, "Capital", CACapital.name(s), "Autopilot picks", "capid", true);   // 2.45.1: was "cap", the per-project cap's key
+            row(t, "Capital", CACapital.name(s), "Autopilot picks", "capid", true);   // 0.2.45.1: was "cap", the per-project cap's key
             row(t, "Capital does", CACapital.MODE_NAMES[Math.max(0, Math.min(2, s.capitalMode))], "Deliveries and commerce", "capmode", true);
             if (s.capitalMode == 0) {
                 row(t, "Commerce starts", CACapital.START_NAMES[Math.max(0, Math.min(CACapital.START_NAMES.length - 1, s.capitalStart))], "Net income over 100,000", "capstart", true);

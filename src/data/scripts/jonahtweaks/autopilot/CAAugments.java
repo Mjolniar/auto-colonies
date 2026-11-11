@@ -95,7 +95,7 @@ public class CAAugments {
 
     /**
      * The profile to plan with: Security while the threat is high, as buildings do, for Approve and Auto colonies. A station
-     * in a system with heavy military presence of its own (protected) stays on its colony's goal anyway (2.40.1): other
+     * in a system with heavy military presence of its own (protected) stays on its colony's goal anyway (0.2.40.1): other
      * stations and military bases there take the fight, so this one can go economic (Mining Station, Hydroponics, Economy
      * Conversion). Only the augments: buildings and fleets still go by the colony's threat. A raid or blockade on its way
      * still puts the combat loadout on (CASiege, in run).
@@ -229,7 +229,7 @@ public class CAAugments {
         else if (id.equals(MINING)) {
             // Station Augments' own formula (miningStation.getOutput): the asteroid belts and rings within reach of the
             // station, each with the yield the mod rolls and keeps for it, times the station's mining strength. Like
-            // Hydroponics, only what it makes above the colony's own largest source of each good counts (2.40.1)
+            // Hydroponics, only what it makes above the colony's own largest source of each good counts (0.2.40.1)
             Map<String, Integer> out = miningOutput(m, station);
             int added = 0;
             if (out != null) for (Map.Entry<String, Integer> e : out.entrySet()) {
@@ -424,7 +424,7 @@ public class CAAugments {
         }
     }
 
-    // ---------------- refit crews (2.37.0) ----------------
+    // ---------------- refit crews (0.2.37.0) ----------------
     // Station Augments only changes a station's augments while you're docked there. From afar, Autopilot books a refit crew:
     // the change happens REFIT_DAYS later, or at once while your fleet is in the colony's system.
 
