@@ -18,7 +18,7 @@ import java.util.*;
  */
 public class CACalibrate {
     static final float MIN = 0.5f, MAX = 2f, KEEP = 0.7f;
-    static float last = -99f;
+    static float last = Float.NaN;   // 0.3.0.0 (A1 fix): never fired; the game's day is negative, so -99 read as a later date
 
     static void sample(Map<String, Float> f, Map<String, Integer> n, String id, float ratio) {
         float r = Math.max(MIN, Math.min(MAX, ratio));
@@ -43,7 +43,7 @@ public class CACalibrate {
 
     /** Weekly: reads every clean building at every colony. */
     public static void run(float now) {
-        if (now - last < 7f) return;
+        if (!CATime.due(last, now, 7f)) return;   // 0.3.0.0 (A1 fix): on the game's own (negative) clock, and an earlier save runs it at once
         last = now;
         CAData d = CAData.get();
         Map<String, Integer> deficit = CAEngine.empireDeficits();
@@ -66,7 +66,7 @@ public class CACalibrate {
                     for (MutableCommodityQuantity q : ind.getAllSupply()) actU += Math.max(0, q.getQuantity().getModifiedInt());
                     if (predU > 0 && actU > 0) sample(d.calOut(), d.calOutN(), id, actU / (float) predU);
                 } catch (Throwable t) {
-                    CADiagnostics.LOG.warn(CADiagnostics.TAG + "calibration reading failed for " + ind.getId() + " at " + m.getName(), t);
+                    CAStep.warn("calibration", "calibration reading failed for " + ind.getId() + " at " + m.getName(), t);   // 0.3.0.0 (07 M8): one trace, then a short line weekly
                 }
             }
         }

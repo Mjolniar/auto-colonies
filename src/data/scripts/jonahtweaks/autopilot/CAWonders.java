@@ -23,6 +23,10 @@ import java.util.*;
  *   research works toward Bifrost Gates; once it works, a gate goes up in each of your systems that has none, one a day
  *   (BifrostMegastructure.addNewBifrostGate, as its dialog does), each 20,000 a month on the Control Center once built.
  * Reflection only; without AotD it does nothing. Setting: Settings, Budget and spending.
+ * 0.3.0.0 (WS-B3): the Grand Wonder site is an action in the planner's one queue (offer), so it never takes a colony's
+ * construction queue ahead of a build that pays.
+ * 0.3.0.0 (C3 fix): wonders start only while CARich.wondersOpen (the Wonders rung On, the tier Rich, the Balanced or Economy
+ * preset); a site's price must fit the rung's allowance and is recorded on it.
  */
 public class CAWonders {
     static final String SITE = "aotd_gw_construction_site", DAEDALUS = "aotd_daedalus_array", BFC = "aotd_bfc_ind";
@@ -32,7 +36,8 @@ public class CAWonders {
     static String summary;
 
     static boolean on(CASettings s) {
-        return !broken && !s.noWonders && Global.getSettings().getModManager().isModEnabled(CAResearch.MOD) && CASurplus.rich(s);
+        return !broken && !s.noWonders && Global.getSettings().getModManager().isModEnabled(CAResearch.MOD) && CASurplus.rich(s)
+                && CARich.wondersOpen(s);   // 0.3.0.0 (C3 fix): the Wonders rung On, the tier Rich, a preset that funds it
     }
 
     static ClassLoader cl() { return Global.getSettings().getScriptClassLoader(); }
@@ -68,7 +73,7 @@ public class CAWonders {
     /** Plan step: the Bifrost Control Center at its host while spending freely (research traces it to Bifrost Gates). */
     static List<CAPlan.Step> stepsFor(MarketAPI m) {
         CASettings s = CAData.settings();
-        if (m == null || s.noWonders || !Global.getSettings().getModManager().isModEnabled(CAResearch.MOD) || !CASurplus.rich(s)
+        if (m == null || s.noWonders || !Global.getSettings().getModManager().isModEnabled(CAResearch.MOD) || !CASurplus.rich(s) || !CARich.wondersOpen(s)
                 || Global.getSettings().getIndustrySpec(BFC) == null) return Collections.emptyList();
         MarketAPI host = bfcHost();
         if (host == null || !host.getId().equals(m.getId())) return Collections.emptyList();
@@ -80,17 +85,57 @@ public class CAWonders {
         summary = null;
         if (!on(s)) return;
         List<String> lines = new ArrayList<String>();
-        try { daedalus(s, lines); }
+        try { daedalus(s, lines, null, true); }
         catch (Throwable t) { broken = true; CADiagnostics.LOG.warn(CADiagnostics.TAG + "can't read Ashes of the Domain's Grand Wonders; they're left to you", t); return; }
         try { bifrost(lines); }
         catch (Throwable t) { broken = true; CADiagnostics.LOG.warn(CADiagnostics.TAG + "can't read Ashes of the Domain's Bifrost network; it's left to you", t); return; }
         summary = lines.isEmpty() ? null : "Wonders and gates: " + CAContracts.join(lines) + ".";
     }
 
+    // ---------------- 0.3.0.0 (WS-B3): the planner's actions ----------------
+
+    /** The planner's name for these actions. */
+    static final String SOURCE = "wonders";
+
+    /**
+     * 0.3.0.0 (WS-B3, research 02 section 13): the Daedalus Array's Grand Wonder site as an action in the planner's one queue,
+     * so it takes a colony's construction queue only when nothing that pays waits there. Spending freely builds it (the rule
+     * you set with Wonders and gates), ranked after everything that pays, from surplus credits, only its fee against the
+     * month's budget, as in 0.2.45.1. Putting the wonder on a finished site costs no credits (Ashes of the Domain's contract
+     * takes goods), so run() still does that, and the Bifrost gates.
+     */
+    public static List<CAAction> offer() {
+        List<CAAction> out = new ArrayList<CAAction>();
+        CASettings s = CAData.settings();
+        if (!on(s)) return out;
+        try { daedalus(s, new ArrayList<String>(), out, false); }
+        catch (Throwable t) { out.clear(); }   // run() marks it broken and logs it
+        return out;
+    }
+
+    /** Builds the Grand Wonder site for the planner; null when it started, else why not. */
+    static String startSite(CAAction a) {
+        MarketAPI m = a.market;
+        CASettings s = CAData.settings();
+        if (Misc.getCurrentlyBeingConstructed(m) != null) return "a new building is already under construction here";
+        CAEngine.Pick p = new CAEngine.Pick();
+        p.id = SITE; p.name = a.name; p.verb = "Build"; p.cost = a.cost; p.upkeep = a.upkeep;
+        String err = CABuild.start(m, p);
+        if (err != null) { if (CALog.once("wonder:site:" + m.getId() + ":" + err)) CALog.add(m.getName() + ": Grand Wonder site not started: " + err); return err; }
+        CABudget.charge(s, m.getId(), 0f, a.fee, a.upkeep);
+        CARich.spent(CARich.WONDERS, a.cost);   // 0.3.0.0 (C3 fix): the site's price counts against the Wonders rung this month
+        CALog.add(m.getName() + ": Grand Wonder site started for the " + name(DAEDALUS) + " (" + Misc.getDGSCredits(a.cost) + ")", true);
+        return null;
+    }
+
     // ---------------- Daedalus Array ----------------
 
+    /**
+     * offers: where the planner's action for the site goes (offer()), or null. act: run() puts the wonder on a finished site,
+     * and with the planner not in charge (legacyPlanner) builds the site itself as in 0.2.45.
+     */
     @SuppressWarnings("unchecked")
-    static void daedalus(CASettings s, List<String> lines) throws Exception {
+    static void daedalus(CASettings s, List<String> lines, List<CAAction> offers, boolean act) throws Exception {
         IndustrySpecAPI spec = Global.getSettings().getIndustrySpec(DAEDALUS);
         if (spec == null || Global.getSettings().getIndustrySpec(SITE) == null) return;
         Class<?> mgrC = Class.forName(GW + "GrandWonderManager", true, cl()), apiC = Class.forName(GW + "GrandWonderAPI", true, cl());
@@ -126,16 +171,37 @@ public class CAWonders {
                 IndustrySpecAPI sp = Global.getSettings().getIndustrySpec(SITE);
                 Industry probe = sp.getNewPluginInstance(m);
                 if (!probe.isAvailableToBuild()) continue;
+                if (offers != null) {   // 0.3.0.0 (B3): the planner's action for the site
+                    CAAction a = new CAAction();
+                    a.kind = CAAction.Kind.BUILD; a.source = SOURCE; a.market = m; a.marketId = m.getId();
+                    a.id = SITE; a.name = sp.getName(); a.why = "for the " + name(DAEDALUS);
+                    a.cost = probe.getBuildCost(); a.fee = CABudget.constructionFee(s, a.cost); a.days = probe.getBuildTime();
+                    a.upkeep = CAEngine.baseUpkeep(m, sp);
+                    a.byRule = true;   // spending freely builds it; it earns nothing a month the engine can count
+                    a.usesQueue = true; a.once = CAPlanner.ONCE_WONDER;
+                    a.fromBudget = false; a.fromSurplus = true; a.chargeAll = false;
+                    a.upkeepCap = CASurplus.upkeepCap(m, s);
+                    // 0.3.0.0 (C3 fix): the site's price must fit the Wonders rung's allowance this month
+                    if (!CARich.wondersFit(s, a.cost)) { lines.add(name(DAEDALUS) + " at " + m.getName() + " waits for the Wonders rung's share of the pool"); return; }
+                    a.starter = (x) -> startSite(x);
+                    offers.add(a);
+                    return;
+                }
+                if (CAPlanner.inCharge()) { lines.add("construction site for the " + name(DAEDALUS) + " at " + m.getName() + " waits its turn in the build queue"); return; }
+                // 0.3.0.0 (C3 fix): the site's price must fit the Wonders rung's allowance this month (always with legacyPlanner)
+                if (!CARich.wondersFit(s, probe.getBuildCost())) { lines.add(name(DAEDALUS) + " at " + m.getName() + " waits for the Wonders rung's share of the pool"); return; }
                 CAEngine.Pick p = new CAEngine.Pick();
                 p.id = SITE; p.name = sp.getName(); p.verb = "Build"; p.cost = probe.getBuildCost(); p.upkeep = CAEngine.baseUpkeep(m, sp);
                 String err = CABuild.start(m, p);
                 if (err != null) { if (CALog.once("wonder:site:" + m.getId() + ":" + err)) CALog.add(m.getName() + ": Grand Wonder site not started: " + err); return; }
                 CABudget.charge(s, 0f, CABudget.constructionFee(s, p.cost), p.upkeep);
+                if (!CABudget.legacy(s)) CARich.spent(CARich.WONDERS, p.cost);   // 0.3.0.0 (C3 fix): the site's price counts against the Wonders rung this month
                 CALog.add(m.getName() + ": Grand Wonder site started for the " + name(DAEDALUS) + " (" + Misc.getDGSCredits(p.cost) + ")", true);
                 lines.add("construction site for the " + name(DAEDALUS) + " going up at " + m.getName());
                 return;
             }
             if (site.isBuilding()) { lines.add(name(DAEDALUS) + "'s construction site at " + m.getName() + " is being built"); return; }
+            if (!act) return;   // 0.3.0.0 (B3): the planner's offer only looks
             CARefl.invoke(assign, site, DAEDALUS);
             CALog.add(m.getName() + ": " + name(DAEDALUS) + " construction started (replaces the Megaport)", true);
             lines.add(name(DAEDALUS) + " started at " + m.getName());

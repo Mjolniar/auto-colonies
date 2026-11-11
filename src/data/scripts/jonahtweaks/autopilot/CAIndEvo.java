@@ -30,7 +30,8 @@ import java.util.*;
  */
 public class CAIndEvo {
     static final String AMB = "IndEvo_amb";
-    static final float HIRE_FEE = 25000f, MOVE_FEE = 10000f;
+    static final float HIRE_FEE = CATuning.HIRE_FEE, MOVE_FEE = CATuning.MOVE_FEE;   // 0.3.0.0 (A3): the same fees as CAItems', in CATuning
+    static final java.util.Map<String, Float> edictHeld = new java.util.HashMap<String, Float>();   // 0.3.0.0: edicts held for stability, retried after 30 days (session only)
 
     public static void run(List<MarketAPI> markets) {
         CASettings s = CAData.settings();
@@ -76,7 +77,7 @@ public class CAIndEvo {
                 SpecialItemData data = stack.getSpecialDataIfSpecial();
                 PersonAPI p = data instanceof AmbassadorItemData ? ((AmbassadorItemData) data).getPerson() : null;
                 Long hired = p == null ? null : d.ambTransit().get(p.getId());
-                if (hired != null && Global.getSector().getClock().getElapsedDaysSince(hired) < 30f) continue;
+                if (hired != null && Global.getSector().getClock().getElapsedDaysSince(hired) < CATuning.TRAVEL_DAYS) continue;
                 Industry target = src.isPlayerOwned() && markets.contains(src) ? emptyEmbassy(src) : null;
                 MarketAPI tm = src;
                 if (target == null) for (MarketAPI m : markets) { target = emptyEmbassy(m); tm = m; if (target != null) break; }
@@ -133,11 +134,14 @@ public class CAIndEvo {
             if (m.isPlayerOwned() || m.getFaction() == null) continue;
             String fid = m.getFactionId();
             if (taken.contains(fid) || (allowed != null && !allowed.contains(fid)) || m.getFaction().isHostileTo(Factions.PLAYER)) continue;
-            int prio = s.priorityOf(fid);
+            // 0.3.0.0 (WS-E, 06 section 4.3): priority and stop line from the faction stance table (CAStance): Ally and Friendly
+            // High, Neutral and Auto Normal, Rival, Enemy and Destroy Ignore; Ally never stops, Neutral stops at 0
+            int stance = s.stanceOf(fid);
+            int prio = CAStance.ambassadorPriority(stance);
             if (prio == 0) continue;                                   // Ignore
             if (s.ambassadorFocus == 3 && prio != 2) continue;          // Priority list only
             float rel = player.getRelationship(fid);
-            if (rel >= stopAt) continue;                               // already high enough
+            if (rel >= CAStance.raiseUntil(stance, stopAt)) continue;  // already high enough
             if (!AmbassadorPersonManager.hasAmbassador(m)) continue;
             float score;
             if (s.ambassadorFocus == 1) score = strength.containsKey(fid) ? strength.get(fid) : 0f;
@@ -258,8 +262,19 @@ public class CAIndEvo {
                     if (CALog.once(key)) CALog.add(m.getName() + ": " + spec.getName() + " unavailable: " + reason);
                     continue;
                 }
+                Float held = edictHeld.get(key);
+                if (held != null && CADay.now() - held < 30f && CADay.now() >= held) continue;
+                float before = CAStability.now(m);
                 m.addCondition(id);
                 m.reapplyConditions();
+                // 0.3.0.0 (WS-A2): an edict's stability effect is measured; one that leaves the colony under the floor is lifted again without IndEvo's early-removal penalty
+                if (!CAStability.canKeep(m, before, "enacting " + spec.getName())) {
+                    try { MarketConditionAPI mc = m.getCondition(id); if (mc != null && mc.getPlugin() instanceof EdictAPI) ((EdictAPI) mc.getPlugin()).removeWithoutPenalty(); } catch (Throwable ignored) { }
+                    if (m.hasCondition(id)) m.removeCondition(id);
+                    m.reapplyConditions();
+                    edictHeld.put(key, CADay.now());
+                    continue;
+                }
                 CALog.forget(key);
                 CALog.add(m.getName() + ": enacted " + spec.getName() + " (effects estimated; edicts are never removed automatically)");
                 return true;
@@ -323,8 +338,7 @@ public class CAIndEvo {
                 float fee = CABudget.constructionFee(s, best.cost);
                 if (best.cost + fee > CABudget.available(s) || CABuild.credits() < best.cost + fee) return false;
                 sw.setCurrent(best.newInstance(), false);
-                Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(best.cost);
-                CABudget.charge(s, best.cost, fee, 0f);
+                CABudget.pay(s, null, best.cost, fee, 0f);
                 CALog.add(m.getName() + ": switched " + ind.getCurrentName() + " to " + best.name + " for " + Misc.getDGSCredits(best.cost)
                         + " (estimated " + CAEngine.credits(bestV) + "/month vs " + CAEngine.credits(current) + ")");
                 return true;

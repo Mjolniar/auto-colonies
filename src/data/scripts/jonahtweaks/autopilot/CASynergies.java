@@ -29,6 +29,8 @@ public class CASynergies {
     static Class<?> srcClass;
     static boolean linked = false, broken = false;
     static Map<String, List<Set<String>>> groups;
+    /** 0.3.0.0 (B1 fix): the pick score() is working out, so a synergy's output that lands on it is netted on its own line (CAValue.synergy). */
+    static CAEngine.Pick scoring;
 
     static boolean link() {
         if (linked || broken) return linked;
@@ -154,9 +156,9 @@ public class CASynergies {
         return v;
     }
 
-    static void supply(CAEngine.Pick p, String com, int units, Map<String, Integer> deficit) {
-        if (units > 0) CAEngine.supply(p, com, units, deficit);
-        else if (units < 0) p.fx[0] -= Global.getSettings().getCommoditySpec(com).getBasePrice() * CAEngine.unitValue * -units;
+    /** 0.3.0.0 (B1, 02 section 9): a synergy's extra output lands on the colony's biggest source of the good, valued as CAValue.boost. */
+    static void supply(MarketAPI m, CAEngine.Pick p, String com, int units, Map<String, Integer> deficit) {
+        if (units != 0) p.fx[0] += CAValue.synergy(m, scoring, com, units, deficit);   // 0.3.0.0 (B1 fix): on the pick's own line when it's the colony's biggest source
     }
 
     /** What one active synergy is worth, in the engine's units; p.lines gets a short description. */
@@ -167,15 +169,15 @@ public class CASynergies {
             if (resort != null) p.fx[0] += share * eff * without(resort.getIncome(), "agro_tourism", "FishingResort");
             p.lines.add("Resort Center income +" + Math.round(share * eff * 100f) + "%");
         } else if (id.equals("aotd_mining_feed")) {
-            supply(p, "metals", 2, deficit); supply(p, "rare_metals", 2, deficit);
+            supply(m, p, "metals", 2, deficit); supply(m, p, "rare_metals", 2, deficit);
             p.lines.add("Refining +2 output");
         } else if (id.equals("aotd_refining_feed")) {
-            for (String c : new String[]{"heavy_machinery", "supplies", "hand_weapons", "ships"}) supply(p, c, 1, deficit);
+            for (String c : new String[]{"heavy_machinery", "supplies", "hand_weapons", "ships"}) supply(m, p, c, 1, deficit);
             p.fx[5] += 0.15f * eff;
             p.lines.add("Heavy Industry +1 output, ship quality +" + Math.round(15f * eff) + "%");
         } else if (id.equals("cabbage_comm_materials")) {
-            supply(p, "supplies", 2, deficit); supply(p, "hand_weapons", 2, deficit);
-            supply(p, "metals", -1, deficit); supply(p, "rare_metals", -1, deficit);
+            supply(m, p, "supplies", 2, deficit); supply(m, p, "hand_weapons", 2, deficit);
+            supply(m, p, "metals", -1, deficit); supply(m, p, "rare_metals", -1, deficit);
             p.lines.add("Heavy Industry +2 supplies and weapons, Refining -1 output");
         } else if (id.equals("ildrenium_black_site_fools")) {
             Industry bs = m.hasIndustry("aotd_blacksite") ? m.getIndustry("aotd_blacksite") : null;
@@ -183,7 +185,7 @@ public class CASynergies {
             p.fx[1] += 5f * eff * PATHER;
             p.lines.add("Black Site upkeep -" + Math.round(10f * eff) + "%, less Pather interest");
         } else if (id.equals("darkhellthepro_syndicate_line")) {
-            if (have.contains("cryosanctum")) supply(p, "organs", 3, deficit);
+            if (have.contains("cryosanctum")) supply(m, p, "organs", 3, deficit);
             float pct = have.contains("aotd_druglight") ? 0.6f * eff : have.contains("lightindustry") ? 0.1f * eff : 0f;
             p.fx[0] += pct * Math.max(0f, m.getGrossIncome());
             p.lines.add((have.contains("cryosanctum") ? "+3 organs; " : "") + "colony income +" + Math.round(pct * 100f) + "%");
@@ -199,7 +201,7 @@ public class CASynergies {
             p.fx[3] += 0.05f;
             p.lines.add("Disrupted buildings recover faster from stockpiled supplies and machinery");
         } else if (id.equals("tata_mono_bio_synthesis")) {
-            supply(p, "food", 2, deficit); CAEngine.demand(p, "drugs", 1, deficit);
+            supply(m, p, "food", 2, deficit); CAEngine.demand(p, "drugs", 1, deficit);
             p.lines.add("Subsidised Farming +2 food, needs 1 drugs");
         } else if (id.equals("seventhslayer_defensive_network")) {
             p.fx[3] += 0.5f; p.fx[4] += 0.2f;
@@ -217,11 +219,11 @@ public class CASynergies {
             if (rf != null) p.fx[0] += 0.1f * eff * without(rf.getUpkeep(), "FacilitatedResearchLogistics");
             p.lines.add("Accessibility +" + Math.round(5f * eff) + "%, research 5% faster, research facility upkeep lower");
         } else if (id.equals("ildrenium_aep")) {
-            supply(p, "fuel", 2, deficit);
+            supply(m, p, "fuel", 2, deficit);
             p.fx[1] -= 10f * PATHER;
             p.lines.add("Fuel Production +2, much more Pather interest");
         } else if (id.equals("aotd_volatile_line")) {
-            supply(p, "fuel", Math.round(2f * eff), deficit);
+            supply(m, p, "fuel", Math.round(2f * eff), deficit);
             p.lines.add("Fuel Production +" + Math.round(2f * eff));
         } else if (id.equals("somerandomsmuck_ditd")) {
             p.fx[2] -= 0.1f;
@@ -304,7 +306,7 @@ public class CASynergies {
             boolean on = met(id, after);
             if (before == null && !on) continue;
             CAEngine.Pick next = new CAEngine.Pick();
-            if (on) effects(id, c.m, after, eff, next, c.deficit);
+            if (on) { scoring = p; try { effects(id, c.m, after, eff, next, c.deficit); } finally { scoring = null; } }   // 0.3.0.0 (B1 fix)
             float change = 0f;
             for (int i = 0; i < 7; i++) {
                 float d = next.fx[i] - (before == null ? 0f : before.fx[i]);
@@ -326,7 +328,7 @@ public class CASynergies {
     public static void render(TooltipMakerAPI t, MarketAPI m) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor();
         Ctx c = context(m, CAEngine.empireDeficits());
-        if (c == null) { t.addPara("Vaults of Knowledge's synergies can't be read; see starsector.log.", gray, 6f); return; }
+        if (c == null) { t.addPara(CATheme.NOT_SHOWN, gray, 6f); return; }
         List<String> active = new ArrayList<String>(), near = new ArrayList<String>();
         try {
             for (Map.Entry<String, Object> e : c.open.entrySet()) {
@@ -345,10 +347,10 @@ public class CASynergies {
         } catch (Throwable ex) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "industry synergy panel failed at " + m.getName(), ex);
         }
-        t.addPara("Synergy efficiency: %s. Spaceport, Waystation, Maglev and Daedalus Array raise it; some synergies grow with it.", 6f, hl, Math.round(c.eff * 100f) + "%");
+        t.addPara("Synergy efficiency: %s.", 6f, hl, Math.round(c.eff * 100f) + "%");
         t.addPara("Active: %s", 4f, hl, active.isEmpty() ? "none" : join(active));
         if (!near.isEmpty()) t.addPara("One building away: %s", 4f, hl, join(near, "; "));
         if (c.locked > 0) t.addPara(c.locked + " more need research first.", gray, 4f);
-        t.addPara("Builds that start, end or strengthen a synergy include it in their estimated value.", gray, 4f);
+        t.addPara("Build values include synergies.", gray, 4f);
     }
 }

@@ -34,13 +34,15 @@ import java.util.*;
  * build does the rest (Objectives.build, the same call the in-person option makes). If the spot's gone by then, the
  * materials and any core are given back. One order a day across the empire. Industrial Evolution's Watchtower comes with
  * its artillery and Secrets of the Frontier's habitat founds a colony, so both are left to you.
+ * 0.3.0.0 (WS-B3): in Auto the crew is an action in the planner's one queue (offer), paid from the same monthly budget as
+ * every build and ranked against them by NPV per credit.
  */
 public class CAObjectives {
     static final String STABLE = "stable_location", OBJECTIVE = "objective", MAKESHIFT = "makeshift";
     static final String COMM = "comm_relay", NAV = "nav_buoy", SENSOR = "sensor_array";
     static final String[] KINDS = {COMM, NAV, SENSOR};
     static final String RECEIVER = "aotd_hypershunt_receiver", TAP = "coronal_portal", TME = "terraformingmadeeasy";
-    static final float CREW_DAYS = 10f, RECEIVER_DAYS = 30f, BASE_FEE = 5000f, PAYBACK_MONTHS = 36f;
+    static final float CREW_DAYS = 10f, RECEIVER_DAYS = 30f, BASE_FEE = CATuning.OBJECTIVE_BASE_FEE, PAYBACK_MONTHS = CATuning.PAYBACK_MONTHS;   // 0.3.0.0 (A3): fee and payback in CATuning
     static final String[] MAKESHIFT_RES = {"heavy_machinery", "metals", "rare_metals"};
     static final int[] MAKESHIFT_QTY = {15, 30, 5};
     static final String[] UPGRADE_RES = {"crew", "metals", "rare_metals"};
@@ -235,6 +237,7 @@ public class CAObjectives {
         if (s.objectiveMode == 2 || Global.getSector() == null) return;
         deliver(d);
         if (CABudget.paused(s) || auto.isEmpty()) return;
+        if (s.objectiveMode == 0 && CAPlanner.inCharge()) return;   // 0.3.0.0 (B3): Auto sends crews from the planner's one queue (offer)
         Plan p = best(d, s, auto);
         if (p == null) return;
         String where = p.at.sys.getBaseName();
@@ -249,13 +252,50 @@ public class CAObjectives {
                 CALog.add(where + ": a " + p.what + " waits for budget (" + Misc.getDGSCredits(p.cost + fee) + ")");
             return;
         }
+        send(d, s, p, fee);
+    }
+
+    // ---------------- 0.3.0.0 (WS-B3): the planner's action ----------------
+
+    /** The planner's name for these actions. */
+    static final String SOURCE = "stable locations";
+    /** What research counts a Beta core at, so an upgrade that uses one pays for it in its NPV (as best() does). */
+    static final float BETA_VALUE = 7500f;
+
+    /**
+     * 0.3.0.0 (WS-B3, research 02 section 13): Auto's best stable-location crew of the day as an action in the planner's one
+     * queue, ranked with every other build by NPV per credit from the month's budget: what it adds a month at your colonies
+     * there, over the horizon, less its materials, a Beta core it uses and the fee. One crew a day, as in 0.2.40.0 (a flag).
+     * Recommend only and Off stay in run().
+     */
+    public static List<CAAction> offer(CAData d, CASettings s, List<MarketAPI> auto) {
+        List<CAAction> out = new ArrayList<CAAction>();
+        if (s.objectiveMode != 0 || Global.getSector() == null || auto.isEmpty() || CABudget.paused(s)) return out;
+        Plan p = best(d, s, auto);
+        if (p == null || p.at.base == null) return out;
+        float fee = CABudget.fee(s, BASE_FEE), core = "beta_core".equals(p.core) ? BETA_VALUE : 0f;
+        CAAction a = new CAAction();
+        a.kind = CAAction.Kind.CREW; a.source = SOURCE; a.market = p.at.base; a.marketId = p.at.base.getId();
+        a.id = p.type; a.name = p.what; a.why = p.why;
+        a.cost = p.cost; a.fee = fee; a.days = p.days; a.worth = p.monthly;
+        a.npv = CAValue.npv(p.monthly, CAHorizon.months(), p.days, p.cost + core, fee);
+        a.once = CAPlanner.ONCE_CREW;
+        a.fromBudget = true; a.chargeAll = true;
+        a.payload = p;
+        a.starter = (x) -> send(CAData.get(), CAData.settings(), (Plan) x.payload, x.fee) ? null : "no " + coreName(((Plan) x.payload).core) + " left in Autopilot Storage";
+        out.add(a);
+        return out;
+    }
+
+    /** Sends a crew: the core first (false when none is left), then the materials and the fee, and the order. */
+    static boolean send(CAData d, CASettings s, Plan p, float fee) {
+        String where = p.at.sys.getBaseName();
         String from = null;
         if (p.core != null) {
             from = takeCore(p.core, p.at.base);
-            if (from == null) return;
+            if (from == null) return false;
         }
-        Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(p.cost);
-        CABudget.charge(s, p.cost, fee, 0f);
+        CABudget.pay(s, null, p.cost, fee, 0f);
         Order o = new Order();
         o.system = p.at.sys.getId(); o.entityId = p.spot.getId(); o.type = p.type; o.what = p.what; o.why = p.why;
         o.paid = p.cost; o.core = p.core; o.coreFrom = from;
@@ -265,6 +305,7 @@ public class CAObjectives {
         CALog.add(where + ": construction crew on its way from " + p.at.base.getName() + " to build a " + p.what + " (" + p.why + "), "
                 + Math.round(p.days) + " days, " + Misc.getDGSCredits(p.cost) + " in materials + " + Misc.getDGSCredits(fee) + " fee"
                 + (p.core != null ? ", and a " + coreName(p.core) + " from Autopilot Storage" : ""));
+        return true;
     }
 
     /** Takes one core or tap from Autopilot Storage, the given colony's first; returns the colony id it came from, or null. */
@@ -295,7 +336,7 @@ public class CAObjectives {
     }
 
     static void giveBack(Order o) {
-        Global.getSector().getPlayerFleet().getCargo().getCredits().add(o.paid);
+        CABudget.refund(CAData.settings(), null, o.paid);
         if (o.core == null || o.coreFrom == null) return;
         CargoAPI c = CAStores.of(o.coreFrom);
         if (TAP.equals(o.core)) c.addSpecial(new SpecialItemData(TAP, null), 1f);

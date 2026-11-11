@@ -23,6 +23,8 @@ import exerelin.campaign.intel.agents.CounterInsurgency;
 import exerelin.campaign.intel.agents.CovertActionIntel;
 import exerelin.campaign.intel.agents.FindPirateBase;
 import exerelin.campaign.intel.agents.InfiltrateCell;
+import exerelin.campaign.intel.agents.InstigateRebellion;
+import exerelin.campaign.intel.agents.LowerRelations;
 import exerelin.campaign.intel.agents.RaiseRelations;
 import exerelin.campaign.intel.agents.SabotageIndustry;
 import exerelin.campaign.intel.fleets.OffensiveFleetIntel;
@@ -49,11 +51,15 @@ import java.util.*;
  * one was created on the spot, the way Nexerelin's console command does). Operation costs and recruiting come out of the
  * monthly budget, never the credit reserve; Nexerelin pays salaries. Enemy operations the game doesn't show you are neither
  * shown nor used (they were before 0.2.37.0). Only person ids are saved, so the save loads without Nexerelin.
+ * 0.3.0.0 (WS-E): relations follow the faction stances (CAStance; Ally, Friendly and Neutral also while hostile); sabotage
+ * needs the War level and stance to allow it (CAWarPolicy.sabotageOk); the offense agent also instigates a rebellion at
+ * the next Destroy invasion target and lowers relations between an Enemy or Destroy faction and its best friend; any
+ * agent puts counter-insurgency at a conquered colony with strong rebels first.
  */
 public class CASpies {
     public static final String MOD = "nexerelin";
-    static final int HIRE_FEE = 12000;
-    static final float RECRUIT_DAYS = 60f;
+    static final int HIRE_FEE = CATuning.AGENT_HIRE_FEE;   // 0.3.0.0 (A3): fee and days in CATuning
+    static final float RECRUIT_DAYS = CATuning.AGENT_RECRUIT_DAYS;
     static final String SECURITY = "security", RELATIONS = "relations", OFFENSE = "offense";
     static final float MIN_SUCCESS = 60f, MAX_ALERT = 0.2f;
     static final String[] MILITARY = {Industries.HIGHCOMMAND, Industries.MILITARYBASE, Industries.PATROLHQ, Industries.HEAVYBATTERIES,
@@ -68,7 +74,7 @@ public class CASpies {
             if (s.spyMode == 0) {
                 s.spyMode = 1;
                 CALog.add("Agents: now on Defense (new in this version). One agent works security at your colonies: Pather cells, rebellions, "
-                        + "hidden pirate bases; an idle agent of yours is put on it, or one is recruited. Change it under Settings, Agents (Nexerelin)", true);
+                        + "hidden pirate bases; an idle agent of yours is put on it, or one is recruited. Change it under Settings, Security and diplomacy, Agents", true);
             }
         }
         if (s.spyMode == 0 || Misc.getPlayerMarkets(false).isEmpty()) return;
@@ -77,12 +83,20 @@ public class CASpies {
         List<AgentIntel> mine = managed(d, mgr);
         arrive(d, mgr, mine);
         hire(d, s, mgr, mine);
+        // 0.3.0.0 (WS-E, 06 section 4.9): a conquered colony where the rebels hold half or more gets counter-insurgency before other work
+        List<MarketAPI> rebels = new ArrayList<MarketAPI>();
+        try { rebels = CAConquest.rebelling(d); } catch (Throwable ignored) { }
         for (AgentIntel a : mine) {
             if (busy(mgr, a)) continue;
             String role = role(d, s, a);
+            if (!rebels.isEmpty() && !SECURITY.equals(role)
+                    && local(s, a, new CounterInsurgency(a, null, Global.getSector().getPlayerFaction(), null, true, null), rebels, "counterInsurgency", "counter-insurgency")) continue;
             if (SECURITY.equals(role)) defend(s, mgr, a);
             else if (RELATIONS.equals(role)) relations(s, a);
-            else if (OFFENSE.equals(role)) { if (offense(s)) attack(s, mgr, a, mine); }
+            else if (OFFENSE.equals(role)) {
+                // 0.3.0.0 (WS-E, 06 section 4.10): rebellion at the next Destroy invasion target, sabotage, then isolating an Enemy or Destroy faction
+                if (offense(s) && !prepare(d, s, mgr, a) && !attack(s, mgr, a, mine)) isolate(d, s, mgr, a, mine);
+            }
         }
     }
 
@@ -104,8 +118,7 @@ public class CASpies {
     }
 
     static String roleName(String r) {
-        return SECURITY.equals(r) ? "security (rebellions, Pather cells, pirate bases)" : RELATIONS.equals(r) ? "relations with your preferred factions"
-                : OFFENSE.equals(r) ? "offense (sabotage)" : r;
+        return SECURITY.equals(r) ? "security" : RELATIONS.equals(r) ? "relations" : OFFENSE.equals(r) ? "offense" : r;   // 0.3.0.0 (WS-F3 fix pass 2): the role's name
     }
 
     /** Every agent you have that still serves, whoever hired it. */
@@ -204,6 +217,10 @@ public class CASpies {
      * Raise Relations with your preferred faction, picked as ambassadors are (CAIndEvo): High priority first, Ignore never,
      * Priority list only if that's the focus, else by the focus (worst relations, strongest, nearest), never at war with you
      * and never past "Stop raising a faction at".
+     * 0.3.0.0 (WS-E, 06 sections 4.3 and 4.10): picked by stance (CAStance): Ally first (never stops), then Friendly (up to the
+     * stop line), then Neutral (only while below 0), then Auto by the focus as before; Rival, Enemy and Destroy never. Ally,
+     * Friendly and Neutral are raised also while hostile: the paid way out of a war (CAStance.raiseWhileHostile), except a
+     * stance from a 0.2.45 priority you haven't set since (0.3.0.0 fix, CAStance.fromOldPriority).
      */
     static boolean relations(CASettings s, AgentIntel a) {
         if (!canDo(a, "raiseRelations")) return false;
@@ -223,13 +240,17 @@ public class CASpies {
         FactionAPI best = null; float bestScore = -1e9f;
         for (String fid : strength.keySet()) {
             FactionAPI f = Global.getSector().getFaction(fid);
-            if (f == null || f.isPlayerFaction() || f.isHostileTo(Factions.PLAYER)) continue;   // at war is your call
-            int prio = s.priorityOf(fid);
-            if (prio == 0 || (s.ambassadorFocus == 3 && prio != 2)) continue;
+            if (f == null || f.isPlayerFaction()) continue;
+            int stance = s.stanceOf(fid);
+            // at war is your call, unless Ally, Friendly or Neutral; 0.3.0.0 (fix): a stance from a 0.2.45 priority you haven't set
+            // since keeps 0.2.45's rule (never while hostile)
+            if (f.isHostileTo(Factions.PLAYER) && !CAStance.raiseWhileHostile(stance, CAStance.fromOldPriority(s, CAData.get(), fid))) continue;
+            int rank = CAStance.raiseRank(stance);
+            if (rank < 0 || (s.ambassadorFocus == 3 && rank < 1)) continue;   // Priority list only: the stances you set
             float rel = pf.getRelationship(fid);
-            if (rel >= stopAt || !RaiseRelations.canModifyRelations(f, a)) continue;
+            if (rel >= CAStance.raiseUntil(stance, stopAt) || !RaiseRelations.canModifyRelations(f, a)) continue;
             float score = s.ambassadorFocus == 1 ? strength.get(fid) : s.ambassadorFocus == 2 ? (near.containsKey(fid) ? near.get(fid) : 0f) : -rel * 100f;
-            if (prio == 2) score += 100000f;
+            score += 100000f * rank;   // Ally, then Friendly, then Neutral, then Auto
             if (score > bestScore) { bestScore = score; best = f; }
         }
         if (best == null) return false;
@@ -243,19 +264,18 @@ public class CASpies {
             return false;
         }
         order(a, op, target, cost);
-        CABudget.charge(s, cost, 0f, 0f);
+        CABudget.pay(s, null, cost, 0f, 0f);   // 0.3.0.0 (C12 fix): the cost leaves the credits here, once
         CALog.forget(key);
         CALog.add("Agent " + name(a) + " sent to " + target.getName() + " to raise relations with " + best.getDisplayName() + " (" + Misc.getDGSCredits(cost) + ")");
         return true;
     }
 
-    /** A remote order the way Nexerelin queues one: travel there, then the operation starts on arrival. */
+    /** A remote order the way Nexerelin queues one: travel there, then the operation starts on arrival. 0.3.0.0 (C12 fix): the caller pays the cost with CABudget.pay. */
     static void order(AgentIntel a, CovertActionIntel op, MarketAPI target, int cost) {
         a.issueTravelOrderIfNeeded(target);
         op.init();
         a.addAction(op);
         if (target == a.getMarket()) op.activate();
-        if (cost > 0) Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(cost);
     }
 
     static MarketAPI nearest(List<MarketAPI> markets, MarketAPI from) {
@@ -270,7 +290,11 @@ public class CASpies {
 
     // ---- offense
 
-    /** A faction operations may target: hostile to you, not allied, no ceasefire, not your commissioner, allows agent actions. */
+    /**
+     * A faction operations may target: hostile to you, not allied, no ceasefire, not your commissioner, allows agent actions.
+     * 0.3.0.0 (WS-E, 06 section 5 step 11): and the War level and its stance allow sabotage (CAWarPolicy.sabotageOk): an Auto
+     * faction from Retaliate (0.2.45's offense), Rival and up from Hold them down; never Ally, Friendly or Neutral.
+     */
     static boolean allowed(FactionAPI f) {
         if (f == null || f.isPlayerFaction() || !f.isHostileTo(Factions.PLAYER)) return false;
         NexFactionConfig conf = NexConfig.getFactionConfig(f.getId());
@@ -280,7 +304,91 @@ public class CASpies {
         if (AllianceManager.areFactionsAllied(f.getId(), Factions.PLAYER)) return false;
         DiplomacyManager dm = DiplomacyManager.getManager();
         DiplomacyBrain brain = dm == null ? null : dm.getDiplomacyBrain(f.getId());
-        return brain == null || !brain.hasCeasefireWith(Factions.PLAYER);
+        if (brain != null && brain.hasCeasefireWith(Factions.PLAYER)) return false;
+        CAData d = CAData.get();
+        String rival = CAWar.autoRival(d, d.settings);
+        return CAWarPolicy.sabotageOk(CAWar.effective(d, d.settings, f, rival), CAWar.stance(d.settings, f.getId(), rival));
+    }
+
+    /** Enemy and Destroy factions that operations may target (isolation, rebellion), from War level Hold them down. */
+    static boolean atWar(CAData d, CASettings s, FactionAPI f) {
+        if (!allowed(f)) return false;
+        String rival = CAWar.autoRival(d, s);
+        return CAStance.wantsWar(CAWar.stance(s, f.getId(), rival)) && CAWar.effective(d, s, f, rival) >= CAWarPolicy.HOLD;
+    }
+
+    /** Whether one of your agents already works on this faction (one operation per faction). */
+    static boolean working(CovertOpsManager mgr, List<AgentIntel> mine, FactionAPI f) {
+        for (CovertActionIntel op : mgr.getOngoingCovertActionsOfType(CovertActionIntel.class)) {
+            if (op.isPlayerInvolved() && !op.isEnded() && mine.contains(op.getAgent()) && op.getTargetFaction() == f
+                    && !(op instanceof exerelin.campaign.intel.agents.Travel)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * 0.3.0.0 (WS-E, 06 section 4.10): Instigate Rebellion at the market Colony Manager would invade next of a Destroy faction
+     * (CAConquest.nextDestroyTarget), before the fleets arrive. Offense role, never in Low profile, paid from the budget.
+     */
+    static boolean prepare(CAData d, CASettings s, CovertOpsManager mgr, AgentIntel a) {
+        if (!canDo(a, "instigateRebellion")) return false;
+        MarketAPI m;
+        try { m = CAConquest.nextDestroyTarget(d, s); } catch (Throwable t) { return false; }
+        if (m == null || !atWar(d, s, m.getFaction()) || RebellionIntel.isOngoing(m)) return false;
+        if (m.getStabilityValue() > InstigateRebellion.MAX_STABILITY) return false;   // Nexerelin's dialog allows it only up to stability 6
+        if (working(mgr, managed(d, mgr), m.getFaction())) return false;
+        FactionAPI pf = Global.getSector().getPlayerFaction();
+        InstigateRebellion op = new InstigateRebellion(a, m, pf, m.getFaction(), true, new HashMap<String, Object>());
+        if (success(op, m) < MIN_SUCCESS) return false;
+        int cost = op.getCost();
+        String key = "spy:rebellion:" + m.getId();
+        if (cost > CABudget.available(s)) {
+            if (CALog.once(key)) CALog.add("Agent " + name(a) + " waits for budget to instigate a rebellion at " + m.getName() + " (" + Misc.getDGSCredits(cost) + ")");
+            return false;
+        }
+        order(a, op, m, cost);
+        CABudget.pay(s, null, cost, 0f, 0f);   // 0.3.0.0 (C12 fix): the cost leaves the credits here, once
+        CALog.forget(key);
+        CALog.add("Agent " + name(a) + " sent to instigate a rebellion at " + m.getName() + " (" + m.getFaction().getDisplayName() + ", Destroy; next invasion target, "
+                + Misc.getDGSCredits(cost) + ")");
+        return true;
+    }
+
+    /**
+     * 0.3.0.0 (WS-E, 06 section 4.10): isolating an Enemy or Destroy faction: Lower Relations between it and its best friend
+     * (the highest relation among factions not allied with it), never with a faction you have as Ally or Friendly. Offense
+     * role, never in Low profile, paid from the budget.
+     */
+    static boolean isolate(CAData d, CASettings s, CovertOpsManager mgr, AgentIntel a, List<AgentIntel> mine) {
+        if (!canDo(a, "lowerRelations")) return false;
+        FactionAPI pf = Global.getSector().getPlayerFaction();
+        for (FactionAPI f : Global.getSector().getAllFactions()) {
+            if (!atWar(d, s, f) || working(mgr, mine, f)) continue;
+            FactionAPI friend = null; float best = -2f;
+            for (FactionAPI o : Global.getSector().getAllFactions()) {
+                if (o == f || o.isPlayerFaction() || o.isNeutralFaction() || !o.isShowInIntelTab() || Misc.getFactionMarkets(o).isEmpty()) continue;
+                if (CAStance.friendly(s.stanceOf(o.getId())) || AllianceManager.areFactionsAllied(o.getId(), f.getId())) continue;
+                float rel = f.getRelationship(o.getId());
+                if (rel > best) { best = rel; friend = o; }
+            }
+            if (friend == null || best <= 0f) continue;   // no friend to turn against it
+            MarketAPI m = nearest(Misc.getFactionMarkets(f), a.getMarket());
+            if (m == null) continue;
+            LowerRelations op = new LowerRelations(a, m, pf, f, friend, true, new HashMap<String, Object>());
+            int cost = op.getCost();
+            String key = "spy:isolate:" + f.getId();
+            if (cost > CABudget.available(s)) {
+                if (CALog.once(key)) CALog.add("Agent " + name(a) + " waits for budget to turn " + friend.getDisplayName() + " against " + f.getDisplayName() + " (" + Misc.getDGSCredits(cost) + ")");
+                return false;
+            }
+            order(a, op, m, cost);
+            CABudget.pay(s, null, cost, 0f, 0f);   // 0.3.0.0 (C12 fix): the cost leaves the credits here, once
+            CALog.forget(key);
+            CALog.add("Agent " + name(a) + " sent to " + m.getName() + " to turn " + friend.getDisplayName() + " against " + f.getDisplayName()
+                    + " (" + CAStance.name(s.stanceOf(f.getId())) + ", " + Misc.getDGSCredits(cost) + ")");
+            return true;
+        }
+        return false;
     }
 
     static boolean allowed(MarketAPI m) { return m != null && !m.isHidden() && m.isInEconomy() && allowed(m.getFaction()); }
@@ -370,7 +478,7 @@ public class CASpies {
             return false;
         }
         order(a, op, m, cost);
-        CABudget.charge(s, cost, 0f, 0f);
+        CABudget.pay(s, null, cost, 0f, 0f);   // 0.3.0.0 (C12 fix): the cost leaves the credits here, once
         CALog.forget(key);
         CALog.add("Agent " + name(a) + " sent to sabotage " + ind.getCurrentName() + " at " + m.getName() + " (" + m.getFaction().getDisplayName()
                 + ", about " + Math.round(success(op, m)) + " percent success, " + Misc.getDGSCredits(cost) + ")");
@@ -464,9 +572,8 @@ public class CASpies {
             return;
         }
         if (CABuild.credits() - total < s.reserve) return;
-        // the hire cost here, the fee in CABudget.charge (0.2.45.1: the fee was taken twice)
-        Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(HIRE_FEE);
-        CABudget.charge(s, HIRE_FEE, fee, 0f);
+        // the hire cost and the fee in one payment (0.2.45.1: the fee was taken twice)
+        CABudget.pay(s, null, HIRE_FEE, fee, 0f);
         d.spyRecruits().put(role, Global.getSector().getClock().getTimestamp());
         CALog.forget("spy:max"); CALog.forget("spy:yours");
         CALog.add("Agents: recruiting one for " + roleName(role) + " (" + Misc.getDGSCredits(total) + "); reports for duty in " + Math.round(RECRUIT_DAYS) + " days");
@@ -480,28 +587,27 @@ public class CASpies {
         java.awt.Color base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         CATheme.heading(t, "Agents (Nexerelin)", 0f);
         CovertOpsManager mgr = CovertOpsManager.getManager();
-        if (mgr == null) { t.addPara("Nexerelin's agents aren't running in this save.", gray, 6f); return; }
-        if (s.spyMode == 0) t.addPara("Agents are off: Autopilot gives no orders and hires no one. Turn them on in Settings, under Agents (Nexerelin).", gray, 6f);
-        else t.addPara("Mode: %s. Recruiting: %s, keeping %s.", 6f, hl, CASettings.SPY_NAMES[Math.max(0, Math.min(2, s.spyMode))],
-                s.spyNoHiring ? "off" : "on", "" + keep(s));
+        if (mgr == null) { t.addPara("Agents aren't running in this save.", gray, 6f); return; }
+        if (s.spyMode == 0) t.addPara("Agents are off (Settings, Agents).", gray, 6f);
+        else {   // 0.3.0.0 (WS-F3 fix): the mode as a readout under the heading
+            CATheme.mode(t, CASettings.SPY_NAMES[Math.max(0, Math.min(2, s.spyMode))]);
+            t.addPara("Recruiting: %s, keeping %s.", 4f, hl, s.spyNoHiring ? "off" : "on", "" + keep(s));
+        }
         for (Map.Entry<String, Long> e : d.spyRecruits().entrySet()) {
             float left = Math.max(0f, RECRUIT_DAYS - Global.getSector().getClock().getElapsedDaysSince(e.getValue()));
-            t.addPara("Recruiting for %s: reports for duty in %s days.", 4f, hl, roleName(e.getKey()), "" + (int) Math.ceil(left));
+            t.addPara("Recruiting for %s: %s days left.", 4f, hl, roleName(e.getKey()), "" + (int) Math.ceil(left));
         }
-        t.addPara("Autopilot only gives orders to agents it hired or you hand over, and only operations the agent's type can run: "
-                + "Negotiators and Hybrids raise relations, Saboteurs sabotage industry, any type handles rebellions, Pather cells and pirate bases.", gray, 4f);
-        t.addPara("Roles: the first agent is on security (what Nexerelin's Internal security mode does: Counter-Insurgency on a rebellion, "
-                + "Infiltrate Cell on a Pather cell, Find Pirate Base for a hidden base); the second raises relations with your preferred factions "
-                + "(picked like ambassadors); with offense on, a third sabotages enemy military. Recruiting one costs 12,000 plus the fee and takes "
-                + Math.round(RECRUIT_DAYS) + " days. Agents with nothing to do wait at their colony.", gray, 4f);
+        // 0.3.0.0 (WS-F3 fix, research 04 section 7 #7): one line, the roles on hover (two paragraphs of 37 and 69 words)
+        t.addPara("Agent one: security; two: relations; three, with offense: sabotage.", gray, 4f);
+        CATheme.hover(t, "A recruit costs 12,000 plus the fee and takes " + Math.round(RECRUIT_DAYS) + " days.");
         List<AgentIntel> all = agents(mgr), mine = managed(d, mgr);
-        if (all.isEmpty()) t.addPara(s.spyMode != 0 && !s.spyNoHiring ? "You have no agents; Autopilot hires one when there's work for it." : "You have no agents.", gray, 6f);
+        if (all.isEmpty()) t.addPara(s.spyMode != 0 && !s.spyNoHiring ? "No agents; Autopilot hires one when there is work." : "No agents.", gray, 6f);
         for (AgentIntel a : all) {
             boolean auto = mine.contains(a);
             String role = auto ? d.spyRoles().get(a.getAgent().getId()) : null;
-            String doing = !auto || s.spyMode == 0 ? "idle" : SECURITY.equals(role) ? "idle: no rebellion, Pather cell or hidden pirate base at your colonies"
-                    : RELATIONS.equals(role) ? "idle: no preferred faction to raise relations with (or no budget)"
-                    : OFFENSE.equals(role) ? "idle: no enemy military target it can sabotage at 60% or better" : "idle";
+            String doing = !auto || s.spyMode == 0 ? "idle" : SECURITY.equals(role) ? "idle: nothing to secure"
+                    : RELATIONS.equals(role) ? "idle: no faction to raise (or no budget)"
+                    : OFFENSE.equals(role) ? "idle: no target at 60% or better" : "idle";
             for (CovertActionIntel op : mgr.getOngoingCovertActionsOfType(CovertActionIntel.class)) {
                 if (op.getAgent() == a && !op.isEnded() && !op.isEnding() && op.getResult() == null) {
                     doing = op.getActionName(false) + (op.getMarket() != null ? " at " + op.getMarket().getName() : "");
@@ -510,7 +616,7 @@ public class CASpies {
             }
             t.addPara("%s, level %s %s: " + CALog.esc(doing) + (a.getMarket() != null ? " (at " + CALog.esc(a.getMarket().getName()) + ")" : "")
                     + ". %s", 8f, new java.awt.Color[]{hl, hl, hl, auto ? hl : gray},
-                    CALog.esc(name(a)), "" + a.getLevel(), CALog.esc(types(a)), auto ? "Autopilot gives its orders" + (role != null ? ", " + roleName(role) : "") : "Yours; Autopilot leaves it alone");
+                    CALog.esc(name(a)), "" + a.getLevel(), CALog.esc(types(a)), auto ? "Autopilot's" + (role != null ? ", " + roleName(role) : "") : "Yours");
             t.addButton(auto ? "Take it back" : "Let Autopilot use it", new String[]{"agent", auto ? "back" : "use", a.getAgent().getId()},
                     base, dark, Alignment.MID, com.fs.starfarer.api.ui.CutStyle.TL_BR, 180f, 22f, 4f);
         }

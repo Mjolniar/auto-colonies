@@ -58,6 +58,49 @@ public class CAScreenButton implements EveryFrameScript {
     static final Object NONE = new Object();
     static boolean noSpotLogged = false;
 
+    // 0.3.0.0 (research 07 M10): the dialog's three classes have obfuscated names a game hotfix can change. They're resolved
+    // once a session before any button is placed; when they're gone there's no button (one log line, the right-click option
+    // still works) instead of a button that does nothing. JTScreenButtonLinkCheck runs the same lookup against the game's jar.
+    static MethodHandle dialogNew, dialogShow;
+    /** Null before the first try, "" when linked, else why not. */
+    static String linkState;
+
+    /** Looks up the game's custom dialog constructor and show() through `cl`, without running them; null when found, else why not. */
+    static String link(ClassLoader cl) {
+        try {
+            Class<?> dialog = Class.forName(DIALOG_CLASS, false, cl), parentType = Class.forName(PARENT_CLASS, false, cl),
+                    listenerType = Class.forName(LISTENER_CLASS, false, cl);
+            MethodHandles.Lookup l = MethodHandles.publicLookup();
+            dialogNew = l.findConstructor(dialog, MethodType.methodType(void.class, float.class, float.class, CustomDialogDelegate.class, parentType, listenerType));
+            dialogShow = l.findVirtual(dialog, "show", MethodType.methodType(void.class, float.class, float.class));
+            return null;
+        } catch (Throwable t) {
+            dialogNew = dialogShow = null;
+            return t.getClass().getSimpleName() + ": " + t.getMessage();
+        }
+    }
+
+    /** Whether the dialog is there to open (looked up once a session). */
+    static boolean linked() {
+        if (linkState == null) {
+            String why;
+            try { why = link(Global.getSettings().getScriptClassLoader()); } catch (Throwable t) { why = String.valueOf(t); }
+            linkState = why == null ? "" : why;
+            if (why != null) CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony screen button off for this session: the game's dialog classes changed ("
+                    + why + "); the right-click option still works");
+        }
+        return linkState.isEmpty();
+    }
+
+    /** For the Diagnostics report: "ok", "not checked yet", or why it's off. */
+    static String linkText() { return linkState == null ? "not checked yet" : linkState.isEmpty() ? "ok" : "off: " + linkState; }
+
+    /** 0.3.0.0 (07 section 3): the session's diagnostics counters and the dialog lookup, cleared on load (CAReset.onLoad). */
+    public static void reset() {
+        noSpotLogged = false; placements = 0; reports = 0; lastReport = null;
+        linkState = null; dialogNew = dialogShow = null;
+    }
+
     private final Map<String, Object> methods = new HashMap<String, Object>();
     private boolean broken = false;
     private float timer = 0f;
@@ -226,6 +269,7 @@ public class CAScreenButton implements EveryFrameScript {
     }
 
     void update() throws Exception {
+        if (!CAData.settings().noScreenButton && !linked()) { broken = true; remove(); return; }   // 0.3.0.0: no dialog to open, no button
         Screen s = CAData.settings().noScreenButton ? null : read();
         if (s == null) { remove(); return; }
         float[] at = spot(s);
@@ -299,17 +343,11 @@ public class CAScreenButton implements EveryFrameScript {
     void open() {
         try {
             Screen s = read();
-            if (s == null) return;
-            ClassLoader cl = Global.getSettings().getScriptClassLoader();
-            Class<?> dialog = Class.forName(DIALOG_CLASS, true, cl), parentType = Class.forName(PARENT_CLASS, false, cl),
-                    listenerType = Class.forName(LISTENER_CLASS, false, cl);
-            MethodHandles.Lookup l = MethodHandles.publicLookup();
-            MethodHandle make = l.findConstructor(dialog, MethodType.methodType(void.class, float.class, float.class,
-                    CustomDialogDelegate.class, parentType, listenerType));
-            MethodHandle show = l.findVirtual(dialog, "show", MethodType.methodType(void.class, float.class, float.class));
+            if (s == null || !linked()) return;
+            // 0.3.0.0: the handles looked up once a session (linked); invoking the constructor initializes the dialog class
             Object dialogParent = CARefl.call(s.core, "getDialogParent");
-            Object d = make.invokeWithArguments(CAColonyDialog.W, CAColonyDialog.H, new CAColonyDialog(s.market), dialogParent, s.grid);
-            show.invokeWithArguments(d, 0.3f, 0.2f);
+            Object d = dialogNew.invokeWithArguments(CAColonyDialog.W, CAColonyDialog.H, new CAColonyDialog(s.market), dialogParent, s.grid);
+            dialogShow.invokeWithArguments(d, 0.3f, 0.2f);
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony screen button couldn't open the panel; use the right-click option", t);
         }

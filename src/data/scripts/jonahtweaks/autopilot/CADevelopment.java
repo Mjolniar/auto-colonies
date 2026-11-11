@@ -184,9 +184,9 @@ public class CADevelopment {
                 + Math.round(altitude(m)) + " of 1000 (" + stage(altitude(m)).toLowerCase() + ")";
         else if ("hypershunt".equals(dev)) what = "no buildings allowed";
         else what = "no effect on building choices";
-        t.addPara("Management style: %s. " + CALog.esc(Character.toUpperCase(what.charAt(0)) + what.substring(1)) + ". Chosen when the colony was founded; VoK can't change it.",
+        t.addPara("Management style: %s. " + CALog.esc(Character.toUpperCase(what.charAt(0)) + what.substring(1)) + ".",
                 6f, hl, name(dev));
-        if (!linked && Global.getSettings().getModManager().isModEnabled(MOD)) t.addPara("(Vaults of Knowledge's styles couldn't be read; scored as standard.)", gray, 2f);
+        if (!linked && Global.getSettings().getModManager().isModEnabled(MOD)) t.addPara("(Styles couldn't be read; scored as standard.)", gray, 2f);
     }
 
     static String signed(int v) { return (v > 0 ? "+" : "") + v; }

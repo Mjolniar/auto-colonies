@@ -21,14 +21,20 @@ import java.util.List;
 /**
  * The colony panel, opened from the colony screen: profile, mode, approvals, plan and recommended builds, locks, and a
  * page per mod feature that applies here, one page at a time from the list on the left (CANav).
+ * 0.3.0.0 (WS-F3, research 04 sections 2 and 7): shorter text. Each paragraph is 40 words or fewer; the score make-up of
+ * each recommended build, the siege detail and the fast buildout detail are hover text (CATheme.hover). The first-time
+ * setup shows the 5 rows of DECISIONS 17 (CASetupUI.renderFirstTime) in place of the whole settings screen.
  */
 public class CAColonyDialog extends BaseCustomDialogDelegate {
     public static final float W = 860f, H = 620f;
     static final String APPROVE = "ca:approve", REJECT = "ca:reject", SAVE_SETUP = "ca:savesetup", BACK = "ca:back";
+    static final String REFRESH = "ca:refresh";   // 0.3.0.0 (A4 fix): Recommended builds' Refresh (CAEngine.refresh)
     static final String AUG_APPLY = "ca:aug:apply", AUG_UNSKIP = "ca:aug:unskip";
     static final String HS = "ca:hs:";   // Coronal Hypershunt actions: ca:hs:<action>:<arg>
     static final String MEGA = "ca:mega:";   // Pluto / Nidavelir actions: ca:mega:<action>:<arg>
     static final String TASC = "ca:tasc:";   // start a TASC terraforming project: ca:tasc:<project name>
+    /** 0.3.0.0 (WS-F3): the message after a button that threw. */
+    static final String FAILED = "That failed; see starsector.log";
     final MarketAPI market;
     CustomPanelAPI root, content;
     String message = null;
@@ -59,15 +65,19 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         Plugin() { super(CANav.W, CANav.GAP); }
         @Override public void buttonPressed(Object id) {
             try { handle(id); }
-            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony panel button failed", t); message = "That didn't work; see starsector.log"; dirty = true; }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony panel button failed", t); message = FAILED; dirty = true; }
         }
         @Override public void advance(float amount) { if (dirty) { dirty = false; safeBuild(); } }
     }
 
     /** Builds the panel; an error shows a line instead of reaching the game's UI (0.2.37.0). */
     void safeBuild() {
+        long t0 = System.nanoTime();
+        CAEngine.drawing(true);   // 0.3.0.0 (A4 fix, 07 M6): nothing drawn here evaluates the colony (CAAugments' slot value included)
         try { build(); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony panel failed to draw", t); }
+        finally { CAEngine.drawing(false); }
+        CAPerf.record("colony panel: " + (setupPage ? "setup" : page), System.nanoTime() - t0);   // 0.3.0.0 (A4): what a page costs to draw
     }
 
     @Override public void createCustomDialog(CustomPanelAPI panel, CustomDialogCallback callback) { root = panel; safeBuild(); }
@@ -80,31 +90,36 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         CAData.Colony c = d.colony(market.getId());
         if (CASetupUI.handle(id, d.settings)) { dirty = true; return; }
         if (CANav.page(id) != null) { page = CANav.page(id); message = null; dirty = true; return; }
-        if (id instanceof CAData.Profile) { c.profile = (CAData.Profile) id; message = "Profile set to " + c.profile.label; }
+        if (id instanceof CAData.Profile) { c.profile = (CAData.Profile) id; message = "Goal set to " + c.profile.label; }
         else if (id instanceof CAData.Mode) {
             CAData.Mode mo = (CAData.Mode) id;
             boolean needsSetup = (mo == CAData.Mode.APPROVE || mo == CAData.Mode.AUTO) && !d.settings.setupDone;
-            if (needsSetup) { setupPage = true; setupMode = mo; CASetupUI.applyRecommended(d.settings); CASetupUI.open.clear(); CASetupUI.open.add("budget"); }
+            // 0.3.0.0 (WS-F3): the Settings page opens on Playstyle afterwards (CASetupUI's groups since F1)
+            if (needsSetup) { setupPage = true; setupMode = mo; CASetupUI.applyRecommended(d.settings); CASetupUI.open.clear(); CASetupUI.open.add("playstyle"); }
             else { c.mode = mo; message = "Mode set to " + mo.label; }
         }
         else if (SAVE_SETUP.equals(id)) {
             d.settings.setupDone = true; setupPage = false;
             if (setupMode != null) c.mode = setupMode;
-            message = "Settings saved; mode set to " + c.mode.label;
-            CALog.add("Setup saved; " + market.getName() + " switched to " + c.mode.label, true);
+            message = "Saved; mode " + c.mode.label;
+            CALog.add(market.getName() + ": setup saved, mode " + c.mode.label, true);   // 0.3.0.0 (WS-F3): "SETUP / Place: ..." on screen
         }
         else if (BACK.equals(id)) { setupPage = false; message = null; }
+        else if (REFRESH.equals(id)) {   // 0.3.0.0 (A4 fix, 07 M6): scored on a click, never while the panel draws; no plan tracking
+            CAEngine.refresh(market, planWith(c), d.settings.minStability, buildoutRanking(c));
+            message = null;
+        }
         else if (APPROVE.equals(id)) { String err = CAAuto.approve(market); message = err == null ? "Approved and started" : err; }
-        else if (REJECT.equals(id)) { CAAuto.reject(market); message = "Rejected; it won't propose again for 30 days"; }
+        else if (REJECT.equals(id)) { CAAuto.reject(market); message = "Rejected for 30 days"; }
         else if (CASurplus.handle(market, id) != null) message = CASurplus.handle(market, id);
         else if (CACapital.handle(market, id) != null) message = CACapital.handle(market, id);
         else if ((AUG_APPLY.equals(id) || AUG_UNSKIP.equals(id)) && Global.getSettings().getModManager().isModEnabled(CAAugments.MOD)) {
             try {
-                if (AUG_UNSKIP.equals(id)) { CAAugments.unskip(market); message = "Autopilot may add those augments again"; }
-                else { String err = CAAugments.applyNow(market); message = err == null ? "Station augments updated" : err; }
+                if (AUG_UNSKIP.equals(id)) { CAAugments.unskip(market); message = "Augments allowed again"; }
+                else { String err = CAAugments.applyNow(market); message = err == null ? "Augments updated" : err; }
             } catch (Throwable e) {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment action failed at " + market.getName(), e);
-                message = "That failed; see starsector.log";
+                message = FAILED;
             }
         }
         else if (id instanceof String && ((String) id).startsWith(HS)) {
@@ -112,7 +127,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             try { message = CAHypershunt.handle(market, a[0], a.length > 1 ? a[1] : ""); }
             catch (Throwable e) {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "hypershunt action failed at " + market.getName(), e);
-                message = "That failed; see starsector.log";
+                message = FAILED;
             }
         }
         else if (id instanceof String && ((String) id).startsWith(CABuildout.PREFIX)) {
@@ -120,7 +135,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         }
         else if (id instanceof String && ((String) id).startsWith(TASC)) {
             String err = CATasc.handle(market, ((String) id).substring(TASC.length()));
-            message = err == null ? "Terraforming project started" : err;
+            message = err == null ? "Project started" : err;
         }
         else if (id instanceof String && ((String) id).startsWith(MEGA)) {
             String[] a = ((String) id).substring(MEGA.length()).split(":", 2);
@@ -134,16 +149,38 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             CAEngine.Pick p = (CAEngine.Pick) id;
             String err = CABuild.start(market, p);
             message = err == null ? "Started: " + p.verb + " " + p.name + " for " + Misc.getDGSCredits(p.cost) : err;
-            if (err == null) CALog.add(market.getName() + ": you started " + p.verb.toLowerCase() + " " + p.name);
+            // 0.3.0.0 (WS-F3): "you started building X" reads as a sentence and gets the BUILD code ("build x" got none)
+            if (err == null) CALog.add(market.getName() + ": you started " + (p.upgrade ? "upgrading to " : "building ") + p.name);
         }
         dirty = true;
     }
 
+    static boolean buildoutRanking(CAData.Colony c) { return c.buildout && c.mode == CAData.Mode.AUTO; }
+
+    /** The goal the plan and Recommended builds use: fast buildout's Money, Security while an Approve or Auto colony is threatened, else its own (0.3.0.0: one place, so Refresh scores what's shown). */
+    CAData.Profile planWith(CAData.Colony c) {
+        boolean managed = c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO;
+        return buildoutRanking(c) ? CAData.Profile.INCOME : managed ? CAThreat.effective(market, c.profile) : c.profile;
+    }
+
+    // 0.3.0.0 (WS-F3 fix pass 2): every text on this panel shorter, for the mod-wide word budget (JTScreenButtonCheck)
     static final String[] MODE_TEXT = {
-            "Off: Autopilot does nothing at this colony.",
-            "Advisor: recommends builds below; you click Build.",
-            "Approve: proposes one project at a time; you approve or reject it.",
-            "Auto: builds, places items and runs policies within your budget."};
+            "Off: does nothing.",
+            "Advisor: recommends builds.",
+            "Approve: proposes one project at a time.",
+            "Auto: builds and sets policies within budget."};
+
+    // ---------------- text (0.3.0.0, WS-F3: each paragraph 40 words or fewer, JTScreenButtonCheck) ----------------
+
+    /** The first-time setup's line above its rows. 0.3.0.0 fix pass 3: shorter (mod-wide word budget, JTScreenButtonCheck). */
+    static final String SETUP_INTRO = "Recommended values for your income.";
+    /** Under siege: the line on Overview, and its hover. */
+    static final String SIEGE_LINE = "Under siege (%s): %s.",
+            SIEGE_HOVER = "Trade contracts skip its goods.";
+    /** A Nexerelin outpost's Overview line (CAEngine.OUTPOST_TEXT in short). */
+    static final String OUTPOST_LINE = "Resupply base; Autopilot leaves it alone.";
+    static final String LOCKS_LINE = "Click to lock. Autopilot leaves locked buildings alone.";
+    static final String PICKS_HOVER_NOTE = "Hover for the score.";
 
     static ButtonAPI rowButton(TooltipMakerAPI t, ButtonAPI prev, String label, Object id, boolean on, float w) {
         Color hl = Misc.getHighlightColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
@@ -177,8 +214,8 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     /** One section of the Mod features page; a section that fails leaves the others on the page. */
     void renderMod(TooltipMakerAPI t, String id, CAData.Colony c, CASettings s, CAData.Profile planWith, float pad) {
         com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
-        String title = id.equals("tasc") ? "Terraforming (Terraforming & Station Construction)" : id.equals("mega") ? "Megastructure (Ashes of the Domain)"
-                : id.equals("augments") ? "Station augments" : "Industry synergies (Ashes of the Domain)";
+        String title = id.equals("tasc") ? "Terraforming (TASC)" : id.equals("mega") ? "Megastructure (AotD)"
+                : id.equals("augments") ? "Station augments" : "Industry synergies (AotD)";
         CATheme.heading(t, title, pad);
         try {
             if (id.equals("tasc")) CATasc.renderColony(t, market, c);
@@ -187,7 +224,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             else if (id.equals("synergies") && mm.isModEnabled(CASynergies.MOD)) CASynergies.render(t, market);
         } catch (Throwable e) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + id + " section failed at " + market.getName(), e);
-            t.addPara("This section couldn't be shown; see starsector.log.", Misc.getGrayColor(), 6f);
+            t.addPara(CATheme.NOT_SHOWN, Misc.getGrayColor(), 6f);
         }
     }
 
@@ -203,11 +240,12 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         if (setupPage) {
             plugin.navW = 0f;
             TooltipMakerAPI t = content.createUIElement(W, H, true);
-            t.addTitle("AUTOPILOT\\\\ INITIALIZATION // FIRST-TIME SETUP");
-            t.addPara("Every setting below is pre-filled with a recommendation from your current income. Click a group to open it. "
-                    + "All of them can be changed later in the Intel screen, under its Colony Autopilot filter.", 6f);
+            t.addTitle("AUTOPILOT // FIRST-TIME SETUP");
+            t.addPara(SETUP_INTRO, 6f);
             CATheme.heading(t, "Settings", 10f);
-            CASetupUI.render(t, s, W);
+            // 0.3.0.0 (WS-F3, DECISIONS 17): Spending, Extras, New colonies, War and the Credit reserve, then one line that the
+            // rest is recommended (0.2.45 showed the whole 76-row settings screen here)
+            CASetupUI.renderFirstTime(t, s, W);
             ButtonAPI save = t.addButton("Save and switch to " + (setupMode == null ? "Auto" : setupMode.label), SAVE_SETUP, hl, dark,
                     Alignment.MID, CutStyle.TL_BR, 260f, 26f, 14f);
             ButtonAPI back = t.addButton("Back", BACK, base, dark, Alignment.MID, CutStyle.TL_BR, 120f, 26f, 0f);
@@ -234,8 +272,8 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         if (message != null) t.addPara(CALog.esc(message), hl, 0f);
 
         boolean managed = c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO;
-        boolean buildout = c.buildout && c.mode == CAData.Mode.AUTO;   // fast buildout ranks by money only (CABuildout)
-        CAData.Profile planWith = buildout ? CAData.Profile.INCOME : managed ? CAThreat.effective(market, c.profile) : c.profile;
+        boolean buildout = buildoutRanking(c);   // fast buildout ranks by money only (CABuildout)
+        CAData.Profile planWith = planWith(c);
 
         if (page.equals("overview")) {
             float threat = CAThreat.estimate(market);
@@ -243,37 +281,38 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             float cell = (cw - 30f) / 4f;
             t.beginGrid(cell, 4);
             t.addToGrid(0, 0, "Size", "" + market.getSize());
-            t.addToGrid(1, 0, "Stability", "" + (int) market.getStabilityValue(), market.getStabilityValue() < data.minStability ? Misc.getNegativeHighlightColor() : hl);
+            t.addToGrid(1, 0, "Stability", "" + (int) market.getStabilityValue(), market.getStabilityValue() < data.settings.minStability ? Misc.getNegativeHighlightColor() : hl);
             t.addToGrid(2, 0, "Hazard", Math.round(market.getHazardValue() * 100f) + "%");
             t.addToGrid(3, 0, "Access", Math.round(market.getAccessibilityMod().computeEffective(0f) * 100f) + "%");
-            t.addToGrid(0, 1, "Industries", Misc.getNumIndustries(market) + " of " + Misc.getMaxIndustries(market));
+            t.addToGrid(0, 1, "Industries", CABuild.usedSlots(market) + " of " + Misc.getMaxIndustries(market));
             t.addToGrid(1, 1, "Net income", Misc.getDGSCredits(market.getNetIncome()), market.getNetIncome() < 0f ? Misc.getNegativeHighlightColor() : hl);
             t.addToGrid(2, 1, "Threat", Math.round(threat * 100f) + "%", threatened ? Misc.getNegativeHighlightColor() : hl);
             t.addToGrid(3, 1, "Credits", Misc.getDGSCredits(CABuild.credits()));
             t.addGrid(message != null ? 8f : 0f);
             if (managed) {
-                t.addPara("Budget this month: %s of %s spent, %s saved up, %s available (fees %s).", 6f, hl, Misc.getDGSCredits(s.spent),
+                t.addPara("Budget: %s of %s spent, %s saved, %s available (fees %s).", 6f, hl, Misc.getDGSCredits(s.spent),
                         Misc.getDGSCredits(CABudget.limit(s)), Misc.getDGSCredits(CABudget.saved(s)), Misc.getDGSCredits(CABudget.available(s)),
                         CASettings.FEE_NAMES[s.feeLevel].toLowerCase());
-                if (CABudget.paused(s)) t.addPara("Spending is paused: net income is negative.", Misc.getNegativeHighlightColor(), 4f);
+                if (CABudget.paused(s)) t.addPara(CATheme.PAUSED, Misc.getNegativeHighlightColor(), 4f);   // 0.3.0.0 (WS-F3 fix pass 3): CAIntel's text
             }
-            if (!buildout && planWith != c.profile) t.addPara("Planning with Security until the threat drops below %s and has been high for %s days.", 4f,
+            if (!buildout && planWith != c.profile) t.addPara("Security goal until threat is under %s.", 4f,
                     Misc.getNegativeHighlightColor(), Math.round(CAThreat.CLEAR * 100f) + "%", "" + Math.round(CAThreat.MIN_DAYS));
             String siege = managed ? CASiege.why(market) : null;
-            if (siege != null) t.addPara("Under siege (%s): " + (buildout ? "the buildout waits" : "only defenses are built")
-                    + "; items, AI cores, policies and station augments are left as they are, and trade contracts don't count on its goods.", 4f,
-                    Misc.getNegativeHighlightColor(), siege);
+            if (siege != null) {   // 0.3.0.0 (WS-F3): the trade contract detail moved to the hover
+                t.addPara(SIEGE_LINE, 4f, Misc.getNegativeHighlightColor(), siege, buildout ? "the buildout waits" : "defenses only");
+                CATheme.hover(t, SIEGE_HOVER);
+            }
             com.fs.starfarer.api.characters.AdminData ad = CAItems.adminAt(market);
             if (ad != null && ad.getPerson() != null && !ad.getPerson().isAICore()) {
                 float salary = Misc.getAdminSalary(ad.getPerson()), worth = CAItems.adminWorth(market, ad.getPerson());
-                t.addPara("Administrator %s: salary %s a month, adds about %s a month here.", 4f, worth < salary ? Misc.getNegativeHighlightColor() : hl,
+                t.addPara("Administrator %s: salary %s, adds %s a month.", 4f, worth < salary ? Misc.getNegativeHighlightColor() : hl,
                         ad.getPerson().getNameString(), Misc.getDGSCredits(salary), Misc.getDGSCredits(worth));
             }
             if (c.mode == CAData.Mode.AUTO && s.useAICores && !CAEngine.isOutpost(market)) {
                 String none = CAItems.noInspections();
                 int pts = CAItems.aiPoints(market), lim = CAItems.coreLimit(s, market, none);
                 boolean coming = CAItems.inspected().contains(market);
-                String why = coming ? "an inspection is coming, so its cores are left as they are" : CAItems.limitWhy(s, market, none, lim);
+                String why = coming ? "inspection coming, cores kept" : CAItems.limitWhy(s, market, none, lim);
                 t.addPara("AI cores: %s inspection points, %s.", 4f, coming || pts > lim ? Misc.getNegativeHighlightColor() : hl, "" + pts, why);
                 String crisis = CACrisis.coreLine(market);
                 if (crisis != null) t.addPara(CALog.esc(crisis), Misc.getGrayColor(), 2f);
@@ -283,10 +322,10 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "management style line failed at " + market.getName(), e); }
             }
             Industry imp = CAStory.bestImprovement(market, c);
-            if (imp != null) t.addPara("Best story point improvement: %s" + (s.storyPointRule == 0 ? " (yours to do: story points are set to Player only)" : ""), 4f, hl, imp.getCurrentName());
+            if (imp != null) t.addPara("Best story point use: %s" + (s.storyPointRule == 0 ? " (yours)" : ""), 4f, hl, imp.getCurrentName());
 
             if (c.pendingId != null) {
-                CATheme.heading(t, "Waiting for your approval", 10f);
+                CATheme.heading(t, CATheme.APPROVAL, 10f);
                 t.addPara("%s for %s (plus a %s fee)", 6f, hl, c.pendingName, Misc.getDGSCredits(c.pendingCost),
                         Misc.getDGSCredits(CABudget.constructionFee(s, c.pendingCost)));
                 ButtonAPI a = t.addButton("Approve", APPROVE, hl, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 6f);
@@ -321,7 +360,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             }
             if (outpost) {
                 CATheme.heading(t, "Nexerelin outpost", 12f);
-                t.addPara(CAEngine.OUTPOST_TEXT + ". Items, cores, policies and fast buildout skip it too, and its shortages don't count as your colonies'.", gray, 6f);
+                t.addPara(OUTPOST_LINE, gray, 6f);   // 0.3.0.0 (WS-F3): 53 words down to 16
             }
         } else if (page.equals("builds")) {
             CAPlan.Plan plan = CAPlan.build(market, planWith);
@@ -333,27 +372,27 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 String tag = !nextShown ? "Next" : "Planned";
                 nextShown = true;
                 String lock = st.kind == CAPlan.Kind.BUILD ? CAAotD.lockReason(st.id, market) : null;
-                if (lock == null && CAPlan.held(market, plan, st)) lock = "waits until the rest of the plan is ready";
+                if (lock == null && CAPlan.held(market, plan, st)) lock = "waits for the rest of the plan";
                 t.addPara("%s  " + CALog.esc(st.label + (lock != null ? " (" + (lock.startsWith("waits") ? "" : "locked: ") + lock + ")" : "")), 2f, tag.equals("Next") ? hl : base, tag);
             }
-            if (!nextShown) t.addPara("Every step is done.", hl, 4f);
+            if (!nextShown) t.addPara("All steps done.", hl, 4f);
             if (!doneSteps.isEmpty()) t.addPara(CALog.esc("Done: " + String.join(", ", doneSteps)), gray, 4f);
 
             if (shunt) {
-                CATheme.heading(t, "Coronal Hypershunt (Ashes of the Domain)", 12f);
+                CATheme.heading(t, "Coronal Hypershunt (AotD)", 12f);
                 try { CAHypershunt.renderColony(t, market, c, s); }
                 catch (Throwable e) {
                     CADiagnostics.LOG.warn(CADiagnostics.TAG + "hypershunt section failed at " + market.getName(), e);
-                    t.addPara("Hypershunt info unavailable; see starsector.log.", gray, 6f);
+                    t.addPara(CATheme.NOT_SHOWN, gray, 6f);
                 }
             } else {
                 CATheme.heading(t, "Recommended builds", 12f);
-                if (c.mode == CAData.Mode.OFF) t.addPara("Autopilot is off for this colony.", gray, 8f);
+                if (c.mode == CAData.Mode.OFF) t.addPara("Autopilot is off here.", gray, 8f);
                 else renderPicks(t, data, planWith, buildout);
             }
         } else if (page.equals("locks")) {
             CATheme.heading(t, "Locks", message != null ? 8f : 0f);
-            t.addPara("Click a building to lock it (highlighted): Autopilot never upgrades, replaces or removes a locked building.", gray, 6f);
+            t.addPara(LOCKS_LINE, gray, 6f);
             ButtonAPI lockPrev = null, lockFirst = null;
             int inRow = 0;
             float lockW = (cw - 12f) / 3f;
@@ -367,7 +406,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             }
             if (lockFirst != null) CALog.endRow(t, lockFirst);
             List<String> odd = CADiagnostics.unsupportedConditions(market);
-            if (!odd.isEmpty() && !shunt) t.addPara(CALog.esc("Unmapped conditions on this colony (scores may be off): " + odd), gray, 10f);
+            if (!odd.isEmpty() && !shunt) t.addPara(CALog.esc("Unmapped conditions (scores may be off): " + odd), gray, 10f);
         } else if (page.equals("mods")) {
             float pad = message != null ? 8f : 0f;
             for (String id : modSections(c, s, shunt)) {
@@ -384,38 +423,75 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     /** The Recommended builds list: the top three options with what they're worth and a button each. */
     void renderPicks(TooltipMakerAPI t, CAData data, CAData.Profile planWith, boolean buildout) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
-        CAEngine.Result r = buildout ? CAEngine.evaluateForProfit(market, data.minStability) : CAEngine.evaluate(market, planWith, data.minStability);
-        if (r.blocked != null) t.addPara(CALog.esc(r.blocked) + (r.picks.isEmpty() ? "." : "; new buildings wait for it, but upgrades can start now."), hl, 8f);
+        // 0.3.0.0 (A4 fix, 07 M6): what's kept for this goal (the daily pass, or Refresh); drawing the panel never evaluates. A
+        // result from before the latest change is shown with its Build buttons off until it's scored again
+        CAEngine.Kept k = CAEngine.kept(market, planWith, data.settings.minStability, buildout);
+        ButtonAPI rb = t.addButton("Refresh", REFRESH, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 8f);
+        LabelAPI note = t.addPara(k == null ? (CAEngine.scoreFailed(market) ? "Not scored; see starsector.log."   // 0.3.0.0 (A4 fix)
+                : "Not scored yet; Refresh.")
+                : k.current ? "Scored today." : "Out of date; Refresh.", k != null && k.current ? gray : hl, 0f);
+        note.getPosition().rightOfMid(rb, 10f);
+        CALog.endRow(t, rb);
+        if (k == null) return;
+        CAEngine.Result r = k.result;
+        if (r.blocked != null) t.addPara(CALog.esc(r.blocked) + (r.picks.isEmpty() ? "." : "; upgrades only."), hl, 8f);
         List<CAEngine.Pick> picks = r.picks;
-        if (picks.isEmpty()) t.addPara("Nothing can be built here right now: every option is already built, blocked by the game, or has no free industry slot.", 8f);
-        else if (!CAEngine.worthwhile(picks.get(0))) t.addPara("Nothing here pays for itself right now, so Approve and Auto wait. The best options are listed anyway.", hl, 8f);
+        if (picks.isEmpty()) t.addPara("Nothing to build now.", 8f);
+        else if (!CAEngine.worthwhile(picks.get(0))) t.addPara("Nothing pays for itself now.", hl, 8f);   // 0.3.0.0 (WS-F3 fix): shorter
+        if (!picks.isEmpty()) t.addPara(PICKS_HOVER_NOTE, gray, 4f);
+        String goal = buildout ? "fast buildout (money only)" : "the " + planWith.label + " goal";
         for (int i = 0; i < Math.min(3, picks.size()); i++) {
             CAEngine.Pick p = picks.get(i);
-            Color money = p.fx[0] < 0f ? Misc.getNegativeHighlightColor() : hl;
-            t.addPara("%s. %s %s: %s a month after upkeep, costs %s, %s days" + (p.upgrade ? " (runs alongside other construction)" : ""), 12f,
-                    new Color[]{hl, hl, hl, money, hl, hl}, "" + (i + 1), p.verb, p.name, CAEngine.signed(p.fx[0]), Misc.getDGSCredits(p.cost), "" + (int) p.days);
-            t.addPara("    Ranked %s: money and other effects worth %s for " + CALog.esc(buildout ? "fast buildout (money only)" : "the " + planWith.label + " goal")
-                            + (p.planBonus > 0f ? ", plan step +%s" : "%s") + (p.followThrough > 0f ? ", upgrade +%s" : "%s")
-                            + ", minus %s a month for the build cost over 3 years", 2f, gray,
-                    CAEngine.signed(p.score), CAEngine.signed(p.worth), p.planBonus > 0f ? Misc.getDGSCredits(p.planBonus) : "",
-                    p.followThrough > 0f ? Misc.getDGSCredits(p.followThrough) : "", Misc.getDGSCredits(p.buildCost));
-            if (!CAEngine.worthwhile(p)) t.addPara("    Not worth building now: it doesn't pay for itself within 3 years. Approve and Auto skip it.", Misc.getNegativeHighlightColor(), 2f);
+            Color money = p.fx[0] < 0f ? Misc.getNegativeHighlightColor() : hl, score = CAEngine.worthwhile(p) ? hl : Misc.getNegativeHighlightColor();
+            t.addPara("%s. %s %s: %s a month, %s, %s days, score %s" + (p.upgrade ? " (runs alongside)" : ""), 12f,
+                    new Color[]{hl, hl, hl, money, hl, hl, score}, "" + (i + 1), p.verb, p.name, CAEngine.signed(p.fx[0]), Misc.getDGSCredits(p.cost),
+                    "" + (int) p.days, CAEngine.signed(p.score));
+            // 0.3.0.0 (WS-F3, research 04 section 2): the score's make-up (30 words under each of three picks in 0.2.45) is hover text
+            CATheme.hover(t, rankLines(p, goal));
+            if (!CAEngine.worthwhile(p)) t.addPara("    Not worth it (payback over %s months).", 2f,
+                    Misc.getNegativeHighlightColor(), "" + months(p));
             int shown = Math.min(3, p.lines.size());
             for (int j = 0; j < shown; j++) t.addPara("    " + CALog.esc(p.lines.get(j)), gray, 2f);
-            if (p.lines.size() > shown) t.addPara("    and " + (p.lines.size() - shown) + " more effects", gray, 2f);
-            boolean waits = !p.upgrade && r.blocked != null, poor = CABuild.credits() < p.cost;
+            if (p.lines.size() > shown) {   // 0.3.0.0 (WS-F3): the rest on hover, here and on the pick's line
+                t.addPara("    and " + (p.lines.size() - shown) + " more effects (hover)", gray, 2f);
+                CATheme.hover(t, p.lines.subList(shown, p.lines.size()).toArray(new String[0]));
+            }
+            boolean waits = !p.upgrade && r.blocked != null, poor = CABuild.credits() < p.cost, old = !k.current;
             ButtonAPI b = t.addButton(p.verb + " (" + Misc.getDGSCredits(p.cost) + ")", p, base, dark,
                     Alignment.MID, CutStyle.TL_BR, 240f, 24f, 6f);
-            b.setEnabled(!waits && !poor);
-            if (waits || poor) {
-                LabelAPI why = t.addPara(waits ? "Waits for the current construction" : "Not enough credits", gray, 0f);
+            b.setEnabled(!waits && !poor && !old);
+            if (waits || poor || old) {
+                LabelAPI why = t.addPara(old ? "Out of date: Refresh" : waits ? "Waits for construction" : "Not enough credits", gray, 0f);
                 why.getPosition().rightOfMid(b, 10f);
                 CALog.endRow(t, b);
             }
         }
-        if (r.noSlot > 0) t.addPara(r.noSlot + " more industries could be built if an industry slot were free.", gray, 10f);
-        if (r.locked > 0) t.addPara(r.locked + " supported buildings are locked here until researched (Ashes of the Domain).", gray, 6f);
-        if (r.unsupportedBuildable > 0) t.addPara(r.unsupportedBuildable
-                + " buildings from mods could be built here but aren't supported yet; see Diagnostics in the Intel screen.", gray, 6f);
+        if (r.noSlot > 0) t.addPara(r.noSlot + " more need an industry slot.", gray, 10f);
+        if (r.locked > 0) t.addPara(r.locked + " more need research (AotD).", gray, 6f);
+        if (r.unsupportedBuildable > 0) t.addPara(r.unsupportedBuildable + " mod buildings not supported (Diagnostics).", gray, 6f);
+    }
+
+    /** Months a pick's price is spread over: its payback horizon (CAHorizon, 0.3.0.0 B2), or the 36 of the legacy planner. Pure. */
+    static int months(CAEngine.Pick p) {
+        return Math.round(p != null && p.horizon > 0f ? p.horizon : CATuning.PAYBACK_MONTHS);
+    }
+
+    /**
+     * 0.3.0.0 (WS-F3): a recommended build's hover: what its score is made of (CAEngine.finish / finishNpv: worth plus the plan
+     * bonus, minus the price spread over the horizon and any industry slot the plan needs), then the effects past the three
+     * shown on the page. goal: "the Balanced goal" or "fast buildout (money only)". Pure apart from credit formatting.
+     */
+    static String[] rankLines(CAEngine.Pick p, String goal) {
+        List<String> out = new ArrayList<String>();
+        StringBuilder b = new StringBuilder("Score ").append(CAEngine.signed(p.score)).append(" a month for ").append(goal)
+                .append(": worth ").append(CAEngine.signed(p.worth));
+        if (p.planBonus > 0f) b.append(", plan +").append(Misc.getDGSCredits(p.planBonus));
+        if (p.followThrough > 0f) b.append(", upgrade +").append(Misc.getDGSCredits(p.followThrough));
+        b.append(", minus ").append(Misc.getDGSCredits(p.buildCost)).append(p.fee > 0f ? " for the price, fee and build time" : " for the price and build time")
+                .append(" over ").append(months(p)).append(" months");
+        if (p.reserve > 0f) b.append(", minus ").append(Misc.getDGSCredits(p.reserve)).append(" for an industry slot the plan needs");
+        out.add(b.append('.').toString());
+        for (int j = 3; j < p.lines.size(); j++) out.add(p.lines.get(j));
+        return out.toArray(new String[0]);
     }
 }

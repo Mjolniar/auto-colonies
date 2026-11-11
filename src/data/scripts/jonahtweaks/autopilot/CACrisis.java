@@ -123,7 +123,7 @@ public class CACrisis {
     public static Base meter() {
         float day = -1f;
         try { day = CADay.now(); } catch (Throwable ignored) { }
-        if (day < 0f || day - meterDay >= 1f || day < meterDay) {
+        if (!CATime.fresh(meterDay, day, 1f)) {   // 0.3.0.0 (A1 fix): day < 0 held on the game's negative clock, so it rescanned the sector every call
             meterDay = day;
             meterLive = false;
             HostileActivityEventIntel ha = event();
@@ -382,7 +382,7 @@ public class CACrisis {
         try {
             HostileActivityEventIntel.HAERandomEventData r = pending();
             String key = r == null ? null : "crisis:" + r.factor.getClass().getSimpleName();
-            for (String k : new ArrayList<String>(d.noted())) if (k.startsWith("crisis:") && !k.equals(key)) CALog.forget(k);
+            CALog.forgetAll("crisis:", key);   // 0.3.0.0: once-keys live in CAData.notedAt now (CALog, 07 M1)
             if (key != null && CALog.once(key)) {
                 List<String> names = new ArrayList<String>();
                 for (MarketAPI m : targets()) names.add(m.getName());
@@ -449,34 +449,16 @@ public class CACrisis {
 
     /** What drives a crisis, how it ends, and what Autopilot does about it. */
     static String advice(HostileActivityFactor f) {
-        if (isPolice(f)) return "Free ports scoring 5 or more (size + drugs + weapons - 2). The police raid the port and close it. "
-                + "Beating them ends it for good. Autopilot closes free ports at Auto colonies while this crisis is the next one.";
-        if (f instanceof PirateHostileActivityFactor) return "Your largest colony's size and low stability, and pirate bases nearby. The raid hits one "
-                + "system. Beating a major raid ends pirate crises for good, and defenses about 1.34 times its strength beat it while you're away. "
-                + "Kanta's protection or a deal with a base commander also stops it.";
-        if (f instanceof LuddicPathHostileActivityFactor) return "Pather cells, which need a colony of size 4 or more with 7 or more Pather interest "
-                + "(AI cores 4/2/1, an AI administrator 10, most colony items 4, Mining 1, Refining 2, Tech-Mining up to 8). The attack "
-                + "saturation-bombards one colony; size 4 or less is wiped out. Beating it ends Pather crises for good; a tithe (when a Pather "
-                + "fleet asks) buys two years. Autopilot prices the interest its cores add, pulls cores from the target so its cell can "
-                + "dissolve, and plans the target with Security.";
-        if (f instanceof PerseanLeagueHostileActivityFactor) return "Only while you could join the League (a size 5 colony, or 3 colonies with one "
-                + "of size 4). A year-long blockade: -60% accessibility in that system, half with defenses near its strength, none with "
-                + "stronger. It doesn't end on its own: beat its Armada or both supply fleets, or join the League at Kazeron (which also "
-                + "stops the Hegemony's crisis).";
-        if (f instanceof SindrianDiktatHostileActivityFactor) return "Any colony of yours making 4 or more fuel, with a fuel producer of size 4 or "
-                + "more. The attack saturation-bombards your biggest fuel producer. Beating it ends it for good and adds 25% to fuel exports; "
-                + "the Diktat's deal costs half your fuel export income. Autopilot counts this progress against Fuel Production.";
-        if (f instanceof TriTachyonHostileActivityFactor) return "Two or more goods your colonies (size 4 or more, 4 or more units) make in "
-                + "competition with Tri-Tachyon. Mercenaries disrupt up to 4 buildings per colony in one system. Beating or bribing them cuts "
-                + "this to a quarter; raiding Tri-Tachyon's commerce ends it.";
-        if (f instanceof LuddicChurchHostileActivityFactor) return "Colonies with a Luddic majority (farming or light industry, no industrial "
-                + "or military buildings). The Knights of Ludd blockade one for 180 days, -2 stability a month (less against strong defenses); "
-                + "at 0 it goes to the Church. Beat the Armada, or make the Church's deal.";
-        if (f instanceof HegemonyHostileActivityFactor) return "AI cores at colonies above size 3 (administrator 10, Alpha 4, Beta 2, Gamma 1). "
-                + "Inspections only go to a colony holding more than 7. Three beaten inspections, or Persean League membership, end it. "
-                + "Autopilot prices this progress into every core, and Inspection orders decides what it does when one comes.";
-        if (f instanceof RemnantHostileActivityFactor) return "A Remnant nexus in one of your systems. Its attack saturation-bombards a colony there; "
-                + "only destroying the nexus ends it.";
+        // 0.3.0.0 (WS-F3 fix pass 2): one line each, what drives it and how it ends (were 44-88 words); the numbers are in the guides
+        if (isPolice(f)) return "Free ports scoring 5 or more. Beating the raid ends it.";
+        if (f instanceof PirateHostileActivityFactor) return "Colony size, low stability and pirate bases nearby. Beating a major raid ends it.";
+        if (f instanceof LuddicPathHostileActivityFactor) return "Pather interest of 7+ at size 4+ colonies. Beating the attack ends it.";
+        if (f instanceof PerseanLeagueHostileActivityFactor) return "While you could join the League. Beat its Armada or join at Kazeron.";
+        if (f instanceof SindrianDiktatHostileActivityFactor) return "A size 4+ colony making 4+ fuel. Beating the attack ends it.";
+        if (f instanceof TriTachyonHostileActivityFactor) return "Goods made in competition with Tri-Tachyon. Raiding its commerce ends it.";
+        if (f instanceof LuddicChurchHostileActivityFactor) return "Luddic-majority colonies. Beat the Knights' Armada or make the Church's deal.";
+        if (f instanceof HegemonyHostileActivityFactor) return "AI cores above size 3. Three beaten inspections end it.";
+        if (f instanceof RemnantHostileActivityFactor) return "A Remnant nexus in your system. Destroying it ends it.";
         return "Added by a mod.";
     }
 
@@ -484,15 +466,14 @@ public class CACrisis {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), bad = Misc.getNegativeHighlightColor();
         CATheme.heading(t, "Colony crises", 0f);
         HostileActivityEventIntel ha = event();
-        if (ha == null) { t.addPara("No crisis meter yet: it starts with your first colony.", gray, 6f); return; }
+        if (ha == null) { t.addPara("No crisis meter yet.", gray, 6f); return; }
         int raw = rawMonthly(ha), monthly = ha.getMonthlyProgress();
         float mult = allMult(ha);
-        t.addPara("Meter: %s of %s, %s a month (%s before your military structures' x%s, at most %s).", 6f, hl,
+        t.addPara("Meter: %s of %s, %s a month (%s before military x%s, max %s).", 6f, hl,
                 "" + ha.getProgress(), "" + ha.getMaxProgress(), (monthly > 0 ? "+" : "") + monthly, "" + raw,
                 Misc.getRoundedValueMaxOneAfterDecimal(mult), "" + ha.getMaxMonthlyProgress());
-        t.addPara("The next crisis is picked at 500 and fires at 600; after it the meter falls back to 0-400. A month with no progress "
-                + "empties it. Autopilot prices each point a month at about %s a month (a crisis every 467 points or so, held to cost %s).",
-                4f, gray, hl, Misc.getDGSCredits(pointCost()), Misc.getDGSCredits(CRISIS_COST * (CALowProfile.on() ? CALowProfile.PRICE_MULT : 1f)));
+        // 0.3.0.0 (WS-F3 fix): one line (was 48 words); how the meter works and the price of a crisis on hover
+        t.addPara("Each point a month is priced at %s a month.", 4f, gray, hl, Misc.getDGSCredits(pointCost()));   // 0.3.0.0 (WS-F3 fix pass 2): one line
         HostileActivityEventIntel.HAERandomEventData r = pending();
         if (r != null) {
             List<String> names = new ArrayList<String>();
@@ -501,7 +482,7 @@ public class CACrisis {
                     name(r.factor), CAContracts.join(names));
         }
         float best = bestMilitaryMult();
-        t.addPara(best >= 1f ? "No Patrol HQ, Military Base or High Command yet: one slows every crisis (x0.9, x0.7, x0.5)."
+        t.addPara(best >= 1f ? "No military structure yet (they slow crises)."
                 : "Your best military structure slows every crisis to x%s.", 4f, hl, Misc.getRoundedValueMaxOneAfterDecimal(best));
         CALowProfile.render(t, s);   // 0.2.43.0
         CAOddisz.render(t);   // Sol Renewed's own crisis, when it's running (0.2.45.0)
@@ -522,10 +503,9 @@ public class CACrisis {
         if (!any) t.addPara("Nothing is adding to it now.", gray, 6f);
 
         CATheme.heading(t, "Hegemony inspections", 12f);
-        t.addPara("Inspection orders: %s. Inspections sent so far: %s; beaten: %s of 3.", 6f, hl,
+        t.addPara("Inspection orders: %s. Sent: %s, beaten: %s of 3.", 6f, hl,
                 CASettings.INSPECTION_NAMES[Math.max(0, Math.min(2, s.inspectionMode))].toLowerCase(),
                 "" + HegemonyHostileActivityFactor.getInspectionAttempts(), "" + HegemonyHostileActivityFactor.getInspectionsDefeated());
-        t.addPara("An inspection comes with " + (int) CAItems.nextInspectionFP() + " fleet points. Complying hands over every core at that colony; "
-                + "pulling cores out after it's sent disrupts every building there. Resisting turns the Hegemony hostile.", gray, 4f);
+        t.addPara("An inspection brings " + (int) CAItems.nextInspectionFP() + " fleet points.", gray, 4f);
     }
 }

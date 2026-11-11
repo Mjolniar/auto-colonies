@@ -37,7 +37,7 @@ public class CALogistics {
 
     static final float PER_SHIP = 1000f;
     static final Set<String> REFIT_GOODS = new HashSet<String>(Arrays.asList("supplies", "fuel", "crew", "marines"));
-    static float lastRun = -99f;
+    static float lastRun = Float.NaN;   // 0.3.0.0 (A1 fix): never fired; the game's day is negative, so -99 read as a later date
 
     // ---------------- hubs ----------------
 
@@ -138,7 +138,7 @@ public class CALogistics {
 
     public static void daily(CAData d, CASettings s, float now) {
         deliver(d);
-        if (!active(s) || now - lastRun < 7f) return;
+        if (!active(s) || !CATime.due(lastRun, now, 7f)) return;   // 0.3.0.0 (A1 fix): on the game's own (negative) clock
         lastRun = now;
         MarketAPI refit = refitHub(s), sell = sellHub(s);
         if (refit == null && sell == null) {
@@ -226,6 +226,16 @@ public class CALogistics {
                 CALog.add("Storage logistics: " + describe(l) + " from " + l.fromName + " to " + l.toName + " (" + l.why + ") waits for budget (" + Misc.getDGSCredits(fee) + ")");
             return;
         }
+        // 0.3.0.0 (C4, research 03 F13): a load goes when it carries 10 times its fee in value, or 30 days after its route's last load
+        String mark = "logi:last:" + l.from + ":" + l.to;
+        Long last = CAMark.at(mark);
+        float since = last == null ? Float.MAX_VALUE : CAMark.days(last, CAMark.now());
+        if (!CAEconomy.loadWorthSending(CAEconomy.cargoValue(l.cargo), fee, since)) {
+            back.addAll(l.cargo);
+            for (FleetMemberAPI fm : l.cargo.getMothballedShips().getMembersListCopy()) back.getMothballedShips().addFleetMember(fm);
+            return;
+        }
+        CAMark.set(mark, CAMark.now());
         l.days = CAStores.days(ly);
         l.sent = Global.getSector().getClock().getTimestamp();
         CABudget.charge(s, 0f, fee, 0f);   // takes the fee from your credits

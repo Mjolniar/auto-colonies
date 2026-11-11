@@ -18,21 +18,18 @@ import java.util.*;
  * Plans one project ahead, plus a two-step look-ahead for replacing a deposit with a richer one.
  */
 public class CATerraform {
-    static final float STANDARD_FEE = 25000f;
+    static final float STANDARD_FEE = CATuning.TERRAFORM_FEE;   // 0.3.0.0 (A3): the number lives in CATuning
 
     /** Hazard rating change of a condition (shared with TASC's planner in CAConditions). */
     static final Map<String, Float> HAZARD = CAConditions.HAZARD;
     static final Map<String, CAData.Profile[]> WORLD_FITS = CAConditions.WORLD_FITS;
-
-    /** Credit-equivalent per month of having this condition at this colony (negative = better without it). */
-    static float conditionValue(MarketAPI m, String cond, CAData.Profile p) { return CAConditions.value(m, cond, p); }
 
     static float projectCost(MarketAPI m, Utils.ProjectData pd) {
         float mult = m.hasCondition(pd.id) ? Settings.REMOVAL_COST_MULTIPLIER : 1f;
         return Math.round(pd.cost * mult * Settings.BUILD_COST_MULTIPLIER);
     }
 
-    static class Cand { MarketAPI m; BaseTerraformingIndustry ind; Utils.ProjectData pd; float cost, score; String why; boolean planned; }
+    static class Cand { MarketAPI m; BaseTerraformingIndustry ind; Utils.ProjectData pd; float cost, score; String why; boolean planned; String world; }
 
     static final String ACTION = "terraforming";
 
@@ -66,6 +63,7 @@ public class CATerraform {
             if ("Forge".equals(plan.name) && (h.equals("extreme_tectonic_activity") || h.equals("high_gravity"))) continue;
             avoid.add(h);
         }
+        Set<String>[] held = CAPlan.protectedConds(m); keep.addAll(held[0]); avoid.addAll(held[1]);   // 0.3.0.0 (B5): what a committed world plan paid for, so surplus terraforming doesn't undo it either
         avoid.removeAll(keep);
         return new Set[]{keep, avoid};
     }
@@ -120,6 +118,7 @@ public class CATerraform {
                         try { if (!ProjectListPlugin.canBuild(ind, pd)) continue; } catch (Throwable t) { continue; }
                         pick = new Cand(); pick.m = m; pick.ind = ind; pick.pd = pd; pick.cost = projectCost(m, pd);
                         pick.score = 1000000f - order * 1000f; pick.planned = true;
+                        pick.world = plan.world;
                         pick.why = (adding ? "add " : "remove ") + pd.name + " (" + plan.name + " plan, step " + order + ")";
                         break;
                     }
@@ -140,9 +139,9 @@ public class CATerraform {
                             if (row != null) after = CATerraSim.apply(conds, mv, row, gas);
                             else { after = new HashSet<String>(conds); if (adding) after.add(pd.id); else after.remove(pd.id); }
                             if (!CATerraSim.valid(conds, after, ka[0], ka[1])) continue;   // never undoes what the plan needs, never adds what it clears
-                            float value = CAConditions.change(m, after, prof, null) + CAPlan.bonusForCondition(m, plan, pd.id, adding);
+                            float value = CAConditions.change(m, after, prof, null) + CAEconomy.hazardPaySaved(m, after) + CAPlan.bonusForCondition(m, plan, pd.id, adding);   // 0.3.0.0 (C4, research 03 F9): plus the hazard pay the colony's growth no longer needs, for the months to its max size (CAEconomy.hazardPaySaved)
                             float cost = projectCost(m, pd);
-                            float score = value - cost / 36f * CASurplus.costWeight(m) - pd.buildTime * 30f;   // a quarter at the focus world with surplus
+                            float score = value - (CAPlan.legacy() ? cost / 36f * CASurplus.costWeight(m) : cost / CAHorizon.months()) - pd.buildTime * 30f;   // 0.3.0.0 (B2): the price over the payback horizon (CAHorizon), the same at every colony; legacyPlanner: 0.2.45's quarter at the focus world
                             if (score > 0f && (pick == null || score > pick.score)) {
                                 pick = new Cand(); pick.m = m; pick.ind = ind; pick.pd = pd; pick.cost = cost; pick.score = score;
                                 pick.why = (adding ? "add " : "remove ") + pd.name;
@@ -174,7 +173,7 @@ public class CATerraform {
                         CALog.add(k.m.getName() + ": terraforming (" + k.why + ") waits for " + Misc.getDGSCredits(k.cost + fee) + " of surplus credits");
                     continue;
                 }
-            } else if (k.cost > s.perProjectCap) {
+            } else if (k.cost > CAPresets.projectCap(s)) {   // 0.3.0.0 (WS-F1 fix): the cap in effect
                 if (CALog.once("tfcap:" + k.m.getId() + ":" + k.pd.id))
                     CALog.add(k.m.getName() + ": terraforming (" + k.why + ") is over the per-project cap; start it from " + k.ind.getCurrentName() + " if you want it");
                 continue;
@@ -184,15 +183,23 @@ public class CATerraform {
                     CALog.add(k.m.getName() + ": terraforming (" + k.why + ") waits for the terraforming budget");
                 continue;
             }
+            // 0.3.0.0 (B3 fix): the plan's projects don't offer the planner actions yet (0.3.0.x), so they ask it first: credits it saves
+            // up for its earmarked pick aren't spent here (CAPlanner.setAside; null while it isn't in charge or saves up for nothing)
+            String held = CAPlanner.setAside(k.cost + fee, k.cost + fee, 0f, k.m);
+            if (held != null) {
+                if (CALog.once("tfheld:" + k.m.getId() + ":" + k.pd.id)) CALog.quiet(k.m.getName() + ": terraforming (" + k.why + ") waits: " + held);
+                continue;
+            }
             try {
                 if (!CABreaker.allowed(ACTION)) continue;
                 k.ind.setProject(k.pd);
                 k.ind.startUpgrading();
                 if (!CABreaker.check(ACTION, k.ind.isUpgrading() || k.ind.hasOngoingProject(), k.m.getName())) continue;   // not charged if it didn't start
-                Global.getSector().getPlayerFleet().getCargo().getCredits().subtract(k.cost);
-                CABudget.charge(s, k.cost, fee, 0f);
+                CABudget.pay(s, null, k.cost, fee, 0f);
+                if (k.planned && k.world != null) CAPlan.commitWorld(k.m, k.world, k.pd.id, !k.m.hasCondition(k.pd.id));   // 0.3.0.0 (B5): the condition this project changes is kept for the commitment
                 s.terraSpent += k.cost;
                 CALog.forget("tf:" + k.m.getId() + ":" + k.pd.id);
+                CALog.forget("tfheld:" + k.m.getId() + ":" + k.pd.id);
                 CALog.add(k.m.getName() + ": " + k.ind.getCurrentName() + " started: " + k.why + " for " + Misc.getDGSCredits(k.cost)
                         + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : ""));
             } catch (Throwable t) {

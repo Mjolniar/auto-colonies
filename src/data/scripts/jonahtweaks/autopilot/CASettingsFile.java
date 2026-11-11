@@ -31,7 +31,6 @@ public class CASettingsFile {
             s.alphaMode = Math.max(0, Math.min(2, j.optInt("alphaMode", s.alphaMode)));
             s.adminHiring = j.optBoolean("adminHiring", s.adminHiring);
             s.adminOptimal = j.optBoolean("adminOptimal", s.adminOptimal);
-            s.adminDelay = j.optBoolean("adminDelay", s.adminDelay);
             s.ambassadorFocus = Math.max(0, Math.min(3, j.optInt("ambassadorFocus", s.ambassadorFocus)));
             s.ambassadorStopAt = Math.max(0, Math.min(3, j.optInt("ambassadorStopAt", s.ambassadorStopAt)));
             JSONObject fp = j.optJSONObject("factionPriority");
@@ -44,7 +43,7 @@ public class CASettingsFile {
             s.hazardPayColonyShare = (float) j.optDouble("hazardPayColonyShare", s.hazardPayColonyShare);
             s.hazardPayEmpireShare = (float) j.optDouble("hazardPayEmpireShare", s.hazardPayEmpireShare);
             s.freePortMode = Math.max(0, Math.min(1, j.optInt("freePortMode", s.freePortMode)));
-            d.minStability = (float) j.optDouble("minStability", d.minStability);
+            s.minStability = (float) j.optDouble("minStability", s.minStability);   // 0.3.0.0 (A3): a setting now, not CAData's
             CADiagnostics.LOG.info(CADiagnostics.TAG + "loaded defaults from " + PATH);
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "could not read " + PATH + "; using built-in defaults", t);

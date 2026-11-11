@@ -2,51 +2,30 @@
 
 ## Quick version
 
-- The manager picks a capital. You can change it.
-- Production, and your other Storage tabs once a week, ship their gear there.
-- When income is high enough, the capital builds trade buildings.
+- Autopilot picks a capital. You can pick another or None.
+- Custom production and other Storage tabs deliver there.
+- When income is high enough, it builds trade buildings.
 
 ## Which colony
 
-Picked by your production gathering point, then what's in its Storage, then size and accessibility. It stays put once picked. To choose: **Make this the capital** on a colony's panel, **Settings, Capital**, or move your gathering point.
+Picked by production gathering point, then Storage contents, then size and accessibility, and kept once picked. To choose: **Make this the capital** on a colony's panel, **Capital** (Settings, Items and people), or move your gathering point. **None** turns the capital off. If the capital is captured, another colony takes deliveries until you retake it.
 
-If it's captured, another colony takes deliveries until you retake it.
+**Capital does** (Settings, Advanced, Capital and storage): Deliveries and commerce (default), Deliveries only, Off. Leaving None restores its previous value.
 
-## Everything goes there
+## Deliveries
 
-- **Custom production** arrives at the capital.
-- **Other Storage tabs** ship ships, weapons, wings, blueprints, hull mod specs, supplies, fuel, crew and marines to it weekly. Cost is a normal Autopilot Storage shipment plus 1,000 a ship, and 2 days plus a day a light-year. **Gather your Storage there** turns it off.
+- **Custom production** arrives there, including [Shipyard](money.md#shipyard) orders.
+- **Other Storage tabs** send ships, weapons, wings, blueprints, hull mod specs, supplies, fuel, crew and marines weekly, as an Autopilot Storage shipment plus 1,000 a ship. **Gather Storage at the capital** turns it off.
 - **Items and AI cores** stay in Autopilot Storage.
-
-Your own refit or sell hub (see [Items](items-and-cores.md)) wins if set.
+- A refit or sell hub you set ([Items](items-and-cores.md#storage-logistics)) takes priority.
 
 ## Trade buildings
 
-Once net income passes 100,000 a month (and no fast buildout is running), the capital builds these in order, even at a loss:
+Once net income passes **Trade hub starts at** (100,000 a month; 50,000, 250,000, Right away) and no fast buildout is running, it plans, in order: Spaceport, Megaport, Commerce, Trade Outpost, Bazaar, Requisitions Centre, Union HQ, Salvage Yards, Underworld, Waystation. Commerce gives an Open Market, otherwise unavailable in the base game.
 
-Spaceport, Megaport, Commerce, Trade Outpost, Bazaar, Requisitions Centre, Union HQ, Salvage Yards, Underworld, Waystation.
-
-Mod buildings you don't have, or can't build there, are skipped. Commerce gives your colony an Open Market, which is the only way to get one in the base game.
-
-The capital gets its station sooner (Battlestation from size 5, Star Fortress from size 7).
-
-**Making room.** With slots full, it takes down its weakest ordinary industry, at most one every 90 days. Defenses, fleet buildings and plan buildings are safe. **Make room for trade buildings** turns it off.
-
-The build-up waits if net income is negative or capital stability is under 3.
-
-## Settings
-
-Under **Settings, Capital**: **Capital** (Autopilot picks), **Capital does** (Deliveries and commerce), **Commerce starts** (100,000 net income), **Make room for trade buildings**, **Gather your Storage there**.
-
-## Coming in 0.3.0
-
-- Built, in testing: the make-room swap values buildings the same way new builds are valued, and doesn't remove the capital's own plan steps.
-- Built, in testing: buildings Autopilot removes aren't rebuilt at that colony for a year.
-- Planned: trade buildings that lose money are only built from the economy step of the money ladder ([Money](money.md)).
-- Planned: ships the mod orders are delivered to the capital's storage.
-
-Everything planned for 0.3.0: [roadmap](roadmap.md)
-
-Plans can still change before release.
+- Ones that cost more than they earn need the Surplus tier, the [Economy rung](money.md#economy) On, and their total upkeep within 5% of colony net income. Built ones stay.
+- Its station comes sooner: Battlestation from size 5, Star Fortress from 7.
+- **Make room for trade buildings:** from Idle money, with slots full, it removes its weakest ordinary industry for a trade building when the swap pays, at most one every 90 days. Defenses, fleet buildings and plan steps stay. The removed industry is not rebuilt there for a year.
+- Paused while net income is negative or capital stability is under 3.
 
 Next: [Money, surplus and the endgame](money.md).

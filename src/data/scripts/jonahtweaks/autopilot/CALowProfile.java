@@ -192,7 +192,7 @@ public class CALowProfile {
      */
     static Map<String, int[]> ttData() {
         float day = CADay.now();
-        if (day >= 0f && day - ttDay < 1f && day >= ttDay) return tt;
+        if (CATime.fresh(ttDay, day, 1f)) return tt;   // 0.3.0.0 (A1 fix): day >= 0 never held on the game's negative clock, so it was never kept
         ttDay = day;
         Map<String, int[]> out = new LinkedHashMap<String, int[]>();
         try {
@@ -332,10 +332,11 @@ public class CALowProfile {
     /**
      * A colony at or over the Pather line whose items and cores are enough to get it under: the item adding least per
      * point of interest goes back to Autopilot Storage (cores go by CAItems.coreLimit). Never a locked building's, one that
-     * uses its item up, or at a colony at 3 stability or less.
+     * uses its item up, or at a colony under the stability floor (0.3.0.0: CAStability's floor, max(3, minStability), instead
+     * of its own 3); and if pulling it costs the colony stability that takes it under the floor, it goes back in.
      */
     static boolean pullItem(CAData d, MarketAPI m) {
-        if (!pather() || m.getStabilityValue() <= 3f) return false;
+        if (!pather() || CAStability.below(m)) return false;
         float now = interest(m), line = cellLine();
         if (now < line) return false;
         CAData.Colony c = d.colony(m.getId());
@@ -358,24 +359,52 @@ public class CALowProfile {
             return false;
         }
         SpecialItemData it = worst.getSpecialItem();
+        String itName = CAItems.name(it.getId()), from = worst.getCurrentName();   // 0.3.0.0 (fix): named before the item comes out
+        float before = CAStability.now(m);
         worst.setSpecialItem(null);
-        CAStores.of(m).addSpecial(it, 1f);
-        m.reapplyIndustries();
-        CALog.add(m.getName() + ": " + TAG + "took the " + CAItems.name(it.getId()) + " out of " + worst.getCurrentName()
+        // 0.3.0.0 (fix): from here until it's in Storage the item is nowhere, so anything that throws (a mod industry's apply()
+        // failing once its item is gone) puts it back in the building first; 0.2.45.1 stored it first, and 0.3.0's measuring moved that
+        try {
+            m.reapplyIndustries();
+            // 0.3.0.0: what an item adds to stability is easier to measure than to predict; one the colony can't lose goes straight back
+            if (!CAStability.canKeep(m, before, TAG + "taking the " + itName + " out of " + from)) {
+                worst.setSpecialItem(it);
+                m.reapplyIndustries();
+                return false;
+            }
+            CAStores.of(m).addSpecial(it, 1f);
+        } catch (Throwable t) {
+            if (worst.getSpecialItem() == null) {
+                worst.setSpecialItem(it);
+                try { m.reapplyIndustries(); } catch (Throwable ignored) { }
+            }
+            throw t;
+        }
+        CALog.add(m.getName() + ": " + TAG + "took the " + itName + " out of " + from
                 + " and back to Autopilot Storage: Pather interest " + Misc.getRoundedValueMaxOneAfterDecimal(now) + ", and a Pather cell comes at " + (int) line);
         return true;
     }
 
     /**
      * An AI core administrator counts 10 toward Hegemony inspections and 10 Pather interest: an idle human administrator
-     * takes over and the core goes to Autopilot Storage. Not below 4 stability (the AI's skills go with it).
+     * takes over and the core goes to Autopilot Storage. The AI's skills go with it (Hypercognition's +1 stability), so 0.3.0.0
+     * asks CAStability whether the colony can lose that and stay at or above the floor, and still never below 4 (0.2.45.1's rule:
+     * CAStability.adminOwn only knows two skills). The result is measured too: one that leaves the colony under the floor is
+     * undone. Never an Omega core (AAR: +3 stability, and past size 10 taking it out starts the Great Civil War).
      */
     static boolean swapAdmin(CAData d, MarketAPI m) {
         PersonAPI a = m.getAdmin();
         if (a == null || !a.isAICore()) return false;
         boolean heg = hegemony() && m.getSize() > HegemonyAICoresActivityCause.IGNORE_COLONY_THRESHOLD;
         if (!heg && !pather()) return false;
-        if (m.getStabilityValue() < 4f) return false;
+        // 0.3.0.0 (fix): the 0.2.45.1 guard stays alongside canLose, since a mod AI core's stability skill counts 0 there
+        if (CAStability.below(m) || m.getStabilityValue() < 4f) return false;
+        if (CAOmega.governs(m)) {   // 0.3.0.0 (fix): never swap out an Omega governor
+            if (CALog.once("lowprofile:omega:" + m.getId()))
+                CALog.add(m.getName() + ": " + TAG + "its Omega core administrator stays: taking it out costs its +3 stability, and past size 10 starts AAR's Great Civil War");
+            return false;
+        }
+        if (!CAStability.canLose(m, -CAStability.adminOwn(a), null)) return false;   // quiet: checked again below with the human's own
         AdminData h = CAItems.idleAdmin(d);
         if (h == null) {
             if (CALog.once("lowprofile:aiadmin:" + m.getId()))
@@ -383,14 +412,36 @@ public class CALowProfile {
                         + "a human administrator takes over once one is free (hire one, or turn on Hire administrators)");
             return false;
         }
-        String core = a.getAICoreId();
+        if (!CAStability.canLose(m, CAStability.adminOwn(h.getPerson()) - CAStability.adminOwn(a), TAG + "administrator "
+                + h.getPerson().getNameString() + " taking over from the AI core")) return false;
+        String core = a.getAICoreId(), human = h.getPerson().getNameString();
+        float before = CAStability.now(m);
         m.setAdmin(h.getPerson());
         h.setMarket(m);
-        if (core != null) CAStores.of(m).addCommodity(core, 1f);
+        // 0.3.0.0 (fix): measure it (setAdmin refreshes the governing skills); under the floor, or anything throwing before the
+        // core is in Storage, puts the AI core back in charge
+        try {
+            m.reapplyIndustries();
+            if (!CAStability.canKeep(m, before, TAG + "administrator " + human + " taking over from the AI core")) {
+                undoAdmin(m, a, h);
+                return false;
+            }
+            if (core != null) CAStores.of(m).addCommodity(core, 1f);
+        } catch (Throwable t) {
+            if (m.getAdmin() != a) undoAdmin(m, a, h);
+            throw t;
+        }
         CALog.forget("lowprofile:aiadmin:" + m.getId());
-        CALog.add(m.getName() + ": " + TAG + "administrator " + h.getPerson().getNameString() + " takes over from the AI core administrator"
+        CALog.add(m.getName() + ": " + TAG + "administrator " + human + " takes over from the AI core administrator"
                 + (core != null ? ", which went back to Autopilot Storage" : ""));
         return true;
+    }
+
+    /** 0.3.0.0 (fix): the AI core governs again and the human administrator is free (setAdmin frees them too); never throws. */
+    static void undoAdmin(MarketAPI m, PersonAPI ai, AdminData h) {
+        try { m.setAdmin(ai); } catch (Throwable ignored) { }
+        try { if (h.getMarket() == m) h.setMarket(null); } catch (Throwable ignored) { }
+        try { m.reapplyIndustries(); } catch (Throwable ignored) { }
     }
 
     /** The Persean League's crisis counts colony size alone: one line saying so, and what ends it. */
@@ -411,27 +462,23 @@ public class CALowProfile {
     public static void render(TooltipMakerAPI t, CASettings s) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), good = Misc.getPositiveHighlightColor();
         CATheme.heading(t, "Low profile", 12f);
-        if (!s.lowProfile) {
-            t.addPara("Off: Autopilot expands at full speed. Low profile (Settings, Expansion style) keeps your colonies growing while "
-                    + "staying clear of what starts each faction's crisis, and prices attention ten times higher.", gray, 6f);
+        if (!s.lowProfile) {   // 0.3.0.0 (WS-F3 fix): shorter; the Settings row has the rest
+            t.addPara("Off (Settings, Expansion style).", gray, 6f);
             return;
         }
-        t.addPara("On: every point of crisis progress counts %s, and Autopilot stays clear of what starts each faction's crisis. A rule "
-                + "lifts once that faction's crisis is over for good.", 6f, hl, "x" + (int) PRICE_MULT);
-        rule(t, "Hegemony", hegemony(), "no AI cores above size 3; an AI core administrator makes way for a human one", hl, good);
-        rule(t, "Luddic Path", pather(), "nothing takes a colony to " + (int) cellLine() + " Pather interest, where a cell comes", hl, good);
-        rule(t, "Luddic Church", church(), "a farming-only habitable colony (a Luddic majority) is priced in; an industrial or military building ends one", hl, good);
+        t.addPara("On: crisis progress counts %s; a rule lifts once its crisis ends.", 6f, hl, "x" + (int) PRICE_MULT);
+        rule(t, "Hegemony", hegemony(), "no AI cores above size 3", hl, good);
+        rule(t, "Luddic Path", pather(), "no colony reaches " + (int) cellLine() + " Pather interest", hl, good);
+        rule(t, "Luddic Church", church(), "Luddic-majority colonies are priced in", hl, good);
         rule(t, "Tri-Tachyon", triTachyon(), "exports competing with theirs are priced in", hl, good);
         rule(t, "Sindrian Diktat", diktat(), "fuel from 4 units is priced in", hl, good);
-        t.addPara("Always: no free ports, no raids on other factions' colonies, no sabotage by agents, no Omega or IX cores, no settlement "
-                + "next to a Remnant nexus, and Hegemony inspections are never resisted.", gray, 6f);
-        t.addPara("Pirates and the Persean League count colony size, so nothing avoids them. Patrol HQ, Military Base and High Command "
-                + "slow every crisis and count ten times as much here, and the colony a crisis is coming for plans with Security. "
-                + "Joining the League at Kazeron ends its crisis and the Hegemony's.", gray, 4f);
+        t.addPara("Always: no free ports, raids, sabotage, Omega or IX cores, or settlements near a Remnant nexus.", gray, 6f);
+        // 0.3.0.0 (WS-F3 fix pass 2): shorter; the pirate and League crises and Kazeron are in the guide
+        t.addPara("Auto-expansion stays in systems you hold.", gray, 4f);
     }
 
     static void rule(TooltipMakerAPI t, String who, boolean live, String what, Color hl, Color good) {
         if (live) t.addPara("%s: " + what + ".", 4f, hl, who);
-        else t.addPara("%s: its crisis is over for good, so this rule is lifted.", 4f, good, who);
+        else t.addPara("%s: crisis over for good; rule lifted.", 4f, good, who);
     }
 }

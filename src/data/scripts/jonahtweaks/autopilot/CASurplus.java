@@ -21,14 +21,22 @@ import java.util.*;
  * plan twice. Colony items waiting in Autopilot Storage count toward what a building is worth anywhere (CAItems.idleBonus).
  * The focus world is yours to pick on its colony panel, or Autopilot's: the Auto colony with the most to build on (size,
  * free industry slots, deposits, habitability, hazard, waiting items that fit, income, a reachable special world).
+ * 0.3.0.0 (WS-C2, research 03 section 5.2): spending freely follows the money tier (CARich): it's on at Rich and Endgame
+ * (rich), while there are credits over the line and the focus-world-only setting is off; 0.3.0.0 (C12 fix): it starts at half
+ * the surplus line over it and, once on, ends under a fifth of the line over it (or with the tier), so it's never on with no
+ * credits over the line. Every caller of rich() (the
+ * planner and build pass, hazard pay, surplus terraforming, war fleets, wonders, research, the endgame) follows the tier
+ * through it. At Idle money and up a credit counts half in what a build is worth at every Approve and Auto colony
+ * (moneyWeight). With the hidden legacyPlanner switch, spending freely is 0.2.45.1's rule (richAt). The focus world itself
+ * is unchanged: credits over the line, at any tier.
  */
 public class CASurplus {
     /** An Autopilot-picked focus world changes only for one that scores this much higher, so it doesn't flip back and forth. */
     static final float MARGIN = 10f;
     /** At the focus world, while there's a surplus, a price counts a quarter. */
-    static final float CHEAP = 0.25f;
+    static final float CHEAP = CATuning.FOCUS_PRICE;   // 0.3.0.0 (A3): in CATuning
     /** The focus world's new upkeep cap while there's a surplus: this share of net income, if more than the setting. */
-    static final float UPKEEP_SHARE = 0.1f;
+    static final float UPKEEP_SHARE = CATuning.FOCUS_UPKEEP_SHARE;
 
     static String focusId;      // today's focus world
     static float computedAt = -99f;
@@ -40,6 +48,7 @@ public class CASurplus {
         committedAt = Long.MIN_VALUE;
         CASurplusResearch.summary = null;
         CAProjects.reset();
+        CARich.reset();   // 0.3.0.0 (C2): the money tier's day cache; the tier itself is in the save
     }
 
     static float now() { return CADay.now(); }
@@ -177,7 +186,7 @@ public class CASurplus {
     public static MarketAPI focus() {
         CASettings s = CAData.settings();
         // not while research scores a what-if state (techs marked researched): yesterday's pick stands until it's put back
-        if (now() - computedAt >= 1f && !(CAEngine.noProbe && computedAt > -99f)) compute(s);
+        if (!CATime.fresh(computedAt, now(), 1f) && !(CAEngine.noProbe && computedAt != -99f)) compute(s);   // 0.3.0.0 (A1 fix): right on the game's negative clock
         return focusId == null ? null : CAAuto.market(focusId);
     }
 
@@ -197,28 +206,82 @@ public class CASurplus {
     // they cost more than they earn. What it may spend comes from the pool, not from income (0.2.34.1): builds and projects draw
     // on the surplus, and the month's new upkeep may reach a sixtieth of it (the pool covers five years of it), shrinking as
     // the pool does. A weak month doesn't stop it (it used to pause under half the best month, and cap upkeep at a fifth of net income).
+    // 0.3.0.0 (C2): it starts and ends with the money tier Rich (CARich). RICH and RICH_OFF are the rule with legacyPlanner.
 
-    /** Credits over the line past which every colony spends from the surplus. */
-    public static final float RICH = 10000000f;
+    /** Credits over the line past which every colony spends from the surplus (legacyPlanner; CARich's Rich line otherwise). */
+    public static final float RICH = CATuning.RICH;   // 0.3.0.0 (A3): these numbers live in CATuning
     /** While rich, a credit counts this much in what a build is worth (income and upkeep alike). */
-    public static final float RICH_MONEY = 0.25f;
+    public static final float RICH_MONEY = CATuning.RICH_MONEY;
     /** While rich, the month's new upkeep may reach the surplus divided by this many months. */
-    static final float RICH_UPKEEP_MONTHS = 60f;
+    static final float RICH_UPKEEP_MONTHS = CATuning.RICH_UPKEEP_MONTHS;
 
-    /** Spending freely: surplus spreading on and this far over the line. */
+    /**
+     * 0.3.0.0 (WS-B5, research 02 section 8): once on, spending freely stays on until the surplus falls under this. Without
+     * it a few 750,000 shields took a 10.5M surplus under 10M and everything flipped back the same week: weekly passes,
+     * money at full weight, the rich plan steps gone, the endgame off at non-focus colonies, and a prune that took down
+     * what spending freely had just built.
+     */
+    public static final float RICH_OFF = CATuning.RICH_OFF;   // 0.7 x RICH; the number lives in CATuning
+    /**
+     * The once-key that says spending freely is on (CALog.GUARDS "surplus:", kept in the save). It's the hysteresis state:
+     * with legacyPlanner 0.2.45.1's (on at RICH, off under RICH_OFF); 0.3.0.0 (C12 fix) otherwise the surplus band below
+     * (RICH_START_SHARE, RICH_HOLD_SHARE). 0.3.0.0 (C2): a save from before 0.3.0 with it set starts at the money tier Rich
+     * (CARich.update).
+     */
+    static final String RICH_KEY = "surplus:rich";
+
+    /** 0.3.0.0 (C12 fix): spending freely starts with credits this share of the surplus line over it (1.5M over the 3M line)... */
+    static final float RICH_START_SHARE = 0.5f;
+    /** ...and once on holds while they stay this share of the line over it (600,000 over the 3M line). Never at 0 surplus. */
+    static final float RICH_HOLD_SHARE = 0.2f;
+
+    /**
+     * Spending freely. 0.3.0.0 (C2): the money tier is Rich or Endgame (CARich.tier, which holds down to 60% of its line),
+     * there are credits over the surplus line, and the focus-world-only setting is off. With legacyPlanner, 0.2.45.1's rule:
+     * RICH over the line, and once on until under RICH_OFF.
+     * 0.3.0.0 (C12 fix): the credits over the line have a start and an end line of their own, both over the surplus line:
+     * it starts at RICH_START_SHARE of the line over it and, once on (RICH_KEY noted), ends under RICH_HOLD_SHARE of it. One
+     * build or one month's upkeep inside that band doesn't end it and start it again (each flip wrote two screen lines,
+     * changed the pass cadence, re-planned every colony and turned the endgame off and on). It's never on with no credits
+     * over the line, so the callers that pay from the surplus while rich (war fleets, uncapped hazard pay, the endgame,
+     * research items) always have some to pay from, as in 0.2.45.1 (7M at least there). The first C12 form held it while the
+     * tier was Rich, also under the line. Surplus investment Off (no line) ends it at once, as in 0.2.45.1.
+     */
     public static boolean rich(CASettings s) {
-        boolean was;
-        try { was = CAData.get().noted().contains("surplus:rich"); } catch (Throwable t) { was = false; }
-        return richAt(s.surplusFocusOnly, amount(s), was);
+        if (CABudget.legacy(s)) return richAt(s.surplusFocusOnly, amount(s), richWas());
+        return richFor(s.surplusFocusOnly, line(s), amount(s), CARich.tier(), richWas());
     }
 
+    /** Pure (0.3.0.0, C12 fix): credits over the line that start spending freely at this surplus line. */
+    static float richStart(float line) { return RICH_START_SHARE * Math.max(0f, line); }
+
+    /** Pure (0.3.0.0, C12 fix): credits over the line under which spending freely ends once on. */
+    static float richHold(float line) { return RICH_HOLD_SHARE * Math.max(0f, line); }
+
+    /**
+     * Pure (0.3.0.0, C12 fix): spending freely. focusOnly: the focus-world-only setting; line: the surplus line (0: surplus
+     * investment Off); amount: credits over it (amount()); tier: the money tier; wasOn: it was on at its last daily look
+     * (RICH_KEY). On at Rich or Endgame with richStart(line) over the line; once on, while the tier holds and richHold(line)
+     * is over it. Off with no credits over the line.
+     */
+    static boolean richFor(boolean focusOnly, float line, float amount, int tier, boolean wasOn) {
+        if (focusOnly || !(line > 0f) || tier < CARich.T3 || !(amount > 0f)) return false;
+        return amount >= richStart(line) || (wasOn && amount >= richHold(line));
+    }
+
+    /** Whether spending freely was on at its last daily look (the saved once-key); false with no save. */
+    static boolean richWas() {
+        try { return CALog.noted(RICH_KEY); } catch (Throwable t) { return false; }
+    }
+
+    /** Pure: spending freely switching on (0.2.45's rule, no memory): RICH or more over the line. */
     static boolean richAt(boolean focusOnly, float amount) { return richAt(focusOnly, amount, false); }
 
-    /** 0.2.45.2 (from 0.3.0): once on, spending freely stays on until the surplus drops under RICH_EXIT of the line (10M on, 7M off), so a couple of big buys don't flip everything back the same week. */
-    static boolean richAt(boolean focusOnly, float amount, boolean wasRich) { return !focusOnly && amount >= (wasRich ? RICH * RICH_EXIT : RICH); }
-
-    /** Spending freely ends under this share of RICH. */
-    static final float RICH_EXIT = 0.7f;
+    /** Pure, 0.3.0.0 (B5): on at RICH; once on (wasOn) it stays on down to RICH_OFF. The focus-world-only setting turns it off at once. */
+    static boolean richAt(boolean focusOnly, float amount, boolean wasOn) {
+        if (focusOnly) return false;
+        return amount >= RICH || (wasOn && amount >= RICH_OFF);
+    }
 
     /** Spends from the surplus: the focus world, or while rich every Approve or Auto colony that builds. */
     public static boolean spends(MarketAPI m) {
@@ -233,13 +296,32 @@ public class CASurplus {
         return f != null && f.getId().equals(m.getId());
     }
 
-    /** What a credit counts in a build's worth at this colony: RICH_MONEY while rich, else 1. */
-    public static float moneyWeight(MarketAPI m) { return m != null && spends(m) && rich(CAData.settings()) ? RICH_MONEY : 1f; }
+    /**
+     * What a credit counts in a build's worth at this colony: RICH_MONEY while rich where it spends the surplus; 0.3.0.0 (C2):
+     * CARich.IDLE_MONEY at any Approve or Auto colony while the money tier is Idle money or higher; else 1.
+     */
+    public static float moneyWeight(MarketAPI m) {
+        if (m == null) return 1f;
+        CASettings s = CAData.settings();
+        if (spends(m) && rich(s)) return RICH_MONEY;
+        boolean legacy = CABudget.legacy(s);
+        int tier = legacy ? CARich.T0 : CARich.tier();
+        if (tier < CARich.T2) return 1f;
+        CAData.Mode mode = CAData.get().colony(m.getId()).mode;
+        boolean managed = (mode == CAData.Mode.AUTO || mode == CAData.Mode.APPROVE) && !CAEngine.isOutpost(m) && !CAHypershunt.is(m);
+        return moneyWeight(false, managed, tier, legacy);
+    }
+
+    /** Pure (0.3.0.0, C2): what a credit counts: rich where the surplus is spent; half at a managed colony from Idle money up (not with legacyPlanner); else 1. */
+    static float moneyWeight(boolean spendsRich, boolean managed, int tier, boolean legacy) {
+        if (spendsRich) return RICH_MONEY;
+        return !legacy && managed && tier >= CARich.T2 ? CARich.IDLE_MONEY : 1f;
+    }
 
     /** Spending the colony may do beyond the monthly budget: the surplus, at the focus world (every colony while rich). 0 elsewhere. */
     public static float extra(MarketAPI m, CASettings s) { return spends(m) ? amount(s) : 0f; }
 
-    public static float projectCap(MarketAPI m, CASettings s) { return spends(m) ? Math.max(s.perProjectCap, amount(s)) : s.perProjectCap; }
+    public static float projectCap(MarketAPI m, CASettings s) { float cap = CAPresets.projectCap(s); return spends(m) ? Math.max(cap, amount(s)) : cap; }   // 0.3.0.0 (WS-F1 fix): the cap in effect, Automatic or Fixed
 
     public static float upkeepCap(MarketAPI m, CASettings s) {
         float cap = CABudget.upkeepCap(s);
@@ -255,7 +337,7 @@ public class CASurplus {
     }
 
     /** While spending freely, a build's price counts this much: tens of millions have nothing better to do. */
-    static final float RICH_PRICE = 0.05f;
+    static final float RICH_PRICE = CATuning.RICH_PRICE;
 
     /**
      * Spending freely, every colony maxes its structures (no industry slot needed): its station to the top tier of its line,
@@ -301,7 +383,7 @@ public class CASurplus {
             if (s.surplusLine == 0) {
                 s.surplusLine = 2;
                 CALog.add("Surplus investment is on (new in this version): credits over " + Misc.getDGSCredits(line(s)) + " go into one focus world. "
-                        + "Change it under Settings, Budget and spending");
+                        + "Change it under Settings, Money");
             }
         }
         compute(s);
@@ -318,40 +400,73 @@ public class CASurplus {
         }
     }
 
-    /** Daily: logs when spending freely starts or ends. */
+    /**
+     * Daily: logs when spending freely starts or ends. 0.3.0.0 (B5): its once-key is the hysteresis state too, so it's set
+     * the day spending freely starts and cleared only the day it ends (under RICH_OFF, or the focus-world-only setting).
+     * 0.3.0.0 (C2): outside legacyPlanner it ends when the money tier drops under Rich, or with the focus-world-only setting.
+     * 0.3.0.0 (C12 fix): and when the credits over the surplus line fall under richHold, or surplus investment is turned Off.
+     */
     static void richDaily(CASettings s) {
         float a = amount(s);
+        boolean legacy = CABudget.legacy(s);
+        // 0.3.0.0 (C2): on a day the money tier changed, its own line is on screen and this one goes to starsector.log only
+        boolean screen = legacy || !CARich.changedToday();
         if (rich(s)) {
-            if (CALog.once("surplus:rich")) CALog.add("Spending freely: " + Misc.getDGSCredits(a) + " surplus, every Auto colony spends it", true);
-        } else {
-            if (CAData.get().noted().contains("surplus:rich")) {
-                CALog.forget("surplus:rich");
-                CALog.add("Spending freely ended (" + (s.surplusFocusOnly ? "focus world only" : "surplus under " + Misc.getDGSCredits(RICH * RICH_EXIT)) + ")");
+            if (CALog.once(RICH_KEY)) {
+                String line = "Spending freely: " + Misc.getDGSCredits(a) + " surplus, every Auto colony spends it";
+                if (screen) CALog.add(line, true); else CALog.quiet(line);
             }
+        } else if (CALog.noted(RICH_KEY)) {   // 0.3.0.0: once-keys live in CAData.notedAt (CALog)
+            CALog.forget(RICH_KEY);
+            // 0.3.0.0 (C12 fix): outside legacyPlanner it ends with the tier, the surplus under richHold, the focus-world-only
+            // setting or surplus investment Off (rich())
+            String why = s.surplusFocusOnly ? "focus world only" : line(s) <= 0f ? "surplus investment off"
+                    : legacy ? "surplus under " + Misc.getDGSCredits(RICH_OFF)
+                    : CARich.tier() < CARich.T3 ? "money tier " + CARich.name(CARich.tier()) : "surplus under " + Misc.getDGSCredits(richHold(line(s)));
+            if (screen) CALog.add("Spending freely ended (" + why + ")"); else CALog.quiet("Spending freely ended (" + why + ")");
         }
-        s.richIncomeRef = 0f;   // the old pause's reference; unused since 0.2.34.1
     }
 
     // ---------------- panels ----------------
 
     static final String SET = "ca:focus:set", AUTO = "ca:focus:auto";
+    /** 0.3.0.0 (WS-F3 fix): the hover of the Budget page's spending freely line. */
+    static final String RICH_HOVER = "Every Auto colony spends the surplus.";
 
     /** The empire panel's line under Budget. */
     public static void renderEmpire(TooltipMakerAPI t, CASettings s) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor();
-        if (line(s) <= 0f) { t.addPara("Surplus investment is off (Settings, Budget and spending).", gray, 4f); return; }
+        if (line(s) <= 0f) { t.addPara("Surplus is off (Settings, Money).", gray, 4f); return; }
         MarketAPI f = focus();
         float a = amount(s);
-        if (f == null) t.addPara("Surplus investment: no Auto colony to be the focus world.", gray, 4f);
-        else if (a <= 0f) t.addPara("Surplus investment: credits over %s go into %s, the focus world; you're under the line now.", 4f, hl,
+        if (f == null) t.addPara("Surplus: no Auto colony for a focus world.", gray, 4f);
+        else if (a <= 0f) t.addPara("Surplus line %s, focus world %s; under the line now.", 4f, hl,
                 Misc.getDGSCredits(line(s)), f.getName());
-        else t.addPara("Surplus investment: %s over your %s line goes into %s, the focus world" + (f.getId().equals(s.focusId) ? " (your pick)." : " ("
+        else t.addPara("Surplus: %s over the %s line goes into %s" + (f.getId().equals(s.focusId) ? " (your pick)." : " ("
                 + CALog.esc(whys.get(f.getId())) + ")."), 4f, hl, Misc.getDGSCredits(a), Misc.getDGSCredits(line(s)), f.getName());
-        if (rich(s)) t.addPara("Spending freely (over %s): every Auto colony spends the surplus, new upkeep up to %s this month (a sixtieth of the pool), "
-                + "hazard pay wherever it helps, several terraforming projects at once.", 2f, hl, Misc.getDGSCredits(RICH), Misc.getDGSCredits(a / RICH_UPKEEP_MONTHS));
+        boolean legacy = CABudget.legacy(s);
+        // 0.3.0.0 (WS-F3 fix): spending freely in one line each (was 32 and 41 words); what it spends on is hover text (RICH_HOVER)
+        if (rich(s) && legacy) {
+            t.addPara("Spending freely from %s to under %s; new upkeep up to %s.", 2f, hl,
+                    Misc.getDGSCredits(RICH), Misc.getDGSCredits(RICH_OFF), Misc.getDGSCredits(a / RICH_UPKEEP_MONTHS));
+            CATheme.hover(t, RICH_HOVER);
+        }
+        // 0.3.0.0 (C2): spending freely and the half money weight follow the money tier (CARich)
+        // 0.3.0.0 (C12 fix): with the surplus band it starts and ends at (richStart, richHold)
+        else if (rich(s)) {
+            t.addPara("Spending freely (tier %s) from %s over the line to under %s; new upkeep up to %s.",
+                    2f, hl, CARich.name(CARich.tier()), Misc.getDGSCredits(richStart(line(s))), Misc.getDGSCredits(richHold(line(s))),
+                    Misc.getDGSCredits(a / RICH_UPKEEP_MONTHS));
+            CATheme.hover(t, RICH_HOVER);
+        }
+        else if (!legacy && CARich.tier() >= CARich.T3 && !s.surplusFocusOnly) t.addPara("Money tier %s: spending freely from %s over the line (%s now).",
+                2f, hl, CARich.name(CARich.tier()),
+                Misc.getDGSCredits(richStart(line(s))), Misc.getDGSCredits(a));
+        else if (!legacy && CARich.tier() >= CARich.T2) t.addPara("Money tier %s: credits count half in build values.",
+                2f, hl, CARich.name(CARich.tier()));
         CAEndgame.render(t, s);
         float c = committed();
-        if (c > 0f) t.addPara("Kept back: %s already promised to production that hasn't been paid yet.", 2f, gray, hl, Misc.getDGSCredits(c));
+        if (c > 0f) t.addPara("Kept back: %s promised to production.", 2f, gray, hl, Misc.getDGSCredits(c));
         if (CATerraSim.summary != null) t.addPara(CALog.esc(CATerraSim.summary), gray, 2f);
         if (CASurplusResearch.summary != null) t.addPara(CALog.esc(CASurplusResearch.summary), gray, 2f);
         if (CAWonders.summary != null) t.addPara(CALog.esc(CAWonders.summary), gray, 2f);
@@ -361,17 +476,19 @@ public class CASurplus {
     public static void renderColony(TooltipMakerAPI t, MarketAPI m, CASettings s, float pad) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         CATheme.heading(t, "Surplus investment", pad);
-        if (line(s) <= 0f) { t.addPara("Off. Turn it on under Settings, Budget and spending.", gray, 6f); return; }
+        if (line(s) <= 0f) { t.addPara("Off (Settings, Money).", gray, 6f); return; }
         MarketAPI f = focus();
         boolean here = f != null && f.getId().equals(m.getId()), mine = m.getId().equals(s.focusId);
         float a = amount(s);
-        if (here) t.addPara("This is the focus world" + (mine ? " (your pick)" : " (Autopilot's pick: " + CALog.esc(whys.get(m.getId())) + ")") + ". "
-                + (a > 0f ? "%s over your line is here to spend: past the monthly budget and the per-project cap, upkeep up to 10%% of net income a month, "
-                + "prices counted at a quarter, and research counts its plan twice." : "Under the line now (%s); it starts when credits pass it."), 6f, hl,
-                a > 0f ? Misc.getDGSCredits(a) : Misc.getDGSCredits(line(s)));
-        else t.addPara("Credits over %s go into " + (f == null ? "the focus world" : CALog.esc(f.getName()) + ", the focus world") + ". This colony scores %s"
+        if (here) {   // 0.3.0.0 (WS-F3): 40 words or fewer; the spending rules on hover
+            t.addPara("This is the focus world" + (mine ? " (your pick)" : " (Autopilot's pick: " + CALog.esc(whys.get(m.getId())) + ")") + ". "
+                    + (a > 0f ? "%s over the line to spend." : "Under the line (%s)."), 6f, hl,
+                    a > 0f ? Misc.getDGSCredits(a) : Misc.getDGSCredits(line(s)));
+            // 0.3.0.0 (WS-F3 fix pass 2): spending past the budget and the per-project cap is in the guide
+        }
+        else t.addPara("Over %s goes to " + (f == null ? "the focus world" : CALog.esc(f.getName())) + ". Score here: %s"
                 + (f != null && scores.containsKey(f.getId()) ? " to its %s." : "."), 6f, hl, Misc.getDGSCredits(line(s)),
-                scores.containsKey(m.getId()) ? "" + Math.round(scores.get(m.getId())) : "nothing (Auto colonies only)",
+                scores.containsKey(m.getId()) ? "" + Math.round(scores.get(m.getId())) : "nothing (Auto only)",
                 f != null && scores.containsKey(f.getId()) ? "" + Math.round(scores.get(f.getId())) : "");
         if (mine) {
             ButtonAPI b = t.addButton("Let Autopilot choose", AUTO, base, dark, Alignment.MID, CutStyle.TL_BR, 220f, 24f, 6f);

@@ -173,7 +173,7 @@ public class CAAugments {
             if (done) return;
             done = true;
             if (CABuild.freeSlots(m) > 0) return;   // a slot is already free
-            CAEngine.Result r = CAEngine.evaluate(m, profile, CAData.get().minStability);
+            CAEngine.Result r = CAEngine.cached(m, profile, CAData.settings().minStability, false);   // 0.3.0.0 (A4): the day's kept evaluation
             if (r.bestNoSlot == null || r.bestNoSlot.score <= 0f) return;
             value = r.bestNoSlot.score; name = r.bestNoSlot.name;
         }
@@ -557,9 +557,9 @@ public class CAAugments {
         t.addPara("%s: %s of %s AP used.", 6f, hl, pl.station, ap(pl.used), ap(pl.budget));
         if (pl.kit != null) t.addPara("What it fights with: " + CALog.esc(pl.kit.describe()) + ".", gray, 4f);
         if (!pl.mine.isEmpty()) t.addPara("Added by Autopilot: %s", 4f, hl, join(pl.mine));
-        if (!pl.yours.isEmpty()) t.addPara("Yours (never changed): %s", 4f, hl, join(pl.yours));
+        if (!pl.yours.isEmpty()) t.addPara("Yours (left alone): %s", 4f, hl, join(pl.yours));
         if (pl.note != null) t.addPara(CALog.esc(pl.note), gray, 4f);
-        if (!pl.changes()) t.addPara("Nothing to change: this is the best loadout of the augments you know.", gray, 6f);
+        if (!pl.changes()) t.addPara("Nothing to change.", gray, 6f);
         else {
             for (Opt o : pl.add) {
                 t.addPara("Add %s (%s AP): %s", 6f, hl, o.name, ap(o.ap), CAEngine.valueText(o.score));
@@ -568,32 +568,31 @@ public class CAAugments {
             for (String n : pl.removeNames) t.addPara("Remove %s to make room", 6f, hl, n);
             t.addPara("Value of the change: about %s", 6f, hl, CAEngine.valueText(pl.gain));
             t.addButton("Apply augment changes", CAColonyDialog.AUG_APPLY, base, dark, Alignment.MID, CutStyle.TL_BR, 240f, 24f, 6f);
-            String when = s.augmentMode != 0 ? "Station augments are set to Recommend only, so they change when you click Apply."
-                    : c.mode == CAData.Mode.AUTO ? "Auto applies this within a week." : "Auto colonies apply this by themselves; here it waits for you.";
+            String when = s.augmentMode != 0 ? "Recommend only: changes on Apply."
+                    : c.mode == CAData.Mode.AUTO ? "Auto applies this within a week." : "Waits for Apply here.";
             t.addPara(when, gray, 4f);
         }
-        if (profile == CAData.Profile.SECURITY) t.addPara(c.profile == CAData.Profile.SECURITY ? "Security goal: combat augments come first." :
-                "The threat is high, so combat augments come first; output augments such as Hydroponics come back once it drops.", gray, 6f);
+        if (profile == CAData.Profile.SECURITY) t.addPara(c.profile == CAData.Profile.SECURITY ? "Security goal: combat augments first." :
+                "High threat: combat augments first.", gray, 6f);
         else if (CAThreat.effective(m, c.profile) == CAData.Profile.SECURITY && c.profile != CAData.Profile.SECURITY)
-            t.addPara("The threat is high, but other military in this system protects it, so the station stays economic: output augments such as the Mining Station and Hydroponics come first. A raid or blockade on its way still gets the combat loadout.", gray, 6f);
-        else t.addPara("Calm: augments that add accessibility, output or cut upkeep come first. When a raid, blockade or high threat comes, "
-                + "the combat loadout goes on before the station is engaged (Bubble Shield, weapon platforms, fighter augments on carrier stations).", gray, 6f);
+            t.addPara("High threat, defended here: output augments first.", gray, 6f);
+        else t.addPara("Calm: output augments first; combat loadout before a raid.", gray, 6f);   // 0.3.0.0 (WS-F3 fix pass 2): shorter
         if (!c.augSkip().isEmpty()) {
             List<String> names = new ArrayList<String>();
             for (String id : c.augSkip()) { stationAugmentSpec sp = specs().get(id); names.add(sp == null ? id : sp.getName()); }
-            t.addPara("Not added again because you removed them: %s", 8f, hl, join(names));
+            t.addPara("You removed these (not added again): %s", 8f, hl, join(names));
             t.addButton("Allow again", CAColonyDialog.AUG_UNSKIP, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 22f, 4f);
         }
-        t.addPara("You know %s station augments. Augment blueprints from loot and markets teach more; ones that use up an item, "
-                + "or give AP back for a drawback, are left to you.", 6f, gray, hl, "" + known().size());
-        t.addPara("Never added, since they work against a station the AI fights: " + CALog.esc(join(new ArrayList<String>(CAAugmentModel.NEVER.values()), "; ")) + ".", gray, 4f);
+        t.addPara("You know %s station augments.",
+                6f, gray, hl, "" + known().size());
+        t.addPara("Not added (bad for an AI-run station): " + CALog.esc(join(new ArrayList<String>(CAAugmentModel.NEVER.values()), "; ")) + ".", gray, 4f);
     }
 
     /** The empire panel's section: one line per colony with a station. */
     public static void renderEmpire(TooltipMakerAPI t, CAData d, CASettings s) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
-        t.addPara("Mode: %s. Picks the augments worth the most within each station's AP. Auto colonies apply them; "
-                + "the others wait for Apply. Augments you install are never changed.", 6f, hl, CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.augmentMode))]);
+        CATheme.mode(t, CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.augmentMode))]);   // 0.3.0.0 (WS-F3 fix): the mode as a readout
+        t.addPara("Picks the best augments within each station's AP.", 4f);
         int shown = 0;
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             CAData.Colony c = d.colony(m.getId());
@@ -606,6 +605,6 @@ public class CAAugments {
             t.addPara("%s, %s: %s of %s AP. Recommends: %s (%s).", 6f, hl, m.getName(), pl.station, ap(pl.used), ap(pl.budget), pl.summary(), CAEngine.valueText(pl.gain));
             t.addButton("Apply", new String[]{"aug", "apply", m.getId()}, base, dark, Alignment.MID, CutStyle.TL_BR, 120f, 22f, 4f);
         }
-        if (shown == 0) t.addPara("None of your managed colonies has an orbital station.", gray, 6f);
+        if (shown == 0) t.addPara("No managed colony has a station.", gray, 6f);
     }
 }

@@ -79,7 +79,12 @@ public class CAData {
     public Map<String, String> upgradeTargets() { if (upgradeTargets == null) upgradeTargets = new HashMap<String, String>(); return upgradeTargets; }
     public Map<String, Map<String, Integer>> marketPending() { if (marketPending == null) marketPending = new HashMap<String, Map<String, Integer>>(); return marketPending; }
     public Map<String, Float> marketPendingSince() { if (marketPendingSince == null) marketPendingSince = new HashMap<String, Float>(); return marketPendingSince; }
-    public float minStability = 5f;
+    /**
+     * 0.3.0.0 (A3, 07 L3): retired; read CASettings.minStability. Kept so saves from before 0.3.0 load and bring theirs over
+     * (CAData.get), and kept equal to the setting so anything still reading it gets the same number.
+     */
+    @Deprecated
+    public float minStability = CATuning.MIN_STABILITY;
     public boolean buildoutOffered;   // the first-colony fast buildout dialog has been shown (or doesn't apply to this save)
     public CASettings settings;
     public com.fs.starfarer.api.campaign.CargoAPI storage;
@@ -116,8 +121,8 @@ public class CAData {
     public Map<String, Long> augRefit;
     public Map<String, Long> augRefit() { if (augRefit == null) augRefit = new HashMap<String, Long>(); return augRefit; }
     public Map<String, Long> attackers() { if (attackers == null) attackers = new HashMap<String, Long>(); return attackers; }
-    // endgame economy (CAEndgame), to timestamps: "marketId:industryId" built by it, "marketId:-industryId" taken down by it,
-    // "marketId:replaced" its last replacement there; kept a year, so nothing it did is undone or redone sooner
+    // endgame economy (CAEndgame), to timestamps: "marketId:industryId" built by it, "marketId:-industryId" taken down by it;
+    // kept a year, so nothing it did is undone or redone sooner. 0.3.0.0: the other features' stamps live in overLimitAt, pruneAt and swapAt
     public Map<String, Long> endgameBuilt;
     public Map<String, Long> endgameBuilt() { if (endgameBuilt == null) endgameBuilt = new HashMap<String, Long>(); return endgameBuilt; }
     // Terraforming Made Easy structures surplus terraforming built ("marketId:structureId"); only these are taken down again
@@ -155,9 +160,9 @@ public class CAData {
     public Set<String> surplusResearch;
     public Set<String> surplusResearch() { if (surplusResearch == null) surplusResearch = new HashSet<String>(); return surplusResearch; }
 
-    /** Keys of log messages already written once (waits, unavailable edicts), so a reload doesn't repeat them. */
+    /** Pre-0.3.0 once-keys only: CALog moves them into notedAt the first time and sets this to null. Nothing calls this any more (CALog.once/noted/forget). */
     public Set<String> noted() {
-        if (noted == null || noted.size() > 2000) noted = new HashSet<String>();
+        if (noted == null) noted = new HashSet<String>();
         return noted;
     }
 
@@ -180,15 +185,96 @@ public class CAData {
     public Map<String, com.fs.starfarer.api.campaign.CargoAPI> stores() { if (stores == null) stores = new HashMap<String, com.fs.starfarer.api.campaign.CargoAPI>(); return stores; }
     public List<CAStores.Shipment> shipments() { if (shipments == null) shipments = new ArrayList<CAStores.Shipment>(); return shipments; }
 
+    // ---------------- 0.3.0.0 (A0): every new saved field of the 0.3.0 workstreams, added at once (plans/cm-3.0 FIELDS.md) ----------------
+    // Ids, numbers and timestamps only (no MarketAPI, PlanetAPI or Nexerelin types); older saves load them null or 0, so the
+    // lists, maps and sets have lazy getters. Every class stored here needs an alias in CAXStream.
+    /** Saved-data layout version (CAMigrate.SCHEMA): new saves start current, every save from before 0.3.0 loads 0. */
+    public int schema = CAMigrate.SCHEMA;
+    /** When CAMigrate moved this save to 0.3.0 (0: never, the save started on 0.3.0); the Settings page's what's-new box reads it. */
+    public long migratedAt;
+    /** A: log keys with when they were noted, so a "once" message can expire instead of the whole set being wiped (07 M1). */
+    public Map<String, Long> notedAt;
+    /** B: removals the planner prices in for a year, so nothing is built, removed and rebuilt (CATombstone). */
+    public List<CATombstone.Mark> tombstones;
+    /** B: "marketId:industryId" -> credits paid for what stands there (sunk-cost memory for the log and teardown loss). */
+    public Map<String, Float> sunk;
+    /** C: the colonies' net income of the last months (newest last), for the 3-month median. */
+    public List<Float> colonyNetHistory;
+    /** C: months in a row with most Auto colonies idle and little of the budget spent. */
+    public int idleMonths;
+    /**
+     * C: the money tier the empire is in (CARich.T0-T4), saved so the 60% exit line (C2 hysteresis) still holds after a
+     * load; a static cache is cleared on every load (CAReset), which would drop a tier each reload between exit and entry.
+     * Older saves load 0 (Tight), the safe start (0.3.0.0).
+     */
+    public int richTier;
+    /** C: when richTier last changed (0: never), for the tier-change log line. */
+    public long richTierSince;
+    /** C: rung name -> credits it spent this month. */
+    public Map<String, Float> rungSpent;
+    /** C: custom production orders the shipyard placed, and goods bought for colonies' Local Resources. */
+    public List<CAShipyard.Order> shipyardOrders;
+    public List<CAStockpile.Buy> stockpiles;
+    /** D: colony expeditions under way; planet or system id -> skip until (Long.MAX_VALUE: never); planets founded. */
+    public List<CAExpansion.Order> expandOrders;
+    public Map<String, Long> expandSkip;
+    public Set<String> expandFounded;
+    /** D: when the last expedition left, and the proposal waiting for approval under Ask first. */
+    public long expandLast;
+    public String expandPendingId, expandPendingName;
+    public float expandPendingCost;
+    /** E: faction id -> when CM declared war; "kind:marketId" -> when an operation was launched; conquered market id -> when. */
+    public Map<String, Long> warDeclared, warOps, conquered;
+    /** E: faction ids whose declaration or bombardment you confirmed this game; when you last stood down. */
+    public Set<String> warAuthorized;
+    public long warStandDown;
+    /**
+     * A (0.3.0.0 fix, 07 L7): endgameBuilt's other users get their own maps. An older save's keys move over by suffix the first
+     * time each getter runs (CATidy.split), so no reader sees an empty map first. overLimitAt: CAOverLimit's ":zerostab",
+     * ":zerosince", ":shed", ":shed:<id>", ":overlimit"; pruneAt: CAPrune's ":useless:<id>", ":pruned"; swapAt: ":replaced" (the
+     * last make-room swap or forced takedown at a colony; CAEndgame, CACapital, CAOverLimit). endgameBuilt keeps CAEndgame's own.
+     */
+    public Map<String, Long> overLimitAt, pruneAt, swapAt;
+    /** A (0.3.0.0, research 01 section 5): this month's Colony Manager spending per colony, "marketId|spent", "|fees", "|upkeep" (CALog.spent); the monthly colony lines clear it. */
+    public Map<String, Float> monthLedger;
+
+    public Map<String, Long> notedAt() { if (notedAt == null) notedAt = new HashMap<String, Long>(); return notedAt; }
+    public List<CATombstone.Mark> tombstones() { if (tombstones == null) tombstones = new ArrayList<CATombstone.Mark>(); return tombstones; }
+    public Map<String, Float> sunk() { if (sunk == null) sunk = new HashMap<String, Float>(); return sunk; }
+    public List<Float> colonyNetHistory() { if (colonyNetHistory == null) colonyNetHistory = new ArrayList<Float>(); return colonyNetHistory; }
+    public Map<String, Float> rungSpent() { if (rungSpent == null) rungSpent = new HashMap<String, Float>(); return rungSpent; }
+    public List<CAShipyard.Order> shipyardOrders() { if (shipyardOrders == null) shipyardOrders = new ArrayList<CAShipyard.Order>(); return shipyardOrders; }
+    public List<CAStockpile.Buy> stockpiles() { if (stockpiles == null) stockpiles = new ArrayList<CAStockpile.Buy>(); return stockpiles; }
+    public List<CAExpansion.Order> expandOrders() { if (expandOrders == null) expandOrders = new ArrayList<CAExpansion.Order>(); return expandOrders; }
+    public Map<String, Long> expandSkip() { if (expandSkip == null) expandSkip = new HashMap<String, Long>(); return expandSkip; }
+    public Set<String> expandFounded() { if (expandFounded == null) expandFounded = new HashSet<String>(); return expandFounded; }
+    public Map<String, Long> warDeclared() { if (warDeclared == null) warDeclared = new HashMap<String, Long>(); return warDeclared; }
+    public Map<String, Long> warOps() { if (warOps == null) warOps = new HashMap<String, Long>(); return warOps; }
+    public Map<String, Long> conquered() { if (conquered == null) conquered = new HashMap<String, Long>(); return conquered; }
+    public Set<String> warAuthorized() { if (warAuthorized == null) warAuthorized = new HashSet<String>(); return warAuthorized; }
+    public Map<String, Long> overLimitAt() { if (overLimitAt == null) overLimitAt = CATidy.split(endgameBuilt, CATidy.OVERLIMIT); return overLimitAt; }
+    public Map<String, Long> pruneAt() { if (pruneAt == null) pruneAt = CATidy.split(endgameBuilt, CATidy.PRUNE); return pruneAt; }
+    public Map<String, Long> swapAt() { if (swapAt == null) swapAt = CATidy.split(endgameBuilt, CATidy.SWAP); return swapAt; }
+    public Map<String, Float> monthLedger() { if (monthLedger == null) monthLedger = new HashMap<String, Float>(); return monthLedger; }
+
     public static CAData get() {
         Map<String, Object> pd = Global.getSector().getPersistentData();
         Object o = pd.get(KEY);
         if (!(o instanceof CAData)) { o = new CAData(); pd.put(KEY, o); }
         CAData d = (CAData) o;
         if (d.colonies == null) d.colonies = new HashMap<String, Colony>();
-        if (d.settings == null) { d.settings = new CASettings(); CASettingsFile.apply(d); }
+        if (d.settings == null) {
+            d.settings = new CASettings();
+            CASettingsFile.apply(d);
+            CAMigrate.stances(d.settings);   // 0.3.0.0: faction priorities from colony_autopilot.json as stances
+        }
+        // 0.3.0.0 (A3, 07 L3): minStability is a setting now; a save from before 0.3.0 loads it 0 there and brings over the one
+        // CAData kept (colony_autopilot.json's when the save started). fixNulls gives 0 the default, as CAData's 0 got before
+        if (!(d.settings.minStability > 0f) && d.minStability > 0f) d.settings.minStability = d.minStability;
         d.settings.fixNulls();
-        if (d.minStability <= 0f) d.minStability = 5f;
+        d.minStability = d.settings.minStability;
+        // 0.3.0.0: a save from before 0.3.0 is moved forward once (CAMigrate never throws; a failed step still loads the save)
+        if (d.schema < CAMigrate.SCHEMA || d.settings.settingsVersion < CAMigrate.SCHEMA) CAMigrate.run(d, d.settings);
         return d;
     }
 

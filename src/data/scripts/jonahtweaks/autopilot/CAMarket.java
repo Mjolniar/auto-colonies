@@ -57,6 +57,17 @@ public final class CAMarket {
     /** After an upgrade changes the building's own line from own0 by delta: still the largest single source. */
     static int upgradeSupply(int own0, int delta, int other) { return Math.max(Math.max(0, own0 + delta), Math.max(0, other)); }
 
+    /**
+     * 0.3.0.0 (B1 fix): the colony's supply of a good once a pick's line holds units. A new building, or an upgrade passing the
+     * target's whole line (whole: CAEngine.effects, e.g. Monoculture Plots' 3 food becoming Farming's 6), is a line of its
+     * own with the administrator's bonus, the old building's line replaced (buildSupply); an upgrade passing a change (CAMods'
+     * Union HQ, a probe measurement) changes the old building's own0 (upgradeSupply). Before, a whole line was stacked on the
+     * old one (3 + 6), so the upgrade added 6 instead of 3.
+     */
+    static int supplyAfter(boolean upgrade, boolean whole, int own0, int units, int admin, int other) {
+        return upgrade && !whole ? upgradeSupply(own0, units, other) : buildSupply(units, admin, other);
+    }
+
     /** Weight change: only what can be shipped off-world counts. */
     static float weightDelta(int before, int after, int ship, float acc) {
         if (acc <= 0f) return 0f;
@@ -88,6 +99,12 @@ public final class CAMarket {
 
     static void invalidate() { cache.clear(); }
 
+    /** 0.3.0.0 (B1): once a day, the snapshots go and finished or stale claims are dropped (snap() and CAValue both call it). */
+    static void daily() {
+        float today = (float) Math.floor(CADay.now());
+        if (today != cacheDay) { cache.clear(); cacheDay = today; prune(); }
+    }
+
     static float accessibility(MarketAPI k) {
         try { return Math.max(0f, k.getAccessibilityMod().computeEffective(0f)); } catch (Throwable t) { return 0f; }
     }
@@ -101,8 +118,7 @@ public final class CAMarket {
 
     /** The good's market today, or null when the game has no market data for it (a non-economy good). */
     static Snap snap(String com) {
-        float today = (float) Math.floor(CADay.now());
-        if (today != cacheDay) { cache.clear(); cacheDay = today; prune(); }
+        daily();
         if (cache.containsKey(com)) return cache.get(com);
         Snap s = null;
         try { s = build(com); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "market model failed for " + com, t); }
@@ -158,6 +174,8 @@ public final class CAMarket {
     /** What a pick's line adds: value per month (export income change), units added at the colony, shares before and after. */
     public static class Gain {
         float value; int addedBefore, addedAfter, after; float shareBefore, shareAfter; boolean capped;
+        /** 0.3.0.0 (B1): the colony's supply of the good before the pick (base) and before this call's units (before), for CAValue's relief. */
+        int base, before;
     }
 
     /** One building's own supply of a good. */
@@ -168,35 +186,56 @@ public final class CAMarket {
         return 0;
     }
 
-    /** The colony's largest source of a good other than skip, with any claimed building under construction there. */
+    /**
+     * The colony's largest source of a good other than skip, with any claimed building under construction there. 0.3.0.0 (B1):
+     * a claim for skip itself (its upgrade under way) is not another source.
+     */
     static int largestOther(MarketAPI m, Industry skip, String com) {
         int best = 0;
         for (Industry ind : m.getIndustries()) if (ind != skip) best = Math.max(best, own(ind, com));
-        return Math.max(best, pendingAt(m, com));
+        return Math.max(best, pendingAt(m, com, skip == null ? null : skip.getId()));
+    }
+
+    /**
+     * 0.3.0.0 (B1, research 02 section 9): what the colony's supply of a good going from before to after (its largest source,
+     * so a building that isn't the biggest changes nothing) does to your export income a month: the share rule both ways,
+     * gain() up and keepValue() down. Null without data for the good; 0 where it's illegal (an illegal source exports nothing).
+     */
+    static Float lineValue(MarketAPI m, String com, int before, int after) {
+        Snap s = snap(com);
+        if (s == null) return null;
+        if (after == before) return 0f;
+        Mine here = s.at(m);
+        if (here == null || here.illegal) return 0f;
+        float others = s.othersIncW(m);
+        if (after > before) return gain(s.value, s.total, here.w, here.inc, others, weightDelta(before, after, here.ship, here.acc), s.mult);
+        return -keepValue(s.value, s.total, here.w, here.inc, others, weightDelta(after, before, here.ship, here.acc), s.mult);
     }
 
     /**
      * The value of a pick's line of units of a good at m (CAEngine.supply), counting what the pick already supplied of it
      * (supply can be called more than once per good). Null when the model has nothing to go on; the caller falls back to
-     * the flat rate.
+     * the flat rate. 0.3.0.0 (B1): units may be negative (CAEngine.supplyChange: a management style's cut), and what the line
+     * adds over the colony's other sources is kept in p.added for the endgame's production chains (research 02 section 9).
      */
     static Gain pickGain(MarketAPI m, CAEngine.Pick p, String com, int units) {
         Snap s = snap(com);
         if (s == null) return null;
         Integer was = p.marketUnits.get(com);
-        int prior = was == null ? 0 : was, cum = prior + units;
+        int prior = was == null ? 0 : was, cum = Math.max(0, prior + units);
         p.marketUnits.put(com, cum);
         Mine here = s.at(m);
         int ship = here != null ? here.ship : 0;
         float acc = here != null ? here.acc : accessibility(m);
         float wm = here != null ? here.w : 0f, inc = here != null ? here.inc : 1f;
         boolean up = p.upgrade && p.existing != null;
+        boolean whole = up && p.wholeLines;   // 0.3.0.0 (B1 fix): the target's whole line replaces the old building's (supplyAfter)
         int own0 = up ? own(p.existing, com) : 0;
         int other = up ? largestOther(m, p.existing, com) : (here != null ? here.supply : largestOther(m, null, com));
-        int admin = up ? 0 : CAMods.adminBonus(m);
+        int admin = up && !whole ? 0 : CAMods.adminBonus(m);
         int base0 = up ? upgradeSupply(own0, 0, other) : Math.max(0, other);
-        int sPrior = prior == 0 ? base0 : up ? upgradeSupply(own0, prior, other) : buildSupply(prior, admin, other);
-        int sCum = up ? upgradeSupply(own0, cum, other) : buildSupply(cum, admin, other);
+        int sPrior = prior == 0 ? base0 : supplyAfter(up, whole, own0, prior, admin, other);
+        int sCum = supplyAfter(up, whole, own0, cum, admin, other);
         float others = s.othersIncW(m);
         float dwPrior = weightDelta(base0, sPrior, ship, acc), dwCum = weightDelta(base0, sCum, ship, acc);
         Gain g = new Gain();
@@ -207,10 +246,35 @@ public final class CAMarket {
         g.capped = sCum > ship && sPrior < sCum;
         g.shareBefore = s.share();
         g.shareAfter = (s.mine + dwCum) / Math.max(1e-6f, s.total + dwCum);
+        g.base = base0; g.before = sPrior;   // 0.3.0.0 (B1)
+        p.added.put(com, g.addedAfter);      // 0.3.0.0 (B1): netted units, for CAValue.chainUnits
         p.marketAfter.put(com, sCum);
         Float v = p.marketValue.get(com);
         p.marketValue.put(com, (v == null ? 0f : v) + g.value);
         return g;
+    }
+
+    /**
+     * 0.3.0.0 (B1 fix): the pick's own line of a good once built (0 when it has none the model valued): a new building's or a
+     * whole-line upgrade's units with the administrator's bonus, or the old building's line changed by a delta upgrade's.
+     * For CAValue.synergy: whether a synergy's extra output lands on the pick itself.
+     */
+    static int pickLevel(MarketAPI m, CAEngine.Pick p, String com) {
+        Integer u = p.marketUnits.get(com);
+        if (u == null || u <= 0) return 0;
+        if (p.upgrade && p.existing != null && !p.wholeLines) return Math.max(0, own(p.existing, com) + u);
+        return u + CAMods.adminBonus(m);
+    }
+
+    /**
+     * 0.3.0.0 (B1 fix): pickGain for n more units on the pick's line, worked out on a copy so the pick itself is unchanged
+     * (CASynergies adds the value to its own sum). Null when the model has nothing to go on.
+     */
+    static Gain pickGainMore(MarketAPI m, CAEngine.Pick p, String com, int n) {
+        CAEngine.Pick s = new CAEngine.Pick();
+        s.id = p.id; s.upgrade = p.upgrade; s.existing = p.existing; s.wholeLines = p.wholeLines;
+        s.marketUnits.putAll(p.marketUnits);
+        return pickGain(m, s, com, n);
     }
 
     // ---------------- a building already there (CAPrune, 0.2.44.1) ----------------
@@ -248,17 +312,50 @@ public final class CAMarket {
         invalidate();
     }
 
-    static int pendingAt(MarketAPI m, String com) {
+    static int pendingAt(MarketAPI m, String com) { return pendingAt(m, com, null); }
+
+    /** 0.3.0.0 (B1): as above, leaving out claims for the building skipId (as the new building or the one being upgraded). */
+    static int pendingAt(MarketAPI m, String com, String skipId) {
         int best = 0;
         try {
             String pre = m.getId() + "|";
             for (Map.Entry<String, Map<String, Integer>> e : CAData.get().marketPending().entrySet()) {
-                if (!e.getKey().startsWith(pre)) continue;
+                if (!e.getKey().startsWith(pre) || claimFor(e.getKey(), skipId)) continue;
                 Integer u = e.getValue().get(com);
                 if (u != null) best = Math.max(best, u);
             }
         } catch (Throwable ignored) { }
         return best;
+    }
+
+    /** 0.3.0.0 (B1): whether a claim key (market|building|upgraded building) belongs to building id. */
+    static boolean claimFor(String key, String id) {
+        if (id == null || key == null) return false;
+        String[] k = key.split("\\|", -1);
+        return k.length == 3 && (id.equals(k[1]) || id.equals(k[2]));
+    }
+
+    /**
+     * 0.3.0.0 (B1, research 02 section 7): every claim as good -> colony -> the colony's supply of it once built, for CAValue's
+     * pending-aware shortages. skipMarket/skipId leave out the claims of one building (keep() asks about that building).
+     */
+    static Map<String, Map<String, Integer>> claimLevels(String skipMarket, String skipId) {
+        Map<String, Map<String, Integer>> out = new HashMap<String, Map<String, Integer>>();
+        try {
+            for (Map.Entry<String, Map<String, Integer>> e : CAData.get().marketPending().entrySet()) {
+                String[] k = e.getKey().split("\\|", -1);
+                if (k.length != 3 || e.getValue() == null) continue;
+                if (skipMarket != null && skipMarket.equals(k[0]) && claimFor(e.getKey(), skipId)) continue;
+                for (Map.Entry<String, Integer> u : e.getValue().entrySet()) {
+                    if (u.getValue() == null || u.getValue() <= 0) continue;
+                    Map<String, Integer> at = out.get(u.getKey());
+                    if (at == null) { at = new HashMap<String, Integer>(); out.put(u.getKey(), at); }
+                    Integer was = at.get(k[0]);
+                    if (was == null || u.getValue() > was) at.put(k[0], u.getValue());
+                }
+            }
+        } catch (Throwable ignored) { }
+        return out;
     }
 
     /** Drops claims whose building is finished, gone, or a year old. */
@@ -271,7 +368,7 @@ public final class CAMarket {
                 String[] k = e.getKey().split("\\|", -1);
                 Float since = d.marketPendingSince().get(e.getKey());
                 boolean keep = false;
-                if (k.length == 3 && (since == null || now - since < 400f)) {
+                if (k.length == 3 && (since == null || now - since < CATuning.MARKET_CLAIM_DAYS)) {
                     MarketAPI m = Global.getSector().getEconomy().getMarket(k[0]);
                     if (m != null && m.isPlayerOwned()) {
                         Industry ind = m.getIndustry(k[1]);
@@ -284,7 +381,11 @@ public final class CAMarket {
         } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "market model: pending builds check failed", t); }
     }
 
-    /** Of a pick's export value, the part from goods in claimed: the same-pass check in CAAuto. */
+    /**
+     * Of a pick's export value, the part from goods in claimed: the same-pass check in CAAuto. 0.3.0.0 (B1, research 02 section
+     * 7): p.marketValue holds the shortage relief too (CAEngine.supply), so a pick that only covers a shortage another colony
+     * just claimed is caught as well.
+     */
     static float claimedPart(CAEngine.Pick p, Set<String> claimed) {
         float all = 0f, part = 0f;
         for (Map.Entry<String, Float> e : p.marketValue.entrySet()) {
@@ -341,14 +442,14 @@ public final class CAMarket {
         return arr;
     }
 
-    static float lastWeek = -99f;
+    static float lastWeek = Float.NaN;   // 0.3.0.0 (A1 fix): never fired; the game's day is negative, so -99 read as a later date
 
     /**
      * Weekly: checks the model's shares against the game's (getExportMarketSharePercent, which rounds to whole percents)
      * and writes one line on where you hold most and the biggest markets you don't supply. starsector.log only.
      */
     public static void weekly(float now) {
-        if (!on() || now - lastWeek < 7f || Global.getSector() == null) return;
+        if (!on() || !CATime.due(lastWeek, now, 7f) || Global.getSector() == null) return;   // 0.3.0.0 (A1 fix): on the game's own (negative) clock
         lastWeek = now;
         invalidate();
         int checked = 0, off = 0;

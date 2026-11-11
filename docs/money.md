@@ -2,81 +2,113 @@
 
 ## Quick version
 
-- Each month it spends from a budget. **Automatic** is recommended and grows with your income.
-- Credits over the surplus line go to one **focus world**. Over 10M of surplus, every Auto colony spends from it (spending freely).
-- With the endgame economy on, it values production, research and military over income.
-- The credit reserve is never spent.
+- The **Automatic** budget (recommended) grows with income.
+- From the Surplus tier up, the **money ladder** spends part of free cash.
+- Surplus credits go to one **focus world**, and at Rich to every Approve and Auto colony.
+- The credit reserve is not spent.
 
 ## The budget
 
-Settings, **Budget and spending**.
+Settings, **Spending** and Advanced, **Budget** ([preset values](settings.md#main-rows)).
 
-- **Budget type.** **Automatic** (recommended) spends half of last month's net income plus 15% of your credits above the reserve. You can also pick a share of net income or a fixed amount.
-- **Saving up.** Unspent budget carries over, up to six months, so it can save for something big.
-- **Credit reserve.** Never spent. Recommended is a quarter of your credits at setup.
-- **Per-project cap.** Anything pricier is proposed to you.
-- **New upkeep cap per month.** Automatic is 10% of last month's net income, at least 20,000.
-- **Pause on loss.** Recommended off.
+- **Automatic** spends a share of colony net income and of credits above the reserve.
+- Unspent budget carries over six months, longer while the credits stay above the reserve.
+- Projects over the **per-project cap** are proposed to you.
+- Emergency defense fleets and administrators past the colony limit can go over budget, down to the reserve.
 
-Emergency defense fleets and an administrator past your colony limit can go over budget, never under the reserve.
+## Money tiers
+
+- **Free cash:** credits less the reserve, unpaid custom production, and 2 months of colony upkeep and fleet costs.
+- **N:** colony net income, a 3-month median without custom production, Ashes of the Domain orders and fleet draw on colony stockpiles.
+- **Idle month:** at least half the Approve and Auto colonies had nothing worth starting, and under 25% of the budget was spent.
+
+| Tier | Starts at (free cash) | Ladder spends |
+|---|---|---|
+| Tight | below Surplus | 0% |
+| Surplus | max(1,000,000, 2 x N) | 20% |
+| Idle money | max(3,000,000, 5 x N), or Surplus + 2 idle months | 35% |
+| Rich | max(10,000,000, 15 x N), or Idle money (by free cash) + 4 idle months | 60% |
+| Endgame | Rich, with N at the Endgame line | 80% |
+
+A tier ends when free cash (Endgame: N) falls under 60% of its line. From Idle money, a credit counts half in build value at Approve and Auto colonies.
+
+## The money ladder
+
+- Each month the tier's share of free cash is split in **What to buy** order, each rung up to its share. Unused shares pass on.
+- **Rung modes** (Settings, Advanced, Surplus and money ladder): On, Recommend only (proposals on the Budget panel; Reject holds one off 30 days), Off. Shipyard and Expansion default to Recommend only.
+- The Expansion rung applies only while **Money for new colonies** is Money ladder ([New colonies](expansion.md#turning-it-on)).
+- Paid first, outside the pool: 0-stability fixes, emergencies, colony-limit administrators, plan steps, ordered production.
+- Credits saved for the planner's next build are not spent.
+
+| Rung | Share | Opens at |
+|---|---|---|
+| Stockpiles | 10% | Surplus |
+| Growth | 20% | Surplus |
+| Military | 20% | Idle money |
+| Shipyard | 25% | Idle money |
+| [Expansion](expansion.md) | 15% | Idle money |
+| Economy | 10% | Surplus |
+| Wonders | the rest | Rich |
+
+| What to buy | Order | Rest goes to |
+|---|---|---|
+| **Balanced** (recommended) | all, in the order above | Wonders |
+| Fleet | Shipyard, Military, Growth, Stockpiles, Expansion, Economy | Shipyard |
+| Expansion | Expansion, Growth, Military, Stockpiles, Shipyard, Economy | Expansion |
+| Economy | Economy, Growth, Stockpiles, Wonders | Wonders |
+| Save | Stockpiles, Growth | your account |
+
+### Shipyard
+
+- Orders known-blueprint hulls from your Doctrine priority list as custom production plus a 2% fee. One order a month, fewest on hand first.
+- Ships arrive at the [capital](capital.md). Orders stop at **6 unclaimed hulls**.
+- If free cash drops under 0 before month end, that month's hulls are cancelled and their fee refunded.
+
+### Stockpiles
+
+At Auto colonies, buys a good in a shortage when the output lost over the months bought is worth more than price, tariff and shipping. Buys at the nearest non-hostile market with stock, shipped as an [Autopilot Storage move](items-and-cores.md#autopilot-storage). Refills under 1 month of cover, up to 3 months. No 10% stockpile charge.
+
+### Military
+
+At Auto colonies, one upgrade a day: a station one tier up a colony size early (5 and 7; capital 4 and 6), Military Base to High Command, Patrol HQ to Military Base when a slot is free and nothing else is worth starting. New upkeep stays within 15% of colony net. Also buys military goods for colonies with a military building or station. Non-emergency defense fleets come from this rung or the budget, once per system every 45 days.
+
+### Growth
+
+- While On, the hazard pay budget rises to the tier's share of colony net (Surplus 40%, Idle money 60%, Rich and up uncapped), and stays at least your setting.
+- Below Rich, in any mode, a colony gets hazard pay only if it reaches its next size with it within 24 months (36 if that size adds an industry slot), or 25% longer if already paying.
+
+### Economy
+
+Surplus research, surplus terraforming, and capital trade buildings that cost more than they earn start only with this rung On, and pay under their own rules outside the pool. See [Research](research.md#surplus-research), [Terraforming](terraforming.md#surplus-terraforming), [Your capital](capital.md#trade-buildings).
+
+### Wonders
+
+The Daedalus Array, Bifrost gates and endgame industry swaps need this rung On. A site's price must fit the rung's allowance.
 
 ## Surplus investment: the focus world
 
-Credits over the **Surplus investment** line (recommended 3,000,000) go into one **focus world**. It can spend past the budget and the per-project cap, add new upkeep up to 10% of net income a month, and count prices at a quarter. Its terraforming is paid from the surplus.
-
-It picks the Auto colony with the most to build on and keeps it. **Make this the focus world** on a colony's panel picks it yourself, and **Let Autopilot choose** hands it back. Credits promised to custom production are kept back.
-
-What it doesn't use goes into [terraforming](terraforming.md) and [research](research.md) at other colonies.
+Credits over the **Surplus investment** line (recommended 3,000,000) go to one **focus world**, the Auto colony with the most to build. It may exceed the budget and per-project cap, add new upkeep up to 10% of net income a month, and pay terraforming from the surplus. **Make this the focus world** sets it. **Let Autopilot choose** hands it back.
 
 ## Spending freely
 
-Once the surplus passes 10,000,000, every Approve and Auto colony spends from the pool. It stays on until the surplus drops under 7,000,000.
+Starts at Rich when surplus credits reach half the line (1,500,000 of 3,000,000). Stays on at Rich or Endgame while they stay above a fifth of the line (600,000). Every Approve and Auto colony spends from the surplus.
 
-- Prices count 5%, so defense, stability, growth and fleet strength get built even at a loss.
+- A credit counts a quarter in build value. Colonies are checked daily, up to three upgrades at once.
 - Every colony maxes its station, Heavy Batteries, Planetary Shield, Megaport and Patrol HQ.
-- Colonies are checked daily, with up to three upgrades at once.
-- Hazard pay, three terraforming projects per colony, and Research Facilities all go harder.
-- With Ashes of the Domain: special project producers, the Daedalus Array and the Bifrost gates.
-- With Nexerelin: many more war fleets ([War and security](war-and-security.md)).
+- More hazard pay, terraforming, Research Facilities and, with Nexerelin, [war fleets](war-and-security.md).
 
-**Over 10,000,000 of surplus** set to Focus world only turns this off.
+Off: **Over 10,000,000 of surplus** set to Focus world only.
 
 ## The endgame economy
 
-Spending freely and making 1,000,000 a month or more (adjustable, or off under **Endgame economy**) turns on the endgame. Money stops being the goal.
+Runs from the Endgame tier while spending freely, until spending freely ends or N falls below 0. **Endgame** row: 1,000,000 a month (recommended), 2,000,000, 500,000 or Off.
 
-- A credit counts 5% when valuing a building, upgrade, core or item.
-- Fleets, ship quality and defense count a lot more.
-- Production counts as a chain. A good none of you make is worth the most, then your own shortages, then a bigger share of the sector's output. War goods count 1.5x, Ashes of the Domain's advanced goods 2x.
-- Money plans lose their priority.
-
-**Replacing industries.** With slots full, an Auto colony can swap its weakest industry for one worth 10,000 a month more. One a day empire-wide, one a month per colony. It never touches:
-
-- military industries, plan/project/research/wonder buildings
-- story-point improved or locked buildings
-- the last producer of a good you'd end up short of
-- anything built in the last year, or needed by a running trade contract
-
-The old building's core and item go to Autopilot Storage. **Endgame replaces industries** turns this off.
-
-**Income floor.** Net income can drop to a third of what it was when the endgame started. It ends if the surplus drops under 5,000,000 or net income goes negative.
+- A credit counts 5% in the value of a building, upgrade, core or item. Fleets, ship quality and defense count more.
+- Net income may fall to a third of its endgame-start level.
+- **Replacing industries:** with slots full, an Auto colony swaps its weakest industry for one worth 10,000 a month more. One a day empire-wide, one a month per colony. Kept: military, plan, project, research, wonder, story-point improved and locked buildings; the last producer of a good you need; anything under a year old or in a trade contract. The old core and item go to Autopilot Storage. Off: **Endgame replaces industries**.
 
 ## Autonomy (Nexerelin)
 
-**Autonomy** can be Off, **Recommend** (recommended) or **Auto**. An autonomous colony gives you a quarter of its profit or loss and doesn't count against your colony limit.
+**Autonomy** (Settings, Advanced, People and diplomacy): Off, **Recommend** (recommended), Auto. An autonomous colony pays you a quarter of its profit or loss and is outside the colony limit. For colonies a year old or more with three straight losing months, or in a money emergency. Auto: one per 30 days at most. Not for new colonies or the colony limit. Mod features page: **Grant autonomy**, **Take back**.
 
-It only looks at colonies a year old or more that lost money three months running, or at a money emergency. Auto does one every 30 days at most. I don't use it for the colony limit (that gets an administrator) or on new colonies. The Mod features page has **Grant autonomy** and **Take back** buttons.
-
-## Coming in 0.3.0
-
-- Built, in testing: the budget uses the median colony income of the last 3 months.
-- Built, in testing: builds have to pay back within 36 months. The limit grows toward 120 months as spare credits increase.
-- Planned: a money ladder. Spare money goes to these uses in order: stockpiles for shortages, growth, military, ships through custom production, new colonies, economy.
-- Planned: spending presets, and an On / Recommend / Off setting for each ladder step. Planned defaults: Balanced preset, ships and expansion on Recommend (you approve each one).
-- Planned: ship orders stop at 6 unclaimed hulls in the capital's storage. Ships are paid for at normal prices.
-
-Everything planned for 0.3.0: [roadmap](roadmap.md)
-
-Plans can still change before release.
-
-Next: [Items, AI cores and administrators](items-and-cores.md).
+Next: [New colonies](expansion.md).

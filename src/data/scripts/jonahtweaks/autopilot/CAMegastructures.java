@@ -167,7 +167,7 @@ public class CAMegastructures {
         }
         int want;
         if (worst > 0) want = cur - worst;
-        else if (c.megaHold > 0L && Global.getSector().getClock().getElapsedDaysSince(c.megaHold) < 30f) want = cur;   // just backed off
+        else if (c.megaHold != 0L && Global.getSector().getClock().getElapsedDaysSince(c.megaHold) < 30f) want = cur;   // 0.3.0.0 (A1 fix): a real stamp is negative; 0 is never
         else want = cur + 1;
         t.put("nexus", Math.max(0, Math.min(Math.min(MAX_NEXUS, pool), want)));
         return t;
@@ -307,15 +307,15 @@ public class CAMegastructures {
             String state;
             try {
                 Map<String, Integer> now = now(g), tgt = target(g, now, c);
-                state = now.isEmpty() ? "nothing to set until a section is restored"
+                state = now.isEmpty() ? "nothing to set yet"
                         : c.megaManual ? "your settings (" + describe(g, now) + ")"
                         : tgt.equals(now) ? "best settings (" + describe(g, now) + ")" : "recommends " + describe(g, tgt);
             } catch (Throwable e) { state = "settings can't be read"; }
             CAHypershunt.Section next = nextRestore(g);
-            t.addPara("%s, %s (%s): %s of %s sections restored; %s." + (next != null ? " Next restoration: " + CALog.esc(next.name) + "." : ""), 8f, hl,
+            t.addPara("%s, %s (%s): %s of %s sections; %s." + (next != null ? " Next: " + CALog.esc(next.name) + "." : ""), 8f, hl,
                     g.name, g.m.getName(), c.mode.label, "" + done, "" + g.sections.size(), state);
         }
-        t.addPara("Open the colony's panel to apply settings or start a restoration.", gray, 4f);
+        t.addPara("Apply settings and restorations on the colony's panel.", gray, 4f);
     }
 
     /** The colony panel's section for a Pluto or Nidavelir colony. */
@@ -323,7 +323,7 @@ public class CAMegastructures {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         Mega g;
         try { g = read(m); } catch (Throwable e) { g = null; CADiagnostics.LOG.warn(CADiagnostics.TAG + "megastructure read failed at " + m.getName(), e); }
-        if (g == null) { t.addPara("The megastructure's state can't be read; see starsector.log.", gray, 6f); return; }
+        if (g == null) { t.addPara(CATheme.NOT_SHOWN, gray, 6f); return; }
         boolean buttons = s.hypershuntMode != 2;
         for (CAHypershunt.Section x : g.sections.values()) CAHypershunt.section(t, null, x, buttons, CAColonyDialog.MEGA + "restore:" + x.id);
         if (!CAHypershunt.researched(CAHypershunt.TECH_RESTORE)) t.addPara("Restoring sections needs %s researched.", 4f, hl, CAHypershunt.techName(CAHypershunt.TECH_RESTORE));
@@ -336,12 +336,9 @@ public class CAMegastructures {
             } else if (!now.isEmpty()) t.addPara("These are the best settings.", gray, 4f);
         } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "megastructure settings failed at " + m.getName(), e); }
         if (c.megaManual) {
-            t.addPara("You set it yourself, so Autopilot leaves it.", gray, 4f);
+            t.addPara("You set it; Autopilot leaves it.", gray, 4f);
             t.addButton("Let Autopilot manage it", CAColonyDialog.MEGA + "manage:x", base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
         }
-        t.addPara(g.kind.equals(PLUTO) ? "The laser runs at full strength and every unit of ore goes to the forges: the Purification Core, "
-                        + "except what the Fusion Forge needs to cover your metals and transplutonics shortages."
-                        : "Manpower goes to the Nexus Core one point at a time while its inputs are fully supplied, and comes back off when "
-                        + "they're short (a shortage hits every restored section). Other sections' manpower and automation are yours.", gray, 6f);
+        t.addPara(g.kind.equals(PLUTO) ? "Full laser; ore goes to the Purification Core." : "Manpower goes to the Nexus Core while its inputs are supplied.", gray, 6f);
     }
 }
