@@ -428,7 +428,7 @@ The fair play release. A review went through everything the mod does and anythin
 ## 0.2.6.0 - 2026-10-30
 
 - **First downloadable release.** Extract the zip into `Starsector/mods/`.
-- **Ashes of the Domain and the other reflected integrations work in game now.** The game's script loader refuses mod code that uses Java's reflection classes, so every one of them failed in a real game (nothing got built under AotD at all). They go through a route the loader allows now, and the build checks for it so it can't come back. This fix was first built as 2.5.1, which only ever ran on my own game.
+- **Ashes of the Domain and the other reflected integrations work in game now.** The game's script loader refuses mod code that uses Java's reflection classes, so every one of them failed in a real game (nothing got built under AotD at all). They go through a route the loader allows now, and the build checks for it so it can't come back. This fix was first built as 0.2.5.1, which only ever ran on my own game.
 - **Staying working through mod updates.** A health check at load for each integration (OK, newer version, partly off, or off, shown on the Diagnostics page), mod values read live where a mod exposes them, a weekly calibration of estimates against your real buildings, and a breaker that pauses an action for the session after it fails three times in a row.
 - **The Getting started guide,** with a first-colony walkthrough.
 
