@@ -7,10 +7,6 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.econ.MarketConditionAPI;
 import com.fs.starfarer.api.loading.IndustrySpecAPI;
 import com.fs.starfarer.api.util.Misc;
-import terraformingmadeeasy.Settings;
-import terraformingmadeeasy.Utils;
-import terraformingmadeeasy.industries.BaseTerraformingIndustry;
-import terraformingmadeeasy.ui.plugins.ProjectListPlugin;
 
 import java.util.*;
 
@@ -94,12 +90,12 @@ public class CATerraformSurplus {
     }
 
     /** TME structures at the colony that are being built, upgraded or running a project, with the project each runs (null while building). */
-    static Map<String, Utils.ProjectData> busy(MarketAPI m) {
-        Map<String, Utils.ProjectData> out = new HashMap<String, Utils.ProjectData>();
+    static Map<String, CATme.Proj> busy(MarketAPI m) {
+        Map<String, CATme.Proj> out = new HashMap<String, CATme.Proj>();
         for (Industry ind : m.getIndustries()) {
-            if (!(ind instanceof BaseTerraformingIndustry)) continue;
-            BaseTerraformingIndustry ti = (BaseTerraformingIndustry) ind;
-            if (ti.isBuilding() || ti.isUpgrading() || ti.hasOngoingProject()) out.put(ind.getId(), ti.hasOngoingProject() ? ti.getProject() : null);
+            if (!(CATme.isTerraforming(ind))) continue;
+            Industry ti = ind;
+            if (ti.isBuilding() || ti.isUpgrading() || CATme.ongoing(ti)) out.put(ind.getId(), CATme.ongoing(ti) ? CATme.project(ti) : null);
         }
         return out;
     }
@@ -113,7 +109,7 @@ public class CATerraformSurplus {
     static CATerraSim.Result plan(MarketAPI m, CAData.Colony c, CASettings s) {
         Set<String> conds = new HashSet<String>();
         for (MarketConditionAPI mc : m.getConditions()) conds.add(mc.getId());
-        Map<String, Utils.ProjectData> busy = busy(m);
+        Map<String, CATme.Proj> busy = busy(m);
         Set<String> key = new HashSet<String>(conds);
         for (String b : busy.keySet()) key.add("busy:" + b);
         Float at = planAt.get(m.getId());
@@ -132,7 +128,7 @@ public class CATerraformSurplus {
         boolean gas = CATerraform.gasGiant(m);
         Map<String, CAWorldPlanner.Row> all = CAWorldPlanner.rows();
         Set<String> start = conds, running = new HashSet<String>(), runningHate = new HashSet<String>();
-        for (Utils.ProjectData pd : busy.values()) {
+        for (CATme.Proj pd : busy.values()) {
             if (pd == null) continue;
             CAWorldPlanner.Row row = all.get(pd.id);
             running.add(pd.id);
@@ -153,8 +149,8 @@ public class CATerraformSurplus {
         CAData.Profile prof = CAThreat.effective(m, c.profile);
         float hp = CAEconomy.hazardPayScale(m);   // 0.3.0.0 fix (C4 review): once per plan
         float base = start == conds ? 0f : CAConditions.change(m, start, prof, null) + CAEconomy.hazardPaySaved(m, conds, start, hp);   // 0.3.0.0 (C4): as value() counts it
-        CATerraSim.Result r = CATerraSim.plan(start, gas, rows, keep, avoid, Settings.BUILD_COST_MULTIPLIER,
-                Settings.REMOVAL_COST_MULTIPLIER, s.surplusTerraform, colony(m, prof, base, conds, hp), rich);
+        CATerraSim.Result r = CATerraSim.plan(start, gas, rows, keep, avoid, CATme.buildCostMult(),
+                CATme.removalCostMult(), s.surplusTerraform, colony(m, prof, base, conds, hp), rich);
         plans.put(m.getId(), r);
         planAt.put(m.getId(), now());
         return r;
@@ -252,10 +248,10 @@ public class CATerraformSurplus {
             }
             return buildStructure(m, k.q, sp, cost, fee, up) == null ? cost + fee : 0f;
         }
-        if (!(ind instanceof BaseTerraformingIndustry)) return 0f;
-        BaseTerraformingIndustry ti = (BaseTerraformingIndustry) ind;
-        if (ti.isBuilding() || ti.isUpgrading() || ti.hasOngoingProject()) return 0f;
-        Utils.ProjectData pd = project(m, ti, mv, key);
+        if (!(CATme.isTerraforming(ind))) return 0f;
+        Industry ti = ind;
+        if (ti.isBuilding() || ti.isUpgrading() || CATme.ongoing(ti)) return 0f;
+        CATme.Proj pd = project(m, ti, mv, key);
         if (pd == null) return 0f;
         float cost = CATerraform.projectCost(m, pd), fee = CABudget.fee(s, CATerraform.STANDARD_FEE);
         if (cost + fee > budget) { waits(m, key, what, cost + fee); return 0f; }
@@ -267,16 +263,16 @@ public class CATerraformSurplus {
      * is the way the move wants it would undo it (pollution removed by the plan an hour ago, then added back by this): never
      * one that goes the wrong way. 0.3.0.0 (B3): shared by act() and the planner's offer.
      */
-    static Utils.ProjectData project(MarketAPI m, BaseTerraformingIndustry ti, CATerraSim.Move mv, String key) {
+    static CATme.Proj project(MarketAPI m, Industry ti, CATerraSim.Move mv, String key) {
         if (!wantsChange(mv.add, m.hasCondition(mv.condition))) {
             planAt.remove(m.getId());
             CADiagnostics.LOG.info(CADiagnostics.TAG + m.getName() + ": surplus terraforming dropped '" + mv.label() + "': the colony already is that way; replanning");
             return null;
         }
-        Utils.ProjectData pd = null;
-        List<Utils.ProjectData> projects = ti.getProjects();
-        if (projects != null) for (Utils.ProjectData x : projects) if (x.id.equals(mv.condition)) pd = x;
-        if (pd == null || !ProjectListPlugin.canBuild(ti, pd)) {
+        CATme.Proj pd = null;
+        List<CATme.Proj> projects = CATme.projects(ti);
+        if (projects != null) for (CATme.Proj x : projects) if (x.id.equals(mv.condition)) pd = x;
+        if (pd == null || !CATme.canRun(ti, pd)) {
             if (CALog.once("tsn:" + key)) CALog.add(m.getName() + ": " + ti.getCurrentName() + " can't " + mv.label() + " there yet");
             return null;
         }
@@ -311,18 +307,18 @@ public class CATerraformSurplus {
     }
 
     /** Starts a project on an idle structure, paid from the surplus; null when it started, else why not. 0.3.0.0 (B3): shared by act() and the planner. */
-    static String startProject(MarketAPI m, CATerraSim.Seq q, BaseTerraformingIndustry ti, Utils.ProjectData pd, float cost, float fee) {
+    static String startProject(MarketAPI m, CATerraSim.Seq q, Industry ti, CATme.Proj pd, float cost, float fee) {
         return startProject(m, q, ti, pd, cost, fee, false);
     }
 
     /** As above. 0.3.0.0 (C4, research 03 F6): budget: the month's budget pays, as buildStructure. */
-    static String startProject(MarketAPI m, CATerraSim.Seq q, BaseTerraformingIndustry ti, Utils.ProjectData pd, float cost, float fee, boolean budget) {
+    static String startProject(MarketAPI m, CATerraSim.Seq q, Industry ti, CATme.Proj pd, float cost, float fee, boolean budget) {
         CASettings s = CAData.settings();
         CATerraSim.Move mv = q.moves.get(0);
         if (!CABreaker.allowed(ACTION)) return "paused for this session (see Diagnostics)";
-        ti.setProject(pd);
+        CATme.setProject(ti, pd);
         ti.startUpgrading();
-        if (!CABreaker.check(ACTION, ti.isUpgrading() || ti.hasOngoingProject(), m.getName())) return "it didn't take effect, so nothing was charged";
+        if (!CABreaker.check(ACTION, ti.isUpgrading() || CATme.ongoing(ti), m.getName())) return "it didn't take effect, so nothing was charged";
         CABudget.take(cost);   // 0.3.0.0 (C4): through CABudget's one line that takes credits (C1)
         paid(s, m, cost, fee, 0f, budget);
         CAMark.clear(unusedKey(m.getId(), mv.structure));   // 0.3.0.0 fix (C4 review): its first project ran
@@ -446,21 +442,21 @@ public class CATerraformSurplus {
                 return buildStructure(x.market, (CATerraSim.Seq) x.payload, xs, x.cost, x.fee, x.upkeep, src == CAEconomy.BUDGET);
             };
         } else {
-            if (!(ind instanceof BaseTerraformingIndustry)) return null;
-            BaseTerraformingIndustry ti = (BaseTerraformingIndustry) ind;
-            if (ti.isBuilding() || ti.isUpgrading() || ti.hasOngoingProject()) return null;
+            if (!(CATme.isTerraforming(ind))) return null;
+            Industry ti = ind;
+            if (ti.isBuilding() || ti.isUpgrading() || CATme.ongoing(ti)) return null;
             if (planWants(m, c, ti)) return null;   // the plan's own step goes first (CATerraform, later today)
-            Utils.ProjectData pd = project(m, ti, mv, key);
+            CATme.Proj pd = project(m, ti, mv, key);
             if (pd == null) return null;
             a.kind = CAAction.Kind.PROJECT; a.id = mv.condition; a.name = ti.getCurrentName() + ": " + mv.label(); a.building = mv.structure;
             a.cost = CATerraform.projectCost(m, pd); a.fee = CABudget.fee(s, CATerraform.STANDARD_FEE); a.days = pd.buildTime;
             a.starter = (x) -> {
                 Industry xi = x.market.getIndustry(x.building);
-                if (!(xi instanceof BaseTerraformingIndustry)) return "the structure is gone";
-                BaseTerraformingIndustry xt = (BaseTerraformingIndustry) xi;
-                if (xt.isBuilding() || xt.isUpgrading() || xt.hasOngoingProject()) return "the structure is busy";
+                if (!(CATme.isTerraforming(xi))) return "the structure is gone";
+                Industry xt = xi;
+                if (xt.isBuilding() || xt.isUpgrading() || CATme.ongoing(xt)) return "the structure is busy";
                 CATerraSim.Seq xq = (CATerraSim.Seq) x.payload;
-                Utils.ProjectData xp = project(x.market, xt, xq.moves.get(0), x.market.getId() + ":" + x.building + ":" + x.id);
+                CATme.Proj xp = project(x.market, xt, xq.moves.get(0), x.market.getId() + ":" + x.building + ":" + x.id);
                 if (xp == null) return "that project can't start there now";
                 int src = source(CAData.settings(), xq, x.total(), x.fromBudget);   // 0.3.0.0 (C4, F6)
                 if (src == CAEconomy.NONE) { x.failWaits = true; return NO_MONEY; }
@@ -515,21 +511,21 @@ public class CATerraformSurplus {
      * makes for its first choice. In 0.2.45 the plan's terraforming ran first and surplus terraforming took what it left idle;
      * the planner runs before it, so it leaves these structures to it.
      */
-    static boolean planWants(MarketAPI m, CAData.Colony c, BaseTerraformingIndustry ti) {
-        List<Utils.ProjectData> projects;
-        try { projects = ti.getProjects(); } catch (Throwable t) { return false; }
+    static boolean planWants(MarketAPI m, CAData.Colony c, Industry ti) {
+        List<CATme.Proj> projects;
+        try { projects = CATme.projects(ti); } catch (Throwable t) { return false; }
         if (projects == null) return false;
         boolean pollutionBack = CAConditions.pollutionReturns(m);
         for (CAPlan.Step st : CAPlan.build(m, c.profile).steps) {
             if (st.kind == CAPlan.Kind.BUILD) continue;
             try { if (st.done(m)) continue; } catch (Throwable t) { continue; }
             if (!ti.getId().equals(CAWorldPlanner.structureFor(st.id)) && st.kind == CAPlan.Kind.COND) continue;
-            for (Utils.ProjectData pd : projects) {
+            for (CATme.Proj pd : projects) {
                 if (!pd.id.equals(st.id)) continue;
                 boolean adding = !m.hasCondition(pd.id);
                 if ((st.kind == CAPlan.Kind.COND) != adding) continue;
                 if (!adding && pd.id.equals("pollution") && pollutionBack) continue;
-                try { if (ProjectListPlugin.canBuild(ti, pd)) return true; } catch (Throwable ignored) { }
+                try { if (CATme.canRun(ti, pd)) return true; } catch (Throwable ignored) { }
             }
         }
         return false;
@@ -549,7 +545,7 @@ public class CATerraformSurplus {
             String id = key.substring(prefix.length());
             Industry ind = m.getIndustry(id);
             if (ind == null) { built.remove(key); CAMark.clear(unusedKey(m.getId(), id)); continue; }   // gone already
-            if (ind.isBuilding() || ind.isUpgrading() || (ind instanceof BaseTerraformingIndustry && ((BaseTerraformingIndustry) ind).hasOngoingProject())) continue;
+            if (ind.isBuilding() || ind.isUpgrading() || (CATme.isTerraforming(ind) && CATme.ongoing(ind))) continue;
             if (r.wanted.contains(id) || c.locks.contains(id)) continue;
             if (id.equals("tme_geomorphology_station") && CAConditions.pollutionReturns(m)) continue;   // the forge's upgrade brings pollution back: it'll be needed
             boolean planned = false;

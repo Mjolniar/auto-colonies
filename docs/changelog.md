@@ -1,30 +1,26 @@
 # Patch notes
 
-Every version, newest first. The mod started as a personal mod of small tweaks (battle size, combat autopilot). Colony Autopilot grew inside it. 0.2.1.0 is the first version on GitHub and 0.2.6.0 the first with a downloadable release. The balance tweaks moved to their own mod in 0.2.7.0.
+## 0.3.0.5 - 2026-11-12
 
-The mod was called Colony Manager until 0.3.0.1. Older entries use the new name, Auto Colonies.
-
-Version numbers start with 0 since 0.3.0.0, because the mod is not at 1.0. Earlier versions are listed with the 0 added: 2.45.2 is 0.2.45.2. Release tags keep their old names (v2.45.2).
+- Terraforming Made Easy: Added support for TME 2.10.0. TME 2.9.8 still works.
+- Terraforming Made Easy: Fixed terraforming plans being off with TME 2.10.0 installed.
 
 ## 0.3.0.4 - 2026-11-12
 
-- Starsector 0.98.5a survival mode: colony income over 200,000 a month loses part of it to corruption. Build and keep values count extra income at the share kept after corruption, worked out from last month's colony income: half just above 200,000, a quarter at 800,000. A pick's details show the share. Losses count in full.
-- Starsector 0.98.5a: an AI core in a Waystation raises stockpiles and no longer cuts demand. Core placement no longer counts a demand cut there.
-- Starsector 0.98.5a: a Drone Replicator cancels Decivilized Subpopulation's -2 stability. Item placement counts that at colonies with the condition.
-- Checked on 0.98.5a, no change needed: survival mode's industry cost, build time and growth points come from the game, so plans already use them.
-- On 0.98a these rules do not exist and nothing changes.
+- Survival mode: Build and keep values count extra colony income after corruption (over 200,000 a month). Losses count in full.
+- Waystation: AI cores no longer count as cutting demand on Starsector 0.98.5a.
+- Drone Replicator: Item placement counts the Decivilized Subpopulation stability it cancels on Starsector 0.98.5a.
 
 ## 0.3.0.3 - 2026-11-12
 
-- Starsector 0.98.5a: the Colony Autopilot button on the colony screen opens its panel on 0.98.5a. The game's dialog classes have new names there; Auto Colonies looks up the 0.98a names first, then the 0.98.5a names, so one build works on both versions.
-- Checked on 0.98.5a, no change needed: founding a colony reads its crew, heavy machinery and supply costs from the game, so survival mode's costs are used there.
+- Colony screen: Fixed the Colony Autopilot button on Starsector 0.98.5a. Works on 0.98a and 0.98.5a.
 
 ## 0.3.0.2 - 2026-11-12
 
-- Roider Dives and Union HQ: Roider Union 2.3.1 mines only the colony's own deposits after a save load. It rebuilds the list of star systems in range before the game has loaded the sector, so the list is empty until the building is built or upgraded again. Auto Colonies now values a Dives or Union HQ for the colony's own deposits, which is what Roider Union mines. Before, it also counted the deposits in range, and rated a Dives too high.
-- The build note for a Dives lists each deposit its miners reach and where it is (this planet, or a star system and its distance).
-- Mod watch: a Dives that mines only its colony's own deposits is reported as information with the cause, no longer as a formula warning.
-- Starsector 0.98.5a: hiring an administrator uses the game's portrait pick in either game version. Its parameters changed in 0.98.5a, and the old call would fail there.
+- Roider Union: Dives and Union HQ are valued for the colony's own deposits, which is what Roider Union 2.3.1 mines after a save load.
+- Roider Union: The Dives build note lists each deposit in reach and where it is.
+- Mod watch: A Dives that mines only its own colony's deposits is reported as information.
+- Administrators: Fixed hiring on Starsector 0.98.5a (portrait pick).
 
 ## 0.3.0.1 - 2026-11-12
 
