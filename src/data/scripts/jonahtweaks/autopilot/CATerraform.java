@@ -4,11 +4,6 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.util.Misc;
-import terraformingmadeeasy.Settings;
-import terraformingmadeeasy.Utils;
-import terraformingmadeeasy.industries.BaseDevelopmentIndustry;
-import terraformingmadeeasy.industries.BaseTerraformingIndustry;
-import terraformingmadeeasy.ui.plugins.ProjectListPlugin;
 
 import java.util.*;
 
@@ -24,12 +19,12 @@ public class CATerraform {
     static final Map<String, Float> HAZARD = CAConditions.HAZARD;
     static final Map<String, CAData.Profile[]> WORLD_FITS = CAConditions.WORLD_FITS;
 
-    static float projectCost(MarketAPI m, Utils.ProjectData pd) {
-        float mult = m.hasCondition(pd.id) ? Settings.REMOVAL_COST_MULTIPLIER : 1f;
-        return Math.round(pd.cost * mult * Settings.BUILD_COST_MULTIPLIER);
+    static float projectCost(MarketAPI m, CATme.Proj pd) {
+        float mult = m.hasCondition(pd.id) ? CATme.removalCostMult() : 1f;
+        return Math.round(pd.cost * mult * CATme.buildCostMult());
     }
 
-    static class Cand { MarketAPI m; BaseTerraformingIndustry ind; Utils.ProjectData pd; float cost, score; String why; boolean planned; String world; }
+    static class Cand { MarketAPI m; Industry ind; CATme.Proj pd; float cost, score; String why; boolean planned; String world; }
 
     static final String ACTION = "terraforming";
 
@@ -96,12 +91,12 @@ public class CATerraform {
             if (pollutionBack && m.hasCondition("pollution") && CALog.once("tfpollution:" + m.getId()))
                 CALog.add(m.getName() + ": pollution isn't removed while its nanoforge forge is being upgraded: the new building adds it back when it finishes");
             for (Industry raw : m.getIndustries()) {
-                if (!(raw instanceof BaseTerraformingIndustry)) continue;
-                BaseTerraformingIndustry ind = (BaseTerraformingIndustry) raw;
-                if (ind.isBuilding() || ind.isUpgrading() || ind.hasOngoingProject() || c.locks.contains(ind.getId())) continue;
+                if (!(CATme.isTerraforming(raw))) continue;
+                Industry ind = raw;
+                if (ind.isBuilding() || ind.isUpgrading() || CATme.ongoing(ind) || c.locks.contains(ind.getId())) continue;
                 if ("tme_stellar_manufactory".equals(ind.getId())) continue;   // needs mirror and shade choices
-                List<Utils.ProjectData> projects;
-                try { projects = ind.getProjects(); } catch (Throwable t) { CADiagnostics.quarantine(ind.getId(), "reading terraforming projects", t); continue; }
+                List<CATme.Proj> projects;
+                try { projects = CATme.projects(ind); } catch (Throwable t) { CADiagnostics.quarantine(ind.getId(), "reading terraforming projects", t); continue; }
                 if (projects == null) continue;
                 Cand pick = null;
                 // 1) the earliest unfinished plan step this structure can run
@@ -110,12 +105,12 @@ public class CATerraform {
                     order++;
                     if (st.done(m) || st.kind == CAPlan.Kind.BUILD) continue;
                     if (!ind.getId().equals(CAWorldPlanner.structureFor(st.id)) && st.kind == CAPlan.Kind.COND) continue;
-                    for (Utils.ProjectData pd : projects) {
+                    for (CATme.Proj pd : projects) {
                         if (!pd.id.equals(st.id)) continue;
                         boolean adding = !m.hasCondition(pd.id);
                         if ((st.kind == CAPlan.Kind.COND) != adding) continue;
                         if (!adding && pd.id.equals("pollution") && pollutionBack) continue;
-                        try { if (!ProjectListPlugin.canBuild(ind, pd)) continue; } catch (Throwable t) { continue; }
+                        try { if (!CATme.canRun(ind, pd)) continue; } catch (Throwable t) { continue; }
                         pick = new Cand(); pick.m = m; pick.ind = ind; pick.pd = pd; pick.cost = projectCost(m, pd);
                         pick.score = 1000000f - order * 1000f; pick.planned = true;
                         pick.world = plan.world;
@@ -127,9 +122,9 @@ public class CATerraform {
                 // 2) otherwise the structure's best-value project, valued on what the colony is after it: TME removes what the
                 // added condition hates (sparse transplutonics deletes abundant ones) and settles farmland, organics and habitability
                 if (pick == null) {
-                    for (Utils.ProjectData pd : projects) {
+                    for (CATme.Proj pd : projects) {
                         try {
-                            if (!ProjectListPlugin.canBuild(ind, pd)) continue;
+                            if (!CATme.canRun(ind, pd)) continue;
                             boolean adding = !m.hasCondition(pd.id);
                             if (!adding && pd.id.equals("pollution") && pollutionBack) continue;
                             CATerraSim.Move mv = new CATerraSim.Move();
@@ -192,9 +187,9 @@ public class CATerraform {
             }
             try {
                 if (!CABreaker.allowed(ACTION)) continue;
-                k.ind.setProject(k.pd);
+                CATme.setProject(k.ind, k.pd);
                 k.ind.startUpgrading();
-                if (!CABreaker.check(ACTION, k.ind.isUpgrading() || k.ind.hasOngoingProject(), k.m.getName())) continue;   // not charged if it didn't start
+                if (!CABreaker.check(ACTION, k.ind.isUpgrading() || CATme.ongoing(k.ind), k.m.getName())) continue;   // not charged if it didn't start
                 CABudget.pay(s, null, k.cost, fee, 0f);
                 if (k.planned && k.world != null) CAPlan.commitWorld(k.m, k.world, k.pd.id, !k.m.hasCondition(k.pd.id));   // 0.3.0.0 (B5): the condition this project changes is kept for the commitment
                 s.terraSpent += k.cost;
@@ -211,10 +206,10 @@ public class CATerraform {
     /** A Terraforming Made Easy project running at the colony now adds or removes this condition. */
     static boolean producing(MarketAPI m, String condId) {
         for (Industry raw : m.getIndustries()) {
-            if (!(raw instanceof BaseDevelopmentIndustry)) continue;
-            BaseDevelopmentIndustry ind = (BaseDevelopmentIndustry) raw;
+            if (!(CATme.isDevelopment(raw))) continue;
+            Industry ind = raw;
             try {
-                if (ind.hasOngoingProject() && ind.getProject() != null && condId.equals(ind.getProject().id)) return true;
+                if (CATme.ongoing(ind) && CATme.project(ind) != null && condId.equals(CATme.project(ind).id)) return true;
             } catch (Throwable ignored) { }
         }
         return false;

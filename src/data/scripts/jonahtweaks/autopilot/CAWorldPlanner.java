@@ -30,8 +30,8 @@ public class CAWorldPlanner {
         if (rows != null) return rows;
         rows = new HashMap<String, Row>();
         try {
-            JSONArray arr = Global.getSettings().getMergedSpreadsheetDataForMod("conditionId",
-                    "data/campaign/tme_terraforming_options.csv", "terraformingmadeeasy");
+            String[] tb = CATme.table();   // 0.3.0.5: TME 2.10.0 moved the table and renamed its gas giant column
+            JSONArray arr = Global.getSettings().getMergedSpreadsheetDataForMod(tb[1], tb[0], "terraformingmadeeasy");
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.getJSONObject(i);
                 String s = o.optString("structureId", ""), c = o.optString("conditionId", "");
@@ -39,7 +39,7 @@ public class CAWorldPlanner {
                 Row r = new Row();
                 r.structure = s; r.condition = c;
                 r.cost = (float) o.optDouble("cost", 0); r.days = (float) o.optDouble("buildTime", 0);
-                r.gasGiants = "TRUE".equalsIgnoreCase(o.optString("canChangeGasGiants", "false"));
+                r.gasGiants = "TRUE".equalsIgnoreCase(o.optString(tb[2], "false"));
                 r.liked = o.optString("likedConditions", "").replaceAll("\\s", "");
                 r.likedInd = o.optString("likedIndustries", "").replaceAll("\\s", "");
                 r.hated = o.optString("hatedConditions", "").replaceAll("\\s", "");
