@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.0.7 - 2026-11-12
+
+- Autopilot log: Lines about waiting or not acting go to starsector.log only. Actions, spending and advice stay in the log.
+- Compatibility: Updated for Terraforming Made Easy 2.10.0, Random Assortment of Things 3.4.0, Emergent Threats: IX Revival 1.4.4, Omega Core Everywhere 1.2.5 and Astral Ascension Renewed 1.0.4.
+
 ## 0.3.0.6 - 2026-11-12
 
 - Docs: Rewrote all docs at half length.

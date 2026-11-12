@@ -212,6 +212,7 @@ public class CALog {
      */
     public static void add(String text, boolean important) {
         if (whatIf()) return;   // 0.3.0.0: a what-if valuation never reaches the log (07 M2)
+        if (!important && CALogFilter.notActing(text)) { quiet(text); return; }   // 0.3.0.7: not-acting lines go to starsector.log only
         CASettings s = CAData.settings();
         List<String> log = s.log;
         String date = Global.getSector().getClock().getDateString();
