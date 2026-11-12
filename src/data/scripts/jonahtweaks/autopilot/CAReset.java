@@ -40,6 +40,7 @@ public class CAReset {
         // check never ran again. NaN fires the first time under that test and under CATime.due alike
         failed += run("calibration", () -> CACalibrate.last = Float.NaN);
         failed += run("storage logistics", () -> CALogistics.lastRun = Float.NaN);
+        failed += run("survival corruption share", () -> { CASurvival.shareReport = null; CASurvival.share = 1f; });   // 0.3.0.4
         failed += run("market model", () -> { CAMarket.invalidate(); CAMarket.cacheDay = -99f; CAMarket.lastWeek = Float.NaN; });
         failed += run("mod watch", () -> CAModWatch.reset());
         if (on("niko_stationAugments")) failed += run("station augments", () -> { CAAugments.nextRun.clear(); CAAugments.lastSig.clear(); });

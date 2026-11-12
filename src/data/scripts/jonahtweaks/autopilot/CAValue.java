@@ -491,7 +491,11 @@ public final class CAValue {
         float[] w = weights(profile, endgame);
         float mw = moneyWeight(m, endgame);
         float v = 0f;
-        for (int i = 0; i < 7; i++) v += w[i] * p.fx[i] * (i == 0 ? mw : 1f);
+        // 0.3.0.4: survival mode's corruption keeps only part of extra colony income (CASurvival)
+        float money = CASurvival.kept(p.fx[0]);
+        if (explain && money < p.fx[0]) p.lines.add("Survival mode corruption: extra income counts " + Math.round(100f * money / p.fx[0]) + "%");
+        v += w[0] * money * mw;
+        for (int i = 1; i < 7; i++) v += w[i] * p.fx[i];
         if (endgame) v += chainValue(m, p, chainUnits(p), false, explain);
         if (v > 0f && p.confidence < 1f) v *= p.confidence;
         return v;
@@ -653,7 +657,7 @@ public final class CAValue {
         k.money = k.export + k.relief + k.other - k.upkeep;
         boolean endgame = endgame(m);
         float[] w = weights(profile, endgame);
-        float v = w[0] * moneyWeight(m, endgame) * k.money;
+        float v = w[0] * moneyWeight(m, endgame) * CASurvival.kept(k.money);   // 0.3.0.4: corruption, as add()
         for (int i = 1; i < 7; i++) v += w[i] * (p.fx[i] + syn[i]);
         // an estimate's chains: none, as add() counts none for it (no lines recorded); else the units it really adds
         if (endgame) v += chainValue(m, p, new LinkedHashMap<String, Integer>(k.lost), true, false);
@@ -1024,7 +1028,7 @@ public final class CAValue {
     /** Money at the colony's money weight (its goal's, the endgame's, the surplus's), as add() counts fx[0]. */
     static float itemMoney(MarketAPI m, float credits, CAData.Profile profile) {
         boolean endgame = endgame(m);
-        return credits * weights(profile, endgame)[0] * moneyWeight(m, endgame);
+        return CASurvival.kept(credits) * weights(profile, endgame)[0] * moneyWeight(m, endgame);   // 0.3.0.4: corruption, as add()
     }
 
     /** A nanoforge's ship and weapon quality, which isn't output: its flat score, as before. 0 for any other item. */
