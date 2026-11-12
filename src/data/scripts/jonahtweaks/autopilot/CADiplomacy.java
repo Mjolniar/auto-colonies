@@ -24,7 +24,7 @@ import java.util.Locale;
  * 0.3.0.0 (WS-E, research 06 section 4.10): diplomacy by stance (Nexerelin), daily from CAAuto after the agents.
  * - Ceasefire and peace offers (Nexerelin's CeasefirePromptIntel): accepted from Ally, Friendly and Neutral factions at any
  *   War level; rejected from Enemy and Destroy factions from War level Retaliate up (at Off and Defend they wait for you);
- *   from Auto and Rival factions they wait for you, with one log line saying which answer Colony Manager would give and why.
+ *   from Auto and Rival factions they wait for you, with one log line saying which answer Auto Colonies would give and why.
  * - Alliance offers from an Ally faction: one log line. Joining stays your call: an alliance brings its wars.
  * - Keep hostile: an Enemy or Destroy faction you declared war on (War page) whose relations rose above Hostile is made
  *   hostile again, at most once in 30 days per faction, the way Nexerelin's fleet request does it.
@@ -73,7 +73,7 @@ public class CADiplomacy {
         }
     }
 
-    /** What Colony Manager would answer a faction it leaves to you, and why. */
+    /** What Auto Colonies would answer a faction it leaves to you, and why. */
     static String advice(CAData d, FactionAPI f, int st) {
         int ops = 0;
         try {
@@ -103,7 +103,7 @@ public class CADiplomacy {
         }
     }
 
-    /** Days since the last declaration of any war by Colony Manager (keep-hostile counts too); MAX_VALUE with none. */
+    /** Days since the last declaration of any war by Auto Colonies (keep-hostile counts too); MAX_VALUE with none. */
     static float daysSinceLastDeclaration(CAData d) {
         float best = Float.MAX_VALUE;
         for (Long at : d.warDeclared().values()) {

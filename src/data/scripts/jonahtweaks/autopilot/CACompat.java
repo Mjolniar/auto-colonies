@@ -17,7 +17,7 @@ import java.util.concurrent.Callable;
  * - Partly off: some ids are gone; those parts can't act (the game has no such building or item), the rest works.
  * - Off: its reflected names can't be read; it does nothing.
  * Only reflection-only classes are linked here, so this never loads a class that needs an absent mod.
- * 0.3.0.0 (research 07 M9): the mods Colony Manager is compiled against (Nexerelin, Industrial Evolution, Random Assortment of
+ * 0.3.0.0 (research 07 M9): the mods Auto Colonies is compiled against (Nexerelin, Industrial Evolution, Random Assortment of
  * Things, Station Augments, Terraforming Made Easy) are checked too: CALinkScan reads the CM classes that call them and looks
  * up every class, method and field they use, without loading CM's own class or running anything. What the mod no longer has
  * is listed in Diagnostics and the integration shows Partly off.

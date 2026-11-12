@@ -31,7 +31,7 @@ public class CALogWatch extends AppenderSkeleton {
         installed = true;
         try {
             CALogWatch w = new CALogWatch();
-            w.setName("MjolniarsModsLogWatch");
+            w.setName("AuthorModsLogWatch");
             w.setThreshold(Level.WARN);
             for (String[] m : MODS) Logger.getLogger(m[0]).addAppender(w);
         } catch (Throwable t) {

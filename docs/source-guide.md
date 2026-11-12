@@ -32,7 +32,7 @@ Two companion pages:
 | Path | What's there |
 |---|---|
 | `mod_info.json` | Mod id `jonah_tweaks` (kept from the old name so existing saves load), version, jar, mod plugin |
-| `src/data/scripts/jonahtweaks/` | The mod plugin and two small leftovers from Tweaks 1.x |
+| `src/data/scripts/jonahtweaks/` | The mod plugin and two small leftovers from the earlier tweaks mod (1.x) |
 | `src/data/scripts/jonahtweaks/autopilot/` | Everything else. `CA` stands for Colony Autopilot. |
 | `data/config/colony_autopilot.json` | Default settings for a new save (commented) |
 | `data/campaign/submarkets.csv` | Registers the Autopilot Storage tab |
@@ -216,7 +216,7 @@ These pieces keep a mod update from quietly breaking things:
 | Class | What it does |
 |---|---|
 | [CACompat](../src/data/scripts/jonahtweaks/autopilot/CACompat.java) | Health check at load. Each integration lists its mod, the version it was written against, the ids it needs and a check that its reflected names resolve. Status: OK, Newer (still works, trusted a bit less), Partly off, or Off. |
-| [CALinkScan](../src/data/scripts/jonahtweaks/autopilot/CALinkScan.java) | 0.3.0: reads Colony Manager's own class files from the class loader (the constant pool: every class, method and field each class calls), keeps the names in Nexerelin's, Industrial Evolution's, RAT's, Station Augments' and TME's packages, and looks each one up with method handles without running anything. A renamed method shows in Diagnostics at load; only the part that calls it stops. |
+| [CALinkScan](../src/data/scripts/jonahtweaks/autopilot/CALinkScan.java) | 0.3.0: reads Auto Colonies' own class files from the class loader (the constant pool: every class, method and field each class calls), keeps the names in Nexerelin's, Industrial Evolution's, RAT's, Station Augments' and TME's packages, and looks each one up with method handles without running anything. A renamed method shows in Diagnostics at load; only the part that calls it stops. |
 | [CAStep](../src/data/scripts/jonahtweaks/autopilot/CAStep.java) | 0.3.0: isolates and times every step of the daily pass. A step that fails 3 days in a row stops for the session with one log line and a Diagnostics entry; the safety steps use `guard` and keep running. |
 | [CAConst](../src/data/scripts/jonahtweaks/autopilot/CAConst.java) | Reads numbers from a mod's own public static fields, with the original value as the fallback. A rebalance is picked up, and the change is logged. |
 | [CACalibrate](../src/data/scripts/jonahtweaks/autopilot/CACalibrate.java) | Weekly, compares predicted upkeep and output with your real plain buildings. It smooths the ratio (70/30), clamps it to 0.5-2x, and applies it after two readings. Kept in the save. |
@@ -312,7 +312,7 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
 | [CATime](../src/data/scripts/jonahtweaks/autopilot/CATime.java) | One clock: game days from the sector clock. `due` and `fresh` treat a stamp later than today as stale (an earlier save was loaded). The game clock's days are negative, so "never fired" is NaN. |
 | [CAReset](../src/data/scripts/jonahtweaks/autopilot/CAReset.java) | Clears every cache, timer and session flag kept in static fields, first thing on every load. `JTResetCheck` fails on a new static that isn't reset or listed. |
 | [CAStability](../src/data/scripts/jonahtweaks/autopilot/CAStability.java) | The one stability rule: `canLose` lets an action go when it costs no stability or the colony stays at or above the floor (minimum stability, at least 3) afterwards. Every takedown, move, pull, policy and new action asks it. |
-| [CATuning](../src/data/scripts/jonahtweaks/autopilot/CATuning.java) | Colony Manager's own numbers in one place (bonuses, fees, day counts, caps, stability margins, the horizon, tier lines). `JTTuningCheck` pins every value. |
+| [CATuning](../src/data/scripts/jonahtweaks/autopilot/CATuning.java) | Auto Colonies' own numbers in one place (bonuses, fees, day counts, caps, stability margins, the horizon, tier lines). `JTTuningCheck` pins every value. |
 | [CAMigrate](../src/data/scripts/jonahtweaks/autopilot/CAMigrate.java) | Moves a save from before 0.3.0 forward once (`to3`). Translates old settings; raises nothing. |
 | [CAXStream](../src/data/scripts/jonahtweaks/autopilot/CAXStream.java) | Short aliases for saved classes, and `omitField` lines for retired fields. Called from `JTModPlugin.configureXStream`. |
 | [CACache](../src/data/scripts/jonahtweaks/autopilot/CACache.java) | Day caches behind the engine: an answer is kept with the game day, an empire-wide change counter and a signature of the colonies it read; any change is a miss. |
@@ -408,7 +408,7 @@ Everything uses the game's own colors and widgets, so it looks like the base gam
 - **One step can't break the others.** Every step of the daily pass goes through `CAStep.run` or `CAStep.guard`.
 - **One stability rule.** Anything that can cost a colony stability asks `CAStability.canLose` first (0.3.0).
 - **One payment path.** Credits are taken and given back only in `CABudget` (`take`, `give`); callers use `pay`, `charge`, `payPrice`, `payFromPool` or `refund` (0.3.0). An offline check fails any other file that changes credits.
-- **Numbers in one place.** Colony Manager's own tuning numbers live in `CATuning` (0.3.0).
+- **Numbers in one place.** Auto Colonies' own tuning numbers live in `CATuning` (0.3.0).
 - **Save safety.** Saved data holds only ids, numbers and timestamps; a newly saved class needs an alias in `CAXStream` (0.3.0).
 - **No `java.lang.reflect` or file classes** anywhere in mod code. Use `CARefl` or method handles.
 - **Format strings.** `addPara` treats its text as a format string. A literal `%` must be written `%%`, and dynamic text goes through `CALog.esc`. A stray `%` crashed the game once, which is why the build checks for it.

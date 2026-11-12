@@ -26,7 +26,7 @@ public class CAWarPolicy {
     public static final float INFAMY_LINE = 75f;
     /** A log line when infamy passes this. */
     public static final float INFAMY_NEAR = 60f;
-    /** Colony Manager's fee on the new offensive operations: the fee setting applied to this share of Nexerelin's price (DECISIONS 10). */
+    /** Auto Colonies' fee on the new offensive operations: the fee setting applied to this share of Nexerelin's price (DECISIONS 10). */
     public static final float FEE_SHARE = 0.1f;
     /** Invasion fleets and marines are sized this much over Nexerelin's own estimate. */
     public static final float FP_MARGIN = 1.25f, MARINE_MARGIN = 1.25f;
@@ -54,7 +54,7 @@ public class CAWarPolicy {
     /** Fuel a bombardment fleet carries per fleet point when the fight is auto-resolved (Misc.FP_TO_BOMBARD_COST_APPROX_MULT). */
     public static final float FUEL_PER_FP = 12f;
     /**
-     * 0.3.0.0 (fix): days a blockade Colony Manager sent keeps its market off the hold-down list, from the saved record:
+     * 0.3.0.0 (fix): days a blockade Auto Colonies sent keeps its market off the hold-down list, from the saved record:
      * Nexerelin's organize time and travel plus its 120 days on station (BlockadeWrapperIntel payloadDays).
      */
     public static final float BLOCKADE_DAYS = 150f;
@@ -90,7 +90,7 @@ public class CAWarPolicy {
                 || INVASION.equals(kind) || SATBOMB.equals(kind);
     }
 
-    /** The operations new in 0.3.0 carry Colony Manager's fee; 0.2.45's defensive fleets, base strikes and strikes back don't (DECISIONS 10). */
+    /** The operations new in 0.3.0 carry Auto Colonies' fee; 0.2.45's defensive fleets, base strikes and strikes back don't (DECISIONS 10). */
     public static boolean feeApplies(String kind) {
         return RETAKE.equals(kind) || HOLD_RAID.equals(kind) || BLOCKADE.equals(kind) || INVASION.equals(kind) || SATBOMB.equals(kind);
     }
@@ -116,7 +116,7 @@ public class CAWarPolicy {
     // ---------------- permission ----------------
 
     /**
-     * The highest War level Colony Manager may use against one faction:
+     * The highest War level Auto Colonies may use against one faction:
      * - Off when the War level is Off;
      * - the War level, capped by the stance (CAStance.cap);
      * - Defend for an ally (or the Persean League while you're a member), your commissioner or a faction not hostile to it,
@@ -203,7 +203,7 @@ public class CAWarPolicy {
 
     public static float invasionCost(float fp, int marines, float perFP, float perMarine) { return fp * perFP + marines * perMarine; }
 
-    /** Colony Manager's fee on an operation: the fee level's multiplier on FEE_SHARE of the price, for the new offensive kinds only. */
+    /** Auto Colonies' fee on an operation: the fee level's multiplier on FEE_SHARE of the price, for the new offensive kinds only. */
     public static float fee(String kind, float price, float feeMult) { return feeApplies(kind) ? FEE_SHARE * Math.max(0f, price) * Math.max(0f, feeMult) : 0f; }
 
     /** Bombardment fleet: 1.25 x Nexerelin's wanted size, and big enough to carry twice the fuel the bombardment needs. */

@@ -20,6 +20,8 @@ Extract the [latest release](https://github.com/Mjolniar/auto-colonies/releases/
 
 Can be added to an existing save. Removing it breaks saves that used it (Autopilot Storage is on your markets). MagicLib or TriOS show updates.
 
+The mod was called Colony Manager until 0.3.0.1. When updating from an older version, delete the old Colony Manager folder in `mods/` before extracting. The mod id is unchanged, so saves keep working.
+
 Updating from 0.2.45.x: back up your save. A 0.3.0 save does not load in 0.2.45.x. Settings carry over ([patch notes](docs/changelog.md)). Version numbers start with 0 since 0.3.0.0, so MagicLib and TriOS do not show 0.3.0.0 as an update to 2.45.2. Get it from the latest release.
 
 ## Quick start

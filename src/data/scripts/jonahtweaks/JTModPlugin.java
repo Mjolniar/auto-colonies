@@ -17,7 +17,7 @@ public class JTModPlugin extends BaseModPlugin {
     }
 
     /**
-     * 0.3.0.0: short stable names for the classes Colony Manager keeps in the save, and retired fields dropped (CAXStream),
+     * 0.3.0.0: short stable names for the classes Auto Colonies keeps in the save, and retired fields dropped (CAXStream),
      * so 0.3.0 can move classes without breaking saves. Never throws: a failure here would stop every save from loading.
      */
     public void configureXStream(XStream x) {

@@ -62,7 +62,7 @@ import java.util.*;
  * 10. Standing guard (rich): a defense fleet at every colony, biggest first, once per system every 45 days.
  * Each faction's effective level (CAWarPolicy.effective) caps what goes at it; nothing ever goes at a faction that isn't
  * hostile to you. Every launch keeps RESERVE of the fleet request capacity for emergencies (RICH_RESERVE while rich) and
- * never goes below the credit reserve. The operations new in 0.3.0 carry Colony Manager's fee (CAWarPolicy.feeApplies).
+ * never goes below the credit reserve. The operations new in 0.3.0 carry Auto Colonies' fee (CAWarPolicy.feeApplies).
  * Every launch is recorded in CAData.warOps ("kind:marketId" to when): ids and timestamps only.
  */
 public class CAWar {
@@ -176,7 +176,7 @@ public class CAWar {
      * 0.3.0.0 (fix, 06 section 4.8): an operation whose result isn't in yet, so its capture, infamy or bombardment is still to
      * come. Nexerelin sets the outcome when an invasion takes the market or a bombardment lands, but the InvasionIntel stays
      * 90 more days at the market it took (InvWaitStage) and a SatBombIntel flies home after it bombs. Also decided: an
-     * invasion whose market is yours already, and a bombardment of Colony Manager's that the record shows as landed.
+     * invasion whose market is yours already, and a bombardment of Auto Colonies' that the record shows as landed.
      */
     static boolean undecided(OffensiveFleetIntel o) {
         if (o.getOutcome() != null) return false;
@@ -189,7 +189,7 @@ public class CAWar {
         return true;
     }
 
-    /** Whether a fleet operation is yours: the player faction's (Colony Manager's, your own requests, or Nexerelin's followers). */
+    /** Whether a fleet operation is yours: the player faction's (Auto Colonies', your own requests, or Nexerelin's followers). */
     static boolean yours(OffensiveFleetIntel o) {
         FactionAPI f = o.getFaction();
         if (f == null) return false;
@@ -218,7 +218,7 @@ public class CAWar {
         return new String[0];
     }
 
-    /** Whether Colony Manager launched this operation (its kind and target are in CAData.warOps). */
+    /** Whether Auto Colonies launched this operation (its kind and target are in CAData.warOps). */
     static boolean cmOp(CAData d, OffensiveFleetIntel o) {
         if (o.getTarget() == null || !o.isPlayerSpawned()) return false;
         for (String k : kindsOf(o)) if (d.warOps().containsKey(k + ":" + o.getTarget().getId())) return true;
@@ -226,7 +226,7 @@ public class CAWar {
     }
 
     /**
-     * Your invasions under way (any of yours: Colony Manager's, your own requests, followers'), respawn invasions aside.
+     * Your invasions under way (any of yours: Auto Colonies', your own requests, followers'), respawn invasions aside.
      * 0.3.0.0 (fix): only those still to land (undecided), so a capture's 90-day wait doesn't hold the next invasion.
      */
     static List<InvasionIntel> invasionsUnderWay() {
@@ -399,7 +399,7 @@ public class CAWar {
         return comm != null && (comm == f || !f.isHostileTo(comm));
     }
 
-    /** The highest War level Colony Manager may use against this faction today (CAWarPolicy.effective). */
+    /** The highest War level Auto Colonies may use against this faction today (CAWarPolicy.effective). */
     static int effective(CAData d, CASettings s, FactionAPI f, String autoRival) {
         if (f == null || f.isPlayerFaction()) return CAWarPolicy.OFF;
         int st = stance(s, f.getId(), autoRival);
@@ -722,7 +722,7 @@ public class CAWar {
                 public int compare(MarketAPI a, MarketAPI b) { return Float.compare(nearestColonyLY(a), nearestColonyLY(b)); }
             });
             for (MarketAPI t : l) {
-                // 0.3.0.0 (fix): also while a blockade Colony Manager sent there can still be on station (the saved record)
+                // 0.3.0.0 (fix): also while a blockade Auto Colonies sent there can still be on station (the saved record)
                 if (oursAt(t) || daysSince(p.d, CAWarPolicy.BLOCKADE + ":" + t.getId()) < CAWarPolicy.BLOCKADE_DAYS) continue;
                 boolean raid = military(t);
                 String kind = raid ? CAWarPolicy.HOLD_RAID : CAWarPolicy.BLOCKADE;
@@ -784,7 +784,7 @@ public class CAWar {
 
     /**
      * The emergency stop: War level to Defend (Off stays Off), bombardment authorization and every war confirmation cleared,
-     * and Colony Manager's offensives still organizing or assembling cancelled (Nexerelin refunds its whole price; the fee
+     * and Auto Colonies' offensives still organizing or assembling cancelled (Nexerelin refunds its whole price; the fee
      * isn't refunded). recall also cancels those travelling (67% back) or in action (33%). Fleet request points never come back.
      * 0.3.0.0 (fix): an invasion with troops on the ground (troopsLanded) is neither cancelled nor recalled.
      */
@@ -921,7 +921,7 @@ public class CAWar {
         for (OffensiveFleetIntel o : offensives()) {
             if (!yours(o) || o.getTarget() == null || o.getTarget().getFaction() != f || o instanceof DefenseFleetIntel) continue;
             t.addPara("  %s at %s, %s points, " + stageName(stageOf(o)) + (troopsLanded(o) ? ", troops on the ground" : "")
-                    + (cmOp(d, o) ? "" : " (not Colony Manager's)") + ".", 2f, Misc.getHighlightColor(),
+                    + (cmOp(d, o) ? "" : " (not Auto Colonies')") + ".", 2f, Misc.getHighlightColor(),
                     what(kindsOf(o).length > 0 ? kindsOf(o)[0] : "raid"), o.getTarget().getName(), "" + Math.round(o.getFP()));
         }
     }

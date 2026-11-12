@@ -33,7 +33,7 @@ import java.util.*;
  * 0.3.0.0 (WS-E, research 06 sections 2.2, 2.3, 4.7-4.9): invasions (Nexerelin) and the colonies they take.
  *
  * Invasions are requested as Nexerelin's fleet request does (InvasionIntel, its price of fleet points x 400 + marines x 50,
- * plus Colony Manager's fee, its fleet request points, its organize and travel time), at 1.25 x Nexerelin's wanted fleet
+ * plus Auto Colonies' fee, its fleet request points, its organize and travel time), at 1.25 x Nexerelin's wanted fleet
  * size with 1.25 x its own marine count. Targets:
  * - Retake (War level Retaliate, setting on): a market that was yours, held by a faction you may attack; your lost capital first.
  * - Conquer (War level Conquer): an Enemy faction's best market while it costs at most a quarter of the surplus; every
@@ -46,7 +46,7 @@ import java.util.*;
  * whole fleet (never a smaller, doomed one). 0.3.0.0 (fix): none while you hold a commission; an invasion whose market is
  * taken no longer counts as under way (CAWar.undecided).
  *
- * Conquered colonies (captures of Colony Manager's own invasions, CAData.conquered): Nexerelin's autonomy taken back at
+ * Conquered colonies (captures of Auto Colonies' own invasions, CAData.conquered): Nexerelin's autonomy taken back at
  * once (autonomy: one more colony governed by you and the unrest only when every colony stays at the stability floor; CAItems
  * hires an administrator for the limit; no autonomy as a bridge); the mode your "Conquered colonies"
  * setting gives (a colony that was yours keeps its own); the Security goal until the rebellion is over, stability is 5
@@ -354,17 +354,17 @@ public class CAConquest {
         } catch (Throwable t) { return 0f; }
     }
 
-    /** Whether Colony Manager sent the invasion that took m (an invasion or retake of it recorded in the last year). */
+    /** Whether Auto Colonies sent the invasion that took m (an invasion or retake of it recorded in the last year). */
     static boolean ours(CAData d, String marketId) {
         return CAWar.daysSince(d, CAWarPolicy.INVASION + ":" + marketId) <= CAWarPolicy.OP_MEMORY_DAYS
                 || CAWar.daysSince(d, CAWarPolicy.RETAKE + ":" + marketId) <= CAWarPolicy.OP_MEMORY_DAYS;
     }
 
-    /** CAMark key that holds the goal a conquered colony had before Colony Manager set Security ("conqprof:<id>|<PROFILE>"). */
+    /** CAMark key that holds the goal a conquered colony had before Auto Colonies set Security ("conqprof:<id>|<PROFILE>"). */
     static final String PROFILE_MARK = "conqprof:";
 
     /**
-     * From CAWarListener: a market changed hands. A capture by you of a market Colony Manager invaded is recorded and set up
+     * From CAWarListener: a market changed hands. A capture by you of a market Auto Colonies invaded is recorded and set up
      * (mode, Security goal); everything else is left alone (your own conquests stay yours to run).
      */
     static void onCaptured(MarketAPI m, FactionAPI newOwner, FactionAPI oldOwner, boolean playerInvolved, boolean isCapture) {
@@ -406,7 +406,7 @@ public class CAConquest {
 
     static boolean profileHeld(MarketAPI m) { return !CAMark.keys(PROFILE_MARK + m.getId() + "|").isEmpty(); }
 
-    /** Catches a capture the listener missed (a load in between): a market of yours that Colony Manager invaded and Nexerelin marks as just captured. */
+    /** Catches a capture the listener missed (a load in between): a market of yours that Auto Colonies invaded and Nexerelin marks as just captured. */
     static void catchMissed(CAData d) {
         for (MarketAPI m : Misc.getFactionMarkets(Global.getSector().getPlayerFaction())) {
             if (d.conquered().containsKey(m.getId()) || !ours(d, m.getId())) continue;
@@ -564,7 +564,7 @@ public class CAConquest {
         return out;
     }
 
-    /** War page: the conquered colonies Colony Manager looks after. */
+    /** War page: the conquered colonies Auto Colonies looks after. */
     static void render(TooltipMakerAPI t, CAData d, CASettings s) {
         if (d.conquered().isEmpty()) return;
         Color hl = Misc.getHighlightColor();

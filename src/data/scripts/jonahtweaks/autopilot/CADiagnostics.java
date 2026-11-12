@@ -186,7 +186,7 @@ public class CADiagnostics {
      * Runtime guard: an error from a mod building's own code (or the game's code running it) during planning quarantines
      * that building for the session.
      * 0.3.0.0 (research 07 H5): a vanilla building is never quarantined, and in a planning check (where says "check",
-     * "reading", "scoring", "cost") neither is one whose error is Colony Manager's own (its topmost frame outside the JDK is
+     * "reading", "scoring", "cost") neither is one whose error is Auto Colonies' own (its topmost frame outside the JDK is
      * CM's): it's logged once per building and kind of error for the session, with a count in the report, and the caller
      * skips the pick as before. Before, a CM null pointer in scoring took the building (farming included) off every
      * colony's list. A failed action on a mod building (installing, starting a project) still quarantines it whoever's
@@ -212,8 +212,8 @@ public class CADiagnostics {
             if (top.equals("?")) for (String k : cmErrors.keySet()) if (k.startsWith(kind + "|")) { key = k; break; }   // a stackless repeat counts with its first
             Integer n = cmErrors.get(key);
             cmErrors.put(key, n == null ? 1 : n + 1);
-            if (n == null) LOG.warn(TAG + (vanilla ? "error with vanilla building " : "Colony Manager error with ") + industryId + " in " + where
-                    + "; not quarantined, logged once a session (" + (Boolean.TRUE.equals(cm) || seen ? "in Colony Manager's own code" : "vanilla is never quarantined") + ")", t);
+            if (n == null) LOG.warn(TAG + (vanilla ? "error with vanilla building " : "Auto Colonies error with ") + industryId + " in " + where
+                    + "; not quarantined, logged once a session (" + (Boolean.TRUE.equals(cm) || seen ? "in Auto Colonies' own code" : "vanilla is never quarantined") + ")", t);
             return;
         }
         industries.put(industryId, Level.QUARANTINED);
@@ -291,7 +291,7 @@ public class CADiagnostics {
         return r;
     }
 
-    /** Whether the error is Colony Manager's own: true, false, or null when the JVM left out the stack trace. */
+    /** Whether the error is Auto Colonies' own: true, false, or null when the JVM left out the stack trace. */
     static Boolean cmFault(Throwable t) {
         if (t == null) return null;
         return cmFault(root(t).getStackTrace());

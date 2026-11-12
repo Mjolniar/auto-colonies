@@ -235,7 +235,7 @@ public class CAData {
      * last make-room swap or forced takedown at a colony; CAEndgame, CACapital, CAOverLimit). endgameBuilt keeps CAEndgame's own.
      */
     public Map<String, Long> overLimitAt, pruneAt, swapAt;
-    /** A (0.3.0.0, research 01 section 5): this month's Colony Manager spending per colony, "marketId|spent", "|fees", "|upkeep" (CALog.spent); the monthly colony lines clear it. */
+    /** A (0.3.0.0, research 01 section 5): this month's Auto Colonies spending per colony, "marketId|spent", "|fees", "|upkeep" (CALog.spent); the monthly colony lines clear it. */
     public Map<String, Float> monthLedger;
 
     public Map<String, Long> notedAt() { if (notedAt == null) notedAt = new HashMap<String, Long>(); return notedAt; }

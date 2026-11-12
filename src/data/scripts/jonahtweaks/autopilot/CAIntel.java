@@ -392,7 +392,7 @@ public class CAIntel extends BaseIntelPlugin {
      * Mjolniar's mods that are installed, at a glance: enabled and version, warnings and errors this session (CALogWatch),
      * and each one's own status line, which the others write to sector memory as "$jonahs_status_" + mod id.
      */
-    static void renderMjolniarsMods(TooltipMakerAPI t) {
+    static void renderAuthorMods(TooltipMakerAPI t) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), bad = Misc.getNegativeHighlightColor();
         com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
         CATheme.heading(t, "Mjolniar's mods", 0f);
@@ -423,7 +423,7 @@ public class CAIntel extends BaseIntelPlugin {
 
     static void renderDiagnostics(TooltipMakerAPI t) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
-        try { renderMjolniarsMods(t); }
+        try { renderAuthorMods(t); }
         catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Mjolniar's mods section failed", e); }
         CATheme.heading(t, "Diagnostics", 0f);
         t.addPara("Last scan: %s. Probe-measured: %s. Not acted on: %s analyzed, %s quarantined. "

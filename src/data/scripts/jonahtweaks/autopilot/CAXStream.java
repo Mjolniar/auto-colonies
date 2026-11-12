@@ -3,7 +3,7 @@ package data.scripts.jonahtweaks.autopilot;
 import com.thoughtworks.xstream.XStream;
 
 /**
- * 0.3.0.0 (A0): stable short names for every Colony Manager class stored in the save, and retired fields dropped, so 0.3.0
+ * 0.3.0.0 (A0): stable short names for every Auto Colonies class stored in the save, and retired fields dropped, so 0.3.0
  * and later can move, split and rename classes without breaking saves (research 07 M11). Called from
  * JTModPlugin.configureXStream before any save is read or written.
  * Saves from before 0.3.0 still load: XStream falls back to the full class name when a name isn't an alias. Saves written
