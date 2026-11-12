@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.0.6 - 2026-11-12
+
+- Docs: Rewrote all docs at half length.
+- Mod info: Shorter description.
+
 ## 0.3.0.5 - 2026-11-12
 
 - Terraforming Made Easy: Added support for TME 2.10.0. TME 2.9.8 still works.
