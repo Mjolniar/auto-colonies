@@ -6,6 +6,14 @@ The mod was called Colony Manager until 0.3.0.1. Older entries use the new name,
 
 Version numbers start with 0 since 0.3.0.0, because the mod is not at 1.0. Earlier versions are listed with the 0 added: 2.45.2 is 0.2.45.2. Release tags keep their old names (v2.45.2).
 
+## 0.3.0.4 - 2026-11-12
+
+- Starsector 0.98.5a survival mode: colony income over 200,000 a month loses part of it to corruption. Build and keep values count extra income at the share kept after corruption, worked out from last month's colony income: half just above 200,000, a quarter at 800,000. A pick's details show the share. Losses count in full.
+- Starsector 0.98.5a: an AI core in a Waystation raises stockpiles and no longer cuts demand. Core placement no longer counts a demand cut there.
+- Starsector 0.98.5a: a Drone Replicator cancels Decivilized Subpopulation's -2 stability. Item placement counts that at colonies with the condition.
+- Checked on 0.98.5a, no change needed: survival mode's industry cost, build time and growth points come from the game, so plans already use them.
+- On 0.98a these rules do not exist and nothing changes.
+
 ## 0.3.0.3 - 2026-11-12
 
 - Starsector 0.98.5a: the Colony Autopilot button on the colony screen opens its panel on 0.98.5a. The game's dialog classes have new names there; Auto Colonies looks up the 0.98a names first, then the 0.98.5a names, so one build works on both versions.

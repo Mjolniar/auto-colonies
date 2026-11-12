@@ -175,7 +175,10 @@ public class CAItems {
         if (CAEndgame.at(m)) {   // the endgame economy: ship production and defense first, income items count as usual
             mult = id.endsWith("nanoforge") || id.equals("cryoarithmetic_engine") ? 2f : id.equals("drone_replicator") ? 1.5f : 1f;
         }
-        return v * mult * m.getSize();
+        float extra = 0f;
+        // 0.3.0.4: on 0.98.5a a Drone Replicator cancels Decivilized Subpopulation's -2 stability: 10 a stability point per size
+        if (id.equals("drone_replicator")) for (String c : CASurvival.replicatorConditions()) if (m.hasCondition(c)) extra += 20f * m.getSize();
+        return v * mult * m.getSize() + extra;
     }
 
     /** One placement per day at most, so each move is visible in the log. Only among the given Auto colonies (those not under siege). */
@@ -899,10 +902,12 @@ public class CAItems {
             if (tier(ind.getAICoreId()) == 0 || tier(ind.getAICoreId()) == 1) up /= BaseIndustry.UPKEEP_MULT;
             fx[0] += up * (1f - BaseIndustry.UPKEEP_MULT);
         }
-        // -1 demand matters where an input is short; a core already in there has taken its unit off
-        int back = ind.getAICoreId() != null ? BaseIndustry.DEMAND_REDUCTION : 0;
+        // -1 demand matters where an input is short; a core already in there has taken its unit off.
+        // 0.3.0.4: on 0.98.5a a Waystation's cores raise stockpiles and cut no demand (CASurvival).
+        boolean cutsDemand = !(ind.getId().equals("waystation") && CASurvival.waystationStockpileCores());
+        int back = ind.getAICoreId() != null && cutsDemand ? BaseIndustry.DEMAND_REDUCTION : 0;
         boolean shortInput = false;
-        for (MutableCommodityQuantity q : ind.getAllDemand()) {
+        if (cutsDemand) for (MutableCommodityQuantity q : ind.getAllDemand()) {
             int dem = q.getQuantity().getModifiedInt() + back;
             CommodityOnMarketAPI com = m.getCommodityData(q.getCommodityId());
             if (dem <= 0 || com == null || com.getCommodity() == null || dem <= com.getAvailable()) continue;
