@@ -55,6 +55,10 @@ public class CAScreenButton implements EveryFrameScript {
     static final String GRID_CLASS = "com.fs.starfarer.campaign.ui.marketinfo.IndustryListPanel";
     static final String DIALOG_CLASS = "com.fs.starfarer.ui.newui.super", PARENT_CLASS = "com.fs.starfarer.ui.interfacenew",
             LISTENER_CLASS = "com.fs.starfarer.ui.oo0O$o";
+    /** {dialog, parent, listener} per game version, tried in order: 0.98a-RC8, then 0.98.5a-RC4 (0.3.0.2). */
+    static final String[][] DIALOG_SETS = {
+            {DIALOG_CLASS, PARENT_CLASS, LISTENER_CLASS},
+            {"com.fs.starfarer.ui.newui.O0oo", "com.fs.starfarer.ui.z", "com.fs.starfarer.ui.oo0O$o"}};
     static final Object NONE = new Object();
     static boolean noSpotLogged = false;
 
@@ -67,17 +71,21 @@ public class CAScreenButton implements EveryFrameScript {
 
     /** Looks up the game's custom dialog constructor and show() through `cl`, without running them; null when found, else why not. */
     static String link(ClassLoader cl) {
-        try {
-            Class<?> dialog = Class.forName(DIALOG_CLASS, false, cl), parentType = Class.forName(PARENT_CLASS, false, cl),
-                    listenerType = Class.forName(LISTENER_CLASS, false, cl);
-            MethodHandles.Lookup l = MethodHandles.publicLookup();
-            dialogNew = l.findConstructor(dialog, MethodType.methodType(void.class, float.class, float.class, CustomDialogDelegate.class, parentType, listenerType));
-            dialogShow = l.findVirtual(dialog, "show", MethodType.methodType(void.class, float.class, float.class));
-            return null;
-        } catch (Throwable t) {
-            dialogNew = dialogShow = null;
-            return t.getClass().getSimpleName() + ": " + t.getMessage();
+        String why = null;
+        for (String[] set : DIALOG_SETS) {
+            try {
+                Class<?> dialog = Class.forName(set[0], false, cl), parentType = Class.forName(set[1], false, cl),
+                        listenerType = Class.forName(set[2], false, cl);
+                MethodHandles.Lookup l = MethodHandles.publicLookup();
+                dialogNew = l.findConstructor(dialog, MethodType.methodType(void.class, float.class, float.class, CustomDialogDelegate.class, parentType, listenerType));
+                dialogShow = l.findVirtual(dialog, "show", MethodType.methodType(void.class, float.class, float.class));
+                return null;
+            } catch (Throwable t) {
+                dialogNew = dialogShow = null;
+                if (why == null) why = t.getClass().getSimpleName() + ": " + t.getMessage();
+            }
         }
+        return why;
     }
 
     /** Whether the dialog is there to open (looked up once a session). */

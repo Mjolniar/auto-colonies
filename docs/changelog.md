@@ -6,6 +6,11 @@ The mod was called Colony Manager until 0.3.0.1. Older entries use the new name,
 
 Version numbers start with 0 since 0.3.0.0, because the mod is not at 1.0. Earlier versions are listed with the 0 added: 2.45.2 is 0.2.45.2. Release tags keep their old names (v2.45.2).
 
+## 0.3.0.3 - 2026-11-12
+
+- Starsector 0.98.5a: the Colony Autopilot button on the colony screen opens its panel on 0.98.5a. The game's dialog classes have new names there; Auto Colonies looks up the 0.98a names first, then the 0.98.5a names, so one build works on both versions.
+- Checked on 0.98.5a, no change needed: founding a colony reads its crew, heavy machinery and supply costs from the game, so survival mode's costs are used there.
+
 ## 0.3.0.2 - 2026-11-12
 
 - Roider Dives and Union HQ: Roider Union 2.3.1 mines only the colony's own deposits after a save load. It rebuilds the list of star systems in range before the game has loaded the sector, so the list is empty until the building is built or upgraded again. Auto Colonies now values a Dives or Union HQ for the colony's own deposits, which is what Roider Union mines. Before, it also counted the deposits in range, and rated a Dives too high.
