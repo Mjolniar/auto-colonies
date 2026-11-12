@@ -95,7 +95,7 @@ public class CACompat {
         ENTRIES.add(new Entry("aotd_theory_of_toolbox", "Ashes of the Domain: Theory of Toolbox", "1.0.13", NONE, NONE, NONE, NONE, () -> CAContracts.link()));
         // 0.3.0.0 (07 M9): the five mods CM is compiled against get their calls checked by CALinkScan (.scans): the CM classes
         // that import them, and the mod's packages. Nexerelin also puts rule commands under the game's package (Nex_*).
-        ENTRIES.add(new Entry("terraformingmadeeasy", "Terraforming Made Easy", "2.9.8",
+        ENTRIES.add(new Entry("terraformingmadeeasy", "Terraforming Made Easy", "2.10.0",
                 a("tme_atmosphere_regulator", "tme_geomorphology_station", "tme_terrestrial_engine", "tme_mineral_replicator", "tme_element_synthesizer",
                         "tme_agricultural_laboratory", "tme_unification_center"), NONE, NONE, NONE, null)
                 .scans(a("CATerraform", "CATerraformSurplus"), "terraformingmadeeasy/"));
@@ -106,11 +106,11 @@ public class CACompat {
                 .scans(a("CADefense", "CASpies", "CAWar", "CAAutonomy", "CAWarListener", "CADiplomacy", "CAConquest", "CAScorched", "CAExpansionNex",
                         "CAExpansion", "CAStance", "CAWarPolicy", "CAWarPage"),   // the 0.3.0 war and expansion classes too: scanning one that calls nothing costs nothing
                         "exerelin/", "com/fs/starfarer/api/impl/campaign/rulecmd/Nex_"));
-        ENTRIES.add(new Entry("assortment_of_things", "Random Assortment of Things", "3.3.1", NONE, NONE, NONE, NONE, null)
+        ENTRIES.add(new Entry("assortment_of_things", "Random Assortment of Things", "3.4.0", NONE, NONE, NONE, NONE, null)
                 .scans(a("CASettlement"), "assortment_of_things/"));
         ENTRIES.add(new Entry("niko_stationAugments", "Station Augments", "2.4.3", NONE, NONE, NONE, NONE, null)
                 .scans(a("CAAugments"), "niko_SA/"));
-        ENTRIES.add(new Entry("EmergentThreats_IX_Revival", "Emergent Threats: IX Revival", "1.4.0", a("ix_fuel_production"), NONE, NONE, a("ix_antimatter_stabilizer"), null));
+        ENTRIES.add(new Entry("EmergentThreats_IX_Revival", "Emergent Threats: IX Revival", "1.4.4", a("ix_fuel_production"), NONE, NONE, a("ix_antimatter_stabilizer"), null));
         // 0.3.0.0 (07 M9): the station builder's handles (CATascStations) count too, not only the terraforming ones
         ENTRIES.add(new Entry("Terraforming & Station Construction", "Terraforming & Station Construction", "10.0.9",
                 a(CATasc.PROCESSOR, CATasc.REFLECTOR, "BOGGLED_DOMED_CITIES", "BOGGLED_GENELAB", "BOGGLED_CHAMELEON", "BOGGLED_MESOZOIC_PARK", "BOGGLED_KLETKA_SIMULATOR"),
@@ -121,8 +121,8 @@ public class CACompat {
                 a("vic_soil_nanites2"), a("vic_genetech"), null));
         ENTRIES.add(new Entry("roider", "Roider Union", "2.3.1", a("roider_dives", "roider_union_hq"), NONE, a(CAMods.CHARTER), NONE, null));
         // 0.2.38.0
-        ENTRIES.add(new Entry("omega_core_everywhere", "Omega Core Everywhere", "1.2.2", NONE, NONE, NONE, a(CAOmega.CORE), () -> CAOmega.linkOce()));
-        ENTRIES.add(new Entry("astral_ascension_renewed", "Astral Ascension Renewed", "1.0.1", NONE,
+        ENTRIES.add(new Entry("omega_core_everywhere", "Omega Core Everywhere", "1.2.5", NONE, NONE, NONE, a(CAOmega.CORE), () -> CAOmega.linkOce()));
+        ENTRIES.add(new Entry("astral_ascension_renewed", "Astral Ascension Renewed", "1.0.4", NONE,
                 a("population_11", "aar_arcology_world", "aar_ecumenopolis", "aar_crowned_world"), NONE, a(CAOmega.CORE), () -> CAOmega.adminPlugin() != null));
         ENTRIES.add(new Entry("niko_scavengableindustries", "Niko's Scavengable Industries", "1.0.0",
                 a("NSI_blastCoreMining", "NSI_SpyBureau", "NSI_SpyOutpost", "NSI_cryosanctum", "NSI_outpostDefense", "NSI_ASBUplink", "NSI_expertDockworks"), NONE, NONE, NONE, null));
