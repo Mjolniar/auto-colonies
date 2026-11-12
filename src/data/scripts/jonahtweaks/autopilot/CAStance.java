@@ -33,7 +33,7 @@ public class CAStance {
 
     public static String name(int stance) { return NAMES[clamp(stance) + 3]; }
 
-    /** Highest War level (CAWarPolicy) Colony Manager may use on a faction with this stance. */
+    /** Highest War level (CAWarPolicy) Auto Colonies may use on a faction with this stance. */
     public static int cap(int stance) {
         int st = clamp(stance);
         if (st <= NEUTRAL) return CAWarPolicy.DEFEND;
@@ -144,7 +144,7 @@ public class CAStance {
     /** Enemy and Destroy: war is wanted (declared on the War page when the faction isn't hostile yet). */
     public static boolean wantsWar(int stance) { return stance >= ENEMY; }
 
-    /** Whether Colony Manager may attack this faction at all (base strikes, raids, invasions): Auto and up. */
+    /** Whether Auto Colonies may attack this faction at all (base strikes, raids, invasions): Auto and up. */
     public static boolean attackable(int stance) { return stance >= AUTO; }
 
     /** Ally and Friendly: never the third party in an isolation operation. */

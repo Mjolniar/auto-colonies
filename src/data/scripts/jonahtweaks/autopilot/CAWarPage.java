@@ -31,7 +31,7 @@ import java.util.Set;
  * Stand down, Recall all and Authorize bombardment, and the War settings at a glance.
  * Then one block per faction at Rival or higher (Pick rivals automatically included) or with operations or attackers of
  * its own: CAWar.renderFaction (stance buttons, relation, Declare war or why not, operations under way), then up to
- * MAX_PLANNED lines with what Colony Manager plans at that faction and why it waits (planned). The full stance table is
+ * MAX_PLANNED lines with what Auto Colonies plans at that faction and why it waits (planned). The full stance table is
  * the Factions page. Then conquered colonies (CAConquest.render) and the markets marked for strikes back.
  *
  * Buttons are CAWar's {"war", action, arg} (CAWar.handle); Declare war, Authorize bombardment, Recall all and Stand down ask
@@ -231,7 +231,7 @@ public final class CAWarPage {
     }
 
     /**
-     * What Colony Manager plans at this faction today, up to MAX_PLANNED lines, biggest operation first: bombardment of the
+     * What Auto Colonies plans at this faction today, up to MAX_PLANNED lines, biggest operation first: bombardment of the
      * capital (Destroy at Scorched), the best invasion (Enemy and Destroy at Conquer), the nearest raid or blockade (Rival
      * and up at Hold them down), retakes and strikes back (Retaliate). Each with what it waits for, by the daily pass's own
      * checks. The daily pass shares one launch a day (two while rich) among every faction, in its own order.

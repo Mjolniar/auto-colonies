@@ -128,7 +128,7 @@ public class CAExpansion {
     /**
      * An expedition under way (saved in CAData.expandOrders): ids, numbers and a timestamp only. method "nex" or "crew"; plan
      * and goal (a CAData.Profile name) for the colony; why, the one-line reason; sent, the game timestamp it left; days, the
-     * expected trip; paid, the price without the fee (what a crew refunds); fee, Colony Manager's fee; fp, a colony fleet's
+     * expected trip; paid, the price without the fee (what a crew refunds); fee, Auto Colonies' fee; fp, a colony fleet's
      * points (0 for a crew).
      */
     public static class Order { public String planetId, planetName, sourceId, method, plan, goal, why; public long sent; public float days, paid, fee; public int fp; }
@@ -1070,7 +1070,7 @@ public class CAExpansion {
         else owner = biggestOwner(sys);
         if (owner != null && !Factions.PLAYER.equals(owner) && !owner.equals(x.commission) && !Factions.NEUTRAL.equals(owner))
             return "Another faction holds the system.";
-        // Colony Manager's own
+        // Auto Colonies' own
         if (p.getId().equals(x.settlement) || settlementOn(p)) return "Holds your Frontiers settlement.";
         if (x.tasc.contains(p.getId())) return "A TASC siphon station is planned there.";
         // a Nexerelin colony expedition headed there (any faction's): founding first would make it invade or cost reputation

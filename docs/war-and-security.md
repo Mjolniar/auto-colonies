@@ -2,7 +2,7 @@
 
 ## Quick version
 
-- Colony Manager tracks threat and handles sieges and colony crises.
+- Auto Colonies tracks threat and handles sieges and colony crises.
 - With Nexerelin: emergency defense fleets, agents, a **War level** (default Retaliate) and a **stance** per faction (default Auto) that caps it and sets diplomacy. War fleets also act for Approve and Advisor colonies.
 - Operations are Nexerelin fleet requests at Nexerelin's price. New offensives add a fee. Nothing goes under the credit reserve.
 - Optional: [Low profile](low-profile.md) caps the War level at Defend.
@@ -55,7 +55,7 @@ Set on the **Factions** or War page.
 
 ### Diplomacy
 
-- Offers left to you get a log line with Colony Manager's answer. It does not join alliances or create ceasefires or treaties.
+- Offers left to you get a log line with Auto Colonies' answer. It does not join alliances or create ceasefires or treaties.
 - **Declare war** (War page): Enemy and Destroy only, once in 30 days, not with a commission or in Low profile. If relations rise, the faction is made hostile again, at most once in 30 days.
 
 ### Conquest

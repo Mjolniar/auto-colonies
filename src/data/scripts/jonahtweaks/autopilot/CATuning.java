@@ -1,7 +1,7 @@
 package data.scripts.jonahtweaks.autopilot;
 
 /**
- * Colony Manager's own numbers in one place (0.3.0.0, WS-A3, research 07 section 5). CAConst holds other mods' and the game's
+ * Auto Colonies' own numbers in one place (0.3.0.0, WS-A3, research 07 section 5). CAConst holds other mods' and the game's
  * constants; this holds CM's tuning: score bonuses, fees and prices, day counts, caps and stability margins. One comment
  * each: what it is and where it came from. Every value is the one 0.2.45.1 used, so moving them here changed nothing.
  *

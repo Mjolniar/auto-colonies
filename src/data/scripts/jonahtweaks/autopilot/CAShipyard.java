@@ -19,19 +19,19 @@ import java.util.*;
 /**
  * WS-C3 rung 4: the shipyard. Research 03 F2 and sections 4a-4c; DECISIONS 7, 8 and 9.
  *
- * 0.3.0.0 (C3): with the money tier at Idle money or higher, Colony Manager orders the ships on your Doctrine screen's priority
+ * 0.3.0.0 (C3): with the money tier at Idle money or higher, Auto Colonies orders the ships on your Doctrine screen's priority
  * list through the game's own custom production, at the game's prices. It adds them to the production list
  * (FactionProductionAPI.addItem, after knowsShip); the game builds them at month end within its monthly capacity, charges them
  * in the monthly report (outside colony net, CABudget.NOT_COLONY) and delivers them to the gathering point's Storage, which
- * CACapital keeps at the capital. Colony Manager takes a convenience fee when the order is placed (shipyardFee, 2% of the
+ * CACapital keeps at the capital. Auto Colonies takes a convenience fee when the order is placed (shipyardFee, 2% of the
  * price; none at the Off fee level).
  * Limits on each order: the Shipyard rung's allowance (CARich); the production capacity left after everything already on the
- * list (yours, Jonah's Auto Outfitting's and Colony Manager's); free cash; and shipyardStop unclaimed hulls (6): hulls Colony
+ * list (yours, Auto Outfitting's and Auto Colonies'); free cash; and shipyardStop unclaimed hulls (6): hulls Colony
  * Manager ordered that are still on the list or waiting in the gathering point's Storage (a hull you take out is claimed).
  * 0.3.0.0 (C3 fix): an order line stays saved until its hulls are claimed, however old it is (tidy: per hull, the oldest
  * lines come off first, down to what's on the list and in Storage), so the stop holds for hulls left in Storage for years.
  * Past MAX_ORDERS lines, each hull's lines are joined into one.
- * The game charges production at month end without looking at your reserve, so every day guard() takes Colony Manager's
+ * The game charges production at month end without looking at your reserve, so every day guard() takes Auto Colonies'
  * own hulls off the list again, fee refunded, while free cash is under 0. The cost multiplier and accrued production are
  * not touched.
  * Which hulls: the priority ships you know the blueprint for (stations and modules left out), the one with the fewest on
@@ -48,7 +48,7 @@ import java.util.*;
  * proposal, the weekly timer and the panel note are session only (reset through CARich.reset).
  */
 public class CAShipyard {
-    /** One order line Colony Manager placed. month: the game timestamp it was placed at. cost: the price of one hull then. */
+    /** One order line Auto Colonies placed. month: the game timestamp it was placed at. cost: the price of one hull then. */
     public static class Order { public String hullId; public int qty; public float cost; public long month; }
 
     /** Days between looks, days a rejected proposal holds the next one off. */
@@ -151,7 +151,7 @@ public class CAShipyard {
     }
 
     /**
-     * Pure: unclaimed hulls: per hull Colony Manager ordered (its saved order lines), those still on the list (up to what it
+     * Pure: unclaimed hulls: per hull Auto Colonies ordered (its saved order lines), those still on the list (up to what it
      * ordered) plus those waiting in the gathering point's Storage (up to what it ordered and isn't still on the list).
      */
     static int unclaimed(Map<String, Integer> ordered, Map<String, Integer> queued, Map<String, Integer> stored) {
@@ -169,7 +169,7 @@ public class CAShipyard {
     static float feeShare(int feeLevel, float shipyardFee) { return feeLevel <= 0 ? 0f : Math.max(0f, shipyardFee); }
 
     /**
-     * Pure: how many of Colony Manager's queued hulls come off the list to bring free cash back to 0 or more, most
+     * Pure: how many of Auto Colonies' queued hulls come off the list to bring free cash back to 0 or more, most
      * expensive first. queuedPrices: the price of each hull on the list (one entry per hull).
      */
     static int toRemove(float free, List<Float> queuedPrices) {
@@ -221,7 +221,7 @@ public class CAShipyard {
         return out;
     }
 
-    /** Hull id -> quantity Colony Manager ordered and hasn't seen claimed (its saved order lines; reading changes nothing). */
+    /** Hull id -> quantity Auto Colonies ordered and hasn't seen claimed (its saved order lines; reading changes nothing). */
     static Map<String, Integer> ordered(CAData d) { return ordered(d.shipyardOrders()); }
 
     /**
@@ -427,11 +427,11 @@ public class CAShipyard {
         return at != null && now >= at && CAMark.days(at, now) < REJECT_DAYS;
     }
 
-    /** Whether Colony Manager already placed an order this game month. */
+    /** Whether Auto Colonies already placed an order this game month. */
     static boolean orderedThisMonth(CAData d) { return !thisMonth(d).isEmpty(); }
 
     /**
-     * Hull id -> quantity Colony Manager ordered this game month: hulls the game hasn't built yet (it builds at month end), so
+     * Hull id -> quantity Auto Colonies ordered this game month: hulls the game hasn't built yet (it builds at month end), so
      * guard() takes off only these, and your own hulls of the same type stay on the list.
      */
     static Map<String, Integer> thisMonth(CAData d) {
@@ -491,7 +491,7 @@ public class CAShipyard {
 
     /**
      * Daily: the game charges production at month end without looking at your reserve. While free cash is under 0, the hulls
-     * Colony Manager ordered this month that are still on the list come off it, most expensive first, until free cash is 0
+     * Auto Colonies ordered this month that are still on the list come off it, most expensive first, until free cash is 0
      * or more; the fee for each comes back.
      */
     public static void guard(CAData d, CASettings s) {

@@ -1,13 +1,13 @@
 {
   "id": "jonah_tweaks",
-  "name": "Jonah's Colony Manager",
+  "name": "Auto Colonies",
   "author": "Mjolniar",
-  "version": "0.3.0.0",
-  "description": "Colony Autopilot: flick a colony to Auto and it builds, places items and AI cores, hires administrators and handles policies on its own, within a budget you set. Optional support for Nexerelin, Ashes of the Domain, Terraforming Made Easy, Industrial Evolution and more. No balance changes.",
+  "version": "0.3.0.1",
+  "description": "Colony Autopilot: set a colony to Auto and it builds, places items and AI cores, hires administrators and sets policies within a budget you set. Optional support for Nexerelin, Ashes of the Domain, Terraforming Made Easy, Industrial Evolution and more. Game balance is not changed.",
   "gameVersion": "0.98a-RC8",
   "utility": false,
   "jars": [
-    "jars/jonahtweaks.jar"
+    "jars/autocolonies.jar"
   ],
   "modPlugin": "data.scripts.jonahtweaks.JTModPlugin"
 }

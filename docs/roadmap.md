@@ -30,7 +30,7 @@ What 0.3.0.0 changed, where each part is described, and what is still open. Full
 
 - The plan's own TME projects and paid item, core and administrator moves still spend in their own steps. They check the planner's savings first. Moving them into the planner's queue is planned for 0.3.0.x.
 - The 0.2.45 build engine stays behind a hidden switch (`legacyPlanner`) for 0.3.0.x.
-- 0.3.0.0 passed the offline checks and a short in-game test on one save ([patch notes](changelog.md#not-tested-in-a-running-game-yet)). Not tested in a game yet (they need a Nexerelin war, a commission or a new colony): player-faction saturation bombardment, Nexerelin colony fleets for the player, conquered-colony rebellions, invasions while commissioned, ceasefire answers, Stand down refunds, Autopilot crew founding. Report problems in the [issues](https://github.com/Mjolniar/jonahs-colony-manager/issues).
+- 0.3.0.0 passed the offline checks and a short in-game test on one save ([patch notes](changelog.md#not-tested-in-a-running-game-yet)). Not tested in a game yet (they need a Nexerelin war, a commission or a new colony): player-faction saturation bombardment, Nexerelin colony fleets for the player, conquered-colony rebellions, invasions while commissioned, ceasefire answers, Stand down refunds, Autopilot crew founding. Report problems in the [issues](https://github.com/Mjolniar/auto-colonies/issues).
 
 ## Updating
 

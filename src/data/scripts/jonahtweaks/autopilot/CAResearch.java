@@ -920,7 +920,7 @@ public class CAResearch {
     /**
      * 0.3.0.0 (WS-B5, research 01 section 9, 03 F5): whether Auto may start a tech that doesn't pay for itself within a year and
      * no plan needs ("the best of the rest"): only with idle money (spending freely, or the money ladder's Idle money tier),
-     * and never while a plan tech waits for databanks. 9 of 22 starts in Jonah's game were such fillers: they burned 45 of
+     * and never while a plan tech waits for databanks. 9 of 22 starts in the author's game were such fillers: they burned 45 of
      * 143 databanks, and then the plan's Antimatter Production never had the 17 it needed.
      */
     static boolean fillersAllowed(CASettings s) {

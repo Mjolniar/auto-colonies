@@ -70,7 +70,7 @@ public class CASurplus {
 
     /**
      * Credits already promised: the game's custom production still to build, and with Ashes of the Domain its production
-     * orders' remaining units (each is paid when it's finished; Jonah's Auto Outfitting's weapon orders go there).
+     * orders' remaining units (each is paid when it's finished; Auto Outfitting's weapon orders go there).
      */
     public static float committed() {
         long ts;

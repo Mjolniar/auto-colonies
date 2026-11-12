@@ -5,7 +5,7 @@ This page lists everything the mod can change in your game, what each change cos
 ## The short version
 
 - It manages **your own colonies** through the calls the game's UI, or the UI of the mod a feature comes from, uses. Every action charges what that UI charges, plus a convenience fee you can set to Off.
-- It does not change any game setting, ship, weapon, faction, market condition or other mod's numbers. No balance changes, no cheats (the old storage cheat and the Derelict Empire attack settings were removed in 0.2.37.0; cheats are in Jonah's Easy Sector).
+- It does not change any game setting, ship, weapon, faction, market condition or other mod's numbers. No balance changes, no cheats (the old storage cheat and the Derelict Empire attack settings were removed in 0.2.37.0; cheats are in Easy Sector).
 - No file access beyond reading its own default settings and its own class files through the game's loader, no network access, no `java.lang.reflect` (the game's script loader refuses it; other mods are reached through method handles).
 - Nothing moves across the sector for free. Items, cores, databanks and goods that go from one place to another are shipped for a fee and travel time.
 - With Nexerelin, 0.3.0 can raid, blockade, invade and bombard other factions' markets. Defaults: War level Retaliate (strikes back at attackers and retakes your lost colonies; 0.2.45 saves keep retake off), every faction stance Auto, bombardment not authorized. War fleets act whatever the colony modes are, Advisor included. War on a faction that is not hostile starts only from the War page's **Declare war** confirmation.
@@ -49,7 +49,7 @@ This page lists everything the mod can change in your game, what each change cos
 
 | What | Where in the code | What it costs |
 |---|---|---|
-| Orders ships through custom production (Shipyard rung; Recommend only by default) | [CAShipyard](../src/data/scripts/jonahtweaks/autopilot/CAShipyard.java) (`FactionProductionAPI.addItem`) | The game's production price, charged by the game at month end, plus a 2% fee when the order is placed. Only hulls on your Doctrine priority list that you know. Stops at 6 unclaimed hulls. While free cash is under 0, Colony Manager's own hulls come off the list again (`removeItem`) and the fee is refunded. |
+| Orders ships through custom production (Shipyard rung; Recommend only by default) | [CAShipyard](../src/data/scripts/jonahtweaks/autopilot/CAShipyard.java) (`FactionProductionAPI.addItem`) | The game's production price, charged by the game at month end, plus a 2% fee when the order is placed. Only hulls on your Doctrine priority list that you know. Stops at 6 unclaimed hulls. While free cash is under 0, Auto Colonies' own hulls come off the list again (`removeItem`) and the fee is refunded. |
 | Buys goods for a colony's Local Resources (Stockpiles rung; military goods on the Military rung) | [CAStockpile](../src/data/scripts/jonahtweaks/autopilot/CAStockpile.java) | The selling market's price plus its tariff; the goods leave that market's open market. Shipped for the Autopilot Storage fee and travel time. Only from markets not hostile to you. |
 | Upgrades a station, Patrol HQ or Military Base (Military rung) | [CAMilitary](../src/data/scripts/jonahtweaks/autopilot/CAMilitary.java), through `CABuild.start` | The game's upgrade cost and time plus the fee. Upgrades only, one a day. The rung's new upkeep stays within 15% of colony net income. |
 
@@ -70,17 +70,17 @@ All three are paid from the ladder's monthly pool, a share of free cash (credits
 |---|---|---|
 | Fleet requests: relief, defense, base strikes, raids, blockades, invasions, retakes | [CAWar](../src/data/scripts/jonahtweaks/autopilot/CAWar.java), [CAConquest](../src/data/scripts/jonahtweaks/autopilot/CAConquest.java) (Nexerelin's `InvasionIntel`, `NexRaidIntel`, `BlockadeWrapperIntel`, `BaseStrikeIntel`, `ReliefFleetIntelAlt`) | Nexerelin's own price and fleet request points, launched the way its fleet request dialog does. Retakes, raids and blockades from Hold them down and invasions add the fee level times 10% of Nexerelin's price. 40% of fleet request points kept for emergencies (10% while rich). Offensive operations only against factions hostile to you and allowed by the War level and the faction's stance. |
 | Saturation bombardment of a Destroy capital (War level Scorched, after you authorize it) | [CAScorched](../src/data/scripts/jonahtweaks/autopilot/CAScorched.java) (a player-faction `SatBombIntel`) | Fleet points x 400 plus the fuel at base price plus the fee, from surplus credits only. One at a time, 120 days apart. |
-| Reputation penalties after Colony Manager's bombardment lands | `CAScorched.applyAtrocity`, called once per bombardment from [CAWarListener](../src/data/scripts/jonahtweaks/autopilot/CAWarListener.java) or a daily scan | The penalties a bombardment in person has, which Nexerelin's fleet path leaves out: the victim -0.04 x size (at best Vengeful); every faction that cares about atrocities -0.02 x size (at best Hostile); the permanent relation cap; the atrocity counts. Nexerelin adds the infamy. |
+| Reputation penalties after Auto Colonies' bombardment lands | `CAScorched.applyAtrocity`, called once per bombardment from [CAWarListener](../src/data/scripts/jonahtweaks/autopilot/CAWarListener.java) or a daily scan | The penalties a bombardment in person has, which Nexerelin's fleet path leaves out: the victim -0.04 x size (at best Vengeful); every faction that cares about atrocities -0.02 x size (at best Hostile); the permanent relation cap; the atrocity counts. Nexerelin adds the infamy. |
 | Answers ceasefire and peace offers | [CADiplomacy](../src/data/scripts/jonahtweaks/autopilot/CADiplomacy.java) (`CeasefirePromptIntel.accept`, `reject`) | Free, as clicking it in the intel. Accepted from Ally, Friendly and Neutral factions; rejected from Enemy and Destroy factions at War level Retaliate and up; the rest wait for you. |
 | Declares war | `CADiplomacy.declareWar`, only from the War page's confirmation | Relations set to Hostile. Enemy and Destroy stances only, one in 30 days. Blocked while you hold a commission or use Low profile. An Enemy or Destroy faction you declared war on is made hostile again at most once in 30 days. |
 | Takes back Nexerelin autonomy at a colony its invasion conquered | `CAConquest` (`Nex_GrantAutonomy.revokeAutonomy`) | Nexerelin's revoke, including its unrest. Waits while the unrest or the colony-limit penalty would put a colony under the stability floor. |
-| Stand down, Recall all | [CAWar](../src/data/scripts/jonahtweaks/autopilot/CAWar.java), [CAWarPage](../src/data/scripts/jonahtweaks/autopilot/CAWarPage.java) | Cancels Colony Manager's own operations; Nexerelin refunds by stage (100% organizing, 67% travelling, 33% in action). Fleet request points and the fee are not refunded. |
+| Stand down, Recall all | [CAWar](../src/data/scripts/jonahtweaks/autopilot/CAWar.java), [CAWarPage](../src/data/scripts/jonahtweaks/autopilot/CAWarPage.java) | Cancels Auto Colonies' own operations; Nexerelin refunds by stage (100% organizing, 67% travelling, 33% in action). Fleet request points and the fee are not refunded. |
 | Nexerelin agents | [CASpies](../src/data/scripts/jonahtweaks/autopilot/CASpies.java) | Recruiting: 12,000 plus the fee, 60 days before the agent reports. Operations: Nexerelin's own cost, through its agent API. Raise relations by stance; sabotage, rebellion and lower relations only against factions hostile to you, by stance and War level. |
 | Nexerelin autonomy | [CAAutonomy](../src/data/scripts/jonahtweaks/autopilot/CAAutonomy.java) | Nexerelin's own grant and revoke, including its unrest. Recommend only by default; Auto is money-only and not for new colonies. |
 
 ### Credits given back
 
-Credits are added back only as refunds of what Colony Manager took: a RAT settlement expedition, a stable-location crew or a TASC station crew whose site is gone, an Auto-expansion crew that can't found its colony (the fee is kept), and the Shipyard's fee for hulls it takes off the production list. Nexerelin's stage refunds for cancelled fleets are paid by Nexerelin.
+Credits are added back only as refunds of what Auto Colonies took: a RAT settlement expedition, a stable-location crew or a TASC station crew whose site is gone, an Auto-expansion crew that can't found its colony (the fee is kept), and the Shipyard's fee for hulls it takes off the production list. Nexerelin's stage refunds for cancelled fleets are paid by Nexerelin.
 
 ## What it does not do
 
@@ -121,7 +121,7 @@ The quickest audit is a handful of searches across `src/`:
 | `CeasefirePromptIntel`, `declareWar`, `makeHostile` | Every diplomacy action |
 | `CAStability.canLose` | The stability check every takedown, move, pull and new action asks first |
 | `Global.getSettings().set` | Nothing (no game setting is changed) |
-| `java.io`, `java.net`, `java.lang.reflect` | `java.io` once, in [CALinkScan](../src/data/scripts/jonahtweaks/autopilot/CALinkScan.java) `read`: an `InputStream` from `getResourceAsStream` that reads Colony Manager's own class files through the class loader for the load-time link check. It writes nothing. `java.lang.reflect` only as class name strings in [CARefl](../src/data/scripts/jonahtweaks/autopilot/CARefl.java) (`Class.forName`, for the method-handle bridge) and in a comment in `CALuna`. No `java.net`. |
+| `java.io`, `java.net`, `java.lang.reflect` | `java.io` once, in [CALinkScan](../src/data/scripts/jonahtweaks/autopilot/CALinkScan.java) `read`: an `InputStream` from `getResourceAsStream` that reads Auto Colonies' own class files through the class loader for the load-time link check. It writes nothing. `java.lang.reflect` only as class name strings in [CARefl](../src/data/scripts/jonahtweaks/autopilot/CARefl.java) (`Class.forName`, for the method-handle bridge) and in a comment in `CALuna`. No `java.net`. |
 | `CARefl` | Every reflective call into another mod, all through method handles |
 | `spendStoryPoints` | Story point use (only with your setting) |
 | `CAStores.ship` | Shipping between colonies |
@@ -140,8 +140,8 @@ Don't remove it from a save that used it. The Autopilot Storage tab is a submark
 - Set every colony to Off in the empire panel.
 - Set War, New colonies and Extras to Off.
 - Set every money ladder rung to Off (Settings, Advanced, Surplus and money ladder).
-- Set Capital to None (Settings, Items and people). With a capital, Colony Manager moves your production gathering point there and gathers Storage there weekly, for the shipping fee plus 1,000 a ship, also with Storage logistics Off.
-- Set every faction stance to Auto (Factions page). At any War level, Off included, Colony Manager accepts ceasefire and peace offers from Ally, Friendly and Neutral factions.
+- Set Capital to None (Settings, Items and people). With a capital, Auto Colonies moves your production gathering point there and gathers Storage there weekly, for the shipping fee plus 1,000 a ship, also with Storage logistics Off.
+- Set every faction stance to Auto (Factions page). At any War level, Off included, Auto Colonies accepts ceasefire and peace offers from Ally, Friendly and Neutral factions.
 - Turn off agents, autonomy, emergency defense fleets and Storage logistics.
 
 After that it keeps its storage tabs, and shipments already on the way still arrive. It starts nothing new.

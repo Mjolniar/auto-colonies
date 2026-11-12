@@ -172,7 +172,7 @@ public class CAProjects {
     /**
      * 0.2.39.0: what Ashes of the Domain's open production orders still need, by good: each order line's remaining units times
      * its goods per unit (AoTDProductionOrderData.reqResourcesPerUnit). Production waits on those goods, which come from
-     * your colonies' output, so a big order (Jonah's Auto Outfitting's weapons for a fleet) crawls when nobody makes one.
+     * your colonies' output, so a big order (Auto Outfitting's weapons for a fleet) crawls when nobody makes one.
      */
     static Map<String, Integer> orders = new LinkedHashMap<String, Integer>();
 

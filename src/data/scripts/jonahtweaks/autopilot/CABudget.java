@@ -10,7 +10,7 @@ import com.fs.starfarer.api.util.Misc;
  * The monthly budget, caps and convenience fees. Fees are fixed vanilla-scale amounts, not scaled by income.
  * 0.3.0.0 (WS-B5, research 03 F4, 01 sections 1 and 7): two numbers instead of one. Colony net (netIncome) is what the
  * colonies themselves made, the monthly report's Colonies node without custom production (vanilla's and Ashes of the
- * Domain's orders) or your fleet's draw on colony stockpiles, and without hazard pay (a choice Colony Manager makes, judged
+ * Domain's orders) or your fleet's draw on colony stockpiles, and without hazard pay (a choice Auto Colonies makes, judged
  * on its own; DECISIONS 14), as the median of the last 3 months. It sets the budget, the caps, hazard pay, the endgame
  * and the money emergency, so one bad month or a ship order no longer moves them all (a -187,821 month switched hazard
  * pay off at every colony and cut the savings by 1.8M). Cash flow (cashFlow, the whole report as before) is only for
@@ -33,7 +33,7 @@ public class CABudget {
         // what's left of the month's budget is saved up for next month (0.2.39.0): every building that cost more than one
         // month's budget waited until savings had grown enough by themselves, months with credits piling up and nothing built.
         // 0.3.0.0 (B5, 01 section 1): past CARRY_MONTHS budgets it keeps what the credits above your reserve really cover,
-        // instead of throwing it away (the 6-month cap dropped up to 19.9M of budget room in Jonah's game)
+        // instead of throwing it away (the 6-month cap dropped up to 19.9M of budget room in the author's game)
         java.util.List<Float> hist = null;
         try { hist = CAData.get().colonyNetHistory(); } catch (Throwable ignored) { }
         int had = hist == null ? 0 : hist.size();   // 0.3.0.0 (B5): limit() may seed an empty history from this same report
@@ -41,7 +41,7 @@ public class CABudget {
         if (!first) s.budgetCarry = legacy(s) ? carried(endedLimit, s.budgetCarry, s.spent)
                 : carried(endedLimit, s.budgetCarry, s.spent, CABuild.credits() - s.reserve);
         float overCap = first ? 0f : Math.max(0f, s.budgetCarry - CARRY_MONTHS * endedLimit);
-        // 0.3.0.0: last month's Colony Manager spending, read before the reset so the colony lines can log it (research 01 section 5)
+        // 0.3.0.0: last month's Auto Colonies spending, read before the reset so the colony lines can log it (research 01 section 5)
         float lastSpent = s.spent, lastFees = s.fees, lastUpkeep = s.upkeepAdded;
         s.month = m;
         s.spent = 0f; s.fees = 0f; s.upkeepAdded = 0f; s.terraSpent = 0f; s.spMonth = 0; s.endgameLoss = 0f;
@@ -70,8 +70,8 @@ public class CABudget {
                 + Misc.getDGSCredits(netIncome(s)) + " as the " + NET_MONTHS + "-month median; cash flow " + Misc.getDGSCredits(s.lastNet)
                 + "; savings " + Misc.getDGSCredits(before) + " -> " + Misc.getDGSCredits(s.budgetCarry)
                 + (overCap > 0f ? " (" + Misc.getDGSCredits(overCap) + " of it past " + Math.round(CARRY_MONTHS) + " months, covered by credits over the reserve)" : ""));
-        if (!first) CALog.colonyMonth(lastSpent, lastFees, lastUpkeep);   // 0.3.0.0: one money line per colony in starsector.log, with what CM spent there (research 01 section 5)
-        // 0.3.0.0 (C1/C2): the ended month counts toward the money tiers' idle months (its budget without savings, what CM spent)
+        if (!first) CALog.colonyMonth(lastSpent, lastFees, lastUpkeep);   // 0.3.0.0: one money line per colony in starsector.log, with what Auto Colonies spent there (research 01 section 5)
+        // 0.3.0.0 (C1/C2): the ended month counts toward the money tiers' idle months (its budget without savings, what Auto Colonies spent)
         if (!first) {
             try { CARich.monthEnded(s, lastSpent, endedLimit); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "idle month count failed", t); }
@@ -419,7 +419,7 @@ public class CABudget {
 
     /**
      * Credits already promised: the game's custom production still to build and Ashes of the Domain's orders still to
-     * finish (CASurplus.committed). Colony Manager's own ship orders sit in those queues and are counted there; shipments in
+     * finish (CASurplus.committed). Auto Colonies' own ship orders sit in those queues and are counted there; shipments in
      * transit and expeditions were paid when they left, so nothing more is owed for them.
      */
     public static float committed() { return CASurplus.committed(); }

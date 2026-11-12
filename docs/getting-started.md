@@ -8,7 +8,7 @@
 
 ## Install
 
-[Latest release](https://github.com/Mjolniar/jonahs-colony-manager/releases/latest). Install steps: [README](../README.md#install). Back up 0.2.45.x saves first. From 0.2.45.x, War keeps the level matching your War fleets setting; Retake and Auto-expansion start off ([Saves from 0.2.45](changelog.md#saves-from-0245)).
+[Latest release](https://github.com/Mjolniar/auto-colonies/releases/latest). Install steps: [README](../README.md#install). Back up 0.2.45.x saves first. From 0.2.45.x, War keeps the level matching your War fleets setting; Retake and Auto-expansion start off ([Saves from 0.2.45](changelog.md#saves-from-0245)).
 
 ## Panels
 
@@ -54,6 +54,6 @@ If Auto builds nothing, check the budget line on the Colonies page. Usual causes
 
 **Reset to recommended** fixes all three. Builds that miss the payback months (36 normally) score 0 or less and are not started.
 
-**Log** and **Diagnostics** show what waits, why, and what is off. Bug reports: [issues](https://github.com/Mjolniar/jonahs-colony-manager/issues), with the files the [README](../README.md) lists.
+**Log** and **Diagnostics** show what waits, why, and what is off. Bug reports: [issues](https://github.com/Mjolniar/auto-colonies/issues), with the files the [README](../README.md) lists.
 
 Next: [How it builds](how-it-builds.md), or [Settings](settings.md).

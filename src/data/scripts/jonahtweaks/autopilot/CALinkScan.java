@@ -5,9 +5,9 @@ import java.lang.invoke.MethodType;
 import java.util.*;
 
 /**
- * 0.3.0.0 (research 07 M9): the load-time link check for mods Colony Manager is compiled against (Nexerelin, Industrial
+ * 0.3.0.0 (research 07 M9): the load-time link check for mods Auto Colonies is compiled against (Nexerelin, Industrial
  * Evolution, Random Assortment of Things, Station Augments, Terraforming Made Easy). Their renamed methods used to show up
- * only at run time, as a NoSuchMethodError from inside a step, every day. This reads Colony Manager's own class files (the
+ * only at run time, as a NoSuchMethodError from inside a step, every day. This reads Auto Colonies' own class files (the
  * constant pool: every class, method and field a class calls), keeps what belongs to the mod's packages, and looks each one
  * up with method handles without running anything. Inner classes are followed from their outer class. No reflection and no
  * file access: the bytes come from the class loader as a resource, and are parsed by hand.
@@ -146,7 +146,7 @@ final class CALinkScan {
         return false;
     }
 
-    /** The result of scanning one Colony Manager class (and its inner classes) against one mod. */
+    /** The result of scanning one Auto Colonies class (and its inner classes) against one mod. */
     static final class Result {
         boolean read = true;                                   // every class file was read and parsed
         int checked;                                           // the mod's members and classes CM calls or names, looked up
@@ -174,7 +174,7 @@ final class CALinkScan {
     }
 
     /**
-     * Looks up everything Colony Manager's class `cmClass` (simple name, in this package) and its inner classes use from the
+     * Looks up everything Auto Colonies' class `cmClass` (simple name, in this package) and its inner classes use from the
      * mod's packages, through `cl`. Runs nothing.
      */
     static Result scan(ClassLoader cl, String cmClass, String[] prefixes) {

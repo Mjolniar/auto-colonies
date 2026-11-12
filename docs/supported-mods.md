@@ -4,7 +4,7 @@
 - No mod here is required. Support for each turns on when it is enabled, in any combination.
 - **Diagnostics** (empire panel) shows each mod's status: OK, newer version, partly off, off.
 - Unless noted, only Auto colonies are acted on ([Modes](how-it-builds.md#modes)). Everything is paid from the budget.
-- Support requests: open an [issue](https://github.com/Mjolniar/jonahs-colony-manager/issues).
+- Support requests: open an [issue](https://github.com/Mjolniar/auto-colonies/issues).
 
 ## Terraforming Made Easy
 
@@ -141,9 +141,9 @@ Their forges and Biolab are built like anything else. Carter's drugs and hand we
 - **[Sol Renewed](https://fractalsoftworks.com/forum/index.php?topic=35983.0):** industries in Sol are priced for Sol's crisis, which does not go down.
 - **Checked, nothing needed:** [Gambling Den](https://fractalsoftworks.com/forum/index.php?topic=35993.0), [Extra System Reloaded - Oddisz Edition](https://fractalsoftworks.com/forum/index.php?topic=36143.0), [Hullmods - Renewed](https://fractalsoftworks.com/forum/index.php?topic=35619.0), [Intel Renewed](https://fractalsoftworks.com/forum/index.php?topic=35978.0) (hiding Colony Autopilot's intel does not stop it), [StopBloatingMe](https://fractalsoftworks.com/forum/index.php?topic=35850.0), [StopStackingMe](https://fractalsoftworks.com/forum/index.php?topic=35952.0), [StarterPack](https://fractalsoftworks.com/forum/index.php?topic=35856.0), [Discord Rich Presence](https://fractalsoftworks.com/forum/index.php?topic=35392.0).
 
-## Jonah's Auto Outfitting
+## Auto Outfitting
 
-[GitHub](https://github.com/Mjolniar/jonahs-auto-outfitting). Its big weapon orders use Ashes of the Domain's production orders. Goods none of your colonies make get a producer planned ([Research](research.md#special-project-supply)).
+[GitHub](https://github.com/Mjolniar/auto-outfitting). Its big weapon orders use Ashes of the Domain's production orders. Goods none of your colonies make get a producer planned ([Research](research.md#special-project-supply)).
 
 ## Any other mod
 - Deposits in the game's tables and installable colony items are handled like vanilla ones.

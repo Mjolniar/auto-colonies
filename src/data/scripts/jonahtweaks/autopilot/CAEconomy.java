@@ -296,7 +296,7 @@ public final class CAEconomy {
      * Live, 0.3.0.0 fix: the share of a month's hazard pay saving that counts at this colony (hazardPayOverHorizon of 1): 0 at
      * its max size, at a Hypershunt and where growth is unsafe (CAPolicies never pays hazard pay there), with legacyPlanner,
      * or when it can't be read. It doesn't read whether hazard pay is on there today: that switch changes with the money
-     * tier and the hazard pay budget (24 changes in Jonah's game), and a sequence worth doing only while it was on lost its
+     * tier and the hazard pay budget (24 changes in the author's game), and a sequence worth doing only while it was on lost its
      * value, so surplus terraforming took down a structure built for it before its first project ran.
      */
     static float hazardPayScale(MarketAPI m) {

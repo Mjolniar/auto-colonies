@@ -38,12 +38,12 @@ import java.util.Map;
  * The fleet is a player-faction SatBombIntel (Nexerelin has no fleet request type for it; this path is untested by Nexerelin
  * and needs the in-game test before release; the fallback is to drop it and invade capitals). Its size is 1.25 x
  * Nexerelin's wanted fleet and enough to carry twice the fuel the bombardment needs (SatBombActionStage only bombs when the
- * fleet has the fuel). Price: fleet points x 400 + the fuel at its base price + Colony Manager's fee, from the surplus only,
+ * fleet has the fuel). Price: fleet points x 400 + the fuel at its base price + Auto Colonies' fee, from the surplus only,
  * never below the credit reserve. One under way at a time and 120 days between two; infamy stays under the coalition line.
  * 0.3.0.0 (fix): candidates are tried in order (capital first, then small markets), up to CAConquest.TRIES a day; a capital
  * whose bombardment landed in the last 365 days isn't bombarded again and is invaded first (06 section 4.7).
  *
- * Nexerelin's fleet path applies none of the reputation cost a bombardment in person has, so when Colony Manager's
+ * Nexerelin's fleet path applies none of the reputation cost a bombardment in person has, so when Auto Colonies'
  * bombardment lands (CAWarListener, or the daily catchMissed when the listener missed it) applyAtrocity applies it, exactly
  * once: the victim -0.04 x size and at best Vengeful;
  * every faction that cares about atrocities (and isn't Vengeful toward the victim) -0.02 x size, at best Hostile (Neutral
@@ -117,7 +117,7 @@ public class CAScorched {
         catch (Throwable t) { return CAWarPolicy.FUEL_PRICE; }
     }
 
-    /** Days since the last of Colony Manager's bombardments landed (MAX_VALUE with none in the record). */
+    /** Days since the last of Auto Colonies' bombardments landed (MAX_VALUE with none in the record). */
     static float daysSinceLast(CAData d) {
         float best = Float.MAX_VALUE;
         for (Map.Entry<String, Long> e : d.warOps().entrySet()) {
@@ -128,7 +128,7 @@ public class CAScorched {
     }
 
     /**
-     * 0.3.0.0 (fix): Colony Manager's bombardment of this market has landed: onBombed replaced the launch record ("satbomb:<id>")
+     * 0.3.0.0 (fix): Auto Colonies' bombardment of this market has landed: onBombed replaced the launch record ("satbomb:<id>")
      * with the landed one ("satbombed:<id>"). A new launch at the same market writes the launch record again.
      */
     static boolean landed(CAData d, MarketAPI t) {
@@ -239,7 +239,7 @@ public class CAScorched {
     }
 
     /**
-     * From CAWarListener: a saturation bombardment by an NPC fleet landed. Colony Manager's own (attacker the player faction
+     * From CAWarListener: a saturation bombardment by an NPC fleet landed. Auto Colonies' own (attacker the player faction
      * and a bombardment of this market in the record) gets the in-person consequences, once: the record is replaced by the
      * "landed" one before anything is applied.
      */
@@ -253,9 +253,9 @@ public class CAScorched {
     }
 
     /**
-     * 0.3.0.0 (fix): records a bombardment of Colony Manager's as landed and applies its cost, once: the launch record
+     * 0.3.0.0 (fix): records a bombardment of Auto Colonies' as landed and applies its cost, once: the launch record
      * ("satbomb:<id>") is replaced by the landed one ("satbombed:<id>") before anything is applied. False when there is no
-     * launch record from the last year (not Colony Manager's, or applied already). Used by onBombed and catchMissed.
+     * launch record from the last year (not Auto Colonies', or applied already). Used by onBombed and catchMissed.
      */
     static boolean landedNow(CAData d, MarketAPI m, FactionAPI victim, int size, boolean limited) {
         String key = CAWarPolicy.SATBOMB + ":" + m.getId();
@@ -269,7 +269,7 @@ public class CAScorched {
     /**
      * 0.3.0.0 (fix): daily (CAConquest.tend, at any War level), the bombardments the listener missed: it is transient, so after a
      * load it is gone until CAWarListener.ensure runs again, and the war fleet step that also adds it can be stopped by its
-     * breaker. A SatBombIntel of Colony Manager's whose outcome is SUCCESS (Nexerelin sets it when the bombardment lands; the
+     * breaker. A SatBombIntel of Auto Colonies' whose outcome is SUCCESS (Nexerelin sets it when the bombardment lands; the
      * intel stays in the intel manager while the fleet flies home) at a market that still has its launch record gets the
      * landed path once (landedNow). The size before is read back (the market's size when it was decivilized, else one more)
      * and limited hatred is worked out again (limited). Skipped while a newer bombardment of yours is still to land there.
@@ -366,7 +366,7 @@ public class CAScorched {
     /** Lines for the authorization confirmation: what each bombardment costs you. */
     static List<String> preview() {
         List<String> out = new ArrayList<String>();
-        out.add("At War level Scorched, Colony Manager sends a bombardment fleet at each Destroy faction's capital"
+        out.add("At War level Scorched, Auto Colonies sends a bombardment fleet at each Destroy faction's capital"
                 + (CAData.settings().scorchedTargets == 1 ? ", and at its markets of size " + destroySize() + " or less where invading costs more" : "") + ".");
         out.add("Size " + destroySize() + " or less: the colony is decivilized. Bigger: it loses one size, every industry is disrupted for a year or more, stability -10.");
         out.add("Each one costs you as in person: the victim -0.04 x size and Vengeful; factions that care about atrocities -0.02 x size and Hostile.");

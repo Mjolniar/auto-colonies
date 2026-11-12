@@ -1,0 +1,12 @@
+{
+  "masterVersionFile": "https://raw.githubusercontent.com/Mjolniar/auto-colonies/main/AutoColonies.version",
+  "modName": "Auto Colonies",
+  "modThreadId": "36266",
+  "modVersion": {
+    "major": 0,
+    "minor": 3,
+    "patch": "0.1"
+  },
+  "directDownloadURL": "https://github.com/Mjolniar/auto-colonies/releases/latest/download/AutoColonies.zip",
+  "changelogURL": "https://raw.githubusercontent.com/Mjolniar/auto-colonies/main/docs/changelog.md"
+}

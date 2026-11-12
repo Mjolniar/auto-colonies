@@ -24,7 +24,7 @@ import java.util.*;
  * once: its demand adds each held, running contract's monthly need, read live (AoTDSectorProductionDemandDataUtils
  * .getTotalDemandFromFaction), and at month end it fills them in order from your colonies with a spaceport and
  * accessibility above 0, each giving its net (supply less its own demand) less what it sent to your short colonies; a
- * contract left short gets a miss. Jonah's logs show that right after a signature the figures are right (12,949 Ore: 33,000
+ * contract left short gets a miss. The author's logs show that right after a signature the figures are right (12,949 Ore: 33,000
  * spare, then 20,051 in the same pass), but by a later pass ToT's colony figures had come back up by about the contract
  * (20,445 Ore spare, then 20,428 after a 12,572 contract; 31,975 Fuel, a month later 30,814 after a 24,920 one), and the
  * contracts signed on that spare missed. So CM no longer trusts spare above what was left right after its own signatures:
@@ -270,7 +270,7 @@ public class CAContracts {
     // ---------------- 0.3.0.0 (WS-B5 fix): contracts held before the ledger ----------------
     // Contracts already held when a save moves to 0.3.0, and ones signed in ToT's own browser, had no entry, so their
     // commodity had no ceiling and CM trusted ToT's figure, the one that climbs back by about each contract's need (the m58
-    // misses: Jonah's held Fuel contracts, Fox Colliot and Blair Pratt, left Fuel open to a third). Each such contract gets an
+    // misses: the author's held Fuel contracts, Fox Colliot and Blair Pratt, left Fuel open to a third). Each such contract gets an
     // entry the first day CM sees it, its base the spare CM sees now: the ceiling then takes its need off that again, as if
     // ToT's figure didn't show it yet. Conservative: at worst its commodity takes no new contract until it ends.
 
@@ -327,7 +327,7 @@ public class CAContracts {
                 what.add(e.getValue() + " " + commodityName(e.getKey()) + " (" + Math.max(0, sp) + " spare)");
             }
             if (!spare.isEmpty() && seed(id, needs, spare, now) > 0)
-                CALog.quiet("trade contract " + CARefl.invoke(cName, c) + " was held before Colony Manager counted it: " + join(what)
+                CALog.quiet("trade contract " + CARefl.invoke(cName, c) + " was held before Auto Colonies counted it: " + join(what)
                         + "; spare for its goods is now held to that less its need while it runs");
         }
     }

@@ -6,7 +6,7 @@ import com.fs.starfarer.api.impl.campaign.ids.Stats;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 
 /**
- * Retired colony condition from Jonah Tweaks 1.x ("Expanded Infrastructure"). It has no effect now. It stays registered
+ * Retired colony condition from the earlier tweaks mod (1.x) ("Expanded Infrastructure"). It has no effect now. It stays registered
  * (data/campaign/market_conditions.csv) only so saves that still reference jt_patronage load, and JTCampaignScript
  * removes it from every market it finds.
  */

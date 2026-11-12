@@ -89,7 +89,7 @@ public class CARich {
     static final int IDLE_MAX = 120;
     /** A month is idle when at least this share of the managed colonies had nothing worth starting at their last look... */
     static final float IDLE_COLONIES = 0.5f;
-    /** ...and Colony Manager spent under this share of the month's budget (savings not counted). */
+    /** ...and Auto Colonies spent under this share of the month's budget (savings not counted). */
     static final float IDLE_SPENT = 0.25f;
     /** At Idle money and up, a credit counts this much in what a build is worth at every Approve and Auto colony (Rich: CASurplus.RICH_MONEY). */
     public static final float IDLE_MONEY = 0.5f;
@@ -233,7 +233,7 @@ public class CARich {
         boolean via = cash < held && heldIdle;
         // 0.3.0.0 (C12 fix): idle months raise Idle money to Rich only when Idle money is held by free cash (reached today, or
         // held on 60% of its own line). Idle money raised from Surplus by idle months stays there: Surplus plus any number of
-        // idle months is Idle money at most (WS-C C2 and research 03 section 5.2: Jonah's save, F 1.7M, N 600,000, lands in T2)
+        // idle months is Idle money at most (WS-C C2 and research 03 section 5.2: the author's save, F 1.7M, N 600,000, lands in T2)
         boolean t2ByCash = t == T2 && !via;
         // idle months raise it
         if (t == T1 && idle >= IDLE_T2) { t = T2; via = true; }
@@ -269,7 +269,7 @@ public class CARich {
 
     /**
      * When a month ends: counts it toward d.idleMonths when at least half the managed colonies had nothing worth starting
-     * at their last look (CAPlanner.idleShare) and Colony Manager spent under a quarter of the month's budget, the ladder's
+     * at their last look (CAPlanner.idleShare) and Auto Colonies spent under a quarter of the month's budget, the ladder's
      * purchases (d.rungSpent) included; resets the count otherwise. A month the planner has no look for (it isn't in
      * charge, or the game was just loaded) leaves the count as it is. Clears d.rungSpent for the new month.
      */
@@ -286,7 +286,7 @@ public class CARich {
         day = Integer.MIN_VALUE;   // the tier is worked out again with the new count
         resetLadder();   // 0.3.0.0 (C3): a new month's pool, from the new month's free cash
         CALog.quiet("Money tiers: last month " + (counted ? (idle ? "idle" : "not idle") + " (" + Math.round(share * 100f)
-                + "% of colonies with nothing worth starting; Colony Manager spent " + Misc.getDGSCredits(all) + " of a "
+                + "% of colonies with nothing worth starting; Auto Colonies spent " + Misc.getDGSCredits(all) + " of a "
                 + Misc.getDGSCredits(budget) + " budget)" : "not counted (no planner look this session)") + "; idle months " + was + " -> " + d.idleMonths);
     }
 

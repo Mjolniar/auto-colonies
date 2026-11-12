@@ -26,7 +26,7 @@ import java.util.*;
  *
  * 0.3.0.0 (WS-B5, research 01 sections 7 and 12): the hazard pay budget is a share of colony net (CABudget.netIncome: the
  * colonies' own net, without hazard pay, as a 3-month median), so one bad month no longer switches it off everywhere (24
- * switches in Jonah's game). A free port that's off opens again only after everything it needs (stability with its
+ * switches in the author's game). A free port that's off opens again only after everything it needs (stability with its
  * penalty to spare, no threat, no crisis, the profile) has held for FREE_PORT_REOPEN_DAYS in a row, on top of the 90 days
  * since its last change: an urgent close (stability, threat, a punitive expedition) used to flip back the same week
  * (37 switches, Zenemosrae 13).

@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 
 /**
- * 0.3.0.0 (A1): clears every cache, timer and session flag Colony Manager keeps in static fields, first thing on every load
+ * 0.3.0.0 (A1): clears every cache, timer and session flag Auto Colonies keeps in static fields, first thing on every load
  * (JTModPlugin.onGameLoad), so nothing from the last save or the last session's clock carries over (07 H2, H6 and section 3
  * "Mutable statics"). Before 0.3.0 several weren't cleared: reload a save from 20 days earlier and research ranking, blocked
  * plan steps, contract shortfalls and settlement sites came from the other timeline, Nexerelin defense and relief fleets

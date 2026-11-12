@@ -389,13 +389,13 @@ public class CAIntel extends BaseIntelPlugin {
     }
 
     /**
-     * Jonah's mods that are installed, at a glance: enabled and version, warnings and errors this session (CALogWatch),
+     * Mjolniar's mods that are installed, at a glance: enabled and version, warnings and errors this session (CALogWatch),
      * and each one's own status line, which the others write to sector memory as "$jonahs_status_" + mod id.
      */
-    static void renderJonahsMods(TooltipMakerAPI t) {
+    static void renderAuthorMods(TooltipMakerAPI t) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), bad = Misc.getNegativeHighlightColor();
         com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
-        CATheme.heading(t, "Jonah's mods", 0f);
+        CATheme.heading(t, "Mjolniar's mods", 0f);
         for (String[] m : CALogWatch.MODS) {
             String ver = null;
             try { ver = mm.getModSpec(m[2]).getVersion(); } catch (Throwable ignored) { }
@@ -423,8 +423,8 @@ public class CAIntel extends BaseIntelPlugin {
 
     static void renderDiagnostics(TooltipMakerAPI t) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
-        try { renderJonahsMods(t); }
-        catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Jonah's mods section failed", e); }
+        try { renderAuthorMods(t); }
+        catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Mjolniar's mods section failed", e); }
         CATheme.heading(t, "Diagnostics", 0f);
         t.addPara("Last scan: %s. Probe-measured: %s. Not acted on: %s analyzed, %s quarantined. "
                         + "Report: saves/common/" + CADiagnostics.REPORT + ".data", 8f, hl,

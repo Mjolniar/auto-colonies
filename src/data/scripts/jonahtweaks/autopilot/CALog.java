@@ -228,7 +228,7 @@ public class CALog {
     }
 
     // ---------------- the month's money per colony (0.3.0.0, research 01 section 5 item 3) ----------------
-    // What Colony Manager spent for each colony this month, kept in the save (CAData.monthLedger: "marketId|spent", "|fees",
+    // What Auto Colonies spent for each colony this month, kept in the save (CAData.monthLedger: "marketId|spent", "|fees",
     // "|upkeep"), so a reload mid-month doesn't lose it. CABudget.charge books every charge here, under the colony when the
     // caller names it and under EMPIRE otherwise (logistics, agents, items moved between colonies). The monthly colony lines
     // read it and clear it; before, the month's spending was reset before any line could show it.
@@ -270,7 +270,7 @@ public class CALog {
 
     /**
      * Monthly, after the Month line (0.3.0.0, research 01 section 5): one starsector.log line per colony with its own money and
-     * what Colony Manager spent there, so a colony that loses money every month, or takes most of the spending, shows up
+     * what Auto Colonies spent there, so a colony that loses money every month, or takes most of the spending, shows up
      * without the weekly diagnostics; then one line for the whole month's spending, with what wasn't tied to one colony.
      * `spent`, `fees` and `upkeepAdded` are last month's budget totals read before the reset (CABudget.rollMonth); below 0,
      * the ledger's own sums stand in. Clears the ledger for the new month. Log only, never on screen.
@@ -312,7 +312,7 @@ public class CALog {
     }
 
     /**
-     * "Month at Wind (size 6, Auto): net -122k (income 300k, upkeep 422k), stability 7; CM spent 250k (fees 12k), upkeep
+     * "Month at Wind (size 6, Auto): net -122k (income 300k, upkeep 422k), stability 7; Auto Colonies spent 250k (fees 12k), upkeep
      * added 8k". Pure.
      */
     static String monthLine(String name, int size, String mode, float income, float upkeep, float net, int stability,
@@ -321,16 +321,16 @@ public class CALog {
                 + " (income " + k(income) + ", upkeep " + k(upkeep) + "), stability " + stability + "; " + cmPart(cmSpent, cmFees, cmUpkeep);
     }
 
-    /** "CM spent 250k (fees 12k), upkeep added 8k", or "CM spent nothing". Pure. */
+    /** "Auto Colonies spent 250k (fees 12k), upkeep added 8k", or "Auto Colonies spent nothing". Pure. */
     static String cmPart(float spent, float fees, float upkeep) {
-        if (spent <= 0f && upkeep <= 0f) return "CM spent nothing";
-        return "CM spent " + k(spent) + (fees > 0f ? " (fees " + k(fees) + ")" : "") + (upkeep > 0f ? ", upkeep added " + k(upkeep) : "");
+        if (spent <= 0f && upkeep <= 0f) return "Auto Colonies spent nothing";
+        return "Auto Colonies spent " + k(spent) + (fees > 0f ? " (fees " + k(fees) + ")" : "") + (upkeep > 0f ? ", upkeep added " + k(upkeep) : "");
     }
 
-    /** "Month's CM spending: 1.2M (fees 30k), upkeep added 45k; 200k not tied to one colony". Pure. */
+    /** "Month's Auto Colonies spending: 1.2M (fees 30k), upkeep added 45k; 200k not tied to one colony". Pure. */
     static String spendLine(float spent, float fees, float upkeep, float atColonies) {
         float other = Math.max(0f, spent - atColonies);
-        return "Month's CM spending: " + (spent <= 0f && upkeep <= 0f ? "nothing" : k(spent) + (fees > 0f ? " (fees " + k(fees) + ")" : "")
+        return "Month's Auto Colonies spending: " + (spent <= 0f && upkeep <= 0f ? "nothing" : k(spent) + (fees > 0f ? " (fees " + k(fees) + ")" : "")
                 + (upkeep > 0f ? ", upkeep added " + k(upkeep) : "")) + (other >= 500f ? "; " + k(other) + " not tied to one colony" : "");
     }
 

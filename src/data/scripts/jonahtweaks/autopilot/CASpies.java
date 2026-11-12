@@ -327,7 +327,7 @@ public class CASpies {
     }
 
     /**
-     * 0.3.0.0 (WS-E, 06 section 4.10): Instigate Rebellion at the market Colony Manager would invade next of a Destroy faction
+     * 0.3.0.0 (WS-E, 06 section 4.10): Instigate Rebellion at the market Auto Colonies would invade next of a Destroy faction
      * (CAConquest.nextDestroyTarget), before the fleets arrive. Offense role, never in Low profile, paid from the budget.
      */
     static boolean prepare(CAData d, CASettings s, CovertOpsManager mgr, AgentIntel a) {

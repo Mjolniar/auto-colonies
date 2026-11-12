@@ -9,17 +9,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Counts the warnings and errors Jonah's mods write to starsector.log this session, with the latest of each, for
+ * Counts the warnings and errors Mjolniar's mods write to starsector.log this session, with the latest of each, for
  * the Diagnostics page. It listens on each mod's package logger (log4j passes every class's messages up to its
  * package), so the other mods need nothing from this one, and it only reads what they log anyway.
  */
 public class CALogWatch extends AppenderSkeleton {
-    /** Package, name and mod id of each of Jonah's mods. */
+    /** Package, name and mod id of each of Mjolniar's mods. */
     public static final String[][] MODS = {
-            {"data.scripts.jonahtweaks", "Jonah's Colony Manager", "jonah_tweaks"},
-            {"data.scripts.jonahseasysector", "Jonah's Easy Sector", "jonahs_easy_sector"},
-            {"data.scripts.jonahsautooutfitting", "Jonah's Auto Outfitting", "jonahs_auto_outfitting"},
-            {"data.scripts.jonahsfixes", "Jonah's Fixes", "jonahs_fixes"}};
+            {"data.scripts.jonahtweaks", "Auto Colonies", "jonah_tweaks"},
+            {"data.scripts.jonahseasysector", "Easy Sector", "jonahs_easy_sector"},
+            {"data.scripts.jonahsautooutfitting", "Auto Outfitting", "jonahs_auto_outfitting"},
+            {"data.scripts.jonahsfixes", "Fixes", "jonahs_fixes"}};
 
     static final Map<String, int[]> counts = new HashMap<String, int[]>();   // package -> {warnings, errors}
     static final Map<String, String> last = new HashMap<String, String>();   // package -> latest warning or error
@@ -31,7 +31,7 @@ public class CALogWatch extends AppenderSkeleton {
         installed = true;
         try {
             CALogWatch w = new CALogWatch();
-            w.setName("JonahsModsLogWatch");
+            w.setName("AuthorModsLogWatch");
             w.setThreshold(Level.WARN);
             for (String[] m : MODS) Logger.getLogger(m[0]).addAppender(w);
         } catch (Throwable t) {

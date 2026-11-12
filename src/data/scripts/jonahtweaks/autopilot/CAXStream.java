@@ -3,7 +3,7 @@ package data.scripts.jonahtweaks.autopilot;
 import com.thoughtworks.xstream.XStream;
 
 /**
- * 0.3.0.0 (A0): stable short names for every Colony Manager class stored in the save, and retired fields dropped, so 0.3.0
+ * 0.3.0.0 (A0): stable short names for every Auto Colonies class stored in the save, and retired fields dropped, so 0.3.0
  * and later can move, split and rename classes without breaking saves (research 07 M11). Called from
  * JTModPlugin.configureXStream before any save is read or written.
  * Saves from before 0.3.0 still load: XStream falls back to the full class name when a name isn't an alias. Saves written
@@ -45,9 +45,9 @@ public final class CAXStream {
         // these lines are what lets an older save load (XStream throws on a saved field the class doesn't have unless it's
         // omitted here): never remove one; a field retired later gets its own line before it's deleted
         omit(x, () -> CASettings.class, "adminDelay");      // never read (07 L2)
-        omit(x, () -> CASettings.class, "storageCheat");    // moved to Jonah's Easy Sector in 0.2.37.0
-        omit(x, () -> CASettings.class, "haFleetCap");      // moved to Jonah's Easy Sector in 0.2.37.0
-        omit(x, () -> CASettings.class, "nexAttackGap");    // moved to Jonah's Easy Sector in 0.2.37.0
+        omit(x, () -> CASettings.class, "storageCheat");    // moved to Easy Sector in 0.2.37.0
+        omit(x, () -> CASettings.class, "haFleetCap");      // moved to Easy Sector in 0.2.37.0
+        omit(x, () -> CASettings.class, "nexAttackGap");    // moved to Easy Sector in 0.2.37.0
         omit(x, () -> CASettings.class, "richIncomeRef");   // the old pause's reference, unused since 0.2.34.1
     }
 

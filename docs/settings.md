@@ -62,6 +62,6 @@ No preset changes the over-limit fix.
 
 A 0.2.45 save's settings move to the 0.3.0 menu once, unchanged. Mapping: [patch notes](changelog.md#saves-from-0245).
 
-No cheat or balance settings here. Cheats: Jonah's Easy Sector.
+No cheat or balance settings here. Cheats: Easy Sector.
 
 Next: [Supported mods](supported-mods.md).

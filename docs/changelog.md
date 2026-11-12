@@ -1,8 +1,19 @@
 # Patch notes
 
-Every version, newest first. The mod started as **Jonah Tweaks**, a personal mod of small tweaks (battle size, combat autopilot). Colony Autopilot grew inside it. 0.2.1.0 is the first version on GitHub and 0.2.6.0 the first with a downloadable release. The balance tweaks moved to their own mod in 0.2.7.0.
+Every version, newest first. The mod started as a personal mod of small tweaks (battle size, combat autopilot). Colony Autopilot grew inside it. 0.2.1.0 is the first version on GitHub and 0.2.6.0 the first with a downloadable release. The balance tweaks moved to their own mod in 0.2.7.0.
+
+The mod was called Colony Manager until 0.3.0.1. Older entries use the new name, Auto Colonies.
 
 Version numbers start with 0 since 0.3.0.0, because the mod is not at 1.0. Earlier versions are listed with the 0 added: 2.45.2 is 0.2.45.2. Release tags keep their old names (v2.45.2).
+
+## 0.3.0.1 - 2026-11-12
+
+- Renamed: Colony Manager is now Auto Colonies. The mod folder is now `Auto Colonies`. Delete the old Colony Manager folder in `mods/` before extracting, or the game finds the mod twice.
+- The mod id is unchanged, so saves keep working.
+- The GitHub repository is now github.com/Mjolniar/auto-colonies. Old links redirect.
+- The release zip is now AutoColonies.zip, and the Version Checker file is AutoColonies.version.
+- In-game text and logs say Auto Colonies. "CM spent" in the month lines is now "Auto Colonies spent".
+- The supported mods list and links use Auto Outfitting's new name.
 
 ## 0.3.0.0 - 2026-11-11
 
@@ -30,8 +41,8 @@ Version Checker and TriOS compare version numbers, so they read 0.3.0.0 as lower
 - **War level** (Nexerelin). Off, Defend, Retaliate, Hold them down, Conquer, Scorched. Replaces the War fleets setting. Default: Retaliate, which is 0.2.45's Protect and strike back plus Retake (below). War fleets act whatever the colony modes are, Advisor included. See [War and security](war-and-security.md).
 - **Faction stances.** Ally, Friendly, Neutral, Auto, Rival, Enemy, Destroy, set on the Factions page. A stance caps the War level used on that faction and sets how agents, IndEvo ambassadors and ceasefire offers treat it. Default: Auto (relations and offers as in 0.2.45).
 - **Conquest** (War level Conquer). Invasions of Enemy and Destroy markets through Nexerelin's invasion fleets, one at a time. Conquered colonies get Nexerelin's autonomy taken back and the Security goal until stable. A conquered colony gets the mode from **Conquered colonies start in** (default Auto) and is kept above 0 stability only on Auto. On Approve or Advisor that is left to you.
-- **Scorched** (War level Scorched). Saturation bombardment of a Destroy faction's capital after you authorize it on the War page. Colony Manager applies the reputation penalties a bombardment in person has.
-- **Retake** (War level Retaliate and up). Invades colonies that were yours, your lost capital first, with the fee. On for new games and for saves without Colony Manager, off for saves from 0.2.45. A retaken colony keeps the mode it had before it was lost and is kept above 0 stability only on Auto.
+- **Scorched** (War level Scorched). Saturation bombardment of a Destroy faction's capital after you authorize it on the War page. Auto Colonies applies the reputation penalties a bombardment in person has.
+- **Retake** (War level Retaliate and up). Invades colonies that were yours, your lost capital first, with the fee. On for new games and for saves without Auto Colonies, off for saves from 0.2.45. A retaken colony keeps the mode it had before it was lost and is kept above 0 stability only on Auto.
 - **Stand down** on the War page: War level to Defend, declarations and bombardment authorization cleared, operations still organizing cancelled with Nexerelin's full refund.
 - **Fees on new war operations.** Retakes, raids and blockades from Hold them down, invasions and bombardments pay the fee level times 10% of Nexerelin's price. Relief, defense fleets, base strikes and strikes back pay no fee, as in 0.2.45.
 - **Diagnostics.** A Performance section (time per step of the daily pass) and a load-time link check for Nexerelin, Industrial Evolution, Random Assortment of Things, Station Augments and Terraforming Made Easy.
@@ -59,7 +70,7 @@ The 0.3.0 planning read 58 game months of one campaign's logs (versions 2.41 to 
 | The budget sat at its 6-month carry cap in 15 of 58 months, peak 11.59M saved; up to 19.9M of budget room discarded | Budget room past the cap is kept while the credits are in your account above the reserve. The money ladder spends idle money. |
 | 95 of 133 "nothing worth starting" lines (71%) were a busy construction slot; two 360-day TME structures held a slot 11 months each while a Heavy Industry worth about 218,000 a month waited | The slot goes to the most value per day of construction. |
 | Ming Adi: 1.525M paid to add Toxic Atmosphere, then the plan wanted to pay to remove it | A world plan that already paid for terraforming switches only to a plan worth at least twice as much. |
-| 16 missed trade contract deliveries on 11 contracts | Colony Manager counts its own contracts against spare goods until Theory of Toolbox catches up. One new contract per commodity a month. |
+| 16 missed trade contract deliveries on 11 contracts | Auto Colonies counts its own contracts against spare goods until Theory of Toolbox catches up. One new contract per commodity a month. |
 | Free port changed 37 times, hazard pay 24 | A closed free port reopens after its conditions hold 30 days. Hazard pay uses a 3-month median of colony net income. |
 | One month at -188,000 net switched hazard pay off at every colony for 30+ days | Budgets, caps and hazard pay use the 3-month median of colony net income. Custom production, AotD orders and your fleet's draw on colony stockpiles are not in it. |
 | Plan bonuses (60,000 / 40,000 / 20,000) and a flat +15,000 for upgrades outweighed the value math | Only enabler steps keep a plan bonus. Other plan steps are valued by what they earn, plus half of what they lead to. |
@@ -71,7 +82,7 @@ Other fixes:
 - The 0-stability safety net runs before the day's building.
 - One stability rule for every takedown, move, pull, policy and new action: the colony stays at or above the floor (minimum stability: 5 by default, at least 3).
 - Timers run on the game calendar. Loading an earlier save clears every cache and timer.
-- Colony Manager's own errors no longer quarantine buildings. Vanilla buildings are not quarantined.
+- Auto Colonies' own errors no longer quarantine buildings. Vanilla buildings are not quarantined.
 - The "logged once" list no longer resets at 2,000 entries.
 - starsector.log gets a repeated error's stack trace once, then a short line at most once a week.
 - The panels show the day's scores and re-score only on Refresh or after a change.
@@ -201,11 +212,11 @@ A bug-fix release. I had a bunch of agents go through the whole mod and my own l
 
 - **Economic stations.** A colony in a system that's well defended (other stations and military bases there that aren't hostile to you, yours or anyone's) keeps its station economic even when its own threat is high: the Mining Station augment, Hydroponics and Economy Conversion over combat augments. A raid or blockade on its way still gets the combat loadout. This only changes the station's augments, not what the colony builds.
 - Station Augments' **Mining Station** augment counts now, valued with that mod's own formula (the asteroid belts and rings near the station), only for what it mines above what the colony already makes.
-- **Terraforming & Station Construction stations.** If you have TASC, Colony Manager can found its mining stations (in an asteroid belt or field) and siphon stations (over a gas giant) as new colonies, in systems with your Auto colonies that are calm or well defended, once TASC's research for them is done and there's room under your colony limit. A crew builds it for TASC's own costs plus a fee, in 60 days, the same way TASC's Construct abilities place it, and the new colony runs in Auto with the Money goal. It's Recommend only out of the box (it just tells you the best site) until you switch it to Auto under Settings, **Station construction**. The astropolis is left to you, it's a habitat rather than an economic station.
+- **Terraforming & Station Construction stations.** If you have TASC, Auto Colonies can found its mining stations (in an asteroid belt or field) and siphon stations (over a gas giant) as new colonies, in systems with your Auto colonies that are calm or well defended, once TASC's research for them is done and there's room under your colony limit. A crew builds it for TASC's own costs plus a fee, in 60 days, the same way TASC's Construct abilities place it, and the new colony runs in Auto with the Money goal. It's Recommend only out of the box (it just tells you the best site) until you switch it to Auto under Settings, **Station construction**. The astropolis is left to you, it's a habitat rather than an economic station.
 
 ## 0.2.40.0 - 2026-11-06
 
-- **Stable locations.** The stable spots in a system (where comm relays, nav buoys and sensor arrays go) get used now. In any system with your Auto colonies, Colony Manager works out what each one is worth to the colonies there, going by their goals, and sends a construction crew to build the best one: a comm relay first for most goals (+1 stability at every colony of yours in the system), then a nav buoy (+2 burn, worth more to Security colonies), then a sensor array. It costs vanilla's materials at base price plus a fee, takes 10 days, and only builds one of each kind per system since they don't stack. If the spot gets taken before the crew shows up, you get the materials back.
+- **Stable locations.** The stable spots in a system (where comm relays, nav buoys and sensor arrays go) get used now. In any system with your Auto colonies, Auto Colonies works out what each one is worth to the colonies there, going by their goals, and sends a construction crew to build the best one: a comm relay first for most goals (+1 stability at every colony of yours in the system), then a nav buoy (+2 burn, worth more to Security colonies), then a sensor array. It costs vanilla's materials at base price plus a fee, takes 10 days, and only builds one of each kind per system since they don't stack. If the spot gets taken before the crew shows up, you get the materials back.
 - With **Terraforming Made Easy**, makeshift ones you own get upgraded to Domain-era (twice the stability for the relay) when there's a spare Beta core in Autopilot Storage and it pays for itself.
 - With **Ashes of the Domain**, once you've researched them and have a Coronal Hypershunt Tap in Autopilot Storage, it builds Hypershunt Receivers (+2 industry slots at every colony in the system) in systems your hypershunt reaches. While you own a hypershunt, one stable spot per system is kept free for one.
 - New setting under Settings, **Stable locations**: Auto (default), Recommend only, or Off. Crews on their way show on the Autopilot Storage page.
@@ -225,14 +236,14 @@ A bug-fix release. I had a bunch of agents go through the whole mod and my own l
 ## 0.2.39.0 - 2026-11-05
 
 - **Storage logistics** (new, off until you switch it on, under Settings). Pick a refit hub (your production gathering point by default) and once a week everything you'd refit a fleet with gets shipped there from your other Storage tabs: mothballed ships, weapons, fighter wings, blueprints and hull mod specs you don't know yet, and supplies, fuel, crew and marines if you want. Pick a sell hub too and blueprints and specs you already know, plus spare copies, go there, so you can sell them all in one place. Fair play like everything else: each load costs a shipping fee (plus 1,000 a ship) from the monthly budget and takes travel time.
-- **Production orders get their goods.** Ashes of the Domain's production orders (Jonah's Auto Outfitting's big weapon orders, say) take goods from your colonies, and crawl when nobody makes one. Now Colony Manager plans producers for any good your open orders need that none of your colonies make, the same way it already did for special projects. It also knows the plain vanilla producers now (Refining for metals, Heavy Industry for heavy machinery and supplies, and so on), not just AotD's.
+- **Production orders get their goods.** Ashes of the Domain's production orders (Auto Outfitting's big weapon orders, say) take goods from your colonies, and crawl when nobody makes one. Now Auto Colonies plans producers for any good your open orders need that none of your colonies make, the same way it already did for special projects. It also knows the plain vanilla producers now (Refining for metals, Heavy Industry for heavy machinery and supplies, and so on), not just AotD's.
 - **Unspent budget is saved up now.** The monthly budget didn't carry over, so anything that cost more than one month's budget (a lot of buildings early on, when the budget's around 60k) just sat there waiting while your credits piled up, and the colony didn't build much of anything. Now whatever's left each month carries over, up to six months' worth, so it saves up and builds the thing. The budget lines show what's saved up.
 - Mod watch only writes to the log when something changes, instead of ten identical lines every week.
-- Fixed: once a colony got Luddic Path cells, every mod building came up "can't be measured". The test colony Colony Manager uses to measure buildings copies your colony's conditions, and Pather cells (like pirate activity, a blockade and the other event conditions) break without the event behind them. Those are left off the test colony now, and if any other condition ever breaks it, the measurement goes ahead without it.
+- Fixed: once a colony got Luddic Path cells, every mod building came up "can't be measured". The test colony Auto Colonies uses to measure buildings copies your colony's conditions, and Pather cells (like pirate activity, a blockade and the other event conditions) break without the event behind them. Those are left off the test colony now, and if any other condition ever breaks it, the measurement goes ahead without it.
 - **Colony items go to the best building first.** Items used to go in storage order, so a lesser item could grab a building a better one was waiting for and get swapped out a week later (an Auroran nanoforge into Heavy Industry, then the Tenebrian one), which costs a fee and a day each time. Now every waiting item is matched against every free building and the best pairs go first.
 - Fixed: a second copy of an item could get shipped to a colony whose first copy had already arrived but wasn't installed yet (two Orbital Fusion Lamps and two Fullerene Spools to Umuzi). A copy that's already there now gets the building, and nothing else gets shipped for it.
 - **Research Facility first.** With research on Auto and no Research Facility anywhere, one now goes first in your focus world's plan (or your biggest colony's). Before, spending freely put every defense structure first, so the Research Facility waited months behind a Planetary Shield and a Patrol HQ, nothing got researched, and plan steps that needed research gave up.
-- Roider Dives and Union HQ: Roider takes a heavy machinery shortage off every mined good, so being 1 short turns 1+1+1+1 into nothing. Colony Manager counts that now when it decides whether a Dives is worth building, and mod watch names the shortage instead of calling it a mismatch.
+- Roider Dives and Union HQ: Roider takes a heavy machinery shortage off every mined good, so being 1 short turns 1+1+1+1 into nothing. Auto Colonies counts that now when it decides whether a Dives is worth building, and mod watch names the shortage instead of calling it a mismatch.
 - The diagnostics report has a colonies section: each colony's plan and where each step stands, its buildings with their items and cores, the construction queue and what's in its Autopilot Storage.
 - **Contracts are safe from the endgame.** The endgame took down Hot Springs's Farming for Light Production, and the big food contract Farming was feeding started missing deliveries. A building that makes something one of your trade contracts needs is never taken down while that contract runs now.
 - Fixed: VPC chips for Industrial Evolution's Commodity Forge (and the other chip buildings) did the same double shipping as colony items, and worse: a different chip each day, every kind twice, for one forge. A chip that's already at the colony goes in first now, and nothing else is shipped while one's on its way.
@@ -398,14 +409,14 @@ The fair play release. A review went through everything the mod does and anythin
 
 ## 0.2.23.0 - 2026-11-02
 
-- **Colony Manager only does colony stuff.** The fix for Industrial Evolution's unnamed Income report rows (sorting Command, Income could crash) isn't part of it anymore. Fixes for other mods live in their own mod now.
-- The Diagnostics page's Jonah's mods section only lists the ones you have installed.
+- **Auto Colonies only does colony stuff.** The fix for Industrial Evolution's unnamed Income report rows (sorting Command, Income could crash) isn't part of it anymore. Fixes for other mods live in their own mod now.
+- The Diagnostics page's Mjolniar's mods section only lists the ones you have installed.
 
 ## 0.2.22.0 - 2026-11-02
 
-- **The colony screen button stays off the refit and fleet screens.** It only looks for its spot on the colonies tab and the docked colony screen now, so it never lands where Jonah's Auto Outfitting has its button, and those screens aren't searched four times a second anymore. With a full building grid it tries every free spot along the rows and beside the buildings.
+- **The colony screen button stays off the refit and fleet screens.** It only looks for its spot on the colonies tab and the docked colony screen now, so it never lands where Auto Outfitting has its button, and those screens aren't searched four times a second anymore. With a full building grid it tries every free spot along the rows and beside the buildings.
 - **Surplus investment keeps back what's promised.** Credits already owed to custom production (the game's own, and Ashes of the Domain's orders) don't count as surplus.
-- **Diagnostics for my other mods.** The Diagnostics page gets a Jonah's mods section with each one's version, warnings and errors this session, and status line.
+- **Diagnostics for my other mods.** The Diagnostics page gets a Mjolniar's mods section with each one's version, warnings and errors this session, and status line.
 - **Stuck colonies explain themselves.** Once a month, a colony with nothing worth starting writes its best options, and why they don't pay, to starsector.log.
 - **Less work in the background.** An old cleanup for a retired condition runs once per load instead of going over every colony every 5 seconds.
 
@@ -541,7 +552,7 @@ The fair play release. A review went through everything the mod does and anythin
 
 ## 0.2.4.1 - 2026-10-30
 
-- **Renamed from Jonah Tweaks to Jonah's Colony Manager.** Same mod id, so saves keep working.
+- **New name.** The tweaks mod became a colony manager with its own name. Same mod id, so saves keep working.
 
 ## 0.2.4.0 - 2026-10-30
 

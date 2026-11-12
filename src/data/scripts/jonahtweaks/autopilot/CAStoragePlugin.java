@@ -11,7 +11,7 @@ import com.fs.starfarer.api.impl.campaign.submarkets.BaseSubmarketPlugin;
  * before, one shared cargo let anything put in at one colony come out at any other). Colony items, AI cores, Antimatter
  * Stabilizers, research databanks, VPC chips and recipes go in, and nothing else (usable, 0.2.39.2). The manager uses only what is in these, ships what it
  * needs elsewhere for a fee and travel time, and returns anything it takes out of a building to that colony's store.
- * (The storage cheat that let anything in and fed colonies' shortages moved to Jonah's Easy Sector in 0.2.37.0.)
+ * (The storage cheat that let anything in and fed colonies' shortages moved to Easy Sector in 0.2.37.0.)
  */
 public class CAStoragePlugin extends BaseSubmarketPlugin {
     public static final String ID = "jt_ca_storage";

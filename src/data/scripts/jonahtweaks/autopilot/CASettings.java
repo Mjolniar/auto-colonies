@@ -69,7 +69,7 @@ public class CASettings {
     // special project supply (CAProjects, Vaults of Knowledge): 0 Auto (also older saves), 1 Warn only, 2 Off
     public int projectSupplyMode = 0;
     public static final String[] PROJECT_SUPPLY_NAMES = {"Auto", "Warn only", "Off"};
-    // 0.3.0.0 (A3): storageCheat (moved to Jonah's Easy Sector in 0.2.37.0) is gone; CAXStream drops it from older saves
+    // 0.3.0.0 (A3): storageCheat (moved to Easy Sector in 0.2.37.0) is gone; CAXStream drops it from older saves
     public int coreRisk = 1;              // 0 more where defenses beat the next inspection, 1 never inspected (default for new saves), 2 no limit, 3 small colonies only
     public int inspectionMode = 0;        // Hegemony inspections of Auto colonies: 0 advise (so older saves load as advise), 1 resist where defended, 2 off
     public boolean allowRemovals = false;
@@ -140,7 +140,7 @@ public class CASettings {
     public static final String[] WAR_NAMES = {"Protect and strike back", "Protect", "Off"};
     // the Colony Autopilot button on your colony's screen (CAScreenButton); on unless this is set
     public boolean noScreenButton = false;
-    // 0.3.0.0 (A3): haFleetCap and nexAttackGap (the Derelict Empire "Attacks on your colonies" settings, in Jonah's Easy Sector
+    // 0.3.0.0 (A3): haFleetCap and nexAttackGap (the Derelict Empire "Attacks on your colonies" settings, in Easy Sector
     // since 0.2.37.0) are gone; CAXStream drops them from older saves
 
     // this month

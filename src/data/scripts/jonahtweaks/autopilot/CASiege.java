@@ -22,7 +22,7 @@ import java.util.Map;
  * Toolbox only delivers from colonies with accessibility above 0, which a blockade takes away. Checked once a day.
  * 0.3.0.0 (WS-B5, research 01 section 13): a hostile fleet at the colony makes a siege at once only when it's strong enough
  * to threaten it (NEAR_SHARE of its own defenses: station and patrols); a weaker one has to still be there at the next
- * daily look (NEAR_DAYS). 13 of 47 sieges in Jonah's game ended within seconds: a pirate passing through the gravity
+ * daily look (NEAR_DAYS). 13 of 47 sieges in the author's game ended within seconds: a pirate passing through the gravity
  * well put the colony on defenses only and swapped its station augments back and forth. Blockades and raids, invasions
  * and blockades on their way still count at once.
  */

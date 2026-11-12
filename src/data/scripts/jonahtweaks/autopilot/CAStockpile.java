@@ -26,7 +26,7 @@ import java.util.*;
  *
  * 0.3.0.0 (C3): buys goods for a colony's Local Resources, which the game draws on to cover a shortage
  * (LocalResourcesSubmarketPlugin: while stock lasts the colony counts as having what it demands, and it draws
- * (demand - available) x the good's economy unit a month). Colony Manager buys at the nearest market that isn't hostile to
+ * (demand - available) x the good's economy unit a month). Auto Colonies buys at the nearest market that isn't hostile to
  * you and has the goods in its open market, at that market's price plus its tariff, takes the goods out of that market, and
  * ships them for the Autopilot Storage shipping fee and travel time (CAStores: 2,000 plus 300 a light-year at your fee level;
  * 2 days plus a day a light-year). They arrive as goods you put there yourself (the plugin's "left" cargo), so the game
