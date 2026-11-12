@@ -286,13 +286,14 @@ public class CAModWatch {
                         : CAMods.hqRange() + (CAMods.charter(m) ? CAMods.charterRange() : 0f);
                 Map<String, MutableCommodityQuantity> sup = new HashMap<String, MutableCommodityQuantity>();
                 for (MutableCommodityQuantity q : ind.getAllSupply()) sup.put(q.getCommodityId(), q);
-                int total = 0, off = 0;
+                int total = 0, off = 0, offOwn = 0;
                 StringBuilder per = new StringBuilder();
                 for (String com : CAMods.MINED) {
                     MutableCommodityQuantity q = sup.get(com);
                     Integer want = CAMods.minedLines(m, com, range), have = q == null ? null : roiderLines(q.getQuantity(), com);
                     int units = q == null ? 0 : Math.max(0, q.getQuantity().getModifiedInt());
                     total += units;
+                    if (!linesMatch(CAMods.minedLines(m, com, -1f), have)) offOwn++;   // against the colony's own deposits only
                     if (want == null && have == null) continue;
                     boolean same = linesMatch(want, have);
                     if (!same) off++;
@@ -309,8 +310,11 @@ public class CAModWatch {
                 try { shortBy = Math.max(0, ind.getMaxDeficit("heavy_machinery").two); } catch (Throwable ignored) { }
                 String game = (bonus != 0 ? "; +" + bonus + " supply bonus" + (from.length() > 0 ? " (" + from + ")" : "") + " on each output with a positive line" : "")
                         + (shortBy > 0 ? "; " + shortBy + " heavy machinery short, off each output" : "");
-                ch.add(off > 0 ? "WARN" : shortBy > 0 ? "INFO" : "PASS", ind.getCurrentName() + " at " + m.getName()
-                        + (off > 0 ? ": Roider's supply lines differ from Autopilot's formula" : ": Roider's supply lines match Autopilot's formula")
+                // 0.3.0.2: lines that match the colony's own deposits only are Roider Union's save-load behaviour (CAMods.areaMined)
+                boolean ownOnly = off > 0 && offOwn == 0;
+                ch.add(off > 0 && !ownOnly ? "WARN" : ownOnly || shortBy > 0 ? "INFO" : "PASS", ind.getCurrentName() + " at " + m.getName()
+                        + (ownOnly ? ": Roider Union is mining only this planet's own deposits (after a save load it drops the area in range; Fixes refreshes it)"
+                           : off > 0 ? ": Roider's supply lines differ from Autopilot's formula" : ": Roider's supply lines match Autopilot's formula")
                         + " [" + per + "]; mines " + total + " units" + game);
             }
         }

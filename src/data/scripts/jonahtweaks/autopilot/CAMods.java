@@ -132,6 +132,66 @@ public class CAMods {
         return b == null ? null : base(com) + b + (m.hasCondition("US_mind") ? -1 : 0);
     }
 
+    /*
+     * 0.3.0.2: Roider Union 2.3.1 counts the deposits in a Dives' or Union HQ's area only in the session it was built. On a
+     * save load DivesController.readResolve rebuilds the list of systems in range before the game has the sector, so the
+     * list is empty, and the reachable deposits (worked out once, on first use) are the colony's own. 99 Es I's Dives
+     * mined 0 ore and no volatiles of a predicted 3 and 1 (rich ore and plentiful volatiles within its Charter range).
+     * Fixes refreshes the area after a load and every 10 days and reports "Roider Dives area: on" in its status line; with
+     * that, a Dives is valued for its area, otherwise for the colony's own deposits only.
+     */
+    static final String FIXES_STATUS = "$jonahs_status_jonahs_fixes";
+
+    /** Whether Roider miners work their area in this game: Fixes' area refresh is running. */
+    static boolean areaMined() {
+        try {
+            Object s = Global.getSector().getMemoryWithoutUpdate().get(FIXES_STATUS);
+            return s instanceof String && ((String) s).contains("Roider Dives area: on");
+        } catch (Throwable t) { return false; }
+    }
+
+    /** The range Roider miners actually reach: their area with the refresh, the colony's own deposits (-1) without. */
+    static float reach(float range) { return areaMined() ? range : -1f; }
+
+    /** Where Roider miners would get one commodity: {deposit condition, "this planet" or "System (0.6 ly)"}; null if nowhere. */
+    static String[] bestSource(MarketAPI m, String com, float range) {
+        String cond = null, where = null;
+        Integer best = null;
+        for (MarketConditionAPI c : m.getConditions()) {
+            Integer b = c.getId().startsWith(com + "_") ? bonus(com, c.getId()) : null;
+            if (b != null && !(com.equals("ore") && c.getId().startsWith("rare_ore")) && (best == null || b > best)) {
+                best = b; cond = c.getId(); where = "this planet";
+            }
+        }
+        if (m.getLocationInHyperspace() == null || range < 0f) return cond == null ? null : new String[]{cond, where};
+        int beat = best == null ? -1 : best;
+        for (StarSystemAPI s : Global.getSector().getStarSystems()) {
+            float d = Misc.getDistanceLY(s.getLocation(), m.getLocationInHyperspace());
+            if (d > range) continue;
+            Object v = s.getMemoryWithoutUpdate().get("$roider_voidResource_" + com);
+            Integer b = v == null ? null : bonus(com, String.valueOf(v));
+            if (b != null && b > beat) {
+                beat = b; cond = String.valueOf(v);
+                where = s.getBaseName() + " (" + (Math.round(d * 10f) / 10f) + " ly)";
+            }
+        }
+        return cond == null ? null : new String[]{cond, where};
+    }
+
+    /** What Roider miners would dig up here, per commodity with its deposit and where it is, e.g. "ore 3 (rich, Tia (0.6 ly))". */
+    static String reachText(MarketAPI m, float range, int extra) {
+        StringBuilder sb = new StringBuilder();
+        for (String com : MINED) {
+            int u = mined(m, com, range, extra);
+            String[] src = u > 0 ? bestSource(m, com, range) : null;
+            if (src == null) continue;
+            String level = src[0].substring(src[0].lastIndexOf('_') + 1);
+            String name = com.equals("rare_ore") ? "transplutonic ore" : com;
+            sb.append(sb.length() > 0 ? ", " : "").append(name).append(' ').append(u).append(" (").append(level).append(", ").append(src[1]).append(')');
+        }
+        return sb.toString();
+    }
+
     static final String CHARTER = "roider_charter";
 
     /** The Historical Roider Charter in the colony's Dives or Union HQ: +1 to every mined output and +6 light-years of range (RoiderItems). */
@@ -193,11 +253,13 @@ public class CAMods {
         float add = charter(m) ? charterRange() : 0f;
         int drugs = noDrugs(m) ? 0 : 3;
         int admin = adminBonus(m);
+        boolean area = areaMined();
         if (id.equals("roider_dives")) {
             int cut = machineryShort(deficit, 1), x = extra(m) - cut, total = 0, counted = 0;
+            float range = reach(divesRange() + add);   // 0.3.0.2: the colony's own deposits only, unless Fixes refreshes the area
             boolean nets = CAEngine.callerNets();   // the market model (0.2.44.0) counts the colony's largest source itself
             for (String com : MINED) {
-                int u = mined(m, com, divesRange() + add, x);
+                int u = mined(m, com, range, x);
                 total += u;
                 int more = above(u, otherSupply(m, "roider_dives", com) - admin);
                 counted += more;
@@ -210,19 +272,23 @@ public class CAMods {
             if (cut > 0) p.lines.add("Your colonies lack heavy machinery, and Roider miners lose the shortage from every output");
             CAEngine.supply(p, "crew", nets ? above(3, otherSupply(m, "roider_dives", "crew") - admin) : 3, deficit);
             CAEngine.demand(p, "heavy_machinery", 1, deficit); CAEngine.demand(p, "drugs", drugs, deficit); CAEngine.demand(p, "supplies", 2, deficit);
-            p.lines.add("Roider miners work deposits within " + Math.round(divesRange() + add) + " light-years");
+            String what = reachText(m, range, x);
+            p.lines.add(area ? "Roider miners work deposits within " + Math.round(divesRange() + add) + " light-years: " + what
+                    : "Roider Union counts only this planet's deposits after a save load (Fixes refreshes the area): " + what);
             return true;
         }
         int x = extra(m), cutWas = machineryShort(deficit, 1), cutNow = machineryShort(deficit, Math.max(1, s - 2));   // the HQ needs size - 2
+        float rangeWas = reach(divesRange() + add), rangeNow = reach(hqRange() + add);
         for (String com : MINED) {
-            int was = mined(m, com, divesRange() + add, x - cutWas), u = mined(m, com, hqRange() + add, x - cutNow);
+            int was = mined(m, com, rangeWas, x - cutWas), u = mined(m, com, rangeNow, x - cutNow);
             int gain = CAEngine.callerNets() ? hqGain(u, was, otherSupply(m, "roider_dives", com) - admin) : u - was;
             if (gain > 0) CAEngine.supply(p, com, gain, deficit);
         }
         CAEngine.supply(p, "crew", CAEngine.callerNets() ? hqGain(s, 3, otherSupply(m, "roider_dives", "crew") - admin) : s - 3, deficit);   // the Dives' 3 crew become the colony's size
         p.fx[1] += 1f; p.fx[3] += 0.2f; p.fx[4] += 0.2f;
         CAEngine.demand(p, "heavy_machinery", s - 3, deficit); CAEngine.demand(p, "supplies", s - 2, deficit); CAEngine.demand(p, "fuel", s - 2, deficit);
-        p.lines.add("Union HQ: mines deposits within " + Math.round(hqRange() + add) + " light-years, stability +1, patrols");
+        p.lines.add(area ? "Union HQ: mines deposits within " + Math.round(hqRange() + add) + " light-years (" + reachText(m, rangeNow, x - cutNow) + "), stability +1, patrols"
+                : "Union HQ: stability +1, patrols; its longer mining range counts only in the session it's built (Roider Union, without Fixes' area refresh)");
         return true;
     }
 

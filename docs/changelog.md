@@ -6,6 +6,13 @@ The mod was called Colony Manager until 0.3.0.1. Older entries use the new name,
 
 Version numbers start with 0 since 0.3.0.0, because the mod is not at 1.0. Earlier versions are listed with the 0 added: 2.45.2 is 0.2.45.2. Release tags keep their old names (v2.45.2).
 
+## 0.3.0.2 - 2026-11-12
+
+- Roider Dives and Union HQ: Roider Union 2.3.1 mines only the colony's own deposits after a save load. It rebuilds the list of star systems in range before the game has loaded the sector, so the list is empty until the building is built or upgraded again. Auto Colonies now values a Dives or Union HQ for the colony's own deposits, which is what Roider Union mines. Before, it also counted the deposits in range, and rated a Dives too high.
+- The build note for a Dives lists each deposit its miners reach and where it is (this planet, or a star system and its distance).
+- Mod watch: a Dives that mines only its colony's own deposits is reported as information with the cause, no longer as a formula warning.
+- Starsector 0.98.5a: hiring an administrator uses the game's portrait pick in either game version. Its parameters changed in 0.98.5a, and the old call would fail there.
+
 ## 0.3.0.1 - 2026-11-12
 
 - Renamed: Colony Manager is now Auto Colonies. The mod folder is now `Auto Colonies`. Delete the old Colony Manager folder in `mods/` before extracting, or the game finds the mod twice.

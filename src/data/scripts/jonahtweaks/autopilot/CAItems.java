@@ -1514,6 +1514,30 @@ public class CAItems {
      * day until enough are on the way.
      */
     static boolean recruitAdmin(CAData d, CASettings s, List<MarketAPI> open, int need, float waited) {
+        return recruitAdmin0(d, s, open, need, waited);
+    }
+
+    /**
+     * 0.3.0.2: the game's non-duplicate portrait pick in whichever form this game version has: (faction, gender, random)
+     * since Starsector 0.98.5a, (faction, gender) before. A direct call to either form fails on the other version with
+     * NoSuchMethodError. Null when neither is there: the portrait createAdmin gave stays.
+     */
+    static String pickPortrait(com.fs.starfarer.api.campaign.FactionAPI f, com.fs.starfarer.api.characters.FullName.Gender g) {
+        Class<?> ev = com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent.class;
+        java.lang.invoke.MethodHandles.Lookup lk = java.lang.invoke.MethodHandles.publicLookup();
+        Class<?> fac = com.fs.starfarer.api.campaign.FactionAPI.class, gen = com.fs.starfarer.api.characters.FullName.Gender.class;
+        try {
+            return (String) lk.findStatic(ev, "pickPortraitPreferNonDuplicate", java.lang.invoke.MethodType.methodType(String.class, fac, gen, java.util.Random.class))
+                    .invoke(f, g, new java.util.Random());
+        } catch (NoSuchMethodException e) {
+            // 0.98a: the two-argument form below
+        } catch (Throwable t) { return null; }
+        try {
+            return (String) lk.findStatic(ev, "pickPortraitPreferNonDuplicate", java.lang.invoke.MethodType.methodType(String.class, fac, gen)).invoke(f, g);
+        } catch (Throwable t) { return null; }
+    }
+
+    static boolean recruitAdmin0(CAData d, CASettings s, List<MarketAPI> open, int need, float waited) {
         int bonus = 5000;
         try { bonus = Global.getSettings().getInt("adminHireTier0"); } catch (Throwable t) { }
         float fee = CABudget.fee(s, HIRE_FEE), price = RECRUITER_PRICE + bonus;
@@ -1528,7 +1552,7 @@ public class CAItems {
             com.fs.starfarer.api.campaign.FactionAPI indie = Global.getSector().getFaction(com.fs.starfarer.api.impl.campaign.ids.Factions.INDEPENDENT);
             p = com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent.createAdmin(indie, 0, new java.util.Random());
             p.setFaction(com.fs.starfarer.api.impl.campaign.ids.Factions.INDEPENDENT);
-            p.setPortraitSprite(com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent.pickPortraitPreferNonDuplicate(indie, p.getGender()));
+            { String port = pickPortrait(indie, p.getGender()); if (port != null) p.setPortraitSprite(port); }
             p.setPostId(com.fs.starfarer.api.impl.campaign.ids.Ranks.POST_ADMINISTRATOR);
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "recruiting an administrator failed", t);
@@ -1647,7 +1671,7 @@ public class CAItems {
                 com.fs.starfarer.api.campaign.FactionAPI indie = Global.getSector().getFaction(Factions.INDEPENDENT);
                 p = com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent.createAdmin(indie, 0, new java.util.Random());
                 p.setFaction(Factions.INDEPENDENT);
-                p.setPortraitSprite(com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent.pickPortraitPreferNonDuplicate(indie, p.getGender()));
+                { String port = pickPortrait(indie, p.getGender()); if (port != null) p.setPortraitSprite(port); }
                 p.setPostId(com.fs.starfarer.api.impl.campaign.ids.Ranks.POST_ADMINISTRATOR);
                 how = "through a recruiter";
             }
