@@ -24,17 +24,6 @@
 - Colonies: Ranked build queue, items, AI cores, administrators, policies, defense, optional new colonies.
 - Mods: 20+ supported, none required.
 
-## Screenshots
-
-<!-- Screenshot placeholders for 0.3.0.0. Add the files to docs/images/ and remove the comment markers.
-![Settings page with the 20 main rows](docs/images/settings-0.3.0.png)
-![Colony panel, Plan and builds, with scores](docs/images/colony-builds-0.3.0.png)
-![Budget panel with the money tier and the ladder line](docs/images/budget-ladder-0.3.0.png)
-![Expansion page](docs/images/expansion-0.3.0.png)
-![War page](docs/images/war-0.3.0.png)
-![Factions page](docs/images/factions-0.3.0.png)
--->
-
 ## Guides
 
 - [Getting started](docs/getting-started.md)

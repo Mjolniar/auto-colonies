@@ -61,7 +61,8 @@ import java.util.*;
  *  9. Scorched (Scorched, authorized): saturation bombardment of a Destroy faction's capital (CAScorched).
  * 10. Standing guard (rich): a defense fleet at every colony, biggest first, once per system every 45 days.
  * Each faction's effective level (CAWarPolicy.effective) caps what goes at it; nothing ever goes at a faction that isn't
- * hostile to you. Every launch keeps RESERVE of the fleet request capacity for emergencies (RICH_RESERVE while rich) and
+ * hostile to you. Every launch keeps RESERVE of the fleet request capacity for emergencies (RICH_RESERVE while rich; 0.3.0.9:
+ * relief fleets and emergency defense use it) and
  * never goes below the credit reserve. The operations new in 0.3.0 carry Auto Colonies' fee (CAWarPolicy.feeApplies).
  * Every launch is recorded in CAData.warOps ("kind:marketId" to when): ids and timestamps only.
  */
@@ -84,6 +85,15 @@ public class CAWar {
 
     /** Fleet points a request may use: the stock above what's kept for emergencies. */
     static float spare(float stock, float capacity, boolean rich) { return stock - (rich ? RICH_RESERVE : RESERVE) * capacity; }
+
+    /**
+     * Pure (0.3.0.9, JTWarCheck): as spare(), except a relief or emergency request (urgent) may use the whole stock: the
+     * reserve is kept for them.
+     */
+    static float spare(float stock, float capacity, boolean rich, boolean urgent) { return urgent ? stock : spare(stock, capacity, rich); }
+
+    /** Pure (0.3.0.9, JTWarCheck): a relief fleet, or anything paid as an emergency (a real attack on a colony). */
+    static boolean urgent(String kind, String payKind) { return CAWarPolicy.EMERGENCY.equals(payKind) || CAWarPolicy.RELIEF.equals(kind); }
 
     /** Size of a request: what it wants (bigger while spending freely), at least MIN_FP, within the spare points; 0 if that's under MIN_FP. */
     static float size(float want, boolean rich, float spare) {
@@ -442,7 +452,8 @@ public class CAWar {
             return CAWarPolicy.allows(kind, eff(f), stance(f), commissioned);
         }
 
-        float spare() { return CAWar.spare(mgr.getFleetRequestStock(), mgr.getFleetRequestCapacity(), rich); }
+        /** 0.3.0.9: less the points a waiting Auto-expansion proposal keeps (CAExpansion.reservedFP), as send() counts them. */
+        float spare() { return CAWar.spare(mgr.getFleetRequestStock() - CAExpansion.reservedFP(), mgr.getFleetRequestCapacity(), rich); }
 
         void went() { left--; started++; }
     }
@@ -507,14 +518,22 @@ public class CAWar {
     }
 
     /**
+     * The fleet points send() asks for: want sized (RICH_SIZE while rich, at least MIN_FP) within the spare points. 0.3.0.0
+     * (WS-D): less the points a waiting Auto-expansion proposal would use, except for an urgent request. 0.3.0.9: an urgent
+     * one (relief, emergency) also uses the reserve (spare with urgent). The standing guard's credit wait prices this same size.
+     */
+    static float sendFP(InvasionFleetManager mgr, String kind, String payKind, float want, boolean rich) {
+        boolean urgent = urgent(kind, payKind);
+        return size(want, rich, spare(mgr.getFleetRequestStock() - (urgent ? 0f : CAExpansion.reservedFP()), mgr.getFleetRequestCapacity(), rich, urgent));
+    }
+
+    /**
      * Launches one relief, defense, base strike, raid or blockade as Nexerelin's fleet request dialog does. payKind picks who
      * pays (CAWarPolicy.payer); recordKey is what CAData.warOps keeps. Returns null when it went, or why it waits.
      */
     static String send(CAData d, CASettings s, InvasionFleetManager mgr, String kind, String payKind, MarketAPI target, float want,
                        boolean rich, String why, String recordKey) {
-        // 0.3.0.0 (WS-D): keeps the points a waiting Auto-expansion proposal would use, except for an emergency
-        boolean emergency = CAWarPolicy.EMERGENCY.equals(payKind);
-        float fp = size(want, rich, spare(mgr.getFleetRequestStock() - (emergency ? 0f : CAExpansion.reservedFP()), mgr.getFleetRequestCapacity(), rich));
+        float fp = sendFP(mgr, kind, payKind, want, rich);
         if (fp <= 0f) return "points";
         MarketAPI from = source(target);
         if (from == null) return "no spaceport";
@@ -767,7 +786,11 @@ public class CAWar {
             String w = send(p.d, p.s, p.mgr, CAWarPolicy.GUARD, CAWarPolicy.GUARD, m, want, true, "standing guard", key);
             if (w == null) p.went();
             else {
-                if ("credits".equals(w)) { float c = Math.round(want * NexConfig.fleetRequestCostPerFP); due = c + fee(p.s, CAWarPolicy.GUARD, c); }
+                if ("credits".equals(w)) {
+                    // 0.3.0.9: priced at the size send() asked for (sendFP: want x 1.5 while rich, within the spare points)
+                    float c = Math.round(sendFP(p.mgr, CAWarPolicy.GUARD, CAWarPolicy.GUARD, want, true) * NexConfig.fleetRequestCostPerFP);
+                    due = c + fee(p.s, CAWarPolicy.GUARD, c);
+                }
                 break;   // out of points or money: the rest wait too
             }
         }

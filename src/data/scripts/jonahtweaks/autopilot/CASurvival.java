@@ -21,6 +21,8 @@ import java.util.List;
  * - Waystation: AI cores raise stockpiles; they no longer cut demand.
  * - Drone Replicator: cancels the stability penalty of ItemEffectsRepo.DRONE_REPLICATOR_CONDITIONS (Decivilized
  *   Subpopulation).
+ * - 0.3.0.9: survival mode's open-market tariff and administrator share (ext_normalTariff, ext_adminAvailableFraction);
+ *   player support fleets; the Askonia standoff that gates the Diktat's crisis progress; parts-based d-mod repairs.
  */
 public final class CASurvival {
     private CASurvival() { }
@@ -29,6 +31,12 @@ public final class CASurvival {
 
     private static boolean looked;
     private static MethodHandle isExtended;
+    /** 0.3.0.9: Misc.isPlayerSupportFleet (0.98.5a), null on 0.98a. */
+    private static MethodHandle isPlayerSupportFleet;
+    /** 0.3.0.9: SDResolution.isAskoniaStandoffInProgress and isAskoniaStandoffCompleted (0.98.5a), null on 0.98a. */
+    private static MethodHandle standoffInProgress, standoffCompleted;
+    /** 0.3.0.9: Misc.usePartsBasedDModRepairs (0.98.5a), null on 0.98a. */
+    private static MethodHandle partsRepairs;
     private static boolean waystationStockpileCores;
     private static List<String> replicatorConditions = Collections.emptyList();
 
@@ -48,12 +56,65 @@ public final class CASurvival {
             Object o = l.findStaticGetter(com.fs.starfarer.api.impl.campaign.econ.impl.ItemEffectsRepo.class, "DRONE_REPLICATOR_CONDITIONS", List.class).invoke();
             if (o instanceof List) replicatorConditions = (List<String>) o;
         } catch (Throwable t) { replicatorConditions = Collections.emptyList(); }
+        // 0.3.0.9: 0.98.5a's support fleets, the Askonia standoff and parts-based repairs
+        try {
+            isPlayerSupportFleet = l.findStatic(com.fs.starfarer.api.util.Misc.class, "isPlayerSupportFleet",
+                    MethodType.methodType(boolean.class, com.fs.starfarer.api.campaign.CampaignFleetAPI.class));
+        } catch (Throwable t) { isPlayerSupportFleet = null; }
+        try {
+            Class<?> sd = Class.forName("com.fs.starfarer.api.impl.campaign.intel.events.sd.SDResolution", false, CASurvival.class.getClassLoader());
+            standoffInProgress = l.findStatic(sd, "isAskoniaStandoffInProgress", MethodType.methodType(boolean.class));
+            standoffCompleted = l.findStatic(sd, "isAskoniaStandoffCompleted", MethodType.methodType(boolean.class));
+        } catch (Throwable t) { standoffInProgress = standoffCompleted = null; }
+        try {
+            partsRepairs = l.findStatic(com.fs.starfarer.api.util.Misc.class, "usePartsBasedDModRepairs", MethodType.methodType(boolean.class));
+        } catch (Throwable t) { partsRepairs = null; }
+    }
+
+    /**
+     * 0.3.0.9: a player support fleet (0.98.5a, SupportFleetSpawner): "$supportFleet" set, a "$supportFleetType", or a fleet of
+     * yours of type "taskForce"; Misc.isPlayerSupportFleet where the game has it. It follows you, so it is never a colony's
+     * defense, a threat, a siege or a target. Never one on 0.98a.
+     */
+    public static boolean supportFleet(com.fs.starfarer.api.campaign.CampaignFleetAPI f) {
+        if (f == null) return false;
+        try {
+            com.fs.starfarer.api.campaign.rules.MemoryAPI mem = f.getMemoryWithoutUpdate();
+            boolean player = f.getFaction() != null && f.getFaction().isPlayerFaction();
+            if (mem != null && supportFleet(mem.getBoolean("$supportFleet"), mem.contains("$supportFleetType"), player, mem.getString("$fleetType"))) return true;
+        } catch (Throwable ignored) { }
+        look();
+        if (isPlayerSupportFleet == null) return false;
+        try { return (boolean) isPlayerSupportFleet.invoke(f); } catch (Throwable t) { return false; }
+    }
+
+    /** Pure (0.3.0.9, JTSurvivalCheck): the support fleet test on what a fleet's memory and faction say. */
+    static boolean supportFleet(boolean flag, boolean hasType, boolean yours, String fleetType) {
+        return flag || (yours && (hasType || "taskForce".equals(fleetType)));
+    }
+
+    /**
+     * 0.3.0.9: whether the Sindrian Diktat's crisis factor counts progress now. On 0.98.5a its getProgress is 0 unless the
+     * Askonia standoff is under way and not over (SindrianDiktatHostileActivityFactor); null on 0.98a, where it always counts.
+     */
+    public static Boolean diktatStandoff() {
+        look();
+        if (standoffInProgress == null || standoffCompleted == null) return null;
+        try { return (boolean) standoffInProgress.invoke() && !(boolean) standoffCompleted.invoke(); }
+        catch (Throwable t) { return null; }
+    }
+
+    /** 0.3.0.9: parts-based d-mod repairs are on (0.98.5a, Misc.usePartsBasedDModRepairs), so markets stock Domain-grade Parts. False on 0.98a. */
+    public static boolean partsRepairs() {
+        look();
+        if (partsRepairs == null || Global.getSettings() == null) return false;
+        try { return (boolean) partsRepairs.invoke(); } catch (Throwable t) { return false; }
     }
 
     /** This campaign runs in survival mode (0.98.5a). Always false on 0.98a. */
     public static boolean extended() {
         look();
-        if (isExtended == null) return false;
+        if (isExtended == null || Global.getSector() == null) return false;   // 0.3.0.9: no campaign (offline checks): Misc isn't loaded for this
         try { return (boolean) isExtended.invoke(); } catch (Throwable t) { return false; }
     }
 
@@ -67,6 +128,30 @@ public final class CASurvival {
     public static List<String> replicatorConditions() {
         look();
         return replicatorConditions;
+    }
+
+    /**
+     * 0.3.0.9: the open market's tariff in survival mode (OpenMarketPlugin.getTariff reads ext_normalTariff, 0.4 in the game's
+     * settings); 0 outside survival mode and on 0.98a. Autopilot adds it to goods it buys for you (CAExpansion's founding goods).
+     */
+    public static float survivalTariff() {
+        if (!extended()) return 0f;
+        try {
+            float t = Global.getSettings().getFloat("ext_normalTariff");
+            return t > 0f ? t : 0f;
+        } catch (Throwable t) { return 0f; }
+    }
+
+    /**
+     * 0.3.0.9: the share of administrators the game offers in survival mode (OfficerManagerEvent multiplies its chance by
+     * ext_adminAvailableFraction, 0.1 in the game's settings); 1 outside survival mode and on 0.98a.
+     */
+    public static float adminAvailableFraction() {
+        if (!extended()) return 1f;
+        try {
+            float f = Global.getSettings().getFloat("ext_adminAvailableFraction");
+            return f > 0f && f < 1f ? f : 1f;
+        } catch (Throwable t) { return 1f; }
     }
 
     /** Last month's report the share was worked out for, and the share; reset on load (CAReset). */

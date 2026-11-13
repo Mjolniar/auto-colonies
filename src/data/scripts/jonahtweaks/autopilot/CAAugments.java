@@ -420,7 +420,7 @@ public class CAAugments {
             inst.setConsiderEngagement(false);
             if (inst.getUnavailableReason() != null) continue;   // the game took it off (station changed or disrupted), not you
             c.augSkip().add(id);
-            CALog.add(m.getName() + ": you removed " + spec.getName() + " from the station; Autopilot won't add it there again");
+            CALog.quiet(m.getName() + ": you removed " + spec.getName() + " from the station; Autopilot won't add it there again");   // 0.3.0.9: left alone, starsector.log only
         }
     }
 
@@ -476,7 +476,8 @@ public class CAAugments {
             done.add("added " + o.name);
         }
         lastSig.remove(m.getId());
-        if (!failed.isEmpty() && CALog.once("augfail:" + m.getId() + ":" + join(failed))) CALog.add(m.getName() + ": could not add station augments: " + join(failed));
+        // 0.3.0.9: a failed add is not acting: starsector.log only
+        if (!failed.isEmpty() && CALog.once("augfail:" + m.getId() + ":" + join(failed))) CALog.quiet(m.getName() + ": could not add station augments: " + join(failed));
         if (done.isEmpty()) return failed.isEmpty() ? "Nothing to change" : "Could not add " + join(failed);
         // short, and at most every 10 days a colony (they follow the threat back and forth): "Gargor augments (defense): +Bubble Shield, -Jump Engine"
         List<String> brief = new ArrayList<String>();

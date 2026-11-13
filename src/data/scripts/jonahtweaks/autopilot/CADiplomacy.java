@@ -204,7 +204,7 @@ public class CADiplomacy {
             int st = s.stanceOf(fid);
             if (!CAStance.wantsWar(st)) {
                 d.warAuthorized().remove(fid);
-                CALog.add(f.getDisplayName() + ": war confirmation cleared (stance now " + CAStance.name(st) + ")");
+                CALog.quiet(f.getDisplayName() + ": war confirmation cleared (stance now " + CAStance.name(st) + ")");   // 0.3.0.9: status, starsector.log only
                 continue;
             }
             if (f.isHostileTo(Factions.PLAYER) || level < CAWarPolicy.RETALIATE) continue;

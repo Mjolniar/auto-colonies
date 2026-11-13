@@ -33,7 +33,7 @@ public class CADefense {
         float fp = 0f;
         for (CampaignFleetAPI f : sys.getFleets()) {
             if (f.isPlayerFleet() || f.getFaction() == null || !f.getFaction().isHostileTo(Factions.PLAYER)) continue;
-            if (f.isStationMode()) continue;
+            if (f.isStationMode() || CASurvival.supportFleet(f)) continue;   // 0.3.0.9: never a support fleet (0.98.5a)
             fp += f.getFleetPoints();
         }
         return fp;
@@ -43,6 +43,7 @@ public class CADefense {
         float fp = 0f;
         for (CampaignFleetAPI f : sys.getFleets()) {
             if (f.isPlayerFleet() || f.getFaction() == null || !Factions.PLAYER.equals(f.getFaction().getId())) continue;
+            if (CASurvival.supportFleet(f)) continue;   // 0.3.0.9: a support fleet follows you, so it doesn't defend the colony
             fp += f.getFleetPoints();
         }
         return fp;
@@ -70,10 +71,12 @@ public class CADefense {
         return hostileFP(sys) > Math.max(150f, CAItems.defenseFP(m) + friendlyFP(sys));
     }
 
+    /** A defense fleet of yours is on its way to or at the colony's system. 0.3.0.9: yours only (requested by you, or of your faction). */
     static boolean defenseUnderWay(MarketAPI m) {
         for (IntelInfoPlugin i : Global.getSector().getIntelManager().getIntel(DefenseFleetIntel.class)) {
             DefenseFleetIntel d = (DefenseFleetIntel) i;
-            if (!d.isEnded() && !d.isEnding() && d.getTarget() != null && d.getTarget().getStarSystem() == m.getStarSystem()) return true;
+            if (d.isEnded() || d.isEnding() || d.getTarget() == null || d.getTarget().getStarSystem() != m.getStarSystem()) continue;
+            if (d.isPlayerSpawned() || (d.getFaction() != null && d.getFaction().isPlayerFaction())) return true;
         }
         return false;
     }
@@ -102,12 +105,13 @@ public class CADefense {
         float stock = mgr.getFleetRequestStock();
         float fp = Math.round(Math.min(Math.max(need, MIN_FP), stock * 0.75f));
         if (fp < MIN_FP) {
-            if (warned.add(target.getId())) CALog.add(target.getName() + ": needs a defense fleet (" + why + "), but only " + (int) stock + " fleet request points are available", true);
+            // 0.3.0.9: cannot, starsector.log only
+            if (warned.add(target.getId())) CALog.quiet(target.getName() + ": needs a defense fleet (" + why + "), but only " + (int) stock + " fleet request points are available");
             return;
         }
         float cost = Math.round(fp * NexConfig.fleetRequestCostPerFP);
         if (CABuild.credits() - cost < s.reserve) {
-            if (warned.add(target.getId() + ":credits")) CALog.add(target.getName() + ": needs a defense fleet costing " + Misc.getDGSCredits(cost) + " but that would go below your credit reserve", true);
+            if (warned.add(target.getId() + ":credits")) CALog.quiet(target.getName() + ": needs a defense fleet costing " + Misc.getDGSCredits(cost) + " but that would go below your credit reserve");   // 0.3.0.9
             return;
         }
         MarketAPI source = null; float bestDist = Float.MAX_VALUE;

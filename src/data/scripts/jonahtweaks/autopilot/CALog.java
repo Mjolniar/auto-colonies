@@ -191,6 +191,7 @@ public class CALog {
     /**
      * A ping (0.2.41.0): a short machine line on screen about what the autopilot is weighing or doing in the background, at
      * most once per key a week. Only with the Machine voice and every entry on screen; never in the panel log.
+     * 0.3.0.9: the same rule as add(): a ping that only says Autopilot is not acting (CALogFilter) goes to starsector.log.
      */
     public static void ping(String key, String text) {
         if (whatIf()) return;
@@ -201,6 +202,7 @@ public class CALog {
             Float at = pingAt.get(key);
             if (at != null && now - at < PING_DAYS && now >= at) return;
             pingAt.put(key, now);
+            if (CALogFilter.notActing(text)) { quiet(text); return; }
             Global.getSector().getCampaignUI().addMessage(CATheme.machine(text), Misc.getTextColor());
         } catch (Throwable ignored) { }
     }

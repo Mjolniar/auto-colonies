@@ -88,7 +88,8 @@ public class CALowProfile {
     }
 
     static boolean diktat() {
-        try { return !SindrianDiktatHostileActivityFactor.isMadeDeal() && !SindrianDiktatHostileActivityFactor.isPlayerDefeatedDiktatAttack(); }
+        // 0.3.0.9: the rule CACrisis.diktat prices by (on 0.98.5a only while the Askonia standoff is under way)
+        try { return CACrisis.diktatCounts(SindrianDiktatHostileActivityFactor.isMadeDeal(), SindrianDiktatHostileActivityFactor.isPlayerDefeatedDiktatAttack(), CASurvival.diktatStandoff()); }
         catch (Throwable t) { return true; }
     }
 
@@ -353,8 +354,8 @@ public class CALowProfile {
             if (per < worstPer) { worstPer = per; worst = ind; }
         }
         if (worst == null || now - items - CAItems.aiPoints(m) >= line) {
-            if (CALog.once("lowprofile:over:" + m.getId()))
-                CALog.add(m.getName() + ": " + TAG + "Pather interest " + Misc.getRoundedValueMaxOneAfterDecimal(now) + " (a cell comes at " + (int) line
+            if (CALog.once("lowprofile:over:" + m.getId()))   // 0.3.0.9: kept, starsector.log only
+                CALog.quiet(m.getName() + ": " + TAG + "Pather interest " + Misc.getRoundedValueMaxOneAfterDecimal(now) + " (a cell comes at " + (int) line
                         + ") from its buildings or locked items, which Autopilot doesn't take down; no more is added here");
             return false;
         }
@@ -400,16 +401,17 @@ public class CALowProfile {
         // 0.3.0.0 (fix): the 0.2.45.1 guard stays alongside canLose, since a mod AI core's stability skill counts 0 there
         if (CAStability.below(m) || m.getStabilityValue() < 4f) return false;
         if (CAOmega.governs(m)) {   // 0.3.0.0 (fix): never swap out an Omega governor
-            if (CALog.once("lowprofile:omega:" + m.getId()))
-                CALog.add(m.getName() + ": " + TAG + "its Omega core administrator stays: taking it out costs its +3 stability, and past size 10 starts AAR's Great Civil War");
+            if (CALog.once("lowprofile:omega:" + m.getId()))   // 0.3.0.9: kept, starsector.log only
+                CALog.quiet(m.getName() + ": " + TAG + "its Omega core administrator stays: taking it out costs its +3 stability, and past size 10 starts AAR's Great Civil War");
             return false;
         }
         if (!CAStability.canLose(m, -CAStability.adminOwn(a), null)) return false;   // quiet: checked again below with the human's own
         AdminData h = CAItems.idleAdmin(d);
         if (h == null) {
+            // 0.3.0.9: the advice on screen; the waiting part ("takes over once one is free") is gone
             if (CALog.once("lowprofile:aiadmin:" + m.getId()))
-                CALog.add(m.getName() + ": " + TAG + "its AI core administrator counts 10 toward Hegemony inspections and the Pathers' interest; "
-                        + "a human administrator takes over once one is free (hire one, or turn on Hire administrators)");
+                CALog.add(m.getName() + ": " + TAG + "hire an administrator, or turn on Hire administrators, to replace its AI core administrator "
+                        + "(it counts 10 toward Hegemony inspections and the Pathers' interest)");
             return false;
         }
         if (!CAStability.canLose(m, CAStability.adminOwn(h.getPerson()) - CAStability.adminOwn(a), TAG + "administrator "

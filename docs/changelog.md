@@ -1,5 +1,26 @@
 # Patch notes
 
+## 0.3.0.9 - 2026-11-12
+
+- Stability: Fixed the 0-stability timer resetting when a colony touches stability 1. Low days count with a slow decay.
+- Stability: Stability counts up to 5x more in scoring below stability 3.
+- Expansion: Fixed a prospect from another save being used after a load.
+- Expansion: Founding goods include the survival mode tariff. New colony value counts corruption in survival mode.
+- Administrators: The recruiter follows survival mode's rarity: about 285 days and 791,000.
+- War: Fixed the standing guard waiting for a different amount than it spends.
+- War: Relief fleets can use the fleet-point reserve.
+- War: Fixed invasions taking points held for an expansion proposal.
+- War: Fixed another faction's defense fleet blocking yours.
+- Military: Approve checks siege, fast buildout and ownership.
+- Planner: Fixed actions with no valid score sorting first.
+- Terraforming: Project days follow TME's build time setting. Spending is booked to the colony.
+- Crisis: Diktat crisis fuel is priced only during the Askonia standoff (0.98.5a).
+- Support fleets: Player support fleets do not count as threats or siege (0.98.5a).
+- Domain-grade Parts: Heavy Industry and Orbital Works get a small value for the parts they add (0.98.5a).
+- Agents: The rival check runs once a day.
+- Autopilot log: Lines about waiting, skipping, failed starts, caps and status go to starsector.log. Actions and advice stay on screen.
+- Autopilot log: Fixed proposals that need your approval being hidden.
+- Autopilot log: Removed duplicate lines and lines that returned every month.
 ## 0.3.0.8 - 2026-11-12
 
 - Survival mode: Fixed corruption being taken from net income. It is taken from gross income, as in the game, and upkeep counts in full.

@@ -218,7 +218,7 @@ public class CAMegastructures {
         }
         if (changed) {
             c.megaManual = true;
-            CALog.add(g.m.getName() + ": you set the " + g.name + " yourself; Autopilot leaves it (Let Autopilot manage it, in the colony panel)");
+            CALog.quiet(g.m.getName() + ": you set the " + g.name + " yourself; Autopilot leaves it (Let Autopilot manage it, in the colony panel)");   // 0.3.0.9: left alone, starsector.log only
         }
         return changed;
     }

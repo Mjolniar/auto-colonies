@@ -442,6 +442,32 @@ public final class CAValue {
         return endgame ? CAEndgame.weights(goal) : goal;
     }
 
+    /**
+     * Pure (0.3.0.9, JTValueCheck): the stability weight's multiplier at this stability (the game's shown value): 1 at
+     * CATuning.STAB_BOOST_BELOW (3) and up, rising in a straight line to CATuning.STAB_BOOST_MAX (5) at 0 and below. NaN: 1.
+     */
+    static float stabilityScale(float stability) {
+        float below = CATuning.STAB_BOOST_BELOW;
+        if (!(stability < below)) return 1f;
+        float s = Math.max(0f, stability);
+        return 1f + (CATuning.STAB_BOOST_MAX - 1f) * (below - s) / below;
+    }
+
+    /**
+     * 0.3.0.9: the weights at this colony: w with the stability weight times stabilityScale of its stability. A copy when it
+     * changes; the goal tables are never written. add(), keepDetail() and CAItems.coreWeights read it, so a building, item
+     * or stable location that adds stability scores higher at a colony near 0.
+     */
+    static float[] atStability(float[] w, MarketAPI m) {
+        if (w == null || w.length < 2 || m == null) return w;
+        float k;
+        try { k = stabilityScale(m.getStabilityValue()); } catch (Throwable t) { return w; }
+        if (k == 1f) return w;
+        float[] out = Arrays.copyOf(w, w.length);
+        out[1] *= k;
+        return out;
+    }
+
     static boolean endgame(MarketAPI m) {
         if (CAEngine.profitOnly || m == null) return false;
         try { return CAEndgame.at(m); } catch (Throwable t) { return false; }
@@ -488,7 +514,7 @@ public final class CAValue {
     public static float add(MarketAPI m, CAEngine.Pick p, CAData.Profile profile, boolean explain) {
         if (p == null) return 0f;
         boolean endgame = endgame(m);
-        float[] w = weights(profile, endgame);
+        float[] w = atStability(weights(profile, endgame), m);   // 0.3.0.9: stability counts more below 3
         float mw = moneyWeight(m, endgame);
         float v = 0f;
         // 0.3.0.4: survival mode's corruption keeps only part of extra colony income (CASurvival)
@@ -658,7 +684,7 @@ public final class CAValue {
         k.other = otherMoney(p) + est + syn[0];   // the engine's money besides its supply lines (salvage, income)
         k.money = k.export + k.relief + k.other - k.upkeep;
         boolean endgame = endgame(m);
-        float[] w = weights(profile, endgame);
+        float[] w = atStability(weights(profile, endgame), m);   // 0.3.0.9: as add()
         float v = w[0] * moneyWeight(m, endgame) * CASurvival.keptGross(k.money, k.upkeep);   // 0.3.0.8: corruption on gross income, as add()
         for (int i = 1; i < 7; i++) v += w[i] * (p.fx[i] + syn[i]);
         // an estimate's chains: none, as add() counts none for it (no lines recorded); else the units it really adds

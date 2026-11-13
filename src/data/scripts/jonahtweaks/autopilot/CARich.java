@@ -160,11 +160,10 @@ public class CARich {
         d.richTierSince = CAMark.now();
         changedDay = today;
         String line = changeLine(fresh ? -1 : was, st.tier, f, n, d.idleMonths, st.idle);
-        if (fresh && st.tier == T0) CALog.quiet(line);   // a new game, or a save that's under every line: no screen line
-        else CALog.add(line, st.tier >= T3 || was >= T3);
+        CALog.quiet(line);   // 0.3.0.9: a tier change is status, starsector.log only
     }
 
-    /** Whether the tier changed today (CASurplus keeps the spending-freely line that goes with it in starsector.log). */
+    /** Whether the tier changed today. */
     static boolean changedToday() { return changedDay == CATime.today(); }
 
     /** Whether idle months raised the tier now, for callers that want Rich reached by free cash only. */

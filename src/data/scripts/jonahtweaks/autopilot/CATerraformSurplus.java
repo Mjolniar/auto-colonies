@@ -422,7 +422,9 @@ public class CATerraformSurplus {
             IndustrySpecAPI bs = spec(b);
             if (bs != null) { days += bs.getBuildTime(); fees += CABudget.constructionFee(s, bs.getCost()); }
         }
-        for (CATerraSim.Move x : q.moves) { days += x.days; fees += CABudget.fee(s, CATerraform.STANDARD_FEE); }
+        // 0.3.0.9: a project's table days times TME's build time multiplier, as TME runs them (CATme.buildDays)
+        float timeMult = CATme.buildTimeMult();
+        for (CATerraSim.Move x : q.moves) { days += CATme.buildDays(x.days, timeMult); fees += CABudget.fee(s, CATerraform.STANDARD_FEE); }
         Industry ind = m.getIndustry(mv.structure);
         if (ind == null) {
             IndustrySpecAPI sp = spec(mv.structure);
@@ -449,7 +451,7 @@ public class CATerraformSurplus {
             CATme.Proj pd = project(m, ti, mv, key);
             if (pd == null) return null;
             a.kind = CAAction.Kind.PROJECT; a.id = mv.condition; a.name = ti.getCurrentName() + ": " + mv.label(); a.building = mv.structure;
-            a.cost = CATerraform.projectCost(m, pd); a.fee = CABudget.fee(s, CATerraform.STANDARD_FEE); a.days = pd.buildTime;
+            a.cost = CATerraform.projectCost(m, pd); a.fee = CABudget.fee(s, CATerraform.STANDARD_FEE); a.days = pd.buildTime;   // 0.3.0.9: TME's multiplier is in buildTime (CATme.wrap)
             a.starter = (x) -> {
                 Industry xi = x.market.getIndustry(x.building);
                 if (!(CATme.isTerraforming(xi))) return "the structure is gone";

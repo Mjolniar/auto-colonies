@@ -396,7 +396,7 @@ public class CASurplus {
         MarketAPI f = CAAuto.market(focusId);
         if (f != null && CALog.once(key)) {
             for (String id : scores.keySet()) if (!id.equals(focusId)) CALog.forget("surplus:on:" + id);
-            CALog.add("Focus world: " + f.getName() + (focusId.equals(s.focusId) ? " (your pick)" : "") + ", " + Misc.getDGSCredits(amount(s)) + " surplus");
+            CALog.quiet("Focus world: " + f.getName() + (focusId.equals(s.focusId) ? " (your pick)" : "") + ", " + Misc.getDGSCredits(amount(s)) + " surplus");   // 0.3.0.9: status, starsector.log only
         }
     }
 
@@ -409,13 +409,9 @@ public class CASurplus {
     static void richDaily(CASettings s) {
         float a = amount(s);
         boolean legacy = CABudget.legacy(s);
-        // 0.3.0.0 (C2): on a day the money tier changed, its own line is on screen and this one goes to starsector.log only
-        boolean screen = legacy || !CARich.changedToday();
+        // 0.3.0.9: spending freely starting and ending are status, starsector.log only
         if (rich(s)) {
-            if (CALog.once(RICH_KEY)) {
-                String line = "Spending freely: " + Misc.getDGSCredits(a) + " surplus, every Auto colony spends it";
-                if (screen) CALog.add(line, true); else CALog.quiet(line);
-            }
+            if (CALog.once(RICH_KEY)) CALog.quiet("Spending freely: " + Misc.getDGSCredits(a) + " surplus, every Auto colony spends it");
         } else if (CALog.noted(RICH_KEY)) {   // 0.3.0.0: once-keys live in CAData.notedAt (CALog)
             CALog.forget(RICH_KEY);
             // 0.3.0.0 (C12 fix): outside legacyPlanner it ends with the tier, the surplus under richHold, the focus-world-only
@@ -423,7 +419,7 @@ public class CASurplus {
             String why = s.surplusFocusOnly ? "focus world only" : line(s) <= 0f ? "surplus investment off"
                     : legacy ? "surplus under " + Misc.getDGSCredits(RICH_OFF)
                     : CARich.tier() < CARich.T3 ? "money tier " + CARich.name(CARich.tier()) : "surplus under " + Misc.getDGSCredits(richHold(line(s)));
-            if (screen) CALog.add("Spending freely ended (" + why + ")"); else CALog.quiet("Spending freely ended (" + why + ")");
+            CALog.quiet("Spending freely ended (" + why + ")");
         }
     }
 

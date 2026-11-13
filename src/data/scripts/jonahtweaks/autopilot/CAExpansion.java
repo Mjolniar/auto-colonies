@@ -154,6 +154,18 @@ public class CAExpansion {
 
     static final Scan SCAN = new Scan();
 
+    /**
+     * 0.3.0.9: CAReset.onLoad empties the scan and the status line, so nothing from another save is shown or acted on. Approve,
+     * Found now and the "nothing pays" reason read the scan through cached(), which needs a fresh stamp (CATime).
+     */
+    static void reset() {
+        SCAN.list = null;
+        SCAN.key = null;
+        SCAN.blocked.clear();
+        SCAN.status = null;
+        SCAN.statusDay = Float.NaN;
+    }
+
     // ---------------- the daily step ----------------
 
     /** Daily from CAAuto (step "expansion"), after the money tiers; auto: your Auto colonies not under siege. */
@@ -489,12 +501,19 @@ public class CAExpansion {
         return nexCost(fp, 400f, goods());
     }
 
-    /** The founding goods at base price: SurveyPlugin.getOutpostConsumed (1,000 crew, 100 heavy machinery, 200 supplies). */
+    /**
+     * The founding goods at base price: SurveyPlugin.getOutpostConsumed (1,000 crew, 100 heavy machinery, 200 supplies).
+     * 0.3.0.9: plus the open market's tariff in survival mode (CASurvival.survivalTariff, 40%), as buying them there costs.
+     */
     static float goods() {
         float v = 0f;
         for (Map.Entry<String, Integer> e : outpostConsumed().entrySet()) v += e.getValue() * basePrice(e.getKey());
-        return v > 0f ? v : OUTPOST_CREW * 50f + OUTPOST_MACHINERY * 150f + OUTPOST_SUPPLIES * 100f;
+        if (!(v > 0f)) v = OUTPOST_CREW * 50f + OUTPOST_MACHINERY * 150f + OUTPOST_SUPPLIES * 100f;
+        return withTariff(v, CASurvival.survivalTariff());
     }
+
+    /** Pure (0.3.0.9, JTExpansionCheck): goods worth `value` at base price, bought with this tariff (0.4 is 40%; under 0 or NaN is none). */
+    static float withTariff(float value, float tariff) { return value * (1f + (tariff > 0f ? tariff : 0f)); }
 
     /** What founding a colony takes from your fleet in the game's own rules (the survey plugin), or the vanilla numbers. */
     static Map<String, Integer> outpostConsumed() {
@@ -1054,7 +1073,7 @@ public class CAExpansion {
         boolean inhabited = !Global.getSector().getEconomy().getMarkets(sys).isEmpty();
         if (!inhabited) {
             for (CampaignFleetAPI f : sys.getFleets()) {
-                if (f.isPlayerFleet() || f.getFaction() == null || f.getFaction().isPlayerFaction()) continue;
+                if (f.isPlayerFleet() || f.getFaction() == null || f.getFaction().isPlayerFaction() || CASurvival.supportFleet(f)) continue;   // 0.3.0.9: support fleets too
                 if (f.isStationMode()) return "A station that isn't yours is in the system.";
                 if (f.getFaction().isHostileTo(Factions.PLAYER) && f.getFleetPoints() > 25) return "Hostile fleets in the system.";
             }
@@ -1180,7 +1199,7 @@ public class CAExpansion {
             h++; size += o.getSize();
         }
         r.threat = threatCost(h, size);
-        r.value = valueOf(r.deposits, hab, r.world, r.hazard, r.crisis, r.admin, r.threat);
+        r.value = valueOf(r.deposits, hab, r.world, r.hazard, r.crisis, r.admin, r.threat, CASurvival.keptShare());   // 0.3.0.9: survival mode's corruption
         // location
         r.ly = lyToColony(p, x);
         r.lyCapital = lyToCapital(p, x);
@@ -1316,7 +1335,18 @@ public class CAExpansion {
 
     /** Pure: credits a month at VALUE_SIZE. */
     static float valueOf(float deposits, boolean habitable, float world, float hazard, float crisis, float admin, float threat) {
-        return deposits + (habitable ? HAB_BONUS : 0f) + world - hazard - crisis - admin - threat;
+        return valueOf(deposits, habitable, world, hazard, crisis, admin, threat, 1f);
+    }
+
+    /**
+     * Pure (0.3.0.9, JTExpansionCheck): credits a month at VALUE_SIZE with survival mode's corruption: the income parts
+     * (deposits, the habitable bonus, a Terraforming Made Easy world) count at `kept`, the share of one more credit of colony
+     * income kept (CASurvival.keptShare, 1 outside survival mode); the costs (hazard upkeep and growth, crisis progress, the
+     * administrator, threat) count in full. kept outside 0-1 or NaN counts as 1.
+     */
+    static float valueOf(float deposits, boolean habitable, float world, float hazard, float crisis, float admin, float threat, float kept) {
+        float k = kept >= 0f && kept < 1f ? kept : 1f;
+        return (deposits + (habitable ? HAB_BONUS : 0f) + world) * k - hazard - crisis - admin - threat;
     }
 
     /**
@@ -1333,7 +1363,11 @@ public class CAExpansion {
         return base * Math.max(MIN_LOCATION, 1f - PER_LY * Math.max(0f, lyToCapital));
     }
 
-    /** Pure: pays back. At least MIN_VALUE a month and within PAYBACK_MONTHS; while rich any positive value, with the cost at RICH_PRICE. */
+    /**
+     * Pure: pays back. At least MIN_VALUE a month and within PAYBACK_MONTHS; while rich any positive value, with the cost at RICH_PRICE.
+     * 0.3.0.9: value is valueOf's, with survival mode's corruption taken off the income (so the 10,000 line and the payback
+     * are on income you keep); cost is the expedition and the plan's first two buildings, which corruption doesn't touch.
+     */
     static boolean pays(float value, float cost, boolean rich) {
         if (!(value > 0f)) return false;
         if (rich) return value * PAYBACK_MONTHS >= cost * CATuning.RICH_PRICE;
@@ -1392,12 +1426,12 @@ public class CAExpansion {
     }
 
     static String nothingReason(CASettings s) {
-        List<Prospect> l = SCAN.list;
+        List<Prospect> l = cached();   // 0.3.0.9: only a scan still fresh (SCAN_DAYS); the counts below are that scan's
         if (l != null && !l.isEmpty()) return "No planet pays back within " + Math.round(PAYBACK_MONTHS) + " months (best: " + l.get(0).planetName + ", "
                 + Misc.getDGSCredits(l.get(0).value) + " a month).";
         String top = null;
         int n = 0;
-        for (Map.Entry<String, Integer> e : SCAN.blocked.entrySet()) if (e.getValue() > n) { n = e.getValue(); top = e.getKey(); }
+        if (l != null) for (Map.Entry<String, Integer> e : SCAN.blocked.entrySet()) if (e.getValue() > n) { n = e.getValue(); top = e.getKey(); }
         return "No planet in scope (" + scopeName(s) + ") can take a colony" + (top != null ? "; mostly: " + lower(top) + " (" + n + ")" : "") + ".";
     }
 
@@ -1502,7 +1536,7 @@ public class CAExpansion {
             String pid = "approve".equals(action) ? d.expandPendingId : id;
             if (pid == null) return null;
             Prospect p = null;
-            List<Prospect> list = SCAN.list;
+            List<Prospect> list = cached();   // 0.3.0.9: a stale scan is scored again below, as a planet not in it
             if (list != null) for (Prospect x : list) if (x.planetId.equals(pid)) p = x;
             if (p == null) {
                 PlanetAPI planet = planet(pid);

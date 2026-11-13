@@ -50,6 +50,9 @@ public class CAOverLimit {
     static final float SHED_DAYS = CATuning.OVER_LIMIT_SHED_DAYS, SHED_HOLD_DAYS = CATuning.OVER_LIMIT_SHED_HOLD_DAYS;
     /** Days at 0 before a stability-costing building is taken down (the game's decivilization needs months at 0). */
     static final float ZERO_WAIT_DAYS = CATuning.OVER_LIMIT_ZERO_WAIT_DAYS;
+    /** 0.3.0.9: days at LOW_STABILITY or below count toward ZERO_WAIT_DAYS; a day above it takes LOW_DECAY days off. */
+    static final float LOW_STABILITY = CATuning.OVER_LIMIT_LOW_STABILITY, LOW_DECAY = CATuning.OVER_LIMIT_LOW_DECAY;
+    static final long DAY_MS = 86_400_000L;
 
     /** Every colony: Auto ones are fixed, the rest get the alert. */
     public static void run(List<MarketAPI> auto) {
@@ -62,6 +65,10 @@ public class CAOverLimit {
             // 0.3.0.0 (fix, B4 review): the over-limit check, 0-stability shedding and the alert each in their own try, so a
             // failure in the (much bigger since B4) over-limit ranking never skips the 0-stability safety net
             boolean acted = false;
+            // 0.3.0.9: the low-stability day count first, so the shedding below reads today's count (a colony back from a
+            // capture is never counted low for the days it was held)
+            try { countLow(d, m); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "low-stability day count failed at " + m.getName(), t); }
             if (autoIds.contains(m.getId())) {
                 int had = m.getIndustries().size();
                 try { acted = check(d, s, m); }
@@ -79,6 +86,37 @@ public class CAOverLimit {
     }
 
     static boolean atZero(MarketAPI m) { return m.getStabilityValue() <= 0f; }
+
+    /**
+     * 0.3.0.9: the ":zerosince" stamp holds the low-stability day count as a start time (now less the count), so the day count
+     * is the days since it. ":lowseen" is when the count was last moved. A day off 0 keeps the count (lowDays). An older save's
+     * stamp reads as a count of the days since it.
+     */
+    static void countLow(CAData d, MarketAPI m) {
+        com.fs.starfarer.api.campaign.CampaignClockAPI clock = Global.getSector().getClock();
+        String sinceKey = m.getId() + ":zerosince", seenKey = m.getId() + ":lowseen";
+        Long since = d.overLimitAt().get(sinceKey), seen = d.overLimitAt().get(seenKey);
+        long now = clock.getTimestamp();
+        float elapsed = seen == null ? 1f : clock.getElapsedDaysSince(seen);
+        float count = since == null ? 0f : clock.getElapsedDaysSince(since) - (seen == null ? 1f : elapsed);
+        float next = lowDays(count, elapsed, m.getStabilityValue() <= LOW_STABILITY);
+        if (next > 0f) d.overLimitAt().put(sinceKey, now - (long) (next * DAY_MS));
+        else d.overLimitAt().remove(sinceKey);
+        d.overLimitAt().put(seenKey, now);
+    }
+
+    /** 0.3.0.9: the most days one look adds to the count (the pass looks daily; a colony out of sight, captured, isn't counted for that time). */
+    static final float LOW_MAX_STEP = 2f;
+
+    /**
+     * Pure (0.3.0.9, JTOverLimitCheck): the low-stability day count after `days` more days, at LOW_STABILITY or below (low) or
+     * above it. Low days add one each, at most LOW_MAX_STEP a look; days above take LOW_DECAY each, down to 0. A negative or
+     * NaN count or day span counts as 0 (a clock that went back: an earlier save).
+     */
+    static float lowDays(float count, float days, boolean low) {
+        float c = count > 0f ? count : 0f, t = days > 0f ? days : 0f;
+        return low ? c + Math.min(t, LOW_MAX_STEP) : Math.max(0f, c - t * LOW_DECAY);
+    }
 
     // ---------------- what each colony looked like yesterday, for the cause of an over-limit day (0.3.0.0) ----------------
 
@@ -142,8 +180,8 @@ public class CAOverLimit {
     /** An important line once a month while a colony sits at 0 stability. */
     static void zeroAlert(CAData d, MarketAPI m, boolean auto) {
         String key = m.getId() + ":zerostab";
-        if (!atZero(m)) { d.overLimitAt().remove(key); d.overLimitAt().remove(m.getId() + ":zerosince"); return; }
-        if (!d.overLimitAt().containsKey(m.getId() + ":zerosince")) d.overLimitAt().put(m.getId() + ":zerosince", Global.getSector().getClock().getTimestamp());
+        // 0.3.0.9: ":zerosince" is the low-stability day count (countLow); this alert leaves it alone
+        if (!atZero(m)) { d.overLimitAt().remove(key); return; }
         Long last = d.overLimitAt().get(key);
         if (last != null && Global.getSector().getClock().getElapsedDaysSince(last) < ALERT_DAYS) return;
         d.overLimitAt().put(key, Global.getSector().getClock().getTimestamp());
@@ -169,7 +207,10 @@ public class CAOverLimit {
     /** What a building does to the colony's stability, read from the game's own modifiers (0.3.0.0: CAStability.of, one place). */
     static float stabilityOf(MarketAPI m, Industry ind) { return CAStability.of(m, ind); }
 
-    /** Pure (0.3.0.0, JTOverLimitCheck): whether a stability-costing building goes today at a colony at 0 (days < 0: never stamped). */
+    /**
+     * Pure (0.3.0.0, JTOverLimitCheck): whether a stability-costing building goes today at a colony at 0 (days < 0: never stamped).
+     * 0.3.0.9: daysAtZero is the low-stability day count (countLow), days at 1 or below with a slow decay.
+     */
     static boolean shedDue(float daysAtZero, float daysSinceShed) {
         // a short dip (a raid, a fresh capture) passes on its own; the game needs months at 0 before it decivilizes
         if (daysAtZero < ZERO_WAIT_DAYS) return false;
@@ -196,8 +237,9 @@ public class CAOverLimit {
             if (v < worstV) { worstV = v; worst = ind; }
         }
         if (worst == null) {
+            // 0.3.0.9: not important (the 0-stability alert is); on screen as the decision it leaves you
             if (CALog.once("stab:none:" + m.getId())) CALog.add(m.getName() + ": stability is at 0 and none of its buildings is what's costing it ("
-                    + causes(m) + "), so Autopilot can't raise it by taking one down", true);
+                    + causes(m) + "), so raising it is up to you");
             return;
         }
         CALog.forget("stab:none:" + m.getId());
@@ -252,7 +294,8 @@ public class CAOverLimit {
             CALog.forget(key + ":keep"); CALog.forget(key + ":grow"); CALog.forget(key + ":none"); CALog.forget(key + ":off"); CALog.forget(key + ":cause");
             return false;
         }
-        if (CALog.once(key + ":cause")) CALog.add(m.getName() + ": over the industry limit: " + cause(m, used, max));   // 0.3.0.0 (07 M4)
+        // 0.3.0.0 (07 M4); 0.3.0.9: starsector.log only, so a pass leaves one line on screen (the decision below, or the takedown)
+        if (CALog.once(key + ":cause")) CALog.quiet(m.getName() + ": over the industry limit: " + cause(m, used, max));
         String over = used + " industries on " + max + " slots";
         int size = m.getSize();
         boolean growsSoon = size < Misc.getMaxMarketSize(m) && Misc.getMarketSizeProgress(m) >= GROWS_SOON;

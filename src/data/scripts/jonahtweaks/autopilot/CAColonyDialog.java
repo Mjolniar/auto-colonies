@@ -149,8 +149,8 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             CAEngine.Pick p = (CAEngine.Pick) id;
             String err = CABuild.start(market, p);
             message = err == null ? "Started: " + p.verb + " " + p.name + " for " + Misc.getDGSCredits(p.cost) : err;
-            // 0.3.0.0 (WS-F3): "you started building X" reads as a sentence and gets the BUILD code ("build x" got none)
-            if (err == null) CALog.add(market.getName() + ": you started " + (p.upgrade ? "upgrading to " : "building ") + p.name);
+            // 0.3.0.0 (WS-F3): "you started building X" reads as a sentence. 0.3.0.9: starsector.log only; the panel shows "Started: ..."
+            if (err == null) CALog.quiet(market.getName() + ": you started " + (p.upgrade ? "upgrading to " : "building ") + p.name);
         }
         dirty = true;
     }
