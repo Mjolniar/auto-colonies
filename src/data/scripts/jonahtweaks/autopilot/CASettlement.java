@@ -160,9 +160,9 @@ public class CASettlement {
         float paid = d.settleExpeditionCost;
         d.settleExpeditionPlanet = null;
         String err = found(planetId, false, false);
-        if (err == null) { CALog.add("Settlement: the expedition founded the settlement", true); return; }
+        if (err == null) { CALog.did("Settlement: the expedition founded the settlement.", true); return; }
         CABudget.refund(d.settings, null, paid);
-        CALog.add("Settlement: the expedition couldn't found it (" + err + "); " + Misc.getDGSCredits(paid) + " refunded", true);
+        CALog.did("Settlement: the expedition could not found it: " + err + ". " + Misc.getDGSCredits(paid) + " refunded.", true);
     }
 
     /** Founds the settlement on this planet's best site, exactly as RAT's dialog does. Returns null on success. */
@@ -322,11 +322,11 @@ public class CASettlement {
             kind = "facility"; id = f.id; cost = f.cost;
             name = "Build " + f.name + " at the settlement (+" + Misc.getDGSCredits(f.gain) + "/month)";
         }
-        if (approve || cost > CAPresets.projectCap(s)) { propose(d, kind, id, name, cost, approve ? "waiting for your approval" : "over the per-project cap, needs your approval"); return; }
+        if (approve || cost > CAPresets.projectCap(s)) { propose(d, kind, id, name, cost, approve ? CAPlanner.APPROVE_MODE : "Approval needed: over the per-project cap"); return; }
         float total = cost + CABudget.constructionFee(s, cost);
         if (total > CABudget.available(s)) {
-            if (CALog.once("settle:" + kind + ":" + id)) CALog.add("Settlement: " + name + " waits for budget (" + Misc.getDGSCredits(total) + " needed, "
-                    + Misc.getDGSCredits(CABudget.available(s)) + " left this month)");
+            if (CALog.once("settle:" + kind + ":" + id)) CALog.think("Settlement: " + name + " waits for budget (" + Misc.getDGSCredits(total) + " needed, "
+                    + Misc.getDGSCredits(CABudget.available(s)) + " left this month).");
             return;
         }
         execute(d, s, kind, id, name, "Auto");
@@ -335,7 +335,7 @@ public class CASettlement {
     static void propose(CAData d, String kind, String id, String name, float cost, String why) {
         if (id.equals(d.settlePendingId) && kind.equals(d.settlePendingKind)) return;
         d.settlePendingKind = kind; d.settlePendingId = id; d.settlePendingName = name; d.settlePendingCost = cost;
-        CALog.add("Settlement: proposes " + name + " for " + Misc.getDGSCredits(cost) + ", " + why, true);
+        CALog.advise("Settlement: Proposal: " + name + " for " + Misc.getDGSCredits(cost) + ". " + why + ".", true);
     }
 
     /** Pays the fee and starts the founding or facility. Returns null on success. */
@@ -357,14 +357,14 @@ public class CASettlement {
         } else err = buildFacility(id);
         if (err != null) {
             // 0.3.0.9: Auto's failed start is starsector.log only; a start you clicked in the empire panel keeps its line
-            if ("Auto".equals(who)) CALog.quiet("Settlement: could not start " + name + ": " + err); else CALog.add("Settlement: could not start " + name + ": " + err);
+            if ("Auto".equals(who)) CALog.quiet("Settlement: could not start " + name + ": " + err); else CALog.advise("Settlement: could not start " + name + ": " + err);
             return err;
         }
         CABudget.pay(s, null, cost, fee, 0f);   // 0.3.0.0 (C12 fix): price and fee in one payment, after the founding or facility started
         CALog.forget("settle:" + kind + ":" + id);
         if (kind.equals(d.settlePendingKind) && id.equals(d.settlePendingId)) clearPending(d);
-        CALog.add("Settlement: " + who + " " + name.substring(0, 1).toLowerCase() + name.substring(1) + " for " + Misc.getDGSCredits(cost)
-                + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : ""), true);
+        CALog.did("Settlement: " + name + " for " + Misc.getDGSCredits(cost)
+                + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + "." + ("Auto".equals(who) ? "" : "You".equals(who) ? " Started by you." : " Approved."), true);
         return null;
     }
 
@@ -439,7 +439,7 @@ public class CASettlement {
 
     /** Empire panel buttons: {"settle", action, id}. Returns a message for the log, or null. */
     public static void handle(String action, String id, CAData d, CASettings s) {
-        if ("reject".equals(action)) { if (d.settlePendingName != null) CALog.add("Settlement: rejected " + d.settlePendingName); clearPending(d); return; }
+        if ("reject".equals(action)) { if (d.settlePendingName != null) CALog.did("Settlement: Proposal rejected: " + d.settlePendingName + "."); clearPending(d); return; }
         if ("approve".equals(action)) {
             if (d.settlePendingKind == null) return;
             execute(d, s, d.settlePendingKind, d.settlePendingId, d.settlePendingName, "Approved:");

@@ -92,6 +92,7 @@ public class CAReset {
         failed += run("log", () -> CALog.reset());
         failed += run("log places", () -> { CATheme.places = null; CATheme.placesDay = -1f; });
         failed += run("colony screen button", () -> CAScreenButton.reset());   // its diagnostics counters and the dialog lookup (A5)
+        failed += run("enforcer patrols", () -> CAEnforcers.reset());   // 0.3.1.0: marked fleets and logged lines held the last save's fleets
         failed += run("storage tab", () -> CAStoragePlugin.none = null);
         return failed;
     }

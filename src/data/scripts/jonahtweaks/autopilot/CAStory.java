@@ -136,8 +136,8 @@ public class CAStory {
             m.reapplyIndustries();
             d.colony(m.getId()).spUsed++;
             s.spMonth += cost;
-            CALog.add(m.getName() + ": spent " + cost + " story point" + (cost == 1 ? "" : "s") + " improving " + ind.getCurrentName()
-                    + (s.storyPointRule == 2 ? " (" + s.spMonth + " of " + s.storyPointMonthlyCap + " this month)" : ""), true);
+            CALog.did(m.getName() + ": Spent " + cost + " story point" + (cost == 1 ? "" : "s") + " improving " + ind.getCurrentName()
+                    + (s.storyPointRule == 2 ? " (" + s.spMonth + " of " + s.storyPointMonthlyCap + " this month)" : "") + ".", true);
             return true;
         } catch (Throwable t) {
             CADiagnostics.quarantine(ind.getId(), "improving with story points", t);

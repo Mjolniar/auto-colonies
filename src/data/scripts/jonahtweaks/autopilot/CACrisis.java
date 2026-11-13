@@ -272,7 +272,7 @@ public class CACrisis {
         if (saved <= 0f) return;
         p.fx[0] += saved;
         p.lines.add("Your best military structure: colony crises build up x" + Misc.getRoundedValueMaxOneAfterDecimal(to)
-                + " instead of x" + Misc.getRoundedValueMaxOneAfterDecimal(now) + ", worth about " + Misc.getDGSCredits(saved) + " a month");
+                + " (now x" + Misc.getRoundedValueMaxOneAfterDecimal(now) + "). Worth about " + Misc.getDGSCredits(saved) + " a month");
     }
 
     // ---------------- the Sindrian Diktat ----------------
@@ -397,8 +397,8 @@ public class CACrisis {
             if (key != null && CALog.once(key)) {
                 List<String> names = new ArrayList<String>();
                 for (MarketAPI m : targets()) names.add(m.getName());
-                CALog.add("Colony crisis coming: " + name(r.factor) + (names.isEmpty() ? "" : ", most likely at " + CAContracts.join(names))
-                        + ". Auto colonies there plan with Security until it's over; see the Crises page.", true);
+                CALog.did("Colony crisis coming: " + name(r.factor) + (names.isEmpty() ? "" : ", most likely at " + CAContracts.join(names))
+                        + ". Auto colonies there plan with Security until it ends. Details: Crises page.", true);
             }
         } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "crisis check failed", t); }
     }
@@ -432,12 +432,12 @@ public class CACrisis {
             HegemonyInspectionIntel.AntiInspectionOrders was = hi.getOrders(), now = orders(CALowProfile.on() ? 0 : s.inspectionMode, CAItems.defended(m), was);
             if (now != was) {
                 hi.setOrders(now);
-                CALog.add(m.getName() + ": a Hegemony AI inspection is coming; its defenses (about " + def + " fleet points) beat the "
-                        + fp + " sent, so it will resist. The Hegemony turns hostile when they arrive; beat three and they stop for good.", true);
+                CALog.did(m.getName() + ": Hegemony AI inspection coming. Defenses (about " + def + " fleet points) beat the "
+                        + fp + " sent. Orders set to resist. The Hegemony turns hostile when they arrive. Beating three ends the inspections.", true);
             } else {
-                CALog.add(m.getName() + ": a Hegemony AI inspection is coming (" + fp + " fleet points; defenses about " + def + "). "
+                CALog.advise(m.getName() + ": Hegemony AI inspection coming (" + fp + " fleet points, defenses about " + def + "). "
                         + (was == HegemonyInspectionIntel.AntiInspectionOrders.COMPLY
-                        ? "Complying hands over every core there; you can resist or bribe from the inspection's intel before it arrives."
+                        ? "Complying hands over every core there. Resist or bribe from the inspection's intel before it arrives."
                         : "Your orders stand."), true);
             }
         }

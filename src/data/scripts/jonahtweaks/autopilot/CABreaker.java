@@ -27,8 +27,8 @@ public class CABreaker {
         CADiagnostics.LOG.warn(CADiagnostics.TAG + action + " didn't take effect at " + where + " (" + n + " of " + LIMIT + ")");
         if (n >= LIMIT && !tripped.containsKey(action)) {
             tripped.put(action, where);
-            CALog.add("Autopilot stopped " + action + " for this session: it didn't take effect " + LIMIT + " times in a row (last at "
-                    + where + "). A mod update may have changed how it works; see Diagnostics.", true);
+            CALog.advise("Autopilot stopped " + action + " for this session. No effect " + LIMIT + " times in a row (last at "
+                    + where + "). Possible cause: a mod update. See Diagnostics.", true);
         }
         return false;
     }

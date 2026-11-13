@@ -41,6 +41,8 @@ public class JTModPlugin extends BaseModPlugin {
             if (Global.getSettings().getModManager().isModEnabled("nexerelin") && data.scripts.jonahtweaks.autopilot.CACompat.linked("CAWarListener"))
                 data.scripts.jonahtweaks.autopilot.CAWarListener.ensure();
         } });
+        // 0.3.1.0: enforcer patrols (CAEnforcers): a transient script and battle listener, so a load drops them; added here
+        step("enforcer patrols", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CAEnforcers.ensure(); } });
         step("calibration", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CACalibrate.migrate(); } });
         step("daily script", new Runnable() { public void run() {
             data.scripts.jonahtweaks.autopilot.CAAuto.reset();

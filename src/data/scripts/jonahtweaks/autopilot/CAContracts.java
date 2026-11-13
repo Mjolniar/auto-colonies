@@ -433,7 +433,7 @@ public class CAContracts {
             if (!CABreaker.check(ACCEPT, ((Map<String, Object>) CARefl.invoke(activeMap, mgr())).containsKey(id), "trade contracts")) return "ToT didn't take the contract";
             sign(o);   // 0.3.0.0 (B5): spare for its goods stays at most what's left now, for as long as it runs
             if ("Auto".equals(who)) taken.add(o);   // one line for the day's contracts (run)
-            else CALog.add("Contract taken: " + goods(o) + ", " + Misc.getDGSCredits(o.pay) + "/month for " + o.months + " months");
+            else CALog.did("Contract taken: " + goods(o) + ", " + Misc.getDGSCredits(o.pay) + "/month for " + o.months + " months.");
             CALog.quiet("trade contract " + o.name + ": " + join(o.lines) + ", " + o.months + " months, " + Misc.getDGSCredits(o.pay)
                     + "/month (" + Misc.getDGSCredits(o.gain) + " over exporting)" + (o.rewards.isEmpty() ? "" : "; rewards: " + join(o.rewards)));
             cached = null;
@@ -542,7 +542,7 @@ public class CAContracts {
                 offered.add(c);
                 int missed = ((Number) CARefl.invoke(cMissed, c)).intValue();
                 if (missed > 0 && CALog.once("contract:" + CARefl.invoke(cId, c) + ":" + missed))
-                    CALog.add("Contract with " + CARefl.invoke(cName, c) + " missed a delivery (" + missed + " of " + CARefl.invoke(cAllowed, c) + ")");
+                    CALog.advise("Contract with " + CARefl.invoke(cName, c) + " missed a delivery (" + missed + " of " + CARefl.invoke(cAllowed, c) + ").");
             }
             try { tidyLedger(held); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "trade contract ledger tidy failed", t); }   // 0.3.0.0 (B5)
             // 0.3.0.0 (B5 fix): contracts held before the ledger, or signed in ToT's browser, get an entry too
@@ -562,8 +562,8 @@ public class CAContracts {
                     float pay = 0f, gain = 0f;
                     List<String> what = new ArrayList<String>();
                     for (Offer o : taken) { pay += o.pay; gain += o.gain; what.add(goods(o)); }
-                    CALog.add((taken.size() == 1 ? "Contract taken: " : taken.size() + " contracts taken: ") + join(what) + ", " + Misc.getDGSCredits(pay)
-                            + "/month (+" + Misc.getDGSCredits(gain) + " over exporting)");
+                    CALog.did((taken.size() == 1 ? "Contract taken: " : taken.size() + " contracts taken: ") + join(what) + ", " + Misc.getDGSCredits(pay)
+                            + "/month (+" + Misc.getDGSCredits(gain) + " over exporting).");
                     taken.clear();
                 }
             }

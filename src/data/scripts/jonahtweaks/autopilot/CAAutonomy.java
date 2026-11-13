@@ -166,7 +166,7 @@ final class CAAutonomy {
             return;
         }
         if (CALog.once("autonomy:rec:" + pick.m.getId()))
-            CALog.add(pick.m.getName() + ": autonomy would save " + Misc.getDGSCredits(pick.saving) + "/month (" + why + "); Grant on the Mod features page", true);
+            CALog.advise(pick.m.getName() + ": autonomy would save " + Misc.getDGSCredits(pick.saving) + "/month (" + why + "). Grant on the Mod features page.", true);
     }
 
     /** Your order, or Auto's. The colony stays autonomous until you take it back. */
@@ -181,8 +181,8 @@ final class CAAutonomy {
         d.clearPending(d.colony(m.getId()));   // nothing can be built there now
         d.lastAutonomyChange = Global.getSector().getClock().getTimestamp();
         CALog.forget("autonomy:rec:" + m.getId());
-        CALog.add(m.getName() + ": autonomous (" + why + ")" + (saving > 0f ? ", saves " + Misc.getDGSCredits(saving) + "/month" : "")
-                + (a != null ? "; " + a.getPerson().getNameString() + " is free" : ""), true);
+        CALog.did(m.getName() + ": autonomous (" + why + ")" + (saving > 0f ? ", saves " + Misc.getDGSCredits(saving) + "/month" : "") + "."
+                + (a != null ? " " + a.getPerson().getNameString() + " is free." : ""), true);
     }
 
     /** Taking one back, with Nexerelin's usual unrest (0.2.37.0: no exception for colonies an older Autopilot made autonomous). */
@@ -200,8 +200,8 @@ final class CAAutonomy {
             m.setAdmin(a.getPerson());
             a.setMarket(m);
         }
-        CALog.add(m.getName() + ": taken back from autonomy (" + why + ")" + ""
-                + (a != null ? "; " + a.getPerson().getNameString() + " governs it" : ""), true);
+        CALog.did(m.getName() + ": taken back from autonomy (" + why + ")."
+                + (a != null ? " " + a.getPerson().getNameString() + " governs it." : ""), true);
     }
 
     /** Buttons on the Mod features page: grant autonomy to a colony, or take one back now. */

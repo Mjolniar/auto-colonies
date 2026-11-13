@@ -89,7 +89,7 @@ public class CAIndEvo {
                 if (p != null) d.ambTransit().remove(p.getId());
                 CABudget.charge(s, 0f, fee, 0f);
                 FactionAPI f = AmbassadorItemHelper.getFactionForItem(data);
-                CALog.add(tm.getName() + ": installed the " + (f == null ? "" : f.getDisplayName() + " ") + "ambassador in the Embassy");
+                CALog.did(tm.getName() + ": " + (f == null ? "" : f.getDisplayName() + " ") + "ambassador installed in the Embassy.");
                 return true;
             }
         }
@@ -162,14 +162,14 @@ public class CAIndEvo {
         String who = src.getFaction().getDisplayName() + " ambassador " + person.getNameString();
         if (true) {   // always travels (0.2.37.0): a hire made from afar arrives in 30 days, never on the spot
             CargoAPI st = storageOf(target);
-            if (st == null) { emb.setSpecialItem(data); CALog.add(target.getName() + ": hired and installed the " + who); return true; }
+            if (st == null) { emb.setSpecialItem(data); CALog.did(target.getName() + ": Hired and installed the " + who + "."); return true; }
             st.addSpecial(data, 1f);
             CAData.get().ambTransit().put(person.getId(), Global.getSector().getClock().getTimestamp());
-            CALog.add(target.getName() + ": hired the " + who + " from " + src.getName() + "; arrives in 30 days"
-                    + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : ""));
+            CALog.did(target.getName() + ": Hired the " + who + " from " + src.getName()
+                    + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : "") + ". Arrives in 30 days.");
         } else {
             emb.setSpecialItem(data);
-            CALog.add(target.getName() + ": hired and installed the " + who + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : ""));
+            CALog.did(target.getName() + ": Hired and installed the " + who + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : "") + ".");
         }
         return true;
     }
@@ -198,8 +198,8 @@ public class CAIndEvo {
                     ind.setSpecialItem(new SpecialItemData(data.getId(), data.getData()));
                     here.removeItems(CargoAPI.CargoItemType.SPECIAL, data, 1f);
                     CABudget.charge(s, 0f, fee, 0f);
-                    CALog.add(m.getName() + ": installed " + stack.getDisplayName() + " in " + ind.getCurrentName()
-                            + (tid.equals("IndEvo_ComForge") ? " (the forge uses the chip up after three production cycles)" : ""));
+                    CALog.did(m.getName() + ": " + stack.getDisplayName() + " installed in " + ind.getCurrentName() + "."
+                            + (tid.equals("IndEvo_ComForge") ? " The forge uses it up after three production cycles." : ""));
                     return true;
                 }
                 if (chipComing(m, ind)) continue;   // it goes in once it's here
@@ -276,7 +276,7 @@ public class CAIndEvo {
                     continue;
                 }
                 CALog.forget(key);
-                CALog.add(m.getName() + ": enacted " + spec.getName() + " (effects estimated; edicts are never removed automatically)");
+                CALog.did(m.getName() + ": Enacted " + spec.getName() + ". Effects estimated. Autopilot does not remove edicts.");
                 return true;
             } catch (Throwable t) {
                 if (CALog.once(key)) CADiagnostics.LOG.warn(CADiagnostics.TAG + "edict check failed for " + id + " at " + m.getName(), t);
@@ -339,8 +339,8 @@ public class CAIndEvo {
                 if (best.cost + fee > CABudget.available(s) || CABuild.credits() < best.cost + fee) return false;
                 sw.setCurrent(best.newInstance(), false);
                 CABudget.pay(s, null, best.cost, fee, 0f);
-                CALog.add(m.getName() + ": switched " + ind.getCurrentName() + " to " + best.name + " for " + Misc.getDGSCredits(best.cost)
-                        + " (estimated " + CAEngine.credits(bestV) + "/month vs " + CAEngine.credits(current) + ")");
+                CALog.did(m.getName() + ": Switched " + ind.getCurrentName() + " to " + best.name + " for " + Misc.getDGSCredits(best.cost)
+                        + ". Estimated " + CAEngine.credits(bestV) + "/month, current " + CAEngine.credits(current) + ".");
                 return true;
             }
         }

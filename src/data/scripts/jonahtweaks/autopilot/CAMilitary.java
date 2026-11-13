@@ -117,7 +117,7 @@ public final class CAMilitary {
      * automatic path (candidates) and Approve read this one rule.
      */
     static String colonyBlock(boolean auto, boolean buildout, boolean siege, boolean noBuildings) {
-        if (!auto) return "is no longer an Auto colony of yours";
+        if (!auto) return "is not an Auto colony of yours now";
         if (siege) return "is under siege";
         if (buildout) return "is in its fast buildout";
         if (noBuildings) return "allows no buildings";
@@ -253,8 +253,8 @@ public final class CAMilitary {
                 String key = u.m.getId() + ":" + u.to;
                 if (!key.equals(recommended)) {
                     recommended = key;
-                    CALog.add(u.m.getName() + ": recommends upgrading to " + u.name + " (Military rung, " + Misc.getDGSCredits(u.total())
-                            + " with the fee, " + Misc.getDGSCredits(u.upkeep) + " more upkeep a month). Approve on the Budget panel");
+                    CALog.advise(u.m.getName() + ": Recommends upgrading to " + u.name + " (Military rung, " + Misc.getDGSCredits(u.total())
+                            + " with the fee, " + Misc.getDGSCredits(u.upkeep) + " more upkeep a month). Approve on the Budget panel.");
                 }
                 CARich.note(CARich.MILITARY, "proposes " + u.name + " at " + u.m.getName() + "; Approve or Reject on this panel");
                 return;
@@ -298,7 +298,7 @@ public final class CAMilitary {
     public static String handle(String key) {
         if (APPROVE.equals(key)) {
             Up u = pending;
-            if (u == null) return "Military: no proposal is waiting";
+            if (u == null) return "Military: no proposal to approve";
             pending = null;
             CASettings s = CAData.settings();
             // checked again now: the building, the money and the upkeep line may have moved since it was proposed
@@ -306,7 +306,7 @@ public final class CAMilitary {
             String block = colonyBlock(u.m);
             if (block != null) return "Military: " + u.m.getName() + " " + block;
             if (u.from.isUpgrading() || u.from.isBuilding() || u.m.getIndustry(u.from.getId()) != u.from) return "Military: that building changed since the proposal";
-            if (u.total() > CARich.room(CARich.MILITARY) + 1f) return "Military: the proposal no longer fits its share of the pool";
+            if (u.total() > CARich.room(CARich.MILITARY) + 1f) return "Military: proposal over its share of the pool";
             float net = CABudget.netIncome(s), added = addedUpkeep();
             if (!upkeepFits(added, u.upkeep, net)) return "Military: the upkeep the Military rung added would pass 15% of colony net now";
             String err = start(s, u, net, added);
@@ -318,7 +318,7 @@ public final class CAMilitary {
         if (REJECT.equals(key)) {
             Up u = pending;
             pending = null;
-            if (u == null) return "Military: no proposal is waiting";
+            if (u == null) return "Military: no proposal to reject";
             CAMark.set(rejectKey(u), CAMark.now());
             lastWant = 0f;
             return u.m.getName() + ": " + u.name + " rejected; not proposed again for " + Math.round(REJECT_DAYS) + " days";
@@ -349,7 +349,7 @@ public final class CAMilitary {
         stamp(u.m, fromId, u.to);
         CAPlanner.wake("slot:" + u.m.getId());
         CARich.note(CARich.MILITARY, "upgrading to " + u.name + " at " + u.m.getName());
-        CALog.add(u.m.getName() + ": upgrading to " + u.name + " (Military rung, " + Misc.getDGSCredits(u.total()) + " with the fee)");
+        CALog.did(u.m.getName() + ": Upgrading to " + u.name + " (Military rung, " + Misc.getDGSCredits(u.total()) + " with the fee).");
         CALog.quiet("Military rung detail: " + u.m.getName() + ", " + u.name + " for " + Misc.getDGSCredits(u.cost) + " plus a " + Misc.getDGSCredits(u.fee)
                 + " fee, " + Misc.getDGSCredits(u.upkeep) + " more upkeep a month; upkeep the Military rung added " + Misc.getDGSCredits(added + u.upkeep)
                 + " of " + Misc.getDGSCredits(UPKEEP_SHARE * net) + " allowed (15% of colony net)");

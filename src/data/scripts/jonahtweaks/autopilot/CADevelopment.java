@@ -155,8 +155,8 @@ public class CADevelopment {
             float alt = altitude(m);
             String stage = stage(alt);
             if (alt > 750f) { CALog.forget("floatalt:" + m.getId() + ":Drifting"); CALog.forget("floatalt:" + m.getId() + ":Unstable"); CALog.forget("floatalt:" + m.getId() + ":Critical"); continue; }
-            if (CALog.once("floatalt:" + m.getId() + ":" + stage)) CALog.add(m.getName() + ": Floating City is " + stage.toLowerCase() + " (altitude "
-                    + Math.round(alt) + " of 1000); it falls while fuel is short and the colony is lost at 0. Fuel producers now score higher.", true);
+            if (CALog.once("floatalt:" + m.getId() + ":" + stage)) CALog.advise(m.getName() + ": Floating City " + stage.toLowerCase() + " (altitude "
+                    + Math.round(alt) + " of 1000). It falls while fuel is short. The colony is lost at 0. Fuel producers now score higher.", true);
         }
     }
 

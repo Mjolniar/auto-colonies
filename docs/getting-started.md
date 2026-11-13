@@ -14,6 +14,7 @@
 
 - Colony panel: Colony Autopilot button on the colony screen, or right click Population & Infrastructure.
 - Empire panel: Intel screen, Colony Autopilot filter. Pages: Colonies, Autopilot Storage, Colony crises, Expansion, War, Mod features, Settings, Factions, Log, Diagnostics.
+- Log page: actions and advice. The Thinking list (Show/Hide) holds what Autopilot weighed, planned and left alone.
 
 ## First colony
 

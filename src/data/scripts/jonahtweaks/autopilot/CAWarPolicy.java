@@ -69,6 +69,11 @@ public class CAWarPolicy {
     public static final String RELIEF = "relief", DEFENSE = "defense", GUARD = "guard", STRIKE = "strike", RAID = "raid",
             RETAKE = "retake", HOLD_RAID = "holdraid", BLOCKADE = "blockade", INVASION = "invasion", SATBOMB = "satbomb",
             EMERGENCY = "emergency";
+    /**
+     * 0.3.1.0: an enforcer patrol charge (CAEnforcers): a colony patrol defeated an enforcement fleet. Paid as defense and guard
+     * are (the military rung first). No War level and no fee: levelOf gives never, feeApplies false.
+     */
+    public static final String ENFORCER = "enforcer";
 
     public static int clamp(int level) { return Math.max(OFF, Math.min(SCORCHED, level)); }
 
@@ -253,8 +258,8 @@ public class CAWarPolicy {
     /**
      * Who pays an operation (cost with the fee): never below the credit reserve (null: it waits).
      * - emergency and relief: "reserve", anything above the reserve, over the month's budget (as 0.2.45);
-     * - defense and guard (proactive defense, standing guard; 03 F10): the military rung's allowance ("rung"), else the
-     *   surplus while rich ("pool"), else the month's budget;
+     * - defense and guard (proactive defense, standing guard; 03 F10), and 0.3.1.0 enforcer charges: the military rung's
+     *   allowance ("rung"), else the surplus while rich ("pool"), else the month's budget;
      * - invasion: the surplus, or the budget when it holds twice the cost;
      * - satbomb: the surplus only;
      * - the rest (strike, raid, retake, holdraid, blockade): the surplus while rich, else the budget, else the surplus.
@@ -262,7 +267,7 @@ public class CAWarPolicy {
     public static String payer(String kind, boolean rich, float cost, float credits, float reserve, float budget, float pool, float rung) {
         if (credits - cost < reserve) return null;
         if (EMERGENCY.equals(kind) || RELIEF.equals(kind)) return "reserve";
-        if (DEFENSE.equals(kind) || GUARD.equals(kind)) {
+        if (DEFENSE.equals(kind) || GUARD.equals(kind) || ENFORCER.equals(kind)) {   // 0.3.1.0: enforcer charges too
             if (rung >= cost) return "rung";
             if (rich) return pool >= cost ? "pool" : null;
             return budget >= cost ? "budget" : null;

@@ -85,7 +85,7 @@ public class CAAugmentModel {
         if (id.equals("SA_stationRepairUnit")) return new Gain(0.03f, "Disruption ends twice as fast, so the station is back sooner after a raid");
         if (id.equals("SA_highResSensors")) return new Gain(0f, "Sight range in battle; sensor range for your fleets nearby");
         if (id.equals("SA_commsCenter")) return new Gain(0f, "Command points don't matter when the station defends itself");
-        if (id.equals("SA_logisticsDrones")) return new Gain(0f, "Combat readiness for your fleets near the station, not the station's own");
+        if (id.equals("SA_logisticsDrones")) return new Gain(0f, "Combat readiness for your fleets near the station. The station's own is unchanged");
         if (id.equals("SA_warmindProtocols")) {
             if (c < 0) return new Gain(-1f, "Needs an AI core in the station");
             if (dustkeepersHostile) return new Gain(-1f, "The Dustkeepers are hostile: the warmind would turn the station against you");

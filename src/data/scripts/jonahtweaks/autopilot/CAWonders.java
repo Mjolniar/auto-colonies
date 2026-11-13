@@ -121,10 +121,10 @@ public class CAWonders {
         CAEngine.Pick p = new CAEngine.Pick();
         p.id = SITE; p.name = a.name; p.verb = "Build"; p.cost = a.cost; p.upkeep = a.upkeep;
         String err = CABuild.start(m, p);
-        if (err != null) { if (CALog.once("wonder:site:" + m.getId() + ":" + err)) CALog.add(m.getName() + ": Grand Wonder site not started: " + err); return err; }
+        if (err != null) { if (CALog.once("wonder:site:" + m.getId() + ":" + err)) CALog.think(m.getName() + ": Grand Wonder site not started: " + err); return err; }
         CABudget.charge(s, m.getId(), 0f, a.fee, a.upkeep);
         CARich.spent(CARich.WONDERS, a.cost);   // 0.3.0.0 (C3 fix): the site's price counts against the Wonders rung this month
-        CALog.add(m.getName() + ": Grand Wonder site started for the " + name(DAEDALUS) + " (" + Misc.getDGSCredits(a.cost) + ")", true);
+        CALog.did(m.getName() + ": Grand Wonder site started for the " + name(DAEDALUS) + " (" + Misc.getDGSCredits(a.cost) + ").", true);
         return null;
     }
 
@@ -162,7 +162,7 @@ public class CAWonders {
             List<String> missing = unmade((Map<?, ?>) CARefl.invoke(demand, w));
             if (!missing.isEmpty()) {
                 lines.add(name(DAEDALUS) + " at " + m.getName() + " waits for " + CAContracts.join(missing));
-                if (CALog.once("wonder:wait:" + m.getId() + ":" + missing)) CALog.add(m.getName() + ": " + name(DAEDALUS) + " waits for " + CAContracts.join(missing) + " production");
+                if (CALog.once("wonder:wait:" + m.getId() + ":" + missing)) CALog.think(m.getName() + ": " + name(DAEDALUS) + " waits for " + CAContracts.join(missing) + " production.");
                 return;
             }
             if (site == null) {
@@ -193,17 +193,17 @@ public class CAWonders {
                 CAEngine.Pick p = new CAEngine.Pick();
                 p.id = SITE; p.name = sp.getName(); p.verb = "Build"; p.cost = probe.getBuildCost(); p.upkeep = CAEngine.baseUpkeep(m, sp);
                 String err = CABuild.start(m, p);
-                if (err != null) { if (CALog.once("wonder:site:" + m.getId() + ":" + err)) CALog.add(m.getName() + ": Grand Wonder site not started: " + err); return; }
+                if (err != null) { if (CALog.once("wonder:site:" + m.getId() + ":" + err)) CALog.think(m.getName() + ": Grand Wonder site not started: " + err); return; }
                 CABudget.charge(s, 0f, CABudget.constructionFee(s, p.cost), p.upkeep);
                 if (!CABudget.legacy(s)) CARich.spent(CARich.WONDERS, p.cost);   // 0.3.0.0 (C3 fix): the site's price counts against the Wonders rung this month
-                CALog.add(m.getName() + ": Grand Wonder site started for the " + name(DAEDALUS) + " (" + Misc.getDGSCredits(p.cost) + ")", true);
+                CALog.did(m.getName() + ": Grand Wonder site started for the " + name(DAEDALUS) + " (" + Misc.getDGSCredits(p.cost) + ").", true);
                 lines.add("construction site for the " + name(DAEDALUS) + " going up at " + m.getName());
                 return;
             }
             if (site.isBuilding()) { lines.add(name(DAEDALUS) + "'s construction site at " + m.getName() + " is being built"); return; }
             if (!act) return;   // 0.3.0.0 (B3): the planner's offer only looks
             CARefl.invoke(assign, site, DAEDALUS);
-            CALog.add(m.getName() + ": " + name(DAEDALUS) + " construction started (replaces the Megaport)", true);
+            CALog.did(m.getName() + ": " + name(DAEDALUS) + " construction started. Replaces the Megaport.", true);
             lines.add(name(DAEDALUS) + " started at " + m.getName());
             return;
         }
@@ -233,11 +233,11 @@ public class CAWonders {
             if (sys == null || have.contains(sys) || !sys.getEntitiesWithTag("bifrost").isEmpty()) continue;
             if (!missing.isEmpty()) {
                 lines.add("Bifrost gates wait for " + CAContracts.join(missing));
-                if (CALog.once("bifrost:wait:" + missing)) CALog.add("Bifrost gates wait for " + CAContracts.join(missing) + " production");
+                if (CALog.once("bifrost:wait:" + missing)) CALog.think("Bifrost gates wait for " + CAContracts.join(missing) + " production.");
                 return;
             }
             CARefl.invoke(add, mega, sys);
-            CALog.add("Bifrost gate started in " + sys.getName() + " (90 days, then 20,000/month)", true);
+            CALog.did("Bifrost gate started in " + sys.getName() + ". 90 days, then 20,000/month.", true);
             lines.add("Bifrost gate started in " + sys.getName());
             return;   // one a day
         }

@@ -185,6 +185,12 @@ public class CAData {
     public Map<String, com.fs.starfarer.api.campaign.CargoAPI> stores() { if (stores == null) stores = new HashMap<String, com.fs.starfarer.api.campaign.CargoAPI>(); return stores; }
     public List<CAStores.Shipment> shipments() { if (shipments == null) shipments = new ArrayList<CAStores.Shipment>(); return shipments; }
 
+    /** 0.3.1.0: the Log page's Thinking list (CALog.think), newest first, dated; older saves load it null. */
+    public List<String> thinking;
+    public List<String> thinking() { if (thinking == null) thinking = new ArrayList<String>(); return thinking; }
+    /** 0.3.1.0: the Log page shows the Thinking list (its Show and Hide button); collapsed by default. */
+    public boolean thinkingShown;
+
     // ---------------- 0.3.0.0 (A0): every new saved field of the 0.3.0 workstreams, added at once (plans/cm-3.0 FIELDS.md) ----------------
     // Ids, numbers and timestamps only (no MarketAPI, PlanetAPI or Nexerelin types); older saves load them null or 0, so the
     // lists, maps and sets have lazy getters. Every class stored here needs an alias in CAXStream.

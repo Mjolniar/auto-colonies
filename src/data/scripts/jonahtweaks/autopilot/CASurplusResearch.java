@@ -151,7 +151,7 @@ public class CASurplusResearch {
         }
         if (s.upkeepAdded + up > CASurplus.upkeepCap(m, s)) {
             summary = head + "; the next, at " + m.getName() + ", waits for next month's new-upkeep room.";
-            if (CALog.once(key + ":upkeep")) CALog.add(m.getName() + ": surplus Research Facility waits for next month's upkeep room");
+            if (CALog.once(key + ":upkeep")) CALog.think(m.getName() + ": Surplus Research Facility waits for next month's upkeep room.");
             return;
         }
         CAEngine.Pick p = new CAEngine.Pick();
@@ -159,14 +159,14 @@ public class CASurplusResearch {
         String err = CABuild.start(m, p);
         if (err != null) {
             summary = head + "; " + m.getName() + " couldn't start it: " + err + ".";
-            if (CALog.once(key + ":" + err)) CALog.add(m.getName() + ": Research Facility not started: " + err);
+            if (CALog.once(key + ":" + err)) CALog.think(m.getName() + ": Research Facility not started: " + err);
             return;
         }
         CABudget.charge(s, 0f, fee, up);   // the price came from the surplus (CABuild.start took it), outside the monthly budget
         CAEconomy.spent(cost);   // 0.3.0.0 fix (C4 review): booked on the Economy rung, as the planner's start does
         d.surplusResearch().add(m.getId());
         summary = head + "; building one at " + m.getName() + ".";
-        CALog.add(m.getName() + ": Research Facility started (+10% research speed), " + Misc.getDGSCredits(cost) + ", " + Misc.getDGSCredits(up) + "/month");
+        CALog.did(m.getName() + ": Research Facility started (+10% research speed). " + Misc.getDGSCredits(cost) + ", " + Misc.getDGSCredits(up) + "/month.");
     }
 
     // ---------------- 0.3.0.0 (WS-B3): the planner's actions ----------------
@@ -276,13 +276,13 @@ public class CASurplusResearch {
         p.id = FACILITY; p.name = a.name; p.verb = "Build"; p.cost = a.cost; p.upkeep = a.upkeep;
         String err = CABuild.start(m, p);
         if (err != null) {
-            if (CALog.once("srs:" + m.getId() + ":" + err)) CALog.add(m.getName() + ": Research Facility not started: " + err);
+            if (CALog.once("srs:" + m.getId() + ":" + err)) CALog.think(m.getName() + ": Research Facility not started: " + err);
             return err;
         }
         CABudget.charge(s, m.getId(), 0f, a.fee, a.upkeep);
         CAEconomy.spent(a.cost);   // 0.3.0.0 (C4): the price came from surplus credits: the money ladder's Economy rung this month
         CAData.get().surplusResearch().add(m.getId());
-        CALog.add(m.getName() + ": Research Facility started (+10% research speed), " + Misc.getDGSCredits(a.cost) + ", " + Misc.getDGSCredits(a.upkeep) + "/month");
+        CALog.did(m.getName() + ": Research Facility started (+10% research speed). " + Misc.getDGSCredits(a.cost) + ", " + Misc.getDGSCredits(a.upkeep) + "/month.");
         return null;
     }
 
@@ -298,7 +298,7 @@ public class CASurplusResearch {
             m.removeIndustry(FACILITY, MarketAPI.MarketInteractionMode.REMOTE, false);   // with a mode, VoK moves its tab's cargo to Storage
             CATombstone.add(m.getId(), FACILITY, CATombstone.RESEARCH, CATombstone.sunk(m.getId(), FACILITY));   // 0.3.0.0 (B4): every removal leaves a year's mark
             d.surplusResearch().remove(id);
-            CALog.add(m.getName() + ": Research Facility removed, research done (-" + Misc.getDGSCredits(up) + "/month)");
+            CALog.did(m.getName() + ": Research Facility removed (-" + Misc.getDGSCredits(up) + "/month). Research done.");
         }
     }
 }

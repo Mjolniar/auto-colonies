@@ -576,7 +576,7 @@ public class CAWar {
             pay(s, payer, cost, fee);
             mgr.modifyFleetRequestStock(-(int) fp);
             if (recordKey != null) record(d, recordKey);
-            CALog.add(target.getName() + ": " + (int) fp + "-pt " + what(kind) + " from " + from.getName() + ", " + money(cost, fee) + " (" + why + ")", true);
+            CALog.did(target.getName() + ": " + (int) fp + "-pt " + what(kind) + " from " + from.getName() + ", " + money(cost, fee) + " (" + why + ").", true);
             return null;
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + what(kind) + " request failed for " + target.getName(), t);
@@ -631,7 +631,7 @@ public class CAWar {
 
         if (p.waiting.isEmpty()) warned.clear();   // one line per wait, not one a day
         else if (warned.add(p.waiting.get(0)))
-            CALog.status("war:wait", "War fleets: waiting (" + p.waiting.get(0) + (p.waiting.size() > 1 ? ", +" + (p.waiting.size() - 1) : "") + ")");
+            CALog.thinkStatus("war:wait", "War fleets: waiting (" + p.waiting.get(0) + (p.waiting.size() > 1 ? ", +" + (p.waiting.size() - 1) : "") + ").");
         summary = "War level " + CAWarPolicy.levelName(p.level) + ". " + (p.rich ? "Rich: up to " + RICH_PER_DAY + " a day, keeping " + Math.round(RICH_RESERVE * 100f)
                 : "One a day, keeping " + Math.round(RESERVE * 100f)) + " percent of fleet request points for emergencies. Points "
                 + (int) mgr.getFleetRequestStock() + " of " + mgr.getFleetRequestCapacity() + (p.started > 0 ? "; " + p.started + " sent today" : "")
@@ -843,10 +843,10 @@ public class CAWar {
                 catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "cancelling an operation failed", t); }
             } else if (!troops && CAWarPolicy.recallable(stage)) moving++;
         }
-        CALog.add("War: " + (recall ? "recalled" : "stood down") + ". Level " + CAWarPolicy.levelName(s.warLevel) + " (was " + CAWarPolicy.levelName(was)
-                + "), war confirmations and bombardment authorization cleared; " + cancelled + " operation(s) cancelled, about "
-                + Misc.getDGSCredits(refund) + " back from Nexerelin" + (moving > 0 ? "; " + moving + " travelling or in action (Recall all on the War page)" : "")
-                + (landed > 0 ? "; " + landed + " invasion(s) with troops on the ground kept" : "") + ".", true);
+        CALog.did("War: " + (recall ? "recalled" : "stood down") + ". Level " + CAWarPolicy.levelName(s.warLevel) + " (was " + CAWarPolicy.levelName(was)
+                + "). War confirmations and bombardment authorization cleared. " + cancelled + " operation(s) cancelled, about "
+                + Misc.getDGSCredits(refund) + " back from Nexerelin." + (moving > 0 ? " " + moving + " travelling or in action (Recall all on the War page)." : "")
+                + (landed > 0 ? " " + landed + " invasion(s) with troops on the ground kept." : ""), true);
     }
 
     // ---------------- War page (WS-F wires it; buttons are {"war", action, arg}) ----------------
@@ -888,14 +888,14 @@ public class CAWar {
             if (st == CAStance.AUTO) s.factionStance().remove(fid); else s.factionStance().put(fid, st);
             CAStance.markSetByYou(fid);   // 0.3.0.0 (fix): a stance you set acts fully in diplomacy (CAStance.fromOldPriority)
             FactionAPI f = Global.getSector().getFaction(fid);
-            CALog.add("War: " + (f != null ? f.getDisplayName() : fid) + " stance " + CAStance.name(st));
+            CALog.did("War: " + (f != null ? f.getDisplayName() : fid) + " stance " + CAStance.name(st) + ".");
         } else if ("declare".equals(action)) {
             FactionAPI f = Global.getSector().getFaction(arg);
             String why = f == null ? "no such faction" : CADiplomacy.declareWar(f);
-            if (why != null) CALog.add("War: war not declared on " + (f != null ? f.getDisplayName() : arg) + " (" + why + ")", true);
+            if (why != null) CALog.advise("War: war not declared on " + (f != null ? f.getDisplayName() : arg) + ": " + why + ".", true);
         } else if ("scorched".equals(action)) {
             s.warScorchedOK = true;
-            CALog.add("War: saturation bombardment authorized for Destroy factions' capitals at War level Scorched", true);
+            CALog.did("War: saturation bombardment authorized for Destroy factions' capitals at War level Scorched.", true);
         } else if ("recall".equals(action)) {
             standDown(d, s, true);
         } else if ("standdown".equals(action)) {

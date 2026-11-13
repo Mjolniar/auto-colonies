@@ -188,13 +188,13 @@ public final class CAFactionsPage {
             CAStance.markSetByYou(fid);   // a stance you set acts fully in diplomacy (CAStance.fromOldPriority)
             FactionAPI f = Global.getSector().getFaction(fid);
             // the War page's wording (CAWar.handle), which CATheme shows as "DIPLO / Hegemony stance Enemy"
-            CALog.add("War: " + (f != null ? f.getDisplayName() : fid) + " stance " + CAStance.name(st));
+            CALog.did("War: " + (f != null ? f.getDisplayName() : fid) + " stance " + CAStance.name(st) + ".");
         } else if ("reset".equals(a[1])) {
             int n = set(s);
             for (String fid : new ArrayList<String>(s.factionStance().keySet())) CAStance.markSetByYou(fid);
             s.factionStance().clear();
             CALog.quiet("Factions page: Reset all to Auto, " + n + " stances changed");
-            CALog.add("War: all factions stance Auto");
+            CALog.did("War: all factions stance Auto.");
         }
     }
 

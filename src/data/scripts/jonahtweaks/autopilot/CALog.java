@@ -147,8 +147,47 @@ public class CALog {
     }
 
     // ---------------- the log ----------------
+    // 0.3.1.0: each call site names its kind. did: what Autopilot did (money spent, items taken or moved, finds, buildings,
+    // fleets sent, contracts taken). advise: advice and decisions for you. think: everything else (not acting, planning,
+    // status, the money tier), in starsector.log and the Log page's Thinking list, never on screen. add() is the fallback
+    // for a line with no kind: CALogFilter sends not-acting wording to think.
 
+    /** A line with no kind (0.3.1.0: the fallback; new call sites use did, advise or think). */
     public static void add(String text) { add(text, false); }
+
+    /** 0.3.1.0: something Autopilot did. The panel log, starsector.log and on screen. */
+    public static void did(String text) { entry(text, false); }
+    public static void did(String text, boolean important) { entry(text, important); }
+
+    /** 0.3.1.0: advice or a decision for you. The panel log, starsector.log and on screen. */
+    public static void advise(String text) { entry(text, false); }
+    public static void advise(String text, boolean important) { entry(text, important); }
+
+    /** 0.3.1.0: lines kept in the Thinking list, newest first. */
+    static final int THINK_LINES = CATuning.LOG_LINES;
+
+    /** 0.3.1.0: Autopilot's thinking: starsector.log and the Log page's Thinking list. Never on screen or in the panel log. */
+    public static void think(String text) {
+        if (whatIf() || text == null) return;
+        CADiagnostics.LOG.info(CADiagnostics.TAG + stamp() + text);
+        try {
+            List<String> l = CAData.get().thinking();
+            String date = "";
+            try { date = Global.getSector().getClock().getDateString() + ": "; } catch (Throwable ignored) { }
+            l.add(0, date + text);
+            while (l.size() > THINK_LINES) l.remove(l.size() - 1);
+        } catch (Throwable ignored) { }
+    }
+
+    /** 0.3.1.0: a flipping status that is thinking (siege, threat, war fleets waiting): think at most once per key every STATUS_DAYS. */
+    public static void thinkStatus(String key, String text) {
+        if (whatIf()) return;
+        float now = CADay.now();
+        Float at = statusAt.get(key);
+        if (at != null && now - at < STATUS_DAYS && now >= at) { quiet(text); return; }
+        statusAt.put(key, now);
+        think(text);
+    }
 
     /** Days a flipping status (siege, threat, station augments, policy toggles) waits before its next line in the panel log. */
     static final float STATUS_DAYS = CATuning.STATUS_DAYS;   // 0.3.0.0 (A3): in CATuning
@@ -161,7 +200,7 @@ public class CALog {
         Float at = statusAt.get(key);
         if (at != null && now - at < STATUS_DAYS && now >= at) { quiet(text); return; }
         statusAt.put(key, now);
-        add(text);
+        did(text);   // 0.3.1.0: a status that changes something (augments, hazard pay, free port); thinkStatus for the rest
     }
 
     /**
@@ -202,7 +241,7 @@ public class CALog {
             Float at = pingAt.get(key);
             if (at != null && now - at < PING_DAYS && now >= at) return;
             pingAt.put(key, now);
-            if (CALogFilter.notActing(text)) { quiet(text); return; }
+            if (CALogFilter.notActing(text)) { think(text); return; }   // 0.3.1.0: the Thinking list
             Global.getSector().getCampaignUI().addMessage(CATheme.machine(text), Misc.getTextColor());
         } catch (Throwable ignored) { }
     }
@@ -214,10 +253,17 @@ public class CALog {
      */
     public static void add(String text, boolean important) {
         if (whatIf()) return;   // 0.3.0.0: a what-if valuation never reaches the log (07 M2)
-        if (!important && CALogFilter.notActing(text)) { quiet(text); return; }   // 0.3.0.7: not-acting lines go to starsector.log only
+        if (!important && CALogFilter.notActing(text)) { think(text); return; }   // 0.3.0.7: not-acting lines leave the screen (0.3.1.0: to think)
+        entry(text, important);
+    }
+
+    /** 0.3.1.0: a did or advise line, or an add() line the filter let through. */
+    static void entry(String text, boolean important) {
+        if (whatIf()) return;
         CASettings s = CAData.settings();
         List<String> log = s.log;
-        String date = Global.getSector().getClock().getDateString();
+        String date = "";
+        try { date = Global.getSector().getClock().getDateString(); } catch (Throwable ignored) { }   // 0.3.1.0: no clock (offline checks) is no date
         log.add(0, date + ": " + text);
         while (log.size() > CATuning.LOG_LINES) log.remove(log.size() - 1);
         CADiagnostics.LOG.info(CADiagnostics.TAG + stamp() + text);
@@ -344,7 +390,7 @@ public class CALog {
     }
 
     /** 0.3.0.0 (07 H6): the session's debounce timers, cleared on load (CAReset.onLoad) so another save's dates don't hold lines back. */
-    public static void reset() { statusAt.clear(); pingAt.clear(); }
+    public static void reset() { statusAt.clear(); pingAt.clear(); CAStores.ARRIVED.clear(); }   // 0.3.1.0: and the arrival notes
 
     public static final String[] SCREEN_NAMES = {"Every entry", "Important only", "Off"};
 }

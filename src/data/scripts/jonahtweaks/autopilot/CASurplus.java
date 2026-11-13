@@ -382,8 +382,8 @@ public class CASurplus {
             s.surplusChecked = true;
             if (s.surplusLine == 0) {
                 s.surplusLine = 2;
-                CALog.add("Surplus investment is on (new in this version): credits over " + Misc.getDGSCredits(line(s)) + " go into one focus world. "
-                        + "Change it under Settings, Money");
+                CALog.did("Surplus investment: on. Credits over " + Misc.getDGSCredits(line(s)) + " go into one focus world. "
+                        + "Setting: Settings, Money.");
             }
         }
         compute(s);

@@ -277,7 +277,7 @@ public class CAAuto {
                 if (c.mode == CAData.Mode.APPROVE) {
                     CAEngine.Pick bestUp = ups.isEmpty() ? null : ups.get(0), bestNew = news.isEmpty() ? null : news.get(0);
                     CAEngine.Pick p = bestNew != null && (bestUp == null || bestNew.score >= bestUp.score) ? bestNew : bestUp;
-                    if (p != null) propose(m, c, p, "waiting for your approval");
+                    if (p != null) propose(m, c, p, CAPlanner.APPROVE_MODE);
                     continue;
                 }
                 List<CAEngine.Pick> all = new ArrayList<CAEngine.Pick>(ups);
@@ -321,33 +321,29 @@ public class CAAuto {
                         continue;
                     }
                 }
-                float cap = CASurplus.projectCap(k.m, s);   // the focus world may go past it with surplus credits
-                if (k.p.cost > cap) { propose(k.m, k.c, k.p, "over the per-project cap, needs your approval"); continue; }
-                if (k.p.measured && s.measuredMode == 1) { propose(k.m, k.c, k.p, "a mod building scored from measurements, needs your approval"); continue; }
-                if (k.p.confidence < 0.9f && k.p.cost > 0.5f * cap) {
-                    propose(k.m, k.c, k.p, "scored from an estimate rather than a game formula and over half the per-project cap, needs your approval");
-                    continue;
-                }
+                // 0.3.1.0: the same three rules as before, from CAPlanner.approval ("Approval needed: ..."); the focus world's cap there too
+                String needs = CAPlanner.approval(k.m, k.p, s);
+                if (needs != null) { propose(k.m, k.c, k.p, needs); continue; }
                 String key = k.m.getId() + ":" + k.p.id;
                 float avail = Math.min(Math.max(0f, CABuild.credits() - s.reserve), CABudget.available(s) + CASurplus.extra(k.m, s));
                 if (k.total > avail) {
-                    if (CALog.once(key)) CALog.add(k.m.getName() + ": " + k.p.name + " waits for budget (" + Misc.getDGSCredits(k.total) + ", "
-                            + Misc.getDGSCredits(avail) + " left; saving up)");
+                    if (CALog.once(key)) CALog.think(k.m.getName() + ": " + k.p.name + " waits for budget (" + Misc.getDGSCredits(k.total) + ", "
+                            + Misc.getDGSCredits(avail) + " left). Saving up.");
                     continue;
                 }
                 float upCap = CASurplus.upkeepCap(k.m, s);
                 float addedUpkeep = k.p.upkeep - (k.remove != null ? k.remove.upkeep : 0f);   // a replaced industry's upkeep stops
                 if (!CABudget.upkeepFits(s.upkeepAdded, addedUpkeep, upCap, k.p.planStep)) {
-                    if (CALog.once(key + ":upkeep")) CALog.add(k.m.getName() + ": " + k.p.name + " waits for next month's upkeep room ("
-                            + Misc.getDGSCredits(addedUpkeep) + " of " + Misc.getDGSCredits(upCap) + ")");
+                    if (CALog.once(key + ":upkeep")) CALog.think(k.m.getName() + ": " + k.p.name + " waits for next month's upkeep room ("
+                            + Misc.getDGSCredits(addedUpkeep) + " of " + Misc.getDGSCredits(upCap) + ").");
                     continue;
                 }
                 // the endgame economy gives up income only down to a third of what it was when it started
                 boolean eg = CAEndgame.at(k.m);
                 float loss = eg ? (k.remove != null ? k.remove.money : 0f) - k.p.fx[0] : 0f;
                 if (eg && !CAEndgame.lossFits(s, loss)) {
-                    if (CALog.once(key + ":endgame")) CALog.add(k.m.getName() + ": " + k.p.name + " waits: it costs " + Misc.getDGSCredits(loss)
-                            + "/month of income and the endgame keeps " + Misc.getDGSCredits(CAEndgame.floor(s)) + "/month");
+                    if (CALog.once(key + ":endgame")) CALog.think(k.m.getName() + ": " + k.p.name + " waits. Income cost: " + Misc.getDGSCredits(loss)
+                            + "/month. Endgame floor: " + Misc.getDGSCredits(CAEndgame.floor(s)) + "/month.");
                     continue;
                 }
                 if (k.remove != null) {
@@ -390,8 +386,8 @@ public class CAAuto {
         if (r.bestNoSlot != null) b.append("; with a free industry slot: ").append(scoreText(r.bestNoSlot)).append(" (").append(r.noSlot).append(" need a slot)");
         if (r.locked > 0) b.append("; ").append(r.locked).append(" locked by research");
         CADiagnostics.LOG.info(CADiagnostics.TAG + b);
-        CALog.ping("scan:" + m.getId(), m.getName() + ": scan: " + r.picks.size() + " options, holding" + (building ? " (a build is under way)" : "")
-                + (r.picks.isEmpty() ? "" : "; best " + r.picks.get(0).verb + " " + r.picks.get(0).name));
+        CALog.think(m.getName() + ": Scan: " + r.picks.size() + " options, holding." + (building ? " A build is under way." : "")
+                + (r.picks.isEmpty() ? "" : " Best: " + r.picks.get(0).verb + " " + r.picks.get(0).name + "."));
     }
 
     static String scoreText(CAEngine.Pick p) {
@@ -405,14 +401,14 @@ public class CAAuto {
         if (p.id.equals(c.pendingId)) return;
         c.pendingId = p.id; c.pendingName = p.verb + " " + p.name; c.pendingUpgrade = p.upgrade; c.pendingCost = p.cost;
         c.pendingNotified = true;
-        CALog.add(m.getName() + ": proposes " + c.pendingName + " for " + Misc.getDGSCredits(p.cost) + ", " + why);
+        CALog.advise(m.getName() + ": Proposal: " + c.pendingName + " for " + Misc.getDGSCredits(p.cost) + ". " + why + ".");
     }
 
     /** Starts a pick, charging the fee and counting it against the budget. Returns null on success. */
     static String execute(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String who) {
         CASettings s = CAData.settings();
         float fee = CABudget.constructionFee(s, p.cost);
-        if (CABuild.credits() < p.cost + fee) return "Not enough credits for the build plus the " + Misc.getDGSCredits(fee) + " fee";
+        if (CABuild.credits() < p.cost + fee) return "Not enough credits: build plus " + Misc.getDGSCredits(fee) + " fee";
         String err = CABuild.start(m, p);
         if (err != null) {
             // 0.3.0.9: a failed start is starsector.log only. An approval you clicked gets the error back from approve(), and
@@ -427,8 +423,8 @@ public class CAAuto {
         CALog.forget(m.getId() + ":" + p.id + ":upkeep");
         CAData.get().clearPending(c);
         wasBuilding.put(m.getId(), true);
-        CALog.add(m.getName() + ": " + (p.upgrade ? "upgrading to " : "building ") + p.name + " (" + Misc.getDGSCredits(p.cost) + ")"
-                + ("Auto".equals(who) ? "" : ", " + who));
+        CALog.did(m.getName() + ": " + (p.upgrade ? "Upgrading to " : "Building ") + p.name + " (" + Misc.getDGSCredits(p.cost) + ")."
+                + ("Auto".equals(who) ? "" : " " + (who.endsWith(":") ? who.substring(0, who.length() - 1) : who) + "."));
         return null;
     }
 
@@ -436,20 +432,20 @@ public class CAAuto {
     public static String approve(MarketAPI m) {
         CAData d = CAData.get();
         CAData.Colony c = d.colony(m.getId());
-        if (c.pendingId == null) return "Nothing is waiting for approval";
+        if (c.pendingId == null) return "Nothing to approve";
         CAEngine.Result r = CAEngine.evaluate(m, CAThreat.effective(m, c.profile), d.settings.minStability);
         if (r.blocked != null && !c.pendingUpgrade) return r.blocked;
         for (CAEngine.Pick p : r.picks) {
             if (p.id.equals(c.pendingId) && p.upgrade == c.pendingUpgrade) return execute(m, c, p, "Approved:");
         }
         d.clearPending(c);
-        return "That proposal no longer applies; cleared it";
+        return "Proposal out of date. Cleared";
     }
 
     public static void reject(MarketAPI m) {
         CAData d = CAData.get();
         CAData.Colony c = d.colony(m.getId());
-        if (c.pendingName != null) CALog.add(m.getName() + ": rejected " + c.pendingName);
+        if (c.pendingName != null) CALog.did(m.getName() + ": Proposal rejected: " + c.pendingName + ".");
         String id = c.pendingId;
         d.clearPending(c);
         // 0.3.0.0 (A1): from today on the game clock; lastNow was 0 until the first pass after a load, so a rejection then wasn't held

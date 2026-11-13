@@ -143,7 +143,7 @@ public class CALogistics {
         MarketAPI refit = refitHub(s), sell = sellHub(s);
         if (refit == null && sell == null) {
             // 0.3.0.9: advice, so it stays on screen
-            if (CALog.once("logi:nohub")) CALog.add("Storage logistics: pick a hub in Settings. Your refit hub has no Storage you can use");
+            if (CALog.once("logi:nohub")) CALog.advise("Storage logistics: pick a hub in Settings. Your refit hub has no Storage you can use.");
             return;
         }
         FactionAPI f = Global.getSector().getPlayerFaction();
@@ -224,7 +224,7 @@ public class CALogistics {
             back.addAll(l.cargo);
             for (FleetMemberAPI fm : l.cargo.getMothballedShips().getMembersListCopy()) back.getMothballedShips().addFleetMember(fm);
             if (CALog.once("logi:wait:" + l.from + ":" + l.to + ":" + Global.getSector().getClock().getMonth()))
-                CALog.add("Storage logistics: " + describe(l) + " from " + l.fromName + " to " + l.toName + " (" + l.why + ") waits for budget (" + Misc.getDGSCredits(fee) + ")");
+                CALog.think("Storage logistics: " + describe(l) + " from " + l.fromName + " to " + l.toName + " (" + l.why + ") waits for budget (" + Misc.getDGSCredits(fee) + ").");
             return;
         }
         // 0.3.0.0 (C4, research 03 F13): a load goes when it carries 10 times its fee in value, or 30 days after its route's last load
@@ -241,8 +241,8 @@ public class CALogistics {
         l.sent = Global.getSector().getClock().getTimestamp();
         CABudget.charge(s, 0f, fee, 0f);   // takes the fee from your credits
         d.loads().add(l);
-        CALog.add("Storage logistics: " + describe(l) + " from " + l.fromName + "'s Storage to " + l.toName + " (" + l.why + "), "
-                + Math.round(l.days) + " days, " + Misc.getDGSCredits(fee));
+        CALog.did("Storage logistics: " + describe(l) + " from " + l.fromName + "'s Storage to " + l.toName + " (" + l.why + "). "
+                + Math.round(l.days) + " days, " + Misc.getDGSCredits(fee) + ".");
     }
 
     static String describe(Load l) {
@@ -279,7 +279,7 @@ public class CALogistics {
             if (st.getMothballedShips() == null) st.initMothballedShips(Factions.PLAYER);
             for (FleetMemberAPI fm : l.cargo.getMothballedShips().getMembersListCopy()) st.getMothballedShips().addFleetMember(fm);
             it.remove();
-            CALog.add("Storage logistics: " + describe(l) + " delivered to " + to.getName() + "'s Storage" + (to.getId().equals(l.to) ? "" : " (" + l.toName + "'s Storage was gone)"));
+            CALog.did("Storage logistics: " + describe(l) + " delivered to " + to.getName() + "'s Storage" + (to.getId().equals(l.to) ? "" : " (" + l.toName + "'s Storage was gone)") + ".");
         }
     }
 

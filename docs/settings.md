@@ -45,6 +45,7 @@
 - Colony policies: Hazard pay growth threshold 25%. Hazard pay budget 30% of net income. Senate edicts On.
 - Agents: Recruit agents On (12,000 each, 60 days). Agents to keep Auto (2, or 3 with offense).
 - War: Emergency defense fleets On. Retake your lost colonies On (Off in saves from 0.2.45). Bombardment targets Capitals only.
+- Enforcer patrols (Advanced, War, also without Nexerelin): Off. Each fleet type Off. Enforcer cost Reputation. Systems with Auto colonies. Skip your commissioner, Skip allies and League membership, Skip ceasefires, Off in Low profile, Off in your fleet's system: On. Patrols intercept Off. [Enforcer patrols](war-and-security.md#enforcer-patrols).
 - Capital: Capital does Deliveries and commerce. Trade hub starts at net income over 100,000.
 - Extras: Found when a site earns 20,000. Other rows Auto or On.
 - New colonies: Method Nexerelin colony fleet when possible. TASC stations Recommend only.

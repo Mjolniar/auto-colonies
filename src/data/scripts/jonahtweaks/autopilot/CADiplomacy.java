@@ -60,15 +60,15 @@ public class CADiplomacy {
             int answer = CAStance.ceasefire(st, old);
             if (answer > 0) {
                 c.accept();
-                CALog.add(f.getDisplayName() + ": " + lower(what) + " accepted (" + CAStance.name(st) + ")", true);
+                CALog.did(f.getDisplayName() + ": " + lower(what) + " accepted (" + CAStance.name(st) + ").", true);
             } else if (answer < 0 && level >= CAWarPolicy.RETALIATE) {
                 c.reject();
-                CALog.add(f.getDisplayName() + ": " + lower(what) + " rejected (" + CAStance.name(st) + ")", true);
+                CALog.did(f.getDisplayName() + ": " + lower(what) + " rejected (" + CAStance.name(st) + ").", true);
             } else {
                 Long at = c.getPlayerVisibleTimestamp();
                 if (CALog.once("dip:offer:" + f.getId() + ":" + (at == null ? 0L : at)))
-                    CALog.add(f.getDisplayName() + ": " + lower(what) + " waits for you in the intel; " + advice(d, f, st)
-                            + (old ? ". Stance " + CAStance.name(st) + " is from your 0.2.45 priority; set it on the War page to let Autopilot answer" : ""));
+                    CALog.advise(f.getDisplayName() + ": " + lower(what) + " in the intel, for you. " + advice(d, f, st) + "."
+                            + (old ? " Stance " + CAStance.name(st) + " is from your 0.2.45 priority. Set it on the War page to let Autopilot answer." : ""));
             }
         }
     }
@@ -82,9 +82,10 @@ public class CADiplomacy {
         } catch (Throwable ignored) { }
         float weariness = 0f;
         try { weariness = DiplomacyManager.getWarWeariness(PlayerFactionStore.getPlayerFactionId()); } catch (Throwable ignored) { }
-        if (CAStance.wantsWar(st)) return "reject recommended (" + CAStance.name(st) + "; War level Off or Defend leaves it to you)";
-        if (ops > 0) return "reject recommended (" + ops + " operation(s) of yours under way against them)";
-        return "accept recommended (" + CAStance.name(st) + ", no operations under way; your war weariness " + Math.round(weariness) + ")";
+        // 0.3.1.0: facts only (THE FORMAT), the sentence after "<offer> in the intel, for you."
+        if (CAStance.wantsWar(st)) return "Reject recommended (" + CAStance.name(st) + "). War level Off or Defend: your decision";
+        if (ops > 0) return "Reject recommended. " + ops + " operation(s) of yours under way against them";
+        return "Accept recommended (" + CAStance.name(st) + "). No operations under way. War weariness " + Math.round(weariness);
     }
 
     static String lower(String s) { return s == null || s.isEmpty() ? "offer" : s.substring(0, 1).toLowerCase(Locale.ROOT) + s.substring(1); }
@@ -99,7 +100,7 @@ public class CADiplomacy {
             if (f == null || s.stanceOf(f.getId()) != CAStance.ALLY) continue;
             Long at = a.getPlayerVisibleTimestamp();
             if (CALog.once("dip:alliance:" + f.getId() + ":" + (at == null ? 0L : at)))
-                CALog.add(f.getDisplayName() + ": alliance offer waits for you in the intel; joining recommended (Ally). An alliance brings its wars.");
+                CALog.advise(f.getDisplayName() + ": alliance offer in the intel, for you. Joining recommended (Ally). An alliance brings its wars.");
         }
     }
 
@@ -142,7 +143,7 @@ public class CADiplomacy {
         makeHostile(f);
         d.warDeclared().put(f.getId(), Global.getSector().getClock().getTimestamp());
         d.warAuthorized().add(f.getId());
-        CALog.add(f.getDisplayName() + ": war declared (" + CAStance.name(s.stanceOf(f.getId())) + ", War level " + CAWarPolicy.levelName(s.warLevel)
+        CALog.did(f.getDisplayName() + ": war declared (" + CAStance.name(s.stanceOf(f.getId())) + ", War level " + CAWarPolicy.levelName(s.warLevel)
                 + "). Alliances vote on joining.", true);
         return null;
     }
@@ -216,7 +217,7 @@ public class CADiplomacy {
             float rel = Global.getSector().getPlayerFaction().getRelationship(fid);
             makeHostile(f);
             d.warDeclared().put(fid, Global.getSector().getClock().getTimestamp());
-            CALog.add(f.getDisplayName() + ": made hostile again (" + CAStance.name(st) + "; relations had risen to " + Math.round(rel * 100f) + ")", true);
+            CALog.did(f.getDisplayName() + ": made hostile again (" + CAStance.name(st) + "). Relations had risen to " + Math.round(rel * 100f) + ".", true);
         }
     }
 }

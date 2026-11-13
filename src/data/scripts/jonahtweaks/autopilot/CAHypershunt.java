@@ -261,19 +261,19 @@ public class CAHypershunt {
         if (s.restored) return s.name + " is already restored";
         if (s.restoring) return s.name + " is already being restored";
         if (!researched(TECH_RESTORE)) return "Needs " + techName(TECH_RESTORE) + " researched";
-        if (!s.canStart) return s.name + " can't be restored yet (another section comes first)";
+        if (!s.canStart) return s.name + " can't be restored yet. Another section comes first";
         if (!CABreaker.allowed(RESTORE)) return "Paused for this session: restorations didn't start three times";
         try {
             CARefl.invoke(sStart, s.raw);
             if (!CABreaker.check(RESTORE, CARefl.getBoolean(sRestoring, s.raw), m.getName())) return "VoK didn't start the restoration";
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "starting megastructure restoration failed at " + m.getName(), t);
-            return "That failed; see starsector.log";
+            return "Failed. See starsector.log";
         }
         CAContracts.cached = null;
-        CALog.add(m.getName() + ": " + who + " started restoring the " + s.name + ": about " + Misc.getDGSCredits(s.monthlyCredits)
-                + " a month for " + s.months() + " months through a restoration contract that draws on your exports"
-                + (s.upkeep > 0f ? ", then " + Misc.getDGSCredits(s.upkeep) + " a month upkeep" : ""));
+        CALog.did(m.getName() + ": " + s.name + " restoration started by " + who + ". About " + Misc.getDGSCredits(s.monthlyCredits)
+                + " a month for " + s.months() + " months, through a restoration contract on your exports."
+                + (s.upkeep > 0f ? " Then " + Misc.getDGSCredits(s.upkeep) + " a month upkeep." : ""));
         return null;
     }
 
@@ -288,13 +288,13 @@ public class CAHypershunt {
             if (!CABreaker.check("setting the hypershunt range", CARefl.getInt(wRange, h.wormholeRaw) == n, h.m.getName())) return "The range didn't take";
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "setting hypershunt range failed at " + h.m.getName(), t);
-            return "That failed; see starsector.log";
+            return "Failed. See starsector.log";
         }
         int was = h.range;
         h.range = n;
-        CALog.add(h.m.getName() + ": " + who + " set the hypershunt range from " + was * h.mult + " to " + n * h.mult + " light-years ("
+        CALog.did(h.m.getName() + ": Hypershunt range set from " + was * h.mult + " to " + n * h.mult + " light-years by " + who + ". "
                 + (n > was ? "+" : "-") + Misc.getDGSCredits(Math.abs(n - was) * STEP_UPKEEP) + " a month upkeep, "
-                + (n > was ? "+" : "-") + Math.abs(n - was) * STEP_PTM + " purified transplutonics demand)");
+                + (n > was ? "+" : "-") + Math.abs(n - was) * STEP_PTM + " purified transplutonics demand.");
         return null;
     }
 
@@ -357,13 +357,13 @@ public class CAHypershunt {
         if (c.hsManual || t == h.range) return;
         String key = "hsrange:" + h.m.getId() + ":" + t;
         if (!auto) {
-            if (CALog.once(key)) CALog.add(h.m.getName() + ": recommends a hypershunt range of " + t * h.mult + " light-years (now "
-                    + h.range * h.mult + "); set it in the colony panel");
+            if (CALog.once(key)) CALog.advise(h.m.getName() + ": Recommends a hypershunt range of " + t * h.mult + " light-years (now "
+                    + h.range * h.mult + "). Set it in the colony panel.");
             return;
         }
         float more = (t - h.range) * STEP_UPKEEP;
         if (more > 0f && s.upkeepAdded + more > CABudget.upkeepCap(s)) {
-            if (CALog.once(key + ":upkeep")) CALog.add(h.m.getName() + ": a hypershunt range of " + t * h.mult + " light-years waits for next month (new upkeep cap reached)");
+            if (CALog.once(key + ":upkeep")) CALog.think(h.m.getName() + ": Hypershunt range of " + t * h.mult + " light-years waits for next month. New upkeep cap reached.");
             return;
         }
         if (setRange(h, t, "Auto") == null) {
@@ -385,25 +385,25 @@ public class CAHypershunt {
         String key = "hsrestore:" + m.getId() + ":" + next.id;
         List<String> none = unsupplied(next);
         if (none == null || !none.isEmpty()) {
-            if (CALog.once(key + ":supply")) CALog.add(m.getName() + ": restoring the " + next.name + " waits: "
-                    + (none == null ? "Theory of Toolbox has no production figures yet" : "your colonies have no spare " + CAContracts.join(none)));
+            if (CALog.once(key + ":supply")) CALog.think(m.getName() + ": Restoring the " + next.name + " waits. "
+                    + (none == null ? "Theory of Toolbox has no production figures yet." : "No spare " + CAContracts.join(none) + " at your colonies."));
             return;
         }
         String cost = "about " + Misc.getDGSCredits(next.monthlyCredits) + " a month for " + next.months() + " months";
         if (!auto) {
-            if (CALog.once(key)) CALog.add(m.getName() + ": recommends restoring the " + next.name + " (" + cost + "); Start in the colony panel");
+            if (CALog.once(key)) CALog.advise(m.getName() + ": Recommends restoring the " + next.name + " (" + cost + "). Start it in the colony panel.");
             return;
         }
         if (next.total() > CAPresets.projectCap(s)) {   // 0.3.0.0 (WS-F1 fix): the cap in effect
-            if (CALog.once(key + ":cap")) CALog.add(m.getName() + ": restoring the " + next.name + " (" + cost + ") is over the per-project cap; Start it in the colony panel");
+            if (CALog.once(key + ":cap")) CALog.advise(m.getName() + ": Restoring the " + next.name + " (" + cost + ") is over the per-project cap. Start it in the colony panel.");
             return;
         }
         if (next.monthlyCredits > CABudget.available(s)) {
-            if (CALog.once(key + ":budget")) CALog.add(m.getName() + ": restoring the " + next.name + " waits for budget (" + cost + ")");
+            if (CALog.once(key + ":budget")) CALog.think(m.getName() + ": Restoring the " + next.name + " waits for budget (" + cost + ").");
             return;
         }
         if (s.upkeepAdded + next.upkeep > CABudget.upkeepCap(s)) {
-            if (CALog.once(key + ":upkeep")) CALog.add(m.getName() + ": restoring the " + next.name + " waits for next month (new upkeep cap reached)");
+            if (CALog.once(key + ":upkeep")) CALog.think(m.getName() + ": Restoring the " + next.name + " waits for next month. New upkeep cap reached.");
             return;
         }
         if (start(m, next, "Auto") == null) CABudget.charge(s, next.monthlyCredits, 0f, next.upkeep);

@@ -98,8 +98,8 @@ public class CAPanopticon {
             if (old != null) here.addCommodity(old, 1f);
             m.reapplyIndustries();
             CABudget.charge(s, 0f, fee, 0f);
-            CALog.add(m.getName() + ": " + name(id) + " into " + ind.getCurrentName()
-                    + (old != null ? ", its " + name(old) + " back to Autopilot Storage" : "") + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : ""));
+            CALog.did(m.getName() + ": " + name(id) + " into " + ind.getCurrentName() + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : "")
+                    + CAStores.from(m, id) + "." + (old != null ? " " + name(old) + " to Autopilot Storage." : ""));
             return true;
         } catch (Throwable t) {
             CADiagnostics.quarantine(CENTER, "installing " + id, t);

@@ -56,7 +56,7 @@ public class CABuild {
 
     /** Returns null on success, or the reason it couldn't start. */
     public static String start(MarketAPI m, CAEngine.Pick p) {
-        if (!p.upgrade && Misc.getCurrentlyBeingConstructed(m) != null) return "A new building is already under construction here (upgrades can still run)";
+        if (!p.upgrade && Misc.getCurrentlyBeingConstructed(m) != null) return "A new building is already under construction here. Upgrades can still run";
         if (credits() < p.cost) return "Not enough credits (" + Misc.getDGSCredits(p.cost) + " needed)";
         if (!CADiagnostics.usable(p.id)) return "Not supported by Colony Autopilot";
         // 0.3.0.0: the one stability rule (CAStability) as the last gate for a new building or upgrade: what it costs once built must
@@ -70,7 +70,7 @@ public class CABuild {
         if (takesSlot(m, p) && usedSlots(m) >= Misc.getMaxIndustries(m))
             return "No free industry slot (" + usedSlots(m) + " of " + Misc.getMaxIndustries(m) + " used, upgrades under way included)";
         String action = "building " + p.name;
-        if (!CABreaker.allowed(action)) return "Paused for this session: it didn't take effect three times (see Diagnostics)";
+        if (!CABreaker.allowed(action)) return "Paused for this session: no effect three times. See Diagnostics";
         boolean added = false;
         try {
             if (p.upgrade) {
@@ -103,7 +103,7 @@ public class CABuild {
             // building that exists is paid as before, instant ones included
             if (!tookEffect(p.upgrade, started, p.upgrade && m.hasIndustry(p.id), now != null)) {
                 if (targetKey != null) CAData.get().upgradeTargets().remove(targetKey);
-                return "It didn't take effect, so nothing was charged";
+                return "It did not take effect. Nothing charged";
             }
             CABudget.payPrice(p.cost);   // 0.3.0.0 (C12 fix, research 03 F3): credits move only in CABudget; the caller books the price and takes the fee with charge() or payFromPool() as before
             CADiagnostics.LOG.info(CADiagnostics.TAG + (p.upgrade ? "upgrade to " : "build ") + p.id + " at " + m.getName()

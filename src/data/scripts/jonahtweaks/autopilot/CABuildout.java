@@ -76,7 +76,7 @@ public class CABuildout {
     /** The once-key (CAMark, kept in the save) of the line below. */
     static final String MOVED_MARK = "menu3:notice";
     /** On screen: "SETUP / Settings: moved to the 0.3.0 menu, nothing you set changed" (CATheme). */
-    static final String MOVED_LINE = "Settings: moved to the 0.3.0 menu, nothing you set changed";
+    static final String MOVED_LINE = "Settings: moved to the 0.3.0 menu. Values unchanged.";
 
     /**
      * What to do about the line for a save moved to 0.3.0 (CAMigrate stamps CAData.migratedAt; a save started on 0.3.0 has 0):
@@ -97,7 +97,7 @@ public class CABuildout {
             int act = movedNotice(d.migratedAt, false, clock.getElapsedDaysSince(d.migratedAt));
             if (act == 0) return;
             CAMark.set(MOVED_MARK, clock.getTimestamp());
-            if (act == 1) CALog.add(MOVED_LINE, true);
+            if (act == 1) CALog.did(MOVED_LINE, true);
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "0.3.0 menu line failed", t);
             try { CAMark.set(MOVED_MARK, 0L); } catch (Throwable ignored) { }   // tried once; not again every second
@@ -172,13 +172,13 @@ public class CABuildout {
             if (STYLE_FULL.equals(data) || STYLE_LOW.equals(data)) {
                 boolean low = STYLE_LOW.equals(data);
                 CALowProfile.set(CAData.settings(), low, "your choice");
-                CALog.add(m.getName() + ": expansion style " + (low ? "Low profile" : "Full expansion") + " (Settings, Playstyle)", true);
+                CALog.did(m.getName() + ": Expansion style: " + (low ? "Low profile" : "Full expansion") + " (Settings, Playstyle).", true);
                 dialog.getOptionPanel().clearOptions();
                 offerBuildout();
                 return;
             }
             if (data instanceof Float) start(m, (Float) data);
-            else CALog.add(m.getName() + ": fast buildout declined. The colony panel offers it while the colony loses money", true);
+            else CALog.did(m.getName() + ": Fast buildout declined. The colony panel offers it while the colony loses money.", true);
             dialog.dismiss();
         }
 
@@ -195,7 +195,7 @@ public class CABuildout {
         if (!d.settings.setupDone) {
             CASetupUI.applyRecommended(d.settings);
             d.settings.setupDone = true;
-            CALog.add("Settings: recommended values applied (Intel, Colony Autopilot, Settings)", true);   // 0.3.0.0 (WS-F3): SETUP on screen
+            CALog.did("Settings: recommended values applied (Intel, Colony Autopilot, Settings).", true);   // 0.3.0.0 (WS-F3): SETUP on screen
         }
         c.mode = CAData.Mode.AUTO;
         c.buildout = true;
@@ -204,8 +204,8 @@ public class CABuildout {
         c.buildoutSince = Global.getSector().getClock().getTimestamp();
         c.buildoutIdleSince = 0L;
         CAAuto.nextPass.remove(m.getId());
-        CALog.add(m.getName() + ": fast buildout started; spends down to " + Misc.getDGSCredits(floor)
-                + " until the colony earns money for 30 days", true);
+        CALog.did(m.getName() + ": Fast buildout started. Spends down to " + Misc.getDGSCredits(floor)
+                + " until the colony earns money for 30 days.", true);
     }
 
     static void stop(MarketAPI m, CAData.Colony c, String why) {
@@ -213,7 +213,7 @@ public class CABuildout {
         c.buildoutProfitSince = 0L;
         c.buildoutSince = 0L;
         c.buildoutIdleSince = 0L;
-        CALog.add(m.getName() + ": fast buildout ended (" + why + "); the normal Auto budget applies now", true);
+        CALog.did(m.getName() + ": Fast buildout ended: " + why + ". Normal Auto budget applies.", true);
     }
 
     /** Ends the buildout once the colony has made money for PROFIT_DAYS in a row. True if it ended. */
@@ -223,7 +223,7 @@ public class CABuildout {
         if (net <= 0f) { c.buildoutProfitSince = 0L; return false; }
         if (c.buildoutProfitSince == 0L) { c.buildoutProfitSince = clock.getTimestamp(); return false; }
         if (clock.getElapsedDaysSince(c.buildoutProfitSince) < PROFIT_DAYS) return false;
-        stop(m, c, "it has earned money for 30 days, " + Misc.getDGSCredits(net) + " a month now");
+        stop(m, c, "earned money for 30 days, " + Misc.getDGSCredits(net) + " a month now");
         return true;
     }
 
@@ -238,7 +238,7 @@ public class CABuildout {
         // IDLE_DAYS of that, or after MAX_DAYS whatever happens
         CampaignClockAPI clock = Global.getSector().getClock();
         if (c.buildoutSince == 0L) c.buildoutSince = clock.getTimestamp();
-        if (clock.getElapsedDaysSince(c.buildoutSince) >= MAX_DAYS) { stop(m, c, "a year without earning money for 30 days in a row; its plan takes over"); return false; }
+        if (clock.getElapsedDaysSince(c.buildoutSince) >= MAX_DAYS) { stop(m, c, "a year without 30 days of income in a row. Its plan takes over"); return false; }
         CAData d = CAData.get();
         CASettings s = d.settings;
         CAAuto.nextPass.put(m.getId(), now + 1f);
@@ -265,7 +265,7 @@ public class CABuildout {
         if (bestUp == null && bestNew == null && !building) {
             if (c.buildoutIdleSince == 0L) c.buildoutIdleSince = clock.getTimestamp();
             else if (clock.getElapsedDaysSince(c.buildoutIdleSince) >= IDLE_DAYS) {
-                stop(m, c, "nothing worth building for " + Math.round(IDLE_DAYS) + " days; its plan takes over");
+                stop(m, c, "nothing worth building for " + Math.round(IDLE_DAYS) + " days. Its plan takes over");
             }
             return false;   // nothing that pays today: the normal pass runs
         }
@@ -274,11 +274,11 @@ public class CABuildout {
         float floor = floor(c);
         for (CAEngine.Pick p : order) {
             if (p == null) continue;
-            if (p.measured && s.measuredMode == 1) { CAAuto.propose(m, c, p, "a mod building scored from measurements, needs your approval"); continue; }
+            if (p.measured && s.measuredMode == 1) { CAAuto.propose(m, c, p, "Approval needed: mod building scored from measurements"); continue; }
             float total = p.cost + CABudget.constructionFee(s, p.cost);
             if (CABuild.credits() - total < floor) {
-                if (CALog.once(m.getId() + ":" + p.id + ":floor")) CALog.add(m.getName() + ": fast buildout: " + p.name + " waits ("
-                        + Misc.getDGSCredits(total) + " would take you below the " + Misc.getDGSCredits(floor) + " floor)");
+                if (CALog.once(m.getId() + ":" + p.id + ":floor")) CALog.think(m.getName() + ": Fast buildout: " + p.name + " waits. "
+                        + Misc.getDGSCredits(total) + " would go below the " + Misc.getDGSCredits(floor) + " floor.");
                 continue;
             }
             if (CAAuto.execute(m, c, p, "Fast buildout") == null) CALog.forget(m.getId() + ":" + p.id + ":floor");
@@ -322,7 +322,7 @@ public class CABuildout {
         CAData.Colony c = CAData.get().colony(m.getId());
         if (action.equals("start")) { start(m, DEFAULT_FLOOR); return "Fast buildout started"; }
         if (!c.buildout) return null;
-        if (action.equals("stop")) { stop(m, c, "stopped by you"); return "Fast buildout stopped; still Auto"; }
+        if (action.equals("stop")) { stop(m, c, "stopped by you"); return "Fast buildout stopped. Mode: Auto"; }
         float f = floor(c), n = f;
         if (action.equals("down")) { n = FLOORS[0]; for (float x : FLOORS) if (x < f) n = x; }   // next step below, or the lowest
         else if (action.equals("up")) { n = FLOORS[FLOORS.length - 1]; for (int k = FLOORS.length - 1; k >= 0; k--) if (FLOORS[k] > f) n = FLOORS[k]; }

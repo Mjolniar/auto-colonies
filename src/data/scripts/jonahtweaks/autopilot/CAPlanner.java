@@ -560,7 +560,7 @@ public class CAPlanner {
         }
         if (a.storyPoints > 0 && a.storyPoints > pool.storyPoints) { mark(a, false, CAAction.STORY, "needs " + a.storyPoints + " story points"); return MOVED; }
         if (a.approveOnly || a.approval != null) {
-            String why = a.approveOnly ? "waiting for your approval" : a.approval;
+            String why = a.approveOnly ? APPROVE_MODE : a.approval;
             if (a.fresh && m != null && proposedAt.add(m)) {
                 h.propose(a, why);
                 res.proposed.add(a);
@@ -982,12 +982,15 @@ public class CAPlanner {
         return a;
     }
 
-    /** Why a pick at an Auto colony needs your approval (0.2.45.1's rules), or null. */
+    /** 0.3.1.0: an Approve colony's proposal reason (CAAuto.propose, the planner's marks). */
+    static final String APPROVE_MODE = "Approval needed: Approve mode";
+
+    /** Why a pick at an Auto colony needs your approval (0.2.45.1's rules), or null. 0.3.1.0: "Approval needed: ..." (THE FORMAT). */
     static String approval(MarketAPI m, CAEngine.Pick p, CASettings s) {
         float cap = CASurplus.projectCap(m, s);   // the focus world may go past it with surplus credits
-        if (p.cost > cap) return "over the per-project cap, needs your approval";
-        if (p.measured && s.measuredMode == 1) return "a mod building scored from measurements, needs your approval";
-        if (p.confidence < 0.9f && p.cost > 0.5f * cap) return "scored from an estimate rather than a game formula and over half the per-project cap, needs your approval";
+        if (p.cost > cap) return "Approval needed: over the per-project cap";
+        if (p.measured && s.measuredMode == 1) return "Approval needed: mod building scored from measurements";
+        if (p.confidence < 0.9f && p.cost > 0.5f * cap) return "Approval needed: estimated score, over half the per-project cap";
         return null;
     }
 
@@ -1032,8 +1035,8 @@ public class CAPlanner {
             // new build that hit one still keeps long builds out of its colony's queue
             boolean noCredits = CABuild.credits() < p.cost + CABudget.constructionFee(s, p.cost);
             if (eg && !CAEndgame.lossFits(s, loss)) {
-                if (CALog.once(m.getId() + ":" + p.id + ":endgame")) CALog.add(m.getName() + ": " + p.name + " waits: it costs " + Misc.getDGSCredits(loss)
-                        + "/month of income and the endgame keeps " + Misc.getDGSCredits(CAEndgame.floor(s)) + "/month");
+                if (CALog.once(m.getId() + ":" + p.id + ":endgame")) CALog.think(m.getName() + ": " + p.name + " waits. Income cost: " + Misc.getDGSCredits(loss)
+                        + "/month. Endgame floor: " + Misc.getDGSCredits(CAEndgame.floor(s)) + "/month.");
                 a.failWaits = true;
                 return "the endgame keeps its income floor";
             }
@@ -1274,8 +1277,8 @@ public class CAPlanner {
         if (r.earmarkSet != null && pool.earmark == r.earmarkSet) {
             Earmark e = r.earmarkSet;
             if (CALog.once("planner:earmark:" + e.key))
-                CALog.add(e.place + ": saving up for " + e.what + " (" + credits(e.total) + ", about " + Math.max(1, Math.round((e.due - now) / 30f))
-                        + (Math.round((e.due - now) / 30f) <= 1 ? " month" : " months") + "); smaller buys wait");
+                CALog.think(e.place + ": Saving up for " + e.what + " (" + credits(e.total) + ", about " + Math.max(1, Math.round((e.due - now) / 30f))
+                        + (Math.round((e.due - now) / 30f) <= 1 ? " month" : " months") + "). Smaller buys wait.");
         }
         if (r.holdSet != null && pool.hold == r.holdSet) {
             Hold k = r.holdSet;

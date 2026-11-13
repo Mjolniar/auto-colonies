@@ -5,6 +5,7 @@
 - Auto Colonies: tracks threat and handles sieges and colony crises.
 - With Nexerelin: emergency defense fleets, agents, a War level (default Retaliate) and a stance per faction (default Auto) that caps it.
 - [Low profile](low-profile.md): caps the War level at Defend.
+- [Enforcer patrols](#enforcer-patrols): colony patrols attack enforcement fleets. Off by default.
 
 ## Threat
 
@@ -17,6 +18,36 @@
 - Crisis progress: priced at about 640 credits a month per point of monthly progress.
 - Charged: AI cores (Hegemony, Pathers) and Fuel Production (Diktat). Credited: Patrol HQ, Military Base, High Command.
 - Next crisis picked (meter at 500): its target is planned as Security, a Pather target sheds AI cores, counted free ports close.
+
+## Enforcer patrols
+
+- Settings: Advanced, War. Enforcer patrols Off by default. Each fleet type Off by default.
+- Fleet types: Hegemony investigators, Hegemony AI inspections, Persean League enforcers, Luddic sacred protectors, Tri-Tachyon commerce raiders, Nexerelin police (with Nexerelin).
+- Finding: by the game's memory flag on the fleet. Inspection task forces: by the inspection's intel.
+- Where: systems with Auto colonies (default), or systems with any colony of yours.
+- Checks: four a day. A target is hostile to your faction for one day, renewed while it stays. Colony patrols and stations engage it.
+- End: the fleet leaves the system, a gate applies, or the setting is turned off.
+- Left alone: your faction's fleets, support fleets, stations, factions already hostile to you, fleets the game already made hostile.
+- Gates, each On by default: your commissioner, allies and League membership, ceasefires (Nexerelin), Low profile, the system your fleet is in.
+- Your fleet: a marked fleet is hostile to your fleet too.
+- Patrols intercept: Off by default. On: colony patrols in the system get an intercept order.
+- Charge: once per fleet, when it loses a battle to your faction's fleets. A battle you fight yourself gets only the game's own penalty.
+- Enforcer cost: Reputation (default), Credits, Both, None.
+
+| Fleet type | Game's penalty when you defeat it | Reputation charge |
+|---|---|---|
+| Hegemony investigators | -3, down to Vengeful (low rep impact) | -3 |
+| Hegemony AI inspections | -3 with transponder off. -3 and at best Hostile with it on | -3 |
+| Persean League enforcers | -3, down to Vengeful (low rep impact) | -3 |
+| Luddic sacred protectors | -3, down to Vengeful (low rep impact) | -3 |
+| Tri-Tachyon commerce raiders | None (Independent, no rep impact) | None |
+| Nexerelin police | None (Independent, no rep impact) | None |
+
+- Credits: fleet points x Nexerelin's fleet request price per point (default 400). 400 per point without Nexerelin.
+- Paid from: the Military rung, the surplus while rich, or the month's budget. Only credits above the credit reserve.
+- Credits mode: a fleet is attacked only when its price is available above the reserve.
+- Owed: a charge that can't be paid is owed and paid first. No new attacks while credits are owed.
+- Log: each attack and each charge. Ended attacks and fleets left alone: starsector.log only.
 
 ## Nexerelin
 

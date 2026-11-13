@@ -67,7 +67,7 @@ public class CALowProfile {
         CAAuto.nextPass.clear();
         if (!on) {
             CALog.forget("lowprofile:on");
-            CALog.add(TAG + "off (" + who + "). Full expansion again: Autopilot builds whatever pays most", true);
+            CALog.did(TAG + "off (" + who + "). Full expansion: Autopilot builds what pays most.", true);
         }
     }
 
@@ -319,8 +319,8 @@ public class CALowProfile {
     public static void run(CAData d, CASettings s, List<MarketAPI> auto) {
         if (!s.lowProfile) { CALog.forget("lowprofile:on"); return; }
         if (CALog.once("lowprofile:on"))
-            CALog.add(TAG + "on. Your colonies keep growing, but attention counts ten times as much, and Autopilot stays clear of what "
-                    + "starts each faction's crisis; the Crises page says what that is", true);
+            CALog.did(TAG + "on. Colonies keep growing. Attention counts ten times as much. Autopilot avoids what "
+                    + "starts each faction's crisis (Crises page).", true);
         Set<MarketAPI> frozen = CAItems.inspected();   // pulling anything out once an inspection is sent disrupts every building there
         for (MarketAPI m : auto) {
             if (frozen.contains(m) || CAEngine.isOutpost(m) || CAHypershunt.is(m)) continue;
@@ -381,8 +381,8 @@ public class CALowProfile {
             }
             throw t;
         }
-        CALog.add(m.getName() + ": " + TAG + "took the " + itName + " out of " + from
-                + " and back to Autopilot Storage: Pather interest " + Misc.getRoundedValueMaxOneAfterDecimal(now) + ", and a Pather cell comes at " + (int) line);
+        CALog.did(m.getName() + ": " + TAG + itName + " moved from " + from
+                + " to Autopilot Storage. Pather interest " + Misc.getRoundedValueMaxOneAfterDecimal(now) + ". A Pather cell comes at " + (int) line + ".");
         return true;
     }
 
@@ -410,8 +410,8 @@ public class CALowProfile {
         if (h == null) {
             // 0.3.0.9: the advice on screen; the waiting part ("takes over once one is free") is gone
             if (CALog.once("lowprofile:aiadmin:" + m.getId()))
-                CALog.add(m.getName() + ": " + TAG + "hire an administrator, or turn on Hire administrators, to replace its AI core administrator "
-                        + "(it counts 10 toward Hegemony inspections and the Pathers' interest)");
+                CALog.advise(m.getName() + ": " + TAG + "hire an administrator, or turn on Hire administrators, to replace its AI core administrator. "
+                        + "It counts 10 toward Hegemony inspections and Pather interest.");
             return false;
         }
         if (!CAStability.canLose(m, CAStability.adminOwn(h.getPerson()) - CAStability.adminOwn(a), TAG + "administrator "
@@ -434,8 +434,8 @@ public class CALowProfile {
             throw t;
         }
         CALog.forget("lowprofile:aiadmin:" + m.getId());
-        CALog.add(m.getName() + ": " + TAG + "administrator " + human + " takes over from the AI core administrator"
-                + (core != null ? ", which went back to Autopilot Storage" : ""));
+        CALog.did(m.getName() + ": " + TAG + "administrator " + human + " took over from the AI core administrator."
+                + (core != null ? " The core went to Autopilot Storage." : ""));
         return true;
     }
 
@@ -454,8 +454,8 @@ public class CALowProfile {
             EventFactor f = ha.getFactorOfClass(PerseanLeagueHostileActivityFactor.class);
             if (f == null || f.getProgress(ha) <= 0) return;
             if (CALog.once("lowprofile:league"))
-                CALog.add(TAG + "the Persean League's crisis counts colony size alone, so nothing Autopilot builds avoids it. Joining the League "
-                        + "at Kazeron ends it and the Hegemony's; that's your call", true);
+                CALog.advise(TAG + "the Persean League's crisis counts colony size only. Autopilot builds do not change it. Joining the League "
+                        + "at Kazeron ends it and the Hegemony's. Your decision.", true);
         } catch (Throwable ignored) { }
     }
 

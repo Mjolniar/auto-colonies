@@ -43,6 +43,8 @@ public class CAStores {
         public long sent;
         public float days;
         public String why;
+        /** 0.3.1.0: the shipping fee paid for it (0 on a joined load, and in shipments saved before 0.3.1.0). */
+        public float fee;
 
         String name() {
             try {
@@ -250,7 +252,7 @@ public class CAStores {
         float fee = load.isEmpty() ? fee(s, ly) : 0f;
         if (fee > 0f && (fee > CABudget.available(s) || CABuild.credits() - fee < s.reserve)) {
             if (CALog.once("ship:wait:" + to.getId() + ":" + (commodity != null ? commodity : special.getId())))
-                CALog.add("Shipping to " + to.getName() + " waits for budget (" + Misc.getDGSCredits(fee) + ")");
+                CALog.think("Shipping to " + to.getName() + " waits for budget (" + Misc.getDGSCredits(fee) + ").");
             return false;
         }
         if (commodity != null) {
@@ -278,17 +280,19 @@ public class CAStores {
                 CAData.get().shipments().add(sh);
                 name = sh.name();
             }
-            CALog.add("Shipping " + (qty > 1 ? qty + " " : "") + name + " from " + fromName + " to " + to.getName() + " with the load sent "
-                    + Math.round(sentAgo) + (Math.round(sentAgo) == 1 ? " day" : " days") + " ago, " + Math.round(travel) + " days, no extra fee"
-                    + (why != null ? " (" + why + ")" : ""));
+            // 0.3.1.0: thinking; the line that uses it says where it came from (from())
+            CALog.think("Shipping " + (qty > 1 ? qty + " " : "") + name + " from " + fromName + " to " + to.getName() + " with the load sent "
+                    + Math.round(sentAgo) + (Math.round(sentAgo) == 1 ? " day" : " days") + " ago. " + Math.round(travel) + " days, no extra fee"
+                    + (why != null ? " (" + why + ")" : "") + ".");
             return true;
         }
         // CABudget.charge takes the fee from your credits; 0.2.45.1: it was also subtracted here, so every shipment cost twice its fee
         if (fee > 0f) CABudget.charge(s, 0f, fee, 0f);
         Shipment sh = shipment(commodity, special, qty, fromId, fromName, to, travel, why);
+        sh.fee = fee;
         CAData.get().shipments().add(sh);
-        CALog.add("Shipping " + (qty > 1 ? qty + " " : "") + sh.name() + " from " + fromName + " to " + to.getName() + ", " + Math.round(sh.days)
-                + " days, " + Misc.getDGSCredits(fee) + (why != null ? " (" + why + ")" : ""));
+        CALog.think("Shipping " + (qty > 1 ? qty + " " : "") + sh.name() + " from " + fromName + " to " + to.getName() + ". " + Math.round(sh.days)
+                + " days, " + Misc.getDGSCredits(fee) + (why != null ? " (" + why + ")" : "") + ".");
         return true;
     }
 
@@ -303,6 +307,31 @@ public class CAStores {
     /** Ships from one colony's Autopilot Storage to another's. */
     public static boolean ship(MarketAPI from, MarketAPI to, String commodity, SpecialItemData special, int qty, String why) {
         return ship(of(from), from.getPrimaryEntity(), from.getId(), from.getName() + "'s Autopilot Storage", to, commodity, special, qty, why);
+    }
+
+    // ---------------- 0.3.1.0: where a shipped item came from, for the line that uses it ----------------
+
+    /** "marketId|itemId" -> {from (a name), fee, arrival timestamp}, set when a shipment arrives. Session only (CALog.reset clears it). */
+    static final Map<String, Object[]> ARRIVED = new HashMap<String, Object[]>();
+    /** Days an arrival note is kept for the line that uses the item. */
+    static final float ARRIVED_DAYS = 30f;
+
+    /**
+     * ", from 99 Es I storage, 2,000 shipping" for an item that arrived in m's Autopilot Storage by shipment in the last
+     * ARRIVED_DAYS, or "". Used once: the note is cleared.
+     */
+    public static String from(MarketAPI m, String id) {
+        if (m == null || id == null) return "";
+        Object[] a = ARRIVED.remove(m.getId() + "|" + id);
+        if (a == null) return "";
+        try { if (Global.getSector().getClock().getElapsedDaysSince((Long) a[2]) > ARRIVED_DAYS) return ""; } catch (Throwable t) { return ""; }
+        return fromText((String) a[0], (Float) a[1]);
+    }
+
+    /** Pure: ", from 99 Es I storage, 2,000 shipping" (no fee part on a joined load). */
+    static String fromText(String from, float fee) {
+        String src = from == null ? "another colony" : from.replace("'s Autopilot Storage", " storage");
+        return ", from " + src + (fee > 0f ? ", " + Misc.getDGSCredits(fee) + " shipping" : "");
     }
 
     /** The colony nearest to `to` whose Autopilot Storage holds this commodity or item, or null. */
@@ -345,7 +374,9 @@ public class CAStores {
             if (sh.commodity != null) st.addCommodity(sh.commodity, sh.qty);
             else st.addSpecial(sh.special, sh.qty);
             it.remove();
-            CALog.add(to.getName() + ": " + (sh.qty > 1 ? sh.qty + " " : "") + sh.name() + " arrived in Autopilot Storage");
+            ARRIVED.put(to.getId() + "|" + (sh.commodity != null ? sh.commodity : sh.special.getId()),
+                    new Object[]{sh.from, sh.fee, Global.getSector().getClock().getTimestamp()});
+            CALog.think(to.getName() + ": " + (sh.qty > 1 ? sh.qty + " " : "") + sh.name() + " arrived in Autopilot Storage.");
         }
     }
 
@@ -357,8 +388,8 @@ public class CAStores {
         CargoAPI dest = of(to);
         dest.addAll(d.storage);
         d.storage.clear();
-        CALog.add("Autopilot Storage is per colony now: what was in the old shared storage is in " + to.getName() + "'s. The manager ships "
-                + "items and cores to other colonies when it needs them there, for a fee and travel time", true);
+        CALog.did("Autopilot Storage: per colony. The old shared storage moved to " + to.getName() + "'s. Items and cores ship "
+                + "to other colonies when needed there, for a fee and travel time.", true);
     }
 
     /** Every stack in every colony's Autopilot Storage, with its colony. */

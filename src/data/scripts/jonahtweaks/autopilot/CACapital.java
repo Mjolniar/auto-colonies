@@ -188,15 +188,15 @@ public class CACapital {
         MarketAPI lost = lostCapital(s);
         if (lost != null) {
             if (CALog.once("capital:lost:" + lost.getId()))
-                CALog.add(lost.getName() + ": capital: no longer yours. Production deliveries go to " + cap.getName() + " until it is again; "
-                        + "nothing is gathered anywhere meanwhile, and it's the capital again the day you get it back", true);
+                CALog.did(lost.getName() + ": Capital: lost. Production deliveries go to " + cap.getName() + " until it is retaken. "
+                        + "Storage gathering paused until then.", true);
             deliveries(s, cap);
             return;
         }
         if (CALog.once("capital:" + cap.getId()))
-            CALog.add(cap.getName() + ": capital: your home port. Production deliveries come here" + (gathers(s) ? ", your other Storage gathers here weekly" : "")
-                    + (s.capitalMode == 0 ? ", and once your colonies have ramped up it builds itself into a trade hub" : "")
-                    + (cap.getId().equals(s.capitalId) ? " (your pick)" : ""));
+            CALog.did(cap.getName() + ": Capital: set" + (cap.getId().equals(s.capitalId) ? " (your pick)" : "") + ". Production deliveries come here."
+                    + (gathers(s) ? " Your other Storage gathers here weekly." : "")
+                    + (s.capitalMode == 0 ? " Builds into a trade hub once your colonies have ramped up." : ""));
         deliveries(s, cap);
         cap = capital();   // the gathering point may have moved it
         if (cap == null) return;
@@ -217,9 +217,9 @@ public class CACapital {
         }
         if (!startsNow) return;
         List<String> left = stepLabels(cap);
-        CALog.add(cap.getName() + ": capital: commerce build-up starts (" + (line == -Float.MAX_VALUE ? "right away" : "net income "
-                + Misc.getDGSCredits(CABudget.netIncome(s)) + " a month") + "): " + (left.isEmpty() ? "every trade building is already here"
-                : CAContracts.join(left) + " go first"), true);
+        CALog.did(cap.getName() + ": Capital: commerce build-up starts" + (line == -Float.MAX_VALUE ? " now" : ", net income "
+                + Misc.getDGSCredits(CABudget.netIncome(s)) + " a month") + ". " + (left.isEmpty() ? "Every trade building is already here."
+                : "First: " + CAContracts.join(left) + "."), true);
     }
 
     /** The gathering point follows the capital; if you moved it to another colony yourself, the capital follows you instead. */
@@ -232,14 +232,14 @@ public class CACapital {
             s.capitalId = g.getId();
             s.capitalGatherSet = g.getId();
             pickedAt = -99f;
-            CALog.add(g.getName() + ": capital: you moved production deliveries here, so this is the capital now", true);
+            CALog.did(g.getName() + ": Capital: moved here with your production deliveries.", true);
             return;
         }
         if (g != null && g.getId().equals(cap.getId())) { s.capitalGatherSet = cap.getId(); return; }
         try {
             prod.setGatheringPoint(cap);
             s.capitalGatherSet = cap.getId();
-            CALog.add(cap.getName() + ": capital: production deliveries now come here" + (g != null ? " (were going to " + g.getName() + ")" : ""));
+            CALog.did(cap.getName() + ": Capital: production deliveries now come here" + (g != null ? " (were going to " + g.getName() + ")" : "") + ".");
         } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "couldn't move the production gathering point to " + cap.getName(), t); }
     }
 
@@ -277,7 +277,7 @@ public class CACapital {
         if (m == null || !commerce(CAData.settings()) || !is(m)) return out;
         if (m.getStabilityValue() < COMMERCE_MIN_STABILITY) {   // 0.2.42.2: Commerce and the Bazaars cost stability
             if (CALog.once("capital:lowstab:" + m.getId()))
-                CALog.add(m.getName() + ": capital: trade buildings wait while stability is under " + Math.round(COMMERCE_MIN_STABILITY) + " (most of them cost stability)");
+                CALog.think(m.getName() + ": Capital: trade buildings wait while stability is under " + Math.round(COMMERCE_MIN_STABILITY) + ".");
             return out;
         }
         CALog.forget("capital:lowstab:" + m.getId());
@@ -341,19 +341,19 @@ public class CACapital {
         for (Map.Entry<String, Float> e : stepWorth.entrySet()) {
             String key = "capital:loss:" + cap.getId() + ":" + e.getKey();
             if (lossAllowed(e.getKey(), s, tier)) { CALog.forget(key); continue; }
-            if (CALog.once(key)) CALog.add(cap.getName() + ": capital: " + CAWorldPlanner.industryName(e.getKey()) + " waits (worth "
-                    + CAEngine.valueText(e.getValue()) + "; " + lossWhy(s, tier, e.getKey()) + ")");
+            if (CALog.once(key)) CALog.think(cap.getName() + ": Capital: " + CAWorldPlanner.industryName(e.getKey()) + " waits (worth "
+                    + CAEngine.valueText(e.getValue()) + "): " + lossWhy(s, tier, e.getKey()) + ".");
         }
     }
 
     /** 0.3.0.0 (C4): why a trade building at a loss waits, for the log. */
     static String lossWhy(CASettings s, int tier, String id) {
-        if (tier < CARich.T1) return "trade buildings at a loss start at the money tier Surplus, now " + CARich.name(tier);
+        if (tier < CARich.T1) return "loss-making trade buildings start at money tier Surplus, now " + CARich.name(tier);
         String closed = CAEconomy.closedWhy(s);   // 0.3.0.0 fix (C4 review 2): the Economy buyers' one gate and its wording
         if (closed != null) return closed;
         Float up = stepUpkeep.get(id);
-        return "trade buildings at a loss would cost " + Misc.getDGSCredits(lossUpkeep + (up == null ? 0f : up)) + " a month in upkeep, over "
-                + Misc.getDGSCredits(CAEconomy.COMMERCE_LOSS_SHARE * Math.max(0f, CABudget.netIncome(s))) + ", 5 percent of colony net";
+        return "loss-making trade buildings: " + Misc.getDGSCredits(lossUpkeep + (up == null ? 0f : up)) + " a month upkeep, over the "
+                + Misc.getDGSCredits(CAEconomy.COMMERCE_LOSS_SHARE * Math.max(0f, CABudget.netIncome(s))) + " limit (5 percent of colony net)";
     }
 
     /** 0.3.0.0 (C4): a trade step may be built: it earns, wasn't valued today, or the money ladder allows one at a loss now. */

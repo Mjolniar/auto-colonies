@@ -197,8 +197,8 @@ public class CAItems {
         if (s.adminOptimal && (assignAdmin(d, markets) || moveAdmin(markets))) return;
         if (s.adminHiring) hireAdmin(d, s, markets);
         else if (adminsUncovered(d) > 0 && CALog.once("admin:need:off:" + adminsNeeded(d)))   // 0.3.0.0 (WS-D): not for an expedition's own administrator
-            CALog.add("Administrators needed: " + limitText(adminsNeeded(d), expansionsComing(d)) + ". Administrator hiring is off, so hire one yourself, or turn on "
-                    + "Hire administrators under Administrators and ambassadors");
+            CALog.advise("Administrators: needed for " + limitText(adminsNeeded(d), expansionsComing(d)) + ". Hire administrators: off. "
+                    + "Hire one, or turn it on under Administrators and ambassadors.");
     }
 
     /**
@@ -317,8 +317,8 @@ public class CAItems {
                 p.m.reapplyIndustries();   // the item's effect otherwise waits for the next economy update
                 CABudget.charge(s, 0f, fee, 0f);
                 idleAt = -99f;
-                CALog.add(p.m.getName() + ": installed " + p.spec.getName() + " in " + p.ind.getCurrentName()
-                        + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : ""));
+                CALog.did(p.m.getName() + ": " + p.spec.getName() + " installed in " + p.ind.getCurrentName()
+                        + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : "") + CAStores.from(p.m, p.data.getId()) + ".");
                 return true;
             } catch (Throwable t) {
                 CADiagnostics.quarantine(p.ind.getId(), "installing " + p.spec.getId(), t);
@@ -383,8 +383,8 @@ public class CAItems {
             bestM.reapplyIndustries();
             CABudget.charge(s, 0f, fee, 0f);
             idleAt = -99f;
-            CALog.add(bestM.getName() + ": swapped " + spec.getName() + " into " + best.getCurrentName() + " for the " + oldName
-                    + ", which went back to Autopilot Storage" + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : ""));
+            CALog.did(bestM.getName() + ": Swapped " + spec.getName() + " into " + best.getCurrentName() + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : "")
+                    + CAStores.from(bestM, data.getId()) + ". " + oldName + " moved to Autopilot Storage.");
             return true;
         } catch (Throwable t) {
             CADiagnostics.quarantine(best.getId(), "swapping in " + spec.getId(), t);
@@ -530,8 +530,8 @@ public class CAItems {
                     CAStores.of(m).addSpecial(item, 1f);
                     m.reapplyIndustries();
                     idleAt = -99f;
-                    CALog.add(m.getName() + ": took the " + name(item.getId()) + " out of " + ind.getCurrentName() + " before its pollution became permanent ("
-                            + left + " days left); back to Autopilot Storage. Lock the building to keep it there", true);
+                    CALog.did(m.getName() + ": " + name(item.getId()) + " moved from " + ind.getCurrentName() + " to Autopilot Storage. Pollution permanent in "
+                            + left + " days. Lock the building to keep it there.", true);
                     return true;
                 } catch (Throwable t) {
                     CADiagnostics.quarantine(item.getId(), "taking a polluting item out at " + m.getName(), t);
@@ -596,17 +596,12 @@ public class CAItems {
                 SpecialItemData item = ind.getSpecialItem();
                 if (item == null || !LAMP.equals(item.getId()) || c.locks.contains(ind.getId())) continue;
                 if (planNeedsHeat(m, c.profile) || lampValue(m, c.profile, true) > 0f) continue;
-                boolean cancels = false;
-                for (String k : LAMP_CANCELS) if (m.hasCondition(k)) cancels = true;
                 try {
                     ind.setSpecialItem(null);
                     CAStores.of(m).addSpecial(item, 1f);
                     m.reapplyConditions();
                     m.reapplyIndustries();
-                    CALog.add(m.getName() + ": took the Orbital Fusion Lamp out of " + ind.getCurrentName() + ", back to Autopilot Storage ("
-                            + (cancels ? "the heat it adds costs more than the cold or darkness it cancels"
-                                       : "it only made the colony hotter and used " + LAMP_VOLATILES + " volatiles; it helps only a cold or dark world")
-                            + ")");
+                    CALog.did(m.getName() + ": Orbital Fusion Lamp moved from " + ind.getCurrentName() + " to Autopilot Storage.");   // 0.3.1.0: the reason is gone
                     return true;
                 } catch (Throwable t) {
                     CADiagnostics.quarantine(LAMP, "taking out the Orbital Fusion Lamp at " + m.getName(), t);
@@ -659,7 +654,8 @@ public class CAItems {
             best.removeIndustry("fuelprod", null, false);
             st.removeCommodity("ix_antimatter_stabilizer", 1f);
             CABudget.charge(s, 0f, fee, 0f);
-            CALog.add(best.getName() + ": used an Antimatter Stabilizer to upgrade Fuel Production to Advanced Fuel Production");
+            CALog.did(best.getName() + ": Fuel Production upgraded to Advanced Fuel Production. 1 Antimatter Stabilizer used"
+                    + CAStores.from(best, "ix_antimatter_stabilizer") + ".");
             return true;
         } catch (Throwable t) {
             CADiagnostics.quarantine("ix_fuel_production", "Antimatter Stabilizer conversion at " + best.getName(), t);
@@ -717,10 +713,10 @@ public class CAItems {
 
     /** Why no inspection can come now, or null when one can. Persean League members get none: the Hegemony's progress is negated, and an event is only picked from progress. */
     public static String noInspections() {
-        if (hegemonyDone()) return "you've defeated the Hegemony's inspections";
-        try { if (PerseanLeagueMembership.isLeagueMember()) return "Persean League membership keeps the Hegemony from acting"; } catch (Throwable ignored) { }
+        if (hegemonyDone()) return "Hegemony inspections defeated";
+        try { if (PerseanLeagueMembership.isLeagueMember()) return "Persean League member"; } catch (Throwable ignored) { }
         for (MarketAPI o : Global.getSector().getEconomy().getMarketsCopy()) if (Factions.HEGEMONY.equals(o.getFactionId())) return null;
-        return "the Hegemony holds no colonies";
+        return "Hegemony holds no colonies";
     }
 
     /**
@@ -795,14 +791,15 @@ public class CAItems {
 
     /** Why m's core limit is what it is, for the panels and the log. */
     public static String limitWhy(CASettings s, MarketAPI m, String none, int lim) {
-        if (lim == pathRelief(m)) return "limit " + lim + ": a Pather attack is coming for it, so its Pather interest goes under 7 and its cell can dissolve";
+        // 0.3.1.0: facts only (THE FORMAT), for "N inspection points, <this>" in log lines and both panels
+        if (lim == pathRelief(m)) return "limit " + lim + " during the Pather attack (Pather interest under 7)";
         String low = CALowProfile.limitWhy(m, lim);
         if (low != null) return low;
-        if (lim == 0) return "limit 0: above size " + HegemonyAICoresActivityCause.IGNORE_COLONY_THRESHOLD + " every core adds to the Hegemony's crisis (AI cores: Small colonies only)";
-        if (lim != Integer.MAX_VALUE) return "limit " + lim + ", which the Hegemony never inspects";
+        if (lim == 0) return "limit 0 above size " + HegemonyAICoresActivityCause.IGNORE_COLONY_THRESHOLD + " (AI cores: Small colonies only)";
+        if (lim != Integer.MAX_VALUE) return "limit " + lim + ", safe from Hegemony inspections";
         if (none != null) return "no limit: " + none;
         if (s.coreRisk == 2) return "no limit (Inspection risk: No limit)";
-        return "no limit: its defenses (about " + (int) defenseFP(m) + " fleet points) beat the next inspection's " + (int) nextInspectionFP();
+        return "no limit, defenses about " + (int) defenseFP(m) + " fleet points, next inspection " + (int) nextInspectionFP();
     }
 
     /** An Alpha core only goes where it can be taken out cleanly: vanilla buildings, never Population & Infrastructure or mod code. */
@@ -1009,9 +1006,9 @@ public class CAItems {
             }
             worst.ind.setAICoreId(null);
             CAStores.of(m).addCommodity(CORES[worst.cur], 1f);
-            CALog.add(m.getName() + ": took the " + coreName(worst.cur) + " out of " + worst.ind.getCurrentName() + " and back to Autopilot Storage: "
-                    + pts + " inspection points, " + limitWhy(s, m, none, lim)
-                    + (s.coreRisk == 0 && lim == safePoints() ? " (its defenses don't beat the next inspection)" : ""));
+            CALog.did(m.getName() + ": " + coreName(worst.cur) + " moved from " + worst.ind.getCurrentName() + " to Autopilot Storage. "
+                    + pts + " inspection points, " + limitWhy(s, m, none, lim) + "."
+                    + (s.coreRisk == 0 && lim == safePoints() ? " Defenses do not beat the next inspection." : ""));
             return true;
         }
 
@@ -1080,9 +1077,11 @@ public class CAItems {
         String where = bestTo.m.getName() + ": ";
         String what = bestFrom != null
                 ? coreName(bestK) + " moved from " + (bestFrom.m == bestTo.m ? "" : bestFrom.m.getName() + "'s ") + bestFrom.ind.getCurrentName() + " to " + bestTo.ind.getCurrentName()
-                : coreName(bestK) + " into " + bestTo.ind.getCurrentName() + (old >= 0 ? " (" + coreName(old) + " to storage)" : "");
-        String gainText = first ? " (research buildings first, -" + Misc.getDGSCredits(bestTo.net[0]) + "/month costs)" : " (+" + Misc.getDGSCredits(real) + "/month)";
-        CALog.add(where + what + gainText);
+                : coreName(bestK) + " into " + bestTo.ind.getCurrentName();
+        String gainText = first ? " (-" + Misc.getDGSCredits(bestTo.net[0]) + "/month, research buildings first)" : " (+" + Misc.getDGSCredits(real) + "/month)";
+        // 0.3.1.0: one line for a core move: where it came from and the shipping are here, the shipping and arrival lines are thinking
+        CALog.did(where + what + gainText + (bestFrom == null ? CAStores.from(bestTo.m, coreId) : "") + "."
+                + (bestFrom == null && old >= 0 ? " " + coreName(old) + " to Autopilot Storage." : ""));
         CALog.quiet(where + aiPoints(bestTo.m) + " inspection points" + (lim == Integer.MAX_VALUE ? "" : " of " + lim));   // 0.3.0.9: no ping, the move line is on screen
         return true;
     }
@@ -1120,8 +1119,8 @@ public class CAItems {
             }
             worst.ind.setAICoreId(null);
             CAStores.of(to.m).addCommodity(CORES[worst.cur], 1f);
-            CALog.add(to.m.getName() + ": took the " + coreName(worst.cur) + " out of " + worst.ind.getCurrentName() + " and back to Autopilot Storage, "
-                    + "to make inspection room for an Alpha core in " + to.ind.getCurrentName() + " (research buildings get Alpha cores first)");
+            CALog.did(to.m.getName() + ": " + coreName(worst.cur) + " moved from " + worst.ind.getCurrentName() + " to Autopilot Storage. "
+                    + "Inspection room for an Alpha core in " + to.ind.getCurrentName() + ".");
             return true;
         }
         return false;
@@ -1217,12 +1216,12 @@ public class CAItems {
         int rest = need - over;
         int fromExpansion = Math.max(0, Math.min(rest, coming));
         int back = rest - fromExpansion;
-        String s = over > 0 ? over + " more " + (over == 1 ? "colony" : "colonies") + " than your colony limit (each costs every colony you govern "
-                + Math.round(Misc.getOutpostPenalty()) + " stability)" : "";
-        if (back > 0) s += (s.isEmpty() ? "" : ", and ") + back + " autonomous " + (back == 1 ? "colony" : "colonies")
-                + " Autopilot takes back once there's room under your colony limit";
-        if (fromExpansion > 0) s += (s.isEmpty() ? "" : ", and ") + fromExpansion + " new " + (fromExpansion == 1 ? "colony" : "colonies")
-                + " on the way from Auto-expansion, past your colony limit";
+        // 0.3.1.0: facts only (THE FORMAT): "1 colony over the colony limit (-2 stability per colony you govern), 1 autonomous colony to take back"
+        String s = over > 0 ? over + " " + (over == 1 ? "colony" : "colonies") + " over the colony limit (-"
+                + Math.round(Misc.getOutpostPenalty()) + " stability per colony you govern)" : "";
+        if (back > 0) s += (s.isEmpty() ? "" : ", ") + back + " autonomous " + (back == 1 ? "colony" : "colonies") + " to take back";
+        if (fromExpansion > 0) s += (s.isEmpty() ? "" : ", ") + fromExpansion + " new " + (fromExpansion == 1 ? "colony" : "colonies")
+                + " from Auto-expansion over the colony limit";
         return s;
     }
 
@@ -1345,8 +1344,8 @@ public class CAItems {
             bestA.setMarket(bestM);
             CALog.forget("admin:idle:" + bestA.getPerson().getId());
             CALog.forget("admin:need");
-            CALog.add(bestM.getName() + ": assigned administrator " + bestA.getPerson().getNameString() + " (" + (need > 0 ? limitText(need) + "; "
-                    : "") + "adds about " + Misc.getDGSCredits(bestWorth) + " a month, salary " + Misc.getDGSCredits(Misc.getAdminSalary(bestA.getPerson())) + ")");
+            CALog.did(bestM.getName() + ": Administrator " + bestA.getPerson().getNameString() + " assigned. " + (need > 0 ? "Needed for " + limitText(need) + ". "
+                    : "") + "Adds about " + Misc.getDGSCredits(bestWorth) + " a month. Salary " + Misc.getDGSCredits(Misc.getAdminSalary(bestA.getPerson())) + ".");
             return true;
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "admin assignment failed at " + bestM.getName(), t);
@@ -1386,7 +1385,7 @@ public class CAItems {
             from.setAdmin(Global.getSector().getPlayerPerson());
             bestM.setAdmin(bestA.getPerson());
             bestA.setMarket(bestM);
-            CALog.add("Administrator " + bestA.getPerson().getNameString() + ": " + from.getName() + " to " + bestM.getName() + " (+" + Misc.getDGSCredits(bestGain) + "/month)");
+            CALog.did("Administrator " + bestA.getPerson().getNameString() + ": moved from " + from.getName() + " to " + bestM.getName() + " (+" + Misc.getDGSCredits(bestGain) + "/month).");
             return true;
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "admin move to " + bestM.getName() + " failed", t);
@@ -1445,8 +1444,8 @@ public class CAItems {
         if (need <= 0) d.adminNeedSince = 0L;
         if (open.isEmpty()) {
             if (needNow > 0 && CALog.once("admin:need:none:" + need))
-                CALog.add("Administrators needed: " + limitText(need, coming) + ". But none of your Auto colonies is governed by you, so Autopilot has nowhere to put an "
-                        + "administrator. Put one on a colony yourself, or switch a colony you govern to Auto");
+                CALog.advise("Administrators: needed for " + limitText(need, coming) + ". No Auto colony is governed by you. "
+                        + "Put one on a colony yourself, or switch a colony you govern to Auto.");
             return false;
         }
         int idleOrComing = 0;
@@ -1510,8 +1509,8 @@ public class CAItems {
         String held = need > 0 ? null : CAPlanner.setAside(total, total, best.salary, bestFor);
         if (need > 0 ? CABuild.credits() - s.reserve < total : total > CABudget.available(s) || CABuild.credits() < total || held != null) {
             if (CALog.once("admin:" + best.person.getId()))
-                CALog.add("An administrator is for hire at " + bestAt.getName() + " (" + Misc.getDGSCredits(best.hiringBonus) + " + fee), "
-                        + (held != null ? "waiting: " + held : "waiting for budget"));
+                CALog.think("Administrators: one for hire at " + bestAt.getName() + " (" + Misc.getDGSCredits(best.hiringBonus) + " + fee). "
+                        + (held != null ? "Waiting: " + held : "Waiting for budget") + ".");
             return false;
         }
         try {
@@ -1520,10 +1519,10 @@ public class CAItems {
             Global.getSector().getCharacterData().addAdmin(best.person);
             CABudget.pay(s, null, best.hiringBonus, fee, best.salary);
             d.adminTransit().put(best.person.getId(), Global.getSector().getClock().getTimestamp());
-            CALog.add("Hired administrator " + best.person.getNameString() + " from " + bestAt.getName() + " for " + Misc.getDGSCredits(best.hiringBonus)
-                    + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + ", salary " + Misc.getDGSCredits(best.salary) + "/month, for "
-                    + bestFor.getName() + (need > 0 ? ": " + limitText(need, coming) : " (adds about " + Misc.getDGSCredits(bestWorth) + " a month)")
-                    + "; arrives in 30 days");
+            CALog.did("Administrators: " + best.person.getNameString() + " hired at " + bestAt.getName() + " for " + Misc.getDGSCredits(best.hiringBonus)
+                    + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + ", salary " + Misc.getDGSCredits(best.salary) + "/month. For "
+                    + bestFor.getName() + (need > 0 ? ": " + limitText(need, coming) : ", adds about " + Misc.getDGSCredits(bestWorth) + " a month")
+                    + ". Arrives in 30 days.");
             return true;
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "administrator hire failed", t);
@@ -1569,8 +1568,8 @@ public class CAItems {
         float fee = CABudget.fee(s, HIRE_FEE), price = recruiterPrice() + bonus;   // 0.3.0.9: higher in survival mode (recruitScale)
         if (CABuild.credits() - s.reserve < price + fee) {
             if (CALog.once("admin:recruit"))   // 0.3.0.9: one key (the month was in it); a "waiting" line, starsector.log only (CALogFilter)
-                CALog.add("Administrators needed: " + limitText(need, expansionsComing(d)) + ". A recruiter can find one for " + Misc.getDGSCredits(price + fee)
-                        + ", waiting for that much above your credit reserve");
+                CALog.think("Administrators: needed for " + limitText(need, expansionsComing(d)) + ". Recruiter: " + Misc.getDGSCredits(price + fee)
+                        + ". Waiting for that much above the credit reserve.");
             return false;
         }
         PersonAPI p;
@@ -1599,9 +1598,9 @@ public class CAItems {
             CALog.spent(null, price, 0f, 0f);
             d.adminTransit().put(p.getId(), Global.getSector().getClock().getTimestamp());
             CALog.forget("admin:need"); CALog.forget("admin:recruit");
-            CALog.add("Hired administrator " + p.getNameString() + " through a recruiter for " + Misc.getDGSCredits(price)
-                    + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + ", salary " + Misc.getDGSCredits(salary) + "/month, for "
-                    + bestFor.getName() + ": " + limitText(need, expansionsComing(d)) + ", none on offer for " + Math.round(waited) + " days; arrives in 30 days");
+            CALog.did("Administrators: " + p.getNameString() + " hired through a recruiter for " + Misc.getDGSCredits(price)
+                    + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + ", salary " + Misc.getDGSCredits(salary) + "/month. For "
+                    + bestFor.getName() + ": " + limitText(need, expansionsComing(d)) + ". None on offer for " + Math.round(waited) + " days. Arrives in 30 days.");
             return true;
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "recruited administrator hire failed", t);
@@ -1704,9 +1703,9 @@ public class CAItems {
             Global.getSector().getCharacterData().addAdmin(p);
             CABudget.payFromPool(s, CAExpansion.RUNG, null, h.price, h.fee);
             d.adminTransit().put(p.getId(), Global.getSector().getClock().getTimestamp());
-            CALog.add("Hired administrator " + p.getNameString() + " " + how + " for " + Misc.getDGSCredits(h.price)
+            CALog.did("Administrators: " + p.getNameString() + " hired " + how + " for " + Misc.getDGSCredits(h.price)
                     + (h.fee > 0f ? " + " + Misc.getDGSCredits(h.fee) + " fee" : "") + ", salary " + Misc.getDGSCredits(h.salary)
-                    + "/month, for the new colony at " + forName + "; arrives in 30 days");
+                    + "/month. For the new colony at " + forName + ". Arrives in 30 days.");
             return true;
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "administrator hire for Auto-expansion failed", t);
@@ -1729,8 +1728,8 @@ public class CAItems {
             a.setMarket(m);
             d.adminTransit().remove(a.getPerson().getId());
             CALog.forget("admin:idle:" + a.getPerson().getId());
-            CALog.add(m.getName() + ": assigned administrator " + a.getPerson().getNameString() + " (new colony from Auto-expansion, salary "
-                    + Misc.getDGSCredits(Misc.getAdminSalary(a.getPerson())) + "/month)");
+            CALog.did(m.getName() + ": Administrator " + a.getPerson().getNameString() + " assigned. New colony from Auto-expansion. Salary "
+                    + Misc.getDGSCredits(Misc.getAdminSalary(a.getPerson())) + "/month.");
             return true;
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "administrator for the new colony " + m.getName() + " failed", t);

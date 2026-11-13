@@ -81,8 +81,8 @@ public class CAStability {
         try {
             if (ok) CALog.forget(key);
             else if (CALog.once(key))
-                CALog.add(m.getName() + ": " + why + " waits: stability " + Math.round(stability) + " would go to "
-                        + Math.round(after(stability, delta, extra)) + ", under Autopilot's floor of " + Math.round(floor), false);
+                CALog.think(m.getName() + ": " + why + " waits. Stability " + Math.round(stability) + " would go to "
+                        + Math.round(after(stability, delta, extra)) + ", under Autopilot's floor of " + Math.round(floor) + ".");
         } catch (Throwable ignored) { }   // the rule never fails because the log did
         return ok;
     }
