@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.3.4 - 2026-11-13
+
+- Compatibility: The game version in mod_info is 0.98.5a-RC4. TriOS no longer marks the mod incompatible. 0.98a still loads it.
+
 ## 0.3.3.3 - 2026-11-13
 
 - Expansion style: Changed "Low profile avoids colony crises" to "Low profile slows colony crises". Shown in the first colony's dialog and in Settings.

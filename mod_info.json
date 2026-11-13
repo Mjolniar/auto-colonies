@@ -2,9 +2,9 @@
   "id": "jonah_tweaks",
   "name": "Auto Colonies",
   "author": "Mjolniar",
-  "version": "0.3.3.3",
+  "version": "0.3.3.4",
   "description": "Colony Autopilot: colonies set to Auto build, place items and AI cores, hire administrators and set policies within your budget. Supports Nexerelin, Ashes of the Domain, Terraforming Made Easy, Industrial Evolution and more.",
-  "gameVersion": "0.98a-RC8",
+  "gameVersion": "0.98.5a-RC4",
   "utility": false,
   "jars": [
     "jars/autocolonies.jar"
