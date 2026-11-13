@@ -468,7 +468,7 @@ public class CAConquest {
         if (ownOk && othersOk) {
             Nex_GrantAutonomy.revokeAutonomy(m);
             d.autonomous().remove(id);
-            if (idle != null) { m.setAdmin(idle.getPerson()); idle.setMarket(m); }
+            if (idle != null && !CARogue.adminLocked(m)) { m.setAdmin(idle.getPerson()); idle.setMarket(m); }   // 0.3.2.1: never over Rogue Planets' Trash King
             CALog.forget("conq:auton:stab:" + id);
             CALog.forget("conq:auton:limit:" + id);
             CALog.forget("conq:auton:gov:" + id);

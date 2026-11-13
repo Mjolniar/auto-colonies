@@ -208,6 +208,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         if (mm.isModEnabled(CAHypershunt.MOD) && CAMegastructures.has(market)) l.add("mega");
         if (mm.isModEnabled(CAAugments.MOD) && s.augmentMode != 2 && !shunt) l.add("augments");
         if (mm.isModEnabled(CASynergies.MOD) && !shunt) l.add("synergies");
+        if (mm.isModEnabled(CARogue.MOD) && CARogue.any(market)) l.add("rogue");   // 0.3.2.1: Rogue Planets' conditions here
         return l;
     }
 
@@ -215,13 +216,14 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     void renderMod(TooltipMakerAPI t, String id, CAData.Colony c, CASettings s, CAData.Profile planWith, float pad) {
         com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
         String title = id.equals("tasc") ? "Terraforming (TASC)" : id.equals("mega") ? "Megastructure (AotD)"
-                : id.equals("augments") ? "Station augments" : "Industry synergies (AotD)";
+                : id.equals("augments") ? "Station augments" : id.equals("rogue") ? "Planet conditions (Rogue Planets)" : "Industry synergies (AotD)";
         CATheme.heading(t, title, pad);
         try {
             if (id.equals("tasc")) CATasc.renderColony(t, market, c);
             else if (id.equals("mega") && mm.isModEnabled(CAHypershunt.MOD)) CAMegastructures.renderColony(t, market, c, s);
             else if (id.equals("augments") && mm.isModEnabled(CAAugments.MOD)) CAAugments.renderColony(t, market, c, s, planWith);
             else if (id.equals("synergies") && mm.isModEnabled(CASynergies.MOD)) CASynergies.render(t, market);
+            else if (id.equals("rogue") && mm.isModEnabled(CARogue.MOD)) CARogue.render(t, market);
         } catch (Throwable e) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + id + " section failed at " + market.getName(), e);
             t.addPara(CATheme.NOT_SHOWN, Misc.getGrayColor(), 6f);

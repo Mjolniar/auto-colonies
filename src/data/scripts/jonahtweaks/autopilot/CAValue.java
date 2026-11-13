@@ -688,6 +688,9 @@ public final class CAValue {
         float est = byEstimate ? p.outputEstimate * (share < 0f ? 1f : share) : 0f;
         k.estimate = byEstimate && k.lines > 0 ? p.outputEstimate : 0f;
         float[] syn = keepSynergies(synergies(m, deficit), m, ind, deficit);
+        // 0.3.2.1: and what it keeps going in the colony's Rogue Planets conditions (a pair's output and stability, Pilgrim World's +1)
+        float[] rogue = CARogue.keepFx(m, ind, deficit);
+        for (int i = 0; i < 7; i++) syn[i] += rogue[i];
         System.arraycopy(syn, 0, k.synergy, 0, 7);
         k.other = otherMoney(p) + est + syn[0];   // the engine's money besides its supply lines (salvage, income)
         k.money = k.export + k.relief + k.other - k.upkeep;

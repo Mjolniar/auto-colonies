@@ -209,6 +209,7 @@ public class CAExpansionNex {
      */
     static boolean fixAdmin(MarketAPI m) {
         if (m == null || !m.isPlayerOwned()) return false;
+        if (CARogue.adminLocked(m)) return false;   // 0.3.2.1: Rogue Planets' Trash King governs it
         if (m.getAdmin() == null) { m.setAdmin(Global.getSector().getPlayerPerson()); return true; }
         if (m.getAdmin().isPlayer()) return false;
         ColonyManager.reassignAdminIfNeeded(m, Global.getSector().getFaction(Factions.NEUTRAL), Global.getSector().getPlayerFaction());

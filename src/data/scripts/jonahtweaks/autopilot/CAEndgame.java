@@ -406,6 +406,7 @@ public class CAEndgame {
         if (keepsPlanBonus(m, plan, id) || CASurplusResearch.FACILITY.equals(id) || CASurplusResearch.BLACK_SITE.equals(id) || CAWonders.SITE.equals(id)) return true;
         if (!CAEngine.isSupportedVanilla(id) && !CAEstimates.has(id)) return true;   // only what the engine can value for certain
         if (CAContracts.feeds(ind) != null) return true;   // a trade contract you hold needs what it makes (0.2.39.0)
+        if (CARogue.keepReason(m, ind, false) != null) return true;   // 0.3.2.1: the running reactor's pair, the vault's Tech-Mining
         Long built = d.endgameBuilt().get(m.getId() + ":" + id);
         return built != null && Global.getSector().getClock().getElapsedDaysSince(built) < MEMORY_DAYS;
     }

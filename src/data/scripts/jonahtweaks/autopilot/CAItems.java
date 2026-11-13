@@ -626,6 +626,7 @@ public class CAItems {
             Industry fuel = m.getIndustry("fuelprod");
             if (fuel == null || !fuel.isFunctional() || fuel.isBuilding() || fuel.isUpgrading() || m.hasIndustry("ix_fuel_production")) continue;
             if (d.colony(m.getId()).locks.contains("fuelprod")) continue;
+            if (CARogue.keepReason(m, fuel, true) != null) continue;   // 0.3.2.1: replacing a running reactor's Fuel Production melts it down
             if (CAPlan.build(m, d.colony(m.getId()).profile).exact.contains("fuelprod")) continue;   // the Unification Center needs vanilla Fuel Production
             int score = m.getSize() * 10 + (fuel.getSpecialItem() != null ? 5 : 0) + (fuel.getAICoreId() != null ? 3 : 0);
             if (score > bestSize) { bestSize = score; best = m; }
@@ -972,6 +973,7 @@ public class CAItems {
         Map<MarketAPI, Integer> points = new HashMap<MarketAPI, Integer>(), limit = new HashMap<MarketAPI, Integer>();
         for (MarketAPI m : markets) {
             if (frozen.contains(m)) continue;
+            if (CARogue.noCores(m)) continue;   // 0.3.2.1: Pilgrim World: one AI core turns its bonus into a penalty; cores you put there stay
             CAData.Colony c = d.colony(m.getId());
             float[] w = coreWeights(m, c);   // first: it updates the threat state the limit reads
             points.put(m, aiPoints(m));
@@ -1138,7 +1140,10 @@ public class CAItems {
     /** A move must gain this much a month (or a quarter of the salary, if more), so administrators don't shuffle. */
     static final float MOVE_MARGIN = 5000f;
 
-    static boolean governedByYou(MarketAPI m) { return m.getAdmin() == null || m.getAdmin().isPlayer(); }
+    static boolean governedByYou(MarketAPI m) {
+        if (CARogue.adminLocked(m)) return false;   // 0.3.2.1: Rogue Planets' Trash King governs it; nobody is seated there
+        return m.getAdmin() == null || m.getAdmin().isPlayer();
+    }
 
     /** The hired administrator governing m, or null. */
     static AdminData adminAt(MarketAPI m) {

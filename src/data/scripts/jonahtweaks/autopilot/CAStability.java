@@ -23,6 +23,9 @@ public class CAStability {
     /** The floor never goes under this, whatever minStability says (CAOddisz, CACapital and CALowProfile used 3 before 0.3.0). */
     static final float MIN_FLOOR = CATuning.STABILITY_FLOOR;   // 0.3.0.0 (A3): in CATuning
 
+    /** 0.3.2.1: the floor at one colony: floor(), and 6 where Rogue Planets' Viable Slave Labor or Supercooled Cryo-Sinks punish 5 or lower. */
+    public static float floor(MarketAPI m) { return Math.max(floor(), CARogue.stabilityFloor(m)); }
+
     /** The lowest stability Autopilot will knowingly leave an Auto colony at: max(3, minStability). */
     public static float floor() {
         float min = CATuning.MIN_STABILITY;
@@ -39,7 +42,7 @@ public class CAStability {
     }
 
     /** Under the floor now: changes with no stability cost of their own that still unsettle a colony (pulling items) wait. */
-    public static boolean below(MarketAPI m) { return now(m) < floor(); }
+    public static boolean below(MarketAPI m) { return now(m) < floor(m); }
 
     // ---------------- the rule ----------------
 
@@ -74,7 +77,7 @@ public class CAStability {
     }
 
     static boolean decide(MarketAPI m, float stability, float delta, float extra, String why) {
-        float floor = floor();
+        float floor = floor(m);   // 0.3.2.1: the colony's own floor
         boolean ok = canLose(stability, delta, extra, floor);
         if (why == null) return ok;
         String key = "stab:hold:" + m.getId() + ":" + why;
@@ -135,8 +138,12 @@ public class CAStability {
         try { num = Misc.getNumIndustries(m); max = Misc.getMaxIndustries(m); } catch (Throwable ignored) { }
         boolean counted = false;
         try { counted = ind.isIndustry(); } catch (Throwable ignored) { }
-        return takeDownDelta(of(m, ind), overLimitPenalty(m), num, max, counted);
+        // 0.3.2.1: and what it brings through Rogue Planets conditions (Pilgrim World's +1, a pair's -1 or -3) comes off too
+        return takeDownDelta(of(m, ind), overLimitPenalty(m), num, max, counted) - CARogue.stabilityShare(m, ind);
     }
+
+    /** 0.3.2.1: what a building adds to the colony's stability: its own modifiers and what it brings through Rogue Planets conditions. */
+    public static float share(MarketAPI m, Industry ind) { return of(m, ind) + CARogue.stabilityShare(m, ind); }
 
     /** Pure: own = what it adds now; penalty = the limit's penalty now (positive); the game's count and limit; whether the game counts it. */
     static float takeDownDelta(float own, float penalty, int gameCount, int max, boolean countedByGame) {

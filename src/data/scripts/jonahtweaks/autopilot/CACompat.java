@@ -143,6 +143,8 @@ public class CACompat {
         ENTRIES.add(new Entry(CAOddisz.PACK, "Coalesced Little Mods", "0.4.0", CAOddisz.packIndustries(), NONE, NONE, NONE, null));
         ENTRIES.add(new Entry(CAOddisz.CURVES_MOD, "Toolbox Economy Curves", "1.0.2", NONE, NONE, NONE, NONE, null));
         ENTRIES.add(new Entry(CAOddisz.SOL_MOD, "Sol Renewed", "1.0.1", NONE, NONE, NONE, NONE, () -> CAOddisz.solLink()));
+        // 0.3.2.1: Rogue Planets, by condition ids and its condition classes' names (CARogue)
+        ENTRIES.add(new Entry(CARogue.MOD, "Rogue Planets", "1.0.0", NONE, CARogue.ids(), NONE, NONE, () -> CARogue.link()));
     }
 
     static final Map<String, Entry> BY_MOD = new HashMap<String, Entry>();

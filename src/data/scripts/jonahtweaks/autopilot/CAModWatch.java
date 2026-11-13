@@ -33,7 +33,8 @@ public class CAModWatch {
             {"omega_core_everywhere", "Omega Core Everywhere"}, {"astral_ascension_renewed", "Astral Ascension Renewed"},
             {"niko_scavengableindustries", "Niko's Scavengable Industries"}, {"roider", "Roider Union"},
             {"JYD", "Junk Yard Dogs"}, {"CFT", "Carter's Freetraders"}, {"vulpoids", "Vulpoids"},
-            {"yunruindustries", "Yunru Industries"}, {"SBTM", "Slightly Better Tech-Mining"}, {"yunruworlds", "Yunru's Worlds"}};
+            {"yunruindustries", "Yunru Industries"}, {"SBTM", "Slightly Better Tech-Mining"}, {"yunruworlds", "Yunru's Worlds"},
+            {CARogue.MOD, "Rogue Planets"}};
 
     static final List<JSONObject> last = new ArrayList<JSONObject>();
     static final Map<String, String> logged = new HashMap<String, String>();
@@ -219,6 +220,7 @@ public class CAModWatch {
         else if (modId.equals("CFT") || modId.equals("yunruindustries")) illegal(modId, mine, ch);
         else if (modId.equals("SBTM")) sbtm(mine, ch);
         else if (modId.equals("niko_scavengableindustries")) nsi(mine, ch);
+        else if (modId.equals(CARogue.MOD)) rogue(mine, ch);
         if (modId.equals("yunruindustries")) drydocks(mine, ch);
     }
 
@@ -389,6 +391,44 @@ public class CAModWatch {
                 if (st.isSpecialStack() && st.getSpecialDataIfSpecial() != null && "NSI_IndustryBPItem".equals(st.getSpecialDataIfSpecial().getId())) bps += (int) st.getSize();
         }
         if (bps > 0) ch.add("INFO", bps + " unlearned building blueprints in your colonies' storage (learning one is a right-click in your cargo)");
+    }
+
+    /**
+     * 0.3.2.1: Rogue Planets at your colonies: each condition's state, Autopilot's upkeep multiplier against the game's own on a
+     * clean building, AI cores on a Pilgrim World, Viable Slave Labor's unrest months, the reactor and the Trash King.
+     */
+    static void rogue(List<MarketAPI> mine, Checks ch) {
+        for (MarketAPI m : mine) {
+            CARogue.Ctx c = CARogue.context(m, null);
+            if (c == null) continue;
+            for (String cond : c.conds) {
+                CARogue.Cond row = CARogue.TABLE.get(cond);
+                CARogue.Fx x = CARogue.effect(cond, c.f, c.have);
+                ch.add("INFO", m.getName() + ": " + row.name + (row.needs.length == 2 ? (x.active ? " active" : " inactive") : "")
+                        + (x.active && !x.text.isEmpty() ? " (" + x.text + ")" : ""));
+            }
+            for (Industry ind : m.getIndustries()) {
+                if (ind.isHidden() || !ind.isFunctional() || ind.isBuilding() || ind.isUpgrading()) continue;
+                float mult = CARogue.upkeepMult(m, ind.getId());
+                if (Math.abs(mult - 1f) < 0.01f) continue;
+                float pred = CAEngine.baseUpkeep(m, ind.getSpec()), real = ind.getUpkeep().getModifiedValue();
+                if (ind.getAICoreId() != null || ind.isImproved() || pred < 100f) continue;
+                boolean same = Math.abs(real - pred) <= Math.max(50f, 0.1f * pred);
+                ch.add(same ? "PASS" : "WARN", m.getName() + "'s " + ind.getCurrentName() + ": upkeep x" + fmt(mult) + " from Rogue Planets. Game "
+                        + Math.round(real) + ", Autopilot " + Math.round(pred));
+            }
+            if (c.conds.contains(CARogue.PILGRIM) && c.f.cores)
+                ch.add("WARN", m.getName() + ": an AI core or AI administrator turns Pilgrim World's bonus into a penalty. Autopilot places none there");
+            if (c.conds.contains(CARogue.SLAVES)) {
+                int months = m.getMemoryWithoutUpdate().getInt(CARogue.UNREST);
+                if (months > 0) ch.add("WARN", m.getName() + ": Viable Slave Labor unrest month " + months + " of 3 (stability " + Math.round(CAStability.now(m)) + ")");
+            }
+            if (c.conds.contains(CARogue.REACTOR) && c.have.contains(CARogue.REFINING) && c.have.contains(CARogue.FUEL))
+                ch.add("INFO", m.getName() + ": Volatile Additive Reactor" + (m.getMemoryWithoutUpdate().getBoolean(CARogue.MELTDOWN) ? " in meltdown" : " running")
+                        + ". Autopilot keeps Refining and Fuel Production as they are");
+            if (c.conds.contains(CARogue.KING))
+                ch.add("INFO", m.getName() + ": Trash King " + (CARogue.adminLocked(m) ? "governs. Autopilot seats no administrator there" : "is gone"));
+        }
     }
 
     // ---------------- report ----------------

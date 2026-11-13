@@ -232,7 +232,8 @@ public class CALogistics {
             else if (where.equals("sell") && sell != null && sell != m) toSell.add(x);
         }
         List<FleetMemberAPI> ships = new ArrayList<FleetMemberAPI>();
-        if (s.logisticsShips && refit != null && refit != m && st.getMothballedShips() != null) ships.addAll(st.getMothballedShips().getMembersListCopy());
+        if (s.logisticsShips && refit != null && refit != m && st.getMothballedShips() != null)
+            for (FleetMemberAPI fm : st.getMothballedShips().getMembersListCopy()) if (!CARogue.storyShip(fm)) ships.add(fm);   // 0.3.2.1: the Afterlight stays (Rogue Planets' story)
 
         if (!toRefit.isEmpty() || !ships.isEmpty()) {
             Load l = load(m, refit, "refit hub");

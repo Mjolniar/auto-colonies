@@ -89,6 +89,7 @@ final class CAAutonomy {
         List<Cand> out = new ArrayList<Cand>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             if (!eligible(d, m, autoOnly)) continue;
+            if (CARogue.adminLocked(m)) continue;   // 0.3.2.1: autonomy would unseat Rogue Planets' Trash King
             float v = moneySaved(colonyNet(m), mult);
             if (v <= 0f) continue;
             Cand k = new Cand(); k.m = m; k.saving = v;

@@ -269,7 +269,7 @@ public class CAPlan {
         extra.addAll(CAFloors.stepsFor(m));     // 0.3.2.0: production floor producers (none with production Off)
         extra.addAll(CASurplus.richSteps(m));   // spending freely: every station and defense maxed
         extra.addAll(CAWonders.stepsFor(m));    // and the Bifrost Control Center at one colony
-        if (extra.isEmpty()) return p;
+        if (extra.isEmpty()) { p.steps = CARogue.planFilter(m, p.steps); return p; }   // 0.3.2.1: Rogue Planets' forbidden steps out
         List<Step> steps = new ArrayList<Step>();
         java.util.Set<String> ids = new java.util.HashSet<String>();
         for (Step s : extra) if (exists(s) && ids.add(s.id)) { s.extra = true; steps.add(s); }
@@ -292,7 +292,7 @@ public class CAPlan {
                 steps = stationsAfter(steps, moving, first);
             } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station order failed at " + m.getName(), t); }
         }
-        p.steps = steps;
+        p.steps = CARogue.planFilter(m, steps);   // 0.3.2.1: Rogue Planets' forbidden steps out (Fragile Biosphere, the reactor pair, the vault)
         return p;
     }
 
@@ -434,12 +434,13 @@ public class CAPlan {
             List<Step> keep = new ArrayList<Step>();
             java.util.Set<String> seen = new java.util.HashSet<String>();
             for (Step s : p.steps) if (exists(s) && seen.add(s.kind + ":" + s.id)) keep.add(s);
-            p.steps = keep;
+            p.steps = CARogue.planFilter(m, keep);   // 0.3.2.1
             return p;
         }
         Plan p = new Plan();
         boolean hab = m.hasCondition("habitable");
         boolean ore = has(m, "ore_"), rare = has(m, "rare_ore_"), vol = has(m, "volatiles_"), org = has(m, "organics_"), farm = has(m, "farmland_");
+        if (vol && CARogue.volatilesAsOrganics(m)) { vol = false; org = true; }   // 0.3.2.1: Rogue Planets' Hydrocarbon Fractionation: Mining makes organics
         boolean cold = m.hasCondition("cold") || m.hasCondition("very_cold");
         boolean war = prof == CAData.Profile.WAR, sec = prof == CAData.Profile.SECURITY, inc = prof == CAData.Profile.INCOME,
                 grow = prof == CAData.Profile.GROWTH, self = prof == CAData.Profile.SELF;
@@ -514,7 +515,7 @@ public class CAPlan {
             if (!exists(s) || !seen.add(s.kind + ":" + s.id)) continue;
             keep.add(s);
         }
-        p.steps = keep;
+        p.steps = CARogue.planFilter(m, keep);   // 0.3.2.1: Rogue Planets' forbidden steps out
         // 0.3.0.0 (B5): the plain plan never pays to undo what a world plan paid for while that world still fits the colony's goal
         try {
             if (k != null && !switchAllowed(PLAIN, Float.NaN, CAWorldPlanner.fit(k.world, prof) > 0f)) {
