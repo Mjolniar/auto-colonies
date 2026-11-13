@@ -1066,6 +1066,8 @@ public class CAExpansion {
         if (Misc.doesMarketHaveMissionImportantPeopleOrIsMarketMissionImportant(p)) return "Part of a mission.";
         if (m.hasCondition("pre_collapse_facility") && !m.getMemoryWithoutUpdate().getBoolean("$aotd_defeated_pcf")) return "A pre-collapse facility is still active.";
         if (m.hasCondition("VIC_VBomb_scar")) return "Virus-bombed.";
+        String index = CAIndexMods.noColony(m);   // 0.3.3.2: Tahlan Shipworks' Kassadari Claim, Gladiator Society's The Gulf
+        if (index != null) return index;
         if (m.isHidden()) return "Hidden.";
         // safety
         boolean yours = x.mine.containsKey(sys);

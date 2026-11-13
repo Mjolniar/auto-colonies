@@ -1,5 +1,19 @@
 # Patch notes
 
+## 0.3.3.2 - 2026-11-13
+
+- JaydeePiracy: Added support for JaydeePiracy 6.0.3. Quarry Lakes: a new Refining needs no ore or transplutonic ore and counts heavy machinery demand +2.
+- JaydeePiracy: Domain-era Meshugatron: a new Fuel Production counts fuel +3 and volatiles demand +3.
+- JaydeePiracy: Eutrophicated Biosphere: a new Farming or Aquaculture counts organics at half its food and heavy machinery demand +3.
+- JaydeePiracy: The Planetkiller Launch Site is left to you. The planetkiller item is not installed.
+- Corrupt.Officials: Added support for Corrupt.Officials 1.0.b. At a colony with net income above the cutoff, extra income counts at the share the colony keeps.
+- Corrupt.Officials: The cutoff, exponent and on/off setting are read from LunaLib. Without LunaLib the mod's defaults apply (40,000 and -0.6).
+- New colonies: Planets with Tahlan Shipworks' Kassadari Claim (accessibility -100%, hazard +50%) and Gladiator Society's The Gulf are skipped.
+- Left to you: Scy Nation's Intelligence Command Center, CJY's Toy Box's Private Production Facility and both greenhouses, and AI-Retrofits' Population Replacement Center. Autopilot does not build or test-build them.
+- Production floors: Blue's Lanestate Battleyards and Oculian Armada's Orbital Matrix count as ship producers.
+- Diagnostics: Added JaydeePiracy, Corrupt.Officials, Tahlan Shipworks, Gladiator Society, Scy Nation and AI-Retrofits to the integration check.
+- Supported mods: 101 more mods checked. Nothing needed. The list is in Supported mods.
+
 ## 0.3.3.1 - 2026-11-13
 
 - Kadur Remnant: Added support for Kadur Remnant 3.2.4support3. Kadur Majority Faith's +1 output on industrial buildings counts in build values from size 3.

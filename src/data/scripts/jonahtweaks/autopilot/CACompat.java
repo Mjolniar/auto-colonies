@@ -147,6 +147,14 @@ public class CACompat {
         ENTRIES.add(new Entry(CARogue.MOD, "Rogue Planets", "1.0.0", NONE, CARogue.ids(), NONE, NONE, () -> CARogue.link()));
         // 0.3.3.1: Kadur Remnant, by condition ids (CAKadur)
         ENTRIES.add(new Entry(CAKadur.MOD, "Kadur Remnant", "3.2.4support3", NONE, a(CAKadur.MAJORITY, CAKadur.VIRUS), NONE, NONE, null));
+        // 0.3.3.2: Mod Index batch 1, by ids and setting names (CAIndexMods)
+        ENTRIES.add(new Entry(CAIndexMods.JDP, "JaydeePiracy", "6.0.3", a(CAIndexMods.PLANETKILLER_SITE),
+                a(CAIndexMods.QUARRY, CAIndexMods.MESHUGATRON, CAIndexMods.EUTROPHIC), a(CAIndexMods.PLANETKILLER), NONE, null));
+        ENTRIES.add(new Entry(CAIndexMods.CORRUPT, "Corrupt.Officials", "1.0.b", NONE, a(CAIndexMods.CORRUPT_COND), NONE, NONE, null));
+        ENTRIES.add(new Entry(CAIndexMods.TAHLAN, "Tahlan Shipworks", "1.4", NONE, a(CAIndexMods.KASSADARI), NONE, NONE, null));
+        ENTRIES.add(new Entry(CAIndexMods.GLADIATOR, "Gladiator Society", "1.6.8", NONE, a(CAIndexMods.GULF), NONE, NONE, null));
+        ENTRIES.add(new Entry(CAIndexMods.SCY, "Scy Nation", "1.11.1", a(CAIndexMods.SCY_INCOM), NONE, NONE, NONE, null));
+        ENTRIES.add(new Entry(CAIndexMods.RETROFITS, "AI-Retrofits", "0.10.1", a(CAIndexMods.RETROFITS_PURGE), NONE, NONE, NONE, null));
     }
 
     static final Map<String, Entry> BY_MOD = new HashMap<String, Entry>();
