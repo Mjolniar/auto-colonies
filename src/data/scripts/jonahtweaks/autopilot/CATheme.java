@@ -191,8 +191,9 @@ public final class CATheme {
             {"expansion style", "QUIET", false},
             // 0.3.0.0 (WS-F3): diplomacy (CADiplomacy offers, CAWar's stance line, CAIndEvo ambassadors, CASpies relations
             // agents), ahead of BUILD, INSTALL and WAR, which their wording also matches
-            {"^war: (?=.* stance [a-z]+$)", "DIPLO", true},
-            {"offer (accepted|rejected|waits)|alliance offer|war confirmation cleared|ambassador|raise relations", "DIPLO", false},
+            // 0.3.1.0: a stance line may end with a period; an offer "in the intel, for you" (THE FORMAT's wording)
+            {"^war: (?=.* stance [a-z]+\\.?$)", "DIPLO", true},
+            {"offer (accepted|rejected|waits|in the intel)|alliance offer|war confirmation cleared|ambassador|raise relations", "DIPLO", false},
             {"(^| )building ", "BUILD", true},
             {"(^| )upgrading to ", "UPGRADE", true},
             {"(^| )installed ", "INSTALL", true},
@@ -230,7 +231,7 @@ public final class CATheme {
             {"augment", "AUGMENT", false},
             {"inspection", "INSPECT", false},
             {"the plan's |plan goes on", "PLAN", false},
-            {"autopilot storage to storage|storage logistics", "STORE", false},
+            {"autopilot storage to storage|storage logistics| moved from .* to autopilot storage", "STORE", false},   // 0.3.1.0: an item moved to storage
             {" waits| waiting", "HOLD", false},
     };
     static final Pattern CREDITS = Pattern.compile("(\\d{1,3}(?:,\\d{3})+|\\d+)\\s?¢");

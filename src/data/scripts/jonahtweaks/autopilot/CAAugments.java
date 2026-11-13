@@ -442,7 +442,7 @@ public class CAAugments {
         Long at = booked.get(m.getId());
         if (at == null) {
             booked.put(m.getId(), com.fs.starfarer.api.Global.getSector().getClock().getTimestamp());
-            CALog.status("augrefit:" + m.getId(), m.getName() + ": station refit crew booked, augments change in " + Math.round(REFIT_DAYS) + " days");
+            CALog.thinkStatus("augrefit:" + m.getId(), m.getName() + ": Station augments: refit crew booked. Augments change in " + Math.round(REFIT_DAYS) + " days.");
             return false;
         }
         if (com.fs.starfarer.api.Global.getSector().getClock().getElapsedDaysSince(at) < REFIT_DAYS) return false;
@@ -482,7 +482,7 @@ public class CAAugments {
         // short, and at most every 10 days a colony (they follow the threat back and forth): "Gargor augments (defense): +Bubble Shield, -Jump Engine"
         List<String> brief = new ArrayList<String>();
         for (String x : done) brief.add(x.replaceFirst("^added ", "+").replaceFirst("^removed ", "-"));
-        CALog.status("aug:" + m.getId(), m.getName() + " augments" + (who.isEmpty() ? "" : " (" + who + ")") + ": " + join(brief));
+        CALog.status("aug:" + m.getId(), m.getName() + ": Station augments" + (who.isEmpty() ? "" : " (" + who + ")") + ": " + join(brief) + ".");
         return null;
     }
 
@@ -523,7 +523,7 @@ public class CAAugments {
                     else lastSig.remove(m.getId());   // try again tomorrow (the station was fighting)
                 }
                 else if (CALog.once("aug:" + m.getId() + ":" + pl.summary())) {
-                    CALog.add(m.getName() + ": suggested augments (" + pl.summary() + ")" + (defense ? ", for defense" : "") + "; Apply on its panel");
+                    CALog.advise(m.getName() + ": Station augments suggested: " + pl.summary() + (defense ? ", for defense" : "") + ". Apply on its panel.");
                 }
             } catch (Throwable t) {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment step failed at " + m.getName(), t);
@@ -539,7 +539,7 @@ public class CAAugments {
         sync(m, c);
         Plan pl = plan(m, c, profileFor(m, c));
         if (!pl.changes()) return "Nothing to change";
-        if (!refitReady(m)) return "Refit crew booked: the augments change in " + Math.round(REFIT_DAYS) + " days, or at once while your fleet is in this system";
+        if (!refitReady(m)) return "Refit crew booked. Augments change in " + Math.round(REFIT_DAYS) + " days, or at once with your fleet in this system";
         return apply(m, c, pl, "you set");
     }
 

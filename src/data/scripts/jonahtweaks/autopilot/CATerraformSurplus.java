@@ -243,7 +243,7 @@ public class CATerraformSurplus {
             float cost = sp.getCost(), fee = CABudget.constructionFee(s, cost), up = CAEngine.baseUpkeep(m, sp);
             if (cost + fee > budget) { waits(m, key, "building " + sp.getName() + " (" + what + ")", cost + fee); return 0f; }
             if (s.upkeepAdded + up > CASurplus.upkeepCap(m, s)) {
-                if (CALog.once("tsu:" + key)) CALog.add(m.getName() + ": " + sp.getName() + " waits for next month's upkeep room");
+                if (CALog.once("tsu:" + key)) CALog.think(m.getName() + ": " + sp.getName() + " waits for next month's upkeep room.");
                 return 0f;
             }
             return buildStructure(m, k.q, sp, cost, fee, up) == null ? cost + fee : 0f;
@@ -273,7 +273,7 @@ public class CATerraformSurplus {
         List<CATme.Proj> projects = CATme.projects(ti);
         if (projects != null) for (CATme.Proj x : projects) if (x.id.equals(mv.condition)) pd = x;
         if (pd == null || !CATme.canRun(ti, pd)) {
-            if (CALog.once("tsn:" + key)) CALog.add(m.getName() + ": " + ti.getCurrentName() + " can't " + mv.label() + " there yet");
+            if (CALog.once("tsn:" + key)) CALog.think(m.getName() + ": " + ti.getCurrentName() + " can't " + mv.label() + " there yet.");
             return null;
         }
         return pd;
@@ -296,13 +296,13 @@ public class CATerraformSurplus {
         p.id = mv.structure; p.name = sp.getName(); p.verb = "Build"; p.cost = cost; p.upkeep = up;
         String err = CABuild.start(m, p);
         if (err != null) {
-            if (CALog.once("tse:" + key + ":" + err)) CALog.add(m.getName() + ": " + sp.getName() + " not started: " + err);
+            if (CALog.once("tse:" + key + ":" + err)) CALog.think(m.getName() + ": " + sp.getName() + " not started: " + err);
             return err;
         }
         paid(s, m, cost, fee, up, budget);   // CABuild.start took the price
         CAData.get().surplusBuilt().add(m.getId() + ":" + mv.structure);
         if (!CABudget.legacy(s)) CAMark.set(unusedKey(m.getId(), mv.structure), CAMark.now());   // 0.3.0.0 fix (C4 review): kept until its first project runs (takeDown)
-        CALog.add(m.getName() + ": building " + sp.getName() + " (" + Misc.getDGSCredits(cost) + (budget ? ", from the month's budget" : "") + ") to " + q.text());
+        CALog.did(m.getName() + ": Building " + sp.getName() + " (" + Misc.getDGSCredits(cost) + (budget ? ", from the month's budget" : "") + ") to " + q.text() + ".");
         return null;
     }
 
@@ -326,8 +326,8 @@ public class CATerraformSurplus {
             CAData.get().enablers().put(m.getId() + ":" + mv.condition, q.moves.get(1).condition);
             CAData.get().enablerAt().put(m.getId() + ":" + mv.condition, Global.getSector().getClock().getTimestamp());
         }
-        CALog.add(m.getName() + ": " + mv.label() + " (" + Math.round(pd.buildTime) + " days, " + Misc.getDGSCredits(cost) + (budget ? " from the month's budget" : "")
-                + ", " + CAEngine.valueText(q.gain) + (q.moves.size() > 1 ? ", then " + q.moves.get(1).label() : "") + ")");
+        CALog.did(m.getName() + ": Terraforming started: " + mv.label() + " (" + Math.round(pd.buildTime) + " days, " + Misc.getDGSCredits(cost) + (budget ? " from the month's budget" : "")
+                + ", " + CAEngine.valueText(q.gain) + ")." + (q.moves.size() > 1 ? " Next: " + q.moves.get(1).label() + "." : ""));
         return null;
     }
 
@@ -571,7 +571,7 @@ public class CATerraformSurplus {
             CATombstone.add(m.getId(), id, CATombstone.TERRAFORM, CATombstone.sunk(m.getId(), id));   // 0.3.0.0 (B4, research 02 section 18): every removal leaves a year's mark
             built.remove(key);
             CAMark.clear(unusedKey(m.getId(), id));
-            CALog.add(m.getName() + ": removed idle " + ind.getCurrentName() + " (-" + Misc.getDGSCredits(up) + "/month)");
+            CALog.did(m.getName() + ": Removed idle " + ind.getCurrentName() + " (-" + Misc.getDGSCredits(up) + "/month).");
         }
     }
 
@@ -606,6 +606,6 @@ public class CATerraformSurplus {
     static boolean wantsChange(boolean add, boolean has) { return add != has; }
 
     static void waits(MarketAPI m, String key, String what, float need) {
-        if (CALog.once("tsw:" + key)) CALog.add(m.getName() + ": " + what + " waits for " + Misc.getDGSCredits(need) + " of surplus");
+        if (CALog.once("tsw:" + key)) CALog.think(m.getName() + ": " + what + " waits for " + Misc.getDGSCredits(need) + " of surplus.");
     }
 }

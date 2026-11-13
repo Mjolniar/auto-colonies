@@ -260,8 +260,8 @@ public class CAConquest {
         CAWar.pay(p.s, payer, pl.cost, pl.fee);
         p.mgr.modifyFleetRequestStock(-(int) pl.fp);
         CAWar.record(p.d, pl.kind + ":" + t.getId());
-        CALog.add(t.getName() + ": " + (int) pl.fp + "-pt invasion from " + from.getName() + ", " + pl.marines + " marines, "
-                + CAWar.money(pl.cost, pl.fee) + " (" + pl.why + ")", true);
+        CALog.did(t.getName() + ": " + (int) pl.fp + "-pt invasion from " + from.getName() + ", " + pl.marines + " marines, "
+                + CAWar.money(pl.cost, pl.fee) + " (" + pl.why + ").", true);
         float after = CAWarPolicy.infamy(badboy() + pendingInfamy(), dominance());
         if (after >= CAWarPolicy.INFAMY_NEAR && CALog.once("war:infamy:" + (int) (after / 5f)))
             CALog.quiet("War: infamy will be about " + Math.round(after) + " of " + Math.round(CAWarPolicy.INFAMY_LINE) + " once the invasions under way land (decays 3 a month)");   // 0.3.0.9: status, starsector.log only
@@ -389,7 +389,7 @@ public class CAConquest {
             CAMark.set(PROFILE_MARK + id + "|" + c.profile.name(), CAMark.now());
             c.profile = CAData.Profile.SECURITY;
         }
-        CALog.add(m.getName() + ": captured" + (from != null ? " from " + from : "") + ". Mode " + c.mode.label + ", goal Security until stable", true);
+        CALog.did(m.getName() + ": captured" + (from != null ? " from " + from : "") + ". Mode " + c.mode.label + ", goal Security until stable.", true);
     }
 
     /** Puts back the goal a conquered colony had before Security, once (its CAMark). */
@@ -400,7 +400,7 @@ public class CAConquest {
             CAData.Colony c = d.colony(m.getId());
             if (c.profile != CAData.Profile.SECURITY) continue;   // you changed it since: yours
             try { c.profile = CAData.Profile.valueOf(name); } catch (Throwable t) { c.profile = CAData.Profile.BALANCED; }
-            CALog.add(m.getName() + ": stable after capture (stability " + Math.round(CAStability.now(m)) + "); goal back to " + c.profile.label);
+            CALog.did(m.getName() + ": stable after capture (stability " + Math.round(CAStability.now(m)) + "). Goal back to " + c.profile.label + ".");
         }
     }
 
@@ -472,8 +472,8 @@ public class CAConquest {
             CALog.forget("conq:auton:stab:" + id);
             CALog.forget("conq:auton:limit:" + id);
             CALog.forget("conq:auton:gov:" + id);
-            CALog.add(m.getName() + ": taken back from Nexerelin's autonomy after capture" + (idle != null ? "; " + idle.getPerson().getNameString() + " governs it"
-                    : fits ? "" : "; over your colony limit until an administrator is hired"), true);
+            CALog.did(m.getName() + ": taken back from Nexerelin's autonomy after capture." + (idle != null ? " " + idle.getPerson().getNameString() + " governs it."
+                    : fits ? "" : " Over your colony limit until an administrator is hired."), true);
             return;
         }
         if (fits && !othersOk) {
@@ -534,7 +534,7 @@ public class CAConquest {
         if (m == null || m.getFaction() == null || !m.getFaction().isPlayerFaction()) {
             d.conquered().remove(id);
             for (String k : CAMark.keys(PROFILE_MARK + id + "|")) CAMark.clear(k);
-            CALog.add((m != null ? m.getName() : id) + ": conquered colony lost" + (m != null && m.getFaction() != null ? " to " + m.getFaction().getDisplayName() : ""), true);
+            CALog.did((m != null ? m.getName() : id) + ": conquered colony lost" + (m != null && m.getFaction() != null ? " to " + m.getFaction().getDisplayName() : "") + ".", true);
             return;
         }
         autonomy(d, m);

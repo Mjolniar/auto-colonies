@@ -1434,13 +1434,13 @@ public class CAPlan {
                 Long was = d.stepStuck().remove(k);
                 if (was != null && daysSince(was) >= DEAD_DAYS) {
                     CALog.forget("plan:dead:" + k);
-                    CALog.add(m.getName() + ": the plan's " + s.label + " step can be reached again, so it counts again");
+                    CALog.think(m.getName() + ": the plan's " + s.label + " step is reachable again. It counts again.");
                     CACache.bump("plan step back");   // 0.3.0.0 (A4): evaluations kept today ranked without it
                 }
             } else if (!d.stepStuck().containsKey(k)) d.stepStuck().put(k, now);
             else if (dead(m, s.id) && CALog.once("plan:dead:" + k)) {
-                CALog.add(m.getName() + ": the plan's " + s.label + " step can't be reached here (no way to build it for " + Math.round(DEAD_DAYS)
-                        + " days), so the plan goes on without it. It counts again if that changes");
+                CALog.think(m.getName() + ": the plan's " + s.label + " step can't be reached here (no way to build it for " + Math.round(DEAD_DAYS)
+                        + " days). The plan goes on without it. It counts again if that changes.");
                 CACache.bump("plan step dead");   // 0.3.0.0 (A4): evaluations kept today still ranked it
             }
         }

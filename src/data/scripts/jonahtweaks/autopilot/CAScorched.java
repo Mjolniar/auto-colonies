@@ -233,8 +233,8 @@ public class CAScorched {
         CAWar.pay(p.s, payer, pl.cost, pl.fee);
         p.mgr.modifyFleetRequestStock(-(int) pl.fp);
         CAWar.record(p.d, CAWarPolicy.SATBOMB + ":" + t.getId());
-        CALog.add(t.getName() + ": " + (int) pl.fp + "-pt saturation bombardment fleet from " + from.getName() + ", " + Math.round(pl.fuel) + " fuel, "
-                + CAWar.money(pl.cost, pl.fee) + " (" + pl.why + ")", true);
+        CALog.did(t.getName() + ": " + (int) pl.fp + "-pt saturation bombardment fleet from " + from.getName() + ", " + Math.round(pl.fuel) + " fuel, "
+                + CAWar.money(pl.cost, pl.fee) + " (" + pl.why + ").", true);
         return null;
     }
 
@@ -358,8 +358,8 @@ public class CAScorched {
             try { RevengeanceManager.getManager().updateSatBombDeathToll(victim.getId(), size); } catch (Throwable ignored) { }
         }
         String cap = limited ? "at best Neutral" : monstrous ? "no cap" : "at best Hostile";
-        CALog.add(m.getName() + ": saturation bombardment landed. " + victim.getDisplayName() + " Vengeful" + (others.isEmpty() ? "" : "; "
-                + CAContracts.join(others) + " " + cap) + (perma ? "; permanent -" + Math.round(NexConfig.permaHateFromPlayerSatBomb * 100f) + " on relations" : "")
+        CALog.did(m.getName() + ": saturation bombardment landed. " + victim.getDisplayName() + " Vengeful" + (others.isEmpty() ? "" : ". "
+                + CAContracts.join(others) + " " + cap) + (perma ? ". Permanent -" + Math.round(NexConfig.permaHateFromPlayerSatBomb * 100f) + " on relations" : "")
                 + ". Nexerelin adds the infamy.", true);
     }
 

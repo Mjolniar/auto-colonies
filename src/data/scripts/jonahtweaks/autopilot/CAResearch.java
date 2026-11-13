@@ -626,8 +626,8 @@ public class CAResearch {
             cached = null;
             Object f = CARefl.invoke(focus, mgr);
             if (!CABreaker.check(START, f != null && t.id.equals(String.valueOf(CARefl.get(fId, f))), "research")) return "VoK didn't start it";
-            CALog.add("Research: " + who + " started " + t.name + " (" + Math.round(Math.max(1f, t.days - t.spent)) + " days, " + itemsText(t)
-                    + (t.tier > 0 ? ", +" + Misc.getDGSCredits(t.tier * TIER_UPKEEP) + " a month per facility while it runs" : "") + ")");
+            CALog.did("Research: " + who + " started " + t.name + " (" + Math.round(Math.max(1f, t.days - t.spent)) + " days, " + itemsText(t)
+                    + (t.tier > 0 ? ", +" + Misc.getDGSCredits(t.tier * TIER_UPKEEP) + " a month per facility while it runs" : "") + ").");
             return null;
         } catch (Throwable e) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "starting research " + t.id + " failed", e);
@@ -645,7 +645,7 @@ public class CAResearch {
             if (s == null || !s.getClass().getSimpleName().equals("SophiaAnderson") || s == CARefl.get(fHead, mgr)) continue;
             CARefl.set(fHead, mgr, s);
             CARefl.invoke(councilAdvance, mgr, 0f);
-            CALog.add("Research: made Sophia Anderson head of R&D (one databank less per tech)");
+            CALog.did("Research: Sophia Anderson made head of R&D. One databank less per tech.");
             return;
         }
     }
@@ -884,11 +884,11 @@ public class CAResearch {
         for (Map.Entry<String, Integer> e : movedById.entrySet()) moved.add(e.getValue() + " " + commodityName(e.getKey()));
         topUpPending = shipped + coming > 0;
         if (moved.isEmpty() && shipped == 0 && coming == 0) return null;
-        String msg = (moved.isEmpty() ? "" : "moved " + CAContracts.join(moved) + " into " + f.getName() + "'s Research Facility tab"
+        String msg = (moved.isEmpty() ? "" : "Moved " + CAContracts.join(moved) + " into " + f.getName() + "'s Research Facility tab"
                 + (pulled.isEmpty() ? "" : " (taken out of " + CAContracts.join(pulled) + ")"))
-                + (shipped + coming > 0 ? (moved.isEmpty() ? "" : "; ") + (shipped + coming) + " more on the way to " + f.getName() + ", "
+                + (shipped + coming > 0 ? (moved.isEmpty() ? "" : ". ") + (shipped + coming) + " more on the way to " + f.getName() + ". "
                 + t.name + " starts once they arrive" : "");
-        if (!moved.isEmpty() || shipped > 0) CALog.add("Research: " + msg);
+        if (!moved.isEmpty() || shipped > 0) CALog.did("Research: " + msg + ".");
         return msg;
     }
 
@@ -1061,7 +1061,7 @@ public class CAResearch {
                 // 0.3.0.9: the advice on screen, where databanks come from in starsector.log; once per tech (the count on hand
                 // was in the key, which logged it again each time the count changed)
                 if (CALog.once("research:wait:" + waiting.id)) {
-                    CALog.add("Research: " + waiting.name + " is next for " + CAContracts.join(waiting.planFor) + ". Needs " + waiting.databanks()
+                    CALog.advise("Research: " + waiting.name + " next for " + CAContracts.join(waiting.planFor) + ". Needs " + waiting.databanks()
                             + " databanks. On hand: " + (int) have + ".");
                     CALog.quiet("Research: databanks come from salvage (research stations, derelicts) and from a Research Facility on a pre-collapse "
                             + "research site; Autopilot uses them from Autopilot Storage, colony Storage or your cargo");

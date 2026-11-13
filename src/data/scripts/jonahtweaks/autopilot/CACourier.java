@@ -51,7 +51,7 @@ public class CACourier {
             boolean stillShort = to != null && auto.contains(to) && to.getCommodityData(com).getDeficitQuantity() > 0;
             if (!stillShort) {
                 ShippingContractMemory.removeContract(c);
-                CALog.add((to == null ? "A colony" : to.getName()) + ": shortage of " + com + " resolved; cancelled its supply contract");
+                CALog.did((to == null ? "A colony" : to.getName()) + ": shortage of " + com + " resolved. Supply contract cancelled.");
             } else ours.put(key(c.toMarketId, com), c);
         }
         for (MarketAPI to : auto) {
@@ -86,8 +86,8 @@ public class CACourier {
                     continue;
                 }
                 ShippingContractMemory.addOrReplaceContract(sc);
-                CALog.add(to.getName() + ": started a monthly Courier Port contract shipping " + (int) amount + " "
-                        + c.getCommodity().getName() + " from " + from.getName() + " to cover a shortage");
+                CALog.did(to.getName() + ": Courier Port contract started: " + (int) amount + " "
+                        + c.getCommodity().getName() + " a month from " + from.getName() + ". Covers a shortage.");
                 return;   // at most one new contract per pass
             }
         }

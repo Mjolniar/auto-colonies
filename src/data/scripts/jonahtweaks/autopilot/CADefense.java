@@ -134,8 +134,8 @@ public class CADefense {
             mgr.modifyFleetRequestStock(-(int) fp);
             lastSent.put(target.getStarSystem().getId(), Global.getSector().getClock().getTimestamp());
             warned.remove(target.getId()); warned.remove(target.getId() + ":credits");
-            CALog.add(target.getName() + ": sent a " + (int) fp + "-point defense fleet from " + source.getName() + " for "
-                    + Misc.getDGSCredits(cost) + " (" + why + ")", true);
+            CALog.did(target.getName() + ": Sent a " + (int) fp + "-point defense fleet from " + source.getName() + " for "
+                    + Misc.getDGSCredits(cost) + " (" + why + ").", true);
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "defense fleet request failed for " + target.getName(), t);
         }

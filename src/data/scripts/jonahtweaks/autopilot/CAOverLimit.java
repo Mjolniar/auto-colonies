@@ -187,9 +187,9 @@ public class CAOverLimit {
         d.overLimitAt().put(key, Global.getSector().getClock().getTimestamp());
         int used = CABuild.usedSlots(m), max = Misc.getMaxIndustries(m);   // 0.3.0.0: one slot count (07 M12)
         float penalty = CAStability.overLimitPenalty(m);
-        CALog.add(m.getName() + ": stability is at 0, and the game decivilizes a colony that stays at 0 for months. Biggest drags: "
-                + causes(m) + (used > max ? ". It has " + used + " industries on " + max + " slots" + (penalty > 0f ? " (-" + Math.round(penalty) + ")" : "") : "")
-                + (auto ? ". Autopilot sheds what costs stability until it's off 0" : ". It isn't on Auto, so raising it is up to you"), true);
+        CALog.advise(m.getName() + ": Stability: 0. A colony at 0 for months decivilizes. Biggest drags: "
+                + causes(m) + (used > max ? ". " + used + " industries on " + max + " slots" + (penalty > 0f ? " (-" + Math.round(penalty) + ")" : "") : "")
+                + (auto ? ". Autopilot takes down what costs stability until it is above 0." : ". Not on Auto. Raising it is up to you."), true);
     }
 
     /** The colony's worst stability modifiers as the game lists them, "Maximum number of industries exceeded -5, Commerce -3". */
@@ -238,8 +238,8 @@ public class CAOverLimit {
         }
         if (worst == null) {
             // 0.3.0.9: not important (the 0-stability alert is); on screen as the decision it leaves you
-            if (CALog.once("stab:none:" + m.getId())) CALog.add(m.getName() + ": stability is at 0 and none of its buildings is what's costing it ("
-                    + causes(m) + "), so raising it is up to you");
+            if (CALog.once("stab:none:" + m.getId())) CALog.advise(m.getName() + ": Stability: 0. None of its buildings causes it ("
+                    + causes(m) + "). Raising it is up to you.");
             return;
         }
         CALog.forget("stab:none:" + m.getId());
@@ -255,8 +255,8 @@ public class CAOverLimit {
         d.overLimitAt().put(m.getId() + ":shed:" + id, ts);
         // 0.3.0.0 (B4): shedding keeps its own rules and never reads a mark, but it leaves one: not built back here for a year
         CATombstone.add(m.getId(), id, CATombstone.SHED, paid);
-        CALog.add(m.getName() + ": took down " + name + " (" + Math.round(worstV) + " stability): the colony was at 0, where the game can decivilize it"
-                + (core != null || item != null ? "; its " + (core != null && item != null ? "core and item" : core != null ? "core" : "item") + " to Autopilot Storage" : ""), true);
+        CALog.did(m.getName() + ": Took down " + name + " (" + Math.round(worstV) + " stability). Stability was 0."
+                + (core != null || item != null ? " Its " + (core != null && item != null ? "core and item" : core != null ? "core" : "item") + " to Autopilot Storage." : ""), true);
     }
 
     /** A building shed at this colony for stability within the last year: the capital's plan leaves it out. */
@@ -305,10 +305,10 @@ public class CAOverLimit {
         boolean zero = atZero(m), danger = m.getStabilityValue() <= LOW;
         switch (decide(used, max, m.getStabilityValue(), s.noOverLimitFix, growsSoon, maxNext, since)) {
             case OFF:
-                if (CALog.once(key + ":off")) CALog.add(m.getName() + ": " + over + ", which " + costText(m) + ". Fixing it is off in Settings, so taking one down is up to you", zero);
+                if (CALog.once(key + ":off")) CALog.advise(m.getName() + ": " + over + ", " + costText(m) + ". Over-limit fix: off in Settings. Taking one down is up to you.", zero);
                 return false;
             case GROWS:
-                if (CALog.once(key + ":grow")) CALog.add(m.getName() + ": " + over + " (5 stability), but it's about to grow to size " + (size + 1) + ", which has room for them all, so it waits");
+                if (CALog.once(key + ":grow")) CALog.think(m.getName() + ": " + over + " (5 stability). Waits for size " + (size + 1) + ", with room for all of them.");
                 return false;
             case WAIT:
             case WITHIN:
@@ -322,8 +322,8 @@ public class CAOverLimit {
         CAEndgame.Weakest wk = weakest(m, col, false);
         if (wk == null) wk = weakest(m, col, true);
         if (wk == null) {
-            if (CALog.once(key + ":none")) CALog.add(m.getName() + ": " + over + ", which " + costText(m) + ", and every industry there is locked, "
-                    + "being built or upgraded, improved, or holds up its stability, so taking one down is up to you", true);
+            if (CALog.once(key + ":none")) CALog.advise(m.getName() + ": " + over + ", " + costText(m) + ". Every industry there is locked, "
+                    + "under construction, improved or needed for stability. Taking one down is up to you.", true);
             return false;
         }
         return takeDown(d, m, wk, over, danger, zero);
@@ -490,12 +490,12 @@ public class CAOverLimit {
         d.swapAt().put(m.getId() + ":replaced", ts);   // and no make-room swap at the capital for a while
         // 0.3.0.0 (B4): a year's mark, so it isn't built back here a month later (Wind's Junkyard Forge, research 01 section 3 item 4)
         CATombstone.add(m.getId(), id, CATombstone.OVERLIMIT, b.paid);
-        CALog.add(m.getName() + ": took down " + name + ": " + over + " " + cost.replaceFirst("^costs", "cost") + (zero ? " and left it at 0, where a colony can decivilize"
-                : danger && m.getStabilityValue() <= LOW ? " and left it at " + Math.round(m.getStabilityValue()) + ", close to 0 where a colony can decivilize"
-                : "") + ", and " + name
-                + " was worth least (" + CAEngine.valueText(wk.built != null ? wk.value : wk.keep) + CATombstone.paidText(b) + ")"
-                + (first ? "; it added " + Math.round(own) + " stability, and the 5 lifts once the colony is within its limit" : "")
-                + (core != null || item != null ? "; its " + (core != null && item != null ? "core and item" : core != null ? "core" : "item") + " to Autopilot Storage" : ""), true);
+        CALog.did(m.getName() + ": Took down " + name + ". " + over + ", " + cost + "." + (zero ? " Stability left at 0."
+                : danger && m.getStabilityValue() <= LOW ? " Stability left at " + Math.round(m.getStabilityValue()) + "."
+                : "") + " " + name
+                + " was worth least (" + CAEngine.valueText(wk.built != null ? wk.value : wk.keep) + CATombstone.paidText(b) + ")."
+                + (first ? " It added " + Math.round(own) + " stability. The 5 lifts once the colony is within its limit." : "")
+                + (core != null || item != null ? " Its " + (core != null && item != null ? "core and item" : core != null ? "core" : "item") + " to Autopilot Storage." : ""), true);
         return true;
     }
 }

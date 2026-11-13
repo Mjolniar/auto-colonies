@@ -149,7 +149,7 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
             if (moved.isEmpty()) continue;
             String what = moved.size() <= 3 ? CAContracts.join(moved)
                     : CAContracts.join(moved.subList(0, 3)) + " and " + (moved.size() - 3) + " more kinds (" + items + " items)";
-            CALog.add(s.market.getName() + ": moved " + what + " from Autopilot Storage to Storage (Autopilot has no use for them)");
+            CALog.did(s.market.getName() + ": Moved " + what + " from Autopilot Storage to Storage. Autopilot does not use them.");
         }
     }
 

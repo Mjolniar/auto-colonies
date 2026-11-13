@@ -160,7 +160,7 @@ public class CARich {
         d.richTierSince = CAMark.now();
         changedDay = today;
         String line = changeLine(fresh ? -1 : was, st.tier, f, n, d.idleMonths, st.idle);
-        CALog.quiet(line);   // 0.3.0.9: a tier change is status, starsector.log only
+        CALog.think(line);   // 0.3.0.9: a tier change is status, off screen (0.3.1.0: the Thinking list)
     }
 
     /** Whether the tier changed today. */

@@ -393,8 +393,8 @@ public class CAShipyard {
                     + " at month end; Approve or Reject on this panel");
             if (!p.sig().equals(loggedSig)) {
                 loggedSig = p.sig();
-                CALog.add("Shipyard: recommends " + text(p.qty, p.names) + " for " + Misc.getDGSCredits(p.value) + " plus a " + Misc.getDGSCredits(p.fee)
-                        + " fee, built at month end and delivered to " + p.to + ". Approve on the Budget panel", true);
+                CALog.advise("Shipyard: recommends " + text(p.qty, p.names) + " for " + Misc.getDGSCredits(p.value) + " plus a " + Misc.getDGSCredits(p.fee)
+                        + " fee, built at month end and delivered to " + p.to + ". Approve on the Budget panel.", true);
             }
             return;
         }
@@ -484,8 +484,8 @@ public class CAShipyard {
         pending = null;
         String what = text(placed, p.names);
         CARich.note(CARich.SHIPYARD, what + " ordered for " + Misc.getDGSCredits(value) + ", delivered to " + to + " at month end");
-        CALog.add("Shipyard: ordered " + what + " for " + Misc.getDGSCredits(value) + " plus a " + Misc.getDGSCredits(fee)
-                + " fee, built at month end and delivered to " + to + "'s Storage");
+        CALog.did("Shipyard: ordered " + what + " for " + Misc.getDGSCredits(value) + " plus a " + Misc.getDGSCredits(fee)
+                + " fee, built at month end and delivered to " + to + "'s Storage.");
         return null;
     }
 
@@ -534,8 +534,8 @@ public class CAShipyard {
         if (removed.isEmpty()) return;
         MarketAPI gp = prod.getGatheringPoint();
         if (back > 0f) CABudget.refund(s, gp == null ? null : gp.getId(), back);
-        CALog.add("Shipyard: took " + text(removed, names) + " off the production list" + (back > 0f ? ", " + Misc.getDGSCredits(back) + " fee back" : "")
-                + "; free cash was under 0, so the reserve and runway are kept", true);
+        CALog.did("Shipyard: took " + text(removed, names) + " off the production list" + (back > 0f ? ", " + Misc.getDGSCredits(back) + " fee back" : "")
+                + ". Free cash was under 0. Reserve and runway kept.", true);
     }
 
     /** One hull of an order comes off: the newest order line of that hull loses one. */
@@ -588,7 +588,7 @@ public class CAShipyard {
     public static String handle(String key) {
         if (APPROVE.equals(key)) {
             Plan p = pending;
-            if (p == null || p.empty()) return "Shipyard: no proposal is waiting";
+            if (p == null || p.empty()) return "Shipyard: no proposal to approve";
             CAData d = CAData.get();
             CASettings s = d.settings;
             FactionProductionAPI prod = production();
@@ -597,17 +597,17 @@ public class CAShipyard {
             // fit its room, as CAMilitary and CAStockpile check on Approve. Earlier rungs may want more since the weekly look
             if (!CARich.open(CARich.SHIPYARD)) {
                 drop();
-                return "Shipyard: the Shipyard rung is closed now (preset, money tier or setting); the proposal is dropped";
+                return "Shipyard: rung closed (preset, money tier or setting). Proposal dropped";
             }
             if (p.total() > CARich.room(CARich.SHIPYARD) + 1f) {
                 drop();
-                return "Shipyard: the proposal no longer fits its share of the pool; a new one comes at the next look";
+                return "Shipyard: proposal over its share of the pool. Dropped. A new one comes at the next look";
             }
             // checked again now: the money and capacity may have moved since it was proposed
             float free = CABudget.freeCash(s), capRoom = Math.max(0f, prod.getMonthlyProductionCapacity() - Math.max(0, prod.getTotalCurrentCost()));
             if (p.total() > free + 1f || p.value > capRoom + 1f) {
                 pending = null;
-                return "Shipyard: the proposal no longer fits free cash or this month's capacity; a new one comes at the next look";
+                return "Shipyard: proposal over free cash or this month's capacity. Dropped. A new one comes at the next look";
             }
             String err = order(d, s, prod, p);
             return err != null ? "Shipyard: " + err : "";
@@ -617,7 +617,7 @@ public class CAShipyard {
             CAMark.set(REJECTED, CAMark.now());
             CARich.want(CARich.SHIPYARD, 0f);
             CARich.note(CARich.SHIPYARD, "you rejected the proposal; the next one comes after " + Math.round(REJECT_DAYS) + " days");
-            return "Shipyard: proposal rejected; the next one comes after " + Math.round(REJECT_DAYS) + " days";
+            return "Shipyard: proposal rejected. Next one after " + Math.round(REJECT_DAYS) + " days";
         }
         return null;
     }

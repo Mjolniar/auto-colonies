@@ -217,8 +217,8 @@ public class CAOmega {
                 if (pts + adminPoints() <= lim) {
                     if (best == null || v > best.value) { best = new Spot(); best.m = m; best.value = v; best.why = "governs it"; }
                 } else if (v > 0f && CALog.once("omega:admin:limit:" + m.getId() + ":" + lim))
-                    CALog.add(m.getName() + ": an Omega core could govern it (Astral Ascension Renewed), but as an administrator it counts "
-                            + adminPoints() + " inspection points (" + CAItems.limitWhy(s, m, none, lim) + "). Put it in yourself if you want it there");
+                    CALog.advise(m.getName() + ": an Omega core could govern it (Astral Ascension Renewed). As an administrator it counts "
+                            + adminPoints() + " inspection points (" + CAItems.limitWhy(s, m, none, lim) + "). Put it in yourself to have it there.");
             }
             if (!effects) continue;
             for (Industry ind : m.getIndustries()) {
@@ -263,15 +263,15 @@ public class CAOmega {
                 if (was != null) was.setMarket(null);   // a hired administrator goes back to the pool and is placed elsewhere
                 best.m.setAdmin(p);
                 here.removeCommodity(CORE, 1f);
-                CALog.add(best.m.getName() + ": an Omega core now governs it (Astral Ascension Renewed: every building makes twice as much, +3 stability, "
-                        + "+1 industry slot, growth past size 10; about " + Misc.getDGSCredits(best.value) + "/month)"
-                        + (was != null ? ". " + was.getPerson().getNameString() + " is free for another colony" : ""));
+                CALog.did(best.m.getName() + ": Omega core administrator installed" + CAStores.from(best.m, CORE) + ". About +" + Misc.getDGSCredits(best.value)
+                        + " a month." + (was != null ? " " + was.getPerson().getNameString() + " is free." : ""));
             } else {
                 best.ind.setAICoreId(CORE);
                 here.removeCommodity(CORE, 1f);
                 if (best.replaced >= 0) here.addCommodity(CAItems.CORES[best.replaced], 1f);
-                CALog.add(best.m.getName() + ": Omega core into " + best.ind.getCurrentName() + " (" + best.why + ", about +"
-                        + Misc.getDGSCredits(best.value) + "/month" + (best.replaced >= 0 ? "; its " + CAItems.coreName(best.replaced) + " to storage" : "") + ")");
+                CALog.did(best.m.getName() + ": Omega core into " + best.ind.getCurrentName() + " (" + best.why + ", about +"
+                        + Misc.getDGSCredits(best.value) + "/month)" + CAStores.from(best.m, CORE) + "."
+                        + (best.replaced >= 0 ? " " + CAItems.coreName(best.replaced) + " to Autopilot Storage." : ""));
             }
             CABudget.charge(s, 0f, fee, 0f);
             return true;
@@ -287,9 +287,9 @@ public class CAOmega {
         for (MarketAPI m : markets) {
             if (!coming.contains(m) || !governs(m)) continue;
             if (CALog.once("omega:inspect:" + m.getId() + ":" + Global.getSector().getClock().getCycle()))
-                CALog.add(m.getName() + ": a Hegemony inspection is coming for the Omega core that governs it. Complying, or losing a resistance, "
-                        + "takes the administrator" + (ascended(m) ? ", and past size 10 that starts Astral Ascension Renewed's Great Civil War (size 8, lasting stability loss)" : "")
-                        + ". Your inspection orders are your call");
+                CALog.advise(m.getName() + ": Hegemony inspection coming for its Omega core administrator. Complying, or losing a resistance, "
+                        + "takes the administrator." + (ascended(m) ? " Past size 10 that starts Astral Ascension Renewed's Great Civil War (size 8, lasting stability loss)." : "")
+                        + " Inspection orders: your decision.");
         }
     }
 }

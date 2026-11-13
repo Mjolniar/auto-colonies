@@ -250,6 +250,57 @@ public class CASettings {
         return v == null ? 0 : v;
     }
 
+    // ---------------- 0.3.1.0: enforcer patrols (CAEnforcers) ----------------
+    // Every field loads as 0 or false from an older save, and 0 or false is the cautious choice for each: the feature off,
+    // every fleet type off, cost Reputation, every gate on (the ...OK fields are inverted), Auto colonies' systems only,
+    // no intercept orders, nothing owed.
+    /** 0.3.1.0: master switch. */
+    public boolean enfOn = false;
+    /** 0.3.1.0: one switch per fleet type (CAEnforcers kind order, ENF_KIND_NAMES). */
+    public boolean enfInvestigators = false, enfInspections = false, enfLeague = false, enfProtectors = false, enfRaiders = false, enfPolice = false;
+    /** 0.3.1.0: cost mode, index into ENF_COST_NAMES; 0 Reputation. */
+    public int enfCost = 0;
+    public static final String[] ENF_COST_NAMES = {"Reputation", "Credits", "Both", "None"};
+    public static final int ENF_REP = 0, ENF_CREDITS = 1, ENF_BOTH = 2, ENF_NONE = 3;
+    /** 0.3.1.0: fleet types, CAEnforcers kind order. Police is Nexerelin's. */
+    public static final String[] ENF_KIND_NAMES = {"Hegemony investigators", "Hegemony AI inspections", "Persean League enforcers",
+            "Luddic sacred protectors", "Tri-Tachyon commerce raiders", "Nexerelin police"};
+    /** 0.3.1.0: gates, inverted so false keeps the gate on: your commissioner, allies, ceasefires, Low profile, your fleet's system. */
+    public boolean enfCommissionOK = false, enfAlliesOK = false, enfCeasefireOK = false, enfLowProfileOK = false, enfNearYouOK = false;
+    /** 0.3.1.0: false: systems with Auto colonies only; true: systems with any colony of yours. */
+    public boolean enfAllColonies = false;
+    /** 0.3.1.0: colony patrols in the system get an intercept order. */
+    public boolean enfIntercept = false;
+    /** 0.3.1.0: credits owed for defeated fleets that could not be paid above the reserve; paid first, no new attacks until then. */
+    public float enfOwed = 0f;
+    public static final String[] ENF_WHERE_NAMES = {"Systems with Auto colonies", "Systems with any colony"};
+
+    /** 0.3.1.0: whether one fleet type is on (CAEnforcers kind index); false for an unknown index. */
+    public boolean enfKind(int kind) {
+        switch (kind) {
+            case 0: return enfInvestigators;
+            case 1: return enfInspections;
+            case 2: return enfLeague;
+            case 3: return enfProtectors;
+            case 4: return enfRaiders;
+            case 5: return enfPolice;
+            default: return false;
+        }
+    }
+
+    /** 0.3.1.0: sets one fleet type on or off (CAEnforcers kind index). */
+    public void setEnfKind(int kind, boolean on) {
+        switch (kind) {
+            case 0: enfInvestigators = on; break;
+            case 1: enfInspections = on; break;
+            case 2: enfLeague = on; break;
+            case 3: enfProtectors = on; break;
+            case 4: enfRaiders = on; break;
+            case 5: enfPolice = on; break;
+            default: break;
+        }
+    }
+
     public boolean expandBuildout() { return !noExpandBuildout; }
     public boolean expandAdmins() { return !noExpandAdmins; }
     public boolean warRetake() { return !noWarRetake; }
@@ -304,5 +355,8 @@ public class CASettings {
             if (rungMode != null) System.arraycopy(rungMode, 0, r, 0, rungMode.length);
             rungMode = r;
         }
+        // 0.3.1.0: a cost mode out of range reads as Reputation; owed credits are never below 0 or NaN
+        if (enfCost < 0 || enfCost >= ENF_COST_NAMES.length) enfCost = ENF_REP;
+        if (!(enfOwed > 0f)) enfOwed = 0f;
     }
 }

@@ -63,9 +63,9 @@ public class CABudget {
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony net history failed", t); }
         }
         if (!first && !Float.isNaN(month) && s.lastNetKnown) rebaseEndgame(s, month, s.lastNet);   // 0.3.0.0 (B5 fix): once, if the seeding below couldn't
-        // 0.3.0.9: monthly status, starsector.log only
-        if (!first) CALog.quiet("Month: net " + Misc.getDGSCredits(netIncome(s)) + ", budget " + Misc.getDGSCredits(limit(s))
-                + (s.budgetCarry > 0f ? " plus " + Misc.getDGSCredits(s.budgetCarry) + " saved up" : ""));
+        // 0.3.1.0: on screen again, one line a month (the money tier change is thinking)
+        if (!first) CALog.did("Month: net " + Misc.getDGSCredits(netIncome(s)) + ", budget " + Misc.getDGSCredits(limit(s))
+                + (s.budgetCarry > 0f ? " plus " + Misc.getDGSCredits(s.budgetCarry) + " saved up" : "") + ".");
         // 0.3.0.0 (B5): the numbers behind the Month line, starsector.log only
         if (!first) CALog.quiet("Month detail: colony net " + (Float.isNaN(month) ? "unknown" : Misc.getDGSCredits(month)) + " last month, "
                 + Misc.getDGSCredits(netIncome(s)) + " as the " + NET_MONTHS + "-month median; cash flow " + Misc.getDGSCredits(s.lastNet)
@@ -306,8 +306,8 @@ public class CABudget {
         s.upkeepCapChecked = true;
         if (s.upkeepCapAuto) return;
         s.upkeepCapAuto = true;
-        CALog.add("New upkeep cap per month is Automatic now: 10% of last month's net income, at least 20,000 (" + Misc.getDGSCredits(upkeepCap(s))
-                + " now; it was a fixed " + Misc.getDGSCredits(s.newUpkeepCap) + "). Settings, Advanced, Budget can set a Fixed cap again", true);
+        CALog.did("New upkeep cap per month: Automatic. 10% of last month's net income, at least 20,000 (" + Misc.getDGSCredits(upkeepCap(s))
+                + " now, was a fixed " + Misc.getDGSCredits(s.newUpkeepCap) + "). Settings, Advanced, Budget can set a Fixed cap again.", true);
     }
 
     /**

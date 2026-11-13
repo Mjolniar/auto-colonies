@@ -227,4 +227,13 @@ public final class CATuning {
     public static final float WAR_ATTACK_DAYS = 120f, WAR_RELIEF_DAYS = 60f;
     /** CADefense's emergency fleets: smallest, in fleet points, and days between two at a colony. */
     public static final float DEFENSE_MIN_FP = 100f, DEFENSE_COOLDOWN_DAYS = 30f;
+
+    // ---------------- 0.3.1.0: enforcer patrols (CAEnforcers) ----------------
+
+    /** 0.3.1.0: days between two checks (four a day). */
+    public static final float ENFORCER_CHECK_DAYS = 0.25f;
+    /** 0.3.1.0: days a mark (the hostility flag and Auto Colonies' record on the fleet) lasts unless a check renews it. */
+    public static final float ENFORCER_HOSTILE_DAYS = 1f;
+    /** 0.3.1.0: credits per fleet point without Nexerelin: Nexerelin's default fleetRequestCostPerFP (exerelin_config.json). */
+    public static final float ENFORCER_CREDITS_PER_FP = 400f;
 }

@@ -98,8 +98,8 @@ public class CAStockpile {
         float total() { return price + fee; }
         /** The log line (short: it's also the on-screen line). */
         String line() {
-            return to.getName() + ": stockpile of " + Misc.getWithDGS(qty) + " " + name + " from " + src.getName() + ", " + Misc.getDGSCredits(total())
-                    + " with shipping, " + Math.round(days) + " days (the shortage costs " + Misc.getDGSCredits(lost) + " a month)";
+            return to.getName() + ": Stockpile of " + Misc.getWithDGS(qty) + " " + name + " from " + src.getName() + ", " + Misc.getDGSCredits(total())
+                    + " with shipping, " + Math.round(days) + " days. Shortage cost: " + Misc.getDGSCredits(lost) + " a month.";
         }
 
         /** The numbers behind it, starsector.log only. */
@@ -464,8 +464,8 @@ public class CAStockpile {
         String key = n.to.getId() + "|" + n.com + "|" + n.qty;
         if (!key.equals(loggedKey[k])) {
             loggedKey[k] = key;
-            CALog.add(n.to.getName() + ": recommends a stockpile of " + Misc.getWithDGS(n.qty) + " " + n.name + " from " + n.src.getName() + " for "
-                    + Misc.getDGSCredits(n.total()) + " with shipping (" + Misc.getDGSCredits(n.lost) + " a month of output). Approve on the Budget panel");
+            CALog.advise(n.to.getName() + ": Recommends a stockpile of " + Misc.getWithDGS(n.qty) + " " + n.name + " from " + n.src.getName() + " for "
+                    + Misc.getDGSCredits(n.total()) + " with shipping (" + Misc.getDGSCredits(n.lost) + " a month of output). Approve on the Budget panel.");
         }
         CARich.note(rung, "proposes " + Misc.getWithDGS(n.qty) + " " + n.name + " for " + n.to.getName() + "; Approve or Reject on this panel");
     }
@@ -493,7 +493,7 @@ public class CAStockpile {
         d.stockpiles().add(b);
         if (pending[kind(n.military)] == n) pending[kind(n.military)] = null;
         CARich.note(rung, Misc.getWithDGS(n.qty) + " " + n.name + " bought for " + n.to.getName());
-        CALog.add(n.line());
+        CALog.did(n.line());
         CALog.quiet(n.detail());
         return null;
     }
@@ -514,7 +514,7 @@ public class CAStockpile {
                 lr.addCommodity(b.commodity, b.qty);
                 left(to, b.commodity, b.qty);
                 it.remove();
-                CALog.add(to.getName() + ": " + Misc.getWithDGS(b.qty) + " " + name + " arrived in Local Resources");
+                CALog.did(to.getName() + ": " + Misc.getWithDGS(b.qty) + " " + name + " arrived in Local Resources.");
                 continue;
             }
             List<MarketAPI> ms = CAStores.markets();
@@ -522,8 +522,8 @@ public class CAStockpile {
             MarketAPI alt = ms.get(0);
             CAStores.of(alt).addCommodity(b.commodity, b.qty);
             it.remove();
-            CALog.add(alt.getName() + ": " + Misc.getWithDGS(b.qty) + " " + name + " arrived in Autopilot Storage ("
-                    + (to == null || !to.isPlayerOwned() ? "the stockpile's colony is no longer yours" : to.getName() + " has no Local Resources now") + ")");
+            CALog.did(alt.getName() + ": " + Misc.getWithDGS(b.qty) + " " + name + " arrived in Autopilot Storage. "
+                    + (to == null || !to.isPlayerOwned() ? "The stockpile's colony is lost." : to.getName() + " has no Local Resources now."));
         }
     }
 
@@ -576,12 +576,12 @@ public class CAStockpile {
         int k = kindOf(key, APPROVE);
         if (k >= 0) {
             Need n = pending[k];
-            if (n == null) return KIND_NAMES[k] + ": no proposal is waiting";
+            if (n == null) return KIND_NAMES[k] + ": no proposal to approve";
             CAData d = CAData.get();
             // 0.3.0.0 (C3 fix): the rung's room, which its own buyer spends from
             if (n.total() > CARich.room(n.military ? CARich.MILITARY : CARich.STOCKPILES) + 1f) {
                 pending[k] = null;
-                return KIND_NAMES[k] + ": the proposal no longer fits its share of the pool; a new one comes at the next look";
+                return KIND_NAMES[k] + ": proposal over its share of the pool. Dropped. A new one comes at the next look";
             }
             String err = buy(d, d.settings, n);
             return err != null ? n.to.getName() + ": stockpile " + err : "";
@@ -590,7 +590,7 @@ public class CAStockpile {
         if (k >= 0) {
             Need n = pending[k];
             pending[k] = null;
-            if (n == null) return KIND_NAMES[k] + ": no proposal is waiting";
+            if (n == null) return KIND_NAMES[k] + ": no proposal to reject";
             CAMark.set(REJECTED + n.to.getId() + "|" + n.com, CAMark.now());
             setWant(k, 0f);
             return n.to.getName() + ": stockpile of " + n.name + " rejected; not proposed again for " + Math.round(REJECT_DAYS) + " days";

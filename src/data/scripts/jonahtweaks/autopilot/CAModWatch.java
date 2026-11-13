@@ -243,8 +243,8 @@ public class CAModWatch {
             for (MarketAPI m : mine) {
                 if (!CAOmega.governs(m)) continue;
                 int max = Misc.getMaxMarketSize(m);
-                ch.add(max >= 15 || m.hasCondition("aotd_archeo_site") ? "PASS" : "WARN", m.getName() + " (size " + m.getSize() + ") is governed by an Omega core; "
-                        + "its size limit is " + max + (max >= 15 ? "" : ", not the 15 Astral Ascension Renewed promises"));
+                ch.add(max >= 15 || m.hasCondition("aotd_archeo_site") ? "PASS" : "WARN", m.getName() + " (size " + m.getSize() + "): Omega core administrator. "
+                        + "Size limit " + max + (max >= 15 ? "" : ". Astral Ascension Renewed promises 15"));
                 if (CAItems.inspected().contains(m)) ch.add("WARN", "a Hegemony inspection is coming for " + m.getName() + "'s Omega administrator");
             }
             if (Global.getSettings().getModManager().isModEnabled("Planetace_AstralAscension"))

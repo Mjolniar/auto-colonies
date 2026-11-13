@@ -372,8 +372,8 @@ public class CAProjects {
                 // a producer Auto doesn't build (not rated, or measured with measured buildings set to Ignore) would sit
                 // first in the plan forever (0.2.38.0): it's yours to build instead
                 if (!CADiagnostics.autopilotBuilds(pl.building) && !CAEngine.isSupported(pl.building)) {
-                    if (CALog.once("projn:" + forWhat + ":" + pl.good + ":" + pl.building))
-                        CALog.add(pl.hostName + ": " + buildingName(pl.building) + " would make " + name(pl.good) + " (" + forWhat + "), but Autopilot doesn't build it; yours to build", true);
+                    if (CALog.once("yours:" + pl.good))   // 0.3.1.0: one key per good (it held per project and host before)
+                        CALog.advise(pl.hostName + ": " + buildingName(pl.building) + " would make " + name(pl.good) + " (" + forWhat + "). Autopilot does not build it. Yours to build.", true);
                     continue;
                 }
                 if (s.projectSupplyMode == 0) {
@@ -382,13 +382,13 @@ public class CAProjects {
                     l.add(new CAPlan.Step(CAPlan.Kind.BUILD, pl.building, buildingName(pl.building) + " (" + name(pl.good) + " for " + forWhat + ")"));
                 }
                 if (CALog.once("proj:" + forWhat + ":" + pl.good + ":" + pl.host + ":" + pl.building))
-                    CALog.add(pl.hostName + ": " + (s.projectSupplyMode == 0 ? "planning " : "build ") + buildingName(pl.building) + " for " + name(pl.good)
-                            + " (" + forWhat + (pl.locked ? ", research first" : "") + ")");
+                    CALog.think(pl.hostName + ": " + (s.projectSupplyMode == 0 ? "Planning " : "Build ") + buildingName(pl.building) + " for " + name(pl.good)
+                            + " (" + forWhat + (pl.locked ? ", research first" : "") + ").");
             }
-            for (String g : last.unresolved) if (CALog.once("projx:" + forWhat(g) + ":" + g))
-                CALog.add(name(g) + " (" + forWhat(g) + "): no Auto colony can host " + hostText(g) + "; yours to build", true);
+            for (String g : last.unresolved) if (CALog.once("yours:" + g))
+                CALog.advise(name(g) + " (" + forWhat(g) + "): no Auto colony can host " + hostText(g) + ". Yours to build.", true);
             if (project != null && !other.isEmpty() && CALog.once("projo:" + project + ":" + other))
-                CALog.add(project + " also needs " + CAContracts.join(other) + " (yours to find)");
+                CALog.advise(project + " also needs " + CAContracts.join(other) + ". Yours to find.");
         } catch (Throwable t) {
             broken = true;
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "can't read Vaults of Knowledge's special projects; their supply is left to you", t);

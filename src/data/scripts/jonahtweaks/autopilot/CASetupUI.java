@@ -174,6 +174,13 @@ public class CASetupUI {
         HOVER.put("fees", new String[]{"On remote building, shipping and orders."});
         HOVER.put("rung", new String[]{"Off: its share goes to the next rung."});
         HOVER.put("warcoal", new String[]{"Off: offensives stop before a coalition forms."});
+        // 0.3.1.0: enforcer patrols (CAEnforcers)
+        HOVER.put("enf", new String[]{"Enforcer patrols: your colony patrols attack the fleet types set to On.",
+                "Charge: once per fleet your forces defeat. A battle you fight yourself gets the game's penalty."});
+        HOVER.put("enfcost", new String[]{"Reputation: the game's penalty for defeating that fleet yourself, -3. Commerce raiders and police: none.",
+                "Credits: fleet points x Nexerelin's fleet request price (400 without it), paid above the credit reserve."});
+        HOVER.put("enfnear", new String[]{"Your system: a marked fleet is hostile to your fleet too."});
+        HOVER.put("enfint", new String[]{"Intercept: colony patrols in the system get an order to intercept the fleet."});
     }
 
     /** The glossary at the top of the Settings page: term, then its line. */
@@ -352,10 +359,8 @@ public class CASetupUI {
             desc(t, "screenlog");
         }
         if (group(t, "advanced", "Advanced", "each setting on its own")) {
-            for (String[] sub : ADVANCED) {
-                if ("adv_war".equals(sub[0]) && !nex) continue;
-                if (subgroup(t, sub[0], sub[1])) advanced(t, s, sub[0]);
-            }
+            // 0.3.1.0: War shows without Nexerelin too (enforcer patrols); its Nexerelin rows stay hidden then
+            for (String[] sub : ADVANCED) if (subgroup(t, sub[0], sub[1])) advanced(t, s, sub[0]);
         }
         t.addButton("Reset to recommended", PREFIX + "recommend:x", Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
                 Alignment.MID, CutStyle.TL_BR, 260f, 24f, 14f);
@@ -489,14 +494,17 @@ public class CASetupUI {
                 row(t, "Autonomy", CASettings.AUTONOMY_NAMES[clamp(s.autonomyMode, 3)], CASettings.AUTONOMY_NAMES[1], "autonomy", true);
             }
         } else if ("adv_war".equals(id)) {
-            row(t, "Emergency defense fleets", onOff(!s.disableDefenseFleets), on, "defense", true);
-            row(t, "Retake your lost colonies", onOff(!s.noWarRetake), on, "warretake", true);
-            row(t, "Top hostile threat as Rival", onOff(s.warAutoRivals), off, "warrivals", true);
-            row(t, "Conquered colonies start in", CASettings.CONQUERED_NAMES[clamp(s.conqueredMode, CASettings.CONQUERED_NAMES.length)],
-                    CASettings.CONQUERED_NAMES[0], "warconq", true);
-            row(t, "Bombardment targets", CASettings.SCORCHED_TARGET_NAMES[clamp(s.scorchedTargets, CASettings.SCORCHED_TARGET_NAMES.length)],
-                    CASettings.SCORCHED_TARGET_NAMES[0], "warscorch", true);
-            row(t, "Coalition risk allowed", onOff(s.warCoalitionOK), off, "warcoal", true);
+            if (nex) {
+                row(t, "Emergency defense fleets", onOff(!s.disableDefenseFleets), on, "defense", true);
+                row(t, "Retake your lost colonies", onOff(!s.noWarRetake), on, "warretake", true);
+                row(t, "Top hostile threat as Rival", onOff(s.warAutoRivals), off, "warrivals", true);
+                row(t, "Conquered colonies start in", CASettings.CONQUERED_NAMES[clamp(s.conqueredMode, CASettings.CONQUERED_NAMES.length)],
+                        CASettings.CONQUERED_NAMES[0], "warconq", true);
+                row(t, "Bombardment targets", CASettings.SCORCHED_TARGET_NAMES[clamp(s.scorchedTargets, CASettings.SCORCHED_TARGET_NAMES.length)],
+                        CASettings.SCORCHED_TARGET_NAMES[0], "warscorch", true);
+                row(t, "Coalition risk allowed", onOff(s.warCoalitionOK), off, "warcoal", true);
+            }
+            enforcers(t, s, nex);
         } else if ("adv_capital".equals(id)) {
             if (CACapital.on(s)) {
                 row(t, "Capital does", CACapital.MODE_NAMES[clamp(s.capitalMode, 2)], CACapital.MODE_NAMES[0], "capmode", true);
@@ -550,6 +558,27 @@ public class CASetupUI {
             row(t, "Announcement voice", CASettings.VOICE_NAMES[clamp(s.voice, 2)], CASettings.VOICE_NAMES[0], "voice", true);
             row(t, "Button on the colony screen", onOff(!s.noScreenButton), on, "screenbtn", true);
         }
+    }
+
+    /**
+     * 0.3.1.0: the enforcer patrol rows (CAEnforcers), at the end of Advanced, War: the switch, then with it On one row per fleet
+     * type (Nexerelin police with Nexerelin), the cost, where, the gates (ceasefires with Nexerelin) and intercept orders. Every
+     * recommendation is the cautious value, which is also the default.
+     */
+    static void enforcers(TooltipMakerAPI t, CASettings s, boolean nex) {
+        String on = "On", off = "Off";
+        row(t, "Enforcer patrols", onOff(s.enfOn), off, "enf", true);
+        if (!s.enfOn) return;
+        for (int k = 0; k < CASettings.ENF_KIND_NAMES.length; k++)
+            if (k != CAEnforcers.POLICE || nex) row(t, CASettings.ENF_KIND_NAMES[k], onOff(s.enfKind(k)), off, "enfk_" + k, true);
+        row(t, "Enforcer cost", CASettings.ENF_COST_NAMES[clamp(s.enfCost, CASettings.ENF_COST_NAMES.length)], CASettings.ENF_COST_NAMES[0], "enfcost", true);
+        row(t, "Enforcer patrols in", CASettings.ENF_WHERE_NAMES[s.enfAllColonies ? 1 : 0], CASettings.ENF_WHERE_NAMES[0], "enfwhere", true);
+        row(t, "Skip your commissioner", onOff(!s.enfCommissionOK), on, "enfcomm", true);
+        row(t, "Skip allies and League membership", onOff(!s.enfAlliesOK), on, "enfally", true);
+        if (nex) row(t, "Skip ceasefires", onOff(!s.enfCeasefireOK), on, "enfcease", true);
+        row(t, "Off in Low profile", onOff(!s.enfLowProfileOK), on, "enflow", true);
+        row(t, "Off in your fleet's system", onOff(!s.enfNearYouOK), on, "enfnear", true);
+        row(t, "Patrols intercept", onOff(s.enfIntercept), off, "enfint", true);
     }
 
     // ---------------- hover text built from the game's state ----------------
@@ -804,6 +833,21 @@ public class CASetupUI {
         else if (k.equals("warconq")) s.conqueredMode = (Math.max(0, Math.min(CASettings.CONQUERED_NAMES.length - 1, s.conqueredMode)) + 1) % CASettings.CONQUERED_NAMES.length;
         else if (k.equals("warscorch")) s.scorchedTargets = (Math.max(0, Math.min(CASettings.SCORCHED_TARGET_NAMES.length - 1, s.scorchedTargets)) + 1) % CASettings.SCORCHED_TARGET_NAMES.length;
         else if (k.equals("warcoal")) s.warCoalitionOK = !s.warCoalitionOK;
+        // 0.3.1.0: enforcer patrols (CAEnforcers)
+        else if (k.equals("enf")) s.enfOn = !s.enfOn;
+        else if (k.startsWith("enfk_")) {
+            int kind = -1;
+            try { kind = Integer.parseInt(k.substring("enfk_".length())); } catch (NumberFormatException ignored) { }
+            s.setEnfKind(kind, !s.enfKind(kind));
+        }
+        else if (k.equals("enfcost")) s.enfCost = (clamp(s.enfCost, CASettings.ENF_COST_NAMES.length) + 1) % CASettings.ENF_COST_NAMES.length;
+        else if (k.equals("enfwhere")) s.enfAllColonies = !s.enfAllColonies;
+        else if (k.equals("enfcomm")) s.enfCommissionOK = !s.enfCommissionOK;
+        else if (k.equals("enfally")) s.enfAlliesOK = !s.enfAlliesOK;
+        else if (k.equals("enfcease")) s.enfCeasefireOK = !s.enfCeasefireOK;
+        else if (k.equals("enflow")) s.enfLowProfileOK = !s.enfLowProfileOK;
+        else if (k.equals("enfnear")) s.enfNearYouOK = !s.enfNearYouOK;
+        else if (k.equals("enfint")) s.enfIntercept = !s.enfIntercept;
         else if (k.equals("ambfocus")) s.ambassadorFocus = (Math.max(0, Math.min(3, s.ambassadorFocus)) + 1) % 4;
         else if (k.equals("ambstop")) s.ambassadorStopAt = (Math.max(0, Math.min(3, s.ambassadorStopAt)) + 1) % 4;
         else if (k.startsWith("stance_")) {   // 0.3.0.0 (WS-E): the stance table (CAStance); Auto removes the entry

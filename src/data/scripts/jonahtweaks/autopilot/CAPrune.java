@@ -188,18 +188,19 @@ public class CAPrune {
         // 0.3.0.0 (B4): a year's mark, so the planner doesn't build it back here (and what it cost goes with it)
         CATombstone.add(m.getId(), id, CATombstone.PRUNE, k.built == null ? 0f : k.built.paid);
         CAMarket.invalidate();
-        CALog.add(m.getName() + ": took down " + name + ": " + why(k) + CATombstone.paidText(k.built)
-                + (core != null || item != null ? "; its " + (core != null && item != null ? "core and item" : core != null ? "core" : "item") + " to Autopilot Storage" : ""));
+        CALog.did(m.getName() + ": Took down " + name + ": " + why(k) + CATombstone.paidText(k.built) + "."
+                + (core != null || item != null ? " Its " + (core != null && item != null ? "core and item" : core != null ? "core" : "item") + " to Autopilot Storage." : ""));
     }
 
     /** The log's reason: "Mining already makes more ore, so it only cost upkeep (about 9,000 a month)", or what it added against its upkeep. */
     static String why(Keep k) {
         CAValue.Kept kv = k.kept;
-        if (kv == null) return "it was worth " + CAEngine.valueText(k.value);
+        // 0.3.1.0: facts only (THE FORMAT)
+        if (kv == null) return "worth " + CAEngine.valueText(k.value);
         if (kv.allDup && !kv.bigger.isEmpty() && !kv.goods.isEmpty())
-            return CAContracts.join(new ArrayList<String>(kv.bigger)) + " already makes more " + CAContracts.join(new ArrayList<String>(kv.goods))
-                    + ", so it only cost upkeep (about " + Misc.getDGSCredits(kv.upkeep) + " a month)";
-        return "for a month it added about " + Misc.getDGSCredits(Math.max(0f, kv.export + kv.relief)) + " a month against "
-                + Misc.getDGSCredits(kv.upkeep) + " upkeep";
+            return CAContracts.join(new ArrayList<String>(kv.bigger)) + " makes more " + CAContracts.join(new ArrayList<String>(kv.goods))
+                    + ". Upkeep only, about " + Misc.getDGSCredits(kv.upkeep) + " a month";
+        return "added about " + Misc.getDGSCredits(Math.max(0f, kv.export + kv.relief)) + " a month for a month, upkeep "
+                + Misc.getDGSCredits(kv.upkeep);
     }
 }

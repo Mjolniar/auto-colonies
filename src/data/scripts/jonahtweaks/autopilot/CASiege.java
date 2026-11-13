@@ -136,7 +136,7 @@ public class CASiege {
             if (c.mode == CAData.Mode.OFF || CAEngine.isOutpost(m)) continue;
             String w = why(m), key = KEY + m.getId();
             if (w != null && CALog.once(key)) {
-                CALog.status("siege:" + m.getId(), m.getName() + ": under siege (" + w + "), defenses only");
+                CALog.thinkStatus("siege:" + m.getId(), m.getName() + ": under siege (" + w + "), defenses only.");
             } else if (w == null && CALog.noted(key)) {   // 0.3.0.0: once-keys live in CAData.notedAt (CALog)
                 CALog.forget(key);
                 CALog.quiet(m.getName() + ": siege over");   // 0.3.0.9: status, starsector.log only; the siege starting stays on screen

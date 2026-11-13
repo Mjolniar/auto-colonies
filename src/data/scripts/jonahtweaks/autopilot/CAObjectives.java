@@ -243,13 +243,13 @@ public class CAObjectives {
         String where = p.at.sys.getBaseName();
         if (s.objectiveMode == 1) {
             if (CALog.once("objective:" + p.at.sys.getId() + ":" + p.type))
-                CALog.add(where + ": recommends a " + p.what + " at a stable location (" + p.why + "; " + Misc.getDGSCredits(p.cost) + " in materials). Stable locations, under Settings, set to Auto builds it");
+                CALog.advise(where + ": Recommends a " + p.what + " at a stable location (" + p.why + "; " + Misc.getDGSCredits(p.cost) + " in materials). Set Stable locations to Auto, under Settings, to build it.");
             return;
         }
         float fee = CABudget.fee(s, BASE_FEE);
         if (!CAItems.canPay(s, p.cost + fee)) {
             if (CALog.once("objective:budget:" + p.at.sys.getId() + ":" + p.type))
-                CALog.add(where + ": a " + p.what + " waits for budget (" + Misc.getDGSCredits(p.cost + fee) + ")");
+                CALog.think(where + ": A " + p.what + " waits for budget (" + Misc.getDGSCredits(p.cost + fee) + ").");
             return;
         }
         send(d, s, p, fee);
@@ -302,9 +302,9 @@ public class CAObjectives {
         o.sent = Global.getSector().getClock().getTimestamp(); o.days = p.days;
         d.objectiveOrders().add(o);
         CALog.forget("objective:budget:" + p.at.sys.getId() + ":" + p.type);
-        CALog.add(where + ": construction crew on its way from " + p.at.base.getName() + " to build a " + p.what + " (" + p.why + "), "
+        CALog.did(where + ": Construction crew sent from " + p.at.base.getName() + " to build a " + p.what + " (" + p.why + "). "
                 + Math.round(p.days) + " days, " + Misc.getDGSCredits(p.cost) + " in materials + " + Misc.getDGSCredits(fee) + " fee"
-                + (p.core != null ? ", and a " + coreName(p.core) + " from Autopilot Storage" : ""));
+                + (p.core != null ? ", and a " + coreName(p.core) + " from Autopilot Storage" : "") + ".");
         return true;
     }
 
@@ -363,16 +363,16 @@ public class CAObjectives {
             boolean ok = usable(e) && (upgrade ? e.hasTag(MAKESHIFT) && Factions.PLAYER.equals(e.getFaction().getId()) : e.hasTag(STABLE));
             if (!ok) {
                 giveBack(o);
-                CALog.add(where + ": the " + o.what + " wasn't built (the spot was taken or gone); the materials" + (o.core != null ? " and the " + coreName(o.core) : "") + " came back");
+                CALog.did(where + ": The " + o.what + " was not built. The spot was taken or gone. Materials" + (o.core != null ? " and the " + coreName(o.core) : "") + " returned.");
                 continue;
             }
             try {
                 new Objectives(e).build(o.type, Factions.PLAYER);
-                CALog.add(where + ": built a " + o.what + " (" + o.why + ")");
+                CALog.did(where + ": Built a " + o.what + " (" + o.why + ").");
             } catch (Throwable t) {
                 giveBack(o);
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "building " + o.type + " failed", t);
-                CALog.add(where + ": the " + o.what + " couldn't be built; the materials came back");
+                CALog.did(where + ": The " + o.what + " could not be built. Materials returned.");
             }
         }
     }

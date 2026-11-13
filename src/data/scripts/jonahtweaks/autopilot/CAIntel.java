@@ -34,6 +34,8 @@ public class CAIntel extends BaseIntelPlugin {
     static final String RESCAN = "jt_ca_rescan";
     /** 0.3.0.0 (A4 fix): the Colonies page's Refresh picks button (CAEngine.refreshAll). */
     static final String REFRESH = "jt_ca_refresh";
+    /** 0.3.1.0: the Log page's Show and Hide button for the Thinking list. */
+    static final String THINKING = "jt_ca_thinking";
     public static final String TAG = "Colony Autopilot";
     /** UI handles are never saved with the game. */
     transient TooltipMakerAPI lastTooltip;
@@ -383,6 +385,14 @@ public class CAIntel extends BaseIntelPlugin {
             CATheme.heading(t, "Log", 0f);
             if (s.log.isEmpty()) t.addPara("Nothing yet.", gray, 6f);
             for (int i = 0; i < Math.min(40, s.log.size()); i++) t.addPara(CALog.esc(s.log.get(i)), gray, 3f);
+            // 0.3.1.0: Autopilot's thinking (CALog.think), collapsed until shown
+            List<String> th = data.thinking();
+            CATheme.heading(t, "Thinking", 12f);
+            t.addButton(data.thinkingShown ? "Hide" : "Show (" + th.size() + ")", THINKING, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 22f, 6f);
+            if (data.thinkingShown) {
+                if (th.isEmpty()) t.addPara("Nothing yet.", gray, 6f);
+                for (int i = 0; i < Math.min(40, th.size()); i++) t.addPara(CALog.esc(th.get(i)), gray, 3f);
+            }
         } else if (page.equals("diag")) {
             renderDiagnostics(t);
         }
@@ -513,7 +523,7 @@ public class CAIntel extends BaseIntelPlugin {
         try { pressed(buttonId, ui); }
         catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "empire panel button failed", t);
-            try { CALog.add("That button failed; see starsector.log", true); ui.updateUIForItem(this); } catch (Throwable ignored) { }
+            try { CALog.advise("Button failed. See starsector.log.", true); ui.updateUIForItem(this); } catch (Throwable ignored) { }
         }
     }
 
@@ -521,12 +531,14 @@ public class CAIntel extends BaseIntelPlugin {
         CAData d = CAData.get();
         String ladder = CARich.handle(buttonId);   // 0.3.0.0 (C3): the money ladder's Approve and Reject buttons
         if (ladder != null) {
-            if (!ladder.isEmpty()) CALog.add(ladder, true);
+            if (!ladder.isEmpty()) CALog.advise(ladder, true);
             ui.updateUIForItem(this);
             return;
         }
         if (CANav.page(buttonId) != null) {
             page = CANav.page(buttonId);
+        } else if (THINKING.equals(buttonId)) {
+            d.thinkingShown = !d.thinkingShown;
         } else if (RESCAN.equals(buttonId)) {
             CADiagnostics.runScan();
         } else if (REFRESH.equals(buttonId)) {
@@ -537,61 +549,61 @@ public class CAIntel extends BaseIntelPlugin {
             String[] a = (String[]) buttonId;
             if (Global.getSettings().getModManager().isModEnabled(CASpies.MOD)) {
                 try { CASpies.handle(d, a[1], a[2]); }
-                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "agent action failed", t); CALog.add("Agents: that failed; see starsector.log", true); }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "agent action failed", t); CALog.advise("Agents: action failed. See starsector.log.", true); }
             }
         } else if (buttonId instanceof String[] && "auton".equals(((String[]) buttonId)[0])) {
             String[] a = (String[]) buttonId;
             if (Global.getSettings().getModManager().isModEnabled(CAAutonomy.MOD)) {
                 try { CAAutonomy.handle(d, a[1], a[2]); }
-                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "autonomy action failed", t); CALog.add("Autonomy: that failed; see starsector.log", true); }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "autonomy action failed", t); CALog.advise("Autonomy: action failed. See starsector.log.", true); }
             }
         } else if (buttonId instanceof String[] && "settle".equals(((String[]) buttonId)[0])) {
             String[] a = (String[]) buttonId;
             if (Global.getSettings().getModManager().isModEnabled(CASettlement.MOD)) {
                 try { CASettlement.handle(a[1], a[2], d, d.settings); }
-                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "settlement action failed", t); CALog.add("Settlement: that failed; see starsector.log", true); }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "settlement action failed", t); CALog.advise("Settlement: action failed. See starsector.log.", true); }
             }
         } else if (buttonId instanceof String[] && "contract".equals(((String[]) buttonId)[0])) {
             if (Global.getSettings().getModManager().isModEnabled(CAContracts.MOD)) {
                 String err = CAContracts.accept(((String[]) buttonId)[2], "you");
-                if (err != null) CALog.add("Trade contract: " + err, true);
+                if (err != null) CALog.advise("Trade contract: " + err, true);
             }
         } else if (buttonId instanceof String[] && "research".equals(((String[]) buttonId)[0])) {
             if (Global.getSettings().getModManager().isModEnabled(CAResearch.MOD)) {
                 String err = CAResearch.handle(((String[]) buttonId)[1], ((String[]) buttonId)[2]);
-                if (err != null) CALog.add("Research: " + err, true);
+                if (err != null) CALog.advise("Research: " + err, true);
             }
         } else if (buttonId instanceof String[] && "hs".equals(((String[]) buttonId)[0])) {
             String[] a = (String[]) buttonId;
             MarketAPI m = CAAuto.market(a[2]);
             if (m != null && Global.getSettings().getModManager().isModEnabled(CAHypershunt.MOD)) {
-                try { String msg = CAHypershunt.handle(m, a[1], a[3]); CALog.add(m.getName() + ": " + msg); }
-                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "hypershunt action failed", t); CALog.add(m.getName() + ": hypershunt: that failed; see starsector.log", true); }
+                try { String msg = CAHypershunt.handle(m, a[1], a[3]); CALog.advise(m.getName() + ": " + msg); }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "hypershunt action failed", t); CALog.advise(m.getName() + ": Hypershunt: action failed. See starsector.log.", true); }
             }
         } else if (buttonId instanceof String[] && "aug".equals(((String[]) buttonId)[0])) {
             MarketAPI m = CAAuto.market(((String[]) buttonId)[2]);
             if (m != null && Global.getSettings().getModManager().isModEnabled(CAAugments.MOD)) {
-                try { String err = CAAugments.applyNow(m); if (err != null) CALog.add(m.getName() + ": station augments: " + err); }
-                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment action failed", t); CALog.add(m.getName() + ": station augments: that failed; see starsector.log", true); }
+                try { String err = CAAugments.applyNow(m); if (err != null) CALog.advise(m.getName() + ": Station augments: " + err); }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment action failed", t); CALog.advise(m.getName() + ": Station augments: action failed. See starsector.log.", true); }
             }
         } else if (buttonId instanceof String[] && "expand".equals(((String[]) buttonId)[0])) {
             String[] a = (String[]) buttonId;   // 0.3.0.0 (WS-D): Auto-expansion's buttons {"expand", action, id}
             try {
                 String err = CAExpansion.handle(a[1], a[2], d, d.settings);
-                if (err != null) CALog.add("Auto-expansion: " + err, true);
+                if (err != null) CALog.advise("Auto-expansion: " + err, true);
             } catch (Throwable t) {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "expansion action failed", t);
-                CALog.add("Auto-expansion: that failed; see starsector.log", true);
+                CALog.advise("Auto-expansion: action failed. See starsector.log.", true);
             }
         } else if (buttonId instanceof String[] && CAFactionsPage.ID.equals(((String[]) buttonId)[0])) {
             // 0.3.0.0 (WS-F2): the Factions page's stance steps and Reset all to Auto {"fac", ...}
             try { CAFactionsPage.handle((String[]) buttonId, d); }
-            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "stance change failed", t); CALog.add("Factions: that failed; see starsector.log", true); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "stance change failed", t); CALog.advise("Factions: action failed. See starsector.log.", true); }
         } else if (buttonId instanceof String[] && "war".equals(((String[]) buttonId)[0])) {
             String[] a = (String[]) buttonId;   // 0.3.0.0 (WS-E): the War page's buttons {"war", action, arg}
             if (Global.getSettings().getModManager().isModEnabled(CAWar.MOD)) {
                 try { CAWar.handle(d, a[1], a.length > 2 ? a[2] : ""); }
-                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "war action failed", t); CALog.add("War: that failed; see starsector.log", true); }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "war action failed", t); CALog.advise("War: action failed. See starsector.log.", true); }
             }
         } else if (buttonId instanceof String[]) {
             String[] a = (String[]) buttonId;
@@ -606,11 +618,11 @@ public class CAIntel extends BaseIntelPlugin {
                 if ((c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO) && !d.settings.setupDone) {
                     CASetupUI.applyRecommended(d.settings);
                     d.settings.setupDone = true;
-                    CALog.add("Recommended settings applied; review them on the Settings page of the Colony Autopilot intel", true);
+                    CALog.did("Settings: recommended values applied. Review them on the Settings page of the Colony Autopilot intel.", true);
                 }
             } else if ("approve".equals(a[0]) && m != null) {
                 String err = CAAuto.approve(m);
-                if (err != null) CALog.add(m.getName() + ": " + err, true);
+                if (err != null) CALog.advise(m.getName() + ": " + err, true);
             } else if ("reject".equals(a[0]) && m != null) {
                 CAAuto.reject(m);
             }

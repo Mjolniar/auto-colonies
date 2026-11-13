@@ -108,7 +108,7 @@ public class CAOddisz {
         if (fresh) p.fx[1] -= size;
         float with = CAPolicies.monthsToGrow(m, own + added), without = CAPolicies.monthsToGrow(m, own);
         p.lines.add("Cloning: +" + added + " growth a month" + (own > 0.5f ? " on top of " + Math.round(own) : "")
-                + (with >= 0f ? ", size " + (size + 1) + " in about " + Math.max(1, Math.round(with)) + " months" + (without >= 0f ? " instead of " + Math.round(without) : "") : "")
+                + (with >= 0f ? ", size " + (size + 1) + " in about " + Math.max(1, Math.round(with)) + " months" + (without >= 0f ? " (" + Math.round(without) + " without)" : "") : "")
                 + (fresh ? "; -" + size + " stability, one more each size it grows" : "") + " (estimated)");
         return fx > 0f;
     }

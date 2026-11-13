@@ -182,15 +182,15 @@ public class CAEndgame {
             s.endgameOn = true;
             s.endgameRefNet = Math.max(s.endgameRefNet, net);   // coming back doesn't lower what it keeps
             chains = null;
-            CALog.add("Endgame economy: " + Misc.getDGSCredits(net) + "/month and " + Misc.getDGSCredits(CASurplus.amount(s))
-                    + " surplus; now building for production chains, military, research. Keeps " + Misc.getDGSCredits(floor(s)) + "/month", true);
+            CALog.did("Endgame economy: on. " + Misc.getDGSCredits(net) + "/month, " + Misc.getDGSCredits(CASurplus.amount(s))
+                    + " surplus. Builds for production chains, military and research. Keeps " + Misc.getDGSCredits(floor(s)) + "/month.", true);
         } else if (!next && s.endgameOn) {
             s.endgameOn = false;
             chains = null;
             String why = s.endgameMode >= ENTER_NET.length ? "turned off"
                     : legacy ? (amount < CASurplus.RICH / 2f ? "surplus under " + Misc.getDGSCredits(CASurplus.RICH / 2f) : "net income below zero")
                     : !rich ? (tier < CARich.T3 ? "money tier " + CARich.name(tier) : "spending freely ended") : "colony net below zero";
-            CALog.add("Endgame economy ended (" + why + ")", true);
+            CALog.did("Endgame economy: off (" + why + ").", true);
         }
         summary = s.endgameOn ? summaryText(s) : null;
     }
@@ -527,9 +527,9 @@ public class CAEndgame {
         lastReplaceDay = now();
         chains = null;
         String why = capital ? "room for the capital's trade" : "endgame";
-        CALog.add(m.getName() + ": took down " + oldName + " for " + p.name + " (" + why + ", worth " + CAEngine.valueText(p.score - wk.keep) + " more"
-                + CATombstone.paidText(b)
-                + (core != null || item != null ? "; its " + (core != null && item != null ? "core and item" : core != null ? "core" : "item") + " to Autopilot Storage" : "") + ")", true);
+        CALog.did(m.getName() + ": Took down " + oldName + " for " + p.name + " (" + why + ", worth " + CAEngine.valueText(p.score - wk.keep) + " more"
+                + CATombstone.paidText(b) + ")."
+                + (core != null || item != null ? " Its " + (core != null && item != null ? "core and item" : core != null ? "core" : "item") + " to Autopilot Storage." : ""), true);
         return true;
     }
 

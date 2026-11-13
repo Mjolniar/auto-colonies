@@ -144,8 +144,8 @@ public class CAPolicies {
             s.hazardLimitChecked = true;
             if (Math.abs(s.hazardPayEmpireShare - 0.10f) < 0.005f) {
                 s.hazardPayEmpireShare = CATuning.HAZARD_EMPIRE_SHARE;
-                CALog.add("Hazard pay limit raised from the old default of 10% to " + Math.round(CATuning.HAZARD_EMPIRE_SHARE * 100f)
-                        + "% of empire net income (Settings, Advanced, Colony policies, Hazard pay budget)", true);
+                CALog.did("Hazard pay limit: raised from 10% to " + Math.round(CATuning.HAZARD_EMPIRE_SHARE * 100f)
+                        + "% of empire net income (Settings, Advanced, Colony policies, Hazard pay budget).", true);
             }
         }
         boolean emergency = CABudget.paused(s);
@@ -190,7 +190,7 @@ public class CAPolicies {
                             if ((!siege && canChange(c.lastHazardPay, HAZARD_PAY_MIN_DAYS)) || urgentOff) {
                                 m.setImmigrationIncentivesOn(want);
                                 c.lastHazardPay = now;
-                                CALog.status("hazard:" + m.getId(), m.getName() + ": hazard pay " + (want ? "on (" + growthText(m, g) + ")" : "off (" + why + ")"));
+                                CALog.status("hazard:" + m.getId(), m.getName() + ": Hazard pay " + (want ? "on (" + growthText(m, g) + ")" : "off (" + why + ")") + ".");
                             }
                         }
                     } catch (Throwable t) { CAStep.warn("colony policy step", "hazard pay failed at " + m.getName(), t); }
@@ -225,7 +225,7 @@ public class CAPolicies {
                         m.setFreePort(want);
                         m.reapplyConditions();
                         c.lastFreePort = now;
-                        CALog.status("freeport:" + m.getId(), m.getName() + ": free port " + (want ? "on" : "off (" + why + ")"));
+                        CALog.status("freeport:" + m.getId(), m.getName() + ": Free port " + (want ? "on" : "off (" + why + ")") + ".");
                     }
                 }
             } catch (Throwable t) { CAStep.warn("colony policy step", "policy check failed at " + m.getName(), t); }
@@ -302,8 +302,9 @@ public class CAPolicies {
     static String growthText(MarketAPI m, Growth g) {
         if (g == null) return "faster growth";
         float with = monthsToGrow(m, g.base + g.points), without = monthsToGrow(m, g.base);
-        return "+" + Math.round(g.points) + " growth a month" + (g.base > 0.5f ? " on top of " + Math.round(g.base) + ", " + pct(g.speedup) + " faster" : "; it doesn't grow without it")
-                + (with >= 0f ? "; size " + (m.getSize() + 1) + " in about " + Math.max(1, Math.round(with)) + " months" + (without >= 0f ? " instead of " + Math.round(without) : "") : "")
+        // 0.3.1.0: "(N without)" for the months without it (THE FORMAT: no contrast phrasing)
+        return "+" + Math.round(g.points) + " growth a month" + (g.base > 0.5f ? " on top of " + Math.round(g.base) + ", " + pct(g.speedup) + " faster" : ", no growth without it")
+                + (with >= 0f ? ", size " + (m.getSize() + 1) + " in about " + Math.max(1, Math.round(with)) + " months" + (without >= 0f ? " (" + Math.round(without) + " without)" : "") : "")
                 + ", " + Misc.getDGSCredits(g.cost) + " a month";
     }
 

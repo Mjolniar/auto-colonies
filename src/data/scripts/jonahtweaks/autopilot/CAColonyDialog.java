@@ -34,7 +34,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     static final String MEGA = "ca:mega:";   // Pluto / Nidavelir actions: ca:mega:<action>:<arg>
     static final String TASC = "ca:tasc:";   // start a TASC terraforming project: ca:tasc:<project name>
     /** 0.3.0.0 (WS-F3): the message after a button that threw. */
-    static final String FAILED = "That failed; see starsector.log";
+    static final String FAILED = "Failed. See starsector.log";
     final MarketAPI market;
     CustomPanelAPI root, content;
     String message = null;
@@ -101,8 +101,8 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         else if (SAVE_SETUP.equals(id)) {
             d.settings.setupDone = true; setupPage = false;
             if (setupMode != null) c.mode = setupMode;
-            message = "Saved; mode " + c.mode.label;
-            CALog.add(market.getName() + ": setup saved, mode " + c.mode.label, true);   // 0.3.0.0 (WS-F3): "SETUP / Place: ..." on screen
+            message = "Saved. Mode: " + c.mode.label;
+            CALog.did(market.getName() + ": setup saved, mode " + c.mode.label + ".", true);   // 0.3.0.0 (WS-F3): "SETUP / Place: ..." on screen
         }
         else if (BACK.equals(id)) { setupPage = false; message = null; }
         else if (REFRESH.equals(id)) {   // 0.3.0.0 (A4 fix, 07 M6): scored on a click, never while the panel draws; no plan tracking
@@ -178,7 +178,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     static final String SIEGE_LINE = "Under siege (%s): %s.",
             SIEGE_HOVER = "Trade contracts skip its goods.";
     /** A Nexerelin outpost's Overview line (CAEngine.OUTPOST_TEXT in short). */
-    static final String OUTPOST_LINE = "Resupply base; Autopilot leaves it alone.";
+    static final String OUTPOST_LINE = "Resupply base. Autopilot leaves it alone.";
     static final String LOCKS_LINE = "Click to lock. Autopilot leaves locked buildings alone.";
     static final String PICKS_HOVER_NOTE = "Hover for the score.";
 
@@ -326,7 +326,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
 
             if (c.pendingId != null) {
                 CATheme.heading(t, CATheme.APPROVAL, 10f);
-                t.addPara("%s for %s (plus a %s fee)", 6f, hl, c.pendingName, Misc.getDGSCredits(c.pendingCost),
+                t.addPara("%s for %s, fee %s.", 6f, hl, c.pendingName, Misc.getDGSCredits(c.pendingCost),
                         Misc.getDGSCredits(CABudget.constructionFee(s, c.pendingCost)));
                 ButtonAPI a = t.addButton("Approve", APPROVE, hl, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 6f);
                 ButtonAPI r = t.addButton("Reject", REJECT, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 0f);
@@ -406,7 +406,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             }
             if (lockFirst != null) CALog.endRow(t, lockFirst);
             List<String> odd = CADiagnostics.unsupportedConditions(market);
-            if (!odd.isEmpty() && !shunt) t.addPara(CALog.esc("Unmapped conditions (scores may be off): " + odd), gray, 10f);
+            if (!odd.isEmpty() && !shunt) t.addPara(CALog.esc("Unmapped conditions: " + odd + ". Scores may be off."), gray, 10f);
         } else if (page.equals("mods")) {
             float pad = message != null ? 8f : 0f;
             for (String id : modSections(c, s, shunt)) {
@@ -427,14 +427,14 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         // result from before the latest change is shown with its Build buttons off until it's scored again
         CAEngine.Kept k = CAEngine.kept(market, planWith, data.settings.minStability, buildout);
         ButtonAPI rb = t.addButton("Refresh", REFRESH, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 8f);
-        LabelAPI note = t.addPara(k == null ? (CAEngine.scoreFailed(market) ? "Not scored; see starsector.log."   // 0.3.0.0 (A4 fix)
-                : "Not scored yet; Refresh.")
-                : k.current ? "Scored today." : "Out of date; Refresh.", k != null && k.current ? gray : hl, 0f);
+        LabelAPI note = t.addPara(k == null ? (CAEngine.scoreFailed(market) ? "Not scored. See starsector.log."   // 0.3.0.0 (A4 fix)
+                : "Not scored yet. Refresh.")
+                : k.current ? "Scored today." : "Out of date. Refresh.", k != null && k.current ? gray : hl, 0f);
         note.getPosition().rightOfMid(rb, 10f);
         CALog.endRow(t, rb);
         if (k == null) return;
         CAEngine.Result r = k.result;
-        if (r.blocked != null) t.addPara(CALog.esc(r.blocked) + (r.picks.isEmpty() ? "." : "; upgrades only."), hl, 8f);
+        if (r.blocked != null) t.addPara(CALog.esc(r.blocked) + (r.picks.isEmpty() ? "." : ". Upgrades only."), hl, 8f);
         List<CAEngine.Pick> picks = r.picks;
         if (picks.isEmpty()) t.addPara("Nothing to build now.", 8f);
         else if (!CAEngine.worthwhile(picks.get(0))) t.addPara("Nothing pays for itself now.", hl, 8f);   // 0.3.0.0 (WS-F3 fix): shorter
@@ -448,12 +448,12 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                     "" + (int) p.days, CAEngine.signed(p.score));
             // 0.3.0.0 (WS-F3, research 04 section 2): the score's make-up (30 words under each of three picks in 0.2.45) is hover text
             CATheme.hover(t, rankLines(p, goal));
-            if (!CAEngine.worthwhile(p)) t.addPara("    Not worth it (payback over %s months).", 2f,
+            if (!CAEngine.worthwhile(p)) t.addPara("    Not worth it. Payback over %s months.", 2f,
                     Misc.getNegativeHighlightColor(), "" + months(p));
             int shown = Math.min(3, p.lines.size());
             for (int j = 0; j < shown; j++) t.addPara("    " + CALog.esc(p.lines.get(j)), gray, 2f);
             if (p.lines.size() > shown) {   // 0.3.0.0 (WS-F3): the rest on hover, here and on the pick's line
-                t.addPara("    and " + (p.lines.size() - shown) + " more effects (hover)", gray, 2f);
+                t.addPara("    " + (p.lines.size() - shown) + " more effects on hover.", gray, 2f);
                 CATheme.hover(t, p.lines.subList(shown, p.lines.size()).toArray(new String[0]));
             }
             boolean waits = !p.upgrade && r.blocked != null, poor = CABuild.credits() < p.cost, old = !k.current;

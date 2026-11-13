@@ -71,7 +71,7 @@ public class CAStep {
     static void stop(String name, Stat st) {
         st.broken = st.inRow + " failures in a row, last: " + st.lastError;
         CADiagnostics.LOG.warn(CADiagnostics.TAG + name + " stopped for this session: " + st.broken);
-        try { CALog.add("Autopilot stopped its " + name + " for this session after " + st.inRow + " failures in a row; see Diagnostics", true); }
+        try { CALog.advise("Autopilot stopped its " + name + " for this session after " + st.inRow + " failures in a row. See Diagnostics.", true); }
         catch (Throwable ignored) { }   // the log itself failing must never throw out of a step
     }
 

@@ -1,5 +1,18 @@
 # Patch notes
 
+## 0.3.1.0 - 2026-11-12
+
+- Enforcer patrols: Added an option for colony patrols to attack Hegemony investigators, Hegemony AI inspections, League enforcers, Luddic sacred protectors, Tri-Tachyon commerce raiders and Nexerelin police in systems with Auto colonies. Off by default. Each fleet type has its own switch. Settings: Advanced, War.
+- Enforcer patrols: Cost mode None, Reputation (default), Credits or Both. Reputation matches the game's penalty: -3, none for raiders and police. Credits: the fleet's points x 400, Nexerelin's fleet hire price. An attack starts only when its price fits above the credit reserve.
+- Enforcer patrols: Skips your commissioning faction, allies, League members and ceasefires, in Low profile and while your fleet is in the system. Each skip is a setting, on by default.
+- Autopilot log: Each line is an action, advice or thinking. Actions and advice show on screen and in the panel log. Thinking goes to starsector.log and the Thinking list on the Log page (Show/Hide).
+- Autopilot log: Planning, scans, money tier changes, siege and threat status, war fleets waiting and item shipping are thinking.
+- Autopilot log: An item or core move is one line with its effect, where it came from and the shipping fee.
+- Autopilot log: "Yours to build" advice shows once per good every 90 days.
+- Autopilot log: The Month line shows once a month.
+- Proposals: A proposal reads "Proposal: X for Y. Approval needed: reason."
+- Text: Log lines and colony panel reasons rewritten as short facts.
+
 ## 0.3.0.9 - 2026-11-12
 
 - Stability: Fixed the 0-stability timer resetting when a colony touches stability 1. Low days count with a slow decay.
@@ -21,6 +34,7 @@
 - Autopilot log: Lines about waiting, skipping, failed starts, caps and status go to starsector.log. Actions and advice stay on screen.
 - Autopilot log: Fixed proposals that need your approval being hidden.
 - Autopilot log: Removed duplicate lines and lines that returned every month.
+
 ## 0.3.0.8 - 2026-11-12
 
 - Survival mode: Fixed corruption being taken from net income. It is taken from gross income, as in the game, and upkeep counts in full.

@@ -220,9 +220,9 @@ public class CAExpansion {
     static void notice(CASettings s) {
         s.expandConfirmed = true;
         String nex = nexOn() && s.expandMethod == 0 ? "about " + Misc.getDGSCredits(nexCostEstimate(NEX_FP)) + " by Nexerelin colony fleet or " : "";
-        CALog.add("Auto-expansion: on (" + modeName(s) + "). An expedition costs " + nex + Misc.getDGSCredits(crewCost(0f, goods()))
-                + " and up by Autopilot crew, plus the fee. Each new colony adds Persean League crisis progress and loses money in its first months. "
-                + "Scope: " + scopeName(s) + ". The Expansion page lists candidates and expeditions", true);
+        CALog.did("Auto-expansion: on (" + modeName(s) + "). Expedition cost: " + nex + Misc.getDGSCredits(crewCost(0f, goods()))
+                + " and up by Autopilot crew, plus the fee. Each new colony adds Persean League crisis progress. New colonies lose money in their first months. "
+                + "Scope: " + scopeName(s) + ". Candidates and expeditions: Expansion page.", true);
     }
 
     // ---------------- modes, scope, money ----------------
@@ -247,7 +247,7 @@ public class CAExpansion {
     static String modeName(CASettings s) {
         int m = mode(s);
         String n = CASettings.EXPAND_NAMES[m];
-        if (m == 1 && s.expandMode == 2) n += ", the Expansion rung is on Recommend only";
+        if (m == 1 && s.expandMode == 2) n += ", Expansion rung: Recommend only";
         return n;
     }
 
@@ -284,7 +284,7 @@ public class CAExpansion {
             int tier = CARich.tier();
             r.rich = tier >= CARich.T3;
             r.veryRich = tier >= CARich.T4;
-            if (tier < CARich.T2) { r.why = "The money tier is " + CARich.name(tier) + "; Auto-expansion starts at " + CARich.name(CARich.T2) + "."; return r; }
+            if (tier < CARich.T2) { r.why = "Money tier: " + CARich.name(tier) + ". Auto-expansion starts at " + CARich.name(CARich.T2) + "."; return r; }
             // the rung's allowance this month; a rung on Recommend only still has one (Ask first proposes within it)
             float a = 0f;
             try { a = CARich.allowance(RUNG); } catch (Throwable ignored) { }
@@ -411,7 +411,7 @@ public class CAExpansion {
         r.idle = CAItems.idleAdmins();
         r.pending = d.expandOrders().size() + d.tascOrders().size() + CAItems.comingBack(d);
         if (r.governed + r.pending - r.max - r.idle > 0) {
-            r.why = "Your colony limit already needs administrators; Auto-expansion waits until they're in place.";
+            r.why = "Colony limit: administrators needed. Auto-expansion waits for them.";
             return r;
         }
         int shortBy = adminsShort(r.governed, r.max, r.idle, r.pending);
@@ -420,8 +420,8 @@ public class CAExpansion {
                 && !CAStability.canGovernedLose(-CAStability.oneMoreGoverned(), null)) shortBy = 1;
         if (shortBy == 0) return r;
         r.hire = true;
-        if (!s.expandAdmins()) r.why = "The new colony needs an administrator, and hiring one for it is off.";
-        else if (r.admins >= r.maxAdmins) r.why = "The new colony needs an administrator, and you employ as many as you can (" + r.maxAdmins + ").";
+        if (!s.expandAdmins()) r.why = "New colony needs an administrator. Hiring one for it is off.";
+        else if (r.admins >= r.maxAdmins) r.why = "New colony needs an administrator. Administrators at the maximum (" + r.maxAdmins + ").";
         return r;
     }
 
@@ -444,7 +444,7 @@ public class CAExpansion {
         if (r.why != null) { c.why = r.why; return c; }
         if (r.hire) {
             c.hire = CAItems.expansionHire(s);
-            if (c.hire == null) { c.why = "The new colony needs an administrator, and none can be hired."; return c; }
+            if (c.hire == null) { c.why = "New colony needs an administrator. None can be hired."; return c; }
         }
         boolean rich = CASurplus.rich(s);
         c.fp = rich ? NEX_FP_RICH : NEX_FP;
@@ -594,9 +594,9 @@ public class CAExpansion {
         d.expandPendingId = p.planetId;
         d.expandPendingName = p.planetName;
         d.expandPendingCost = c.total;
-        CALog.add(p.planetName + ": colony expedition proposed (" + p.plan + ", goal " + goalLabel(p.goal) + ", about " + Misc.getDGSCredits(p.value)
-                + " a month at size " + VALUE_SIZE + ", " + Misc.getDGSCredits(c.total) + " by " + methodName(c.method)
-                + (c.hire != null ? " with an administrator" : "") + "). Approve or reject it on the Expansion page", true);
+        CALog.advise(p.planetName + ": Colony expedition proposed. " + p.plan + ", goal " + goalLabel(p.goal) + ". About " + Misc.getDGSCredits(p.value)
+                + " a month at size " + VALUE_SIZE + ". Cost " + Misc.getDGSCredits(c.total) + " by " + methodName(c.method)
+                + (c.hire != null ? " with an administrator" : "") + ". Approve or reject it on the Expansion page.", true);
     }
 
     /** Drops a proposal whose planet can't be colonized any more. */
@@ -673,10 +673,10 @@ public class CAExpansion {
         d.expandLast = o.sent;
         if (o.planetId.equals(d.expandPendingId)) clearPending(d, null);
         SCAN.list = null;   // the planet is taken by this order: scan again next time
-        CALog.add(o.planetName + ": colony expedition from " + c.from.getName() + " (" + methodName(o.method)
-                + (intel != null ? ", " + o.fp + " points" : "") + "), about " + Math.round(o.days) + " days, " + Misc.getDGSCredits(c.price)
-                + (c.fee > 0f ? " + " + Misc.getDGSCredits(c.fee) + " fee" : "") + "; " + p.plan + ", goal " + goalLabel(p.goal)
-                + (player ? " (you)" : ""), true);
+        CALog.did(o.planetName + ": Colony expedition sent from " + c.from.getName() + " (" + methodName(o.method)
+                + (intel != null ? ", " + o.fp + " points" : "") + "). About " + Math.round(o.days) + " days. " + Misc.getDGSCredits(c.price)
+                + (c.fee > 0f ? " + " + Misc.getDGSCredits(c.fee) + " fee" : "") + ". " + p.plan + ", goal " + goalLabel(p.goal) + "."
+                + (player ? " Ordered by you." : ""), true);
         return null;
     }
 
@@ -708,8 +708,8 @@ public class CAExpansion {
         if (needsAdminNow() && CAItems.idleAdmin(d) == null) {
             if (elapsed - o.days < ADMIN_WAIT_DAYS) {
                 if (CALog.once("expand:adminwait:" + o.planetId))
-                    CALog.add(o.planetName + ": colony expedition waits for an administrator (colony limit or stability), up to "
-                            + Math.round(ADMIN_WAIT_DAYS) + " days", false);
+                    CALog.think(o.planetName + ": Colony expedition waits up to "
+                            + Math.round(ADMIN_WAIT_DAYS) + " days for an administrator.");
                 return false;
             }
             turnBack(d, s, o, "no administrator arrived within " + Math.round(ADMIN_WAIT_DAYS) + " days", false);
@@ -733,7 +733,7 @@ public class CAExpansion {
     static void turnBack(CAData d, CASettings s, Order o, String why, boolean skipPlanet) {
         CABudget.refund(s, null, o.paid);
         if (skipPlanet) skip(d, o.planetId, SKIP_DAYS);
-        CALog.add(o.planetName + ": colony expedition turned back (" + why + "); " + Misc.getDGSCredits(o.paid) + " refunded, the fee is kept", true);
+        CALog.did(o.planetName + ": Colony expedition turned back: " + why + ". " + Misc.getDGSCredits(o.paid) + " refunded. Fee kept.", true);
     }
 
     /** A Nexerelin colony fleet: true when the order is finished. */
@@ -745,8 +745,8 @@ public class CAExpansion {
         if (!nex || !Global.getSettings().getModManager().isModEnabled("nexerelin")) {
             if (colony && m.isPlayerOwned()) { afterFounding(d, s, m, o); return true; }
             if (elapsed < NEX_LOST_DAYS) return false;
-            CALog.add(o.planetName + ": colony expedition dropped: Nexerelin is off and no colony was founded in "
-                    + Math.round(NEX_LOST_DAYS) + " days; the " + Misc.getDGSCredits(o.paid) + " is lost", true);
+            CALog.did(o.planetName + ": Colony expedition dropped. Nexerelin is off. No colony founded in "
+                    + Math.round(NEX_LOST_DAYS) + " days. " + Misc.getDGSCredits(o.paid) + " lost.", true);
             return true;
         }
         if (colony && m.isPlayerOwned() && (CAExpansionNex.foundedByNex(m) || "success".equals(CAExpansionNex.status(o)))) {
@@ -758,20 +758,20 @@ public class CAExpansion {
             String who = p == null ? "the planet is gone" : m.isPlayerOwned() ? "you founded a colony there yourself"
                     : "taken by " + (m.getFaction() == null ? "another faction" : m.getFaction().getDisplayName());
             if (p != null && !m.isPlayerOwned()) skip(d, o.planetId, SKIP_DAYS);
-            CALog.add(o.planetName + ": colony expedition cancelled (" + who + ")" + (share > 0f ? "; Nexerelin refunds "
-                    + Math.round(share * 100f) + "% of " + Misc.getDGSCredits(o.paid) : ""), true);
+            CALog.did(o.planetName + ": Colony expedition cancelled: " + who + "." + (share > 0f ? " Nexerelin refunds "
+                    + Math.round(share * 100f) + "% of " + Misc.getDGSCredits(o.paid) + "." : ""), true);
             return true;
         }
         String st = CAExpansionNex.status(o);
         if ("underway".equals(st)) {
             if (p != null && nexusIn(p.getStarSystem()) && CALog.once("expand:nexus:" + o.planetId))
-                CALog.add(o.planetName + ": colony expedition still under way, and a Remnant nexus is now in the system", true);
+                CALog.advise(o.planetName + ": Colony expedition under way. A Remnant nexus is now in the system.", true);
             return false;
         }
         if ("cancelled".equals(st)) {
             skip(d, o.planetId, SKIP_DAYS);
-            CALog.add(o.planetName + ": colony expedition cancelled by Nexerelin; Nexerelin refunds part of the "
-                    + Misc.getDGSCredits(o.paid) + " by how far it got", true);
+            CALog.did(o.planetName + ": Colony expedition cancelled by Nexerelin. Nexerelin refunds part of the "
+                    + Misc.getDGSCredits(o.paid) + " by distance travelled.", true);
             return true;
         }
         if ("missing".equals(st) && elapsed < o.days + NEX_MISSING_DAYS) return false;
@@ -779,9 +779,9 @@ public class CAExpansion {
         String sys = p != null && p.getStarSystem() != null ? p.getStarSystem().getId() : null;
         if (sys != null) skip(d, sys, SKIP_DAYS);
         skip(d, NO_NEX, SKIP_DAYS);
-        CALog.add(o.planetName + ": colony expedition failed (" + ("missing".equals(st) ? "no word from the colony fleet" : "fleet lost, short of crew, or someone else first")
-                + "); Nexerelin refunds nothing. The system is skipped for " + Math.round(SKIP_DAYS) + " days and the next "
-                + Math.round(SKIP_DAYS) + " days use Autopilot crews", true);
+        CALog.did(o.planetName + ": Colony expedition failed: " + ("missing".equals(st) ? "no word from the colony fleet" : "fleet lost, short of crew, or someone else first")
+                + ". No Nexerelin refund. System blocked for " + Math.round(SKIP_DAYS) + " days. Autopilot crews only for the next "
+                + Math.round(SKIP_DAYS) + " days.", true);
         return true;
     }
 
@@ -800,7 +800,7 @@ public class CAExpansion {
         d.expandFounded().add(o.planetId);
         CAData.Colony c = d.colony(m.getId());
         c.profile = profile(o.goal);
-        CALog.add(m.getName() + ": colony expedition founded the colony (" + o.plan + ", goal " + c.profile.label + "); on Auto", true);
+        CALog.did(m.getName() + ": Colony expedition founded the colony. " + o.plan + ", goal " + c.profile.label + ". On Auto.", true);
         CALog.quiet(m.getName() + ": founded by " + methodName(o.method) + " after " + Math.round(Global.getSector().getClock().getElapsedDaysSince(o.sent))
                 + " days for " + Misc.getDGSCredits(o.paid) + " + " + Misc.getDGSCredits(o.fee) + " fee (" + o.why + ")");
         if (s.expandBuildout()) CABuildout.start(m, buildoutFloor(s));
@@ -1511,7 +1511,7 @@ public class CAExpansion {
                 if (e.getValue() != null && e.getValue() == Long.MAX_VALUE) { it.remove(); n++; }
             }
             SCAN.list = null;
-            CALog.add("Auto-expansion: never list cleared (" + n + (n == 1 ? " planet)" : " planets)"), false);
+            CALog.did("Auto-expansion: never list cleared (" + n + (n == 1 ? " planet)." : " planets)."), false);
             return null;
         }
         if ("reject".equals(action)) {
@@ -1520,7 +1520,7 @@ public class CAExpansion {
             skip(d, d.expandPendingId, SKIP_DAYS);
             clearPending(d, null);
             SCAN.list = null;
-            CALog.add(name + ": colony expedition rejected; not proposed again for " + Math.round(SKIP_DAYS) + " days", false);
+            CALog.did(name + ": Colony expedition rejected. Not proposed again for " + Math.round(SKIP_DAYS) + " days.", false);
             return null;
         }
         if ("never".equals(action)) {
@@ -1529,7 +1529,7 @@ public class CAExpansion {
             d.expandSkip().put(id, Long.MAX_VALUE);
             if (id.equals(d.expandPendingId)) clearPending(d, null);
             SCAN.list = null;
-            CALog.add(p.getName() + ": colony expedition never sent here (your never list on the Expansion page)", false);
+            CALog.did(p.getName() + ": Colony expedition: on the never list (Expansion page).", false);
             return null;
         }
         if ("approve".equals(action) || "found".equals(action)) {

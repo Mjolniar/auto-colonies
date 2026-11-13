@@ -438,7 +438,7 @@ public class CAEngine {
                 CASynergies.score(syn, p);
                 upkeep(m, spec, null, p);
                 float cramped = CAGrand.penalty(m, p.upkeep);
-                if (cramped > 0f) { p.fx[0] -= cramped; p.lines.add("Past Grand.Colonies' building limit: all upkeep here rises, about " + credits(cramped) + " per month"); }
+                if (cramped > 0f) { p.fx[0] -= cramped; p.lines.add("Past Grand.Colonies' building limit: upkeep here rises about " + credits(cramped) + " per month"); }
                 CALowProfile.score(m, inst, null, p);   // Low profile: the Pather line and the attention it draws (0.2.43.0)
                 CAOddisz.score(m, inst, p);   // Sol Renewed: an industry in Sol feeds its crisis meter for good (0.2.45.0)
                 if (!finish(m, p, profile, minStability, plan)) continue;
@@ -537,13 +537,13 @@ public class CAEngine {
         // surplus's weight, the endgame's chains on the units it really adds, confidence), the number CAValue.keep runs backwards
         float value = CAValue.add(m, p, profile, true);
         // an uncertain gain must beat a known one by a margin (an estimate at 0.85 needs about 18% more to win)
-        if (value > 0f && p.confidence < 1f) p.lines.add("Estimate rather than a game formula: counted at " + Math.round(p.confidence * 100f) + "%");
+        if (value > 0f && p.confidence < 1f) p.lines.add("Estimated score: counted at " + Math.round(p.confidence * 100f) + "%");   // 0.3.1.0: THE FORMAT
         // upgrading a forge that holds a nanoforge makes a new building, which pollutes a clean habitable world again
         if (!p.pollution && m != null && p.upgrade && p.existing instanceof com.fs.starfarer.api.impl.campaign.econ.impl.HeavyIndustry
                 && CAConditions.polluting(p.existing.getSpecialItem()) && m.hasCondition("habitable") && !m.hasCondition("pollution")) p.pollution = true;
         if (p.pollution) {   // the same for every goal (War production used to mind it a sixth as much), and never started (below)
             value -= CATuning.POLLUTION_PENALTY;
-            p.lines.add("Pollutes this habitable world (permanent after 90 days): Autopilot never starts this; build it yourself if you want it");
+            p.lines.add("Pollution: permanent after 90 days. Autopilot does not build it");
         }
         // the plan only orders buildings that are worth something on their own, except Terraforming Made Easy's structures
         // and the Unification Center: they cost more than they earn, but they're how the plan's world is reached
@@ -554,7 +554,7 @@ public class CAEngine {
         // ---------------- 0.3.0.0 (B2): the 0.2.45 score, with the hidden legacyPlanner switch on (for 0.3.0.x) ----------------
         float planBonus = (value > 0f || enabler) && !profitOnly ? CAPlan.bonusFor(m, plan, p.id) : 0f;
         if (endgame && planBonus > 0f && !CAEndgame.keepsPlanBonus(m, plan, p.id)) planBonus = 0f;   // a money plan's steps stand on their own
-        if (planBonus > 0f) p.lines.add(0, "Next step of this colony's " + plan.name + " plan" + (value <= 0f ? " (costs more than it earns; the plan needs it)" : ""));
+        if (planBonus > 0f) p.lines.add(0, "Plan: next step of the " + plan.name + " plan" + (value <= 0f ? ". Costs more than it earns. The plan needs it" : ""));
         // a new industry the plan doesn't ask for, when the free slots are all the plan's industries have left
         float reserve = 0f;
         if (!p.upgrade && planBonus <= 0f && !profitOnly && isIndustry(p.id) && plan != null) {
@@ -562,7 +562,7 @@ public class CAEngine {
             int needed = endgame ? CAEndgame.openKeptIndustrySteps(m, plan) : CAPlan.openIndustrySteps(m, plan);
             if (needed > 0 && free <= needed) {
                 reserve = SLOT_RESERVE;
-                p.lines.add("Takes an industry slot this colony's " + plan.name + " plan needs (" + needed + " plan industr" + (needed == 1 ? "y" : "ies") + " to come)");
+                p.lines.add("Takes an industry slot the " + plan.name + " plan needs (" + needed + " plan industr" + (needed == 1 ? "y" : "ies") + " to come)");
             }
         }
         float followThrough = p.upgrade && value > 0f && !profitOnly ? CATuning.FOLLOW_THROUGH : 0f;
@@ -615,10 +615,11 @@ public class CAEngine {
                 if (fixed > 0f && (waitsFor = CAPlan.stationWaitsFor(m, plan, ranked.step)) != null)
                     fixed = Math.min(fixed, Math.max(0f, price - value + CAPlan.STATION_WAIT));
             } else if (ranked != null && !endgame && own > 0f && value > 0f) tie = CAHorizon.PLAN_TIE * value;   // breaks ties, never makes a bad step pay
-            if (ranked == null) p.lines.add(0, "A step of this colony's " + plan.name + " plan that hasn't paid for itself here lately: no plan rank or slot held for it");
-            else if (waitsFor != null) p.lines.add(0, "A step of this colony's " + plan.name + " plan after " + waitsFor.label + ": a calm colony builds what earns before its station");
-            else p.lines.add(0, "Next step of this colony's " + plan.name + " plan" + (fixedKind && value <= 0f ? " (costs more than it earns; the plan needs it)"
-                    : ordinary && own <= 0f ? " (it doesn't pay for itself here yet)" : ""));
+            // 0.3.1.0: facts only (THE FORMAT)
+            if (ranked == null) p.lines.add(0, "Plan: a " + plan.name + " plan step. It has not paid for itself here lately. No plan rank or slot held for it");
+            else if (waitsFor != null) p.lines.add(0, "Plan: a " + plan.name + " plan step after " + waitsFor.label + ". A calm colony builds earning buildings first");
+            else p.lines.add(0, "Plan: next step of the " + plan.name + " plan" + (fixedKind && value <= 0f ? ". Costs more than it earns. The plan needs it"
+                    : ordinary && own <= 0f ? ". Does not pay for itself here yet" : ""));
         }
         // a new industry the plan doesn't ask for must beat the plan industry it would push out of the free slots (0.2.45: a flat
         // 30,000 whatever either was worth); in fast buildout too, for plan industries that pay on money alone (02 section 10)
@@ -627,8 +628,8 @@ public class CAEngine {
             CAPlan.Reserve r = CAPlan.reserve(m, plan, CABuild.freeSlots(m), endgame);
             if (r.amount > 0f) {
                 reserve = r.amount;
-                p.lines.add("Takes an industry slot this colony's " + plan.name + " plan needs (" + r.needed + " plan industr" + (r.needed == 1 ? "y" : "ies")
-                        + " to come): it has to beat the one it pushes out, about " + credits(reserve) + " per month");
+                p.lines.add("Takes an industry slot the " + plan.name + " plan needs (" + r.needed + " plan industr" + (r.needed == 1 ? "y" : "ies")
+                        + " to come). Slot reserve: about " + credits(reserve) + " per month");
             }
         }
         float planBonus = down + tie + fixed;
@@ -639,7 +640,7 @@ public class CAEngine {
         // only a pick that passes because surplus credits stretch the horizon says so
         float base = CAHorizon.heldBase;
         if (!Float.isNaN(base) && h > base + 0.5f && own > 0f && gross - CAHorizon.price(p.cost, fee, gross, p.days, base) <= 0f)
-            p.lines.add("Pays back within " + Math.round(h) + " months: surplus credits stretch the usual " + Math.round(base));
+            p.lines.add("Payback horizon: " + Math.round(h) + " months with surplus credits (usually " + Math.round(base) + ")");
         float asStep = value + planBonus - price;   // what it scores as the plan's step, before any slot reserve
         p.score = asStep - reserve;
         if (p.pollution) { p.score = Math.min(p.score, -1f); asStep = Math.min(asStep, -1f); }   // shown, never started: worthwhile() needs a positive score
@@ -691,7 +692,7 @@ public class CAEngine {
         }
         if (sum <= 0f) return 0f;
         float d = CAHorizon.DOWNSTREAM_SHARE * sum;
-        p.lines.add("Leads to " + CAContracts.join(names) + " in this colony's plan: counts half of what " + (names.size() == 1 ? "that adds" : "they add")
+        p.lines.add("Leads to " + CAContracts.join(names) + " in the plan: half of " + (names.size() == 1 ? "its" : "their") + " value counts"
                 + ", about " + credits(d) + " per month");
         return d;
     }
@@ -764,8 +765,8 @@ public class CAEngine {
             p.fx[0] += v;
             if (p.recording) { Integer was = p.supplied.get(com); p.supplied.put(com, (was == null ? 0 : was) + units); p.suppliedValue += v; }
             addUnits(p.added, com, units);   // 0.3.0.0 (B1)
-            p.lines.add("+" + units + " " + Global.getSettings().getCommoditySpec(com).getName() + ": illegal here without a free port, so it exports nothing"
-                    + (local > 0 ? "; covers " + local + " of this colony's own shortage, about " + Misc.getDGSCredits(v) + " per month" : ""));
+            p.lines.add("+" + units + " " + Global.getSettings().getCommoditySpec(com).getName() + ": illegal here without a free port. No exports"
+                    + (local > 0 ? ". Covers " + local + " of this colony's own shortage, about " + Misc.getDGSCredits(v) + " per month" : ""));
             return;
         }
         float base = Global.getSettings().getCommoditySpec(com).getBasePrice();
@@ -789,13 +790,13 @@ public class CAEngine {
             if (relief != 0f) addValue(p.marketValue, com, relief);   // 0.3.0.0 (B1, 02 section 7): the same-pass claim check sees relief too
             if (p.recording) { Integer was = p.supplied.get(com); p.supplied.put(com, (was == null ? 0 : was) + units); p.suppliedValue += v; }
             if (g.addedAfter <= g.addedBefore) {
-                p.lines.add("+" + units + " " + name + ": already made here in larger amounts (a colony counts only its biggest source), adds nothing");
+                p.lines.add("+" + units + " " + name + ": a larger source here already. Adds 0");
                 return;
             }
             String share = Math.round(g.shareBefore * 100f) + "% -> " + Math.round(g.shareAfter * 100f) + "%";
             p.lines.add("+" + units + " " + name + ": about " + Misc.getDGSCredits(g.value) + " per month in exports (your share of the sector's "
-                    + name.toLowerCase(Locale.ROOT) + " " + share + ")" + (g.capped ? ", past what the colony can ship" : "")
-                    + (cover > 0 ? "; covers " + cover + " of your colonies' shortage, about " + Misc.getDGSCredits(relief) + " more" : ""));
+                    + name.toLowerCase(Locale.ROOT) + " " + share + ")" + (g.capped ? ", capped at what the colony can ship" : "")
+                    + (cover > 0 ? ". Covers " + cover + " of your colonies' shortage, about " + Misc.getDGSCredits(relief) + " more" : ""));
             return;
         }
         // 0.3.0.0 (B1): the shortage premium only on the units that cover the shortage (it was on every unit of any short good)
@@ -858,9 +859,8 @@ public class CAEngine {
             v = base * unitValue * ((now - prior) + (CATuning.SHORTAGE_FACTOR - 1f) * cover);
         }
         p.fx[0] += v;
-        p.lines.add((delta > 0 ? "+" : "") + delta + " " + name + " from " + why
-                + (g != null && g.addedAfter == g.addedBefore ? " (the colony makes more elsewhere, so it changes nothing)" : "")
-                + ": about " + Misc.getDGSCredits(v) + " per month");
+        p.lines.add((delta > 0 ? "+" : "") + delta + " " + name + " from " + why + ": about " + Misc.getDGSCredits(v) + " per month"
+                + (g != null && g.addedAfter == g.addedBefore ? ". No change: a larger source here" : ""));
     }
 
     static void demand(Pick p, String com, int units, Map<String, Integer> deficit) {
@@ -870,7 +870,7 @@ public class CAEngine {
         float v = Global.getSettings().getCommoditySpec(com).getBasePrice() * CATuning.SHORT_INPUT_PRICE * units;
         p.fx[0] -= v;
         p.inputPenalty += v;   // 0.3.0.0 (B1 fix): a build is charged it, keeping one isn't (CAValue.keepDetail)
-        p.lines.add("Needs " + Global.getSettings().getCommoditySpec(com).getName() + ", which your colonies already lack");
+        p.lines.add("Needs " + Global.getSettings().getCommoditySpec(com).getName() + ". Your colonies already lack it");
     }
 
     static void effects(MarketAPI m, String id, Pick p, Map<String, Integer> deficit) {
@@ -953,7 +953,7 @@ public class CAEngine {
                     if (share < 1f) {
                         p.fx[0] -= est * (1f - share);
                         est *= share;
-                        p.lines.add("Only " + Math.round(share * 100f) + "% of it above the ship parts this colony makes already (estimated)");
+                        p.lines.add(Math.round(share * 100f) + "% of it above the ship parts this colony makes (estimated)");
                     }
                 }
                 p.outputEstimate += est;
@@ -1444,7 +1444,7 @@ public class CAEngine {
         return m.getPrimaryEntity() != null && m.getPrimaryEntity().hasTag("nex_playerOutpost");
     }
 
-    public static final String OUTPOST_TEXT = "Nexerelin outpost: a forward base for resupply and storage, outside your trade economy, so Autopilot doesn't build or change anything here";
+    public static final String OUTPOST_TEXT = "Nexerelin outpost: resupply and storage base outside your trade economy. Autopilot does not build or change anything here";
 
 
     public static String signed(float v) { return (v >= 0 ? "+" : "-") + Misc.getDGSCredits(Math.abs(v)); }

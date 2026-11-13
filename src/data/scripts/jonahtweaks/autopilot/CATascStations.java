@@ -286,14 +286,14 @@ public class CATascStations {
         String what = (MINING.equals(best.kind) ? "mining station" : "siphon station") + " in " + best.sys.getBaseName();
         if (mode == 0) {
             if (CALog.once("tasc:station:" + best.sys.getId() + ":" + best.kind))
-                CALog.add("Recommends a " + what + " (" + best.why + ", about " + Misc.getDGSCredits(best.monthly) + " a month once it grows; "
-                        + Misc.getDGSCredits(best.cost) + "). " + (s.stationMode == 1 ? "Set the Expansion rung to On to have a crew build it"
-                        : "Station construction, under Settings, set to Auto has a crew build it"));
+                CALog.advise("Recommends a " + what + " (" + best.why + ", about " + Misc.getDGSCredits(best.monthly) + " a month once it grows; "
+                        + Misc.getDGSCredits(best.cost) + "). " + (s.stationMode == 1 ? "Set the Expansion rung to On to have a crew build it."
+                        : "Set Station construction to Auto, under Settings, to have a crew build it."));
             return;
         }
         float fee = CABudget.fee(s, BASE_FEE);
         if (!CAItems.canPay(s, best.cost + fee)) {
-            if (CALog.once("tasc:station:budget:" + best.sys.getId())) CALog.add("A " + what + " waits for budget (" + Misc.getDGSCredits(best.cost + fee) + ")");
+            if (CALog.once("tasc:station:budget:" + best.sys.getId())) CALog.think("A " + what + " waits for budget (" + Misc.getDGSCredits(best.cost + fee) + ").");
             return;
         }
         CABudget.pay(s, null, best.cost, fee, 0f);
@@ -302,8 +302,8 @@ public class CATascStations {
         o.gasGiantId = best.gasGiant == null ? null : best.gasGiant.getId();
         o.sent = Global.getSector().getClock().getTimestamp(); o.days = CREW_DAYS;
         d.tascOrders().add(o);
-        CALog.add("Construction crew on its way to build a " + what + " (" + best.why + "), " + Math.round(CREW_DAYS) + " days, "
-                + Misc.getDGSCredits(best.cost) + " + " + Misc.getDGSCredits(fee) + " fee. It becomes a new colony in Auto with the Money goal");
+        CALog.did("Construction crew sent to build a " + what + " (" + best.why + "). " + Math.round(CREW_DAYS) + " days, "
+                + Misc.getDGSCredits(best.cost) + " + " + Misc.getDGSCredits(fee) + " fee. It becomes a new colony on Auto with the Money goal.");
     }
 
     static void deliver(CAData d) {
@@ -321,13 +321,13 @@ public class CATascStations {
             }
             if (made == null) {
                 CABudget.refund(CAData.settings(), null, o.paid);
-                CALog.add("The " + o.what + " wasn't built (the site's gone, or you're at your colony limit); the " + Misc.getDGSCredits(o.paid) + " came back");
+                CALog.did("The " + o.what + " was not built. The site is gone, or the colony limit is reached. " + Misc.getDGSCredits(o.paid) + " refunded.");
                 continue;
             }
             CAData.Colony c = d.colony(made.getId());
             c.mode = CAData.Mode.AUTO;
             c.profile = CAData.Profile.INCOME;
-            CALog.add("Built a " + o.what + ": " + made.getName() + " is a new colony, in Auto with the Money goal (" + o.why + ")");
+            CALog.did("Built a " + o.what + ". " + made.getName() + " is a new colony, on Auto with the Money goal (" + o.why + ").");
         }
     }
 

@@ -89,7 +89,7 @@ public class CATerraform {
             Set<String>[] ka = keepAvoid(m, plan, conds);
             boolean gas = gasGiant(m), pollutionBack = CAConditions.pollutionReturns(m);
             if (pollutionBack && m.hasCondition("pollution") && CALog.once("tfpollution:" + m.getId()))
-                CALog.add(m.getName() + ": pollution isn't removed while its nanoforge forge is being upgraded: the new building adds it back when it finishes");
+                CALog.think(m.getName() + ": Terraforming: pollution removal waits for the nanoforge upgrade. The new building adds pollution back.");
             for (Industry raw : m.getIndustries()) {
                 if (!(CATme.isTerraforming(raw))) continue;
                 Industry ind = raw;
@@ -160,8 +160,8 @@ public class CATerraform {
                 // savings above the credit reserve, since it's how the colony reaches its plan
                 if (CABuild.credits() - s.reserve < k.cost + fee) {
                     if (CALog.once("tfsave:" + k.m.getId() + ":" + k.pd.id))
-                        CALog.add(k.m.getName() + ": terraforming (" + k.why + ") waits until you have " + Misc.getDGSCredits(k.cost + fee)
-                                + " above the credit reserve");
+                        CALog.think(k.m.getName() + ": Terraforming (" + k.why + ") waits for " + Misc.getDGSCredits(k.cost + fee)
+                                + " above the credit reserve.");
                     continue;
                 }
             } else if (CASurplus.spends(k.m)) {
@@ -169,17 +169,17 @@ public class CATerraform {
                 // past the caps and the terraforming budget
                 if (k.cost + fee > CASurplus.amount(s)) {
                     if (CALog.once("tfsurplus:" + k.m.getId() + ":" + k.pd.id))
-                        CALog.add(k.m.getName() + ": terraforming (" + k.why + ") waits for " + Misc.getDGSCredits(k.cost + fee) + " of surplus credits");
+                        CALog.think(k.m.getName() + ": Terraforming (" + k.why + ") waits for " + Misc.getDGSCredits(k.cost + fee) + " of surplus credits.");
                     continue;
                 }
             } else if (k.cost > CAPresets.projectCap(s)) {   // 0.3.0.0 (WS-F1 fix): the cap in effect
                 if (CALog.once("tfcap:" + k.m.getId() + ":" + k.pd.id))
-                    CALog.add(k.m.getName() + ": terraforming (" + k.why + ") is over the per-project cap; start it from " + k.ind.getCurrentName() + " if you want it");
+                    CALog.advise(k.m.getName() + ": Terraforming (" + k.why + ") is over the per-project cap. Start it from " + k.ind.getCurrentName() + " to run it.");
                 continue;
             }
             else if (k.cost + fee > Math.min(CABudget.available(s), terraLeft) || CABuild.credits() < k.cost + fee) {
                 if (CALog.once("tf:" + k.m.getId() + ":" + k.pd.id))
-                    CALog.add(k.m.getName() + ": terraforming (" + k.why + ") waits for the terraforming budget");
+                    CALog.think(k.m.getName() + ": Terraforming (" + k.why + ") waits for the terraforming budget.");
                 continue;
             }
             // 0.3.0.0 (B3 fix): the plan's projects don't offer the planner actions yet (0.3.0.x), so they ask it first: credits it saves
@@ -199,8 +199,8 @@ public class CATerraform {
                 s.terraSpent += k.cost;
                 CALog.forget("tf:" + k.m.getId() + ":" + k.pd.id);
                 CALog.forget("tfheld:" + k.m.getId() + ":" + k.pd.id);
-                CALog.add(k.m.getName() + ": " + k.ind.getCurrentName() + " started: " + k.why + " for " + Misc.getDGSCredits(k.cost)
-                        + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : ""));
+                CALog.did(k.m.getName() + ": " + k.ind.getCurrentName() + " started: " + k.why + " for " + Misc.getDGSCredits(k.cost)
+                        + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + ".");
             } catch (Throwable t) {
                 CADiagnostics.quarantine(k.ind.getId(), "starting terraforming project " + k.pd.id, t);
             }

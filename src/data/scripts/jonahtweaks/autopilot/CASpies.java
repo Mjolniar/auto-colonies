@@ -73,8 +73,8 @@ public class CASpies {
             s.spyChecked = true;
             if (s.spyMode == 0) {
                 s.spyMode = 1;
-                CALog.add("Agents: now on Defense (new in this version). One agent works security at your colonies: Pather cells, rebellions, "
-                        + "hidden pirate bases; an idle agent of yours is put on it, or one is recruited. Change it under Settings, Security and diplomacy, Agents", true);
+                CALog.did("Agents: set to Defense. One agent works security at your colonies: Pather cells, rebellions, "
+                        + "hidden pirate bases. An idle agent of yours goes on it, or one is recruited. Setting: Settings, Security and diplomacy, Agents.", true);
             }
         }
         if (s.spyMode == 0 || Misc.getPlayerMarkets(false).isEmpty()) return;
@@ -155,7 +155,7 @@ public class CASpies {
             if ("use".equals(action)) {
                 d.spyAgents().add(personId);
                 CALog.forget("spy:yours");
-                CALog.add("Agent " + name(a) + " (" + types(a) + ") handed to Autopilot; it gets orders once it's idle");
+                CALog.did("Agents: " + name(a) + " (" + types(a) + ") handed to Autopilot. Orders start when it is idle.");
             } else {
                 d.spyAgents().remove(personId);
                 d.spyRoles().remove(personId);
@@ -201,7 +201,7 @@ public class CASpies {
         int cost = template.getCost();
         String key = "spy:" + defId + ":" + target.getId();
         if (cost > CABudget.available(s)) {
-            if (CALog.once(key)) CALog.add(target.getName() + ": agent " + name(a) + " waits for budget for " + what + " (" + Misc.getDGSCredits(cost) + ")");
+            if (CALog.once(key)) CALog.think(target.getName() + ": Agents: " + name(a) + " waits for budget for " + what + " (" + Misc.getDGSCredits(cost) + ").");
             return false;
         }
         if (template instanceof CounterInsurgency) a.issueCOINOrder(target);
@@ -209,7 +209,7 @@ public class CASpies {
         else a.issueBaseFindOrder(target);   // these charge the credits themselves
         CABudget.charge(s, cost, 0f, 0f);
         CALog.forget(key);
-        CALog.add(target.getName() + ": agent " + name(a) + " sent for " + what + (cost > 0 ? " (" + Misc.getDGSCredits(cost) + ")" : ""));
+        CALog.did(target.getName() + ": Agents: " + name(a) + " sent for " + what + (cost > 0 ? " (" + Misc.getDGSCredits(cost) + ")" : "") + ".");
         return true;
     }
 
@@ -260,13 +260,13 @@ public class CASpies {
         int cost = op.getCost();
         String key = "spy:rel:" + best.getId();
         if (cost > CABudget.available(s)) {
-            if (CALog.once(key)) CALog.add("Agent " + name(a) + " waits for budget to raise relations with " + best.getDisplayName() + " (" + Misc.getDGSCredits(cost) + ")");
+            if (CALog.once(key)) CALog.think("Agents: " + name(a) + " waits for budget to raise relations with " + best.getDisplayName() + " (" + Misc.getDGSCredits(cost) + ").");
             return false;
         }
         order(a, op, target, cost);
         CABudget.pay(s, null, cost, 0f, 0f);   // 0.3.0.0 (C12 fix): the cost leaves the credits here, once
         CALog.forget(key);
-        CALog.add("Agent " + name(a) + " sent to " + target.getName() + " to raise relations with " + best.getDisplayName() + " (" + Misc.getDGSCredits(cost) + ")");
+        CALog.did("Agents: " + name(a) + " sent to " + target.getName() + " to raise relations with " + best.getDisplayName() + " (" + Misc.getDGSCredits(cost) + ").");
         return true;
     }
 
@@ -361,14 +361,14 @@ public class CASpies {
         int cost = op.getCost();
         String key = "spy:rebellion:" + m.getId();
         if (cost > CABudget.available(s)) {
-            if (CALog.once(key)) CALog.add("Agent " + name(a) + " waits for budget to instigate a rebellion at " + m.getName() + " (" + Misc.getDGSCredits(cost) + ")");
+            if (CALog.once(key)) CALog.think("Agents: " + name(a) + " waits for budget to instigate a rebellion at " + m.getName() + " (" + Misc.getDGSCredits(cost) + ").");
             return false;
         }
         order(a, op, m, cost);
         CABudget.pay(s, null, cost, 0f, 0f);   // 0.3.0.0 (C12 fix): the cost leaves the credits here, once
         CALog.forget(key);
-        CALog.add("Agent " + name(a) + " sent to instigate a rebellion at " + m.getName() + " (" + m.getFaction().getDisplayName() + ", Destroy; next invasion target, "
-                + Misc.getDGSCredits(cost) + ")");
+        CALog.did("Agents: " + name(a) + " sent to instigate a rebellion at " + m.getName() + " (" + Misc.getDGSCredits(cost) + "). "
+                + m.getFaction().getDisplayName() + ", Destroy. Next invasion target.");
         return true;
     }
 
@@ -396,14 +396,14 @@ public class CASpies {
             int cost = op.getCost();
             String key = "spy:isolate:" + f.getId();
             if (cost > CABudget.available(s)) {
-                if (CALog.once(key)) CALog.add("Agent " + name(a) + " waits for budget to turn " + friend.getDisplayName() + " against " + f.getDisplayName() + " (" + Misc.getDGSCredits(cost) + ")");
+                if (CALog.once(key)) CALog.think("Agents: " + name(a) + " waits for budget to turn " + friend.getDisplayName() + " against " + f.getDisplayName() + " (" + Misc.getDGSCredits(cost) + ").");
                 return false;
             }
             order(a, op, m, cost);
             CABudget.pay(s, null, cost, 0f, 0f);   // 0.3.0.0 (C12 fix): the cost leaves the credits here, once
             CALog.forget(key);
-            CALog.add("Agent " + name(a) + " sent to " + m.getName() + " to turn " + friend.getDisplayName() + " against " + f.getDisplayName()
-                    + " (" + CAStance.name(s.stanceOf(f.getId())) + ", " + Misc.getDGSCredits(cost) + ")");
+            CALog.did("Agents: " + name(a) + " sent to " + m.getName() + " to turn " + friend.getDisplayName() + " against " + f.getDisplayName()
+                    + " (" + CAStance.name(s.stanceOf(f.getId())) + ", " + Misc.getDGSCredits(cost) + ").");
             return true;
         }
         return false;
@@ -492,14 +492,14 @@ public class CASpies {
         int cost = op.getCost();
         String key = "spy:sabotage:" + m.getId();
         if (cost > CABudget.available(s)) {
-            if (CALog.once(key)) CALog.add("Agent " + name(a) + " waits for budget to sabotage " + ind.getCurrentName() + " at " + m.getName() + " (" + Misc.getDGSCredits(cost) + ")");
+            if (CALog.once(key)) CALog.think("Agents: " + name(a) + " waits for budget to sabotage " + ind.getCurrentName() + " at " + m.getName() + " (" + Misc.getDGSCredits(cost) + ").");
             return false;
         }
         order(a, op, m, cost);
         CABudget.pay(s, null, cost, 0f, 0f);   // 0.3.0.0 (C12 fix): the cost leaves the credits here, once
         CALog.forget(key);
-        CALog.add("Agent " + name(a) + " sent to sabotage " + ind.getCurrentName() + " at " + m.getName() + " (" + m.getFaction().getDisplayName()
-                + ", about " + Math.round(success(op, m)) + " percent success, " + Misc.getDGSCredits(cost) + ")");
+        CALog.did("Agents: " + name(a) + " sent to sabotage " + ind.getCurrentName() + " at " + m.getName() + " (" + m.getFaction().getDisplayName()
+                + ", " + Misc.getDGSCredits(cost) + "). About " + Math.round(success(op, m)) + " percent success.");
         return true;
     }
 
@@ -546,8 +546,8 @@ public class CASpies {
             d.spyRoles().put(p.getId(), role);
             mine.add(a);
             it.remove();
-            CALog.add("Agent " + p.getNameString() + " (" + spec.getName() + ", level 1) reported for duty at " + home.getName() + ": " + roleName(role)
-                    + "; Nexerelin pays " + Misc.getDGSCredits(AgentIntel.getSalary(1)) + " a month in salary", true);
+            CALog.did("Agents: " + p.getNameString() + " (" + spec.getName() + ", level 1) reported for duty at " + home.getName() + ". Role: " + roleName(role)
+                    + ". Salary " + Misc.getDGSCredits(AgentIntel.getSalary(1)) + " a month, paid by Nexerelin.", true);
         }
     }
 
@@ -571,12 +571,12 @@ public class CASpies {
                 d.spyAgents().add(a.getAgent().getId());
                 d.spyRoles().put(a.getAgent().getId(), SECURITY);
                 mine.add(a);
-                CALog.add("Agents: took over your idle agent " + name(a) + " (" + types(a) + ") for " + roleName(SECURITY)
-                        + ". Take it back on the Colony Autopilot intel's Mod features page, under Agents", true);
+                CALog.did("Agents: your idle agent " + name(a) + " (" + types(a) + ") assigned to " + roleName(SECURITY)
+                        + ". Take it back on the Colony Autopilot intel's Mod features page, under Agents.", true);
                 return;
             }
-            if (CALog.once("spy:yours")) CALog.add("Agents: your agent " + name(a) + " (" + types(a) + ") is idle, so Autopilot doesn't recruit one. "
-                    + "To have Autopilot use it, click Let Autopilot use it on the Colony Autopilot intel's Mod features page, under Agents");
+            if (CALog.once("spy:yours")) CALog.advise("Agents: your agent " + name(a) + " (" + types(a) + ") is idle. Autopilot does not recruit while it is. "
+                    + "To hand it over: Let Autopilot use it, on the Colony Autopilot intel's Mod features page, under Agents.");
             return;
         }
         if (mgr.getAgents().size() + d.spyRecruits().size() >= mgr.getMaxAgents().getModifiedInt()) {
@@ -586,7 +586,7 @@ public class CASpies {
         float fee = CABudget.fee(s, HIRE_FEE * 0.1f), total = HIRE_FEE + fee;
         float room = CABudget.available(s);
         if (SECURITY.equals(role) ? total > room : 2f * total > room) {
-            if (CALog.once("spy:hirebudget:" + role)) CALog.add("Agents: recruiting for " + roleName(role) + " waits for budget (" + Misc.getDGSCredits(total) + ")");
+            if (CALog.once("spy:hirebudget:" + role)) CALog.think("Agents: recruiting for " + roleName(role) + " waits for budget (" + Misc.getDGSCredits(total) + ").");
             return;
         }
         if (CABuild.credits() - total < s.reserve) return;
@@ -594,7 +594,7 @@ public class CASpies {
         CABudget.pay(s, null, HIRE_FEE, fee, 0f);
         d.spyRecruits().put(role, Global.getSector().getClock().getTimestamp());
         CALog.forget("spy:max"); CALog.forget("spy:yours");
-        CALog.add("Agents: recruiting one for " + roleName(role) + " (" + Misc.getDGSCredits(total) + "); reports for duty in " + Math.round(RECRUIT_DAYS) + " days");
+        CALog.did("Agents: recruiting one for " + roleName(role) + " (" + Misc.getDGSCredits(total) + "). Reports for duty in " + Math.round(RECRUIT_DAYS) + " days.");
     }
 
     // ---- empire panel
