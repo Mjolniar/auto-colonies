@@ -1189,7 +1189,7 @@ public class CAExpansion {
         List<String> got = new ArrayList<String>();
         r.deposits = deposits(m, hab || farms, got);
         r.world = world != null && world.world != null ? worldBonus(world.world, goal) : 0f;
-        float[] w = CAEngine.WEIGHTS[goal.ordinal()];
+        float[] w = CAEngine.goalWeights(goal);
         r.hazard = hazardCost(m.getHazardValue(), w[6]);
         r.crisis = x.leagueCounts ? crisisCost(x.meter, leagueDelta(VALUE_SIZE)) : 0f;
         r.admin = x.adminMonthly;

@@ -49,11 +49,15 @@
 - Capital: Capital does Deliveries and commerce. Trade hub starts at net income over 100,000.
 - Extras: Found when a site earns 20,000. Other rows Auto or On.
 - New colonies: Method Nexerelin colony fleet when possible. TASC stations Recommend only.
-- Interface: Announcement voice Machine. Colony screen button On.
+- Production: Production Light. Hull sources 1. Hull capacity 100,000 a month. Order goods within 6 months. Production quality 0.8. Parts reserve 100. Supplies and fuel floors No shortage. Floors at Money colonies Off. Floor builds first On. Make room Ask first. Money taper Gentle (300,000 and 1,000,000). Same building copies 2, next copy counts 75%. Goal weights 0.3.2 table. Contracts keep floor goods On. Parts to the capital Off. Shipyard from Surplus On.
+- Production floor values: 40,000 a hull source, 0.5 a capacity credit, 50,000 per 1.0 quality, 250 a part, order goods x3, other goods x2.
+- Production Off: The 0.3.1 picks. Floors, taper, diversity and the 0.3.2 table are not used.
+- Interface: Announcement voice Machine. Colony screen button On. Thinking list Hide.
 
 ## Saves from 0.2.45
 
 - Settings: moved to the 0.3.0 menu once, unchanged. Mapping: [patch notes](changelog.md#0300---2026-11-11).
+- Saves from before 0.3.2: Production is Light on load, with one log line. Production Off keeps the 0.3.1 picks.
 - Cheat and balance settings: none. Cheats are in Easy Sector.
 
 Next: [Supported mods](supported-mods.md).

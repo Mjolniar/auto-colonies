@@ -79,7 +79,7 @@ public class CAConditions {
 
     /** Credit-equivalent per month of having this condition at this colony (negative = better without it). */
     public static float value(MarketAPI m, String cond, CAData.Profile p) {
-        float[] w = CAEngine.WEIGHTS[p.ordinal()];
+        float[] w = CAEngine.goalWeights(p);
         float v = 0f;
         Float hz = HAZARD.get(cond);
         if (hz != null) {

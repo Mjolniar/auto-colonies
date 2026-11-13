@@ -22,12 +22,19 @@
 
 - Credit value: From Idle money, a credit counts half in build value.
 
+## Money taper
+
+- Rule: A build's money counts in full up to 300,000 a month of colony net and contract income, 60% up to 1,000,000 and 35% above. A loss runs the same curve down.
+- Options (Settings, Advanced, Production): Off, Gentle (recommended), Strong (200,000 and 600,000, 50% and 25%). Money colonies, fast buildout and the endgame use no taper.
+- Stacking: The tier's credit value multiplies on top.
+
 ## The money ladder
 
 - Split: Each month the tier's share of free cash is split over the rungs in What to buy order. Unused shares pass on.
 - Rung modes (Settings, Advanced, Surplus and money ladder): On, Recommend only, Off. Shipyard and Expansion default to Recommend only.
 - Paid first: 0-stability fixes, emergencies, colony-limit administrators, plan steps, ordered production.
-- Shares: Stockpiles 10%, Growth 20%, Military 20%, Shipyard 25%, [Expansion](expansion.md) 15%, Economy 10%, Wonders the rest. Military, Shipyard and Expansion open at Idle money, Wonders at Rich.
+- Shares: Stockpiles 10%, Growth 20%, Military 20%, Shipyard 25%, [Expansion](expansion.md) 15%, Economy 10%, Wonders the rest. Military and Expansion open at Idle money, Wonders at Rich. Shipyard opens at Surplus with Production on, Idle money with it Off.
+- Shipyard capacity: With no production capacity, the Shipyard note names the Heavy Industry planned for the hull capacity floor.
 - Shipyard: Known-blueprint hulls from your Doctrine priority list, as custom production plus a 2% fee. One a month, up to 6 unclaimed. Delivered to the [capital](capital.md).
 - Military: One upgrade a day at Auto colonies, stations a size early. New upkeep within 15% of colony net. Non-emergency defense fleets, once per system every 45 days.
 

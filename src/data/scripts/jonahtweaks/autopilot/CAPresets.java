@@ -23,6 +23,9 @@ package data.scripts.jonahtweaks.autopilot;
  *  Story points   Yours only*, One per colony, 2 a month, 5 a month       storyPointRule, storyPointMonthlyCap
  *  Stations       Pick by score*, Low tech .. Imperium, Only where they pay   stationLine, noStationPlan
  *  War            Off .. Scorched (CAWarPolicy.LEVEL_NAMES), Retaliate*   warLevel
+ *  Production     Off, Light*, Full                                       productionMode, floorHullSources, floorCapacity,
+ *                                                                         floorOrderMonths, floorQuality, floorPartsReserve,
+ *                                                                         floorSupplies, floorFuel (Off writes productionMode only)
  * </pre>
  * The over-limit fix (noOverLimitFix) is in no row: it keeps colonies off 0 stability and stays on through every preset.
  * Pure apart from reading which mods are enabled and the net income for the per-project cap; apply() writes fields only,
@@ -33,9 +36,10 @@ package data.scripts.jonahtweaks.autopilot;
  */
 public class CAPresets {
     public static final String SPENDING = "spending", EXTRAS = "extras", NEW_COLONIES = "newcolonies", TAKE_DOWN = "takedown",
-            AI_CORES = "aicores", ADMINS = "admins", POLICIES = "policies", STORY = "story", STATIONS = "stations", WAR = "war";
-    /** Every preset row, in menu order. */
-    public static final String[] ROWS = {SPENDING, EXTRAS, NEW_COLONIES, WAR, STORY, STATIONS, TAKE_DOWN, POLICIES, AI_CORES, ADMINS};
+            AI_CORES = "aicores", ADMINS = "admins", POLICIES = "policies", STORY = "story", STATIONS = "stations", WAR = "war",
+            PRODUCTION = "production";
+    /** Every preset row, in menu order. 0.3.2.0: Production (Advanced, Production). */
+    public static final String[] ROWS = {SPENDING, EXTRAS, NEW_COLONIES, WAR, STORY, STATIONS, TAKE_DOWN, POLICIES, AI_CORES, ADMINS, PRODUCTION};
     /** match() when the fields fit no value; shown as "Custom". */
     public static final int CUSTOM = -1;
     public static final String CUSTOM_NAME = "Custom";
@@ -85,6 +89,13 @@ public class CAPresets {
     static final String[] STATION_NAMES = {"Pick by score", "Low tech", "Midline", "High tech", "Imperium", "Only where they pay"};
     public static final int STATIONS_ONLY_WHERE_THEY_PAY = 5;
 
+    /** 0.3.2.0: Production: Off (the 0.3.1.0 picks), Light, Full; each value's floors (index 0 unused: Off keeps them). */
+    static final String[] PRODUCTION_NAMES = CASettings.PRODUCTION_NAMES;
+    static final int[] P_HULLS = {0, CATuning.FLOOR_HULLS_LIGHT, CATuning.FLOOR_HULLS_FULL};
+    static final float[] P_CAPACITY = {0f, CATuning.FLOOR_CAPACITY_LIGHT, CATuning.FLOOR_CAPACITY_FULL};
+    static final float[] P_QUALITY = {0f, CATuning.FLOOR_QUALITY_LIGHT, CATuning.FLOOR_QUALITY_FULL};
+    static final int[] P_GOODS = {0, CATuning.FLOOR_GOODS_SHORTAGE, CATuning.FLOOR_GOODS_FLEET};
+
     /** The recommended value of each row (CASetupUI.applyRecommended lands on these). */
     public static int rec(String row) {
         if (SPENDING.equals(row)) return 1;
@@ -92,6 +103,7 @@ public class CAPresets {
         if (AI_CORES.equals(row)) return 1;
         if (ADMINS.equals(row)) return 2;
         if (WAR.equals(row)) return CAWarPolicy.RETALIATE;
+        if (PRODUCTION.equals(row)) return CATuning.PROD_LIGHT;
         return 0;   // Extras Auto, New colonies Off, Policies Auto, Story points Yours only, Stations Pick by score
     }
 
@@ -106,6 +118,7 @@ public class CAPresets {
         if (STORY.equals(row)) return STORY_NAMES;
         if (STATIONS.equals(row)) return STATION_NAMES;
         if (WAR.equals(row)) return CAWarPolicy.LEVEL_NAMES;
+        if (PRODUCTION.equals(row)) return PRODUCTION_NAMES;
         return null;
     }
 
@@ -123,6 +136,8 @@ public class CAPresets {
         if (STORY.equals(row)) return new String[]{"storyPointRule", "storyPointMonthlyCap"};
         if (STATIONS.equals(row)) return new String[]{"stationLine", "noStationPlan"};
         if (WAR.equals(row)) return new String[]{"warLevel"};
+        if (PRODUCTION.equals(row)) return new String[]{"productionMode", "floorHullSources", "floorCapacity", "floorOrderMonths", "floorQuality",
+                "floorPartsReserve", "floorSupplies", "floorFuel"};
         return new String[0];
     }
 
@@ -166,6 +181,20 @@ public class CAPresets {
             if (value == STATIONS_ONLY_WHERE_THEY_PAY) s.noStationPlan = true;   // the line is kept
             else { s.noStationPlan = false; s.stationLine = CASettings.STATION_IDS[value]; }
         } else if (WAR.equals(row)) s.warLevel = CAWarPolicy.clamp(value);
+        else if (PRODUCTION.equals(row)) applyProduction(s, value);
+    }
+
+    /** 0.3.2.0: Production. Off sets the mode only (the floors are kept for when you turn it back on); Light and Full write their floors. */
+    static void applyProduction(CASettings s, int v) {
+        s.productionMode = v;
+        if (v == CATuning.PROD_OFF) return;
+        s.floorHullSources = P_HULLS[v];
+        s.floorCapacity = P_CAPACITY[v];
+        s.floorOrderMonths = CATuning.FLOOR_ORDER_MONTHS;
+        s.floorQuality = P_QUALITY[v];
+        s.floorPartsReserve = CATuning.FLOOR_PARTS_RESERVE;
+        s.floorSupplies = P_GOODS[v];
+        s.floorFuel = P_GOODS[v];
     }
 
     /**
@@ -338,6 +367,15 @@ public class CAPresets {
             return 0;   // Pick by score, also a line whose station the game doesn't have (its mod is off)
         }
         if (WAR.equals(row)) return CAWarPolicy.clamp(s.warLevel);
+        if (PRODUCTION.equals(row)) {
+            int v = s.productionMode;
+            if (v == CATuning.PROD_OFF) return v;
+            if (v != CATuning.PROD_LIGHT && v != CATuning.PROD_FULL) return CUSTOM;
+            boolean same = s.floorHullSources == P_HULLS[v] && near(s.floorCapacity, P_CAPACITY[v]) && s.floorOrderMonths == CATuning.FLOOR_ORDER_MONTHS
+                    && near(s.floorQuality, P_QUALITY[v]) && s.floorPartsReserve == CATuning.FLOOR_PARTS_RESERVE && s.floorSupplies == P_GOODS[v]
+                    && s.floorFuel == P_GOODS[v];
+            return same ? v : CUSTOM;   // a floor you changed reads Custom
+        }
         return CUSTOM;
     }
 

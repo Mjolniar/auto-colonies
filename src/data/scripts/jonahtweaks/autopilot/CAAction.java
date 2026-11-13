@@ -101,6 +101,16 @@ public class CAAction {
     public FollowUp followUp;
     /** How many starts at the same place led to it this pass (a follow-up's is its starter's plus one). */
     public int round;
+    /**
+     * 0.3.2.0 (M2): what it adds to the open production floors a month (CAEngine.Pick.floorValue), and whether the planner ranks
+     * it first for that (CASettings.needsFirst): ahead of other actions by floor value per credit, at the head of its colony's
+     * queue, keeping its industry slot against other actions, and taking the earmark from a non-floor pick.
+     */
+    public float floor;
+    public boolean floorFirst;
+
+    /** 0.3.2.0: floor value per credit, the order floor actions go in. */
+    public float floorPerCredit() { float r = floor / basis(); return finite(r) ? r : 0f; }
 
     // ---------------- the pass's own marks (CAPlanner.execute) ----------------
 

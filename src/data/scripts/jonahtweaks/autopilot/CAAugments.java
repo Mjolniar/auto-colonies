@@ -263,7 +263,7 @@ public class CAAugments {
             p.lines.add(combat > 0 ? "Stronger station in combat (Station Augments rates it " + combat + ")"
                     + (threatened ? "; counts ten times while the colony is threatened" : "") : "Weaker station in combat");
         }
-        float[] w = CAEngine.WEIGHTS[profile.ordinal()];
+        float[] w = CAEngine.goalWeights(profile);
         float v = extra;
         for (int i = 0; i < 7; i++) v += w[i] * p.fx[i];
         Opt o = new Opt();

@@ -391,7 +391,11 @@ public class CAContracts {
             o.lines.add(need + " " + commodityName(com) + " (" + Math.max(0, spare) + " spare)");
             Integer was = o.needs.get(com);
             o.needs.put(com, (was == null ? 0 : was) + need);
-            if (!fits(spare, 0, need)) {
+            // 0.3.2.0 (M6): goods an open production floor needs stay home (CASettings.keepProductionGoods)
+            if (CAFloors.keeps(com)) {
+                o.feasible = false;
+                o.why = "production floor: " + commodityName(com) + " stays for your own production";
+            } else if (!fits(spare, 0, need)) {
                 o.feasible = false;
                 o.why = "not enough spare " + commodityName(com) + " (" + Math.max(0, spare) + " of " + (int) Math.ceil(need * (1f + MARGIN)) + " needed"
                         + (held > 0 ? "; " + held + " more is at colonies under siege or without accessibility, which can't deliver" : "")
@@ -458,6 +462,33 @@ public class CAContracts {
         StringBuilder sb = new StringBuilder();
         for (String s : l) { if (sb.length() > 0) sb.append(", "); sb.append(s); }
         return sb.toString();
+    }
+
+    /** 0.3.2.0: what your held, running contracts pay a month (need x base price x cut), read once a day; 0 without ToT. */
+    static float payCache = 0f;
+    static float payAt = Float.NaN;
+
+    @SuppressWarnings("unchecked")
+    public static float monthlyPay() {
+        float now = CADay.now();
+        if (!Float.isNaN(payAt) && now - payAt < 1f && now >= payAt) return payCache;
+        payAt = now;
+        float pay = 0f;
+        if (Global.getSettings().getModManager().isModEnabled(MOD) && active()) {
+            try {
+                for (Object c : ((Map<String, Object>) CARefl.invoke(activeMap, mgr())).values()) {
+                    if (c == null || !live(c)) continue;
+                    for (Object d : ((Map<String, Object>) CARefl.invoke(cData, c)).values()) {
+                        String com = String.valueOf(CARefl.invoke(dCom, d));
+                        int need = ((Number) CARefl.invoke(dReq, d)).intValue();
+                        if (need <= 0) continue;
+                        pay += need * Global.getSettings().getCommoditySpec(com).getBasePrice() * ((Number) CARefl.invoke(dCut, d)).floatValue();
+                    }
+                }
+            } catch (Throwable t) { CAStep.warn("trade contracts", "contract pay read failed", t); }
+        }
+        payCache = pay;
+        return pay;
     }
 
     // ---------------- held contracts ----------------

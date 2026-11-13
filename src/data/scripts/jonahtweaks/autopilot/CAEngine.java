@@ -81,7 +81,7 @@ public class CAEngine {
     }
     static void put(String cond, String com, int mod) { DEPOSIT.put(cond, com); DEPOSIT_MOD.put(cond, mod); }
 
-    /** Profile weights: credit-equivalent per month for one unit of each effect. */
+    /** Profile weights: credit-equivalent per month for one unit of each effect. 0.3.2.0: the 0.3.0 table (WEIGHTS_030), used with production Off or the 0.3.0 table setting. */
     static final float[][] WEIGHTS = {
             //            credits stab   access  defense fleet  quality growth
             /* BALANCED */ {1.0f, 3000f, 20000f, 3000f, 4000f, 10000f, 1500f},
@@ -90,6 +90,23 @@ public class CAEngine {
             /* WAR      */ {0.8f, 2500f, 10000f, 4000f, 10000f, 30000f, 500f},
             /* GROWTH   */ {0.6f, 3500f, 30000f, 1500f, 1000f, 1000f, 6000f},
             /* SELF     */ {1.0f, 3000f, 20000f, 3000f, 4000f, 10000f, 1500f}};
+    static final float[][] WEIGHTS_030 = WEIGHTS;
+    /** 0.3.2.0 (M4): the 0.3.2 table. Balanced, Self-sufficiency and War production count fleets and ship quality more; Money, Security and Rapid growth are unchanged. */
+    static final float[][] WEIGHTS_NEW = {
+            //            credits stab   access  defense fleet  quality growth
+            /* BALANCED */ {1.0f, 3500f, 20000f, 3500f, 6000f, 15000f, 1500f},
+            /* INCOME   */ {1.6f, 2500f, 30000f, 800f, 800f, 2000f, 1000f},
+            /* SECURITY */ {0.5f, 4000f, 8000f, 9000f, 9000f, 4000f, 500f},
+            /* WAR      */ {0.8f, 2500f, 10000f, 4000f, 15000f, 40000f, 500f},
+            /* GROWTH   */ {0.6f, 3500f, 30000f, 1500f, 1000f, 1000f, 6000f},
+            /* SELF     */ {0.9f, 3000f, 15000f, 3000f, 4000f, 10000f, 1500f}};
+
+    /** 0.3.2.0: a goal's weights in use: the 0.3.2 table while production is on with it, else the 0.3.0 table (production Off: exactly 0.3.1.0). */
+    public static float[] goalWeights(CAData.Profile profile) {
+        CAData.Profile p = profile == null ? CAData.Profile.BALANCED : profile;
+        CAFloors.State st = CAFloors.state();
+        return (st != null && st.on() && st.newWeights ? WEIGHTS_NEW : WEIGHTS)[p.ordinal()];
+    }
     /** Fast buildout's weights: the Money goal's, with ground defense, fleets and ship quality worth nothing, since they earn nothing and add upkeep. */
     static final float[] PROFIT = {1.6f, 2500f, 30000f, 0f, 0f, 0f, 1000f};
 
@@ -156,6 +173,10 @@ public class CAEngine {
          * building's line in CAMarket.pickGain instead of stacking on it; CAMods' Union HQ and probe measurements pass changes.
          */
         boolean wholeLines;
+        /** 0.3.2.0: what it adds to the open production floors a month (CAFloors.value, in its worth); the planner ranks floor picks first. */
+        public float floorValue;
+        /** 0.3.2.0: Domain-grade Parts its market gains a month (parts()), for the parts floor. */
+        public float partsAdded;
     }
 
     /** 0.3.0.0 (B1 fix): Autopilot's estimates whose flat income is the goods the building makes (see Pick.outputEstimate). */
@@ -238,8 +259,18 @@ public class CAEngine {
         public String blocked = null;
         /** 0.3.0.0 (A4 fix): cached() while a panel draws, with nothing kept: an empty stand-in, not an evaluation. */
         public boolean notScored = false;
+        /** 0.3.2.0: the best pick with no slot that adds to an open production floor (make room, CAFloors.makeRoom), and every such pick (CAAuto.approve). */
+        public Pick bestFloorNoSlot = null;
+        public List<Pick> floorNoSlot = new ArrayList<Pick>();
 
-        void noSlot(Pick p) { noSlot++; if (bestNoSlot == null || p.score > bestNoSlot.score) bestNoSlot = p; }
+        void noSlot(Pick p) {
+            noSlot++;
+            if (bestNoSlot == null || p.score > bestNoSlot.score) bestNoSlot = p;
+            if (p.floorValue > 0f) {
+                floorNoSlot.add(p);
+                if (bestFloorNoSlot == null || p.score > bestFloorNoSlot.score) bestFloorNoSlot = p;
+            }
+        }
     }
 
     /** Set while CAResearch values techs: no probe-colony measurements under a what-if research state. */
@@ -999,6 +1030,7 @@ public class CAEngine {
             float units = partsPerMonth(Math.max(now, suppliesAfter), sup.getEconUnit(), stock, q + qualityAdd, fBase, fProd, mult)
                     - partsPerMonth(now, sup.getEconUnit(), stock, q, fBase, fProd, mult);
             if (!(units >= 0.5f)) return;
+            p.partsAdded = units;   // 0.3.2.0: the parts floor (CAFloors) counts them while the fleet's repair need is open
             // parts earn no income: counted at PARTS_VALUE_SHARE of their sell price, a tie-breaker for the d-mod repairs they allow
             float v = units * parts.getBasePrice() * parts.getSellPriceMult() * CATuning.PARTS_VALUE_SHARE;
             if (!(v > 0f)) return;

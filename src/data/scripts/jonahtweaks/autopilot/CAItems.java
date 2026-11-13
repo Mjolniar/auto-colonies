@@ -882,7 +882,7 @@ public class CAItems {
     /** The colony's goal weights: fast buildout's money-only ones, else its goal's, or Security while its threat is high. */
     static float[] coreWeights(MarketAPI m, CAData.Colony c) {
         if (c.buildout) return CAValue.atStability(CAEngine.PROFIT, m);   // 0.3.0.9: stability counts more below 3 (CAValue.stabilityScale)
-        float[] w = CAEngine.WEIGHTS[CAThreat.effective(m, c.profile).ordinal()];
+        float[] w = CAEngine.goalWeights(CAThreat.effective(m, c.profile));
         return CAValue.atStability(CAEndgame.at(m) ? CAEndgame.weights(w) : w, m);   // the endgame economy: money counts 5%, fleets and defense more
     }
 

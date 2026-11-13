@@ -30,6 +30,8 @@ public class CAData {
         public Mode mode = Mode.ADVISOR;
         public Set<String> locks = new HashSet<String>();
         public String pendingId, pendingName;
+        /** 0.3.2.0: the industry a pending make-room swap takes down on Approve (CAFloors.swap); null for every other proposal and in older saves. */
+        public String pendingReplace;
         public boolean pendingUpgrade;
         public float pendingCost;
         public boolean pendingNotified;
@@ -297,5 +299,6 @@ public class CAData {
 
     public void clearPending(Colony c) {
         c.pendingId = null; c.pendingName = null; c.pendingCost = 0f; c.pendingUpgrade = false; c.pendingNotified = false;
+        c.pendingReplace = null;   // 0.3.2.0
     }
 }

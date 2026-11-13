@@ -40,7 +40,7 @@ public class CAReset {
         // c206+ day is about -640,000: `now - (-99) < 7` was true every day and storage logistics, calibration and the market
         // check never ran again. NaN fires the first time under that test and under CATime.due alike
         failed += run("calibration", () -> CACalibrate.last = Float.NaN);
-        failed += run("storage logistics", () -> CALogistics.lastRun = Float.NaN);
+        failed += run("storage logistics", () -> { CALogistics.lastRun = Float.NaN; CALogistics.partsRun = Float.NaN; });   // 0.3.2.0: the weekly parts move too
         failed += run("survival corruption share", () -> { CASurvival.shareReport = null; CASurvival.share = 1f; });   // 0.3.0.4
         failed += run("market model", () -> { CAMarket.invalidate(); CAMarket.cacheDay = -99f; CAMarket.lastWeek = Float.NaN; });
         failed += run("mod watch", () -> CAModWatch.reset());
@@ -53,6 +53,7 @@ public class CAReset {
         failed += run("blocked plan steps", () -> { CAPlan.BLOCKED.clear(); CAPlan.lockedCache = 0; CAPlan.lockedDay = -1; });
         failed += run("trade contracts", () -> {
             CAContracts.cached = null; CAContracts.cachedAt = -1f; CAContracts.contractedCache = null; CAContracts.contractedAt = -1f; CAContracts.taken.clear();
+            CAContracts.payCache = 0f; CAContracts.payAt = Float.NaN;   // 0.3.2.0: what held contracts pay a month (the money taper)
         });
         if (on("assortment_of_things")) failed += run("settlement sites", () -> { CASettlement.cache = null; CASettlement.cachedAt = -999f; });
         if (on("nexerelin")) {

@@ -370,6 +370,9 @@ public class CAShipyard {
             say(un + " hulls it ordered are unclaimed (on the production list or in " + gp.getName() + "'s Storage); it stops at " + stop);
             return;
         }
+        // 0.3.2.0 (M7): no capacity for one hull: the note names the floor producer planned, and nothing is ordered
+        String noCap = capacityNote(prod.getMonthlyProductionCapacity(), cheapest(hulls), CAFloors.on(), CAFloors.plannedText());
+        if (noCap != null) { say(noCap); return; }
         float capRoom = Math.max(0f, prod.getMonthlyProductionCapacity() - Math.max(0, prod.getTotalCurrentCost()));
         float free = CABudget.freeCash(s), fs = feeShare(s.feeLevel, s.shipyardFee);
         Plan wanted = plan(hulls, capRoom, free, fs, stop - un);
@@ -402,6 +405,23 @@ public class CAShipyard {
         if (p.empty()) { CARich.note(CARich.SHIPYARD, "waits for its share of the pool (" + Misc.getDGSCredits(allowance) + " now)"); return; }
         String err = order(d, s, prod, p);
         if (err != null) CARich.note(CARich.SHIPYARD, err);
+    }
+
+    /**
+     * Pure, 0.3.2.0 (M7, JTShipyardCheck): with production floors on, the rung's note when the monthly capacity is 0 or under the
+     * cheapest priority hull: "no production capacity", plus the floor producer planned when there is one. Null otherwise.
+     */
+    static String capacityNote(float capacity, float cheapest, boolean floorsOn, String planned) {
+        if (!floorsOn) return null;
+        if (capacity > 0f && (Float.isNaN(cheapest) || capacity >= cheapest)) return null;
+        return "no production capacity" + (planned != null ? ". " + planned : "");
+    }
+
+    /** The cheapest hull's price, or NaN with none. */
+    static float cheapest(List<Hull> hulls) {
+        float c = Float.NaN;
+        for (Hull h : hulls) if (Float.isNaN(c) || h.cost < c) c = h.cost;
+        return c;
     }
 
     /** Nothing more this month: no want, the panel note, no proposal. */
