@@ -2,9 +2,10 @@
 
 ## Quick version
 
-- Modes: Colonies start in Advisor (recommendations only). Approve proposes one build at a time. Auto builds within your budget.
+- Modes: Colonies start in Advisor (a ranking beside the build menu). Approve proposes builds in an approval summary every 60 days. Auto builds within your budget.
+- Empire mode: Empire-wide settings follow it. The first-time setup sets it. A setting you change stays.
 - Setup: The first switch to Approve or Auto opens a 5-row setup.
-- Nexerelin: Emergency defense fleets, agents and war fleets act in every colony mode.
+- Nexerelin: Emergency defense fleets act in every colony mode. Agents and war fleets follow the empire mode.
 
 ## Install
 

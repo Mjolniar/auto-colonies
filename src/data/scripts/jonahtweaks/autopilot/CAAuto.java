@@ -45,16 +45,31 @@ public class CAAuto {
     static final Map<String, String> rejectedId = new HashMap<String, String>();
     static final Map<String, Float> rejectedUntil = new HashMap<String, Float>();
 
-    /** Pure: remembers a rejection at a colony for MAX_WAIT days. */
+    /** Remembers a rejection at a colony for MAX_WAIT days. 0.3.3.0: also as a saved mark, so a load keeps the hold. */
     static void noteRejected(String marketId, String pickId, float now) {
         if (marketId == null || pickId == null) return;
         rejectedId.put(marketId, pickId);
         rejectedUntil.put(marketId, now + MAX_WAIT);
+        CAMark.set(REJECT_MARK + marketId + "|" + pickId, CAMark.now());
+    }
+
+    /** 0.3.3.0: the saved hold of a rejected pick: "buildno:<marketId>|<pickId>" (CAMark, per colony, tidied with the colony). */
+    static final String REJECT_MARK = "buildno:";
+
+    /** 0.3.3.0: days left of a saved rejection hold (0: none, or over; an old mark is cleared). */
+    static float markedDays(String marketId, String pickId) {
+        Long at = CAMark.at(REJECT_MARK + marketId + "|" + pickId);
+        if (at == null) return 0f;
+        float left = MAX_WAIT - CAMark.days(at, CAMark.now());
+        if (left > 0f) return left;
+        CAMark.clear(REJECT_MARK + marketId + "|" + pickId);
+        return 0f;
     }
 
     /** Pure: days left of your rejection of this pick at this colony, 0 when none (over, another pick, or a date from a later save). */
     static float rejectedDays(String marketId, String pickId, float now) {
-        if (marketId == null || pickId == null || !pickId.equals(rejectedId.get(marketId))) return 0f;
+        if (marketId == null || pickId == null) return 0f;
+        if (!pickId.equals(rejectedId.get(marketId))) return markedDays(marketId, pickId);
         Float until = rejectedUntil.get(marketId);
         if (until == null) return 0f;
         float left = until - now;
@@ -97,6 +112,7 @@ public class CAAuto {
         final CAData d = CAData.get();
         final CASettings s = d.settings;
         final com.fs.starfarer.api.ModManagerAPI mods = Global.getSettings().getModManager();
+        CAApprovals.beginPass();   // 0.3.3.0: today's steps offer their live asks again
         CAStep.run("month roll-over", () -> CABudget.rollMonth(s));
         CAStep.run("upkeep cap check", () -> CABudget.migrateUpkeepCap(s));
         CAStep.run("calibration", () -> CACalibrate.run(now));   // weekly: compare estimates with what your buildings really do
@@ -409,11 +425,19 @@ public class CAAuto {
         c.pendingId = p.id; c.pendingName = p.verb + " " + p.name; c.pendingUpgrade = p.upgrade; c.pendingCost = p.cost;
         c.pendingReplace = replace;
         c.pendingNotified = true;
-        CALog.advise(m.getName() + ": Proposal: " + c.pendingName + " for " + Misc.getDGSCredits(p.cost) + ". " + why + ".");
+        // 0.3.3.0: the summary's reason line and money, and when it was proposed
+        c.pendingWhy = why + (p.lines.isEmpty() ? "" : ". " + p.lines.get(0));
+        c.pendingMonthly = p.fx[0];
+        c.pendingSince = CAMark.now();
+        // 0.3.3.0: on screen only with the summary Off; else the Thinking list, and the summary asks
+        CAApprovals.say(m.getName() + ": Proposal: " + c.pendingName + " for " + Misc.getDGSCredits(p.cost) + ". " + why + ".", false);
     }
 
     /** Starts a pick, charging the fee and counting it against the budget. Returns null on success. */
-    static String execute(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String who) {
+    static String execute(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String who) { return execute(m, c, p, who, false); }
+
+    /** 0.3.3.0: quiet: your own Build click is logged to starsector.log only (the panel shows what started). */
+    static String execute(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String who, boolean quiet) {
         CASettings s = CAData.settings();
         float fee = CABudget.constructionFee(s, p.cost);
         if (CABuild.credits() < p.cost + fee) return "Not enough credits: build plus " + Misc.getDGSCredits(fee) + " fee";
@@ -431,8 +455,9 @@ public class CAAuto {
         CALog.forget(m.getId() + ":" + p.id + ":upkeep");
         CAData.get().clearPending(c);
         wasBuilding.put(m.getId(), true);
-        CALog.did(m.getName() + ": " + (p.upgrade ? "Upgrading to " : "Building ") + p.name + " (" + Misc.getDGSCredits(p.cost) + ")."
-                + ("Auto".equals(who) ? "" : " " + (who.endsWith(":") ? who.substring(0, who.length() - 1) : who) + "."));
+        String line = m.getName() + ": " + (p.upgrade ? "Upgrading to " : "Building ") + p.name + " (" + Misc.getDGSCredits(p.cost) + ")."
+                + ("Auto".equals(who) ? "" : " " + (who.endsWith(":") ? who.substring(0, who.length() - 1) : who) + ".");
+        if (quiet) CALog.quiet(line); else CALog.did(line);
         return null;
     }
 
@@ -441,6 +466,9 @@ public class CAAuto {
         CAData d = CAData.get();
         CAData.Colony c = d.colony(m.getId());
         if (c.pendingId == null) return "Nothing to approve";
+        // 0.3.3.0: the credit reserve is not spent, whoever approves
+        String gate = CAApprovals.reserveGate(c.pendingCost + CABudget.constructionFee(d.settings, c.pendingCost));
+        if (gate != null) return gate;
         CAData.Profile prof = CAThreat.effective(m, c.profile);
         CAEngine.Result r = CAEngine.evaluate(m, prof, d.settings.minStability);
         if (r.blocked != null && !c.pendingUpgrade) return r.blocked;

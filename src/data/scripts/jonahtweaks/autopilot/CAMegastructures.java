@@ -246,7 +246,14 @@ public class CAMegastructures {
                         Integer was = now.get("nexus"), will = t.get("nexus");
                         if (auto && was != null && will != null && will < was) c.megaHold = Global.getSector().getClock().getTimestamp();   // wait 30 days before adding again
                         if (auto) applyTarget(g, c, t, "Auto");
-                        else if (CALog.once("mega:" + g.m.getId() + ":" + t)) CALog.advise(g.m.getName() + ": Recommends " + describe(g, t) + " at the " + g.name + ". Apply in the colony panel.");
+                        else {
+                            if (CALog.once("mega:" + g.m.getId() + ":" + t)) CAApprovals.say(g.m.getName() + ": Recommends " + describe(g, t) + " at the " + g.name + ". Apply in the colony panel.", false);
+                            // 0.3.3.0: a decision in the approval summary
+                            final Mega gg = g; final CAData.Colony cc = c; final Map<String, Integer> tt = t;
+                            CAApprovals.offer("mega:" + g.m.getId() + ":" + t, "megastructure", g.m, g.name + ": " + describe(g, t), 0f, 0f, null, () -> {
+                                try { return applyTarget(gg, cc, tt, "Approved"); } catch (Exception e) { return "Failed. See starsector.log"; }
+                            });
+                        }
                     }
                 }
                 CAHypershunt.Section next = nextRestore(g);

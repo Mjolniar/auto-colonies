@@ -322,6 +322,7 @@ public class CASettlement {
             kind = "facility"; id = f.id; cost = f.cost;
             name = "Build " + f.name + " at the settlement (+" + Misc.getDGSCredits(f.gain) + "/month)";
         }
+        if (rejected(kind, id)) return;   // 0.3.3.0: you rejected it within 30 days
         if (approve || cost > CAPresets.projectCap(s)) { propose(d, kind, id, name, cost, approve ? CAPlanner.APPROVE_MODE : "Approval needed: over the per-project cap"); return; }
         float total = cost + CABudget.constructionFee(s, cost);
         if (total > CABudget.available(s)) {
@@ -335,7 +336,26 @@ public class CASettlement {
     static void propose(CAData d, String kind, String id, String name, float cost, String why) {
         if (id.equals(d.settlePendingId) && kind.equals(d.settlePendingKind)) return;
         d.settlePendingKind = kind; d.settlePendingId = id; d.settlePendingName = name; d.settlePendingCost = cost;
-        CALog.advise("Settlement: Proposal: " + name + " for " + Misc.getDGSCredits(cost) + ". " + why + ".", true);
+        CAApprovals.say("Settlement: Proposal: " + name + " for " + Misc.getDGSCredits(cost) + ". " + why + ".", true);
+    }
+
+    /** 0.3.3.0: a rejected proposal is held 30 days (saved mark "settleno:<kind>:<id>"); an older mark is cleared. */
+    static boolean rejected(String kind, String id) {
+        String key = "settleno:" + kind + ":" + id;
+        Long at = CAMark.at(key);
+        if (at == null) return false;
+        if (CAMark.days(at, CAMark.now()) < 30f) return true;
+        CAMark.clear(key);
+        return false;
+    }
+
+    /** 0.3.3.0: Approve on the waiting proposal: the credit reserve first, then execute. Returns null on success, else why. */
+    public static String approve(CAData d, CASettings s) {
+        if (d.settlePendingKind == null) return "Nothing to approve";
+        float cost = "found".equals(d.settlePendingKind) ? foundingCost() : facilityCost(d.settlePendingId);
+        String gate = CAApprovals.reserveGate(cost + CABudget.constructionFee(s, cost));
+        if (gate != null) return gate;
+        return execute(d, s, d.settlePendingKind, d.settlePendingId, d.settlePendingName, "Approved:");
     }
 
     /** Pays the fee and starts the founding or facility. Returns null on success. */
@@ -439,10 +459,16 @@ public class CASettlement {
 
     /** Empire panel buttons: {"settle", action, id}. Returns a message for the log, or null. */
     public static void handle(String action, String id, CAData d, CASettings s) {
-        if ("reject".equals(action)) { if (d.settlePendingName != null) CALog.did("Settlement: Proposal rejected: " + d.settlePendingName + "."); clearPending(d); return; }
+        if ("reject".equals(action)) {
+            if (d.settlePendingName != null) CALog.did("Settlement: Proposal rejected: " + d.settlePendingName + ".");
+            if (d.settlePendingKind != null) CAMark.set("settleno:" + d.settlePendingKind + ":" + d.settlePendingId, CAMark.now());   // 0.3.3.0: held 30 days
+            clearPending(d);
+            return;
+        }
         if ("approve".equals(action)) {
             if (d.settlePendingKind == null) return;
-            execute(d, s, d.settlePendingKind, d.settlePendingId, d.settlePendingName, "Approved:");
+            String err = approve(d, s);
+            if (err != null) CALog.advise("Settlement: " + err + ".", true);
             return;
         }
         if ("found".equals(action)) {

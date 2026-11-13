@@ -54,6 +54,10 @@ public class JTModPlugin extends BaseModPlugin {
         step("colony screen button", new Runnable() { public void run() {
             Global.getSector().addTransientScript(new data.scripts.jonahtweaks.autopilot.CAScreenButton());
         } });
+        // 0.3.3.0: Autopilot's ranking beside the game's build menu (Advisor colonies by default)
+        step("build menu hints", new Runnable() { public void run() {
+            Global.getSector().addTransientScript(new data.scripts.jonahtweaks.autopilot.CABuildHints());
+        } });
         step("colony menu option", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CAOptionProvider.register(); } });
         step("intel panel", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CAIntel.ensure(); } });
         step("storage tabs", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CAItems.ensureStorageTabs(); } });

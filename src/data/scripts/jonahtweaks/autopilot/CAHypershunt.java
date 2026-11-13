@@ -357,8 +357,16 @@ public class CAHypershunt {
         if (c.hsManual || t == h.range) return;
         String key = "hsrange:" + h.m.getId() + ":" + t;
         if (!auto) {
-            if (CALog.once(key)) CALog.advise(h.m.getName() + ": Recommends a hypershunt range of " + t * h.mult + " light-years (now "
-                    + h.range * h.mult + "). Set it in the colony panel.");
+            if (CALog.once(key)) CAApprovals.say(h.m.getName() + ": Recommends a hypershunt range of " + t * h.mult + " light-years (now "
+                    + h.range * h.mult + "). Set it in the colony panel.", false);
+            // 0.3.3.0: a decision in the approval summary; Approve sets it as Auto would, its added upkeep booked the same way
+            final Shunt hh = h; final int tt = t; final CAData.Colony cc = c; final float extra = (t - h.range) * STEP_UPKEEP;
+            CAApprovals.offer(key, "hypershunt", h.m, "Hypershunt range " + t * h.mult + " light-years (now " + h.range * h.mult + ")", 0f, 0f,
+                    extra > 0f ? "Adds " + Misc.getDGSCredits(extra) + " upkeep a month." : null, () -> {
+                        String err = setRange(hh, tt, "Approved");
+                        if (err == null) { cc.hsRange = hh.range; if (extra > 0f) CABudget.charge(CAData.settings(), 0f, 0f, extra); }
+                        return err;
+                    });
             return;
         }
         float more = (t - h.range) * STEP_UPKEEP;
@@ -391,7 +399,14 @@ public class CAHypershunt {
         }
         String cost = "about " + Misc.getDGSCredits(next.monthlyCredits) + " a month for " + next.months() + " months";
         if (!auto) {
-            if (CALog.once(key)) CALog.advise(m.getName() + ": Recommends restoring the " + next.name + " (" + cost + "). Start it in the colony panel.");
+            if (CALog.once(key)) CAApprovals.say(m.getName() + ": Recommends restoring the " + next.name + " (" + cost + "). Start it in the colony panel.", false);
+            // 0.3.3.0: a decision in the approval summary; Approve starts it and books the first month as Auto does
+            final MarketAPI mm = m; final Section nn = next;
+            CAApprovals.offer(key, "restore", m, "Restore the " + next.name, next.monthlyCredits, 0f, "About " + cost + ".", () -> {
+                String err = start(mm, nn, "Approved");
+                if (err == null) CABudget.charge(CAData.settings(), nn.monthlyCredits, 0f, nn.upkeep);
+                return err;
+            });
             return;
         }
         if (next.total() > CAPresets.projectCap(s)) {   // 0.3.0.0 (WS-F1 fix): the cap in effect

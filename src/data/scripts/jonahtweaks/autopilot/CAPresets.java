@@ -385,13 +385,38 @@ public class CAPresets {
         String[] names = values(row);
         if (v >= 0 && names != null && v < names.length) return names[v];
         if (STORY.equals(row) && s != null && s.storyPointRule == 2) return s.storyPointMonthlyCap + " a month";
+        if (s != null && modeDefault(s, row)) return MODE_DEFAULT;
         return CUSTOM_NAME;
     }
 
-    /** The recommended value's name. */
+    /** 0.3.3.0: shown when a row's fields fit no value but each is the empire mode's own (none set by you). */
+    public static final String MODE_DEFAULT = "Mode default";
+
+    /** 0.3.3.0: every Empire field of the row is at the empire mode's column and none of the row's fields is set by you. */
+    static boolean modeDefault(CASettings s, String row) {
+        String[] fs = fields(row);
+        if (fs == null) return false;
+        boolean any = false;
+        for (String f : fs) {
+            if (s.playerSet().contains(f)) return false;
+            Object v = CAModeTable.value(f, s.empire());
+            if (v == null) continue;
+            any = true;
+            if (!CAModeTable.same(CAModeTable.get(s, f), v)) return false;
+        }
+        return any;
+    }
+
+    /** The recommended value's name. 0.3.3.0: New colonies and War show the empire mode's own value. */
     public static String recName(String row) {
         String[] names = values(row);
-        return names == null ? "" : names[rec(row)];
+        if (names == null) return "";
+        try {
+            CAData.Mode m = CAData.settings().empire();
+            Object v = NEW_COLONIES.equals(row) ? CAModeTable.value("expandMode", m) : WAR.equals(row) ? CAModeTable.value("warLevel", m) : null;
+            if (v instanceof Integer && (Integer) v >= 0 && (Integer) v < names.length) return names[(Integer) v];
+        } catch (Throwable ignored) { }
+        return names[rec(row)];
     }
 
     /**

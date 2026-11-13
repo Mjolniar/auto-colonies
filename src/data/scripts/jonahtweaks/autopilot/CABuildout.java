@@ -192,12 +192,14 @@ public class CABuildout {
     public static void start(MarketAPI m, float floor) {
         CAData d = CAData.get();
         CAData.Colony c = d.colony(m.getId());
-        if (!d.settings.setupDone) {
+        boolean first = !d.settings.setupDone;
+        if (first) {
             CASetupUI.applyRecommended(d.settings);
             d.settings.setupDone = true;
             CALog.did("Settings: recommended values applied (Intel, Colony Autopilot, Settings).", true);   // 0.3.0.0 (WS-F3): SETUP on screen
         }
-        c.mode = CAData.Mode.AUTO;
+        d.setMode(c, CAData.Mode.AUTO);
+        if (first) CAModeTable.setEmpire(d.settings, CAData.Mode.AUTO);   // 0.3.3.0: the first setup sets the empire mode
         c.buildout = true;
         c.buildoutFloor = floor;
         c.buildoutProfitSince = 0L;

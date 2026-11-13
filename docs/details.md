@@ -19,7 +19,10 @@
 - Colony panel: The Colony Autopilot button on the colony screen, or right-click Population & Infrastructure, then Colony Autopilot... The button needs a free spot near the building grid (colonies tab and docked market screen). Setting Button on the colony screen turns it off.
 - Empire panel: Intel screen, Colony Autopilot filter. Pages: Colonies, Autopilot Storage, Colony crises, Expansion (0.3.0.0), War (0.3.0.0, Nexerelin), Mod features, Settings, Factions (0.3.0.0), Log, Diagnostics.
 - Settings: 20 main rows in 6 groups and an Advanced group with 11 subgroups (0.3.0.0). One group is open at a time.
-- Modes per colony: Off, Advisor (default: recommends, the player clicks Build), Approve (one-click proposals), Auto (builds within the budget).
+- Modes per colony: Off, Advisor (default: a ranking beside the build menu, the player builds), Approve (proposals in the approval summary), Auto (builds within the budget).
+- Empire mode (0.3.3.0, `CAModeTable`): Empire-wide settings follow one mode. Each mode has its own defaults. A setting the player changes is flagged "set by you" and keeps its value through mode changes.
+- Approval summary (0.3.3.0, `CAApprovalDialog`): One dialog with every decision waiting, every 60 days by default, at a moment with no dialog, menu or battle. Approve all, Choose each, Reject all, Later. Every approval checks the credit reserve and pays the fee.
+- Build menu hints (0.3.3.0, `CABuildHints`): A panel beside the game's build menu and Building Menu Overhaul's at Advisor colonies. On 0.98.5a also a tooltip line.
 - Goals: Balanced, Money, Security, War production, Rapid growth, Self-sufficiency.
 - Plan: Each colony gets a plan from its planet, hazards and resources.
 - Plan with Terraforming Made Easy: The plan includes a reachable special world (Forge, Fortress, Paradise, Hive, Death, Waste). A world is picked only if its industries and the colony's other industries fit the slots at max size (1 to size 3, then 2, 3 and 4 at sizes 4 to 6, plus bonus slots).
@@ -29,7 +32,7 @@
 - Fast buildout ranking: Money goal weights, with ground defense, fleets and ship quality worth nothing. It builds no defenses, patrols or stations.
 - Fast buildout end: After 30 days in a row of positive colony net income. The colony stays in Auto with its own goal.
 - First switch to Approve or Auto: Opens the setup page (0.3.0.0, `CASetupUI.renderFirstTime`) with the recommended settings. Everything that pays for itself is on. Removals, story points and offense stay with the player. 5 rows: Spending, Extras, New colonies, War with Nexerelin, Credit reserve.
-- Reset to recommended (`CASetupUI.resetToRecommended`): A Settings page button. It keeps Expansion style, War, New colonies, faction stances, the capital and Capital does.
+- Reset to recommended (`CASetupUI.resetToRecommended`): A Settings page button. It clears "set by you" and applies the empire mode's defaults. It keeps Expansion style, faction stances, the capital pick and the focus world.
 - Orbital Fusion Lamp: Cancels Cold, Very Cold, Poor Light and Dark. Needs 10 volatiles.
 - Orbital Fusion Lamp: On a world that is not cold it adds heat. Autopilot places it only where the cancelled cold or darkness is worth more than the heat, or where the plan needs Extreme Heat.
 - Orbital Fusion Lamp: A lamp at an Auto colony that does neither goes back to Autopilot Storage, one a day.

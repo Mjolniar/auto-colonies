@@ -28,6 +28,8 @@ import java.util.List;
 public class CAColonyDialog extends BaseCustomDialogDelegate {
     public static final float W = 860f, H = 620f;
     static final String APPROVE = "ca:approve", REJECT = "ca:reject", SAVE_SETUP = "ca:savesetup", BACK = "ca:back";
+    /** 0.3.3.0: sets the empire mode to this colony's mode. */
+    static final String EMPIRE = "ca:empire";
     static final String REFRESH = "ca:refresh";   // 0.3.0.0 (A4 fix): Recommended builds' Refresh (CAEngine.refresh)
     static final String AUG_APPLY = "ca:aug:apply", AUG_UNSKIP = "ca:aug:unskip";
     static final String HS = "ca:hs:";   // Coronal Hypershunt actions: ca:hs:<action>:<arg>
@@ -64,8 +66,11 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     class Plugin extends CATheme.Frame {   // the grid and neon frames behind the panel (0.2.41.0)
         Plugin() { super(CANav.W, CANav.GAP); }
         @Override public void buttonPressed(Object id) {
+            CASettings s = CAData.settings();
+            CAModeTable.clickStart(s);   // 0.3.3.0: a setting this click changes is yours
             try { handle(id); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony panel button failed", t); message = FAILED; dirty = true; }
+            finally { CAModeTable.clickEnd(s, id); }
         }
         @Override public void advance(float amount) { if (dirty) { dirty = false; safeBuild(); } }
     }
@@ -95,16 +100,23 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             CAData.Mode mo = (CAData.Mode) id;
             boolean needsSetup = (mo == CAData.Mode.APPROVE || mo == CAData.Mode.AUTO) && !d.settings.setupDone;
             // 0.3.0.0 (WS-F3): the Settings page opens on Playstyle afterwards (CASetupUI's groups since F1)
-            if (needsSetup) { setupPage = true; setupMode = mo; CASetupUI.applyRecommended(d.settings); CASetupUI.open.clear(); CASetupUI.open.add("playstyle"); }
-            else { c.mode = mo; message = "Mode set to " + mo.label; }
+            if (needsSetup) {
+                setupPage = true; setupMode = mo; CASetupUI.applyRecommended(d.settings); CASetupUI.open.clear(); CASetupUI.open.add("playstyle");
+                // 0.3.3.0: the setup rows show the chosen mode's own defaults, so what you see is what Save keeps
+                d.settings.empireMode = mo;
+                CAModeTable.apply(d.settings, mo);
+            }
+            else { d.setMode(c, mo); message = "Mode set to " + mo.label; }
         }
         else if (SAVE_SETUP.equals(id)) {
             d.settings.setupDone = true; setupPage = false;
-            if (setupMode != null) c.mode = setupMode;
+            if (setupMode != null) d.setMode(c, setupMode);
+            CAModeTable.setEmpire(d.settings, c.mode);   // 0.3.3.0: the first setup sets the empire mode
             message = "Saved. Mode: " + c.mode.label;
             CALog.did(market.getName() + ": setup saved, mode " + c.mode.label + ".", true);   // 0.3.0.0 (WS-F3): "SETUP / Place: ..." on screen
         }
         else if (BACK.equals(id)) { setupPage = false; message = null; }
+        else if (EMPIRE.equals(id)) { CAModeTable.setEmpire(d.settings, c.mode); message = "Empire mode set to " + c.mode.label; }
         else if (REFRESH.equals(id)) {   // 0.3.0.0 (A4 fix, 07 M6): scored on a click, never while the panel draws; no plan tracking
             CAEngine.refresh(market, planWith(c), d.settings.minStability, buildoutRanking(c));
             message = null;
@@ -147,10 +159,10 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         }
         else if (id instanceof CAEngine.Pick) {
             CAEngine.Pick p = (CAEngine.Pick) id;
-            String err = CABuild.start(market, p);
-            message = err == null ? "Started: " + p.verb + " " + p.name + " for " + Misc.getDGSCredits(p.cost) : err;
-            // 0.3.0.0 (WS-F3): "you started building X" reads as a sentence. 0.3.0.9: starsector.log only; the panel shows "Started: ..."
-            if (err == null) CALog.quiet(market.getName() + ": you started " + (p.upgrade ? "upgrading to " : "building ") + p.name);
+            // 0.3.3.0: the game's price plus the construction fee, from credits above the reserve (nothing is free)
+            float fee = CABudget.constructionFee(d.settings, p.cost);
+            String err = CAApprovals.startByPlayer(market, p);
+            message = err == null ? "Started: " + p.verb + " " + p.name + " for " + Misc.getDGSCredits(p.cost) + " plus " + Misc.getDGSCredits(fee) + " fee" : err;
         }
         dirty = true;
     }
@@ -166,8 +178,8 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     // 0.3.0.0 (WS-F3 fix pass 2): every text on this panel shorter, for the mod-wide word budget (JTScreenButtonCheck)
     static final String[] MODE_TEXT = {
             "Off: does nothing.",
-            "Advisor: recommends builds.",
-            "Approve: proposes one project at a time.",
+            "Advisor: ranks builds. You build.",
+            "Approve: proposes. You approve.",
             "Auto: builds and sets policies within budget."};
 
     // ---------------- text (0.3.0.0, WS-F3: each paragraph 40 words or fewer, JTScreenButtonCheck) ----------------
@@ -330,6 +342,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 CATheme.heading(t, CATheme.APPROVAL, 10f);
                 t.addPara("%s for %s, fee %s.", 6f, hl, c.pendingName, Misc.getDGSCredits(c.pendingCost),
                         Misc.getDGSCredits(CABudget.constructionFee(s, c.pendingCost)));
+                if (c.pendingWhy != null) t.addPara(CALog.esc(c.pendingWhy), gray, 2f);   // 0.3.3.0
                 ButtonAPI a = t.addButton("Approve", APPROVE, hl, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 6f);
                 ButtonAPI r = t.addButton("Reject", REJECT, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 0f);
                 r.getPosition().rightOfTop(a, 6f);
@@ -351,6 +364,14 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             for (CAData.Mode mo : CAData.Mode.values()) { prev = rowButton(t, prev, mo.label, mo, mo == c.mode, (cw - 18f) / 4f); if (first == null) first = prev; }
             CALog.endRow(t, first);
             t.addPara(MODE_TEXT[c.mode.ordinal()], gray, 6f);
+            // 0.3.3.0: a colony above the empire mode: one line and a button, no pop-up
+            CAData.Mode em = s.empire();
+            if (c.mode.ordinal() > em.ordinal()) {
+                ButtonAPI eb = t.addButton("Empire mode to " + c.mode.label, EMPIRE, base, dark, Alignment.MID, CutStyle.TL_BR, 220f, 22f, 6f);
+                LabelAPI el = t.addPara(CALog.esc("Empire: " + em.label + "."), gray, 0f);
+                el.getPosition().rightOfMid(eb, 10f);
+                CALog.endRow(t, eb);
+            }
             CABuildout.render(t, market, c);
             if (c.mode == CAData.Mode.AUTO && !outpost && !shunt) {
                 try { CASurplus.renderColony(t, market, s, 12f); }
@@ -466,6 +487,22 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 LabelAPI why = t.addPara(old ? "Out of date: Refresh" : waits ? "Waits for construction" : "Not enough credits", gray, 0f);
                 why.getPosition().rightOfMid(b, 10f);
                 CALog.endRow(t, b);
+            }
+        }
+        // 0.3.3.0: every other option, tagged as in the build menu hints (Best, Good, Poor and why), Build on the ones that pay
+        if (picks.size() > 3) {
+            t.addPara("More", hl, 12f);
+            float stab = CAStability.now(market), floor = CAStability.floor();
+            for (int i = 3; i < picks.size(); i++) {
+                CAEngine.Pick p = picks.get(i);
+                String[] tg = CABuildHints.tag(p, i + 1, data.settings, stab, floor);
+                boolean ok = CAEngine.worthwhile(p) && !(!p.upgrade && r.blocked != null) && k.current;
+                if (ok) {
+                    ButtonAPI b = t.addButton(p.verb + " (" + Misc.getDGSCredits(p.cost) + ")", p, base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 20f, 4f);
+                    LabelAPI l = t.addPara("%s: %s. " + CALog.esc(tg[1]) + ".", 0f, hl, tg[0], p.name);
+                    l.getPosition().rightOfMid(b, 10f);
+                    CALog.endRow(t, b);
+                } else t.addPara("%s: %s. " + CALog.esc(tg[1]) + ".", 4f, "Poor".equals(tg[0]) ? Misc.getNegativeHighlightColor() : gray, tg[0], p.name);
             }
         }
         if (r.noSlot > 0) t.addPara(r.noSlot + " more need an industry slot.", gray, 10f);

@@ -325,7 +325,7 @@ public class CATascStations {
                 continue;
             }
             CAData.Colony c = d.colony(made.getId());
-            c.mode = CAData.Mode.AUTO;
+            d.setMode(c, CAData.Mode.AUTO);
             c.profile = CAData.Profile.INCOME;
             CALog.did("Built a " + o.what + ". " + made.getName() + " is a new colony, on Auto with the Money goal (" + o.why + ").");
         }

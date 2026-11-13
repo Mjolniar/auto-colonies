@@ -93,7 +93,11 @@ public class CAReset {
         if (on("IndEvo")) failed += run("edicts held for stability", () -> CAIndEvo.edictHeld.clear());   // WS-A2: retried after a load
         failed += run("log", () -> CALog.reset());
         failed += run("log places", () -> { CATheme.places = null; CATheme.placesDay = -1f; });
-        failed += run("colony screen button", () -> CAScreenButton.reset());   // its diagnostics counters and the dialog lookup (A5)
+        failed += run("colony screen button", () -> CAScreenButton.reset());
+        // 0.3.3.0: the approval summary's timers, the live asks, the build menu hints, the field lookups and the settings markers
+        failed += run("approval summary", () -> { CAApprovalDialog.reset(); CAApprovals.reset(); });
+        failed += run("build menu hints", () -> CABuildHints.reset());
+        failed += run("mode table", () -> { CAModeTable.reset(); CASetupUI.marked.clear(); });   // its diagnostics counters and the dialog lookup (A5)
         failed += run("enforcer patrols", () -> CAEnforcers.reset());   // 0.3.1.0: marked fleets and logged lines held the last save's fleets
         failed += run("storage tab", () -> CAStoragePlugin.none = null);
         return failed;

@@ -348,6 +348,27 @@ public class CASettings {
     /** 0.3.2.0: the Log page shows its Thinking list (CAData.thinkingShown before 0.3.2.0; CAMigrate.to4 copies it). */
     public boolean showThinking = false;
 
+    // ---------------- 0.3.3.0: modes rework (plans/2026-11-13-modes-rework.md) ----------------
+    // An older save loads these as null or 0: CAMigrate.to5 sets empireMode and playerSet; fixNulls gives approvalDays 60.
+    /** 0.3.3.0: days between approval summaries (CAApprovalDialog); -1 Off. 0 (an older save) reads as 60. */
+    public int approvalDays = 60;
+    /** 0.3.3.0: build menu hints (CABuildHints): 0 Advisor colonies, 1 every colony not Off, 2 Off. */
+    public int buildHints = 0;
+    public static final String[] HINT_NAMES = {"Advisor colonies", "Every colony not Off", "Off"};
+    /** 0.3.3.0: score an out-of-date colony once a day when its build menu opens (off by default). */
+    public boolean hintScoreOnOpen = false;
+    /** 0.3.3.0: the mode empire-wide settings follow (CAModeTable). New saves Advisor; older saves CAMigrate.to5. */
+    public CAData.Mode empireMode = CAData.Mode.ADVISOR;
+    /** 0.3.3.0: fields you changed (CAModeTable.track); they keep their value through empire mode changes. Reset clears it. */
+    public java.util.Set<String> playerSet = new java.util.HashSet<String>();
+    /** 0.3.3.0: settings rows you changed, for the "set by you" marker. */
+    public java.util.Set<String> playerRows = new java.util.HashSet<String>();
+
+    public java.util.Set<String> playerSet() { if (playerSet == null) playerSet = new java.util.HashSet<String>(); return playerSet; }
+    public java.util.Set<String> playerRows() { if (playerRows == null) playerRows = new java.util.HashSet<String>(); return playerRows; }
+    /** The empire mode, Advisor when none is set yet. */
+    public CAData.Mode empire() { return empireMode == null ? CAData.Mode.ADVISOR : empireMode; }
+
     /** 0.3.2.0: every production field at its default (the Light preset). Reset to recommended and older saves use it. */
     public void productionDefaults() {
         productionMode = CATuning.PROD_LIGHT;
@@ -458,6 +479,11 @@ public class CASettings {
         if (!(floorValPart >= 0f)) floorValPart = CATuning.FLOOR_VAL_PART;
         if (!(floorValOrders >= 0f)) floorValOrders = CATuning.FLOOR_VAL_ORDERS;
         if (!(floorValGoods >= 0f)) floorValGoods = CATuning.FLOOR_VAL_GOODS;
+        // 0.3.3.0: an older save loads approvalDays 0: the default; -1 is Off; never over a year
+        if (approvalDays == 0) approvalDays = CAApprovalDialog.DEFAULT_DAYS;
+        if (approvalDays < 0) approvalDays = -1;
+        if (approvalDays > 365) approvalDays = 365;
+        if (buildHints < 0 || buildHints > 2) buildHints = 0;
     }
 
     /** 0.3.2.0: fixNulls filled the production fields this session (an older save); CAMigrate.to4 logs it once. Not saved. */

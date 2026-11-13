@@ -65,9 +65,9 @@ final class CAMark {
      * a world commitment and its conditions (CAPlan), a rejected stockpile proposal (CAStockpile, "stockno:<marketId>|<commodity>"),
      * a rejected military proposal (CAMilitary, "milno:<marketId>|<building id>"), an upgrade the Military rung started
      * (CAMilitary, "milup:<marketId>|<building now>|<building it started from>") and an unused surplus terraforming structure
-     * (CATerraformSurplus, "tfnew:<marketId>|<structure>").
+     * (CATerraformSurplus, "tfnew:<marketId>|<structure>"). 0.3.3.0: a rejected build proposal (CAAuto, "buildno:<marketId>|<pick id>").
      */
-    static final String[] PER_COLONY = {"fpok:", "world:", "worldcond:", "stockno:", "milno:", "milup:", "tfnew:"};
+    static final String[] PER_COLONY = {"fpok:", "world:", "worldcond:", "stockno:", "milno:", "milup:", "tfnew:", "buildno:"};
 
     /** For CATidy.forget: drops the per-colony marks of colonies that are gone. Returns how many went. */
     static int forgetMarkets(java.util.Set<String> gone) {

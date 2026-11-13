@@ -383,7 +383,7 @@ public class CAConquest {
         CASettings s = d.settings;
         if (!known) {
             int mode = Math.max(0, Math.min(2, s.conqueredMode));
-            c.mode = mode == 0 ? CAData.Mode.AUTO : mode == 1 ? CAData.Mode.APPROVE : CAData.Mode.ADVISOR;
+            d.setMode(c, mode == 0 ? CAData.Mode.AUTO : mode == 1 ? CAData.Mode.APPROVE : CAData.Mode.ADVISOR);
         }
         if (c.profile != CAData.Profile.SECURITY) {
             CAMark.set(PROFILE_MARK + id + "|" + c.profile.name(), CAMark.now());

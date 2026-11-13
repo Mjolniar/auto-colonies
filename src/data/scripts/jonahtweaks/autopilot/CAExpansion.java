@@ -594,7 +594,7 @@ public class CAExpansion {
         d.expandPendingId = p.planetId;
         d.expandPendingName = p.planetName;
         d.expandPendingCost = c.total;
-        CALog.advise(p.planetName + ": Colony expedition proposed. " + p.plan + ", goal " + goalLabel(p.goal) + ". About " + Misc.getDGSCredits(p.value)
+        CAApprovals.say(p.planetName + ": Colony expedition proposed. " + p.plan + ", goal " + goalLabel(p.goal) + ". About " + Misc.getDGSCredits(p.value)
                 + " a month at size " + VALUE_SIZE + ". Cost " + Misc.getDGSCredits(c.total) + " by " + methodName(c.method)
                 + (c.hire != null ? " with an administrator" : "") + ". Approve or reject it on the Expansion page.", true);
     }
@@ -804,7 +804,7 @@ public class CAExpansion {
         CALog.quiet(m.getName() + ": founded by " + methodName(o.method) + " after " + Math.round(Global.getSector().getClock().getElapsedDaysSince(o.sent))
                 + " days for " + Misc.getDGSCredits(o.paid) + " + " + Misc.getDGSCredits(o.fee) + " fee (" + o.why + ")");
         if (s.expandBuildout()) CABuildout.start(m, buildoutFloor(s));
-        else c.mode = CAData.Mode.AUTO;
+        else d.setMode(c, CAData.Mode.AUTO);
         if (!seatAt(d, m) && CAItems.overLimit() > 0 && CAItems.idleAdmins() == 0 && s.expandAdmins()) {
             // over the limit on arrival (an administrator left, a colony was captured): hire at once, CAOverLimit watches stability
             CAItems.ExpansionHire h = CAItems.expansionHire(s);

@@ -35,6 +35,10 @@ public class CAData {
         public boolean pendingUpgrade;
         public float pendingCost;
         public boolean pendingNotified;
+        /** 0.3.3.0: the proposal's reason and first effect line, its money a month, and when it was proposed (older saves: null, 0). */
+        public String pendingWhy;
+        public float pendingMonthly;
+        public long pendingSince;
         public int spUsed = 0;
         public long lastHazardPay = 0L, lastFreePort = 0L;
         public boolean threatHigh = false;
@@ -88,6 +92,8 @@ public class CAData {
     @Deprecated
     public float minStability = CATuning.MIN_STABILITY;
     public boolean buildoutOffered;   // the first-colony fast buildout dialog has been shown (or doesn't apply to this save)
+    /** 0.3.3.0: when the approval summary last opened (0: never, also older saves). */
+    public long approvalLast;
     public CASettings settings;
     public com.fs.starfarer.api.campaign.CargoAPI storage;
     public Map<String, Long> ambTransit;
@@ -275,6 +281,7 @@ public class CAData {
             d.settings = new CASettings();
             CASettingsFile.apply(d);
             CAMigrate.stances(d.settings);   // 0.3.0.0: faction priorities from colony_autopilot.json as stances
+            CAModeTable.apply(d.settings, d.settings.empire());   // 0.3.3.0: a new save starts on the Advisor column
         }
         // 0.3.0.0 (A3, 07 L3): minStability is a setting now; a save from before 0.3.0 loads it 0 there and brings over the one
         // CAData kept (colony_autopilot.json's when the save started). fixNulls gives 0 the default, as CAData's 0 got before
@@ -300,5 +307,13 @@ public class CAData {
     public void clearPending(Colony c) {
         c.pendingId = null; c.pendingName = null; c.pendingCost = 0f; c.pendingUpgrade = false; c.pendingNotified = false;
         c.pendingReplace = null;   // 0.3.2.0
+        c.pendingWhy = null; c.pendingMonthly = 0f; c.pendingSince = 0L;   // 0.3.3.0
+    }
+
+    /** 0.3.3.0: sets a colony's mode; a change clears its waiting proposal (the planner proposes again for the new mode). */
+    public void setMode(Colony c, Mode mode) {
+        if (c == null || mode == null) return;
+        if (c.mode != mode) clearPending(c);
+        c.mode = mode;
     }
 }

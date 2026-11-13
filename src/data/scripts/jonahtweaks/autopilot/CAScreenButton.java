@@ -289,9 +289,11 @@ public class CAScreenButton implements EveryFrameScript {
         UIPanelAPI in = container(s, at);
         PositionAPI cp = in.getPosition();
         float rx = at[0] - cp.getX(), ry = at[1] - cp.getY();
-        if (button != null && parent == in && s.sawButton && Math.abs(rx - relX) < 1f && Math.abs(ry - relY) < 1f) return;   // still in place
+        int waiting = waiting(s.market);   // 0.3.3.0: decisions waiting at this colony, on the button
+        if (button != null && parent == in && s.sawButton && Math.abs(rx - relX) < 1f && Math.abs(ry - relY) < 1f && waiting == shownWaiting) return;   // still in place
         remove();
-        button = make();
+        shownWaiting = waiting;
+        button = make(waiting);
         in.addComponent(button).inBL(rx, ry);
         parent = in;
         relX = rx;
@@ -336,12 +338,24 @@ public class CAScreenButton implements EveryFrameScript {
         relX = relY = Float.NaN;
     }
 
-    CustomPanelAPI make() {
+    private int shownWaiting = -1;
+
+    /** 0.3.3.0: decisions waiting at this colony (its build proposal and the ladder's proposals there). */
+    static int waiting(MarketAPI m) {
+        if (m == null) return 0;
+        int n = 0;
+        try { for (CAApprovals.Item it : CAApprovals.collect()) if (m.getId().equals(it.marketId)) n++; } catch (Throwable ignored) { }
+        return n;
+    }
+
+    CustomPanelAPI make() { return make(0); }
+
+    CustomPanelAPI make(int waiting) {
         CustomPanelAPI p = Global.getSettings().createCustom(W, H, new BaseCustomUIPanelPlugin() {
             @Override public void buttonPressed(Object id) { if (OPEN.equals(id)) open(); }
         });
         TooltipMakerAPI t = p.createUIElement(W, H, false);
-        ButtonAPI b = t.addButton("Colony Autopilot", OPEN, Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(), Alignment.MID, CutStyle.ALL, W, H, 0f);
+        ButtonAPI b = t.addButton(waiting > 0 ? "Colony Autopilot (" + waiting + ")" : "Colony Autopilot", OPEN, Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(), Alignment.MID, CutStyle.ALL, W, H, 0f);
         b.getPosition().inTL(0f, 0f);
         p.addUIElement(t).inTL(0f, 0f);
         return p;

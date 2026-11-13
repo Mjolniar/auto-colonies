@@ -1,5 +1,25 @@
 # Patch notes
 
+## 0.3.3.0 - 2026-11-13
+
+- Approval summary: Added one dialog with every decision waiting, grouped by colony. Options: Approve all, Choose each, Reject all, Later.
+- Approval summary: Opens every 60 days by default, only with no dialog, menu, screen or battle up. Settings, Advanced, Interface: Off or 15 to 180 days.
+- Approval summary: Covers builds and make room, the RAT settlement, colony expeditions, the money ladder's proposals, hypershunt, megastructures, TASC projects, station augments and autonomy.
+- Approvals: Every approval checks the credit reserve first and pays the convenience fee.
+- Approvals: The Intel page lists every kind of decision with Approve and Reject, plus Approve all and Reject all.
+- Approvals: Proposal lines go to the Thinking list while the summary is on.
+- Rejections: A rejected build or settlement is held 30 days through save loads.
+- Advisor: Added a ranking beside the game's build menu and Building Menu Overhaul's: Best, Good and Poor with a reason. No messages or pop-ups for Advisor colonies.
+- Advisor: On 0.98.5a each build menu row's tooltip gets one Autopilot line.
+- Colony panel: Recommended builds lists every option with its tag. The Build button pays the price plus the fee from credits above the reserve.
+- Colony screen button: Shows the number of decisions waiting at the colony.
+- Modes: Changing a colony's mode clears its waiting proposal.
+- Empire mode: Added Off, Advisor, Approve and Auto defaults for empire-wide settings. New saves start on Advisor. The first-time setup sets it.
+- Empire mode: Auto turns on Auto-expansion, every money ladder rung, make room, TASC stations and storage logistics. Approve asks first. Advisor gives advice only.
+- Settings: A setting you change shows "set by you" and keeps its value when the empire mode changes. Reset to recommended clears it.
+- Settings: Storage logistics moved to Advanced, Capital and storage. Empire mode is a main row.
+- Saves: Older saves get an empire mode from their colonies. Settings that differ from 0.3.2's recommended values count as set by you; the rest follow the empire mode, with one log line.
+
 ## 0.3.2.1 - 2026-11-13
 
 - Rogue Planets: Added support for Rogue Planets 1.0.0. Its 31 conditions are read by id. Without the mod nothing changes.
