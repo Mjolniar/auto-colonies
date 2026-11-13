@@ -28,6 +28,7 @@
 - [Yunru Industries, Slightly Better Tech-Mining, Yunru's Worlds](https://fractalsoftworks.com/forum/index.php?topic=21968.0): valued by effect. Bazaar only at your [capital](capital.md).
 - [United Aurora Federation](https://fractalsoftworks.com/forum/index.php?topic=12709.0): Dimensional Nanoforge, Servosync Pump, Modular Purifier, Garrison Transmitter placed by effect.
 - [Auto Outfitting](https://github.com/Mjolniar/auto-outfitting): big weapon orders use AotD production orders.
+- [Kadur Remnant](https://fractalsoftworks.com/forum/index.php?topic=35145.0): Kadur Majority Faith's +1 output on industrial buildings (size 3 and up) and Virus Bombed's -2 on every output line count in build values.
 
 ## Terraforming & Station Construction (Boggled)
 
@@ -76,6 +77,10 @@
 
 ## Checked, nothing needed
 
-[Better Colonies](https://fractalsoftworks.com/forum/index.php?topic=17103.0), [Supply Forging](https://fractalsoftworks.com/forum/index.php?topic=17503.0), [LOST_SECTOR](https://fractalsoftworks.com/forum/index.php?topic=27556.0), [Kon's Player Faction Bundles](https://fractalsoftworks.com/forum/index.php?topic=25040.0), [Galactic Constellate](https://fractalsoftworks.com/forum/index.php?topic=29622.0), [Tri-Tachyon Expansion](https://fractalsoftworks.com/forum/index.php?topic=30322.0), [Luddic Enhancement](https://fractalsoftworks.com/forum/index.php?topic=15084.0), [Hillock](https://fractalsoftworks.com/forum/index.php?topic=29727.0), [Hazard Mining](https://fractalsoftworks.com/forum/index.php?topic=13236.0), [Hiver Swarm](https://fractalsoftworks.com/forum/index.php?topic=22965.0), [Adversary](https://fractalsoftworks.com/forum/index.php?topic=25821.0).
+[Better Colonies](https://fractalsoftworks.com/forum/index.php?topic=17103.0), [Supply Forging](https://fractalsoftworks.com/forum/index.php?topic=17503.0), [Iron Shell](https://fractalsoftworks.com/forum/index.php?topic=18297.0), [Commissioned Crews](https://fractalsoftworks.com/forum/index.php?topic=16677.0), [Too Much Information](https://fractalsoftworks.com/forum/index.php?topic=25485.0), [Content Unlocking Missions](https://fractalsoftworks.com/forum/index.php?topic=24771.0), [LOST_SECTOR](https://fractalsoftworks.com/forum/index.php?topic=27556.0), [Kon's Player Faction Bundles](https://fractalsoftworks.com/forum/index.php?topic=25040.0), [Galactic Constellate](https://fractalsoftworks.com/forum/index.php?topic=29622.0), [Tri-Tachyon Expansion](https://fractalsoftworks.com/forum/index.php?topic=30322.0), [Luddic Enhancement](https://fractalsoftworks.com/forum/index.php?topic=15084.0), [Hillock](https://fractalsoftworks.com/forum/index.php?topic=29727.0), [Hazard Mining](https://fractalsoftworks.com/forum/index.php?topic=13236.0), [Hiver Swarm](https://fractalsoftworks.com/forum/index.php?topic=22965.0), [Adversary](https://fractalsoftworks.com/forum/index.php?topic=25821.0).
+
+## Not checked
+
+- [0.98.5a Preview Mod](https://fractalsoftworks.com/forum/index.php?topic=35147.0): files not read.
 
 [Back to the README](../README.md)
