@@ -136,7 +136,11 @@ public class CATerraform {
                             if (!CATerraSim.valid(conds, after, ka[0], ka[1])) continue;   // never undoes what the plan needs, never adds what it clears
                             float value = CAConditions.change(m, after, prof, null) + CAEconomy.hazardPaySaved(m, after) + CAPlan.bonusForCondition(m, plan, pd.id, adding);   // 0.3.0.0 (C4, research 03 F9): plus the hazard pay the colony's growth no longer needs, for the months to its max size (CAEconomy.hazardPaySaved)
                             float cost = projectCost(m, pd);
-                            float score = value - (CAPlan.legacy() ? cost / 36f * CASurplus.costWeight(m) : cost / CAHorizon.months()) - pd.buildTime * 30f;   // 0.3.0.0 (B2): the price over the payback horizon (CAHorizon), the same at every colony; legacyPlanner: 0.2.45's quarter at the focus world
+                            // 0.3.0.0 (B2): the price over the payback horizon (CAHorizon), the same at every colony; legacyPlanner: 0.2.45's
+                            // quarter at the focus world and 30 credits a construction day. 0.3.0.9: the price, the fee and the worth
+                            // lost while it runs, over the horizon (CAHorizon.npvMonthly, as CAEngine scores builds)
+                            float score = CAPlan.legacy() ? value - cost / 36f * CASurplus.costWeight(m) - pd.buildTime * 30f
+                                    : CAHorizon.npvMonthly(value, cost, CABudget.fee(s, STANDARD_FEE), pd.buildTime, CAHorizon.months());
                             if (score > 0f && (pick == null || score > pick.score)) {
                                 pick = new Cand(); pick.m = m; pick.ind = ind; pick.pd = pd; pick.cost = cost; pick.score = score;
                                 pick.why = (adding ? "add " : "remove ") + pd.name;
@@ -190,7 +194,7 @@ public class CATerraform {
                 CATme.setProject(k.ind, k.pd);
                 k.ind.startUpgrading();
                 if (!CABreaker.check(ACTION, k.ind.isUpgrading() || CATme.ongoing(k.ind), k.m.getName())) continue;   // not charged if it didn't start
-                CABudget.pay(s, null, k.cost, fee, 0f);
+                CABudget.pay(s, k.m.getId(), k.cost, fee, 0f);   // 0.3.0.9: booked to the colony
                 if (k.planned && k.world != null) CAPlan.commitWorld(k.m, k.world, k.pd.id, !k.m.hasCondition(k.pd.id));   // 0.3.0.0 (B5): the condition this project changes is kept for the commitment
                 s.terraSpent += k.cost;
                 CALog.forget("tf:" + k.m.getId() + ":" + k.pd.id);

@@ -943,7 +943,7 @@ public class CAPlan {
     /** One log line (at most every CALog.WAIT_DAYS while it holds) when the commitment keeps a plan from undoing it. */
     static void keptNote(MarketAPI m, Commit k, String plan) {
         if (CALog.once("worldkeep:" + m.getId() + ":" + k.world))
-            CALog.add(m.getName() + ": keeps the " + CAWorldPlanner.name(k.world) + " terraforming it paid for; the " + plan + " plan won't undo it");
+            CALog.quiet(m.getName() + ": keeps the " + CAWorldPlanner.name(k.world) + " terraforming it paid for; the " + plan + " plan won't undo it");   // 0.3.0.9: starsector.log only
     }
 
     // ---------------- 0.3.0.0 (WS-B5 fix 2): commitments for terraforming paid for under 0.2.45 ----------------
@@ -1455,7 +1455,7 @@ public class CAPlan {
             d.worldDead().put(key(m, plan.world), now);
             d.worldDead().put(key(m, STEP_MARK + s.id), now);   // every other special world that needs this structure goes with it
             CACache.bump("world dropped");   // 0.3.0.0 (A4): kept plans and evaluations still aimed at that world
-            CALog.add(m.getName() + ": " + (UNIFICATION.equals(s.id) ? "no special world can form here" : "the " + plan.name + " and other special worlds that need "
+            CALog.quiet(m.getName() + ": " + (UNIFICATION.equals(s.id) ? "no special world can form here" : "the " + plan.name + " and other special worlds that need "
                     + s.label + " can't form here") + " (" + s.label + " is out of reach). For a year the colony follows the plain plan for its goal");
             break;
         }

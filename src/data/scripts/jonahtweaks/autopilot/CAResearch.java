@@ -1012,7 +1012,7 @@ public class CAResearch {
             Object mgr = mgr();
             if (mgr == null || !idle(mgr)) return;
             if (((Number) CARefl.invoke(facilities, mgr)).intValue() <= 0) {
-                if (CALog.once("research:nofacility")) CALog.add("Research: no working Research Facility, so nothing can be researched");
+                if (CALog.once("research:nofacility")) CALog.quiet("Research: no working Research Facility, so nothing can be researched");   // 0.3.0.9: starsector.log only
                 return;
             }
             CALog.forget("research:nofacility");
@@ -1053,18 +1053,22 @@ public class CAResearch {
                     d.researchStaging = t.id;
                     return;
                 }
-                if (CALog.once("research:fail:" + t.id + ":" + failed)) CALog.add("Research: Auto couldn't start " + t.name + ": " + failed);
+                if (CALog.once("research:fail:" + t.id + ":" + failed)) CALog.quiet("Research: Auto couldn't start " + t.name + ": " + failed);   // 0.3.0.9: starsector.log only
             }
             if (waiting == null) d.researchWaitSince = 0L;
             else if (d.researchWaitSince == 0L) d.researchWaitSince = Global.getSector().getClock().getTimestamp();
             if (waiting != null) {
-                if (CALog.once("research:wait:" + waiting.id + ":" + (int) have))
-                    CALog.add("Research: next for your colonies' plans is " + waiting.name + " (for " + CAContracts.join(waiting.planFor) + "), which needs "
-                            + waiting.databanks() + " research databanks; you have " + (int) have + ". Databanks come from salvage (research stations, derelicts) "
-                            + "and from a Research Facility on a pre-collapse research site; Autopilot uses them from Autopilot Storage, colony Storage or your cargo");
+                // 0.3.0.9: the advice on screen, where databanks come from in starsector.log; once per tech (the count on hand
+                // was in the key, which logged it again each time the count changed)
+                if (CALog.once("research:wait:" + waiting.id)) {
+                    CALog.add("Research: " + waiting.name + " is next for " + CAContracts.join(waiting.planFor) + ". Needs " + waiting.databanks()
+                            + " databanks. On hand: " + (int) have + ".");
+                    CALog.quiet("Research: databanks come from salvage (research stations, derelicts) and from a Research Facility on a pre-collapse "
+                            + "research site; Autopilot uses them from Autopilot Storage, colony Storage or your cargo");
+                }
             } else if (c.tries.isEmpty()) {
                 String why = idleReason(c, have, openCount > 0);
-                if (CALog.once("research:idle:" + why)) CALog.add("Research: Auto has nothing it can start: " + why);
+                if (CALog.once("research:idle:" + why)) CALog.quiet("Research: Auto has nothing it can start: " + why);   // 0.3.0.9: starsector.log only
             }
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "research step failed", t);

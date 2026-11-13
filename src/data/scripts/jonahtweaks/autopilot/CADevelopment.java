@@ -133,8 +133,9 @@ public class CADevelopment {
             int shortBy = c == null ? 0 : Math.max(c.getDeficitQuantity(), c.getMaxDemand() + fuel - c.getAvailable());
             Integer own = p.supplied.get("fuel");   // the building that fixes the shortage goes ahead (0.2.38.0: it was blocked too)
             if (shortBy > 0 && (own == null || own < shortBy)) {
-                if (CALog.once("floatfuel:" + m.getId())) CALog.add(m.getName() + ": Floating City: nothing new is built until fuel covers the thrusters "
-                        + "(each building adds 3-5 fuel demand; a shortage lowers the city until it's lost)", true);
+                // 0.3.0.9: holding, starsector.log only; the altitude warning (run) stays on screen
+                if (CALog.once("floatfuel:" + m.getId())) CALog.quiet(m.getName() + ": Floating City: nothing new is built until fuel covers the thrusters "
+                        + "(each building adds 3-5 fuel demand; a shortage lowers the city until it's lost)");
                 return false;
             }
             CALog.forget("floatfuel:" + m.getId());

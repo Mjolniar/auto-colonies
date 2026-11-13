@@ -283,11 +283,22 @@ public class CACrisis {
         return Math.round(maxProd * setting("diktatProgressPerUnitProdMult", 1f));
     }
 
+    /**
+     * Pure (0.3.0.9, JTCrisisCheck): whether the Diktat's crisis factor counts fuel progress: no deal, no win over its attack,
+     * and on 0.98.5a the Askonia standoff under way and not over (standoff: CASurvival.diktatStandoff, null on 0.98a, where
+     * the factor always counts). On 0.98.5a the game's getProgress is 0 outside the standoff.
+     */
+    static boolean diktatCounts(boolean deal, boolean won, Boolean standoff) {
+        if (deal || won) return false;
+        return standoff == null || standoff;
+    }
+
     /** Subtracts the Diktat progress a building making `fuel` units at m would add, when the Diktat is still counting fuel. */
     public static void diktat(MarketAPI m, int fuel, CAEngine.Pick p) {
         if (fuel <= 0) return;
         try {
-            if (SindrianDiktatHostileActivityFactor.isMadeDeal() || SindrianDiktatHostileActivityFactor.isPlayerDefeatedDiktatAttack()) return;
+            if (!diktatCounts(SindrianDiktatHostileActivityFactor.isMadeDeal(), SindrianDiktatHostileActivityFactor.isPlayerDefeatedDiktatAttack(),
+                    CASurvival.diktatStandoff())) return;
             if (!BaseHostileActivityFactor.checkFactionExists(Factions.DIKTAT, true)) return;
             TriTachyonStandardActivityCause.CompetitorData d = SindrianDiktatStandardActivityCause.computeCompetitorData(Factions.DIKTAT, Factions.PLAYER, Commodities.FUEL);
             if (d.factionMaxProd < SindrianDiktatStandardActivityCause.MIN_DIKTAT_PRODUCTION) return;

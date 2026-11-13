@@ -89,8 +89,13 @@ public final class CATuning {
     public static final float MOVE_FEE = 10_000f;
     /** Fee to hire an administrator or an ambassador remotely, before the fee level (CAItems, CAIndEvo). */
     public static final float HIRE_FEE = 25_000f;
-    /** What a recruiter charges to find an administrator none is on offer for; a price, so the fee level never waives it (CAItems, 0.2.41.2). */
+    /**
+     * What a recruiter charges to find an administrator none is on offer for; a price, so the fee level never waives it (CAItems, 0.2.41.2).
+     * 0.3.0.9: times CAItems.recruitScale in survival mode (about 3.2 at the game's 0.1 administrator share).
+     */
     public static final float RECRUITER_PRICE = 250_000f;
+    /** 0.3.0.9: Domain-grade Parts a Heavy Industry or Orbital Works adds count at this share of their sell price (no income). */
+    public static final float PARTS_VALUE_SHARE = 0.1f;
     /** Fee to recruit a Nexerelin agent remotely, before the fee level (CASpies, 0.2.37.0). */
     public static final int AGENT_HIRE_FEE = 12_000;
     /** Base fee for a crew to a stable location (CAObjectives, 0.2.40.0). */
@@ -144,6 +149,11 @@ public final class CATuning {
     public static final float OVER_LIMIT_SHED_DAYS = 10f, OVER_LIMIT_SHED_HOLD_DAYS = 365f;
     /** CAOverLimit: days at 0 stability before a stability-costing building is taken down (decivilization takes months at 0). */
     public static final float OVER_LIMIT_ZERO_WAIT_DAYS = 20f;
+    /**
+     * 0.3.0.9: CAOverLimit counts days at this stability or below toward OVER_LIMIT_ZERO_WAIT_DAYS; each day above it takes
+     * OVER_LIMIT_LOW_DECAY days off the count. A colony that touches 1 now and then keeps its count.
+     */
+    public static final float OVER_LIMIT_LOW_STABILITY = 1f, OVER_LIMIT_LOW_DECAY = 0.25f;
     /** CAOverLimit: growth this close to the next size waits for the room it brings instead of shedding. */
     public static final float OVER_LIMIT_GROWS_SOON = 0.8f;
     /** Days between two industries the capital takes down to make room for commerce (CACapital, 0.2.42.0). */
@@ -152,7 +162,10 @@ public final class CATuning {
     public static final float STEP_DEAD_DAYS = 60f, WORLD_DEAD_DAYS = 365f;
     /** B5 (CAPlan): days after the committed world was last the colony's plan that the commitment lasts (a dropped world comes back after WORLD_DEAD_DAYS). */
     public static final float WORLD_COMMIT_DAYS = WORLD_DEAD_DAYS + 30f;
-    /** Days the colony limit can go short of administrators with none on offer before a recruiter finds one (CAItems, 0.2.41.2). */
+    /**
+     * Days the colony limit can go short of administrators with none on offer before a recruiter finds one (CAItems, 0.2.41.2).
+     * 0.3.0.9: times CAItems.recruitScale in survival mode.
+     */
     public static final float ADMIN_RECRUIT_DAYS = 90f;
     /** Days a hired administrator or ambassador travels before taking a post (CAItems, CAIndEvo; fair play). */
     public static final float TRAVEL_DAYS = 30f;
@@ -193,6 +206,11 @@ public final class CATuning {
     public static final float FREE_PORT_STABILITY_MARGIN = 1f;
     /** At or under this stability a colony over its industry limit sheds an industry at once, whatever it earns (CAOverLimit). */
     public static final float OVER_LIMIT_LOW = 2f;
+    /**
+     * 0.3.0.9 (CAValue.stabilityScale): below STAB_BOOST_BELOW stability the stability weight in scoring rises in a straight
+     * line, to STAB_BOOST_MAX times its goal weight at 0, so what adds stability wins at a colony near 0.
+     */
+    public static final float STAB_BOOST_BELOW = 3f, STAB_BOOST_MAX = 5f;
 
     // ---------------- war and defense (Nexerelin) ----------------
 

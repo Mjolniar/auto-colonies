@@ -120,14 +120,23 @@ public class CAAction {
     /** Credits the NPV is per. */
     public float basis() { return basis > 0f ? basis : Math.max(1f, total()); }
 
-    /** NPV per construction day: the order a colony's new builds go through its one queue (Smith's rule, 02 section 5). */
-    public float perDay() { return npv / Math.max(1f, days); }
+    /**
+     * 0.3.0.9: the NPV the planner ranks and decides by: a NaN or infinite NPV (a scoring that failed) counts as 0, worthless.
+     * worthwhile(), perDay(), perCredit(), CAPlanner.RANK, QUEUE, ruleOnly and earmarkFor read it.
+     */
+    public float value() { return finite(npv) ? npv : 0f; }
 
-    /** NPV per credit: the order money goes to across colonies (02 section 5). */
-    public float perCredit() { return npv / basis(); }
+    /** Pure (0.3.0.9, JTPlanRankCheck): neither NaN nor infinite. */
+    public static boolean finite(float v) { return !Float.isNaN(v) && !Float.isInfinite(v); }
 
-    /** Worth starting on its own numbers: a positive NPV, or a rule you set. */
-    public boolean worthwhile() { return npv > 0f || byRule; }
+    /** NPV per construction day: the order a colony's new builds go through its one queue (Smith's rule, 02 section 5). 0.3.0.9: on value(), 0 if not finite. */
+    public float perDay() { float r = value() / Math.max(1f, days); return finite(r) ? r : 0f; }
+
+    /** NPV per credit: the order money goes to across colonies (02 section 5). 0.3.0.9: on value(), 0 if not finite. */
+    public float perCredit() { float r = value() / basis(); return finite(r) ? r : 0f; }
+
+    /** Worth starting on its own numbers: a positive NPV, or a rule you set. 0.3.0.9: a NaN NPV is never positive (value()). */
+    public boolean worthwhile() { return value() > 0f || byRule; }
 
     /** Upkeep the new-upkeep cap counts: what the building doesn't cover itself (02 section 3), never below 0. */
     public float netUpkeep() { return CAPlanner.netRisk(upkeep, gross, confidence); }

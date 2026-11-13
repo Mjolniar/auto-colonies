@@ -352,7 +352,7 @@ public class CAHypershunt {
         // a range that isn't the default and isn't what Autopilot set was chosen by you
         if (!c.hsManual && h.range != t && ((c.hsRange == null && h.range != 1) || (c.hsRange != null && c.hsRange != h.range))) {
             c.hsManual = true;
-            CALog.add(h.m.getName() + ": you set the hypershunt range yourself; Autopilot leaves it (Let Autopilot manage it, in the colony panel)");
+            CALog.quiet(h.m.getName() + ": you set the hypershunt range yourself; Autopilot leaves it (Let Autopilot manage it, in the colony panel)");   // 0.3.0.9: left alone, starsector.log only
         }
         if (c.hsManual || t == h.range) return;
         String key = "hsrange:" + h.m.getId() + ":" + t;

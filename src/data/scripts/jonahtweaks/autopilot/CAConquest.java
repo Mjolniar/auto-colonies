@@ -231,7 +231,7 @@ public class CAConquest {
         float dom = CAWarPolicy.projectedDominance(dominance(), sz[0], pendingGain() + pl.t.getSize(), sz[1], CAScorched.pendingLoss());
         return CAWarPolicy.invasionWait(coming, p.rich, unstable(p.d), room, badboy(), dom,
                 pendingInfamy() + CAScorched.pendingInfamy(), CAWarPolicy.captureInfamy(pl.t.getSize(), alliedWithOriginal(pl.t)),
-                p.s.warCoalitionOK, p.spare(), pl.fp, payer);
+                p.s.warCoalitionOK, p.spare(), pl.fp, payer);   // 0.3.0.9: spare() keeps a waiting expansion proposal's points
     }
 
     /** Market size your invasions under way would add (0.3.0.0 fix: only those still to land, CAWar.undecided). */
@@ -264,7 +264,7 @@ public class CAConquest {
                 + CAWar.money(pl.cost, pl.fee) + " (" + pl.why + ")", true);
         float after = CAWarPolicy.infamy(badboy() + pendingInfamy(), dominance());
         if (after >= CAWarPolicy.INFAMY_NEAR && CALog.once("war:infamy:" + (int) (after / 5f)))
-            CALog.add("War: infamy will be about " + Math.round(after) + " of " + Math.round(CAWarPolicy.INFAMY_LINE) + " once the invasions under way land (decays 3 a month)", true);
+            CALog.quiet("War: infamy will be about " + Math.round(after) + " of " + Math.round(CAWarPolicy.INFAMY_LINE) + " once the invasions under way land (decays 3 a month)");   // 0.3.0.9: status, starsector.log only
         return null;
     }
 
@@ -480,22 +480,22 @@ public class CAConquest {
             // 0.3.0.0 (fix): under the limit with no idle administrator, the colonies you govern hold it. Off CAAutonomy's list:
             // CAAutonomy takes colonies on it back under the limit without this check
             d.autonomous().remove(id);
-            if (CALog.once("conq:auton:gov:" + id))
-                CALog.add(m.getName() + ": autonomous after capture (Nexerelin); taking it back would cost each colony you govern "
+            if (CALog.once("conq:auton:gov:" + id))   // 0.3.0.9: waiting, starsector.log only
+                CALog.quiet(m.getName() + ": autonomous after capture (Nexerelin); taking it back would cost each colony you govern "
                         + Math.round(CAStability.oneMoreGoverned()) + " stability and put one under " + Math.round(CAStability.floor())
-                        + ". Taken back once they can take it or an administrator is free", true);
+                        + ". Taken back once they can take it or an administrator is free");
             return;
         }
         if (fits) {
             d.autonomous().remove(id);   // its own stability holds it: CAAutonomy must not take it back today
-            if (CALog.once("conq:auton:stab:" + id))
-                CALog.add(m.getName() + ": autonomous after capture (Nexerelin); taken back once its stability can take " + CAAutonomy.REVOKE_UNREST + " unrest", true);
+            if (CALog.once("conq:auton:stab:" + id))   // 0.3.0.9: waiting, starsector.log only
+                CALog.quiet(m.getName() + ": autonomous after capture (Nexerelin); taken back once its stability can take " + CAAutonomy.REVOKE_UNREST + " unrest");
             return;
         }
         if (!d.autonomous().containsKey(id)) d.autonomous().put(id, Global.getSector().getClock().getTimestamp());   // CAItems hires for it
-        if (CALog.once("conq:auton:limit:" + id))
-            CALog.add(m.getName() + ": autonomous after capture (Nexerelin); taking it back over your colony limit would put a colony under stability "
-                    + Math.round(CAStability.floor()) + ". Autopilot hires an administrator and takes it back then", true);
+        if (CALog.once("conq:auton:limit:" + id))   // 0.3.0.9: waiting, starsector.log only
+            CALog.quiet(m.getName() + ": autonomous after capture (Nexerelin); taking it back over your colony limit would put a colony under stability "
+                    + Math.round(CAStability.floor()) + ". Autopilot hires an administrator and takes it back then");
     }
 
     /** A relief fleet once Nexerelin's capture timeout is over and unrest remains (2 x the stabilize package, an emergency). */
@@ -544,13 +544,13 @@ public class CAConquest {
         reliefIfDue(s, m);
         if (stab <= 2f) {
             if (CALog.once("conq:low:" + id))
-                CALog.add(m.getName() + ": stability " + Math.round(stab) + " after capture; no new invasion until it's 3 or more", true);
+                CALog.quiet(m.getName() + ": stability " + Math.round(stab) + " after capture; no new invasion until it's 3 or more");   // 0.3.0.9: holding, starsector.log only
         } else CALog.forget("conq:low:" + id);
         float days = at == null ? Float.MAX_VALUE : Global.getSector().getClock().getElapsedDaysSince(at);
         if (calm && m.isPlayerOwned() && !profileHeld(m) && days >= CAWarPolicy.SETTLE_DAYS) {
             d.conquered().remove(id);
             CALog.forget("conq:low:" + id);
-            CALog.add(m.getName() + ": settled after capture (stability " + Math.round(stab) + ")");
+            CALog.quiet(m.getName() + ": settled after capture (stability " + Math.round(stab) + ")");   // 0.3.0.9: status, starsector.log only
         }
     }
 

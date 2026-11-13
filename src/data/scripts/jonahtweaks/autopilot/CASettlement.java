@@ -355,7 +355,11 @@ public class CASettlement {
                 name = name + "; the expedition gets there in " + Math.round(d.settleExpeditionDays) + " days";
             }
         } else err = buildFacility(id);
-        if (err != null) { CALog.add("Settlement: could not start " + name + ": " + err); return err; }
+        if (err != null) {
+            // 0.3.0.9: Auto's failed start is starsector.log only; a start you clicked in the empire panel keeps its line
+            if ("Auto".equals(who)) CALog.quiet("Settlement: could not start " + name + ": " + err); else CALog.add("Settlement: could not start " + name + ": " + err);
+            return err;
+        }
         CABudget.pay(s, null, cost, fee, 0f);   // 0.3.0.0 (C12 fix): price and fee in one payment, after the founding or facility started
         CALog.forget("settle:" + kind + ":" + id);
         if (kind.equals(d.settlePendingKind) && id.equals(d.settlePendingId)) clearPending(d);

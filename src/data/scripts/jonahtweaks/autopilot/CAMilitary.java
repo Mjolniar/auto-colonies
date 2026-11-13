@@ -111,7 +111,28 @@ public final class CAMilitary {
         return from;
     }
 
+    /**
+     * Pure (0.3.0.9, JTLadderCheck): why the rung can't upgrade at a colony now, in words for the Approve line, or null. auto:
+     * an Auto colony of yours (not an outpost); noBuildings: a Coronal Hypershunt or a colony that allows no buildings. The
+     * automatic path (candidates) and Approve read this one rule.
+     */
+    static String colonyBlock(boolean auto, boolean buildout, boolean siege, boolean noBuildings) {
+        if (!auto) return "is no longer an Auto colony of yours";
+        if (siege) return "is under siege";
+        if (buildout) return "is in its fast buildout";
+        if (noBuildings) return "allows no buildings";
+        return null;
+    }
+
     // ---------------- the game ----------------
+
+    /** 0.3.0.9: colonyBlock for a colony as it is now. */
+    static String colonyBlock(MarketAPI m) {
+        boolean auto = false;
+        try { auto = m.isPlayerOwned() && CAItems.autoMarkets().contains(m); } catch (Throwable ignored) { }
+        CAData.Colony c = CAData.get().colony(m.getId());
+        return colonyBlock(auto, c.buildout, auto && CASiege.held(m), CAHypershunt.is(m) || m.hasTag("market_no_industries_allowed"));
+    }
 
     /**
      * 0.3.0.0 (C3 fix): upkeep a month the rung's own upgrades added at your colonies: per stamp, the building's base upkeep
@@ -172,7 +193,8 @@ public final class CAMilitary {
         for (MarketAPI m : auto) {
             try {
                 CAData.Colony c = CAData.get().colony(m.getId());
-                if (c.buildout || CAHypershunt.is(m) || CASiege.held(m) || m.hasTag("market_no_industries_allowed")) continue;
+                // 0.3.0.9: the one rule Approve reads too (colonyBlock); auto holds: these come from CAItems.autoMarkets
+                if (colonyBlock(true, c.buildout, CASiege.held(m), CAHypershunt.is(m) || m.hasTag("market_no_industries_allowed")) != null) continue;
                 for (Industry ind : m.getIndustries()) {
                     if (ind.isBuilding() || ind.isUpgrading() || !CAStockpile.military(ind)) continue;
                     String next = ind.getSpec().getUpgrade();
@@ -280,6 +302,9 @@ public final class CAMilitary {
             pending = null;
             CASettings s = CAData.settings();
             // checked again now: the building, the money and the upkeep line may have moved since it was proposed
+            // 0.3.0.9: and the colony: still an Auto colony of yours, not under siege, not in a fast buildout (as candidates)
+            String block = colonyBlock(u.m);
+            if (block != null) return "Military: " + u.m.getName() + " " + block;
             if (u.from.isUpgrading() || u.from.isBuilding() || u.m.getIndustry(u.from.getId()) != u.from) return "Military: that building changed since the proposal";
             if (u.total() > CARich.room(CARich.MILITARY) + 1f) return "Military: the proposal no longer fits its share of the pool";
             float net = CABudget.netIncome(s), added = addedUpkeep();

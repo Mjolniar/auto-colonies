@@ -902,10 +902,12 @@ public class CAEngine {
             supply(p, "heavy_machinery", s - 2, deficit); supply(p, "supplies", s - 2, deficit);
             supply(p, "hand_weapons", s - 2, deficit); supply(p, "ships", s - 2, deficit);
             demand(p, "metals", s, deficit); demand(p, "rare_metals", s - 2, deficit);
+            parts(m, p, s - 2, 0f);   // 0.3.0.9: Domain-grade Parts from its supplies (0.98.5a)
             // a Heavy Industry pollutes only with a polluting item in it, and Autopilot never puts one in on a habitable
             // world (CAItems.wouldPollute, 0.2.36.2), so building one here doesn't pollute
         } else if (id.equals("orbitalworks")) {
             p.fx[5] += 0.2f; p.fx[4] += 0.2f; p.lines.add("+20% ship quality and more ship output");
+            parts(m, p, s - 2, ORBITAL_WORKS_QUALITY);   // 0.3.0.9: more Domain-grade Parts from the better production quality (0.98.5a)
         } else if (id.equals("fuelprod")) {
             supply(p, "fuel", s - 2, deficit); demand(p, "volatiles", s, deficit);
             CACrisis.diktat(m, s - 2, p);   // the Sindrian Diktat counts fuel output from 4
@@ -957,6 +959,53 @@ public class CAEngine {
                 p.outputEstimate += est;
             }
         }
+    }
+
+    /** 0.3.0.9: Orbital Works' production quality over Heavy Industry (HeavyIndustry.ORBITAL_WORKS_QUALITY_BONUS). */
+    static final float ORBITAL_WORKS_QUALITY = 0.2f;
+
+    /**
+     * Pure (0.3.0.9, JTValueCheck): Domain-grade Parts a colony's Local Resources gains a month on 0.98.5a, by the game's rule
+     * (BaseSubmarketPlugin.getPartsGeneratedAsFractionOfSupplies with LocalResourcesSubmarketPlugin's stockpile): supplies
+     * production x the econ unit x stockpileMultProduction, times (fBase + (quality + 0.3) x fProd x min(1.5, production / 10))
+     * x mult (ext_partsForSaleFraction in survival mode, else 1). 0 with no supplies production.
+     */
+    static float partsPerMonth(int suppliesProd, float econUnit, float stockMult, float quality, float fBase, float fProd, float mult) {
+        if (suppliesProd <= 0) return 0f;
+        float share = (fBase + (quality + 0.3f) * fProd * Math.min(1.5f, suppliesProd / 10f)) * mult;
+        return Math.max(0f, suppliesProd * econUnit * stockMult * share);
+    }
+
+    /**
+     * 0.3.0.9: what a Heavy Industry or Orbital Works adds in Domain-grade Parts (0.98.5a; nothing when the game has no "parts"
+     * commodity or parts-based repairs are off): the parts the colony's market gains a month with supplies production at
+     * suppliesAfter and production quality qualityAdd higher, less what it gains now (partsPerMonth), at the game's sell
+     * price for a part (base price x its sell price mult: 250 of 10,000). Parts are not traded in the economy, so they earn
+     * no export income; this sell price is the value the game puts on a part a market takes.
+     */
+    static void parts(MarketAPI m, Pick p, int suppliesAfter, float qualityAdd) {
+        try {
+            if (!CASurvival.partsRepairs()) return;
+            if (p.id != null && m.getIndustry(p.id) != null) return;   // already built: its supplies and quality are in what the colony has now
+            com.fs.starfarer.api.campaign.econ.CommoditySpecAPI parts = Global.getSettings().getCommoditySpec("parts");
+            com.fs.starfarer.api.campaign.econ.CommoditySpecAPI sup = Global.getSettings().getCommoditySpec("supplies");
+            if (parts == null || sup == null) return;
+            CommodityOnMarketAPI c = m.getCommodityData("supplies");
+            int now = c == null ? 0 : Math.max(0, c.getMaxSupply());
+            float q = m.getStats().getDynamic().getMod(com.fs.starfarer.api.impl.campaign.ids.Stats.PRODUCTION_QUALITY_MOD).computeEffective(0f);
+            float fBase = Global.getSettings().getFloat("partsForSaleBaseSuppliesFraction"), fProd = Global.getSettings().getFloat("partsForSaleBaseProductionFraction");
+            float stock = Global.getSettings().getFloat("stockpileMultProduction");
+            float mult = CASurvival.extended() ? Global.getSettings().getFloat("ext_partsForSaleFraction") : 1f;
+            float units = partsPerMonth(Math.max(now, suppliesAfter), sup.getEconUnit(), stock, q + qualityAdd, fBase, fProd, mult)
+                    - partsPerMonth(now, sup.getEconUnit(), stock, q, fBase, fProd, mult);
+            if (!(units >= 0.5f)) return;
+            // parts earn no income: counted at PARTS_VALUE_SHARE of their sell price, a tie-breaker for the d-mod repairs they allow
+            float v = units * parts.getBasePrice() * parts.getSellPriceMult() * CATuning.PARTS_VALUE_SHARE;
+            if (!(v > 0f)) return;
+            p.fx[0] += v;
+            p.lines.add("Domain-grade Parts: about " + Math.round(units) + " more a month in its market, counted as " + Misc.getDGSCredits(v)
+                    + " a month (no income)");
+        } catch (Throwable ignored) { }
     }
 
     /**

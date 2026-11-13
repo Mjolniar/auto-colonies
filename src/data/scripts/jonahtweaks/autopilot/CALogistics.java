@@ -142,7 +142,8 @@ public class CALogistics {
         lastRun = now;
         MarketAPI refit = refitHub(s), sell = sellHub(s);
         if (refit == null && sell == null) {
-            if (CALog.once("logi:nohub")) CALog.add("Storage logistics: no hub to send to (your refit hub has no Storage you can use); pick one in Settings");
+            // 0.3.0.9: advice, so it stays on screen
+            if (CALog.once("logi:nohub")) CALog.add("Storage logistics: pick a hub in Settings. Your refit hub has no Storage you can use");
             return;
         }
         FactionAPI f = Global.getSector().getPlayerFaction();

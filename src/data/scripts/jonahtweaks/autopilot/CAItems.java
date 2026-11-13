@@ -884,9 +884,9 @@ public class CAItems {
 
     /** The colony's goal weights: fast buildout's money-only ones, else its goal's, or Security while its threat is high. */
     static float[] coreWeights(MarketAPI m, CAData.Colony c) {
-        if (c.buildout) return CAEngine.PROFIT;
+        if (c.buildout) return CAValue.atStability(CAEngine.PROFIT, m);   // 0.3.0.9: stability counts more below 3 (CAValue.stabilityScale)
         float[] w = CAEngine.WEIGHTS[CAThreat.effective(m, c.profile).ordinal()];
-        return CAEndgame.at(m) ? CAEndgame.weights(w) : w;   // the endgame economy: money counts 5%, fleets and defense more
+        return CAValue.atStability(CAEndgame.at(m) ? CAEndgame.weights(w) : w, m);   // the endgame economy: money counts 5%, fleets and defense more
     }
 
     /** Credits a month core k adds in ind with goal weights w, less the Hegemony and Pather crisis progress it adds (crisis null: none counted). */
@@ -1001,8 +1001,9 @@ public class CAItems {
                 if (worst == null || x.rank(x.cur) / points(x.cur) < worst.rank(worst.cur) / points(worst.cur)) worst = x;
             }
             if (worst == null || pts - movable > lim) {   // an AI core administrator or locked buildings keep it over anyway
-                if (CALog.once("cores:fixed:" + m.getId() + ":" + pts + ":" + lim))
-                    CALog.add(m.getName() + ": " + pts + " inspection points (" + limitWhy(s, m, none, lim) + ") from cores Autopilot doesn't move "
+                // 0.3.0.9: kept, starsector.log only; once per colony (the points and limit were in the key)
+                if (CALog.once("cores:fixed:" + m.getId()))
+                    CALog.quiet(m.getName() + ": " + pts + " inspection points (" + limitWhy(s, m, none, lim) + ") from cores Autopilot doesn't move "
                             + "(an AI core administrator, or locked buildings), so no more cores go there");
                 continue;
             }
@@ -1082,8 +1083,7 @@ public class CAItems {
                 : coreName(bestK) + " into " + bestTo.ind.getCurrentName() + (old >= 0 ? " (" + coreName(old) + " to storage)" : "");
         String gainText = first ? " (research buildings first, -" + Misc.getDGSCredits(bestTo.net[0]) + "/month costs)" : " (+" + Misc.getDGSCredits(real) + "/month)";
         CALog.add(where + what + gainText);
-        CALog.quiet(where + aiPoints(bestTo.m) + " inspection points" + (lim == Integer.MAX_VALUE ? "" : " of " + lim));
-        CALog.ping("inspect:" + bestTo.m.getId(), where + aiPoints(bestTo.m) + " inspection points" + (lim == Integer.MAX_VALUE ? "" : " of " + lim));
+        CALog.quiet(where + aiPoints(bestTo.m) + " inspection points" + (lim == Integer.MAX_VALUE ? "" : " of " + lim));   // 0.3.0.9: no ping, the move line is on screen
         return true;
     }
 
@@ -1112,8 +1112,9 @@ public class CAItems {
                 if (worst == null || x.net[x.cur] / points(x.cur) < worst.net[worst.cur] / points(worst.cur)) worst = x;
             }
             if (worst == null || room + freeable < extra) {
-                if (CALog.once("cores:room:" + to.m.getId() + ":" + points.get(to.m)))
-                    CALog.add(to.m.getName() + ": " + to.ind.getCurrentName() + " should get an Alpha core first, but even without the colony's "
+                // 0.3.0.9: over a cap, starsector.log only; once per colony and building (the points were in the key)
+                if (CALog.once("cores:room:" + to.m.getId() + ":" + to.ind.getId()))
+                    CALog.quiet(to.m.getName() + ": " + to.ind.getCurrentName() + " should get an Alpha core first, but even without the colony's "
                             + "other movable cores it's over its inspection limit (" + limitWhy(s, to.m, none, limit.get(to.m)) + ")");
                 continue;
             }
@@ -1331,8 +1332,8 @@ public class CAItems {
             if (expansionsComing(d) > 0 && adminsNeeded(d) > 0) return false;   // 0.3.0.0 (WS-D): kept for the colony on the way, no "stays unassigned" line
             for (AdminData a : idle) {
                 float salary = Misc.getAdminSalary(a.getPerson());
-                if (CALog.once("admin:idle:" + a.getPerson().getId()))
-                    CALog.add("Administrator " + a.getPerson().getNameString() + " stays unassigned: no Auto colony you govern gains more than their "
+                if (CALog.once("admin:idle:" + a.getPerson().getId()))   // 0.3.0.9: starsector.log only
+                    CALog.quiet("Administrator " + a.getPerson().getNameString() + " stays unassigned: no Auto colony you govern gains more than their "
                             + Misc.getDGSCredits(salary) + " a month" + (held ? " (or the colony would lose its management bonus and end under "
                             + Math.round(CAStability.floor()) + " stability)" : "") + ". Unassigned they cost " + Misc.getDGSCredits(salary * idleMult)
                             + "; dismissing them is up to you");
@@ -1399,9 +1400,25 @@ public class CAItems {
     /** What the recruiter charges on top of the usual hiring bonus and fee; a price, not a service fee, so the fee level never waives it. */
     static final float RECRUITER_PRICE = CATuning.RECRUITER_PRICE;
 
-    static String monthKey() {
-        return Global.getSector().getClock().getCycle() + ":" + Global.getSector().getClock().getMonth();
+    /**
+     * Pure (0.3.0.9, JTAdminCheck): how many times longer the recruiter's wait and how many times higher its price are when the
+     * game offers this share of administrators (CASurvival.adminAvailableFraction: 0.1 in survival mode, 1 otherwise): the
+     * square root of how much rarer they are, on each, so wait and price together follow the game's 10 times. At most 10 each;
+     * 1 for a share of 1 or more, 0 or less, or NaN.
+     */
+    static float recruitScale(float availableFraction) {
+        if (!(availableFraction > 0f) || availableFraction >= 1f) return 1f;
+        return (float) Math.min(10.0, Math.sqrt(1.0 / availableFraction));
     }
+
+    /** 0.3.0.9: days the colony limit waits before a recruiter finds an administrator: RECRUIT_DAYS, longer in survival mode (recruitScale). */
+    static float recruitDays() { return RECRUIT_DAYS * recruitScale(CASurvival.adminAvailableFraction()); }
+
+    /** 0.3.0.9: the recruiter's price on top of the hiring bonus: RECRUITER_PRICE, higher in survival mode (recruitScale), to the nearest 1,000. */
+    static float recruiterPrice() { return recruiterPrice(recruitScale(CASurvival.adminAvailableFraction())); }
+
+    /** Pure (0.3.0.9, JTAdminCheck): RECRUITER_PRICE times scale, to the nearest 1,000. */
+    static float recruiterPrice(float scale) { return Math.round(RECRUITER_PRICE * scale / 1000f) * 1000f; }
 
     /** Colonies the player still governs personally (no administrator). */
     static List<MarketAPI> selfGoverned(List<MarketAPI> markets) {
@@ -1440,8 +1457,8 @@ public class CAItems {
         }
         int max = (int) Global.getSector().getPlayerStats().getAdminNumber().getModifiedValue();
         if (Global.getSector().getCharacterData().getAdmins().size() >= max) {
-            if (need > 0 && CALog.once("admin:need:max:" + max))
-                CALog.add("Administrators needed: " + limitText(need, coming) + ". But you already have as many as you can employ (" + max + ")");
+            if (need > 0 && CALog.once("admin:need:max:" + max))   // 0.3.0.9: over a cap, starsector.log only
+                CALog.quiet("Administrators needed: " + limitText(need, coming) + ". But you already have as many as you can employ (" + max + ")");
             return false;
         }
         float fee = CABudget.fee(s, HIRE_FEE);
@@ -1471,16 +1488,19 @@ public class CAItems {
             if (need <= 0) return false;
             if (d.adminNeedSince == 0L) d.adminNeedSince = Global.getSector().getClock().getTimestamp();
             float waited = Global.getSector().getClock().getElapsedDaysSince(d.adminNeedSince);
-            if (waited >= RECRUIT_DAYS) return recruitAdmin(d, s, open, need, waited);
-            if (CALog.once("admin:need:" + monthKey()))
-                CALog.add("Administrators needed: " + limitText(need, coming) + ". None is for hire: the game only offers one at a market you dock at, "
-                        + "now and then. If none turns up in " + Math.max(1, Math.round(RECRUIT_DAYS - waited)) + " days, a recruiter finds one for "
-                        + Misc.getDGSCredits(RECRUITER_PRICE) + " more than a normal hire");
+            float recruitDays = recruitDays();   // 0.3.0.9: longer in survival mode, where the game offers a tenth as many
+            if (waited >= recruitDays) return recruitAdmin(d, s, open, need, waited);
+            // 0.3.0.9: waiting, starsector.log only; one key (the month was in it, so the line came back each month). Assigning
+            // or recruiting one forgets it
+            if (CALog.once("admin:need"))
+                CALog.quiet("Administrators needed: " + limitText(need, coming) + ". None is for hire: the game only offers one at a market you dock at, "
+                        + "now and then. If none turns up in " + Math.max(1, Math.round(recruitDays - waited)) + " days, a recruiter finds one for "
+                        + Misc.getDGSCredits(recruiterPrice()) + " more than a normal hire");
             return false;
         }
         if (bestNet <= 0f && need <= 0) {
-            if (CALog.once("admin:skip:" + best.person.getId()))
-                CALog.add("Not hiring an administrator: the best on offer (" + best.person.getNameString() + " at " + bestAt.getName() + ", salary "
+            if (CALog.once("admin:skip:" + best.person.getId()))   // 0.3.0.9: declined, starsector.log only
+                CALog.quiet("Not hiring an administrator: the best on offer (" + best.person.getNameString() + " at " + bestAt.getName() + ", salary "
                         + Misc.getDGSCredits(best.salary) + " a month) would add about " + Misc.getDGSCredits(bestWorth) + " a month at " + bestFor.getName()
                         + ", less than they cost");
             return false;
@@ -1516,7 +1536,8 @@ public class CAItems {
      * none (it only rolls for one when you dock at a market: 5% a visit, plus 5% per size over 3). A basic administrator, no
      * skills, like the game's cheaper tier, for RECRUITER_PRICE on top of that tier's hiring bonus and the usual fee; arrives
      * in 30 days like any remote hire. Past the monthly budget if need be, never below the credit reserve. Keeps going one a
-     * day until enough are on the way.
+     * day until enough are on the way. 0.3.0.9: in survival mode the wait is longer and the price higher (recruitDays,
+     * recruiterPrice); the game offers a tenth as many administrators there.
      */
     static boolean recruitAdmin(CAData d, CASettings s, List<MarketAPI> open, int need, float waited) {
         return recruitAdmin0(d, s, open, need, waited);
@@ -1545,9 +1566,9 @@ public class CAItems {
     static boolean recruitAdmin0(CAData d, CASettings s, List<MarketAPI> open, int need, float waited) {
         int bonus = 5000;
         try { bonus = Global.getSettings().getInt("adminHireTier0"); } catch (Throwable t) { }
-        float fee = CABudget.fee(s, HIRE_FEE), price = RECRUITER_PRICE + bonus;
+        float fee = CABudget.fee(s, HIRE_FEE), price = recruiterPrice() + bonus;   // 0.3.0.9: higher in survival mode (recruitScale)
         if (CABuild.credits() - s.reserve < price + fee) {
-            if (CALog.once("admin:recruit:" + monthKey()))
+            if (CALog.once("admin:recruit"))   // 0.3.0.9: one key (the month was in it); a "waiting" line, starsector.log only (CALogFilter)
                 CALog.add("Administrators needed: " + limitText(need, expansionsComing(d)) + ". A recruiter can find one for " + Misc.getDGSCredits(price + fee)
                         + ", waiting for that much above your credit reserve");
             return false;
@@ -1577,7 +1598,7 @@ public class CAItems {
             CABudget.charge(s, 0f, fee, salary);
             CALog.spent(null, price, 0f, 0f);
             d.adminTransit().put(p.getId(), Global.getSector().getClock().getTimestamp());
-            CALog.forget("admin:need:" + monthKey());
+            CALog.forget("admin:need"); CALog.forget("admin:recruit");
             CALog.add("Hired administrator " + p.getNameString() + " through a recruiter for " + Misc.getDGSCredits(price)
                     + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + ", salary " + Misc.getDGSCredits(salary) + "/month, for "
                     + bestFor.getName() + ": " + limitText(need, expansionsComing(d)) + ", none on offer for " + Math.round(waited) + " days; arrives in 30 days");
@@ -1653,7 +1674,7 @@ public class CAItems {
         int bonus = 5000, salary = 2500;
         try { bonus = Global.getSettings().getInt("adminHireTier0"); } catch (Throwable t) { }
         try { salary = Global.getSettings().getInt("adminSalaryTier0"); } catch (Throwable t) { }
-        h.price = RECRUITER_PRICE + bonus;
+        h.price = recruiterPrice() + bonus;   // 0.3.0.9: as recruitAdmin's, higher in survival mode
         h.salary = salary;
         return h;
     }

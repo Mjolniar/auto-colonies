@@ -154,8 +154,9 @@ final class CAAutonomy {
             break;
         }
         if (pick == null) {
-            if (e != null && CALog.once("autonomy:none:" + Global.getSector().getClock().getMonth()))
-                CALog.add("Emergency (" + e.why + "): no colony a year old loses money, so autonomy wouldn't help", true);
+            // 0.3.0.9: not acting, starsector.log only; one key (the month was in it)
+            if (e != null && CALog.once("autonomy:none"))
+                CALog.quiet("Emergency (" + e.why + "): no colony a year old loses money, so autonomy wouldn't help");
             return;
         }
         String why = e != null ? "money emergency" : "lost money " + d.colony(pick.m.getId()).lossStreak + " months in a row";

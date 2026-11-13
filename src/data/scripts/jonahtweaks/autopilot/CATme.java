@@ -33,6 +33,8 @@ public final class CATme {
     private static boolean looked, v210;
     private static Class<?> terra, mega, dev, projCls;
     private static Object canRun, setProjectM, gCond, gName, gCost, gTime, gUnlocked, fId, fName, fCost, fTime, buildMult, removeMult;
+    /** 0.3.0.9: TME's Settings.BUILD_TIME_MULTIPLIER (2.9.8 and 2.10.0), read by name as the cost multipliers are. */
+    private static Object timeMult;
 
     private static synchronized void look() {
         if (looked) return;
@@ -76,6 +78,8 @@ public final class CATme {
         } catch (Throwable t) {
             buildMult = removeMult = null;
         }
+        try { timeMult = CARefl.field(Class.forName("terraformingmadeeasy.Settings", false, cl), "BUILD_TIME_MULTIPLIER"); }
+        catch (Throwable t) { timeMult = null; }
     }
 
     /** TME 2.10.0 or newer is loaded. */
@@ -136,15 +140,28 @@ public final class CATme {
             p.id = c == null ? "" : c.toString();
             p.name = n == null ? p.id : n.toString();
             p.cost = ((Number) CARefl.invoke(gCost, o)).floatValue();
-            p.buildTime = ((Number) CARefl.invoke(gTime, o)).floatValue();
+            p.buildTime = buildDays(((Number) CARefl.invoke(gTime, o)).floatValue(), buildTimeMult());
         } else {
             Object c = CARefl.get(fId, o), n = CARefl.get(fName, o);
             p.id = c == null ? "" : c.toString();
             p.name = n == null ? p.id : n.toString();
             p.cost = CARefl.getFloat(fCost, o);
-            p.buildTime = CARefl.getFloat(fTime, o);
+            p.buildTime = buildDays(CARefl.getFloat(fTime, o), buildTimeMult());
         }
         return p;
+    }
+
+    /**
+     * Pure (0.3.0.9, JTTerraSimCheck): the days a project takes, as TME's structure counts them (TerraformingIndustry and
+     * BaseDevelopmentIndustry: the project's buildTime x Settings.BUILD_TIME_MULTIPLIER). A multiplier of 0 or less, or NaN,
+     * counts as 1. Proj.buildTime holds this.
+     */
+    static float buildDays(float raw, float mult) { return raw * (mult > 0f ? mult : 1f); }
+
+    /** 0.3.0.9: TME's build time multiplier (its settings: fast 0.5, normal 1, slow 2, or custom), 1 when unreadable. */
+    public static float buildTimeMult() {
+        look();
+        try { return timeMult == null ? 1f : CARefl.getFloat(timeMult, null); } catch (Throwable t) { return 1f; }
     }
 
     /** TME's own check that the structure can run this project now (requirements, and on 2.10.0 research unlocks). */

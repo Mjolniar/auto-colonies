@@ -99,13 +99,15 @@ public class CASiege {
     }
 
     static boolean hostile(CampaignFleetAPI f) {
-        return !f.isPlayerFleet() && !f.isStationMode() && f.getFaction() != null && f.getFaction().isHostileTo(Factions.PLAYER);
+        return !f.isPlayerFleet() && !f.isStationMode() && f.getFaction() != null && f.getFaction().isHostileTo(Factions.PLAYER)
+                && !CASurvival.supportFleet(f);   // 0.3.0.9: never a support fleet (0.98.5a)
     }
 
     static float friendlyFP(StarSystemAPI sys) {
         float fp = 0f;
         for (CampaignFleetAPI f : sys.getFleets()) {
             if (f.isPlayerFleet() || f.getFaction() == null || !Factions.PLAYER.equals(f.getFaction().getId())) continue;
+            if (CASurvival.supportFleet(f)) continue;   // 0.3.0.9: a support fleet follows you, so it doesn't defend the colony
             fp += f.getFleetPoints();
         }
         return fp;
@@ -137,7 +139,7 @@ public class CASiege {
                 CALog.status("siege:" + m.getId(), m.getName() + ": under siege (" + w + "), defenses only");
             } else if (w == null && CALog.noted(key)) {   // 0.3.0.0: once-keys live in CAData.notedAt (CALog)
                 CALog.forget(key);
-                CALog.status("siegeend:" + m.getId(), m.getName() + ": siege over");
+                CALog.quiet(m.getName() + ": siege over");   // 0.3.0.9: status, starsector.log only; the siege starting stays on screen
             }
         }
     }

@@ -353,7 +353,7 @@ public class CAAuto {
                 if (k.remove != null) {
                     String why = CAEndgame.cantStart(k.m, k.p);
                     if (why != null) {
-                        if (CALog.once(key + ":replace")) CALog.add(k.m.getName() + ": " + k.p.name + " would replace " + k.remove.ind.getCurrentName() + ", but " + why);
+                        if (CALog.once(key + ":replace")) CALog.quiet(k.m.getName() + ": " + k.p.name + " would replace " + k.remove.ind.getCurrentName() + ", but " + why);   // 0.3.0.9: skipped, starsector.log only
                         continue;
                     }
                     try { if (!CAEndgame.takeDown(k.m, k.remove, k.p)) continue; }   // 0.3.0.0: CAStability held the swap (it logs why)
@@ -415,10 +415,9 @@ public class CAAuto {
         if (CABuild.credits() < p.cost + fee) return "Not enough credits for the build plus the " + Misc.getDGSCredits(fee) + " fee";
         String err = CABuild.start(m, p);
         if (err != null) {
-            // 0.3.0.0: a start that keeps failing is in the panel log once per STATUS_DAYS per colony and building (always in
-            // starsector.log); an approval you clicked always gets its line
-            String line = m.getName() + ": could not start " + p.name + ": " + err;
-            if ("Auto".equals(who)) CALog.status("start:" + m.getId() + ":" + p.id, line); else CALog.add(line);
+            // 0.3.0.9: a failed start is starsector.log only. An approval you clicked gets the error back from approve(), and
+            // the colony panel and the intel show it
+            CALog.quiet(m.getName() + ": could not start " + p.name + ": " + err);
             return err;
         }
         CABudget.charge(s, m.getId(), p.cost, fee, p.upkeep);   // 0.3.0.0: booked under this colony for the monthly colony lines

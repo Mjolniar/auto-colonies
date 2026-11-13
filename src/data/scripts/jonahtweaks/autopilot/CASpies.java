@@ -113,7 +113,7 @@ public class CASpies {
         else if (offense(s) && !held.contains(OFFENSE) && canDo(a, "sabotageIndustry")) r = OFFENSE;
         else r = canDo(a, "raiseRelations") ? RELATIONS : SECURITY;
         d.spyRoles().put(id, r);
-        CALog.add("Agent " + name(a) + " (" + types(a) + ") takes the " + r + " role");
+        CALog.quiet("Agent " + name(a) + " (" + types(a) + ") takes the " + r + " role");   // 0.3.0.9: status, starsector.log only
         return r;
     }
 
@@ -159,7 +159,7 @@ public class CASpies {
             } else {
                 d.spyAgents().remove(personId);
                 d.spyRoles().remove(personId);
-                CALog.add("Agent " + name(a) + " is yours again; Autopilot won't give it orders");
+                CALog.quiet("Agent " + name(a) + " is yours again; Autopilot won't give it orders");   // 0.3.0.9: left alone, starsector.log only
             }
         }
     }
@@ -306,14 +306,32 @@ public class CASpies {
         DiplomacyBrain brain = dm == null ? null : dm.getDiplomacyBrain(f.getId());
         if (brain != null && brain.hasCeasefireWith(Factions.PLAYER)) return false;
         CAData d = CAData.get();
-        String rival = CAWar.autoRival(d, d.settings);
+        String rival = rival(d, d.settings);
         return CAWarPolicy.sabotageOk(CAWar.effective(d, d.settings, f, rival), CAWar.stance(d.settings, f.getId(), rival));
+    }
+
+    /**
+     * 0.3.0.9: CAWar.autoRival kept for the game day (it reads every market against every colony of yours), and the day it was
+     * worked out. CAReset.onLoad clears both.
+     */
+    static String rivalCache;
+    static int rivalDay = Integer.MIN_VALUE;
+
+    /**
+     * 0.3.0.9: CAWar.autoRival once a game day, for allowed() and atWar(), which run for every faction and market an agent
+     * looks at. With "Pick rivals automatically" off there is none and nothing is kept.
+     */
+    static String rival(CAData d, CASettings s) {
+        if (s == null || !s.warAutoRivals) return null;
+        int today = CATime.today();
+        if (today != rivalDay) { rivalCache = CAWar.autoRival(d, s); rivalDay = today; }
+        return rivalCache;
     }
 
     /** Enemy and Destroy factions that operations may target (isolation, rebellion), from War level Hold them down. */
     static boolean atWar(CAData d, CASettings s, FactionAPI f) {
         if (!allowed(f)) return false;
-        String rival = CAWar.autoRival(d, s);
+        String rival = rival(d, s);
         return CAStance.wantsWar(CAWar.stance(s, f.getId(), rival)) && CAWar.effective(d, s, f, rival) >= CAWarPolicy.HOLD;
     }
 
@@ -562,7 +580,7 @@ public class CASpies {
             return;
         }
         if (mgr.getAgents().size() + d.spyRecruits().size() >= mgr.getMaxAgents().getModifiedInt()) {
-            if (CALog.once("spy:max")) CALog.add("Agents: Nexerelin's agent limit is reached, so no agent was recruited (Officer Training and Officer Management raise it)");
+            if (CALog.once("spy:max")) CALog.quiet("Agents: Nexerelin's agent limit is reached, so no agent was recruited (Officer Training and Officer Management raise it)");
             return;
         }
         float fee = CABudget.fee(s, HIRE_FEE * 0.1f), total = HIRE_FEE + fee;

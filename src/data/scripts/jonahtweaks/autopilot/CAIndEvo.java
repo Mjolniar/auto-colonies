@@ -259,7 +259,7 @@ public class CAIndEvo {
                 EdictAPI e = (EdictAPI) o;
                 String reason = e.getUnavailableReason(m);
                 if (reason != null && !reason.isEmpty()) {
-                    if (CALog.once(key)) CALog.add(m.getName() + ": " + spec.getName() + " unavailable: " + reason);
+                    if (CALog.once(key)) CALog.quiet(m.getName() + ": " + spec.getName() + " unavailable: " + reason);   // 0.3.0.9: starsector.log only
                     continue;
                 }
                 Float held = edictHeld.get(key);

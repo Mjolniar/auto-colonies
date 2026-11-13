@@ -34,6 +34,7 @@ public class CAReset {
         failed += run("integration health", () -> CACompat.brokenClasses.clear());   // CACompat.check fills it again in runScan
         failed += run("saved data tidy-up", () -> CATidy.reset());
         failed += run("industry limit", () -> CAOverLimit.reset());
+        failed += run("expansion scan", () -> CAExpansion.reset());   // 0.3.0.9: the candidate list and status line held the last save's
         // the weekly timers 0.2.45 ran on the session's own clock (0.2.45.1 reset these in CAAuto.reset). 0.3.0.0 (A1 fix): back to
         // NaN, "never fired", not -99. The pass now hands them the game's own day, and the game clock counts from 1970, so a
         // c206+ day is about -640,000: `now - (-99) < 7` was true every day and storage logistics, calibration and the market
@@ -57,6 +58,7 @@ public class CAReset {
         if (on("nexerelin")) {
             failed += run("defense fleet cooldowns", () -> { CADefense.lastSent.clear(); CADefense.warned.clear(); });
             failed += run("relief fleet cooldowns", () -> { CAWar.lastRelief.clear(); CAWar.warned.clear(); CAWar.summary = null; });
+            failed += run("agents' rival", () -> { CASpies.rivalCache = null; CASpies.rivalDay = Integer.MIN_VALUE; });   // 0.3.0.9: the day's automatic rival held the last save's
         }
         failed += run("colony crises", () -> {
             CACrisis.meterDay = -1f; CACrisis.meterRaw = 0f; CACrisis.meterMult = 1f; CACrisis.meterCap = 60; CACrisis.meterLive = false;

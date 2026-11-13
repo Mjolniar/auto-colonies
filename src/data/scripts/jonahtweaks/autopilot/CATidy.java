@@ -37,7 +37,7 @@ public final class CATidy {
 
     // ---------------- endgameBuilt split into purpose maps (0.3.0.0 fix, 07 L7) ----------------
 
-    /** CAOverLimit's stamps: ":zerostab", ":zerosince" (state), ":shed", ":shed:<id>", ":overlimit". */
+    /** CAOverLimit's stamps: ":zerostab", ":zerosince" (state), ":shed", ":shed:<id>", ":overlimit"; 0.3.0.9: ":lowseen" (moved daily). */
     public static final String OVERLIMIT = "overlimit";
     /** CAPrune's: ":useless:<id>" (state: since when it's been worth less than nothing), ":pruned". */
     public static final String PRUNE = "prune";

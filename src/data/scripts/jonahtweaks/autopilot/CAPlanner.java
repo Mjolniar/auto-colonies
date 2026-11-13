@@ -378,7 +378,7 @@ public class CAPlanner {
     }
 
     /** Ranked only by the rule you set: no positive NPV of its own. */
-    static boolean ruleOnly(CAAction a) { return a.byRule && a.npv <= 0f; }
+    static boolean ruleOnly(CAAction a) { return a.byRule && !(a.value() > 0f); }   // 0.3.0.9: a NaN NPV counts as none (CAAction.value)
 
     /** Across colonies: NPV per credit, rule-only actions last (stable for ties, so a module's own order stands). */
     static final Comparator<CAAction> RANK = new Comparator<CAAction>() {
@@ -387,7 +387,7 @@ public class CAPlanner {
             if (rx != ry) return rx ? 1 : -1;
             if (rx) return 0;
             int c = Float.compare(y.perCredit(), x.perCredit());
-            return c != 0 ? c : Float.compare(y.npv, x.npv);
+            return c != 0 ? c : Float.compare(y.value(), x.value());   // 0.3.0.9: a NaN NPV as 0 (CAAction.value)
         }
     };
 
@@ -398,7 +398,7 @@ public class CAPlanner {
             if (rx != ry) return rx ? 1 : -1;
             if (rx) return 0;
             int c = Float.compare(y.perDay(), x.perDay());
-            return c != 0 ? c : Float.compare(y.npv, x.npv);
+            return c != 0 ? c : Float.compare(y.value(), x.value());   // 0.3.0.9: a NaN NPV as 0 (CAAction.value)
         }
     };
 
@@ -649,7 +649,7 @@ public class CAPlanner {
      * the month roll-over that brings the money in (readyIn), as keepsDate counts it, not "now + months x 30".
      */
     static void earmarkFor(CAAction a, Pool pool, Result res, float total, float room, boolean fits) {
-        if (pool.earmark != null || !fits || ruleOnly(a) || a.npv <= 0f || !a.fromBudget || a.emergency) return;   // 0.3.0.0 (B3 fix): never for a siege's defense
+        if (pool.earmark != null || !fits || ruleOnly(a) || !(a.value() > 0f) || !a.fromBudget || a.emergency) return;   // 0.3.0.0 (B3 fix): never for a siege's defense; 0.3.0.9: nor a NaN NPV
         if (monthsToAfford(total, room, pool.monthly) > EARMARK_MAX_MONTHS) return;
         pool.earmark = new Earmark(a.key(), a.label(), total, pool.now + readyIn(total, room, pool.monthly, pool.daysLeft), pool.now);
         pool.earmark.surplus = a.fromSurplus;
@@ -1040,7 +1040,7 @@ public class CAPlanner {
             if (ref.remove != null) {
                 String why = CAEndgame.cantStart(m, p);
                 if (why != null) {
-                    if (CALog.once(m.getId() + ":" + p.id + ":replace")) CALog.add(m.getName() + ": " + p.name + " would replace " + ref.remove.ind.getCurrentName() + ", but " + why);
+                    if (CALog.once(m.getId() + ":" + p.id + ":replace")) CALog.quiet(m.getName() + ": " + p.name + " would replace " + ref.remove.ind.getCurrentName() + ", but " + why);   // 0.3.0.9: skipped, starsector.log only
                     a.failWaits = noCredits;
                     return why;
                 }
@@ -1279,8 +1279,8 @@ public class CAPlanner {
         }
         if (r.holdSet != null && pool.hold == r.holdSet) {
             Hold k = r.holdSet;
-            if (CALog.once("planner:hold:" + k.key))
-                CALog.add(k.place + ": next month's new upkeep room is kept for " + k.what + " (" + credits(k.net) + "/month)");
+            if (CALog.once("planner:hold:" + k.key))   // 0.3.0.9: a hold is a wait, starsector.log only
+                CALog.quiet(k.place + ": next month's new upkeep room is kept for " + k.what + " (" + credits(k.net) + "/month)");
         }
         lastPass = now;
         lastStarted = r.started.size();
@@ -1291,19 +1291,19 @@ public class CAPlanner {
         }
     }
 
-    /** One line for a wait, once (CALog.once): money and upkeep room on screen as 0.2.45.1 did; the rest in starsector.log only. */
+    /** 0.3.0.9: one starsector.log line for a wait, once per key (CALog.once). A wait is not acting, so none is on screen. */
     static void logWait(CAAction a) {
         String k = a.reasonKind, name = a.name != null ? a.name : a.id;
         if (CASurplusResearch.SOURCE.equals(a.source) && CAAction.MONEY.equals(k)) {
             // 0.3.0.0 (B3 fix): as 0.2.45.1, surplus research's money wait is in its Surplus research summary, not on screen
             if (CALog.once(waitKey(a, k))) CALog.quiet(a.place() + ": " + name + " waits " + a.reason);
         } else if (CAAction.MONEY.equals(k) || CAAction.UPKEEP.equals(k)) {
-            if (CALog.once(waitKey(a, k))) CALog.add(a.place() + ": " + name + " waits " + a.reason);
+            if (CALog.once(waitKey(a, k))) CALog.quiet(a.place() + ": " + name + " waits " + a.reason);
         } else if (CAAction.STABILITY.equals(k) && a.reason != null && a.reason.startsWith(KEPT_STABILITY)) {
             // 0.3.0.0 (B3 fix): held for a better pick's stability room: starsector.log only, like the other holds
             if (CALog.once("planner:stabkept:" + a.key())) CALog.quiet(a.place() + ": " + name + " waits: " + a.reason);
         } else if (CAAction.STABILITY.equals(k)) {
-            if (CALog.once("planner:stab:" + a.key())) CALog.add(a.place() + ": " + name + " waits: " + a.reason);
+            if (CALog.once("planner:stab:" + a.key())) CALog.quiet(a.place() + ": " + name + " waits: " + a.reason);
         } else if (CAAction.HELD.equals(k) || CAAction.GATE.equals(k) || CAAction.SLOT.equals(k)) {
             if (CALog.once("planner:" + k + ":" + a.key())) CALog.quiet(a.place() + ": " + name + " waits: " + a.reason);
         } else if (CAAction.TOMBSTONE.equals(k)) {
