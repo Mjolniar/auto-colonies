@@ -1,5 +1,12 @@
 # Patch notes
 
+## 0.3.3.1 - 2026-11-13
+
+- Kadur Remnant: Added support for Kadur Remnant 3.2.4support3. Kadur Majority Faith's +1 output on industrial buildings counts in build values from size 3.
+- Kadur Remnant: Virus Bombed's -2 on every output line counts in build values.
+- Diagnostics: Added Kadur Remnant to the integration check.
+- Supported mods: Better Colonies 1.91, Iron Shell 1.183ae, Commissioned Crews, Supply Forging 1.5b, Too Much Information 0.99b and Content Unlocking Missions 1.15b checked. Nothing needed.
+
 ## 0.3.3.0 - 2026-11-13
 
 - Approval summary: Added one dialog with every decision waiting, grouped by colony. Options: Approve all, Choose each, Reject all, Later.

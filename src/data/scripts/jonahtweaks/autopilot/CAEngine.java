@@ -468,6 +468,7 @@ public class CAEngine {
                 trust(spec, p, p.measured);
                 CAItems.idleBonus(m, inst, p, profile);   // a colony item waiting in Autopilot Storage that would go in it
                 if (!CADevelopment.adjust(m, p, inst, deficit)) continue;   // AotD management style
+                CAKadur.adjust(m, p, inst, deficit);   // 0.3.3.1: Kadur Remnant's Kadur Majority Faith and Virus Bombed on its output lines
                 CASynergies.score(syn, p);
                 upkeep(m, spec, null, p);
                 CARogue.score(rog, p);   // 0.3.2.1: what it starts, ends or changes in the colony's Rogue Planets conditions

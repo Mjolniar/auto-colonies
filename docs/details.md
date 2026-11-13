@@ -12,7 +12,7 @@
 4. Do not remove the mod from a save that has used it. Autopilot Storage is a market tab in the player's colonies.
 
 - Optional integrations: Each loads only when its mod is enabled. Any combination works. See "Building from source".
-- Integrated mods: Terraforming Made Easy, Industrial Evolution, Nexerelin, Emergent Threats, Ashes of the Domain (Building Menu Overhaul; Vaults of Knowledge; Theory of Toolbox), Random Assortment of Things, Station Augments, Terraforming & Station Construction, Grand.Colonies, Substance.Abuse, Volkov Industrial Conglomerate, Roider Union, Planetary Shield: Access Control, Unknown Skies, What We Left Behind, Astral Ascension, Omega Core Everywhere, Astral Ascension Renewed, Niko's Scavengable Industries, Junk Yard Dogs, Carter's Freetraders, Vulpoids, Yunru Industries, Slightly Better Tech-Mining, Rogue Planets.
+- Integrated mods: Terraforming Made Easy, Industrial Evolution, Nexerelin, Emergent Threats, Ashes of the Domain (Building Menu Overhaul; Vaults of Knowledge; Theory of Toolbox), Random Assortment of Things, Station Augments, Terraforming & Station Construction, Grand.Colonies, Substance.Abuse, Volkov Industrial Conglomerate, Roider Union, Planetary Shield: Access Control, Unknown Skies, What We Left Behind, Astral Ascension, Omega Core Everywhere, Astral Ascension Renewed, Niko's Scavengable Industries, Junk Yard Dogs, Carter's Freetraders, Vulpoids, Yunru Industries, Slightly Better Tech-Mining, Rogue Planets, Kadur Remnant.
 
 ## Using it
 

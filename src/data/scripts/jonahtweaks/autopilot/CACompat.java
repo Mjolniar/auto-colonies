@@ -145,6 +145,8 @@ public class CACompat {
         ENTRIES.add(new Entry(CAOddisz.SOL_MOD, "Sol Renewed", "1.0.1", NONE, NONE, NONE, NONE, () -> CAOddisz.solLink()));
         // 0.3.2.1: Rogue Planets, by condition ids and its condition classes' names (CARogue)
         ENTRIES.add(new Entry(CARogue.MOD, "Rogue Planets", "1.0.0", NONE, CARogue.ids(), NONE, NONE, () -> CARogue.link()));
+        // 0.3.3.1: Kadur Remnant, by condition ids (CAKadur)
+        ENTRIES.add(new Entry(CAKadur.MOD, "Kadur Remnant", "3.2.4support3", NONE, a(CAKadur.MAJORITY, CAKadur.VIRUS), NONE, NONE, null));
     }
 
     static final Map<String, Entry> BY_MOD = new HashMap<String, Entry>();
