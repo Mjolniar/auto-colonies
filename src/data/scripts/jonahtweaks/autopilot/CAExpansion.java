@@ -1188,6 +1188,7 @@ public class CAExpansion {
         // value at size VALUE_SIZE
         List<String> got = new ArrayList<String>();
         r.deposits = deposits(m, hab || farms, got);
+        r.deposits += CARogue.prospect(m, VALUE_SIZE, CAEngine.goalWeights(goal)[1], got);   // 0.3.2.1: Rogue Planets' storage deliveries and stability
         r.world = world != null && world.world != null ? worldBonus(world.world, goal) : 0f;
         float[] w = CAEngine.goalWeights(goal);
         r.hazard = hazardCost(m.getHazardValue(), w[6]);
@@ -1277,6 +1278,7 @@ public class CAExpansion {
             String com = CAConditions.depositCommodity(id);
             if (com == null) continue;
             if ("food".equals(com) && !food) continue;
+            if (!"food".equals(com) && CARogue.onlyFarming(m)) continue;   // 0.3.2.1: Rogue Planets' Fragile Biosphere allows Farming only
             Integer u = depositUnitsAt(id, VALUE_SIZE);
             if (u == null || u <= 0) continue;
             v += u * basePrice(com) * CAEngine.unitValue * DEPOSIT_SHARE;

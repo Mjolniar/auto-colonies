@@ -44,6 +44,7 @@ public class CAReset {
         failed += run("survival corruption share", () -> { CASurvival.shareReport = null; CASurvival.share = 1f; });   // 0.3.0.4
         failed += run("market model", () -> { CAMarket.invalidate(); CAMarket.cacheDay = -99f; CAMarket.lastWeek = Float.NaN; });
         failed += run("mod watch", () -> CAModWatch.reset());
+        failed += run("Rogue Planets", () -> { CARogue.on = null; CARogue.testIndustries = null; });   // 0.3.2.1: asked again; the test list is offline only
         if (on("niko_stationAugments")) failed += run("station augments", () -> { CAAugments.nextRun.clear(); CAAugments.lastSig.clear(); });
         // caches and cooldowns that held the other save's data (07 H6)
         failed += run("research ranking", () -> {

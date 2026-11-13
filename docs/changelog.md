@@ -1,5 +1,21 @@
 # Patch notes
 
+## 0.3.2.1 - 2026-11-13
+
+- Rogue Planets: Added support for Rogue Planets 1.0.0. Its 31 conditions are read by id. Without the mod nothing changes.
+- Rogue Planets: Synergy pairs count in build values when a building starts, ends or changes them: Degenerate Volatiles, Diamond Core, Radiolytic Catalyst, Hollowed Caldera Garrisons, Vacation Paradise & Resort, Smugglers' Haven, Viable Slave Labor, Magmatic Antimatter Forge, Ground-to-Space Missile Defense.
+- Rogue Planets: Hydrocarbon Fractionation, Megalithic Outcrops, Clandestine Harvesting Syndicate and Pilgrim World count in build values. Geothermal Leylines, Chrono-Spatial Dilation, Closed-loop Hydroponic Matrix, Megalithic Outcrops and Forgotten Vault-World count in upkeep.
+- Rogue Planets: Geographically Efficient Zoning halves the build wait. Supercritical Crust counts a new building at its share of working time. Chrono-Spatial Dilation counts fleet value at half.
+- Rogue Planets: Fragile Biosphere colonies get no industry but Farming. The second of a Volatile Additive Reactor's Refining and Fuel Production is left to you. A running pair is not taken down, replaced or upgraded.
+- Stability: Viable Slave Labor and Supercooled Cryo-Sinks colonies are held at stability 6 or more. At the second month of slave labor unrest, an Auto colony's Commerce is taken down when that lifts stability above 5.
+- AI cores and administrators: No AI cores or AI administrator at a Pilgrim World. No administrator change, autonomy or Omega administrator at a Trash King colony.
+- Policies: Hazard pay stays off while Diamond Core's pair runs. Opening the free port costs no stability while Smugglers' Haven's pair runs.
+- Production floors: Degenerate Volatiles, Ship Graveyard and Magmatic Antimatter Forge colonies rank first as floor hosts. Fragile Biosphere colonies host none.
+- New colonies: Antimatter Anomaly fuel, crustquake goods and the stability cost of Automated Shipyards and the Harvesting Syndicate count. Fragile Biosphere counts farmland only.
+- Left to you: Forgotten Vault-World's Tech-Mining, the Trash King, the Violet Dwarf system and the Afterlight. Storage logistics does not ship the Afterlight.
+- Colony panel: Mod features lists each Rogue Planets condition at the colony and how Autopilot handles it.
+- Diagnostics: Added Rogue Planets to the integration check and the mod watch.
+
 ## 0.3.2.0 - 2026-11-13
 
 - Production floors: Added floors for hull source, hull capacity, AoTD order goods, production quality, weapons, Domain-grade Parts, supplies, fuel and producer inputs. Measured daily. Shown on the Budget panel.

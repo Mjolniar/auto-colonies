@@ -104,7 +104,7 @@ The pass, in order:
 - Source 1, game formulas (`CAEngine.effects`, `deposits`): vanilla buildings. Deposit industries read the tables `ResourceDepositsCondition` uses.
 - Source 2, estimates (`CAEstimates`, `CAEngine.estimate`): hand-written effects for mod buildings, marked "(estimated)".
 - Source 3, measurements (`CASimulator`): a building with no formula or estimate is built on a probe colony and the difference is read.
-- Source 4, adjusters: `CADevelopment.adjust`, `CASynergies.score`, `CAMods.apply`, `CAGrand.penalty`, `CABrewery.apply`.
+- Source 4, adjusters: `CADevelopment.adjust`, `CASynergies.score`, `CARogue.score`, `CAMods.apply`, `CAGrand.penalty`, `CABrewery.apply`.
 - Shortages: `CAEngine.empireDeficits()` adds up unmet demand plus what AotD trade contracts lack. Supplying a short commodity is worth more.
 - Trust (`CAEngine.trust`): confidence 1 for game formulas, 0.9 for measurements, 0.85 for estimates (0.92 once checked against the colonies), 0.05 less for an untested mod version. Positive value is scaled by confidence.
 - Upkeep (`CAEngine.upkeep`): the spec's upkeep times max(1, size - 2) times the colony's upkeep multiplier, times the `CACalibrate` factor. `CACalibrate.migrate` clears corrections that saves from before 0.2.8.0 learned.
@@ -163,7 +163,7 @@ Pattern 2, reflection only:
 - `CATasc`: uses `MethodHandles.publicLookup().findStatic`. Plain `getMethod` needs Illustrated Entities' classes.
 
 Pattern 3, literal ids only:
-- Classes: `CAMods` (VIC, Planetary Shield, Roider Union, Unknown Skies, What We Left Behind, Astral Ascension) and `CABrewery` (Substance.Abuse). They compare ids as strings and are inert without their mods.
+- Classes: `CAMods` (VIC, Planetary Shield, Roider Union, Unknown Skies, What We Left Behind, Astral Ascension), `CABrewery` (Substance.Abuse) and `CARogue` (Rogue Planets: condition ids, memory keys and its public numbers by name through `CAConst`). They compare ids as strings and are inert without their mods.
 - Generic support: deposits and colony items from any mod work through the game's tables.
 
 ## Surviving mod updates
@@ -290,6 +290,7 @@ Integrations:
 | `CAPrune` | Any | Takes down an Auto colony's industry whose `keep` value is below 0 for 30 days |
 | `CAMarket` | Any | Market model: `snap`, `pickGain`, `claim`, `prune`, `weekly` check against the game's shares |
 | `CAMods` | VIC, Planetary Shield, Roider Union, Unknown Skies, What We Left Behind, Astral Ascension and others | Small integrations by id; buildings left to the player (`LEFT`) |
+| `CARogue` | Rogue Planets | Condition table and rules: build values, upkeep, plan filter, stability floor, cores, administrators, reactor and vault guards |
 | `CACapital` | Any | Picks the capital, keeps the production gathering point on it, puts its trade buildings (`COMMERCE`) first in its plan, frees an industry slot (`replacement`, `CAEndgame.takeDown`) |
 | `CALogistics` | Any | Storage logistics: ships, weapons, wings and unknown blueprints to the refit hub, known blueprints and spares to the sell hub |
 | `CAObjectives` | Any (TME and AotD add) | Stable locations: comm relays, nav buoys, sensor arrays, TME's Domain-era upgrade, AotD's Hypershunt Receivers |

@@ -44,6 +44,22 @@
 - Omega Core Everywhere: an Omega core in Storage goes where it does most. No inspection points.
 - Astral Ascension Renewed: an Omega core can govern a colony. 10 inspection points.
 
+## Rogue Planets
+
+[Forum](https://fractalsoftworks.com/forum/index.php?topic=36337.0)
+
+- Synergy pairs: Degenerate Volatiles, Diamond Core, Radiolytic Catalyst, Hollowed Caldera Garrisons, Vacation Paradise & Resort, Smugglers' Haven, Viable Slave Labor, Magmatic Antimatter Forge and Ground-to-Space Missile Defense count in build values.
+- Other conditions: Hydrocarbon Fractionation, Megalithic Outcrops, Clandestine Harvesting Syndicate and Pilgrim World count in build values. Upkeep conditions count in every upkeep.
+- Fragile Biosphere: no industry but Farming is built or planned.
+- Volatile Additive Reactor: the second of Refining and Fuel Production is left to you. A running pair is not taken down, replaced or upgraded.
+- Stability: Viable Slave Labor and Supercooled Cryo-Sinks colonies are held at 6 or more. At the second month of slave labor unrest, Commerce is taken down if that lifts stability above 5.
+- Pilgrim World: no AI cores and no AI administrator.
+- Policies: hazard pay stays off while Diamond Core runs. The free port costs no stability while Smugglers' Haven runs.
+- Production floors: Degenerate Volatiles, Ship Graveyard and Magmatic Antimatter Forge colonies rank first as floor hosts. The Magmatic forge counts at the production gathering point.
+- New colonies: Antimatter Anomaly fuel and crustquake goods count. Fragile Biosphere counts farmland only.
+- Left to you: Forgotten Vault-World's Tech-Mining, the Trash King's seat, the Violet Dwarf system, the Afterlight. Cold Sky Observatory and Resonant Signal Trap get no build value.
+- Colony panel: Mod features lists each condition at the colony and how Autopilot handles it.
+
 ## Oddisz's mods
 
 [Mod list](https://fractalsoftworks.com/forum/index.php?topic=36175.0)

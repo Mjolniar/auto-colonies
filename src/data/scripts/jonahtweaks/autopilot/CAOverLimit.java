@@ -205,7 +205,7 @@ public class CAOverLimit {
     }
 
     /** What a building does to the colony's stability, read from the game's own modifiers (0.3.0.0: CAStability.of, one place). */
-    static float stabilityOf(MarketAPI m, Industry ind) { return CAStability.of(m, ind); }
+    static float stabilityOf(MarketAPI m, Industry ind) { return CAStability.share(m, ind); }   // 0.3.2.1: Rogue Planets' share too
 
     /**
      * Pure (0.3.0.0, JTOverLimitCheck): whether a stability-costing building goes today at a colony at 0 (days < 0: never stamped).
@@ -233,6 +233,7 @@ public class CAOverLimit {
         for (Industry ind : m.getIndustries()) {
             if (ind.isHidden() || ind.isBuilding() || ind.isUpgrading() || ind.isImproved() || !ind.canShutDown()) continue;
             if (ind.getSpec().hasTag("population") || ind.getSpec().hasTag("station") || col.locks.contains(ind.getId())) continue;
+            if (CARogue.keepReason(m, ind, true) != null) continue;   // 0.3.2.1: the running reactor's pair melts down if taken down
             float v = stabilityOf(m, ind);
             if (v < worstV) { worstV = v; worst = ind; }
         }
@@ -422,6 +423,7 @@ public class CAOverLimit {
         if (!ind.isIndustry() || ind.isHidden() || ind.isBuilding() || ind.isUpgrading() || ind.isImproved() || !ind.canShutDown()) return false;
         if (ind.getSpec().hasTag("population") || ind.getSpec().hasTag("station") || col.locks.contains(id)) return false;
         if (CAMods.leftToYou(id) != null) return false;   // you built it, Autopilot never does: it stays (0.2.45.0)
+        if (CARogue.keepReason(m, ind, true) != null) return false;   // 0.3.2.1: the running reactor's pair
         // one that holds up the colony's stability by 5 or more: taking it down wouldn't lift the colony at all (0.2.44.1)
         return stabilityOf(m, ind) < PENALTY;
     }

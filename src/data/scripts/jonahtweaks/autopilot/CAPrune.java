@@ -137,7 +137,8 @@ public class CAPrune {
                 || col.locks.contains(id) || CAMods.leftToYou(id) != null) return null;   // left to you: never taken down (0.2.45.0)
         if (CAEndgame.keepsPlanBonus(m, plan, id) || CAContracts.feeds(ind) != null) return null;
         if (plan != null) for (CAPlan.Step st : plan.steps) if (id.equals(st.id) || CAPlan.inChainBelow(id, st.id)) return null;
-        if (CAStability.of(m, ind) > 0f) return null;   // never one that adds stability (0.2.44.1)
+        if (CAStability.share(m, ind) > 0f) return null;   // never one that adds stability (0.2.44.1); 0.3.2.1: Pilgrim World's +1 counts
+        if (CARogue.keepReason(m, ind, false) != null) return null;   // 0.3.2.1: the running reactor's pair, the vault's Tech-Mining
         // 0.3.0.0: and never one the colony can't lose (CAStability, the one rule for every takedown)
         if (!CAStability.canLose(m, CAStability.takeDownDelta(m, ind), null)) return null;
         // 0.3.0.0 (B4): built under another valuation within the year (spending freely, the endgame): not judged under this one

@@ -127,6 +127,8 @@ public class CAAuto {
         // before anything is built today, after the steps its ranking reads (plans, special projects, the capital, the
         // endgame), and never stopped for the session: it's the "never 0 stability" safety net
         CAStep.guard("industry limit / 0-stability step", () -> CAOverLimit.run(allAuto));
+        // 0.3.2.1: Rogue Planets' Viable Slave Labor: unrest months and the rebellion that takes the colony (guarded: a safety net too)
+        if (mods.isModEnabled(CARogue.MOD)) CAStep.guard("Rogue Planets step", () -> CARogue.daily(d, allAuto));
         // 0.3.0.0 slots: the planner (WS-B), the money tiers and their rungs (WS-C, monthly inside), Auto-expansion (WS-D).
         // 0.3.0.0 (B3): the planner starts every build, upgrade, surplus terraforming project, Research Facility, wonder site,
         // stable-location crew and story point improvement from one queue (CAPlanner); the modules' own steps below keep

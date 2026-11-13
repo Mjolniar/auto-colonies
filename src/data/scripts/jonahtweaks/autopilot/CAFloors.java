@@ -779,6 +779,8 @@ public class CAFloors {
         int size, freeSlots;
         boolean auto, habitable;
         final Set<String> has = new HashSet<String>();
+        /** 0.3.2.1: its Rogue Planets conditions (CARogue.hostForbids, hostBonus); empty without the mod. */
+        final Set<String> conds = new HashSet<String>();
     }
 
     /**
@@ -795,7 +797,10 @@ public class CAFloors {
             if (upgrade && !h.has.contains(base)) continue;
             if (!upgrade && h.size < CATuning.FLOOR_HULL_MIN_SIZE) continue;
             if (!upgrade && h.freeSlots <= 0 && !makeRoom) continue;
-            float sc = (upgrade ? 200f : 0f) + (h.freeSlots > 0 ? 100f : 0f) + h.size * 10f + (h.auto ? 30f : 0f) + (h.habitable ? 0f : 20f);
+            // 0.3.2.1: Rogue Planets: never where a condition forbids it (Fragile Biosphere, the reactor pair); its production conditions rank first
+            if (!h.conds.isEmpty() && CARogue.hostForbids(building, base, h.conds, h.has, CAPlan.industry(building))) continue;
+            float sc = (upgrade ? 200f : 0f) + (h.freeSlots > 0 ? 100f : 0f) + h.size * 10f + (h.auto ? 30f : 0f) + (h.habitable ? 0f : 20f)
+                    + CARogue.hostBonus(building, h.conds, h.has);
             if (sc > bestScore) { bestScore = sc; best = h; }
         }
         return best;
@@ -835,6 +840,7 @@ public class CAFloors {
             h.freeSlots = Math.max(0, CABuild.freeSlots(m));
             for (Industry ind : m.getIndustries()) h.has.add(ind.getId());
             for (String l : c.locks) h.has.add(l);   // a locked slot's building stays: nothing replaces it
+            if (CARogue.on()) h.conds.addAll(CARogue.conds(m));   // 0.3.2.1
             hs.add(h);
         }
         return hs;

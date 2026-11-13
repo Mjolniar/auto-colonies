@@ -48,6 +48,12 @@ public class CAConditions {
         for (String s : h) HAZARD.put(s, 0.5f);
         HAZARD.put("habitable", -0.25f);
         HAZARD.put("mild_climate", -0.25f);
+        // 0.3.2.1: Rogue Planets' hazard conditions (set in their code, not condition_gen_data)
+        HAZARD.put("geothermal_leylines", 0.5f);
+        HAZARD.put("supercritical_crust", 0.5f);
+        HAZARD.put("watched", 0.25f);
+        HAZARD.put("fragile_biosphere", -0.1f);
+        HAZARD.put("hydrocarbon_fractionation", -0.5f);
     }
 
     static final Map<String, CAData.Profile[]> WORLD_FITS = new HashMap<String, CAData.Profile[]>();

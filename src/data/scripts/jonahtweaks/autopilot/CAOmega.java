@@ -211,7 +211,8 @@ public class CAOmega {
             if (frozen.contains(m) || incoming.contains(m.getId()) || CAEngine.isOutpost(m)) continue;
             CAData.Colony c = d.colony(m.getId());
             float[] w = CAItems.coreWeights(m, c);
-            if (admins != null && (m.getAdmin() == null || !m.getAdmin().isAICore())) {
+            // 0.3.2.1: never at a Rogue Planets Trash King colony (he governs) or Pilgrim World (an AI core breaks its bonus)
+            if (admins != null && (m.getAdmin() == null || !m.getAdmin().isAICore()) && !CARogue.adminLocked(m) && !CARogue.noCores(m)) {
                 int pts = CAItems.aiPoints(m), lim = CAItems.coreLimit(s, m, none);
                 float v = weigh(w, adminFx(m, deficit));
                 if (pts + adminPoints() <= lim) {
@@ -220,7 +221,7 @@ public class CAOmega {
                     CALog.advise(m.getName() + ": an Omega core could govern it (Astral Ascension Renewed). As an administrator it counts "
                             + adminPoints() + " inspection points (" + CAItems.limitWhy(s, m, none, lim) + "). Put it in yourself to have it there.");
             }
-            if (!effects) continue;
+            if (!effects || CARogue.noCores(m)) continue;   // 0.3.2.1: Pilgrim World
             for (Industry ind : m.getIndustries()) {
                 try {
                     if (!ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId()) || !ind.canInstallAICores()) continue;

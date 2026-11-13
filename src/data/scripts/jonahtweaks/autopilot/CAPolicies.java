@@ -204,14 +204,16 @@ public class CAPolicies {
                     boolean profileFits = m.hasIndustry("aotd_underworld") || prof == CAData.Profile.INCOME || prof == CAData.Profile.GROWTH || prof == CAData.Profile.BALANCED || prof == CAData.Profile.SELF;
                     // free port costs up to 3 stability (FreeMarket's penalty grows to that over a year); 0.3.0.0: opening one also asks
                     // CAStability, the one rule for anything that costs a colony stability
-                    float margin = on ? 0f : com.fs.starfarer.api.impl.campaign.econ.FreeMarket.MAX_STABILITY_PENALTY;
-                    boolean stableEnough = stab - margin >= d.settings.minStability + CATuning.FREE_PORT_STABILITY_MARGIN && (on || CAStability.canLose(m, -margin, null));
+                    // 0.3.2.1: no cost with Rogue Planets' Smugglers' Haven running; the colony's own floor (Viable Slave Labor, Cryo-Sinks)
+                    float margin = on || CARogue.portPenaltyCovered(m) ? 0f : com.fs.starfarer.api.impl.campaign.econ.FreeMarket.MAX_STABILITY_PENALTY;
+                    float floorHere = Math.max(d.settings.minStability, CARogue.stabilityFloor(m));
+                    boolean stableEnough = stab - margin >= floorHere + CATuning.FREE_PORT_STABILITY_MARGIN && (on || CAStability.canLose(m, -margin, null));
                     boolean shield = CAMods.shieldWantsClosedPort(m);   // Planetary Shield: Access Control keeps Pathers out only with the port closed
                     boolean police = CACrisis.policeComing() && CACrisis.policeScore(m) > 0;   // Nexerelin's police crisis is next: a closed port isn't a target
                     boolean low = CALowProfile.on();   // Low profile: a free port draws Nexerelin's police (0.2.43.0)
                     boolean want = profileFits && stableEnough && !luddic && !threat && !punitive && !emergency && !shield && !police && !low;
                     String why = low ? "low profile" : police ? "Nexerelin's police raid on free ports is the next colony crisis" : punitive ? "punitive expedition under way" : threat ? "threat is high" : luddic ? "Luddic majority" : !stableEnough ? "stability too low" : emergency ? "net income is negative" : shield ? "the planetary shield keeps Pather cells out only while the port is closed" : !profileFits ? "profile is " + prof.label : "";
-                    boolean urgentOff = on && (punitive || threat || police || low || stab < CAStability.floor());   // 0.3.0.0: the one floor, max(3, minStability)
+                    boolean urgentOff = on && (punitive || threat || police || low || stab < CAStability.floor(m));   // 0.3.0.0: the one floor, max(3, minStability); 0.3.2.1: the colony's own
                     // 0.3.0.0 (B5, 01 section 12): a closed port opens only once its reasons have held FREE_PORT_REOPEN_DAYS in a row
                     boolean ready = true;
                     if (!on) {
@@ -339,6 +341,7 @@ public class CAPolicies {
         List<Growth> cands = new ArrayList<Growth>();
         for (MarketAPI m : auto) {
             if (CAHypershunt.is(m) || CAMods.growthUnsafe(m) || m.getSize() >= Misc.getMaxMarketSize(m)) continue;
+            if (CARogue.hazardPayBuiltIn(m)) continue;   // 0.3.2.1: Rogue Planets' Diamond Core gives its effect and holds the toggle off
             Growth g = growth(m);
             info.put(m, g);
             if (byTime) {

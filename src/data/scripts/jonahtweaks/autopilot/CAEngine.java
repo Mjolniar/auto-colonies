@@ -421,6 +421,7 @@ public class CAEngine {
         boolean bmo = CAAotD.enabled();
         Menu menu = menu(m, day, ep, empire);   // 0.3.0.0 (A4): the colony's build-menu answers for the day
         CASynergies.Ctx syn = Global.getSettings().getModManager().isModEnabled(CASynergies.MOD) ? CASynergies.context(m, deficit) : null;
+        CARogue.Ctx rog = CARogue.context(m, deficit);   // 0.3.2.1: Rogue Planets conditions here (null without the mod or its conditions)
 
         // 0.3.0.0 (A4): the specs filtered once per load (buildable()) instead of every spec and an upgrade-target loop each time
         for (IndustrySpecAPI spec : buildable()) {
@@ -430,6 +431,7 @@ public class CAEngine {
             if (spec.hasTag("station") && hasStation) continue;
             if (spec.hasTag("station") && !"score".equals(line) && !stationMatches(id, line)) continue;
             if (id.equals(CAWonders.SITE)) continue;   // a Grand Wonder site is only ever built for a wonder (CAWonders)
+            if (rog != null && CARogue.forbids(rog, id, null) != null) continue;   // 0.3.2.1: Fragile Biosphere, the reactor pair, the vault's Tech-Mining
             boolean supported = CADiagnostics.industryLevel(id) == CADiagnostics.Level.SUPPORTED;
             boolean measurable = !supported && !noProbe && CADiagnostics.industryLevel(id) == CADiagnostics.Level.MEASURED && CAData.settings().measuredMode != 2;
             try {
@@ -468,6 +470,7 @@ public class CAEngine {
                 if (!CADevelopment.adjust(m, p, inst, deficit)) continue;   // AotD management style
                 CASynergies.score(syn, p);
                 upkeep(m, spec, null, p);
+                CARogue.score(rog, p);   // 0.3.2.1: what it starts, ends or changes in the colony's Rogue Planets conditions
                 float cramped = CAGrand.penalty(m, p.upkeep);
                 if (cramped > 0f) { p.fx[0] -= cramped; p.lines.add("Past Grand.Colonies' building limit: upkeep here rises about " + credits(cramped) + " per month"); }
                 CALowProfile.score(m, inst, null, p);   // Low profile: the Pather line and the attention it draws (0.2.43.0)
@@ -493,6 +496,7 @@ public class CAEngine {
                 try {
                     IndustrySpecAPI upSpec = Global.getSettings().getIndustrySpec(up);
                     if (up.equals(vanillaUp) && !ind.canUpgrade()) continue;
+                    if (rog != null && CARogue.forbids(rog, up, ind) != null) continue;   // 0.3.2.1: Fragile Biosphere, the running reactor
                     // as the build menu: a Military Base needs a working spaceport (0.3.0.0, A4: asked once a day per colony)
                     Industry upInst = null;
                     Boolean upOpen = menu.upOpen.get(up);
@@ -527,6 +531,7 @@ public class CAEngine {
                     trust(upSpec, p, p.measured);
                     CASynergies.score(syn, p);
                     upkeep(m, upSpec, ind.getSpec(), p);
+                    CARogue.score(rog, p);   // 0.3.2.1
                     CALowProfile.score(m, upInst, ind, p);
                     CAOddisz.score(m, upInst, p);   // an upgrade's cost adds to Sol's meter too (0.2.45.0)
                     if (!finish(m, p, profile, minStability, plan)) continue;
@@ -556,7 +561,8 @@ public class CAEngine {
 
     /** Combines effects with profile weights; false when the pick breaks a rule or isn't worth building. */
     static boolean finish(MarketAPI m, Pick p, CAData.Profile profile, float minStability, CAPlan.Plan plan) {
-        if (p.fx[1] < 0 && m.getStabilityValue() + p.fx[1] < minStability) return false;
+        // 0.3.2.1: Viable Slave Labor and Supercooled Cryo-Sinks hold a colony at 6 or more (CARogue.stabilityFloor)
+        if (p.fx[1] < 0 && m.getStabilityValue() + p.fx[1] < Math.max(minStability, CARogue.stabilityFloor(m))) return false;
         // the endgame economy (CAEndgame): money counts 5%, military and security at least its weights, and what the building
         // makes is valued as production chains
         boolean endgame = !profitOnly && CAEndgame.at(m);
@@ -751,7 +757,7 @@ public class CAEngine {
         // as BaseIndustry.applyIncomeAndUpkeep: the spec's upkeep (already in credits: the game multiplies the CSV value by 500
         // when it loads) times max(1, size - 2) times the colony's upkeep multiplier
         float sizeMult = (CATasc.fixedUpkeep(spec.getId()) ? 1 : Math.max(1, m.getSize() - 2)) * m.getUpkeepMult().getModifiedValue();
-        return spec.getUpkeep() * sizeMult * CADevelopment.upkeepMult(m, spec);
+        return spec.getUpkeep() * sizeMult * CADevelopment.upkeepMult(m, spec) * CARogue.upkeepMult(m, spec.getId());   // 0.3.2.1: Rogue Planets' upkeep conditions
     }
 
     static void upkeep(MarketAPI m, IndustrySpecAPI spec, IndustrySpecAPI replaced, Pick p) {
@@ -914,8 +920,9 @@ public class CAEngine {
         } else if (id.equals("mining")) {
             deposits(m, "mining", p, deficit);
             CAMods.miningExtras(m, p, deficit);   // Unknown Skies / What We Left Behind conditions that add to Mining directly
-            demand(p, "heavy_machinery", s - 3, deficit);
-            demand(p, "drugs", s, deficit);
+            int cut = CARogue.miningDemandCut(m);   // 0.3.2.1: Megalithic Outcrops
+            demand(p, "heavy_machinery", s - 3 - cut, deficit);
+            demand(p, "drugs", s - cut, deficit);
         } else if (id.equals("techmining")) {
             int r = m.hasCondition("ruins_vast") ? 4 : m.hasCondition("ruins_extensive") ? 3 : m.hasCondition("ruins_widespread") ? 2 : 1;
             float left = m.getMemoryWithoutUpdate().contains("$core_techMiningMult") ? m.getMemoryWithoutUpdate().getFloat("$core_techMiningMult") : 1f;   // ruins deplete 5% a month
@@ -1056,7 +1063,7 @@ public class CAEngine {
             Integer base = ResourceDepositsCondition.BASE_MODIFIER.get(com);
             if (base == null) base = BASE_MOD.containsKey(com) ? BASE_MOD.get(com) : 0;
             int size = ResourceDepositsCondition.BASE_ZERO.contains(com) ? 0 : m.getSize();
-            supply(p, com, size + base + mod, deficit);
+            supply(p, CARogue.minedAs(m, industry, com), size + base + mod, deficit);   // 0.3.2.1: Hydrocarbon Fractionation's volatiles come out as organics
         }
     }
 
