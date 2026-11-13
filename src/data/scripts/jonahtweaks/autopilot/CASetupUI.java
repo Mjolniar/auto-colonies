@@ -157,7 +157,7 @@ public class CASetupUI {
     /** Hover text by row key: on the row's label and its gray line. */
     static final Map<String, String[]> HOVER = new LinkedHashMap<String, String[]>();
     static {
-        DESC.put("lowprofile", "Low profile avoids colony crises and earns less.");
+        DESC.put("lowprofile", "Low profile slows colony crises and earns less.");
         DESC.put("p_spend", "Normal: 50% of net income and 15% of savings.");
         DESC.put("p_extras", "Mod buildings and features.");
         DESC.put("p_newcol", "Founds colonies with idle money.");

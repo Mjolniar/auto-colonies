@@ -319,8 +319,8 @@ public class CALowProfile {
     public static void run(CAData d, CASettings s, List<MarketAPI> auto) {
         if (!s.lowProfile) { CALog.forget("lowprofile:on"); return; }
         if (CALog.once("lowprofile:on"))
-            CALog.did(TAG + "on. Colonies keep growing. Attention counts ten times as much. Autopilot avoids what "
-                    + "starts each faction's crisis (Crises page).", true);
+            CALog.did(TAG + "on. Colonies keep growing. Attention counts ten times as much. Autopilot slows "
+                    + "each faction's crisis (Crises page).", true);
         Set<MarketAPI> frozen = CAItems.inspected();   // pulling anything out once an inspection is sent disrupts every building there
         for (MarketAPI m : auto) {
             if (frozen.contains(m) || CAEngine.isOutpost(m) || CAHypershunt.is(m)) continue;
