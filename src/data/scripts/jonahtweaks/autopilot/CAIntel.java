@@ -9,6 +9,7 @@ import com.fs.starfarer.api.ui.ButtonAPI;
 import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.CutStyle;
 import com.fs.starfarer.api.ui.IntelUIAPI;
+import com.fs.starfarer.api.ui.LabelAPI;
 import com.fs.starfarer.api.ui.SectorMapAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
@@ -36,6 +37,8 @@ public class CAIntel extends BaseIntelPlugin {
     static final String REFRESH = "jt_ca_refresh";
     /** 0.3.1.0: the Log page's Show and Hide button for the Thinking list. */
     static final String THINKING = "jt_ca_thinking";
+    /** 0.3.3.0: Approve or Reject one decision by its key ({APPR, key}), or all of them. */
+    static final String APPR = "appr", REJT = "rejt", APPR_ALL = "apprall", REJT_ALL = "rejtall";
     public static final String TAG = "Colony Autopilot";
     /** UI handles are never saved with the game. */
     transient TooltipMakerAPI lastTooltip;
@@ -108,8 +111,7 @@ public class CAIntel extends BaseIntelPlugin {
      */
     static List<String[]> pages(CAData data, CASettings s, List<MarketAPI> markets) {
         List<String[]> p = new ArrayList<String[]>();
-        int pending = 0;
-        for (MarketAPI m : markets) if (data.colony(m.getId()).pendingId != null) pending++;
+        int pending = CAApprovals.collect().size();   // 0.3.3.0: every kind of decision
         p.add(new String[]{"colonies", pending > 0 ? "Colonies (" + pending + " to approve)" : "Colonies"});
         p.add(new String[]{"storage", "Autopilot Storage"});
         p.add(new String[]{"crises", CACrisis.pending() != null ? "Colony crises (one coming)" : "Colony crises"});
@@ -240,18 +242,24 @@ public class CAIntel extends BaseIntelPlugin {
             try { CAFloors.render(t); }
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "production floor lines failed", e); }
 
-            boolean anyPending = false;
-            for (MarketAPI m : markets) if (data.colony(m.getId()).pendingId != null) anyPending = true;
-            if (anyPending) {
+            // 0.3.3.0: every decision waiting, of every kind, grouped by colony (CAApprovals); the summary pop-up shows the same list
+            List<CAApprovals.Item> waiting = CAApprovals.collect();
+            if (!waiting.isEmpty()) {
                 CATheme.heading(t, CATheme.APPROVAL, 12f);   // 0.3.0.0 (WS-F3 fix pass 3): one text with the colony panel
-                for (MarketAPI m : markets) {
-                    CAData.Colony c = data.colony(m.getId());
-                    if (c.pendingId == null) continue;
-                    t.addPara("%s: %s for %s", 8f, hl, m.getName(), c.pendingName, Misc.getDGSCredits(c.pendingCost));
-                    ButtonAPI a = t.addButton("Approve", new String[]{"approve", m.getId()}, hl, dark, Alignment.MID, CutStyle.TL_BR, 120f, 22f, 4f);
-                    ButtonAPI r = t.addButton("Reject", new String[]{"reject", m.getId()}, base, dark, Alignment.MID, CutStyle.TL_BR, 120f, 22f, 0f);
-                    r.getPosition().rightOfTop(a, 6f);
-                    CALog.endRow(t, a);
+                ButtonAPI all = t.addButton("Approve all", new String[]{APPR_ALL, ""}, hl, dark, Alignment.MID, CutStyle.TL_BR, 120f, 22f, 6f);
+                ButtonAPI none = t.addButton("Reject all", new String[]{REJT_ALL, ""}, base, dark, Alignment.MID, CutStyle.TL_BR, 120f, 22f, 0f);
+                none.getPosition().rightOfTop(all, 6f);
+                CALog.endRow(t, all);
+                for (Map.Entry<String, List<CAApprovals.Item>> g : CAApprovals.group(waiting).entrySet()) {
+                    t.addPara("%s", 8f, hl, g.getKey());
+                    for (CAApprovals.Item it : g.getValue()) {
+                        ButtonAPI a = t.addButton("Approve", new String[]{APPR, it.key}, hl, dark, Alignment.MID, CutStyle.TL_BR, 90f, 20f, 4f);
+                        ButtonAPI r = t.addButton("Reject", new String[]{REJT, it.key}, base, dark, Alignment.MID, CutStyle.TL_BR, 90f, 20f, 0f);
+                        r.getPosition().rightOfTop(a, 4f);
+                        LabelAPI l = t.addPara("%s", 0f, Misc.getTextColor(), CAApprovalDialog.line(it));
+                        l.getPosition().rightOfMid(r, 10f);
+                        CALog.endRow(t, a);
+                    }
                 }
             }
 
@@ -530,7 +538,15 @@ public class CAIntel extends BaseIntelPlugin {
         }
     }
 
+    /** 0.3.3.0: every click is tracked: a setting it changes is yours (CAModeTable), and keeps its value through mode changes. */
     void pressed(Object buttonId, IntelUIAPI ui) {
+        CASettings s = CAData.settings();
+        CAModeTable.clickStart(s);
+        try { press(buttonId, ui); }
+        finally { CAModeTable.clickEnd(s, buttonId); }
+    }
+
+    void press(Object buttonId, IntelUIAPI ui) {
         CAData d = CAData.get();
         String ladder = CARich.handle(buttonId);   // 0.3.0.0 (C3): the money ladder's Approve and Reject buttons
         if (ladder != null) {
@@ -617,18 +633,26 @@ public class CAIntel extends BaseIntelPlugin {
                 c.profile = all[(c.profile.ordinal() + 1) % all.length];
             } else if ("mode".equals(a[0])) {
                 CAData.Mode[] all = CAData.Mode.values();
-                c.mode = all[(c.mode.ordinal() + 1) % all.length];
+                d.setMode(c, all[(c.mode.ordinal() + 1) % all.length]);   // 0.3.3.0: a change clears the colony's waiting proposal
                 if ((c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO) && !d.settings.setupDone) {
                     CASetupUI.applyRecommended(d.settings);
                     d.settings.setupDone = true;
                     CALog.did("Settings: recommended values applied. Review them on the Settings page of the Colony Autopilot intel.", true);
+                    CAModeTable.setEmpire(d.settings, c.mode);   // 0.3.3.0: the first setup sets the empire mode
                 }
             } else if ("approve".equals(a[0]) && m != null) {
                 String err = CAAuto.approve(m);
                 if (err != null) CALog.advise(m.getName() + ": " + err, true);
             } else if ("reject".equals(a[0]) && m != null) {
                 CAAuto.reject(m);
-            }
+            } else if (APPR.equals(a[0]) || REJT.equals(a[0])) {   // 0.3.3.0: any kind of decision, by its key
+                for (CAApprovals.Item it : CAApprovals.collect()) {
+                    if (!it.key.equals(a[1])) continue;
+                    String err = APPR.equals(a[0]) ? CAApprovals.approve(it) : CAApprovals.reject(it);
+                    if (err != null) CALog.advise(it.place + ": " + err, true);
+                }
+            } else if (APPR_ALL.equals(a[0])) CAApprovals.approveAll(CAApprovals.collect());
+            else if (REJT_ALL.equals(a[0])) CAApprovals.rejectAll(CAApprovals.collect());
         }
         ui.updateUIForItem(this);
     }

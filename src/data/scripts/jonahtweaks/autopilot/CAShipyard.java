@@ -396,7 +396,7 @@ public class CAShipyard {
                     + " at month end; Approve or Reject on this panel");
             if (!p.sig().equals(loggedSig)) {
                 loggedSig = p.sig();
-                CALog.advise("Shipyard: recommends " + text(p.qty, p.names) + " for " + Misc.getDGSCredits(p.value) + " plus a " + Misc.getDGSCredits(p.fee)
+                CAApprovals.say("Shipyard: recommends " + text(p.qty, p.names) + " for " + Misc.getDGSCredits(p.value) + " plus a " + Misc.getDGSCredits(p.fee)
                         + " fee, built at month end and delivered to " + p.to + ". Approve on the Budget panel.", true);
             }
             return;

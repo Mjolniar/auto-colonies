@@ -464,8 +464,8 @@ public class CAStockpile {
         String key = n.to.getId() + "|" + n.com + "|" + n.qty;
         if (!key.equals(loggedKey[k])) {
             loggedKey[k] = key;
-            CALog.advise(n.to.getName() + ": Recommends a stockpile of " + Misc.getWithDGS(n.qty) + " " + n.name + " from " + n.src.getName() + " for "
-                    + Misc.getDGSCredits(n.total()) + " with shipping (" + Misc.getDGSCredits(n.lost) + " a month of output). Approve on the Budget panel.");
+            CAApprovals.say(n.to.getName() + ": Recommends a stockpile of " + Misc.getWithDGS(n.qty) + " " + n.name + " from " + n.src.getName() + " for "
+                    + Misc.getDGSCredits(n.total()) + " with shipping (" + Misc.getDGSCredits(n.lost) + " a month of output). Approve on the Budget panel.", false);
         }
         CARich.note(rung, "proposes " + Misc.getWithDGS(n.qty) + " " + n.name + " for " + n.to.getName() + "; Approve or Reject on this panel");
     }

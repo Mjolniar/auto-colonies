@@ -309,7 +309,12 @@ public class CATasc {
                 for (Proj p : projects(m, c.profile)) if (p.startable && p.value >= MIN_PROJECT) { best = p; break; }
                 if (best == null) continue;
                 if (c.mode == CAData.Mode.AUTO) startProject(m, best, "Auto");
-                else if (CALog.once("tasc:" + m.getId() + ":" + best.name)) CALog.advise(m.getName() + ": Recommends TASC's " + best.name + ". Start it in the colony panel.");
+                else {
+                    if (CALog.once("tasc:" + m.getId() + ":" + best.name)) CAApprovals.say(m.getName() + ": Recommends TASC's " + best.name + ". Start it in the colony panel.", false);
+                    // 0.3.3.0: a decision in the approval summary
+                    final MarketAPI mm = m; final Proj pp = best;
+                    CAApprovals.offer("tasc:" + m.getId() + ":" + best.name, "tasc", m, "TASC: " + best.name, 0f, 0f, null, () -> startProject(mm, pp, "you"));
+                }
             } catch (Throwable t) {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "TASC step failed at " + m.getName(), t);
             }

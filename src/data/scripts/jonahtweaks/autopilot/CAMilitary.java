@@ -253,8 +253,8 @@ public final class CAMilitary {
                 String key = u.m.getId() + ":" + u.to;
                 if (!key.equals(recommended)) {
                     recommended = key;
-                    CALog.advise(u.m.getName() + ": Recommends upgrading to " + u.name + " (Military rung, " + Misc.getDGSCredits(u.total())
-                            + " with the fee, " + Misc.getDGSCredits(u.upkeep) + " more upkeep a month). Approve on the Budget panel.");
+                    CAApprovals.say(u.m.getName() + ": Recommends upgrading to " + u.name + " (Military rung, " + Misc.getDGSCredits(u.total())
+                            + " with the fee, " + Misc.getDGSCredits(u.upkeep) + " more upkeep a month). Approve on the Budget panel.", false);
                 }
                 CARich.note(CARich.MILITARY, "proposes " + u.name + " at " + u.m.getName() + "; Approve or Reject on this panel");
                 return;

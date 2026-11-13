@@ -13,8 +13,8 @@ import java.util.Map;
  * and is never retried every frame.
  */
 public class CAMigrate {
-    /** The saved-data layout this build writes (CAData.schema and CASettings.settingsVersion). 0.3.2.0: 4 (production floors). */
-    public static final int SCHEMA = 4;
+    /** The saved-data layout this build writes (CAData.schema and CASettings.settingsVersion). 0.3.2.0: 4 (production floors). 0.3.3.0: 5 (mode presets). */
+    public static final int SCHEMA = 5;
     /** The 0.3.0 layout: a save below it gets to3 as well. */
     static final int SCHEMA_030 = 3;
 
@@ -51,7 +51,8 @@ public class CAMigrate {
         boolean ok = true;
         if (fromSettings < SCHEMA_030) ok = to3(d, s);
         else if (fromData < SCHEMA_030) ok = stances(s);
-        if (fromSettings < SCHEMA && !to4(d, s)) ok = false;
+        if (fromSettings < 4 && !to4(d, s)) ok = false;
+        if (fromSettings < 5 && !to5(d, s)) ok = false;
         if (before030) {
             try { d.migratedAt = Global.getSector().getClock().getTimestamp(); } catch (Throwable ignored) { }
             try {
@@ -73,6 +74,46 @@ public class CAMigrate {
             if (d.thinkingShown) s.showThinking = true;
             return true;
         } catch (Throwable t) { warn("production floors", t); return false; }
+    }
+
+    /**
+     * 0.3.3.0: the move to mode presets (plans/2026-11-13-modes-rework.md section 9). The empire mode: Advisor before setup,
+     * else Auto with any Auto colony, else Approve with any Approve colony, else Advisor. Player-set flags: every tracked
+     * field that differs from what the save started with (the recommended values after setup, a new save's before), less the
+     * amounts setup works out from credits (reserve, per-project cap, upkeep cap). Then the empire mode's column goes into
+     * every field you never changed; each change is one Thinking line and one did line counts them. Idempotent: a save with
+     * its flags and empire mode set is left alone.
+     */
+    static boolean to5(CAData d, CASettings s) {
+        try {
+            boolean flagged = s.playerSet != null, moded = s.empireMode != null;
+            if (flagged && moded) return true;
+            if (!moded) {
+                java.util.List<CAData.Mode> modes = new java.util.ArrayList<CAData.Mode>();
+                for (CAData.Colony c : d.colonies.values()) if (c != null && c.mode != null) modes.add(c.mode);
+                s.empireMode = CAModeTable.deriveEmpire(s.setupDone, modes);
+            }
+            if (!flagged) {
+                CASettings base = baseline(s.setupDone);
+                s.playerSet = new java.util.HashSet<String>(CAModeTable.changedFrom(s, base));
+            }
+            s.playerRows();
+            java.util.List<String> written = CAModeTable.apply(s, s.empireMode);
+            try {
+                for (String f : written) CALog.think("Settings: " + CAModeTable.label(f) + " follows the " + s.empireMode.label + " mode now.");
+                CALog.did("Settings: empire mode " + s.empireMode.label + ". " + written.size() + " settings follow it; "
+                        + s.playerSet.size() + " you set stay as they are.", true);
+            } catch (Throwable ignored) { }
+            return true;
+        } catch (Throwable t) { warn("mode presets", t); return false; }
+    }
+
+    /** What an older save's settings started as: the recommended values after setup, a new save's before it. */
+    static CASettings baseline(boolean setupDone) {
+        CASettings b = new CASettings();
+        b.empireMode = null;
+        if (setupDone) { try { CASetupUI.applyRecommended(b); } catch (Throwable t) { warn("mode presets baseline", t); } }
+        return b;
     }
 
     /**

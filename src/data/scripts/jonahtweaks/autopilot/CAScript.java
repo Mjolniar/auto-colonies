@@ -16,6 +16,8 @@ public class CAScript implements EveryFrameScript {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "fast buildout offer failed", t);
             try { CAData.get().buildoutOffered = true; } catch (Throwable ignored) { }   // never let the handler itself throw into the game
         }
+        try { CAApprovalDialog.check(amount); }   // 0.3.3.0: the approval summary, at a safe moment once per interval
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "approval summary check failed", t); }
         acc += Global.getSector().getClock().convertToDays(amount);
         if (acc < 1f) return;
         if (acc < 2f && contractsBusy()) return;   // ToT's economy threads are reading markets; try again next frame, but never wait past a day

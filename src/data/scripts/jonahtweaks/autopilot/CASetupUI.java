@@ -41,8 +41,18 @@ public class CASetupUI {
      * points, offense) stay off. Scaled to the empire's income and credits now. Lands every CAPresets row on its
      * recommended value (JTPresetsCheck).
      */
-    public static void applyRecommended(CASettings s) {
-        float net = Math.max(0f, CABudget.netIncome(s)), credits = CABuild.credits();
+    /**
+     * The recommended values (first-time setup, Reset to recommended, fast buildout). 0.3.3.0: a write the mod makes itself
+     * (CAModeTable.system), so nothing it changes counts as set by you; callers then apply the empire mode's column.
+     */
+    public static void applyRecommended(final CASettings s) {
+        CAModeTable.system(s, new Runnable() { public void run() { recommended(s); } });
+    }
+
+    static void recommended(CASettings s) {
+        float net, credits;
+        try { net = Math.max(0f, CABudget.netIncome(s)); credits = CABuild.credits(); }
+        catch (Throwable t) { net = 0f; credits = 0f; }   // 0.3.3.0: no sector (the migration's baseline offline): the floors below
         // budget: half of net income plus 15% of savings above the reserve each month. A young colony that loses money
         // still gets built (share-of-income alone is 0 then), and spending slows as savings run down.
         s.budgetAuto = true;
@@ -123,6 +133,9 @@ public class CASetupUI {
         s.noPrune = false;         // and an industry that stopped paying for 30 days (0.2.44.1)
         s.productionDefaults();    // 0.3.2.0: production Light, its floors, taper, diversity and the rest at their defaults
         s.showThinking = false;    // 0.3.2.0: the Log page's Thinking list collapsed
+        s.approvalDays = CAApprovalDialog.DEFAULT_DAYS;   // 0.3.3.0: the approval summary every 60 days
+        s.buildHints = 0;          // 0.3.3.0: build menu hints at Advisor colonies
+        s.hintScoreOnOpen = false;
     }
 
     /**
@@ -132,12 +145,9 @@ public class CASetupUI {
      * Take down buildings and is reset with it.
      */
     public static void resetToRecommended(CASettings s) {
-        int warLevel = s.warLevel, warMode = s.warMode, capitalMode = s.capitalMode;
-        applyRecommended(s);
-        s.warLevel = warLevel;
-        s.warMode = warMode;
-        s.capitalMode = capitalMode;   // 0.3.0.0 (WS-F1 fix): None, Deliveries only or Deliveries and commerce, as you set it
-        // applyRecommended doesn't touch lowProfile, expand*, stationMode, factionStance, capitalId, capitalModeBeforeNone or focusId
+        // 0.3.3.0: what you set is cleared, then the recommended values and the empire mode's column (CAModeTable.reset);
+        // Expansion style, faction stances, the capital pick and the focus world are choices with no default and stay
+        CAModeTable.reset(s);
     }
 
     // ---------------- text (JTMenuTextCheck: a gray line is 20 words or fewer, a paragraph 40 or fewer) ----------------
@@ -163,12 +173,13 @@ public class CASetupUI {
         DESC.put("p_cores", "AI cores from Autopilot Storage.");
         DESC.put("p_admins", "Hires and places administrators.");
         DESC.put("capid", "Deliveries and Storage gather here.");
-        DESC.put("logi", "Refit gear goes to one refit hub.");
+        DESC.put("empire", "Empire-wide settings follow it.");
         DESC.put("spy", "Security and relations; offense adds sabotage.");
         DESC.put("amb", "Ally and Friendly factions first.");
         DESC.put("stances", "One stance per faction. Agents, ambassadors, ceasefires and war fleets follow it.");
         DESC.put("screenlog", "Short lines on screen.");
 
+        HOVER.put("empire", new String[]{"Off: nothing. Advisor: advice. Approve: asks first. Auto: acts."});
         HOVER.put("lowprofile", new String[]{"No AI cores above size 3, no Pather interest, free ports, raids or sabotage."});
         HOVER.put("p_spend", new String[]{"Thrifty 30% and 5%, Normal 50% and 15%, Lavish 80% and 30%. The per-project cap is half, all or twice net income. Surplus terraforming: 10-year payback on Thrifty."});
         HOVER.put("p_war", new String[]{"Defend: relief. Retaliate: raids on attackers, retakes of your lost colonies. Hold them down: raids on Rival and up. Conquer: invasions. Scorched: bombardment."});
@@ -199,11 +210,11 @@ public class CASetupUI {
             "New: War level, faction stances, New colonies, What to buy."};
     static final float WHATS_NEW_DAYS = 30f;
     static final String SETUP_REST = "Everything else uses the recommended settings.";
-    static final String RESET_NOTE = "Keeps Expansion style, War, New colonies, stances, Capital and Capital does.";
+    static final String RESET_NOTE = "Returns settings to the empire mode's defaults; keeps stances and picks.";
 
     /** The main rows' keys, in menu order (20 with every supported mod; JTMenuTextCheck). */
-    static final String[] MAIN_KEYS = {"lowprofile", "p_spend", "p_extras", "p_newcol", "p_war", "reserve", "surplus", "richpreset", "endgame",
-            "p_story", "p_station", "p_takedown", "p_policy", "p_cores", "p_admins", "capid", "logi", "spy", "amb", "screenlog"};
+    static final String[] MAIN_KEYS = {"empire", "lowprofile", "p_spend", "p_extras", "p_newcol", "p_war", "reserve", "surplus", "richpreset", "endgame",
+            "p_story", "p_station", "p_takedown", "p_policy", "p_cores", "p_admins", "capid", "spy", "amb", "screenlog"};
     /** Preset row keys to their CAPresets row. */
     static final Map<String, String> PRESET_KEYS = new LinkedHashMap<String, String>();
     static {
@@ -297,12 +308,16 @@ public class CASetupUI {
 
     public static void render(TooltipMakerAPI t, CASettings s, float width) {
         Color gray = Misc.getGrayColor(), hl = Misc.getHighlightColor();
+        marked.clear();
+        try { marked.addAll(markedRows(s)); } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "set-by-you markers failed", e); }
         whatsNew(t);
         for (String[] g : GLOSSARY) t.addPara("%s: " + CALog.esc(g[1]), 2f, hl, g[0]);
         boolean nex = nex(), indevo = mod(CAPresets.INDEVO);
 
         if (group(t, "playstyle", "Playstyle", (s.lowProfile ? "low profile" : "full expansion") + ", "
                 + lower(CAPresets.name(s, CAPresets.SPENDING)) + " spending")) {
+            row(t, "Empire mode", s.empire().label, null, "empire", true);
+            desc(t, "empire");
             row(t, "Expansion style", s.lowProfile ? "Low profile" : "Full expansion", null, "lowprofile", true);
             desc(t, "lowprofile");
             preset(t, s, "Spending", "p_spend");
@@ -312,12 +327,12 @@ public class CASetupUI {
         }
         if (group(t, "money", "Money", "reserve " + Misc.getDGSCredits(s.reserve) + ", surplus " + lower(CASurplus.lineName(s)))) {
             reserve(t, s);
-            row(t, "Surplus investment", CASurplus.lineName(s), CASettings.SURPLUS_NAMES[REC_SURPLUS], "surplus", true);
+            row(t, "Surplus investment", CASurplus.lineName(s), modeName("surplusLine", CASettings.SURPLUS_NAMES), "surplus", true);
             desc(t, "surplus");
             row(t, "What to buy", CASettings.RICH_PRESET_NAMES[clamp(s.richPreset, CASettings.RICH_PRESET_NAMES.length)],
                     CASettings.RICH_PRESET_NAMES[0], "richpreset", true, richTip());
             desc(t, "richpreset", richTip());
-            row(t, "Endgame", CAEndgame.NAMES[clamp(s.endgameMode, CAEndgame.NAMES.length)], CAEndgame.NAMES[0], "endgame", true);
+            row(t, "Endgame", CAEndgame.NAMES[clamp(s.endgameMode, CAEndgame.NAMES.length)], modeName("endgameMode", CAEndgame.NAMES), "endgame", true);
             desc(t, "endgame");
             preset(t, s, "Story points", "p_story");
         }
@@ -336,14 +351,12 @@ public class CASetupUI {
             if (CACapital.on(s)) row(t, "Capital", CACapital.name(s), "Autopilot picks", "capid", true);
             else row(t, "Capital", "None", "Autopilot picks", "capid", true);
             desc(t, "capid");
-            row(t, "Storage logistics", s.logisticsMode == 1 ? "On" : "Off", null, "logi", true);
-            desc(t, "logi");
         }
         if (group(t, "security", "Security and diplomacy", (nex ? "agents " + lower(CASettings.SPY_NAMES[clamp(s.spyMode, 3)]) + ", " : "")
                 + lower(stanceSummary(s)))) {
             if (nex) {
                 row(t, "Agents", CASettings.SPY_NAMES[clamp(s.spyMode, 3)] + (s.spyMode == 2 && s.lowProfile ? " (Low profile: defense only)" : ""),
-                        "Defense", "spy", true);
+                        modeName("spyMode", CASettings.SPY_NAMES), "spy", true);
                 desc(t, "spy");
             }
             if (indevo) {
@@ -456,7 +469,7 @@ public class CASetupUI {
             if (vok) row(t, "Surplus research", onOff(!s.noSurplusResearch), on, "surplusres", true);
             for (int r = CARich.STOCKPILES; r < CARich.RUNGS.length; r++)
                 row(t, CARich.RUNGS[r] + " rung", CASettings.RUNG_MODE_NAMES[clamp(s.rungMode(r), 3)],
-                        CASettings.RUNG_MODE_NAMES[CASettings.RUNG_DEFAULTS[r]], "rung_" + r, true, HOVER.get("rung"));
+                        modeName("rungMode[" + r + "]", CASettings.RUNG_MODE_NAMES), "rung_" + r, true, HOVER.get("rung"));
             row(t, "Shipyard stops at", s.shipyardStop + " unclaimed hulls", "6", "shipyardstop", false);
         } else if ("adv_build".equals(id)) {
             row(t, "Over-limit fix", onOff(!s.noOverLimitFix), on, "overlimit", true);
@@ -494,7 +507,7 @@ public class CASetupUI {
                 row(t, "Recruit agents", onOff(!s.spyNoHiring), on, "spyhire", true);
                 row(t, "Agents to keep", s.spyKeep == 0 ? "Auto" : "" + s.spyKeep, "Auto", "spykeep", true);
                 if (s.spyMode == 2) row(t, "Offense target", spyTargetName(s.spyTarget), spyTargetName(null), "spytarget", true);
-                row(t, "Autonomy", CASettings.AUTONOMY_NAMES[clamp(s.autonomyMode, 3)], CASettings.AUTONOMY_NAMES[1], "autonomy", true);
+                row(t, "Autonomy", CASettings.AUTONOMY_NAMES[clamp(s.autonomyMode, 3)], modeName("autonomyMode", CASettings.AUTONOMY_NAMES), "autonomy", true);
             }
         } else if ("adv_war".equals(id)) {
             if (nex) {
@@ -510,29 +523,30 @@ public class CASetupUI {
             enforcers(t, s, nex);
         } else if ("adv_capital".equals(id)) {
             if (CACapital.on(s)) {
-                row(t, "Capital does", CACapital.MODE_NAMES[clamp(s.capitalMode, 2)], CACapital.MODE_NAMES[0], "capmode", true);
+                row(t, "Capital does", CACapital.MODE_NAMES[clamp(s.capitalMode, 2)], modeName("capitalMode", CACapital.MODE_NAMES), "capmode", true);
                 if (s.capitalMode == 0) {
                     row(t, "Trade hub starts at", CACapital.START_NAMES[clamp(s.capitalStart, CACapital.START_NAMES.length)], CACapital.START_NAMES[0], "capstart", true);
                     row(t, "Make room for trade buildings", onOff(!s.capitalNoRoom), on, "caproom", true);
                 }
                 row(t, "Gather Storage at the capital", onOff(!s.capitalNoGather), on, "capgather", true);
             }
+            row(t, "Storage logistics", s.logisticsMode == 1 ? "On" : "Off", modeName("logisticsMode", new String[]{"Off", "On"}), "logi", true);
             row(t, "Refit hub", CALogistics.hubName(s.logisticsHub, true), null, "logihub", true);
             row(t, "Sell hub", CALogistics.hubName(s.logisticsSellHub, false), null, "logisell", true);
             row(t, "Ships to the refit hub", s.logisticsShips ? yes : "No", yes, "logiships", true);
             row(t, "Supplies, fuel, crew, marines too", s.logisticsSupplies ? yes : "No", yes, "logigoods", true);
         } else if ("adv_extras".equals(id)) {
-            row(t, "Stable locations", CASettings.OBJECTIVE_NAMES[clamp(s.objectiveMode, 3)], CASettings.OBJECTIVE_NAMES[0], "objectives", true);
+            row(t, "Stable locations", CASettings.OBJECTIVE_NAMES[clamp(s.objectiveMode, 3)], modeName("objectiveMode", CASettings.OBJECTIVE_NAMES), "objectives", true);
             row(t, "Measured mod buildings", CASettings.MEASURED_NAMES[clamp(s.measuredMode, 3)], CASettings.MEASURED_NAMES[0], "measured", true);
-            if (mod(CAPresets.TOT)) row(t, "Trade contracts", CASettings.CONTRACT_NAMES[clamp(s.contractMode, 3)], CASettings.CONTRACT_NAMES[1], "contract", true);
+            if (mod(CAPresets.TOT)) row(t, "Trade contracts", CASettings.CONTRACT_NAMES[clamp(s.contractMode, 3)], modeName("contractMode", CASettings.CONTRACT_NAMES), "contract", true);
             if (vok) {
-                row(t, "Research", CASettings.CONTRACT_NAMES[clamp(s.researchMode, 3)], CASettings.CONTRACT_NAMES[1], "research", true);
-                row(t, "Special project supply", CASettings.PROJECT_SUPPLY_NAMES[clamp(s.projectSupplyMode, 3)], CASettings.PROJECT_SUPPLY_NAMES[0], "projsupply", true);
+                row(t, "Research", CASettings.CONTRACT_NAMES[clamp(s.researchMode, 3)], modeName("researchMode", CASettings.CONTRACT_NAMES), "research", true);
+                row(t, "Special project supply", CASettings.PROJECT_SUPPLY_NAMES[clamp(s.projectSupplyMode, 3)], modeName("projectSupplyMode", CASettings.PROJECT_SUPPLY_NAMES), "projsupply", true);
                 row(t, "Megastructures", CASettings.AUGMENT_NAMES[clamp(s.hypershuntMode, 3)], CASettings.AUGMENT_NAMES[0], "hs", true);
             }
             if (mod(CAPresets.SA)) row(t, "Station augments", CASettings.AUGMENT_NAMES[clamp(s.augmentMode, 3)], CASettings.AUGMENT_NAMES[0], "aug", true);
             if (mod(CAPresets.RAT)) {
-                row(t, "RAT settlement", CASettings.SETTLE_NAMES[clamp(s.settlementMode, 4)], CASettings.SETTLE_NAMES[2], "settle", true);
+                row(t, "RAT settlement", CASettings.SETTLE_NAMES[clamp(s.settlementMode, 4)], modeName("settlementMode", CASettings.SETTLE_NAMES), "settle", true);
                 row(t, "Found when a site earns", Misc.getDGSCredits(s.settlementMinIncome), "20,000", "settleinc", false);
             }
             if (indevo) {
@@ -556,13 +570,16 @@ public class CASetupUI {
             row(t, "Administrator past the limit", onOff(s.expandAdmins()), on, "expadmins", true);
             // 0.3.0.0 (WS-F1 fix): Auto stations only recommend while New colonies on Auto asks first (CAPresets.tascMode)
             if (CATasc.enabled()) row(t, "TASC stations", CASettings.TASC_STATION_NAMES[clamp(s.stationMode, 3)]
-                    + (CAPresets.tascMode(s) != clamp(s.stationMode, 3) ? " (recommends: Expansion rung)" : ""), CASettings.TASC_STATION_NAMES[0], "tascst", true);
+                    + (CAPresets.tascMode(s) != clamp(s.stationMode, 3) ? " (recommends: Expansion rung)" : ""), modeName("stationMode", CASettings.TASC_STATION_NAMES), "tascst", true);
         } else if ("adv_prod".equals(id)) {
             production(t, s);
         } else if ("adv_ui".equals(id)) {
             row(t, "Announcement voice", CASettings.VOICE_NAMES[clamp(s.voice, 2)], CASettings.VOICE_NAMES[0], "voice", true);
             row(t, "Button on the colony screen", onOff(!s.noScreenButton), on, "screenbtn", true);
             row(t, "Thinking list", s.showThinking ? "Show" : "Hide", "Hide", "thinking", true);   // 0.3.2.0: the Log page's list
+            row(t, "Approval summary", CAApprovalDialog.daysName(s.approvalDays), CAApprovalDialog.daysName(CAApprovalDialog.DEFAULT_DAYS), "approvaldays", true);
+            row(t, "Build menu hints", CASettings.HINT_NAMES[clamp(s.buildHints, 3)], CASettings.HINT_NAMES[0], "hints", true);
+            row(t, "Score on open", onOff(s.hintScoreOnOpen), off, "hintscore", true);
         }
     }
 
@@ -582,7 +599,7 @@ public class CASetupUI {
         row(t, "Fuel floor", CASettings.FLOOR_GOODS_NAMES[clamp(s.floorFuel, 3)], CASettings.FLOOR_GOODS_NAMES[1], "ffuel", true);
         row(t, "Floors at Money colonies", onOff(s.floorMoneyGoal), off, "fmoney", true);
         row(t, "Floor builds first", onOff(s.needsFirst), on, "fneeds", true);
-        row(t, "Make room", CASettings.MAKE_ROOM_NAMES[clamp(s.makeRoom, 3)], CASettings.MAKE_ROOM_NAMES[1], "froom", true);
+        row(t, "Make room", CASettings.MAKE_ROOM_NAMES[clamp(s.makeRoom, 3)], modeName("makeRoom", CASettings.MAKE_ROOM_NAMES), "froom", true);
         row(t, "Money taper", CASettings.TAPER_NAMES[clamp(s.moneyTaper, 3)], CASettings.TAPER_NAMES[1], "ftaper", true);
         if (s.moneyTaper == CATuning.TAPER_GENTLE) {
             row(t, "Taper from", Misc.getDGSCredits(s.taperLow), Misc.getDGSCredits(CATuning.TAPER_LOW), "ftlow", false);
@@ -722,6 +739,52 @@ public class CASetupUI {
         return id;
     }
 
+    // ---------------- 0.3.3.0: mode defaults and the "set by you" marker ----------------
+
+    /** The active empire mode's value of an Empire field, as a name (the row's recommendation), or null. */
+    static String modeName(String field, String[] names) {
+        try {
+            Object v = CAModeTable.value(field, CAData.settings().empire());
+            if (!(v instanceof Integer)) return null;
+            int i = (Integer) v;
+            return i >= 0 && i < names.length ? names[i] : null;
+        } catch (Throwable t) { return null; }
+    }
+
+    /** The settings row key a button id names, or null (groups and Reset aren't rows). */
+    static String rowKey(Object id) {
+        if (!(id instanceof String) || !((String) id).startsWith(PREFIX)) return null;
+        String k = ((String) id).substring(PREFIX.length()).split(":")[0];
+        return k.isEmpty() || "group".equals(k) || "recommend".equals(k) ? null : k;
+    }
+
+    /** Main rows that aren't presets, to the field each one sets. */
+    static final Map<String, String> ROW_FIELD = new LinkedHashMap<String, String>();
+    static {
+        String[][] m = {{"surplus", "surplusLine"}, {"richpreset", "richPreset"}, {"endgame", "endgameMode"}, {"spy", "spyMode"},
+                {"amb", "disableAmbassadors"}, {"screenlog", "screenLog"}, {"reserve", "reserve"}, {"logi", "logisticsMode"}};
+        for (String[] x : m) ROW_FIELD.put(x[0], x[1]);
+    }
+
+    /** Rows drawn with "set by you" this draw (render fills it). */
+    static final Set<String> marked = new HashSet<String>();
+
+    /** The rows you set: every row you changed, and every row with a field you set (presets by their fields). */
+    static Set<String> markedRows(CASettings s) {
+        Set<String> out = new HashSet<String>(s.playerRows());
+        Set<String> mine = s.playerSet();
+        for (Map.Entry<String, String> e : PRESET_KEYS.entrySet())
+            for (String f : CAPresets.fields(e.getValue())) if (mine.contains(f) || (f.equals("rungMode") && hasRung(mine))) out.add(e.getKey());
+        for (Map.Entry<String, String> e : ROW_FIELD.entrySet()) if (mine.contains(e.getValue())) out.add(e.getKey());
+        for (int r = 0; r < CARich.RUNGS.length; r++) if (mine.contains(CAModeTable.RUNG + "[" + r + "]")) out.add("rung_" + r);
+        return out;
+    }
+
+    static boolean hasRung(Set<String> mine) {
+        for (String f : mine) if (f.startsWith(CAModeTable.RUNG)) return true;
+        return false;
+    }
+
     // ---------------- rows ----------------
 
     /** One compact line: the buttons on the left, then "LABEL :: value", and "// rec ..." only when the value differs. */
@@ -741,7 +804,8 @@ public class CASetupUI {
         }
         // 0.3.0.0 (WS-F1, research 04 section 3): the recommendation shows only when the value differs from it
         boolean showRec = rec != null && !rec.isEmpty() && !rec.equalsIgnoreCase(value);
-        LabelAPI l = t.addPara("%s  ::  %s" + (showRec ? "   // rec " + CALog.esc(rec) : ""), 0f, Misc.getHighlightColor(),
+        boolean mine = marked.contains(key);   // 0.3.3.0: a row you set keeps its value through empire mode changes
+        LabelAPI l = t.addPara("%s  ::  %s" + (showRec ? "   // rec " + CALog.esc(rec) : "") + (mine ? "   // set by you" : ""), 0f, Misc.getHighlightColor(),
                 label.toUpperCase(Locale.ROOT), value);
         l.getPosition().rightOfMid(last, 12f);
         if (tip != null) t.addTooltipToPrevious(tip(tip), TooltipMakerAPI.TooltipLocation.BELOW);
@@ -922,6 +986,13 @@ public class CASetupUI {
         else if (k.equals("spykeep")) s.spyKeep = (Math.max(0, Math.min(4, s.spyKeep)) + 1) % 5;
         else if (k.equals("spytarget")) s.spyTarget = nextSpyTarget(s.spyTarget);
         else if (k.equals("logi")) s.logisticsMode = s.logisticsMode == 1 ? 0 : 1;
+        else if (k.equals("empire")) {   // 0.3.3.0: Off, Advisor, Approve, Auto; the column goes into every field you never changed
+            CAData.Mode[] all = CAData.Mode.values();
+            CAModeTable.setEmpire(s, all[(s.empire().ordinal() + 1) % all.length]);
+        }
+        else if (k.equals("approvaldays")) s.approvalDays = CAApprovalDialog.nextDays(s.approvalDays);
+        else if (k.equals("hints")) s.buildHints = (Math.max(0, Math.min(2, s.buildHints)) + 1) % 3;
+        else if (k.equals("hintscore")) s.hintScoreOnOpen = !s.hintScoreOnOpen;
         else if (k.equals("objectives")) s.objectiveMode = (Math.max(0, Math.min(2, s.objectiveMode)) + 1) % 3;
         else if (k.equals("tascst")) s.stationMode = (Math.max(0, Math.min(2, s.stationMode)) + 1) % 3;
         else if (k.equals("logihub")) s.logisticsHub = CALogistics.next(s.logisticsHub, false);

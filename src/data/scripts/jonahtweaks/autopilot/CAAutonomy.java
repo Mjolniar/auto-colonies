@@ -167,7 +167,15 @@ final class CAAutonomy {
             return;
         }
         if (CALog.once("autonomy:rec:" + pick.m.getId()))
-            CALog.advise(pick.m.getName() + ": autonomy would save " + Misc.getDGSCredits(pick.saving) + "/month (" + why + "). Grant on the Mod features page.", true);
+            CAApprovals.say(pick.m.getName() + ": autonomy would save " + Misc.getDGSCredits(pick.saving) + "/month (" + why + "). Grant on the Mod features page.", true);
+        // 0.3.3.0: a decision in the approval summary
+        final MarketAPI mm = pick.m; final float saving = pick.saving;
+        CAApprovals.offer("autonomy:" + pick.m.getId(), "autonomy", pick.m, "Grant autonomy (saves " + Misc.getDGSCredits(saving) + " a month)", 0f, 0f, why, () -> {
+            if (!Global.getSettings().getModManager().isModEnabled(MOD)) return "Nexerelin is off";
+            if (!mm.isPlayerOwned()) return "Not your colony now";
+            grant(CAData.get(), mm, "your approval", saving);
+            return null;
+        });
     }
 
     /** Your order, or Auto's. The colony stays autonomous until you take it back. */

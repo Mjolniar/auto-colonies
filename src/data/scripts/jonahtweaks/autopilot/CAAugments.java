@@ -522,8 +522,15 @@ public class CAAugments {
                     if (done == null) c.augDefense = defense;
                     else lastSig.remove(m.getId());   // try again tomorrow (the station was fighting)
                 }
-                else if (CALog.once("aug:" + m.getId() + ":" + pl.summary())) {
-                    CALog.advise(m.getName() + ": Station augments suggested: " + pl.summary() + (defense ? ", for defense" : "") + ". Apply on its panel.");
+                else {
+                    if (CALog.once("aug:" + m.getId() + ":" + pl.summary()))
+                        CAApprovals.say(m.getName() + ": Station augments suggested: " + pl.summary() + (defense ? ", for defense" : "") + ". Apply on its panel.", false);
+                    // 0.3.3.0: a decision in the approval summary (installing augments is free and can be undone)
+                    final MarketAPI mm = m;
+                    CAApprovals.offer("aug:" + m.getId() + ":" + pl.summary(), "augments", m, "Station augments: " + pl.summary(), 0f, 0f, null, () -> {
+                        if (!Global.getSettings().getModManager().isModEnabled(MOD)) return "Station Augments is off";
+                        return applyNow(mm);
+                    });
                 }
             } catch (Throwable t) {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment step failed at " + m.getName(), t);
