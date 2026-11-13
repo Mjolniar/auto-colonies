@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.3.3 - 2026-11-13
+
+- Expansion style: Changed "Low profile avoids colony crises" to "Low profile slows colony crises". Shown in the first colony's dialog and in Settings.
+- Log: The Low profile line says Autopilot slows each faction's crisis.
+
 ## 0.3.3.2 - 2026-11-13
 
 - JaydeePiracy: Added support for JaydeePiracy 6.0.3. Quarry Lakes: a new Refining needs no ore or transplutonic ore and counts heavy machinery demand +2.
@@ -12,14 +17,12 @@
 - Left to you: Scy Nation's Intelligence Command Center, CJY's Toy Box's Private Production Facility and both greenhouses, and AI-Retrofits' Population Replacement Center. Autopilot does not build or test-build them.
 - Production floors: Blue's Lanestate Battleyards and Oculian Armada's Orbital Matrix count as ship producers.
 - Diagnostics: Added JaydeePiracy, Corrupt.Officials, Tahlan Shipworks, Gladiator Society, Scy Nation and AI-Retrofits to the integration check.
-- Supported mods: 101 more mods checked. Nothing needed. The list is in Supported mods.
 
 ## 0.3.3.1 - 2026-11-13
 
 - Kadur Remnant: Added support for Kadur Remnant 3.2.4support3. Kadur Majority Faith's +1 output on industrial buildings counts in build values from size 3.
 - Kadur Remnant: Virus Bombed's -2 on every output line counts in build values.
 - Diagnostics: Added Kadur Remnant to the integration check.
-- Supported mods: Better Colonies 1.91, Iron Shell 1.183ae, Commissioned Crews, Supply Forging 1.5b, Too Much Information 0.99b and Content Unlocking Missions 1.15b checked. Nothing needed.
 
 ## 0.3.3.0 - 2026-11-13
 
