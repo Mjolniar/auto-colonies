@@ -45,6 +45,7 @@ public class CAReset {
         failed += run("market model", () -> { CAMarket.invalidate(); CAMarket.cacheDay = -99f; CAMarket.lastWeek = Float.NaN; });
         failed += run("mod watch", () -> CAModWatch.reset());
         failed += run("Rogue Planets", () -> { CARogue.on = null; CARogue.testIndustries = null; });   // 0.3.2.1: asked again; the test list is offline only
+        failed += run("Corrupt.Officials", () -> CAIndexMods.reset());   // 0.3.3.2: its settings and each colony's kept share read again
         if (on("niko_stationAugments")) failed += run("station augments", () -> { CAAugments.nextRun.clear(); CAAugments.lastSig.clear(); });
         // caches and cooldowns that held the other save's data (07 H6)
         failed += run("research ranking", () -> {

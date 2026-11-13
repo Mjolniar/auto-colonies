@@ -522,6 +522,10 @@ public final class CAValue {
         float money = CASurvival.keptGross(p.fx[0], p.upkeep);
         if (explain && money < p.fx[0] && p.fx[0] + p.upkeep > 0f)
             p.lines.add("Survival mode corruption: extra income counts " + Math.round(100f * (money + p.upkeep) / (p.fx[0] + p.upkeep)) + "%");
+        // 0.3.3.2: Corrupt.Officials cuts a colony's net income above its cutoff (CAIndexMods)
+        float officials = CAIndexMods.corruptKept(m, money);
+        if (explain && officials < money) p.lines.add("Corrupt.Officials: extra income counts " + Math.round(100f * officials / money) + "% at this colony");
+        money = officials;
         // 0.3.2.0 (M1, M3): the money taper past the taper line, then the diversity share of a 3rd and later copy of a family;
         // both identity while production is Off (CAFloors.state() null)
         float tapered = CAFloors.tapered(money, profile, endgame);
@@ -697,7 +701,8 @@ public final class CAValue {
         boolean endgame = endgame(m);
         float[] w = atStability(weights(profile, endgame), m);   // 0.3.0.9: as add()
         // 0.3.2.0: the money taper as add() counts it, so build and keep match
-        float v = w[0] * moneyWeight(m, endgame) * CAFloors.tapered(CASurvival.keptGross(k.money, k.upkeep), profile, endgame);   // 0.3.0.8: corruption on gross income, as add()
+        // 0.3.0.8: corruption on gross income, as add(); 0.3.3.2: and Corrupt.Officials' cut, as add()
+        float v = w[0] * moneyWeight(m, endgame) * CAFloors.tapered(CAIndexMods.corruptKept(m, CASurvival.keptGross(k.money, k.upkeep)), profile, endgame);
         for (int i = 1; i < 7; i++) v += w[i] * (p.fx[i] + syn[i]);
         // an estimate's chains: none, as add() counts none for it (no lines recorded); else the units it really adds
         if (endgame) v += chainValue(m, p, new LinkedHashMap<String, Integer>(k.lost), true, false);
@@ -1070,7 +1075,7 @@ public final class CAValue {
     /** Money at the colony's money weight (its goal's, the endgame's, the surplus's), as add() counts fx[0]. */
     static float itemMoney(MarketAPI m, float credits, CAData.Profile profile) {
         boolean endgame = endgame(m);
-        return CASurvival.kept(credits) * weights(profile, endgame)[0] * moneyWeight(m, endgame);   // 0.3.0.4: corruption, as add()
+        return CAIndexMods.corruptKept(m, CASurvival.kept(credits)) * weights(profile, endgame)[0] * moneyWeight(m, endgame);   // 0.3.0.4: corruption, as add(); 0.3.3.2: Corrupt.Officials too
     }
 
     /** A nanoforge's ship and weapon quality, which isn't output: its flat score, as before. 0 for any other item. */

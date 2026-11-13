@@ -37,7 +37,8 @@ public class CAFloors {
             "Domain-grade Parts", "supplies", "fuel", "producer inputs"};
     /** Buildings that make ships (floor 1 and 3 producers). Any industry with a ships line counts too. */
     static final Set<String> SHIP_PRODUCERS = new HashSet<String>(Arrays.asList("heavyindustry", "orbitalworks", "aotd_civilian_heavy_prod",
-            "triheavy", "hegeheavy", "yunru_heavyindustry"));
+            "triheavy", "hegeheavy", "yunru_heavyindustry",
+            CAIndexMods.XLU_YARDS, CAIndexMods.OCUA_MATRIX));   // 0.3.3.2: Blue's Lanestate Battleyards, Oculian Armada's Orbital Matrix
     /** AoTD order goods (floor 3). */
     static final String[] ORDER_GOODS = {"ships", "hand_weapons", "advanced_components"};
     /** Producer inputs (floor 9). */

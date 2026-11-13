@@ -916,8 +916,9 @@ public class CAEngine {
         int s = m.getSize();
         boolean habitable = m.hasCondition("habitable");
         if (id.equals("farming") || id.equals("aquaculture")) {
-            deposits(m, "farming", p, deficit);
-            demand(p, "heavy_machinery", s - 3, deficit);
+            int food = deposits(m, "farming", p, deficit);
+            demand(p, "heavy_machinery", s - 3 + CAIndexMods.eutrophicMachinery(m), deficit);   // 0.3.3.2: JaydeePiracy's Eutrophicated Biosphere +3
+            CAIndexMods.eutrophicFarm(m, food, p, deficit);   // 0.3.3.2: and its organics, half the food
         } else if (id.equals("mining")) {
             deposits(m, "mining", p, deficit);
             CAMods.miningExtras(m, p, deficit);   // Unknown Skies / What We Left Behind conditions that add to Mining directly
@@ -933,7 +934,8 @@ public class CAEngine {
             p.lines.add("Salvage from the ruins: about " + Misc.getDGSCredits(v) + " per month in value");
         } else if (id.equals("refining")) {
             supply(p, "metals", s, deficit); supply(p, "rare_metals", s - 2, deficit);
-            demand(p, "ore", s + 2, deficit); demand(p, "rare_ore", s, deficit);
+            if (CAIndexMods.quarryLakes(m)) CAIndexMods.quarryRefining(p, deficit);   // 0.3.3.2: JaydeePiracy's Quarry Lakes: no ore needed
+            else { demand(p, "ore", s + 2, deficit); demand(p, "rare_ore", s, deficit); }
         } else if (id.equals("lightindustry")) {
             supply(p, "domestic_goods", s, deficit); supply(p, "luxury_goods", s - 2, deficit);
             demand(p, "organics", s, deficit);
@@ -948,8 +950,11 @@ public class CAEngine {
             p.fx[5] += 0.2f; p.fx[4] += 0.2f; p.lines.add("+20% ship quality and more ship output");
             parts(m, p, s - 2, ORBITAL_WORKS_QUALITY);   // 0.3.0.9: more Domain-grade Parts from the better production quality (0.98.5a)
         } else if (id.equals("fuelprod")) {
-            supply(p, "fuel", s - 2, deficit); demand(p, "volatiles", s, deficit);
-            CACrisis.diktat(m, s - 2, p);   // the Sindrian Diktat counts fuel output from 4
+            // 0.3.3.2: JaydeePiracy's Domain-era Meshugatron: +3 fuel, +3 volatiles demand
+            int mesh = CAIndexMods.meshugatronFuel(m);
+            supply(p, "fuel", s - 2 + mesh, deficit); demand(p, "volatiles", s + CAIndexMods.meshugatronVolatiles(m), deficit);
+            if (mesh > 0) p.lines.add("Domain-era Meshugatron: fuel +" + mesh + ". Volatiles demand +" + CAIndexMods.meshugatronVolatiles(m));
+            CACrisis.diktat(m, s - 2 + mesh, p);   // the Sindrian Diktat counts fuel output from 4
         } else if (id.equals("spaceport")) {
             p.fx[2] += 1.5f; p.fx[6] += 3f; p.lines.add("Removes the -100% no-spaceport penalty and adds +50% accessibility");
         } else if (id.equals("megaport")) {
@@ -1050,9 +1055,11 @@ public class CAEngine {
 
     /**
      * What a deposit industry makes here, by the tables the game's own ResourceDepositsCondition uses (so deposits mods
-     * register there count too), falling back to the vanilla table above.
+     * register there count too), falling back to the vanilla table above. 0.3.3.2: returns the food units it adds (for
+     * JaydeePiracy's Eutrophicated Biosphere).
      */
-    static void deposits(MarketAPI m, String industry, Pick p, Map<String, Integer> deficit) {
+    static int deposits(MarketAPI m, String industry, Pick p, Map<String, Integer> deficit) {
+        int food = 0;
         for (MarketConditionAPI c : m.getConditions()) {
             String com = ResourceDepositsCondition.COMMODITY.get(c.getId());
             Integer mod = ResourceDepositsCondition.MODIFIER.get(c.getId());
@@ -1065,7 +1072,9 @@ public class CAEngine {
             if (base == null) base = BASE_MOD.containsKey(com) ? BASE_MOD.get(com) : 0;
             int size = ResourceDepositsCondition.BASE_ZERO.contains(com) ? 0 : m.getSize();
             supply(p, CARogue.minedAs(m, industry, com), size + base + mod, deficit);   // 0.3.2.1: Hydrocarbon Fractionation's volatiles come out as organics
+            if ("food".equals(com)) food += Math.max(0, size + base + mod);
         }
+        return food;
     }
 
     /** One Courier Port serves every contract, so only the best-connected colony gets one, and only if none exists yet. */
