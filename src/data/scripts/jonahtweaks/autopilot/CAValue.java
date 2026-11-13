@@ -492,8 +492,10 @@ public final class CAValue {
         float mw = moneyWeight(m, endgame);
         float v = 0f;
         // 0.3.0.4: survival mode's corruption keeps only part of extra colony income (CASurvival)
-        float money = CASurvival.kept(p.fx[0]);
-        if (explain && money < p.fx[0]) p.lines.add("Survival mode corruption: extra income counts " + Math.round(100f * money / p.fx[0]) + "%");
+        // 0.3.0.8: on gross income; fx[0] has the upkeep taken off (CAEngine.upkeep), so it is added back first
+        float money = CASurvival.keptGross(p.fx[0], p.upkeep);
+        if (explain && money < p.fx[0] && p.fx[0] + p.upkeep > 0f)
+            p.lines.add("Survival mode corruption: extra income counts " + Math.round(100f * (money + p.upkeep) / (p.fx[0] + p.upkeep)) + "%");
         v += w[0] * money * mw;
         for (int i = 1; i < 7; i++) v += w[i] * p.fx[i];
         if (endgame) v += chainValue(m, p, chainUnits(p), false, explain);
@@ -657,7 +659,7 @@ public final class CAValue {
         k.money = k.export + k.relief + k.other - k.upkeep;
         boolean endgame = endgame(m);
         float[] w = weights(profile, endgame);
-        float v = w[0] * moneyWeight(m, endgame) * CASurvival.kept(k.money);   // 0.3.0.4: corruption, as add()
+        float v = w[0] * moneyWeight(m, endgame) * CASurvival.keptGross(k.money, k.upkeep);   // 0.3.0.8: corruption on gross income, as add()
         for (int i = 1; i < 7; i++) v += w[i] * (p.fx[i] + syn[i]);
         // an estimate's chains: none, as add() counts none for it (no lines recorded); else the units it really adds
         if (endgame) v += chainValue(m, p, new LinkedHashMap<String, Integer>(k.lost), true, false);

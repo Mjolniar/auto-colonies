@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.0.8 - 2026-11-12
+
+- Survival mode: Fixed corruption being taken from net income. It is taken from gross income, as in the game, and upkeep counts in full.
+- War: Fixed the fee being charged for an operation that ends at once (raids, strikes, blockades, defense fleets).
+- Military rung: Fixed standing guard and proactive defense spending from the Military rung on Recommend only, and from the surplus with the rung Off. They use the month's budget then.
+
 ## 0.3.0.7 - 2026-11-12
 
 - Autopilot log: Lines about waiting or not acting go to starsector.log only. Actions, spending and advice stay in the log.
