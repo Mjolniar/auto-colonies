@@ -236,4 +236,57 @@ public final class CATuning {
     public static final float ENFORCER_HOSTILE_DAYS = 1f;
     /** 0.3.1.0: credits per fleet point without Nexerelin: Nexerelin's default fleetRequestCostPerFP (exerelin_config.json). */
     public static final float ENFORCER_CREDITS_PER_FP = 400f;
+
+    // ---------------- 0.3.2.0: production floors (CAFloors), money taper (CAMoneyCurve), diversity ----------------
+
+    /** Production preset values (CASettings.productionMode): Off, Light, Full. */
+    public static final int PROD_OFF = 0, PROD_LIGHT = 1, PROD_FULL = 2;
+    /** Floor 1, ship producers at Approve or Auto colonies of this size or more: Light, Full. */
+    public static final int FLOOR_HULLS_LIGHT = 1, FLOOR_HULLS_FULL = 2, FLOOR_HULL_MIN_SIZE = 4;
+    /** Floor 2, custom production capacity a month: Light, Full. */
+    public static final float FLOOR_CAPACITY_LIGHT = 100_000f, FLOOR_CAPACITY_FULL = 300_000f;
+    /** Floor 3, months an AoTD order's remaining goods may take. */
+    public static final int FLOOR_ORDER_MONTHS = 6;
+    /** Floor 4, custom production quality: Light, Full. */
+    public static final float FLOOR_QUALITY_LIGHT = 0.8f, FLOOR_QUALITY_FULL = 1.0f;
+    /** Floor 6, Domain-grade Parts kept on top of the fleet's d-mod repair need. */
+    public static final int FLOOR_PARTS_RESERVE = 100;
+    /** Floors 7 and 8 (CASettings.floorSupplies, floorFuel): Off, No shortage, Fleet use. */
+    public static final int FLOOR_GOODS_OFF = 0, FLOOR_GOODS_SHORTAGE = 1, FLOOR_GOODS_FLEET = 2;
+    /**
+     * Floor values a month, default (CASettings.floorVal*): a new hull source; per credit of hull capacity; per 1.0 of
+     * production quality; per Domain-grade Part a month; the shortage factor on order goods; on supplies, fuel, weapons and inputs.
+     */
+    public static final float FLOOR_VAL_HULL = 40_000f, FLOOR_VAL_CAPACITY = 0.5f, FLOOR_VAL_QUALITY = 50_000f, FLOOR_VAL_PART = 250f,
+            FLOOR_VAL_ORDERS = 3f, FLOOR_VAL_GOODS = 2f;
+    /** Self-sufficiency counts floor values this many times. */
+    public static final float FLOOR_SELF_MULT = 2f;
+    /** Capacity per Ships and Weapons unit when no producer can be read yet (settings.json productionCapacityPerSWUnit). */
+    public static final float FLOOR_CAPACITY_PER_UNIT = 25_000f;
+    /** Days the fleet's d-mod repair need is kept before it is read again. */
+    public static final float FLOOR_FLEET_DAYS = 7f;
+    /** Days between two parts advice lines while nothing changes. */
+    public static final float FLOOR_PARTS_ADVICE_DAYS = 30f;
+
+    /** Money taper (CASettings.moneyTaper): Off, Gentle, Strong. Weight 1 up to low, wMid to high, wTop above. */
+    public static final int TAPER_OFF = 0, TAPER_GENTLE = 1, TAPER_STRONG = 2;
+    public static final float TAPER_LOW = 300_000f, TAPER_HIGH = 1_000_000f, TAPER_MID = 0.6f, TAPER_TOP = 0.35f;
+    public static final float TAPER_STRONG_LOW = 200_000f, TAPER_STRONG_HIGH = 600_000f, TAPER_STRONG_MID = 0.5f, TAPER_STRONG_TOP = 0.25f;
+
+    /** Diversity: copies of a building family in the empire before the next copy's money counts DIVERSITY_SHARE per extra copy. */
+    public static final int DIVERSITY_COPIES = 2;
+    public static final float DIVERSITY_SHARE = 0.75f;
+    /** Building families for the diversity rule: each row's ids count as copies of one another. */
+    public static final String[][] DIVERSITY_FAMILIES = {
+            {"roider_dives", "roider_union_hq"},
+            {"mining", "aotd_extractive_operation", "rat_asteroid_mining"},
+            {"JYD_scrap", "JYD_forge"},
+            {"commerce", "aotd_trade_outpost", "yunru_bazaar", "IndEvo_ReqCenter"},
+            {"farming", "aquaculture"},
+            {"lightindustry", "aotd_light_production"}};
+
+    /** Make room (CASettings.makeRoom): Off, Ask first, Auto. */
+    public static final int MAKE_ROOM_OFF = 0, MAKE_ROOM_ASK = 1, MAKE_ROOM_AUTO = 2;
+    /** Days after it was built that an industry is never taken down to make room for a floor producer. */
+    public static final float MAKE_ROOM_BUILT_DAYS = 365f;
 }

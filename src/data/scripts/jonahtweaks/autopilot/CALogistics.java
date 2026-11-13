@@ -138,6 +138,7 @@ public class CALogistics {
 
     public static void daily(CAData d, CASettings s, float now) {
         deliver(d);
+        try { partsMove(d, s, now); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "parts move failed", t); }
         if (!active(s) || !CATime.due(lastRun, now, 7f)) return;   // 0.3.0.0 (A1 fix): on the game's own (negative) clock
         lastRun = now;
         MarketAPI refit = refitHub(s), sell = sellHub(s);
@@ -150,6 +151,58 @@ public class CALogistics {
         for (MarketAPI m : choices()) {
             try { gather(d, s, f, m, refit, sell); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "storage logistics failed at " + m.getName(), t); }
+        }
+    }
+
+    // ---------------- 0.3.2.0 (M6): Domain-grade Parts to the capital (CASettings.partsToCapital, off by default) ----------------
+
+    static float partsRun = Float.NaN;
+
+    /**
+     * Pure: parts to take from one colony's Local Resources: what the fleet still needs at the capital (want), never the
+     * colony's reserve, never more than the budget pays for at the game's Local Resources price.
+     */
+    static int partsToMove(int have, int reserve, int want, float budget, float unitPrice) {
+        int n = Math.min(Math.max(0, have - Math.max(0, reserve)), Math.max(0, want));
+        if (unitPrice > 0f) n = Math.min(n, (int) Math.floor(Math.max(0f, budget) / unitPrice));
+        return Math.max(0, n);
+    }
+
+    /**
+     * Weekly with production floors on and the setting on: parts the fleet's d-mods need (CAFloors), not yet in a Storage or
+     * your fleet's cargo, come from Local Resources to the capital's Storage. Each load pays what taking them in the colony
+     * screen costs (base price x stockpileCostMult, the game's Local Resources price) plus the shipment fee, from the budget.
+     */
+    static void partsMove(CAData d, CASettings s, float now) {
+        if (!s.productionOn() || !s.partsToCapital || !CASurvival.partsRepairs() || !CATime.due(partsRun, now, 7f)) return;
+        partsRun = now;
+        CAFloors.State st = CAFloors.state();
+        MarketAPI cap = CACapital.capital();
+        if (st == null || cap == null || !access(cap)) return;
+        int held = 0;
+        for (MarketAPI m : choices()) held += CAFloors.parts(Misc.getStorageCargo(m));
+        try { held += CAFloors.parts(Global.getSector().getPlayerFleet().getCargo()); } catch (Throwable ignored) { }
+        int want = st.partsWant() - held;
+        if (want <= 0) return;
+        float price = Global.getSettings().getCommoditySpec("parts").getBasePrice() * CAFloors.setting("stockpileCostMult", 1f);
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            if (want <= 0 || m == cap) continue;
+            CargoAPI local = CAFloors.localCargo(m);
+            float ly = CAStores.ly(m, cap), fee = CABudget.fee(s, CAStores.baseFee(ly));
+            int n = partsToMove(CAFloors.parts(local), s.floorPartsReserve, want, Math.min(CABudget.available(s), CABuild.credits() - s.reserve) - fee, price);
+            if (n <= 0) continue;
+            Load l = load(m, cap, "parts for the fleet's d-mods");
+            local.removeCommodity("parts", n);
+            l.cargo.addCommodity("parts", n);
+            float cost = n * price;
+            l.days = CAStores.days(ly);
+            l.sent = Global.getSector().getClock().getTimestamp();
+            CABudget.charge(s, 0f, fee, 0f);              // the shipment fee, as every load
+            CABudget.pay(s, m.getId(), cost, 0f, 0f);     // the Local Resources price, as taking them in the colony screen
+            d.loads().add(l);
+            want -= n;
+            CALog.did("Parts: " + n + " from " + m.getName() + "'s Local Resources to " + cap.getName() + "'s Storage. " + Math.round(l.days) + " days, "
+                    + Misc.getDGSCredits(cost) + " plus a " + Misc.getDGSCredits(fee) + " fee.");
         }
     }
 
@@ -246,14 +299,16 @@ public class CALogistics {
     }
 
     static String describe(Load l) {
-        int ships = l.cargo.getMothballedShips().getNumMembers(), weapons = 0, wings = 0, bps = 0, goods = 0;
+        int ships = l.cargo.getMothballedShips().getNumMembers(), weapons = 0, wings = 0, bps = 0, goods = 0, dparts = 0;
         for (CargoStackAPI x : l.cargo.getStacksCopy()) {
             if (x.isWeaponStack()) weapons += (int) x.getSize();
             else if (x.isFighterWingStack()) wings += (int) x.getSize();
             else if (x.isSpecialStack()) bps += (int) x.getSize();
+            else if (x.isCommodityStack() && "parts".equals(x.getCommodityId())) dparts += (int) x.getSize();   // 0.3.2.0
             else if (x.isCommodityStack()) goods += (int) x.getSize();
         }
         List<String> parts = new ArrayList<String>();
+        if (dparts > 0) parts.add(dparts + " Domain-grade Parts");
         if (ships > 0) parts.add(ships + (ships == 1 ? " ship" : " ships"));
         if (weapons > 0) parts.add(weapons + " weapons");
         if (wings > 0) parts.add(wings + " fighter wings");

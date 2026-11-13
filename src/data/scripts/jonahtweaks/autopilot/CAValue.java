@@ -438,7 +438,7 @@ public final class CAValue {
     /** The weights a value is counted with: fast buildout's money-only ones, the endgame's, or the goal's (as CAEngine.finish). */
     static float[] weights(CAData.Profile profile, boolean endgame) {
         if (CAEngine.profitOnly) return CAEngine.PROFIT;
-        float[] goal = CAEngine.WEIGHTS[(profile == null ? CAData.Profile.BALANCED : profile).ordinal()];
+        float[] goal = CAEngine.goalWeights(profile);   // 0.3.2.0: the 0.3.2 table while production is on (CAEngine.WEIGHTS_NEW)
         return endgame ? CAEndgame.weights(goal) : goal;
     }
 
@@ -522,9 +522,17 @@ public final class CAValue {
         float money = CASurvival.keptGross(p.fx[0], p.upkeep);
         if (explain && money < p.fx[0] && p.fx[0] + p.upkeep > 0f)
             p.lines.add("Survival mode corruption: extra income counts " + Math.round(100f * (money + p.upkeep) / (p.fx[0] + p.upkeep)) + "%");
-        v += w[0] * money * mw;
+        // 0.3.2.0 (M1, M3): the money taper past the taper line, then the diversity share of a 3rd and later copy of a family;
+        // both identity while production is Off (CAFloors.state() null)
+        float tapered = CAFloors.tapered(money, profile, endgame);
+        if (explain && money > 0f && tapered < money - 1f)
+            p.lines.add("Money taper: its money counts " + Math.round(100f * tapered / money) + "% at this income");
+        if (tapered > 0f) tapered *= CAFloors.diversityMult(m, p, explain);
+        v += w[0] * tapered * mw;
         for (int i = 1; i < 7; i++) v += w[i] * p.fx[i];
         if (endgame) v += chainValue(m, p, chainUnits(p), false, explain);
+        // 0.3.2.0 (M2): what it adds to the open production floors (0 while they're met or Off)
+        v += CAFloors.value(m, p, profile, explain);
         if (v > 0f && p.confidence < 1f) v *= p.confidence;
         return v;
     }
@@ -685,10 +693,13 @@ public final class CAValue {
         k.money = k.export + k.relief + k.other - k.upkeep;
         boolean endgame = endgame(m);
         float[] w = atStability(weights(profile, endgame), m);   // 0.3.0.9: as add()
-        float v = w[0] * moneyWeight(m, endgame) * CASurvival.keptGross(k.money, k.upkeep);   // 0.3.0.8: corruption on gross income, as add()
+        // 0.3.2.0: the money taper as add() counts it, so build and keep match
+        float v = w[0] * moneyWeight(m, endgame) * CAFloors.tapered(CASurvival.keptGross(k.money, k.upkeep), profile, endgame);   // 0.3.0.8: corruption on gross income, as add()
         for (int i = 1; i < 7; i++) v += w[i] * (p.fx[i] + syn[i]);
         // an estimate's chains: none, as add() counts none for it (no lines recorded); else the units it really adds
         if (endgame) v += chainValue(m, p, new LinkedHashMap<String, Integer>(k.lost), true, false);
+        // 0.3.2.0: a floor producer whose removal would open a floor keeps that floor's value
+        v += CAFloors.keepValue(m, ind, profile);
         k.value = v;
         return k;
     }

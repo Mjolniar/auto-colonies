@@ -509,7 +509,10 @@ public class CAEndgame {
      * Takes the old industry down (its AI core and item to Autopilot Storage), to make room for the new one. 0.3.0.0: false (and
      * nothing done) when the swap would leave the colony under the stability floor (CAStability), checked at the last moment.
      */
-    static boolean takeDown(MarketAPI m, Weakest wk, CAEngine.Pick p) {
+    static boolean takeDown(MarketAPI m, Weakest wk, CAEngine.Pick p) { return takeDown(m, wk, p, null); }
+
+    /** 0.3.2.0: as above; reason CAPlanner.PickRef.FLOOR: a make-room swap for a production floor producer (its own mark and log reason). */
+    static boolean takeDown(MarketAPI m, Weakest wk, CAEngine.Pick p, String reason) {
         Industry ind = wk.ind;
         if (!CAStability.canLose(m, swapDelta(m, ind, p), "replacing " + ind.getCurrentName() + " with " + p.name)) return false;
         CAData d = CAData.get();
@@ -517,16 +520,17 @@ public class CAEndgame {
         SpecialItemData item = ind.getSpecialItem();
         CAStores.emptyInto(m, ind);   // core and item to this colony's Autopilot Storage
         String oldName = ind.getCurrentName(), oldId = ind.getId();
-        boolean capital = !at(m) && CACapital.isStep(m, p.id);
+        boolean floor = CAPlanner.PickRef.FLOOR.equals(reason);
+        boolean capital = !floor && !at(m) && CACapital.isStep(m, p.id);
         CATombstone.Built b = wk.built != null ? wk.built : CATombstone.built(m, oldId, CAHorizon.months(), null);   // read before the mark clears it
         m.removeIndustry(oldId, MarketAPI.MarketInteractionMode.REMOTE, false);
         long ts = Global.getSector().getClock().getTimestamp();
         d.endgameBuilt().put(m.getId() + ":-" + oldId, ts);
         d.swapAt().put(m.getId() + ":replaced", ts);
-        CATombstone.add(m.getId(), oldId, capital ? CATombstone.CAPITAL : CATombstone.ENDGAME, b.paid);   // 0.3.0.0 (B4): not built back here for a year
-        lastReplaceDay = now();
+        CATombstone.add(m.getId(), oldId, floor ? CATombstone.FLOOR : capital ? CATombstone.CAPITAL : CATombstone.ENDGAME, b.paid);   // 0.3.0.0 (B4): not built back here for a year
+        if (!floor) lastReplaceDay = now();   // 0.3.2.0: a make-room swap doesn't use the endgame's one-a-day
         chains = null;
-        String why = capital ? "room for the capital's trade" : "endgame";
+        String why = floor ? "room for a production floor producer" : capital ? "room for the capital's trade" : "endgame";
         CALog.did(m.getName() + ": Took down " + oldName + " for " + p.name + " (" + why + ", worth " + CAEngine.valueText(p.score - wk.keep) + " more"
                 + CATombstone.paidText(b) + ")."
                 + (core != null || item != null ? " Its " + (core != null && item != null ? "core and item" : core != null ? "core" : "item") + " to Autopilot Storage." : ""), true);

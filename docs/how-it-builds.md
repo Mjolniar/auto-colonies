@@ -30,7 +30,19 @@
 ## How it picks
 
 - Monthly value: Money after upkeep plus stability, accessibility, defense, fleets, ship quality and growth, weighted by the goal.
+- Money taper: Money counts in full up to 300,000 a month of income, 60% up to 1,000,000, 35% above ([Money](money.md#money-taper)).
+- Diversity: A 3rd and later copy of a building family counts 75% of its money per extra copy.
 - Payback horizon: 36 months, rising to 120 as surplus credits reach 10,000,000.
+
+## Production floors
+
+- Production (Settings, Advanced, Production): Off, Light (recommended), Full.
+- Floors: Hull source, hull capacity (custom production), AoTD order goods, production quality, weapons, Domain-grade Parts, supplies, fuel, producer inputs.
+- Light: 1 hull source, 100,000 capacity a month, quality 0.8 (about 1 d-mod a hull), no supplies or fuel shortage. Full: 2 hull sources, 300,000, quality 1.0, supplies and fuel for your fleet.
+- Value: An open floor adds value for the part of the gap a build closes. Floor builds rank first and keep their industry slot.
+- Steps: An open floor's producer (Heavy Industry, Orbital Works, Fuel Production, Refining, High-tech Industry) becomes a plan step at the best colony. A colony with a free slot goes first.
+- Make room: With no free slot, the planned colony proposes replacing its weakest income-only industry (Ask first).
+- Budget panel: Each floor, met or how far off, and the producers planned.
 
 ## The one queue
 

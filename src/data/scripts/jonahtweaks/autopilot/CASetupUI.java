@@ -121,6 +121,8 @@ public class CASetupUI {
         s.noMarketModel = false;   // exports valued by your share of each sector market (0.2.44.0)
         s.noOverLimitFix = false;  // and a colony over its industry limit takes down its weakest industry
         s.noPrune = false;         // and an industry that stopped paying for 30 days (0.2.44.1)
+        s.productionDefaults();    // 0.3.2.0: production Light, its floors, taper, diversity and the rest at their defaults
+        s.showThinking = false;    // 0.3.2.0: the Log page's Thinking list collapsed
     }
 
     /**
@@ -215,12 +217,13 @@ public class CASetupUI {
         PRESET_KEYS.put("p_policy", CAPresets.POLICIES);
         PRESET_KEYS.put("p_cores", CAPresets.AI_CORES);
         PRESET_KEYS.put("p_admins", CAPresets.ADMINS);
+        PRESET_KEYS.put("p_prod", CAPresets.PRODUCTION);   // 0.3.2.0: in Advanced, Production
     }
     /** Advanced subgroups: id, title. */
     static final String[][] ADVANCED = {
             {"adv_budget", "Budget"}, {"adv_rich", "Surplus and money ladder"}, {"adv_build", "Building"}, {"adv_cores", "AI cores and items"},
             {"adv_policy", "Colony policies"}, {"adv_people", "People and diplomacy"}, {"adv_war", "War"}, {"adv_capital", "Capital and storage"},
-            {"adv_extras", "Extras"}, {"adv_expand", "New colonies"}, {"adv_ui", "Interface"}};
+            {"adv_extras", "Extras"}, {"adv_expand", "New colonies"}, {"adv_prod", "Production"}, {"adv_ui", "Interface"}};
 
     // ---------------- groups ----------------
 
@@ -554,10 +557,49 @@ public class CASetupUI {
             // 0.3.0.0 (WS-F1 fix): Auto stations only recommend while New colonies on Auto asks first (CAPresets.tascMode)
             if (CATasc.enabled()) row(t, "TASC stations", CASettings.TASC_STATION_NAMES[clamp(s.stationMode, 3)]
                     + (CAPresets.tascMode(s) != clamp(s.stationMode, 3) ? " (recommends: Expansion rung)" : ""), CASettings.TASC_STATION_NAMES[0], "tascst", true);
+        } else if ("adv_prod".equals(id)) {
+            production(t, s);
         } else if ("adv_ui".equals(id)) {
             row(t, "Announcement voice", CASettings.VOICE_NAMES[clamp(s.voice, 2)], CASettings.VOICE_NAMES[0], "voice", true);
             row(t, "Button on the colony screen", onOff(!s.noScreenButton), on, "screenbtn", true);
+            row(t, "Thinking list", s.showThinking ? "Show" : "Hide", "Hide", "thinking", true);   // 0.3.2.0: the Log page's list
         }
+    }
+
+    /**
+     * 0.3.2.0: the Production subgroup: the preset, then each floor, the planner rules, the taper, diversity, goal weights,
+     * contracts, parts and the Shipyard rung. Every recommendation is the plan's default (CASettings.productionDefaults).
+     */
+    static void production(TooltipMakerAPI t, CASettings s) {
+        String on = "On", off = "Off";
+        row(t, "Production", CAPresets.name(s, CAPresets.PRODUCTION), CAPresets.recName(CAPresets.PRODUCTION), "p_prod", true);
+        row(t, "Hull sources", String.valueOf(s.floorHullSources), "1", "fhulls", false);
+        row(t, "Hull capacity a month", Misc.getDGSCredits(s.floorCapacity), Misc.getDGSCredits(CATuning.FLOOR_CAPACITY_LIGHT), "fcap", false);
+        row(t, "Order goods within", s.floorOrderMonths + " months", CATuning.FLOOR_ORDER_MONTHS + " months", "fmonths", false);
+        row(t, "Production quality", String.format(Locale.ROOT, "%.1f", s.floorQuality), "0.8", "fqual", false);
+        row(t, "Parts reserve", String.valueOf(s.floorPartsReserve), String.valueOf(CATuning.FLOOR_PARTS_RESERVE), "fparts", false);
+        row(t, "Supplies floor", CASettings.FLOOR_GOODS_NAMES[clamp(s.floorSupplies, 3)], CASettings.FLOOR_GOODS_NAMES[1], "fsup", true);
+        row(t, "Fuel floor", CASettings.FLOOR_GOODS_NAMES[clamp(s.floorFuel, 3)], CASettings.FLOOR_GOODS_NAMES[1], "ffuel", true);
+        row(t, "Floors at Money colonies", onOff(s.floorMoneyGoal), off, "fmoney", true);
+        row(t, "Floor builds first", onOff(s.needsFirst), on, "fneeds", true);
+        row(t, "Make room", CASettings.MAKE_ROOM_NAMES[clamp(s.makeRoom, 3)], CASettings.MAKE_ROOM_NAMES[1], "froom", true);
+        row(t, "Money taper", CASettings.TAPER_NAMES[clamp(s.moneyTaper, 3)], CASettings.TAPER_NAMES[1], "ftaper", true);
+        if (s.moneyTaper == CATuning.TAPER_GENTLE) {
+            row(t, "Taper from", Misc.getDGSCredits(s.taperLow), Misc.getDGSCredits(CATuning.TAPER_LOW), "ftlow", false);
+            row(t, "Taper top from", Misc.getDGSCredits(s.taperHigh), Misc.getDGSCredits(CATuning.TAPER_HIGH), "fthigh", false);
+        }
+        row(t, "Same building copies", s.diversityCopies == 0 ? off : String.valueOf(s.diversityCopies), String.valueOf(CATuning.DIVERSITY_COPIES), "fdivn", false);
+        row(t, "Next copy counts", Math.round(s.diversityShare * 100f) + "%", Math.round(CATuning.DIVERSITY_SHARE * 100f) + "%", "fdivd", false);
+        row(t, "Goal weights", CASettings.GOAL_WEIGHT_NAMES[clamp(s.goalWeights, 2)], CASettings.GOAL_WEIGHT_NAMES[0], "fweights", true);
+        row(t, "Contracts keep floor goods", onOff(s.keepProductionGoods), on, "fkeep", true);
+        row(t, "Parts to the capital", onOff(s.partsToCapital), off, "fpartscap", true);
+        row(t, "Shipyard from Surplus", onOff(s.shipyardFromSurplus), on, "fshipyard", true);
+        row(t, "Value: hull source", Misc.getDGSCredits(s.floorValHull), Misc.getDGSCredits(CATuning.FLOOR_VAL_HULL), "fvhull", false);
+        row(t, "Value: capacity credit", String.format(Locale.ROOT, "%.1f", s.floorValCapacity), "0.5", "fvcap", false);
+        row(t, "Value: 1.0 quality", Misc.getDGSCredits(s.floorValQuality), Misc.getDGSCredits(CATuning.FLOOR_VAL_QUALITY), "fvqual", false);
+        row(t, "Value: a part", Misc.getDGSCredits(s.floorValPart), Misc.getDGSCredits(CATuning.FLOOR_VAL_PART), "fvpart", false);
+        row(t, "Value: order goods", "x" + String.format(Locale.ROOT, "%.1f", s.floorValOrders), "x3.0", "fvorder", false);
+        row(t, "Value: goods", "x" + String.format(Locale.ROOT, "%.1f", s.floorValGoods), "x2.0", "fvgoods", false);
     }
 
     /**
@@ -923,6 +965,33 @@ public class CASetupUI {
         else if (k.equals("expmethod")) s.expandMethod = (clamp(s.expandMethod, CASettings.EXPAND_METHOD_NAMES.length) + 1) % CASettings.EXPAND_METHOD_NAMES.length;
         else if (k.equals("expmax")) s.expandMax = (clamp(s.expandMax, CASettings.EXPAND_MAX_NAMES.length) + 1) % CASettings.EXPAND_MAX_NAMES.length;
         else if (k.equals("expbuildout")) s.noExpandBuildout = !s.noExpandBuildout;
+        // 0.3.2.0: production floors (Advanced, Production) and the Thinking list (Advanced, Interface)
+        else if (k.equals("fhulls")) s.floorHullSources = Math.max(0, Math.min(3, s.floorHullSources + (int) dir));
+        else if (k.equals("fcap")) s.floorCapacity = Math.max(0f, Math.min(1000000f, s.floorCapacity + 50000f * dir));
+        else if (k.equals("fmonths")) s.floorOrderMonths = Math.max(3, Math.min(24, s.floorOrderMonths + (int) dir));
+        else if (k.equals("fqual")) s.floorQuality = Math.round(Math.max(0.5f, Math.min(1.2f, s.floorQuality + 0.1f * dir)) * 10f) / 10f;
+        else if (k.equals("fparts")) s.floorPartsReserve = Math.max(0, Math.min(1000, s.floorPartsReserve + 50 * (int) dir));
+        else if (k.equals("fsup")) s.floorSupplies = (clamp(s.floorSupplies, 3) + 1) % 3;
+        else if (k.equals("ffuel")) s.floorFuel = (clamp(s.floorFuel, 3) + 1) % 3;
+        else if (k.equals("fmoney")) s.floorMoneyGoal = !s.floorMoneyGoal;
+        else if (k.equals("fneeds")) s.needsFirst = !s.needsFirst;
+        else if (k.equals("froom")) s.makeRoom = (clamp(s.makeRoom, 3) + 1) % 3;
+        else if (k.equals("ftaper")) s.moneyTaper = (clamp(s.moneyTaper, 3) + 1) % 3;
+        else if (k.equals("ftlow")) s.taperLow = Math.max(100000f, Math.min(s.taperHigh - 100000f, s.taperLow + 100000f * dir));
+        else if (k.equals("fthigh")) s.taperHigh = Math.max(s.taperLow + 100000f, Math.min(10000000f, s.taperHigh + 100000f * dir));
+        else if (k.equals("fdivn")) s.diversityCopies = Math.max(0, Math.min(6, s.diversityCopies + (int) dir));
+        else if (k.equals("fdivd")) s.diversityShare = Math.round(Math.max(0.5f, Math.min(1f, s.diversityShare + 0.05f * dir)) * 100f) / 100f;
+        else if (k.equals("fweights")) s.goalWeights = (clamp(s.goalWeights, 2) + 1) % 2;
+        else if (k.equals("fkeep")) s.keepProductionGoods = !s.keepProductionGoods;
+        else if (k.equals("fpartscap")) s.partsToCapital = !s.partsToCapital;
+        else if (k.equals("fshipyard")) s.shipyardFromSurplus = !s.shipyardFromSurplus;
+        else if (k.equals("fvhull")) s.floorValHull = Math.max(0f, s.floorValHull + 10000f * dir);
+        else if (k.equals("fvcap")) s.floorValCapacity = Math.round(Math.max(0f, s.floorValCapacity + 0.1f * dir) * 10f) / 10f;
+        else if (k.equals("fvqual")) s.floorValQuality = Math.max(0f, s.floorValQuality + 10000f * dir);
+        else if (k.equals("fvpart")) s.floorValPart = Math.max(0f, s.floorValPart + 50f * dir);
+        else if (k.equals("fvorder")) s.floorValOrders = Math.round(Math.max(0f, s.floorValOrders + 0.5f * dir) * 10f) / 10f;
+        else if (k.equals("fvgoods")) s.floorValGoods = Math.round(Math.max(0f, s.floorValGoods + 0.5f * dir) * 10f) / 10f;
+        else if (k.equals("thinking")) s.showThinking = !s.showThinking;
         else if (k.equals("expadmins")) s.noExpandAdmins = !s.noExpandAdmins;
         return true;
     }

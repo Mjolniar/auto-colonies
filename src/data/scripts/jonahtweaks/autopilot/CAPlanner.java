@@ -120,7 +120,7 @@ public class CAPlanner {
     /** Called by CAAuto.reset (CAReset.onLoad): a load starts with no offers, events, earmark or hold. */
     static void reset() {
         offers.clear(); sigs.clear(); slotsSeen.clear(); threatSeen.clear(); wakes.clear(); waiting.clear(); idle.clear(); regen.clear();
-        lastMonth = -1; lastTier = null; earmark = null; hold = null; lastPass = Float.NaN; lastStarted = 0;
+        lastMonth = -1; lastTier = null; earmark = null; hold = null; lastPass = Float.NaN; lastStarted = 0; floorPass = false;
     }
 
     /** Money saved up for one pick: its key and price, the day it should be affordable by, when it was set, and whether it may also draw on the surplus. */
@@ -136,6 +136,8 @@ public class CAPlanner {
         String market;
         boolean queue;
         float lapse;
+        /** 0.3.2.0: saved up for a floor producer (another floor producer doesn't take it over). */
+        boolean floor;
         Earmark() { }
         Earmark(String key, String name, float total, float due, float set) {
             this.key = key; this.name = name; this.total = total; this.due = due; this.set = set;
@@ -380,23 +382,38 @@ public class CAPlanner {
     /** Ranked only by the rule you set: no positive NPV of its own. */
     static boolean ruleOnly(CAAction a) { return a.byRule && !(a.value() > 0f); }   // 0.3.0.9: a NaN NPV counts as none (CAAction.value)
 
-    /** Across colonies: NPV per credit, rule-only actions last (stable for ties, so a module's own order stands). */
+    /**
+     * 0.3.2.0 (M2): a floor action (CAAction.floorFirst) ranks ahead of the rest. While a pass has one, emergencies (a siege's
+     * defenses) rank ahead of it: set by execute for the length of one sort, so a pass with no floor action sorts as 0.3.1.0.
+     */
+    static boolean floorPass = false;
+
+    /** 0.3.2.0: the rank group: 0 an emergency in a floor pass, 1 a floor action, 2 the rest, 3 rule-only. */
+    static int rankGroup(CAAction a) {
+        if (ruleOnly(a)) return 3;
+        if (a.emergency && floorPass) return 0;
+        return a.floorFirst ? 1 : 2;
+    }
+
+    /** Across colonies: NPV per credit, rule-only actions last (stable for ties, so a module's own order stands). 0.3.2.0: floor actions first, by floor value per credit. */
     static final Comparator<CAAction> RANK = new Comparator<CAAction>() {
         public int compare(CAAction x, CAAction y) {
-            boolean rx = ruleOnly(x), ry = ruleOnly(y);
-            if (rx != ry) return rx ? 1 : -1;
-            if (rx) return 0;
+            int gx = rankGroup(x), gy = rankGroup(y);
+            if (gx != gy) return gx < gy ? -1 : 1;
+            if (gx == 3) return 0;
+            if (gx == 1) { int f = Float.compare(y.floorPerCredit(), x.floorPerCredit()); if (f != 0) return f; }
             int c = Float.compare(y.perCredit(), x.perCredit());
             return c != 0 ? c : Float.compare(y.value(), x.value());   // 0.3.0.9: a NaN NPV as 0 (CAAction.value)
         }
     };
 
-    /** A colony's construction queue: NPV per construction day (Smith's rule), rule-only actions last. */
+    /** A colony's construction queue: NPV per construction day (Smith's rule), rule-only actions last. 0.3.2.0: floor actions head the queue. */
     static final Comparator<CAAction> QUEUE = new Comparator<CAAction>() {
         public int compare(CAAction x, CAAction y) {
             boolean rx = ruleOnly(x), ry = ruleOnly(y);
             if (rx != ry) return rx ? 1 : -1;
             if (rx) return 0;
+            if (x.floorFirst != y.floorFirst) return x.floorFirst ? -1 : 1;
             int c = Float.compare(y.perDay(), x.perDay());
             return c != 0 ? c : Float.compare(y.value(), x.value());   // 0.3.0.9: a NaN NPV as 0 (CAAction.value)
         }
@@ -418,6 +435,14 @@ public class CAPlanner {
      * between passes. Never throws for one action: a starter that throws is that action's failure.
      */
     static Result execute(List<CAAction> all, Pool pool, Hooks h) {
+        boolean was = floorPass;
+        floorPass = false;
+        for (CAAction a : all) if (a != null && a.floorFirst) floorPass = true;   // 0.3.2.0: emergencies rank ahead of floor actions
+        try { return run(all, pool, h); }
+        finally { floorPass = was; }
+    }
+
+    static Result run(List<CAAction> all, Pool pool, Hooks h) {
         if (h == null) h = PURE;
         Result res = new Result();
         List<CAAction> alive = new ArrayList<CAAction>();
@@ -649,9 +674,12 @@ public class CAPlanner {
      * the month roll-over that brings the money in (readyIn), as keepsDate counts it, not "now + months x 30".
      */
     static void earmarkFor(CAAction a, Pool pool, Result res, float total, float room, boolean fits) {
-        if (pool.earmark != null || !fits || ruleOnly(a) || !(a.value() > 0f) || !a.fromBudget || a.emergency) return;   // 0.3.0.0 (B3 fix): never for a siege's defense; 0.3.0.9: nor a NaN NPV
+        // 0.3.2.0 (M2): the first waiting floor producer takes the earmark from a pick that isn't one
+        boolean takeOver = pool.earmark != null && a.floorFirst && !pool.earmark.floor && !pool.earmark.key.equals(a.key());
+        if ((pool.earmark != null && !takeOver) || !fits || ruleOnly(a) || !(a.value() > 0f) || !a.fromBudget || a.emergency) return;   // 0.3.0.0 (B3 fix): never for a siege's defense; 0.3.0.9: nor a NaN NPV
         if (monthsToAfford(total, room, pool.monthly) > EARMARK_MAX_MONTHS) return;
         pool.earmark = new Earmark(a.key(), a.label(), total, pool.now + readyIn(total, room, pool.monthly, pool.daysLeft), pool.now);
+        pool.earmark.floor = a.floorFirst;
         pool.earmark.surplus = a.fromSurplus;
         pool.earmark.what = a.name != null ? a.name : a.id; pool.earmark.place = a.place();
         pool.earmark.market = a.marketId; pool.earmark.queue = a.usesQueue;
@@ -702,6 +730,7 @@ public class CAPlanner {
         CAAction by = null;
         for (CAAction h : alive) {
             if (h == a || !h.usesSlot || !a.marketId.equals(h.marketId) || !keeps(h)) continue;
+            if (a.floorFirst && !h.floorFirst) continue;   // 0.3.2.0 (M2): a floor producer isn't held back by a slot kept for a pick that isn't one
             n++;
             if (by == null) by = h;
         }
@@ -903,6 +932,7 @@ public class CAPlanner {
         } catch (Throwable t) { CAStep.warn("planner", "planner look failed at " + m.getName(), t); return o; }
         o.list.addAll(pickActions(m, c, s, r, building, siege));
         // the endgame economy, then the capital: with every industry slot taken, the best industry with no slot may replace the weakest
+        boolean replaced = false;
         if (c.mode == CAData.Mode.AUTO && !building && !siege && r.blocked == null && CAEngine.worthwhile(r.bestNoSlot)) {
             CAEndgame.Weakest wk = null;
             try { wk = CAEndgame.replacement(m, c, r.bestNoSlot, used); }
@@ -913,6 +943,21 @@ public class CAPlanner {
             }
             if (wk != null) {
                 CAAction k = fromPick(m, c, r.bestNoSlot, s, false, wk);
+                o.list.add(k);
+                replaced = true;
+            }
+        }
+        // 0.3.2.0 (Batch E): make room: a floor producer with no slot may replace the weakest income-only industry; Ask first proposes it
+        if (!replaced && (c.mode == CAData.Mode.AUTO || c.mode == CAData.Mode.APPROVE) && !building && !siege && r.blocked == null
+                && CAEngine.worthwhile(r.bestFloorNoSlot)) {
+            CAEndgame.Weakest wk = null;
+            try { wk = CAFloors.makeRoom(m, c, r.bestFloorNoSlot, used); }
+            catch (Throwable t) { CAStep.warn("planner", "make room check failed at " + m.getName(), t); }
+            if (wk != null) {
+                boolean approve = c.mode == CAData.Mode.APPROVE;
+                CAAction k = fromPick(m, c, r.bestFloorNoSlot, s, approve, wk);
+                ((PickRef) k.payload).why = PickRef.FLOOR;
+                if (!approve && s.makeRoom != CATuning.MAKE_ROOM_AUTO) k.approval = makeRoomApproval(wk.ind.getCurrentName());
                 o.list.add(k);
             }
         }
@@ -944,8 +989,14 @@ public class CAPlanner {
         final CAData.Colony c;
         final CAEngine.Pick p;
         final CAEndgame.Weakest remove;
+        /** 0.3.2.0: why a replacement takes its industry down: null the endgame or the capital (CAEndgame.takeDown decides), FLOOR make room. */
+        String why;
+        static final String FLOOR = "production floor";
         PickRef(CAData.Colony c, CAEngine.Pick p, CAEndgame.Weakest remove) { this.c = c; this.p = p; this.remove = remove; }
     }
+
+    /** 0.3.2.0: the approval reason of a make-room swap under Ask first. */
+    static String makeRoomApproval(String replaced) { return "Approval needed: takes down " + replaced + " to make room for a production floor producer"; }
 
     /** One of the build engine's picks as an action. remove: the industry a replacement takes down first (its slot and upkeep). */
     static CAAction fromPick(MarketAPI m, CAData.Colony c, CAEngine.Pick p, CASettings s, boolean approveOnly, CAEndgame.Weakest remove) {
@@ -979,6 +1030,8 @@ public class CAPlanner {
         a.payload = new PickRef(c, p, remove);
         a.starter = PICK_START;
         a.rescore = PICK_RESCORE;
+        a.floor = p.floorValue;   // 0.3.2.0 (M2): floor actions rank first (CASettings.needsFirst)
+        a.floorFirst = p.floorValue > 0f && CAFloors.needsFirst();
         return a;
     }
 
@@ -1047,7 +1100,7 @@ public class CAPlanner {
                     a.failWaits = noCredits;
                     return why;
                 }
-                if (!CAEndgame.takeDown(m, ref.remove, p)) { a.failWaits = true; return "stability held the swap"; }   // CAStability logs why
+                if (!CAEndgame.takeDown(m, ref.remove, p, ref.why)) { a.failWaits = true; return "stability held the swap"; }   // CAStability logs why
             }
             String err = CAAuto.execute(m, ref.c, p, "Auto");
             if (err != null) { a.failWaits = noCredits || failsForNow(err); return err; }
@@ -1103,6 +1156,7 @@ public class CAPlanner {
         a.approval = f.approval; a.tombstone = f.tombstone; a.payload = f.payload; a.basis = f.basis; a.why = f.why;
         a.byRule = f.byRule; a.storyPoints = f.storyPoints; a.approveOnly = a.approveOnly || f.approveOnly;
         a.emergency = f.emergency; a.rejected = f.rejected;   // 0.3.0.0 (B3 fix): the siege and your rejection as they are now
+        a.floor = f.floor; a.floorFirst = f.floorFirst;       // 0.3.2.0: the floors as they are now
     }
 
     /** Every other module's actions, each in its own try so one failing never keeps the rest out. */
@@ -1244,7 +1298,8 @@ public class CAPlanner {
         public void propose(CAAction a, String why) {
             if (!(a.payload instanceof PickRef) || a.market == null) return;
             PickRef ref = (PickRef) a.payload;
-            CAAuto.propose(a.market, ref.c, ref.p, why);
+            // 0.3.2.0 (Batch E): a make-room swap carries the industry it takes down, so Approve can do the swap
+            CAAuto.propose(a.market, ref.c, ref.p, why, PickRef.FLOOR.equals(ref.why) && ref.remove != null && ref.remove.ind != null ? ref.remove.ind.getId() : null);
         }
     }
 

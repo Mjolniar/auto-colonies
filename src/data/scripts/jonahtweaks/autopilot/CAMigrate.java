@@ -13,8 +13,10 @@ import java.util.Map;
  * and is never retried every frame.
  */
 public class CAMigrate {
-    /** The saved-data layout this build writes (CAData.schema and CASettings.settingsVersion). */
-    public static final int SCHEMA = 3;
+    /** The saved-data layout this build writes (CAData.schema and CASettings.settingsVersion). 0.3.2.0: 4 (production floors). */
+    public static final int SCHEMA = 4;
+    /** The 0.3.0 layout: a save below it gets to3 as well. */
+    static final int SCHEMA_030 = 3;
 
     /** warMode (0 protect and strike back, 1 protect, 2 off) to the 0.3.0 War level, matching what CAWar actually did with it. */
     static int warLevelFor(int warMode) {
@@ -43,15 +45,34 @@ public class CAMigrate {
         d.schema = SCHEMA;
         s.settingsVersion = SCHEMA;
         // settings from before 0.3.0 get the whole move; an old save whose settings were just re-created (new CASettings,
-        // already version 3) only needs its colony_autopilot.json priorities as stances
-        boolean ok = fromSettings < SCHEMA ? to3(d, s) : stances(s);
-        try { d.migratedAt = Global.getSector().getClock().getTimestamp(); } catch (Throwable ignored) { }
+        // already the current version) only needs its colony_autopilot.json priorities as stances. 0.3.2.0: a 0.3.0 or 0.3.1
+        // save (version 3) gets only to4
+        boolean before030 = fromSettings < SCHEMA_030 || fromData < SCHEMA_030;
+        boolean ok = true;
+        if (fromSettings < SCHEMA_030) ok = to3(d, s);
+        else if (fromData < SCHEMA_030) ok = stances(s);
+        if (fromSettings < SCHEMA && !to4(d, s)) ok = false;
+        if (before030) {
+            try { d.migratedAt = Global.getSector().getClock().getTimestamp(); } catch (Throwable ignored) { }
+            try {
+                CALog.quiet("saved data moved to 0.3.0 (data " + fromData + ", settings " + fromSettings + "): War level "
+                        + CAWarPolicy.LEVEL_NAMES[Math.max(0, Math.min(CAWarPolicy.LEVEL_NAMES.length - 1, s.warLevel))]
+                        + " from War fleets " + s.warMode + ", " + s.factionStance().size() + " faction stance(s) from your priorities"
+                        + (s.noWarRetake ? ", retaking lost colonies off until you turn it on" : "") + (ok ? "" : "; a step failed, see above"));
+            } catch (Throwable ignored) { }
+        }
+    }
+
+    /**
+     * 0.3.2.0: the move to production floors. fixNulls already gave the production fields their defaults (Light) on a save
+     * that didn't have them (CAFloors.update says so once on the first daily pass); this copies the Log page's Thinking list
+     * switch into the settings. Idempotent.
+     */
+    static boolean to4(CAData d, CASettings s) {
         try {
-            CALog.quiet("saved data moved to 0.3.0 (data " + fromData + ", settings " + fromSettings + "): War level "
-                    + CAWarPolicy.LEVEL_NAMES[Math.max(0, Math.min(CAWarPolicy.LEVEL_NAMES.length - 1, s.warLevel))]
-                    + " from War fleets " + s.warMode + ", " + s.factionStance().size() + " faction stance(s) from your priorities"
-                    + (s.noWarRetake ? ", retaking lost colonies off until you turn it on" : "") + (ok ? "" : "; a step failed, see above"));
-        } catch (Throwable ignored) { }
+            if (d.thinkingShown) s.showThinking = true;
+            return true;
+        } catch (Throwable t) { warn("production floors", t); return false; }
     }
 
     /**

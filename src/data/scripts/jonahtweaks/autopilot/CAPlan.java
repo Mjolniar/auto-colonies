@@ -266,6 +266,7 @@ public class CAPlan {
         extra.addAll(stations);   // and a station at every colony, a bigger one at bigger colonies (0.2.42.0)
         extra.addAll(CAResearch.stepsFor(m));   // a Research Facility when there's none and research is Auto
         extra.addAll(CAProjects.stepsFor(m));
+        extra.addAll(CAFloors.stepsFor(m));     // 0.3.2.0: production floor producers (none with production Off)
         extra.addAll(CASurplus.richSteps(m));   // spending freely: every station and defense maxed
         extra.addAll(CAWonders.stepsFor(m));    // and the Bifrost Control Center at one colony
         if (extra.isEmpty()) return p;

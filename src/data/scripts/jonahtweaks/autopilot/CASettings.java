@@ -301,6 +301,82 @@ public class CASettings {
         }
     }
 
+    // ---------------- 0.3.2.0: production priorities (CAFloors, CAMoneyCurve, diversity) ----------------
+    // An older save loads every field below as 0, false or null. productionChecked is false then, and fixNulls fills them
+    // with productionDefaults() once (CAMigrate.to4 logs it). A field you set later is never filled again.
+    /** 0.3.2.0: the production fields below hold a value you or the defaults set (false: an older save, filled by fixNulls). */
+    public boolean productionChecked = true;
+    /** 0.3.2.0: Production preset: CATuning.PROD_OFF (the 0.3.1.0 picks), PROD_LIGHT (default), PROD_FULL. */
+    public int productionMode = CATuning.PROD_LIGHT;
+    public static final String[] PRODUCTION_NAMES = {"Off", "Light", "Full"};
+    /** 0.3.2.0: floor 1, ship producers wanted (0 to 3); floor 2, capacity a month; floor 3, months for AoTD order goods. */
+    public int floorHullSources = CATuning.FLOOR_HULLS_LIGHT;
+    public float floorCapacity = CATuning.FLOOR_CAPACITY_LIGHT;
+    public int floorOrderMonths = CATuning.FLOOR_ORDER_MONTHS;
+    /** 0.3.2.0: floor 4, production quality; floor 6, parts kept on top of the fleet's repair need. */
+    public float floorQuality = CATuning.FLOOR_QUALITY_LIGHT;
+    public int floorPartsReserve = CATuning.FLOOR_PARTS_RESERVE;
+    /** 0.3.2.0: floors 7 and 8 (FLOOR_GOODS_NAMES). */
+    public int floorSupplies = CATuning.FLOOR_GOODS_SHORTAGE, floorFuel = CATuning.FLOOR_GOODS_SHORTAGE;
+    public static final String[] FLOOR_GOODS_NAMES = {"Off", "No shortage", "Fleet use"};
+    /** 0.3.2.0: floors also apply at Money-goal colonies (off by default). */
+    public boolean floorMoneyGoal = false;
+    /** 0.3.2.0: floor values a month (CATuning.FLOOR_VAL_*): hull source, per capacity credit, per 1.0 quality, per part, order factor, goods factor. */
+    public float floorValHull = CATuning.FLOOR_VAL_HULL, floorValCapacity = CATuning.FLOOR_VAL_CAPACITY, floorValQuality = CATuning.FLOOR_VAL_QUALITY,
+            floorValPart = CATuning.FLOOR_VAL_PART, floorValOrders = CATuning.FLOOR_VAL_ORDERS, floorValGoods = CATuning.FLOOR_VAL_GOODS;
+    /** 0.3.2.0: floor actions rank ahead of other actions in the planner. */
+    public boolean needsFirst = true;
+    /** 0.3.2.0: a floor producer may replace the weakest income industry: CATuning.MAKE_ROOM_OFF, MAKE_ROOM_ASK (default), MAKE_ROOM_AUTO. */
+    public int makeRoom = CATuning.MAKE_ROOM_ASK;
+    public static final String[] MAKE_ROOM_NAMES = {"Off", "Ask first", "Auto"};
+    /** 0.3.2.0: money taper (CATuning.TAPER_*): Off, Gentle (default), Strong; its two lines for Gentle. */
+    public int moneyTaper = CATuning.TAPER_GENTLE;
+    public static final String[] TAPER_NAMES = {"Off", "Gentle", "Strong"};
+    public float taperLow = CATuning.TAPER_LOW, taperHigh = CATuning.TAPER_HIGH;
+    /** 0.3.2.0: diversity: copies of a building family before the next counts less (0: off), and that share per extra copy. */
+    public int diversityCopies = CATuning.DIVERSITY_COPIES;
+    public float diversityShare = CATuning.DIVERSITY_SHARE;
+    /** 0.3.2.0: goal weights: 0 the 0.3.2 table (default), 1 the 0.3.0 table. */
+    public int goalWeights = 0;
+    public static final String[] GOAL_WEIGHT_NAMES = {"0.3.2 table", "0.3.0 table"};
+    /** 0.3.2.0: trade contracts leave floor goods alone while their floor is open (CAContracts). */
+    public boolean keepProductionGoods = true;
+    /** 0.3.2.0: storage logistics brings Domain-grade Parts from Local Resources to the capital's Storage weekly (off by default). */
+    public boolean partsToCapital = false;
+    /** 0.3.2.0: the Shipyard rung opens at Surplus (else Idle money) while production floors are on. */
+    public boolean shipyardFromSurplus = true;
+    /** 0.3.2.0: the Log page shows its Thinking list (CAData.thinkingShown before 0.3.2.0; CAMigrate.to4 copies it). */
+    public boolean showThinking = false;
+
+    /** 0.3.2.0: every production field at its default (the Light preset). Reset to recommended and older saves use it. */
+    public void productionDefaults() {
+        productionMode = CATuning.PROD_LIGHT;
+        floorHullSources = CATuning.FLOOR_HULLS_LIGHT;
+        floorCapacity = CATuning.FLOOR_CAPACITY_LIGHT;
+        floorOrderMonths = CATuning.FLOOR_ORDER_MONTHS;
+        floorQuality = CATuning.FLOOR_QUALITY_LIGHT;
+        floorPartsReserve = CATuning.FLOOR_PARTS_RESERVE;
+        floorSupplies = CATuning.FLOOR_GOODS_SHORTAGE;
+        floorFuel = CATuning.FLOOR_GOODS_SHORTAGE;
+        floorMoneyGoal = false;
+        floorValHull = CATuning.FLOOR_VAL_HULL; floorValCapacity = CATuning.FLOOR_VAL_CAPACITY; floorValQuality = CATuning.FLOOR_VAL_QUALITY;
+        floorValPart = CATuning.FLOOR_VAL_PART; floorValOrders = CATuning.FLOOR_VAL_ORDERS; floorValGoods = CATuning.FLOOR_VAL_GOODS;
+        needsFirst = true;
+        makeRoom = CATuning.MAKE_ROOM_ASK;
+        moneyTaper = CATuning.TAPER_GENTLE;
+        taperLow = CATuning.TAPER_LOW; taperHigh = CATuning.TAPER_HIGH;
+        diversityCopies = CATuning.DIVERSITY_COPIES;
+        diversityShare = CATuning.DIVERSITY_SHARE;
+        goalWeights = 0;
+        keepProductionGoods = true;
+        partsToCapital = false;
+        shipyardFromSurplus = true;
+        productionChecked = true;
+    }
+
+    /** 0.3.2.0: production floors and the rest of the 0.3.2.0 production rules are on (not the Off preset). */
+    public boolean productionOn() { return productionMode == CATuning.PROD_LIGHT || productionMode == CATuning.PROD_FULL; }
+
     public boolean expandBuildout() { return !noExpandBuildout; }
     public boolean expandAdmins() { return !noExpandAdmins; }
     public boolean warRetake() { return !noWarRetake; }
@@ -358,5 +434,32 @@ public class CASettings {
         // 0.3.1.0: a cost mode out of range reads as Reputation; owed credits are never below 0 or NaN
         if (enfCost < 0 || enfCost >= ENF_COST_NAMES.length) enfCost = ENF_REP;
         if (!(enfOwed > 0f)) enfOwed = 0f;
+        // 0.3.2.0: an older save loads the production fields as 0 and productionChecked false: the defaults (Light), once
+        if (!productionChecked) { productionDefaults(); productionFilled = true; }
+        // 0.3.2.0: values out of range (a broken settings file) read as the nearest allowed one
+        if (productionMode < CATuning.PROD_OFF || productionMode > CATuning.PROD_FULL) productionMode = CATuning.PROD_LIGHT;
+        floorHullSources = Math.max(0, Math.min(3, floorHullSources));
+        if (!(floorCapacity >= 0f)) floorCapacity = CATuning.FLOOR_CAPACITY_LIGHT;
+        floorOrderMonths = Math.max(3, Math.min(24, floorOrderMonths));
+        if (!(floorQuality >= 0.5f) || floorQuality > 1.2f) floorQuality = CATuning.FLOOR_QUALITY_LIGHT;
+        floorPartsReserve = Math.max(0, Math.min(1000, floorPartsReserve));
+        if (floorSupplies < 0 || floorSupplies > 2) floorSupplies = CATuning.FLOOR_GOODS_SHORTAGE;
+        if (floorFuel < 0 || floorFuel > 2) floorFuel = CATuning.FLOOR_GOODS_SHORTAGE;
+        if (makeRoom < 0 || makeRoom > 2) makeRoom = CATuning.MAKE_ROOM_ASK;
+        if (moneyTaper < 0 || moneyTaper > 2) moneyTaper = CATuning.TAPER_GENTLE;
+        if (!(taperLow > 0f)) taperLow = CATuning.TAPER_LOW;
+        if (!(taperHigh > taperLow)) taperHigh = Math.max(taperLow + 1f, CATuning.TAPER_HIGH);
+        diversityCopies = Math.max(0, Math.min(6, diversityCopies));
+        if (!(diversityShare >= 0.5f) || diversityShare > 1f) diversityShare = CATuning.DIVERSITY_SHARE;
+        if (goalWeights < 0 || goalWeights > 1) goalWeights = 0;
+        if (!(floorValHull >= 0f)) floorValHull = CATuning.FLOOR_VAL_HULL;
+        if (!(floorValCapacity >= 0f)) floorValCapacity = CATuning.FLOOR_VAL_CAPACITY;
+        if (!(floorValQuality >= 0f)) floorValQuality = CATuning.FLOOR_VAL_QUALITY;
+        if (!(floorValPart >= 0f)) floorValPart = CATuning.FLOOR_VAL_PART;
+        if (!(floorValOrders >= 0f)) floorValOrders = CATuning.FLOOR_VAL_ORDERS;
+        if (!(floorValGoods >= 0f)) floorValGoods = CATuning.FLOOR_VAL_GOODS;
     }
+
+    /** 0.3.2.0: fixNulls filled the production fields this session (an older save); CAMigrate.to4 logs it once. Not saved. */
+    transient boolean productionFilled;
 }

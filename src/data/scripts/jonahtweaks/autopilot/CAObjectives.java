@@ -133,7 +133,7 @@ public class CAObjectives {
             if (m.getStarSystem() != sys || CAEngine.isOutpost(m)) continue;
             x.colonies.add(m);
             CAData.Colony c = d.colonies == null ? null : d.colonies.get(m.getId());
-            x.weights.add(c != null ? CAItems.coreWeights(m, c) : CAEngine.WEIGHTS[CAData.Profile.BALANCED.ordinal()]);
+            x.weights.add(c != null ? CAItems.coreWeights(m, c) : CAEngine.goalWeights(CAData.Profile.BALANCED));
             if (x.base == null || m.getSize() > x.base.getSize()) x.base = m;
         }
         Set<String> claimed = new HashSet<String>();

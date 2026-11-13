@@ -34,6 +34,7 @@ public class CAAuto {
         wasBuilding.clear(); nextPass.clear(); lastTrace.clear(); lastNow = 0f;
         rejectedId.clear(); rejectedUntil.clear();
         CAPlanner.reset();   // 0.3.0.0 (B3): the planner's offers, events, earmark and upkeep hold
+        CAFloors.reset();    // 0.3.2.0: the production floors are measured again on the first pass after a load
     }
 
     /**
@@ -112,6 +113,7 @@ public class CAAuto {
         CAStep.run("capital step", () -> CACapital.daily(d, s));   // the capital: deliveries there, and its commerce build-up once colonies ramp up (0.2.42.0)
         CAStep.run("endgame economy step", () -> CAEndgame.daily(s));   // after spending freely is known: the endgame economy starts or ends
         CAStep.run("special project supply step", () -> CAProjects.update());   // before any plan is read: a special project's producers are plan steps
+        CAStep.run("production floors step", () -> CAFloors.update());   // 0.3.2.0: before any plan is read: the floors, their producers as plan steps, the parts advice
         // the same lists as 0.2.45 made after the build pass (nothing in it changes a colony's mode or siege). 0.3.0.0 (A1): in a
         // guarded step, so a throw here can't skip the day; if it does throw, the lists stay empty and nothing is built today
         final List<MarketAPI> allAuto = new ArrayList<MarketAPI>(), auto = new ArrayList<MarketAPI>();
@@ -397,9 +399,13 @@ public class CAAuto {
                 + ", upkeep " + Math.round(p.upkeep) + "/month" + (p.horizon > 0f ? ", NPV " + Math.round(p.score * p.horizon) + " over " + Math.round(p.horizon) + " months" : "") + ")";
     }
 
-    static void propose(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String why) {
-        if (p.id.equals(c.pendingId)) return;
+    static void propose(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String why) { propose(m, c, p, why, null); }
+
+    /** 0.3.2.0: replace: the industry a make-room swap takes down on Approve (null: none). */
+    static void propose(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String why, String replace) {
+        if (p.id.equals(c.pendingId) && (replace == null ? c.pendingReplace == null : replace.equals(c.pendingReplace))) return;
         c.pendingId = p.id; c.pendingName = p.verb + " " + p.name; c.pendingUpgrade = p.upgrade; c.pendingCost = p.cost;
+        c.pendingReplace = replace;
         c.pendingNotified = true;
         CALog.advise(m.getName() + ": Proposal: " + c.pendingName + " for " + Misc.getDGSCredits(p.cost) + ". " + why + ".");
     }
@@ -433,8 +439,20 @@ public class CAAuto {
         CAData d = CAData.get();
         CAData.Colony c = d.colony(m.getId());
         if (c.pendingId == null) return "Nothing to approve";
-        CAEngine.Result r = CAEngine.evaluate(m, CAThreat.effective(m, c.profile), d.settings.minStability);
+        CAData.Profile prof = CAThreat.effective(m, c.profile);
+        CAEngine.Result r = CAEngine.evaluate(m, prof, d.settings.minStability);
         if (r.blocked != null && !c.pendingUpgrade) return r.blocked;
+        // 0.3.2.0 (Batch E): a make-room swap: the industry comes down, then the floor producer goes up, each checked first
+        if (c.pendingReplace != null) {
+            for (CAEngine.Pick p : r.floorNoSlot) {
+                if (!p.id.equals(c.pendingId) || p.upgrade != c.pendingUpgrade) continue;
+                String err = CAFloors.swap(m, c, p, c.pendingReplace, prof);
+                if (err != null) return err;
+                return execute(m, c, p, "Approved:");
+            }
+            d.clearPending(c);
+            return "Proposal out of date. Cleared";
+        }
         for (CAEngine.Pick p : r.picks) {
             if (p.id.equals(c.pendingId) && p.upgrade == c.pendingUpgrade) return execute(m, c, p, "Approved:");
         }

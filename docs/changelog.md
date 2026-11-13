@@ -1,5 +1,26 @@
 # Patch notes
 
+## 0.3.2.0 - 2026-11-13
+
+- Production floors: Added floors for hull source, hull capacity, AoTD order goods, production quality, weapons, Domain-grade Parts, supplies, fuel and producer inputs. Measured daily. Shown on the Budget panel.
+- Production floors: An open floor adds value to a build for the part of the gap it closes. A met floor adds nothing.
+- Production floors: Floors apply at every goal except Money. Fast buildout skips them.
+- Production floors: An open floor gets its producer as a plan step at the best Approve or Auto colony. Research values the techs it needs.
+- Planner: Floor builds rank first, head their colony's queue, keep their industry slot and take the earmark from other picks. Siege defenses stay first.
+- Make room: With no free slot, a floor producer may replace the weakest income-only industry at the colony planned for it. Ask first (default) proposes it. Options: Off, Ask first, Auto.
+- Make room: Kept: plan, project, military, locked and capital trade buildings, floor producers and industries under a year old. Every swap passes the stability floor.
+- Money taper: A build's money counts in full up to 300,000 a month of colony net and contract income, 60% up to 1,000,000 and 35% above. Options: Off, Gentle (default), Strong. Money colonies use no taper.
+- Diversity: A 3rd and later copy of a building family in the empire counts 75% of its money per extra copy. Families: Roider Dives and Union HQ, mining, JYD forges, commerce, farming, light industry.
+- Goal weights: Balanced, Self-sufficiency and War production count fleets and ship quality more. The 0.3.0 table is a setting.
+- Trade contracts: Ships, weapons, components, Domain-grade machinery, supplies and fuel stay home while their floor is open.
+- Shipyard: The Shipyard rung opens at Surplus. With no production capacity its note names the floor producer planned.
+- Parts: Added an advice line with the parts in Local Resources and the fleet's d-mod repair need. Taking parts costs the game's Local Resources price.
+- Parts: Added an option to move the parts the fleet needs from Local Resources to the capital's Storage, at the Local Resources price plus the shipment fee. Off by default.
+- Supported mods: Restoration Docks count toward the parts floor. Salvage Yards' quality loss counts against the quality floor. JYD, Yunru, RAT and Roider ship consumers count against AoTD order goods.
+- Settings: Added the Production preset (Off, Light, Full) and every production setting under Advanced, Production. Off keeps the 0.3.1 picks.
+- Settings: Added a Thinking list row (Show, Hide) under Advanced, Interface.
+- Saves: Older saves load with Light and one log line naming the setting.
+
 ## 0.3.1.0 - 2026-11-12
 
 - Enforcer patrols: Added an option for colony patrols to attack Hegemony investigators, Hegemony AI inspections, League enforcers, Luddic sacred protectors, Tri-Tachyon commerce raiders and Nexerelin police in systems with Auto colonies. Off by default. Each fleet type has its own switch. Settings: Advanced, War.

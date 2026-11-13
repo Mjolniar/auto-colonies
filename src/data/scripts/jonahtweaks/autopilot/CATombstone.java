@@ -64,7 +64,7 @@ public class CATombstone {
     /** Why a building came down (Mark.why), short for the panel and log. */
     public static final String PRUNE = "stopped paying", OVERLIMIT = "over the industry limit", SHED = "0 stability",
             ENDGAME = "endgame swap", CAPITAL = "room for the capital's trade", TERRAFORM = "idle terraforming structure",
-            RESEARCH = "research done";
+            RESEARCH = "research done", FLOOR = "room for a production floor producer";
 
     /** The valuation a building was built or is judged under. */
     public static final String MONEY = "money", RICH = "rich", ENDGAME_V = "endgame";

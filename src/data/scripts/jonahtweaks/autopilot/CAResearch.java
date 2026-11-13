@@ -602,7 +602,7 @@ public class CAResearch {
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             if (m.getSize() >= Misc.getMaxMarketSize(m)) continue;   // a colony at max size doesn't need it
             if (waterOnly && (m.getPlanetEntity() == null || !com.fs.starfarer.api.impl.campaign.econ.impl.Farming.AQUA_PLANETS.contains(m.getPlanetEntity().getTypeId()))) continue;
-            float w6 = CAEngine.WEIGHTS[CAData.get().colony(m.getId()).profile.ordinal()][6];
+            float w6 = CAEngine.goalWeights(CAData.get().colony(m.getId()).profile)[6];
             v += hazardCut * 10f * w6 / 2f;   // as CAConditions.value counts a condition's hazard against growth
         }
         return v;

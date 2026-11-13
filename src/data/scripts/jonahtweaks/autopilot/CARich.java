@@ -360,10 +360,19 @@ public class CARich {
     }
 
     /** Pure: whether a rung is open: not legacyPlanner, its tier reached, its mode not Off, and in the preset. */
-    static boolean open(int rung, int tier, int mode, int preset, boolean legacy) {
+    static boolean open(int rung, int tier, int mode, int preset, boolean legacy) { return open(rung, tier, mode, preset, legacy, false); }
+
+    /** Pure, 0.3.2.0 (M7): as above; shipyardEarly: the Shipyard rung opens at Surplus (production floors on, CASettings.shipyardFromSurplus). */
+    static boolean open(int rung, int tier, int mode, int preset, boolean legacy, boolean shipyardEarly) {
         if (legacy || rung <= OBLIGATIONS || rung >= RUNGS.length) return false;
-        return tier >= FROM_TIER[rung] && mode != OFF && inPreset(preset, rung);
+        return tier >= fromTier(rung, shipyardEarly) && mode != OFF && inPreset(preset, rung);
     }
+
+    /** Pure, 0.3.2.0: the tier a rung opens at: FROM_TIER, with the Shipyard at Surplus (T1) when shipyardEarly. */
+    static int fromTier(int rung, boolean shipyardEarly) { return rung == SHIPYARD && shipyardEarly ? T1 : FROM_TIER[rung]; }
+
+    /** 0.3.2.0: the Shipyard rung opens at Surplus: production Light or Full with Shipyard from Surplus on (Off: Idle money, as 0.3.1.0). */
+    static boolean shipyardEarly(CASettings s) { return s != null && s.productionOn() && s.shipyardFromSurplus; }
 
     /** Pure: the month's pool: the tier's draw of free cash as it was at the month's start (free cash now plus what the ladder spent since). */
     static float poolOf(int tier, float freeCash, float spentThisMonth) {
@@ -425,7 +434,7 @@ public class CARich {
     public static boolean open(int rung) {
         try {
             CASettings s = CAData.settings();
-            return open(rung, tier(), s.rungMode(rung), s.richPreset, CABudget.legacy(s));
+            return open(rung, tier(), s.rungMode(rung), s.richPreset, CABudget.legacy(s), shipyardEarly(s));
         } catch (Throwable t) { return false; }
     }
 
@@ -474,7 +483,7 @@ public class CARich {
             boolean[] open = new boolean[RUNGS.length];
             float[] w = new float[RUNGS.length];
             for (int r = 0; r < RUNGS.length; r++) {
-                open[r] = open(r, t, s.rungMode(r), s.richPreset, legacy);
+                open[r] = open(r, t, s.rungMode(r), s.richPreset, legacy, shipyardEarly(s));
                 w[r] = r != keepAll && wantMonth[r] == key ? wants[r] : Float.NaN;
             }
             float[] out = waterfall(pool(), order(s.richPreset), rest(s.richPreset), open, spentNow(d), w);
@@ -717,7 +726,7 @@ public class CARich {
         float[] a = allowances();
         List<String> parts = new ArrayList<String>();
         for (int r : order(p)) {
-            if (!open(r, tr, s.rungMode(r), p, false)) continue;
+            if (!open(r, tr, s.rungMode(r), p, false, shipyardEarly(s))) continue;
             parts.add(RUNGS[r] + " " + Misc.getDGSCredits(a[r]) + (s.rungMode(r) == RECOMMEND ? " (recommend only)" : ""));
         }
         return "Ladder (" + preset + "): " + Misc.getDGSCredits(pool) + " this month, " + Math.round(DRAW[clamp(tr)] * 100f) + "% of free cash."

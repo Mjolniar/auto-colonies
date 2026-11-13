@@ -236,6 +236,9 @@ public class CAIntel extends BaseIntelPlugin {
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "money ladder lines failed", e); }
             try { CACapital.renderEmpire(t, s); }
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "capital line failed", e); }
+            // 0.3.2.0 (Batch A): the production floors: each one met or how far off, the producers planned, where the parts are
+            try { CAFloors.render(t); }
+            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "production floor lines failed", e); }
 
             boolean anyPending = false;
             for (MarketAPI m : markets) if (data.colony(m.getId()).pendingId != null) anyPending = true;
@@ -388,8 +391,8 @@ public class CAIntel extends BaseIntelPlugin {
             // 0.3.1.0: Autopilot's thinking (CALog.think), collapsed until shown
             List<String> th = data.thinking();
             CATheme.heading(t, "Thinking", 12f);
-            t.addButton(data.thinkingShown ? "Hide" : "Show (" + th.size() + ")", THINKING, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 22f, 6f);
-            if (data.thinkingShown) {
+            t.addButton(s.showThinking ? "Hide" : "Show (" + th.size() + ")", THINKING, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 22f, 6f);
+            if (s.showThinking) {   // 0.3.2.0: a setting (Settings, Interface), copied from CAData.thinkingShown once
                 if (th.isEmpty()) t.addPara("Nothing yet.", gray, 6f);
                 for (int i = 0; i < Math.min(40, th.size()); i++) t.addPara(CALog.esc(th.get(i)), gray, 3f);
             }
@@ -538,7 +541,7 @@ public class CAIntel extends BaseIntelPlugin {
         if (CANav.page(buttonId) != null) {
             page = CANav.page(buttonId);
         } else if (THINKING.equals(buttonId)) {
-            d.thinkingShown = !d.thinkingShown;
+            d.settings.showThinking = !d.settings.showThinking;   // 0.3.2.0: the setting the Settings page's Thinking list row shows
         } else if (RESCAN.equals(buttonId)) {
             CADiagnostics.runScan();
         } else if (REFRESH.equals(buttonId)) {
