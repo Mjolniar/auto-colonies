@@ -475,9 +475,15 @@ public class CAWar {
 
     /** Who pays price + fee for this kind (CAWarPolicy.payer), with today's budget, surplus and military rung. */
     static String payerFor(CASettings s, String payKind, boolean rich, float total) {
+        // 0.3.0.8: the Military rung pays only while it is On. On Recommend only or Off, standing guard and proactive defense
+        // draw on neither the rung nor the surplus pool; they use the month's budget, as before the money ladder
+        int r = militaryRung(), mode = CARich.ON;
+        try { mode = CARich.mode(r); } catch (Throwable ignored) { }
         float rung = 0f;
-        try { rung = CARich.allowance(militaryRung()); } catch (Throwable ignored) { }
-        return CAWarPolicy.payer(payKind, rich, total, CABuild.credits(), s.reserve, CABudget.available(s), CASurplus.amount(s), rung);
+        if (mode == CARich.ON) try { rung = CARich.allowance(r); } catch (Throwable ignored) { }
+        boolean guard = CAWarPolicy.DEFENSE.equals(payKind) || CAWarPolicy.GUARD.equals(payKind);
+        boolean poolOk = rich && !(guard && mode != CARich.ON);
+        return CAWarPolicy.payer(payKind, poolOk, total, CABuild.credits(), s.reserve, CABudget.available(s), CASurplus.amount(s), rung);
     }
 
     /**
@@ -541,9 +547,12 @@ public class CAWar {
                 else if (CAWarPolicy.BLOCKADE.equals(kind))
                     o = new BlockadeWrapperIntel(pf, from, target, fp, Nex_FleetRequest.getTimeToLaunch(fp, Nex_FleetRequest.FleetType.BLOCKADE));
                 else o = new NexRaidIntel(pf, from, target, fp, Nex_FleetRequest.getTimeToLaunch(fp, Nex_FleetRequest.FleetType.RAID));
-                o.setPlayerFee((int) cost);
                 o.setPlayerSpawned(true);
                 o.init();
+                // 0.3.0.8: the fee only after init went through, as CAConquest.launch: an operation that ends at once refunds
+                // its player fee (OffensiveFleetIntel.refundPlayerFeeIfNeeded), so nothing is charged and no points are taken
+                if (o.isEnded() || o.isEnding()) return "no route";
+                o.setPlayerFee((int) cost);
             }
             pay(s, payer, cost, fee);
             mgr.modifyFleetRequestStock(-(int) fp);

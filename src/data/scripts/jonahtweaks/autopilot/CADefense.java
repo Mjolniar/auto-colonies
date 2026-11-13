@@ -120,9 +120,11 @@ public class CADefense {
         try {
             float time = Nex_FleetRequest.getTimeToLaunch(fp, Nex_FleetRequest.FleetType.DEFENSE);
             DefenseFleetIntel intel = new DefenseFleetIntel(Global.getSector().getPlayerFaction(), source, target, fp, time);
-            intel.setPlayerFee(Math.round(cost));
             intel.setPlayerSpawned(true);
             intel.init();
+            // 0.3.0.8: the fee only after init went through (an operation that ends at once refunds its fee), as CAConquest.launch
+            if (intel.isEnded() || intel.isEnding()) return;
+            intel.setPlayerFee(Math.round(cost));
             // 0.3.0.0 (C1): paid through CABudget.pay, the one place credits move; counted against the month as before, no fee
             CABudget.pay(s, target.getId(), cost, 0f, 0f);
             mgr.modifyFleetRequestStock(-(int) fp);

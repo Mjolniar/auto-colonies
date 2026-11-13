@@ -114,8 +114,24 @@ public final class CASurvival {
         return (float) ((1.0 - 1.0 / exponent) * Math.pow(threshold / base, 1.0 / exponent));
     }
 
-    /** Money a month after corruption: a gain at the kept share, a loss in full. */
+    /** Money a month after corruption: a gain at the kept share, a loss in full. For money with no upkeep in it (items). */
     public static float kept(float money) {
         return money > 0f ? money * keptShare() : money;
+    }
+
+    /**
+     * 0.3.0.8: net money (income minus upkeep) after corruption. The game takes corruption from gross colony income only,
+     * so the kept share applies to the income part (net + upkeep) and upkeep counts in full.
+     */
+    public static float keptGross(float net, float upkeep) {
+        float gross = net + upkeep;
+        return gross > 0f ? keptGross(net, upkeep, keptShare()) : net;
+    }
+
+    /** Pure: keptGross at a given kept share. */
+    static float keptGross(float net, float upkeep, float share) {
+        float gross = net + upkeep;
+        if (!(gross > 0f) || !(share < 1f)) return net;
+        return gross * share - upkeep;
     }
 }
