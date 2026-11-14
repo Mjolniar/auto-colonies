@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.6.1 - 2026-11-14
+
+- Story mode: Fixed the 0.3.6.0 download missing the Autarch AI Core's icon and portrait.
+
 ## 0.3.6.0 - 2026-11-14
 
 - Story mode: Added. Off by default. The Colony Autopilot stays dormant until you find the Autarch AI Core, then runs the abilities you buy with processing power from the AI cores you feed it. [Story mode](story-mode.md).
