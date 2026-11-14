@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.5.2 - 2026-11-13
+
+- War fleets: Fixed a relief fleet message appearing every day for a colony under siege while the relief waited for fleet points or credits. The relief is posted only when it launches.
+
 ## 0.3.5.1 - 2026-11-13
 
 - Autonomy: A rejected autonomy offer for a colony returns after a year. Other rejected offers still return after 30 days.

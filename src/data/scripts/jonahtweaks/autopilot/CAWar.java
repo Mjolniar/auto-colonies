@@ -539,10 +539,12 @@ public class CAWar {
         if (from == null) return "no spaceport";
         ReliefFleetIntelAlt relief = null;
         if (CAWarPolicy.RELIEF.equals(kind)) {
-            relief = ReliefFleetIntelAlt.createEvent(from, target);
-            if (relief == null) return "no relief";
+            // 0.3.5.2: built without init() until points and credits are there. createEvent() runs init(), which posts the
+            // relief intel and its message; a relief that then waited for points or credits was ended at once and tried
+            // again the next day, so a colony under siege got a new relief message every day
+            relief = new ReliefFleetIntelAlt(from, target);
             fp = relief.calcFP();
-            if (fp > mgr.getFleetRequestStock()) { relief.endImmediately(); return "points"; }
+            if (fp > mgr.getFleetRequestStock()) return "points";
         }
         // Nexerelin's own prices (Nex_FleetRequest.updateCost): fleet points x the cost per point, but a relief fleet is twice the
         // colony's stabilize package (needed credits plus the goods), whatever its size (0.2.37.0: it was priced by points, far too cheap)
@@ -550,13 +552,13 @@ public class CAWar {
                 : fp * NexConfig.fleetRequestCostPerFP);
         float fee = fee(s, kind, cost);
         String payer = payerFor(s, payKind, rich, cost + fee);
-        if (payer == null) {
-            if (relief != null) relief.endImmediately();
-            return "credits";
-        }
+        if (payer == null) return "credits";
         try {
-            if (relief != null) relief.setPlayerFee((int) cost);
-            else {
+            if (relief != null) {
+                relief.init();   // posts the intel and launches: only now that points and credits are there
+                if (relief.isEnded() || relief.isEnding()) return "no route";
+                relief.setPlayerFee((int) cost);
+            } else {
                 FactionAPI pf = Global.getSector().getPlayerFaction();
                 OffensiveFleetIntel o;
                 if (CAWarPolicy.DEFENSE.equals(kind) || CAWarPolicy.GUARD.equals(kind))
