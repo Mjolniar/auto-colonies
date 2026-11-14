@@ -125,7 +125,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             message = null;
         }
         else if (APPROVE.equals(id)) { String err = CAAuto.approve(market); message = err == null ? "Approved and started" : err; }
-        else if (REJECT.equals(id)) { CAAuto.reject(market); message = "Rejected for 30 days"; }
+        else if (REJECT.equals(id)) { CAAuto.reject(market); message = "Rejected for 180 days"; }
         else if (CASurplus.handle(market, id) != null) message = CASurplus.handle(market, id);
         else if (CACapital.handle(market, id) != null) message = CACapital.handle(market, id);
         else if ((AUG_APPLY.equals(id) || AUG_UNSKIP.equals(id)) && Global.getSettings().getModManager().isModEnabled(CAAugments.MOD)) {

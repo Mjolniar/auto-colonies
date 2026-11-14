@@ -90,7 +90,7 @@ The planner:
 - New-upkeep cap: counts only upkeep a building does not cover itself.
 - After each start: actions sharing a colony, good, building or one-per-empire flag are re-scored.
 - Fast buildout: an Auto colony in its fast buildout gets `CABuildout.pass` in place of its normal offers. It ranks by money only.
-- Approve colonies: the best pick becomes a proposal (see [Modes and approvals](#modes-and-approvals)). A rejected one waits 30 days.
+- Approve colonies: the best pick becomes a proposal (see [Modes and approvals](#modes-and-approvals)). A rejected one waits 180 days.
 - Removal marks (`CATombstone`): a building taken down in the last year stays off that colony's list.
 - Fresh look: when something starts or finishes, a slot opens, threat or siege changes, the month rolls over or the money tier changes. Otherwise weekly (`CAAuto.wait`).
 - Fallback: with the hidden `legacyPlanner` switch, or after 3 failed planner days, the old build pass (`CAAuto.buildPass`) runs.

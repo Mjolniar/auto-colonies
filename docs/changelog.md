@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.6.4 - 2026-11-14
+
+- Approvals: A rejected proposal is held 180 days, up from 30. This covers builds, settlements, Shipyard, Stockpiles, Military goods, Military upgrades, hypershunt restores, megastructures, station augments and TASC projects. Autonomy is still held a year. Expedition targets are still skipped 180 days.
+
 ## 0.3.6.3 - 2026-11-14
 
 - Settings: Picking Mode default in a preset row sets that group to the empire mode's values. They follow the mode again and stop counting as set by you.

@@ -254,7 +254,7 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
             o.addOptionConfirmation(APPROVE_ALL, "Approve all " + open.size() + " for " + Misc.getDGSCredits(total) + " with fees? One that doesn't fit the reserve stays open.", "Approve all", "Back");
             o.addOption("Choose each (" + open.size() + ")", CHOOSE);
             o.addOption("Reject all", REJECT_ALL);
-            o.addOptionConfirmation(REJECT_ALL, "Reject all " + open.size() + "? They come back after 30 days (expeditions 180).", "Reject all", "Back");
+            o.addOptionConfirmation(REJECT_ALL, "Reject all " + open.size() + "? They come back after 180 days (autonomy a year).", "Reject all", "Back");
         }
         int days = Math.max(1, CAData.settings().approvalDays);
         o.addOption(open.isEmpty() ? "Close" : "Later (back in " + days + " days)", LATER);
