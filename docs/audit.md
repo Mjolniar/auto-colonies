@@ -92,6 +92,7 @@
 ## What's saved
 
 - One persistent-data key, `jt_colony_autopilot`, holding plain values and ids. Other mods' data is stored as ids only. Full list: [source guide](source-guide.md#whats-saved).
+- Story mode: a second key, `ac_story`, holding plain values (`CASync`). With story mode on, one derelict research station holding the Autarch AI Core is added to an uninhabited fringe system (`CAAutarch`). It stays in the sector if story mode is switched off.
 
 ## How to check it yourself
 

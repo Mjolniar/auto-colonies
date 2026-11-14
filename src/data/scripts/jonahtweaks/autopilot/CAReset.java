@@ -46,7 +46,9 @@ public class CAReset {
         failed += run("mod watch", () -> CAModWatch.reset());
         failed += run("Rogue Planets", () -> { CARogue.on = null; CARogue.testIndustries = null; });   // 0.3.2.1: asked again; the test list is offline only
         failed += run("Corrupt.Officials", () -> CAIndexMods.reset());   // 0.3.3.2: its settings and each colony's kept share read again
-        failed += run("LunaLib settings", () -> CALunaSync.reset());   // 0.3.4.0: the last sync was the other save's; CALunaSync.onLoad syncs again
+        failed += run("LunaLib settings", () -> CALunaSync.reset());
+        // 0.3.6.0: story mode's screen state (the button waiting for Confirm, the page's line, a queued TriPad beat, a mode note)
+        failed += run("story mode", () -> { CASync.queued = null; CASync.armed = null; CASync.notice = null; CASync.modeNote = null; });   // 0.3.4.0: the last sync was the other save's; CALunaSync.onLoad syncs again
         if (on("niko_stationAugments")) failed += run("station augments", () -> { CAAugments.nextRun.clear(); CAAugments.lastSig.clear(); });
         // caches and cooldowns that held the other save's data (07 H6)
         failed += run("research ranking", () -> {

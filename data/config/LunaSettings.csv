@@ -1,4 +1,6 @@
 fieldID,fieldName,fieldType,defaultValue,secondaryValue,fieldDescription,minValue,maxValue,tab
+ca_h_storymode,Story mode,Header,Story mode,,,,,
+ca_storymode,Story mode,Boolean,false,,"On: the Colony Autopilot stays dormant until you find the Autarch AI Core, then runs the abilities you buy with the AI cores you give it. Off: every feature works from the start. Each save keeps its story progress when you switch, but processing power you spent is not refunded.",,,
 ca_t_presets,,Text,Presets set several fields at once; each field is on the Advanced tab. Mode default: the empire mode's values. Custom: the fields match no option. Picking Mode default or Custom changes nothing.,,,,,
 ,,,,,,,,
 ca_h_playstyle,Playstyle,Header,Playstyle,,,,,

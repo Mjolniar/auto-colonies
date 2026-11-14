@@ -93,6 +93,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     void handle(Object id) {
         CAData d = CAData.get();
         CAData.Colony c = d.colony(market.getId());
+        if (CASync.handle(id)) { dirty = true; return; }   // 0.3.6.0 story mode
         if (CASetupUI.handle(id, d.settings)) { dirty = true; return; }
         if (CANav.page(id) != null) { page = CANav.page(id); message = null; dirty = true; return; }
         if (id instanceof CAData.Profile) { c.profile = (CAData.Profile) id; message = "Goal set to " + c.profile.label; }
@@ -107,7 +108,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 d.settings.empireMode = mo;
                 CAModeTable.apply(d.settings, mo);
             }
-            else { d.setMode(c, mo); message = "Mode set to " + mo.label; }
+            else { d.setMode(c, mo); message = CASync.modeNote != null ? CASync.modeNote : "Mode set to " + mo.label; }   // 0.3.6.0 story mode: held back
         }
         else if (SAVE_SETUP.equals(id)) {
             d.settings.setupDone = true; setupPage = false;
@@ -251,6 +252,15 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         CASettings s = data.settings;
         CAData.Colony c = data.colony(market.getId());
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
+
+        if (CASync.dormant()) {   // 0.3.6.0 story mode: nothing to show but the TriPad's note
+            plugin.navW = 0f;
+            TooltipMakerAPI t = content.createUIElement(W, H, true);
+            CASyncPage.renderDormantColony(t, market.getName());
+            content.addUIElement(t).inTL(0f, 0f);
+            root.addComponent(content).inTL(0f, 0f);
+            return;
+        }
 
         if (setupPage) {
             plugin.navW = 0f;

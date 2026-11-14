@@ -186,14 +186,16 @@ public class CAItems {
         CAData d = CAData.get();
         CASettings s = d.settings;
         if (markets.isEmpty()) return;
-        if (pullLamp(d, markets)) return;
-        if (pullPollutingForge(d, markets)) return;
-        if (placeItem(d, s, markets)) return;
-        if (!s.disableStabilizers && s.allowRemovals && convertFuel(d, s, markets)) return;   // replaces a building, so only with Allow removals
+        boolean items = CASync.has("items");   // 0.3.6.0 story mode: Colony items
+        if (items && pullLamp(d, markets)) return;
+        if (items && pullPollutingForge(d, markets)) return;
+        if (items && placeItem(d, s, markets)) return;
+        if (items && !s.disableStabilizers && s.allowRemovals && convertFuel(d, s, markets)) return;   // replaces a building, so only with Allow removals
         if (s.useAICores && placeCore(d, s, markets)) return;
         boolean quiet = CALowProfile.on();   // Low profile places no Omega or IX cores (0.2.43.0)
-        if (s.useAICores && !quiet && CAOmega.run(d, s, markets)) return;   // Omega Core Everywhere / Astral Ascension Renewed (0.2.38.0)
-        if (s.useAICores && !quiet && CAPanopticon.run(d, s, markets)) return;   // Emergent Threats: IX Revival's Panopticon cores (0.2.39.3)
+        boolean omega = CASync.has("omega");   // 0.3.6.0 story mode: Omega and IX cores
+        if (omega && s.useAICores && !quiet && CAOmega.run(d, s, markets)) return;   // Omega Core Everywhere / Astral Ascension Renewed (0.2.38.0)
+        if (omega && s.useAICores && !quiet && CAPanopticon.run(d, s, markets)) return;   // Emergent Threats: IX Revival's Panopticon cores (0.2.39.3)
         if (s.adminOptimal && (assignAdmin(d, markets) || moveAdmin(markets))) return;
         if (s.adminHiring) hireAdmin(d, s, markets);
         else if (adminsUncovered(d) > 0 && CALog.once("admin:need:off:" + adminsNeeded(d)))   // 0.3.0.0 (WS-D): not for an expedition's own administrator
@@ -1017,6 +1019,7 @@ public class CAItems {
         // cores in any colony's Autopilot Storage: one at the colony goes straight in, one elsewhere is shipped there first (0.2.37.0)
         int[] have = new int[CORES.length];
         for (int k = 0; k < CORES.length; k++) have[k] = (int) CAStores.count(CORES[k]);
+        CASync.reserve(have);   // 0.3.6.0 story mode: cores kept in storage for feeding the Autarch
         if (s.alphaMode != 2 && makeRoom(slots, points, limit, have[0] > 0, s, none)) return true;
         CoreSlot bestTo = null, bestFrom = null;
         int bestK = -1;

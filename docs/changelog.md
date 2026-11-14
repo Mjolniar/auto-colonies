@@ -1,5 +1,15 @@
 # Patch notes
 
+## 0.3.6.0 - 2026-11-14
+
+- Story mode: Added. Off by default. The Colony Autopilot stays dormant until you find the Autarch AI Core, then runs the abilities you buy with processing power from the AI cores you feed it. [Story mode](story-mode.md).
+- Story mode: 48 abilities with PP costs, a managed-colony limit, the Autarch AI Core item, TriPad dialogs, a Story page and a Story tab entry.
+- Story mode: Instant construction and Free construction exist only in story mode.
+- Settings: Story mode is the first row in LunaLib's menu (F3) and on the intel Settings page. Each save follows the setting when loaded and when LunaLib's menu is saved.
+- Settings: Switching story mode off returns every held setting and colony mode. Switching it on again keeps the quest, PP, abilities and fed cores. Spent PP is not refunded.
+- Settings: A setting story mode holds at off keeps your value in LunaLib, so other saves are not changed.
+- New games: A pop-up asks Normal or Story mode once. Older saves never see it.
+
 ## 0.3.5.3 - 2026-11-14
 
 - Approval summary: Decision details are whole sentences in the game's dialog style. The "What:", "Why:" and "If rejected:" labels are removed.

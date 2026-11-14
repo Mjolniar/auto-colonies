@@ -1,0 +1,12 @@
+{
+	# Story version: bonus experience for the story point that builds the Alpha core's isolation cradle (CATriPad)
+	"bonusXP":{
+		"jcm_cradle":1,
+	},
+	# Story version: the Autarch AI Core's portrait, loaded at startup
+	"graphics":{
+		"portraits":{
+			"autarch_core":"graphics/portraits/autarch_core.png",
+		},
+	},
+}

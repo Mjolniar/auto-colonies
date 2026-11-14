@@ -5,6 +5,7 @@
 - Location with LunaLib: LunaLib's settings menu (F3 by default), Auto Colonies. General tab: the main rows. Advanced tab: the Advanced groups. [LunaLib](#lunalib).
 - Location without LunaLib: Empire panel (Intel screen, Colony Autopilot filter), Settings.
 - Layout: 20 main rows in 6 groups. The rest is under Advanced.
+- Story mode: The first row. Off by default. [Story mode](story-mode.md).
 - Empire mode: Off, Advisor, Approve or Auto. Empire-wide settings follow it ([Mode defaults](#mode-defaults)). The first-time setup sets it.
 - Set by you: A row you change shows "set by you". It keeps its value when the empire mode changes.
 - Presets: most main rows are presets. Custom: no preset matches. Mode default: each field at the empire mode's value.
@@ -15,6 +16,7 @@
 
 - LunaLib: Optional. Without it the intel Settings page has every row.
 - Values: Global. Every save uses LunaLib's values.
+- Story mode: Each save switches to LunaLib's Story mode value when loaded and when LunaLib's menu is saved. A setting story mode holds at off keeps your value in LunaLib.
 - First load after 0.3.4.0: The loaded save's settings are copied into LunaLib once. That game does not change.
 - Later loads: LunaLib's values go into the loaded save, with its "set by you" marks.
 - Saving in LunaLib's menu: The changed fields apply to the loaded game. A changed field counts as set by you.

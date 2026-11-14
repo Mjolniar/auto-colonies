@@ -23,6 +23,7 @@
 
 - Colonies: Ranked build queue, items, AI cores, administrators, policies, defense, optional new colonies.
 - Mods: 45+ supported, none required.
+- Story mode: Optional. The Autopilot starts dormant and runs the abilities you buy with the AI cores you give it. [Story mode](docs/story-mode.md).
 
 ## Guides
 
@@ -37,6 +38,7 @@
 - [Research](docs/research.md)
 - [Terraforming](docs/terraforming.md)
 - [Settings](docs/settings.md)
+- [Story mode](docs/story-mode.md)
 - [Supported mods](docs/supported-mods.md)
 - [0.3.0 overview](docs/roadmap.md)
 - [Patch notes](docs/changelog.md)

@@ -428,6 +428,7 @@ public class CAEngine {
             if (full != null) break;
             String id = spec.getId();
             if (CAPlan.hasOrBetter(m, id)) continue;
+            if (!CASync.mayBuild(spec)) continue;   // 0.3.6.0 story mode: stations need Stations
             if (spec.hasTag("station") && hasStation) continue;
             if (spec.hasTag("station") && !"score".equals(line) && !stationMatches(id, line)) continue;
             if (id.equals(CAWonders.SITE)) continue;   // a Grand Wonder site is only ever built for a wonder (CAWonders)
@@ -492,6 +493,7 @@ public class CAEngine {
             if (vanillaUp != null) ups.add(vanillaUp);
             if (bmo && !plan.exact.contains(ind.getId())) ups.addAll(CAAotD.children(ind.getId()));
             for (String up : ups) {
+                if (!CASync.mayBuild(up)) continue;   // 0.3.6.0 story mode: stations need Stations
                 boolean upMeasured = CADiagnostics.industryLevel(up) == CADiagnostics.Level.MEASURED && CAData.settings().measuredMode != 2;
                 if (CADiagnostics.industryLevel(up) != CADiagnostics.Level.SUPPORTED && !upMeasured) continue;
                 try {

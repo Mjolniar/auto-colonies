@@ -57,6 +57,7 @@ public class CABuildout {
         checkMoved();   // 0.3.0.0 (WS-F4): this once-a-second check also carries the one-time 0.3.0 menu line
         CAData d = CAData.get();
         if (d.buildoutOffered) return;
+        if (!CASync.has("buildout")) return;   // 0.3.6.0 story mode: the offer needs Fast buildout
         List<MarketAPI> mine = new java.util.ArrayList<MarketAPI>();
         for (MarketAPI x : Misc.getPlayerMarkets(false)) if (!CAEngine.isOutpost(x)) mine.add(x);   // Nexerelin outposts aren't colonies
         if (mine.isEmpty()) return;   // no colony yet: wait for the first
@@ -300,6 +301,7 @@ public class CABuildout {
         CATheme.heading(t, "Fast buildout", 12f);
         // 0.3.0.0 (WS-F3, research 04 section 7): one short line each; how it ranks and when it ends are hover text (hoverText).
         // 0.3.0.0 fix pass 3: shorter lines, for the mod-wide word budget (JTScreenButtonCheck)
+        if (!c.buildout && !CASync.has("buildout")) { CASyncPage.buildoutOff(t, m); return; }   // 0.3.6.0 story mode
         if (!c.buildout) {
             t.addPara("Loses %s a month. Fast buildout spends credits above a floor here.", 6f,
                     Misc.getNegativeHighlightColor(), Misc.getDGSCredits(-m.getNetIncome()));
@@ -323,7 +325,11 @@ public class CABuildout {
     /** Colony panel buttons; returns the message to show. */
     static String handle(MarketAPI m, String action) {
         CAData.Colony c = CAData.get().colony(m.getId());
-        if (action.equals("start")) { start(m, DEFAULT_FLOOR); return "Fast buildout started"; }
+        if (action.equals("start")) {
+            if (!CASync.has("buildout")) return "Fast buildout is off. It costs " + CASyncCatalog.get("buildout").cost + " PP on the Story page.";   // 0.3.6.0 story mode
+            start(m, DEFAULT_FLOOR);
+            return "Fast buildout started";
+        }
         if (!c.buildout) return null;
         if (action.equals("stop")) { stop(m, c, "stopped by you"); return "Fast buildout stopped. Mode: Auto"; }
         float f = floor(c), n = f;

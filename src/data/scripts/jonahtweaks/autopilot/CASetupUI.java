@@ -312,6 +312,7 @@ public class CASetupUI {
         marked.clear();
         try { marked.addAll(markedRows(s)); } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "set-by-you markers failed", e); }
         whatsNew(t);
+        CASyncPage.settingsRow(t);   // 0.3.6.0: story mode, here while LunaLib is off (LunaLib's menu has it otherwise)
         for (String[] g : GLOSSARY) t.addPara("%s: " + CALog.esc(g[1]), 2f, hl, g[0]);
         boolean nex = nex(), indevo = mod(CAPresets.INDEVO);
 
@@ -818,7 +819,11 @@ public class CASetupUI {
     static ButtonAPI row(TooltipMakerAPI t, String label, String value, String rec, String key, boolean toggle, String[] tip) {
         Color base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         ButtonAPI first, last;
-        if (toggle) {
+        String lock = CASync.rowLock(key, CAData.settings());   // 0.3.6.0 story mode: what the abilities that are off hold back
+        boolean held = lock != null && CASync.rowWhole(key);
+        if (held) {
+            first = last = t.addButton("LOCKED", CASync.PREFIX + "none", Misc.getGrayColor(), dark, Alignment.MID, CutStyle.TL_BR, 86f, 20f, 4f);
+        } else if (toggle) {
             first = last = t.addButton("CYCLE", PREFIX + key + ":next", base, dark, Alignment.MID, CutStyle.TL_BR, 86f, 20f, 4f);
         } else {
             first = t.addButton("-", PREFIX + key + ":-", base, dark, Alignment.MID, CutStyle.TL_BR, 40f, 20f, 4f);
@@ -826,9 +831,10 @@ public class CASetupUI {
             last.getPosition().rightOfTop(first, 6f);
         }
         // 0.3.0.0 (WS-F1, research 04 section 3): the recommendation shows only when the value differs from it
-        boolean showRec = rec != null && !rec.isEmpty() && !rec.equalsIgnoreCase(value);
+        boolean showRec = !held && rec != null && !rec.isEmpty() && !rec.equalsIgnoreCase(value);
         boolean mine = marked.contains(key);   // 0.3.3.0: a row you set keeps its value through empire mode changes
-        LabelAPI l = t.addPara("%s: %s." + (showRec ? " Recommended: " + CALog.esc(rec) + "." : "") + (mine ? " Set by you." : ""), 0f, Misc.getHighlightColor(),
+        LabelAPI l = t.addPara("%s: %s." + (showRec ? " Recommended: " + CALog.esc(rec) + "." : "") + (mine ? " Set by you." : "")
+                + (lock != null ? " " + CALog.esc(lock) : ""), 0f, Misc.getHighlightColor(),   // story mode: what the abilities that are off hold back
                 label, value);
         l.getPosition().rightOfMid(last, 12f);
         if (tip != null) t.addTooltipToPrevious(tip(tip), TooltipMakerAPI.TooltipLocation.BELOW);
@@ -872,8 +878,25 @@ public class CASetupUI {
 
     // ---------------- buttons ----------------
 
-    /** Handles a settings button; returns true if the id was a settings button. */
+    /**
+     * Handles a settings button; returns true if the id was a settings button. Story mode: a click on a row that lands on a
+     * value an ability that's off holds back moves on (up to 6 times), what you picked replaces what a hold remembered, and
+     * the holds apply (CASync.enforce).
+     */
     public static boolean handle(Object id, CASettings s) {
+        if (!(id instanceof String) || !((String) id).startsWith(PREFIX)) return false;
+        String key = ((String) id).substring(PREFIX.length()).split(":")[0];
+        if (key.equals("group")) return handleSetting(id, s);
+        int[] before = CASync.snapshot(s);
+        boolean heldBefore = CASync.anyLocked(s);
+        boolean r = handleSetting(id, s);
+        if (!heldBefore && CASync.cycles(key)) for (int guard = 0; guard < 6 && CASync.anyLocked(s); guard++) handleSetting(id, s);
+        CASync.forgetChanged(before, s);
+        CASync.enforce(s);
+        return r;
+    }
+
+    static boolean handleSetting(Object id, CASettings s) {
         if (!(id instanceof String) || !((String) id).startsWith(PREFIX)) return false;
         String[] a = ((String) id).substring(PREFIX.length()).split(":");
         String k = a[0], op = a.length > 1 ? a[1] : "next";

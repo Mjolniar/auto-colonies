@@ -57,7 +57,9 @@ public class CABuild {
     /** Returns null on success, or the reason it couldn't start. */
     public static String start(MarketAPI m, CAEngine.Pick p) {
         if (!p.upgrade && Misc.getCurrentlyBeingConstructed(m) != null) return "A new building is already under construction here. Upgrades can still run";
-        if (credits() < p.cost) return "Not enough credits (" + Misc.getDGSCredits(p.cost) + " needed)";
+        float price = CASync.buildPrice(p.cost);   // 0.3.6.0 story mode: Free construction
+        if (credits() < price) return "Not enough credits (" + Misc.getDGSCredits(price) + " needed)";
+        if (!CASync.mayBuild(p.id)) return "Stations is off on the Story page.";
         if (!CADiagnostics.usable(p.id)) return "Not supported by Colony Autopilot";
         // 0.3.0.0: the one stability rule (CAStability) as the last gate for a new building or upgrade: what it costs once built must
         // leave the colony at or above the floor. The planner already holds such picks back; this catches any path that doesn't
@@ -105,7 +107,12 @@ public class CABuild {
                 if (targetKey != null) CAData.get().upgradeTargets().remove(targetKey);
                 return "It did not take effect. Nothing charged";
             }
-            CABudget.payPrice(p.cost);   // 0.3.0.0 (C12 fix, research 03 F3): credits move only in CABudget; the caller books the price and takes the fee with charge() or payFromPool() as before
+            if (price > 0f) CABudget.payPrice(price);   // 0.3.6.0 story mode: Free construction pays nothing
+            if (now != null && CASync.instantBuild()) {   // 0.3.6.0 story mode: Instant construction
+                try { now.finishBuildingOrUpgrading(); }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "instant construction failed for " + p.id + " at " + m.getName(), t); }
+            }
+            // 0.3.0.0 (C12 fix, research 03 F3): credits move only in CABudget; the caller books the price and takes the fee with charge() or payFromPool() as before
             CADiagnostics.LOG.info(CADiagnostics.TAG + (p.upgrade ? "upgrade to " : "build ") + p.id + " at " + m.getName()
                     + " for " + Misc.getDGSCredits(p.cost));
             // 0.3.0.0 (B4, 03 F12): sunk-cost memory: what it cost, when and under which valuation (CATombstone: removal log, teardown loss)

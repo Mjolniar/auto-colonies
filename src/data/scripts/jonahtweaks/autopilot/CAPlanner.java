@@ -1086,7 +1086,7 @@ public class CAPlanner {
             float loss = eg ? (ref.remove != null ? ref.remove.money : 0f) - p.fx[0] : 0f;
             // 0.3.0.0 (B3 fix): failWaits marks the failures that are for now (the income floor, credits, stability), so a better
             // new build that hit one still keeps long builds out of its colony's queue
-            boolean noCredits = CABuild.credits() < p.cost + CABudget.constructionFee(s, p.cost);
+            boolean noCredits = CABuild.credits() < CASync.buildPrice(p.cost) + CABudget.constructionFee(s, p.cost);   // 0.3.6.0 story mode: Free construction
             if (eg && !CAEndgame.lossFits(s, loss)) {
                 if (CALog.once(m.getId() + ":" + p.id + ":endgame")) CALog.think(m.getName() + ": " + p.name + " waits. Income cost: " + Misc.getDGSCredits(loss)
                         + "/month. Endgame floor: " + Misc.getDGSCredits(CAEndgame.floor(s)) + "/month.");
