@@ -167,23 +167,27 @@ final class CAAutonomy {
             grant(d, pick.m, "Auto: " + why, pick.saving);
             return;
         }
+        // 0.3.5.3: sentences in Nexerelin's own wording (rules.csv, Nex_AutonomyHelpText)
+        String reason = e != null ? "Your colonies are short of money." : pick.m.getName() + " has lost money "
+                + d.colony(pick.m.getId()).lossStreak + " months in a row.";
         if (CALog.once("autonomy:rec:" + pick.m.getId()))
-            CAApprovals.say(pick.m.getName() + ": autonomy would save " + Misc.getDGSCredits(pick.saving) + "/month (" + why + "). Grant on the Mod features page.", true);
+            CAApprovals.say(pick.m.getName() + ": Granting autonomy would raise income by about " + Misc.getDGSCredits(pick.saving)
+                    + " a month. " + reason, true);
         // 0.3.3.0: a decision in the approval summary
         final MarketAPI mm = pick.m; final float saving = pick.saving;
         int share = Math.round(incomeMult() * 100f);
-        CAApprovals.offer("autonomy:" + pick.m.getId(), "autonomy", pick.m, "Grant autonomy (saves " + Misc.getDGSCredits(saving) + " a month)", 0f, 0f, why, () -> {
+        CAApprovals.Item it = CAApprovals.offer("autonomy:" + pick.m.getId(), "autonomy", pick.m, "Grant autonomy", 0f, 0f, why, () -> {
             if (!Global.getSettings().getModManager().isModEnabled(MOD)) return "Nexerelin is off";
             if (!mm.isPlayerOwned()) return "Not your colony now";
             grant(CAData.get(), mm, "your approval", saving);
             return null;
         },
-                // 0.3.3.5: what autonomy means, so the summary isn't dismissed without it
-                "What: Nexerelin runs " + mm.getName() + " for you. You keep " + share + "% of its profit or loss.",
-                "Effect: it stops counting against your colony limit, and nothing can be built there while it is autonomous.",
-                "Saves: about " + Misc.getDGSCredits(saving) + " a month. Why: " + why + ".",
-                "Undo: take it back any time under Intel, Colony Autopilot, Mod features. That adds " + REVOKE_UNREST + " unrest.",
-                "If rejected: not offered again for a year.");
+                reason,
+                "An autonomous colony generates only " + share + "% of its usual profit or loss, and does not count toward your colony limit.",
+                "You cannot build there while it is autonomous.",
+                "Revoking autonomy later will cause " + REVOKE_UNREST + " points of recent unrest.",
+                "If you reject it, it will not be offered again for a year.");
+        if (it != null) it.monthly = saving;   // the summary line reads "Grant autonomy. +X a month."
     }
 
     /** Your order, or Auto's. The colony stays autonomous until you take it back. */
