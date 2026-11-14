@@ -213,7 +213,7 @@ Rules for saves:
 - New fields: load as zero, false or null in older saves, so defaults mean off. Fields that must default on use an inverted `noX` name. Collections are created on first use.
 - Removed fields: the game's save loader fails on a field the class lacks, so a retired field stays listed in `CAXStream` with `omitField`.
 - Other mods' objects: only ids, numbers and timestamps are stored.
-- Removal: Autopilot Storage is a market tab, so the mod cannot be removed from a save that used it.
+- Removal: a save made with the mod enabled does not load without it (saved classes and the Autopilot Storage tab).
 
 ## Files by area
 
