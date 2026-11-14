@@ -28,6 +28,8 @@ public final class CAApprovals {
         public String key, kind, marketId, place, title, why;
         public float cost, fee, monthly;
         public long since;
+        /** 0.3.3.5: what the decision does, costs and why, one line each ("What: ...", "Cost: ..."), for the summary and panels. */
+        public List<String> details = new ArrayList<String>();
         /** Live asks: the game day the module last offered it. */
         int seen;
         Act approve, reject;
@@ -51,7 +53,7 @@ public final class CAApprovals {
     }
 
     /** A module offers a live ask (an Approve colony's recommendation). Held for 30 days after you reject it. */
-    static void offer(String key, String kind, MarketAPI m, String title, float cost, float fee, String why, Act approve) {
+    static void offer(String key, String kind, MarketAPI m, String title, float cost, float fee, String why, Act approve, String... details) {
         if (key == null || approve == null || held(key)) return;
         Item it = new Item();
         it.key = key; it.kind = kind; it.marketId = m == null ? null : m.getId(); it.place = m == null ? EMPIRE : m.getName();
@@ -60,6 +62,7 @@ public final class CAApprovals {
         it.since = old != null ? old.since : CAMark.now();
         it.seen = CATime.today();
         it.approve = approve;
+        if (details != null) for (String line : details) if (line != null && !line.isEmpty()) it.details.add(line);
         final String k = key;
         it.reject = new Act() { public String run() { CAMark.set("askno:" + k, CAMark.now()); LIVE.remove(k); return null; } };
         LIVE.put(key, it);
@@ -94,7 +97,40 @@ public final class CAApprovals {
         try { if (d.expandPendingId != null) out.add(expedition(d)); } catch (Throwable t) { CAStep.warn("approvals", "expedition proposal could not be read", t); }
         try { ladder(out); } catch (Throwable t) { CAStep.warn("approvals", "money ladder proposals could not be read", t); }
         out.addAll(LIVE.values());
+        for (Item it : out) if (it.details.isEmpty()) it.details.addAll(describe(it));
         sort(out);
+        return out;
+    }
+
+    /**
+     * 0.3.3.5: the summary's lines for a decision that brought none of its own: what it does, what it costs, why, and what
+     * rejecting does. Pure apart from credit formatting.
+     */
+    static List<String> describe(Item it) {
+        List<String> out = new ArrayList<String>();
+        String k = it.kind == null ? "" : it.kind, t = it.title == null ? "" : it.title;
+        if ("build".equals(k)) {
+            int cut = t.indexOf(", takes down ");
+            out.add("What: builds " + (cut >= 0 ? t.substring(0, cut) : t) + " at " + it.place + ".");
+            if (cut >= 0) out.add("Slot: takes down " + t.substring(cut + ", takes down ".length()) + " first to free the industry slot.");
+        } else if ("settle".equals(k)) out.add("What: founds a Random Assortment of Things Frontiers settlement.");
+        else if ("expand".equals(k)) out.add("What: sends a colony expedition that founds a new colony there.");
+        else if ("shipyard".equals(k)) out.add("What: adds these hulls to your custom production queue.");
+        else if ("stock".equals(k)) out.add("What: buys the goods and ships them into " + it.place + "'s Local Resources.");
+        else if ("military".equals(k)) out.add("What: upgrades " + it.place + "'s military building.");
+        else if ("augments".equals(k)) out.add("What: installs these Station Augments on the station. Installing is free and can be undone.");
+        else if ("hypershunt".equals(k)) out.add("What: changes the Coronal Hypershunt's range.");
+        else if ("megastructure".equals(k)) out.add("What: applies the settings Autopilot recommends for it.");
+        else if ("tasc".equals(k)) out.add("What: starts this Terraforming & Station Construction project at " + it.place + ".");
+        if (it.total() > 0f) {
+            if ("expand".equals(k)) out.add("Cost: " + Misc.getDGSCredits(it.total()) + ", fee included.");
+            else out.add("Cost: " + Misc.getDGSCredits(it.cost) + (it.fee > 0f ? " plus a " + Misc.getDGSCredits(it.fee) + " fee" : "") + ".");
+        }
+        if (it.monthly > 0f) out.add("Gain: about " + Misc.getDGSCredits(it.monthly) + " a month.");
+        else if (it.monthly < 0f) out.add("Upkeep: " + Misc.getDGSCredits(-it.monthly) + " more a month.");
+        if (it.why != null && !it.why.isEmpty()) out.add("Why: " + it.why);
+        if ("expand".equals(k)) out.add("If rejected: that target is skipped for 180 days.");
+        else if ("build".equals(k) || LIVE.containsKey(it.key)) out.add("If rejected: not offered again for 30 days.");
         return out;
     }
 

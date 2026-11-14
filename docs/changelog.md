@@ -1,5 +1,12 @@
 # Patch notes
 
+## 0.3.3.5 - 2026-11-13
+
+- Approval summary: Each decision lists what it does, what it costs, why, and what rejecting does.
+- Approval summary: Autonomy lists the 25% income share, the colony limit, no building while autonomous, and the 2 unrest to take it back.
+- Approval summary: Shows the colony's world when every decision is at one colony, otherwise a vanilla illustration.
+- Approval summary: Later says when the summary comes back. The Approve all and Reject all confirmations say what each does.
+
 ## 0.3.3.4 - 2026-11-13
 
 - Compatibility: The game version in mod_info is 0.98.5a-RC4. TriOS no longer marks the mod incompatible. 0.98a still loads it.
