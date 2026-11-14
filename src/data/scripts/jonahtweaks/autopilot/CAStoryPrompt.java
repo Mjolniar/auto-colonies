@@ -62,6 +62,7 @@ public class CAStoryPrompt implements InteractionDialogPlugin {
         try {
             CASync.askMode(false);
             CASync.setOn(story);
+            if (story) CAAutarch.ensurePlaced();   // 0.3.6.2: placed after the answer (CASync waits for it on a new game)
             CALunaSync.sync();   // LunaLib's Story mode setting follows the choice
         } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode choice failed", t); }
         dialog.dismiss();

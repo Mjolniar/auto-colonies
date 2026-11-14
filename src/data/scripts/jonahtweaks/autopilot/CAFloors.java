@@ -918,8 +918,10 @@ public class CAFloors {
         if (key.equals(adviceKey)) return;
         adviceKey = key;
         float price = base("parts") * setting("stockpileCostMult", 1f);
+        // 0.3.6.2: Thinking list and starsector.log only, never on screen (it came back each time the counts moved). The Budget
+        // page's floor list shows the parts in Local Resources
         if (CALog.once(key))
-            CALog.advise("Parts: " + Misc0.n(st.partsLocal) + " in Local Resources at " + st.partsColonies + (st.partsColonies == 1 ? " colony" : " colonies")
+            CALog.think("Parts: " + Misc0.n(st.partsLocal) + " in Local Resources at " + st.partsColonies + (st.partsColonies == 1 ? " colony" : " colonies")
                     + ". Fleet d-mods need about " + Misc0.n(st.partsNeed) + ". Taking them costs " + Misc.getDGSCredits(price) + " a part.");
     }
 

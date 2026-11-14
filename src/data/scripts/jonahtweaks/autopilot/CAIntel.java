@@ -96,9 +96,11 @@ public class CAIntel extends BaseIntelPlugin {
     public void createIntelInfo(TooltipMakerAPI info, IntelInfoPlugin.ListInfoMode mode) {
         Color c = getTitleColor(mode);
         info.addPara(getName(), c, 0f);
-        info.addPara("%s colonies, %s diagnostics issues", 3f, Misc.getGrayColor(), Misc.getHighlightColor(),
-                "" + Misc.getPlayerMarkets(false).size(),
-                "" + (CADiagnostics.count(CADiagnostics.Level.ANALYZED) + CADiagnostics.count(CADiagnostics.Level.QUARANTINED)));
+        try {   // 0.3.6.2: guarded, the game calls this outside any catch
+            info.addPara("%s colonies, %s diagnostics issues", 3f, Misc.getGrayColor(), Misc.getHighlightColor(),
+                    "" + Misc.getPlayerMarkets(false).size(),
+                    "" + (CADiagnostics.count(CADiagnostics.Level.ANALYZED) + CADiagnostics.count(CADiagnostics.Level.QUARANTINED)));
+        } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "intel list line failed", e); }
     }
 
     /** The page shown (UI state only, not saved). */
@@ -184,9 +186,16 @@ public class CAIntel extends BaseIntelPlugin {
     public void createLargeDescription(CustomPanelAPI panel, float width, float height) {
         CAData data = CAData.get();
         CASettings s = data.settings;
-        CABudget.rollMonth(s);
+        // 0.3.6.2: guarded like the page itself; a throw here reached the game
+        try { CABudget.rollMonth(s); } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "month roll from the intel failed", e); }
         List<MarketAPI> markets = Misc.getPlayerMarkets(false);
-        List<String[]> pages = pages(data, s, markets);
+        List<String[]> pages;
+        try { pages = pages(data, s, markets); }
+        catch (Throwable e) {
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "intel page list failed", e);
+            pages = new ArrayList<String[]>();
+            pages.add(new String[]{"diag", "Diagnostics"});
+        }
         page = CANav.valid(pages, page);
         float scrollY = 0f;
         try { if (page.equals(lastPage) && lastTooltip != null && lastTooltip.getExternalScroller() != null) scrollY = lastTooltip.getExternalScroller().getYOffset(); }

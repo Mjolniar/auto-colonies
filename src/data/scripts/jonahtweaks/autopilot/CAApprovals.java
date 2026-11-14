@@ -99,6 +99,7 @@ public final class CAApprovals {
         List<Item> out = new ArrayList<Item>();
         CAData d;
         try { d = CAData.get(); } catch (Throwable t) { return out; }
+        try { if (CASync.dormant()) return out; } catch (Throwable ignored) { }   // 0.3.6.2 story mode: no decisions while dormant
         CASettings s = d.settings;
         try {
             for (MarketAPI m : Misc.getPlayerMarkets(false)) {
@@ -345,6 +346,7 @@ public final class CAApprovals {
     /** Approves one item: the reserve, then the kind's own handler. Returns null when it started, else the reason. */
     public static String approve(Item it) {
         if (it == null || it.approve == null) return "Not available";
+        if (CASync.dormant()) return "The Colony Autopilot is dormant";   // 0.3.6.2 story mode
         try {
             String gate = reserveGate(it.total());
             if (gate != null) return gate;

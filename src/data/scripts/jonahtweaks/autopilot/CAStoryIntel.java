@@ -81,11 +81,17 @@ public class CAStoryIntel extends BaseIntelPlugin {
     public void createIntelInfo(TooltipMakerAPI info, IntelInfoPlugin.ListInfoMode mode) {
         Color c = getTitleColor(mode);
         info.addPara(getName(), c, 0f);
-        info.addPara(CALog.esc(objective()), 3f, Misc.getGrayColor(), Misc.getHighlightColor());
+        try { info.addPara(CALog.esc(objective()), 3f, Misc.getGrayColor(), Misc.getHighlightColor()); }   // 0.3.6.2: guarded
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story intel line failed", t); }
     }
 
     @Override
     public void createSmallDescription(TooltipMakerAPI info, float width, float height) {
+        try { describe(info); }   // 0.3.6.2: guarded, the game calls this outside any catch
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story intel failed", t); }
+    }
+
+    void describe(TooltipMakerAPI info) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor();
         info.addPara("The Colonial Administration Suite on your TriPad runs on the Autarch AI Core. Every AI core you give it adds processing power (PP), "
                 + "and you pick the abilities it runs with that PP.", 0f);

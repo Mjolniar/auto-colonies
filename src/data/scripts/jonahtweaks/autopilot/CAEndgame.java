@@ -396,6 +396,11 @@ public class CAEndgame {
         if (!CADiagnostics.usable(p.id)) return "Autopilot can't build it";
         if (!CABreaker.allowed("building " + p.name)) return "building it is paused this session";
         if (CAAotD.enabled() && !CAAotD.allows(p.id, m)) return "research hasn't unlocked it";
+        // 0.3.6.2: CABuild.start's other refusals, checked before anything comes down, so a takedown never leaves an empty slot
+        if (!p.upgrade && Misc.getCurrentlyBeingConstructed(m) != null) return "another building is under construction";
+        if (!p.upgrade && m.hasIndustry(p.id)) return "it's already built";
+        if (!CASync.mayBuild(p.id)) return "Stations is off on the Story page";
+        if (p.upgrade && (p.existing == null || p.existing.isUpgrading() || p.existing.isBuilding())) return "that building can't be upgraded right now";
         return null;
     }
 

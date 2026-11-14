@@ -159,7 +159,12 @@ public class CASettlement {
         String planetId = d.settleExpeditionPlanet;
         float paid = d.settleExpeditionCost;
         d.settleExpeditionPlanet = null;
-        String err = found(planetId, false, false);
+        String err;
+        try { err = found(planetId, false, false); }
+        catch (Throwable t) {   // 0.3.6.2: a throw refunds the expedition too (found() has undone what it added)
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "settlement founding failed", t);
+            err = "an error, logged in starsector.log";
+        }
         if (err == null) { CALog.did("Settlement: the expedition founded the settlement.", true); return; }
         CABudget.refund(d.settings, null, paid);
         CALog.did("Settlement: the expedition could not found it: " + err + ". " + Misc.getDGSCredits(paid) + " refunded.", true);
@@ -199,49 +204,63 @@ public class CASettlement {
         if (check) return null;
 
         if (pay) CABudget.payPrice(cost);   // 0.3.0.0 (C12 fix): credits move only in CABudget (not booked, as before)
-        SectorEntityToken ent = planet.getStarSystem().addCustomEntity("rat_frontiers_settlement_" + Misc.genUID(), planet.getName() + " Settlement",
-                "rat_frontiers_settlement", Factions.PLAYER);
-        ent.setCircularOrbitPointingDown(planet, 1f, 1f, 360f);
-        ent.getMemoryWithoutUpdate().set("$abandonedStation", true);
-        MarketAPI market = Global.getFactory().createMarket("rat_station_commander_market", ent.getName(), 3);
-        market.setSurveyLevel(MarketAPI.SurveyLevel.FULL);
-        market.setPrimaryEntity(ent);
-        market.setFactionId(Factions.PLAYER);
-        market.addIndustry(Industries.SPACEPORT);
-        market.addSubmarket("rat_settlement_storage");
-        ((StoragePlugin) market.getSubmarket("rat_settlement_storage").getPlugin()).setPlayerPaidToUnlock(true);
-        market.setPlanetConditionMarketOnly(false);
-        ent.setMarket(market);
-        ent.getMemoryWithoutUpdate().unset("$tradeMode");
-        market.getStability().modifyFlat("rat_base", 10f);
-        market.getAccessibilityMod().modifyFlat("rat_base", 0.40f);
-        market.getStats().getDynamic().getMod(Stats.GROUND_DEFENSES_MOD).modifyFlat("rat_base", 200f);
+        // 0.3.6.2: a throw part-way through undoes what was added (RAT's active settlement, entity, manager, intel) and refunds,
+        // so RAT never keeps a settlement with no manager or intel
+        SectorEntityToken ent = null; SettlementData data = null; SettlementManager manager = null; SettlementIntel intel = null;
+        try {
+            ent = planet.getStarSystem().addCustomEntity("rat_frontiers_settlement_" + Misc.genUID(), planet.getName() + " Settlement",
+                    "rat_frontiers_settlement", Factions.PLAYER);
+            ent.setCircularOrbitPointingDown(planet, 1f, 1f, 360f);
+            ent.getMemoryWithoutUpdate().set("$abandonedStation", true);
+            MarketAPI market = Global.getFactory().createMarket("rat_station_commander_market", ent.getName(), 3);
+            market.setSurveyLevel(MarketAPI.SurveyLevel.FULL);
+            market.setPrimaryEntity(ent);
+            market.setFactionId(Factions.PLAYER);
+            market.addIndustry(Industries.SPACEPORT);
+            market.addSubmarket("rat_settlement_storage");
+            ((StoragePlugin) market.getSubmarket("rat_settlement_storage").getPlugin()).setPlayerPaidToUnlock(true);
+            market.setPlanetConditionMarketOnly(false);
+            ent.setMarket(market);
+            ent.getMemoryWithoutUpdate().unset("$tradeMode");
+            market.getStability().modifyFlat("rat_base", 10f);
+            market.getAccessibilityMod().modifyFlat("rat_base", 0.40f);
+            market.getStats().getDynamic().getMod(Stats.GROUND_DEFENSES_MOD).modifyFlat("rat_base", 200f);
 
-        SettlementData data = new SettlementData(planet, ent);
-        data.setLocation(site.getLocation());
-        data.setAngleFromCenter(site.getAngleFromCenter());
-        data.setDistanceFromCenteer(site.getDistanceFromCenter());
-        fu().getFrontiersData().setActiveSettlement(data);
-        for (int i = 0; i < 6; i++) {
-            SettlementFacilitySlot slot = new SettlementFacilitySlot(data);
-            if (i == 0) slot.installNewFacility("landing_pad");
-            data.getFacilitySlots().add(slot);
+            data = new SettlementData(planet, ent);
+            data.setLocation(site.getLocation());
+            data.setAngleFromCenter(site.getAngleFromCenter());
+            data.setDistanceFromCenteer(site.getDistanceFromCenter());
+            fu().getFrontiersData().setActiveSettlement(data);
+            for (int i = 0; i < 6; i++) {
+                SettlementFacilitySlot slot = new SettlementFacilitySlot(data);
+                if (i == 0) slot.installNewFacility("landing_pad");
+                data.getFacilitySlots().add(slot);
+            }
+            for (BaseSettlementModifier plugin : mods) {
+                plugin.setSettlement(data);
+                data.getModifiers().add(plugin);
+                if (plugin.getSpec().isResource()) data.getStats().getIncome().setBaseValue(plugin.getSpec().getIncomeForCondition(planet.getMarket().getConditions()));
+                else data.getStats().getIncome().setBaseValue(0f);
+                plugin.apply();
+            }
+            manager = new SettlementManager(data);
+            Global.getSector().addScript(manager);
+            Global.getSector().getListenerManager().addListener(manager);
+            data.setMananger(manager);
+            intel = new SettlementIntel(data);
+            data.setIntel(intel);
+            Global.getSector().getIntelManager().addIntel(intel);
+            cache = null;
+        } catch (Throwable t) {
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "settlement founding on " + planet.getName() + " failed; undone", t);
+            try { if (data != null && fu().getFrontiersData().getActiveSettlement() == data) fu().getFrontiersData().setActiveSettlement(null); } catch (Throwable ignored) { }
+            try { if (manager != null) { Global.getSector().removeScript(manager); Global.getSector().getListenerManager().removeListener(manager); } } catch (Throwable ignored) { }
+            try { if (intel != null) Global.getSector().getIntelManager().removeIntel(intel); } catch (Throwable ignored) { }
+            try { if (ent != null) ent.getContainingLocation().removeEntity(ent); } catch (Throwable ignored) { }
+            if (pay) CABudget.refund(CAData.settings(), null, cost);
+            cache = null;
+            return "Founding failed (logged in starsector.log)" + (pay ? ". Refunded" : "");
         }
-        for (BaseSettlementModifier plugin : mods) {
-            plugin.setSettlement(data);
-            data.getModifiers().add(plugin);
-            if (plugin.getSpec().isResource()) data.getStats().getIncome().setBaseValue(plugin.getSpec().getIncomeForCondition(planet.getMarket().getConditions()));
-            else data.getStats().getIncome().setBaseValue(0f);
-            plugin.apply();
-        }
-        SettlementManager manager = new SettlementManager(data);
-        Global.getSector().addScript(manager);
-        Global.getSector().getListenerManager().addListener(manager);
-        data.setMananger(manager);
-        SettlementIntel intel = new SettlementIntel(data);
-        data.setIntel(intel);
-        Global.getSector().getIntelManager().addIntel(intel);
-        cache = null;
         CADiagnostics.LOG.info(CADiagnostics.TAG + "founded settlement on " + planet.getName() + " (" + want.resourceName + ") for " + Misc.getDGSCredits(cost));
         return null;
     }
@@ -360,6 +379,8 @@ public class CASettlement {
 
     /** Pays the fee and starts the founding or facility. Returns null on success. */
     public static String execute(CAData d, CASettings s, String kind, String id, String name, String who) {
+        // 0.3.6.2: one expedition at a time; a second click while one is on its way paid again and lost the first payment
+        if ("found".equals(kind) && d.settleExpeditionPlanet != null) return "A settlement expedition is already on its way";
         float cost = "found".equals(kind) ? foundingCost() : facilityCost(id);
         float fee = CABudget.constructionFee(s, cost);
         if (CABuild.credits() < cost + fee) return "Not enough credits for it plus the " + Misc.getDGSCredits(fee) + " fee";
@@ -448,7 +469,7 @@ public class CASettlement {
             t.addPara("%s. %s, %s: %s, about %s per month" + (st.refinable ? " (%s with Refining)" : "%s") + ", %s ly away", 4f, hl,
                     "" + (i + 1), st.planetName, st.systemName, st.resourceName, Misc.getDGSCredits(st.income),
                     st.refinable ? Misc.getDGSCredits(st.refinedIncome) : "", st.distanceLY >= 999f ? "-" : "" + Math.round(st.distanceLY));
-            if (s.settlementMode == 0 && i == 0) {
+            if (s.settlementMode == 0 && i == 0 && d.settleExpeditionPlanet == null) {   // 0.3.6.2: no second founding while one is on its way
                 com.fs.starfarer.api.ui.ButtonAPI b = t.addButton("Found on " + st.planetName + " (" + Misc.getDGSCredits(foundingCost()) + ")", new String[]{"settle", "found", st.planetId}, base, dark,
                         com.fs.starfarer.api.ui.Alignment.MID, com.fs.starfarer.api.ui.CutStyle.TL_BR, 260f, 22f, 4f);
                 b.setEnabled(CABuild.credits() >= foundingCost());

@@ -170,6 +170,14 @@ public class CABuildout {
         }
 
         public void optionSelected(String text, Object data) {
+            try { select(data); }
+            catch (Throwable t) {   // 0.3.6.2: no throw reaches the game from this dialog
+                CADiagnostics.LOG.warn(CADiagnostics.TAG + "fast buildout offer failed", t);
+                dialog.dismiss();
+            }
+        }
+
+        void select(Object data) {
             if (STYLE_FULL.equals(data) || STYLE_LOW.equals(data)) {
                 boolean low = STYLE_LOW.equals(data);
                 CALowProfile.set(CAData.settings(), low, "your choice");
@@ -275,7 +283,7 @@ public class CABuildout {
         }
         c.buildoutIdleSince = 0L;
         CAEngine.Pick[] order = upRatio >= newRatio ? new CAEngine.Pick[]{bestUp, bestNew} : new CAEngine.Pick[]{bestNew, bestUp};
-        float floor = floor(c);
+        float floor = Math.max(floor(c), s.reserve);   // 0.3.6.2: the credit reserve is not spent, buildout or not
         for (CAEngine.Pick p : order) {
             if (p == null) continue;
             if (p.measured && s.measuredMode == 1) { CAAuto.propose(m, c, p, "Approval needed: mod building scored from measurements"); continue; }

@@ -149,9 +149,17 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
     public void init(InteractionDialogAPI dialog) {
         this.dialog = dialog;
         dialog.setPromptText("Colony Autopilot");
-        showVisual();
-        summary();
-        options();
+        try {
+            showVisual();
+            summary();
+            options();
+        } catch (Throwable t) {   // 0.3.6.2: a throw here left the dialog open with no way out
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "approval summary failed to open", t);
+            dialog.getOptionPanel().clearOptions();
+            dialog.getTextPanel().addPara("Summary unavailable.");
+            dialog.getOptionPanel().addOption("Close", LATER);
+            dialog.getOptionPanel().setShortcut(LATER, Keyboard.KEY_ESCAPE, false, false, false, true);
+        }
     }
 
     // ---------------- 0.3.3.5: the picture, like a vanilla event ----------------
@@ -375,8 +383,13 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
         @Override public boolean hasCancelButton() { return false; }
         @Override public String getConfirmText() { return "Close"; }
         @Override public CustomUIPanelPlugin getCustomPanelPlugin() { return plugin; }
-        @Override public void customDialogConfirm() { owner.panelClosed(); }
-        @Override public void customDialogCancel() { owner.panelClosed(); }
+        @Override public void customDialogConfirm() { closed(); }
+        @Override public void customDialogCancel() { closed(); }
+
+        void closed() {   // 0.3.6.2: guarded, these are called by the game
+            try { owner.panelClosed(); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "approval summary panel close failed", t); owner.dialog.dismiss(); }
+        }
 
         void pressed(Object id) {
             if (APPROVE_ALL.equals(id)) {

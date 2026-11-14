@@ -52,6 +52,43 @@ public final class CAAutarch {
         return false;
     }
 
+    /**
+     * 0.3.6.2: the derelict station holding the core is still in the sector. Saves from 0.3.6.0 and 0.3.6.1 didn't record its
+     * id: it's looked up once by its memory flag. Can't tell: true (never declared lost on a guess).
+     */
+    public static boolean siteExists() {
+        try {
+            String id = CASync.text("autarchSite");
+            if (id == null) {
+                for (StarSystemAPI s : Global.getSector().getStarSystems())
+                    for (SectorEntityToken e : s.getAllEntities())
+                        if (e.getMemoryWithoutUpdate().getBoolean("$autarch_core_site")) { CASync.text("autarchSite", e.getId()); return true; }
+                CASync.text("autarchSite", "gone");
+                return false;
+            }
+            return !"gone".equals(id) && Global.getSector().getEntityById(id) != null;
+        } catch (Throwable t) { return true; }
+    }
+
+    /**
+     * 0.3.6.2: a core sold at a market while story mode was off (the listener only runs while it's on): taken off that
+     * market's shelves so it can't be bought back next to its replacement. True when one was found.
+     */
+    public static boolean takeFromMarkets() {
+        boolean found = false;
+        try {
+            for (MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) {
+                for (com.fs.starfarer.api.campaign.econ.SubmarketAPI sub : m.getSubmarketsCopy()) {
+                    if (sub.getPlugin() != null && sub.getPlugin().isFreeTransfer()) continue;   // Storage tabs: anywhere() covers them
+                    CargoAPI c = sub.getCargo();
+                    float n = c == null ? 0f : c.getQuantity(CargoAPI.CargoItemType.SPECIAL, item());
+                    if (n > 0f) { c.removeItems(CargoAPI.CargoItemType.SPECIAL, item(), n); found = true; }
+                }
+            }
+        } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autarch AI Core market check failed", t); }
+        return found;
+    }
+
     /** Takes one from the fleet's cargo; false when there is none. */
     public static boolean take() {
         if (inCargo() < 1) return false;
@@ -88,6 +125,7 @@ public final class CAAutarch {
         loot.addSpecial(item(), 1);
         BaseSalvageSpecial.addExtraSalvage(st, loot);
         st.getMemoryWithoutUpdate().set("$autarch_core_site", true);
+        CASync.text("autarchSite", st.getId());   // 0.3.6.2: siteExists
         CASync.text("autarchSystem", sys.getBaseName());
         CADiagnostics.LOG.info(CADiagnostics.TAG + "Autarch AI Core placed in a derelict research station in " + sys.getName());
         return true;
@@ -104,6 +142,14 @@ public final class CAAutarch {
             float d = s.getLocation().length();
             if (d < MIN_DIST || d > MAX_DIST) continue;
             p.add(s, 1f);
+        }
+        if (p.isEmpty()) {   // 0.3.6.2: no system in the fringe band (small or modded sectors): any uninhabited procgen system
+            for (StarSystemAPI s : Global.getSector().getStarSystems()) {
+                if (!s.isProcgen() || s.getStar() == null || s.hasTag(Tags.THEME_HIDDEN) || s.hasTag(Tags.THEME_CORE)
+                        || s.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER) || s.hasTag(Tags.THEME_SPECIAL)) continue;
+                if (notIn != null && notIn.equals(s.getBaseName())) continue;
+                if (Misc.getMarketsInLocation(s).isEmpty()) p.add(s, 1f);
+            }
         }
         return p.pick();
     }

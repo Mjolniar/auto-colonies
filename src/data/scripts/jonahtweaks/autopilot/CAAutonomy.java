@@ -78,6 +78,7 @@ final class CAAutonomy {
         CAData.Colony c = d.colony(m.getId());
         if (autoOnly ? c.mode != CAData.Mode.AUTO : c.mode == CAData.Mode.OFF) return false;
         if (c.buildout) return false;   // a fast buildout loses money on purpose until it pays
+        if (d.conquered().containsKey(m.getId())) return false;   // 0.3.6.2: the conquered step takes capture autonomy back, so it would loop
         if (m.getDaysInExistence() < NEW_DAYS) return false;   // a new colony needs its stability, and taking it back costs 2
         if (CAEngine.isOutpost(m) || CAHypershunt.is(m) || CAMegastructures.has(m)) return false;
         return m.getAdmin() == null || !m.getAdmin().isAICore();   // an AI core you put there would stay behind

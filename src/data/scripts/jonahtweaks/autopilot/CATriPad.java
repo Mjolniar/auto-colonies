@@ -210,7 +210,12 @@ public class CATriPad implements InteractionDialogPlugin {
     void handOver() {
         CAData d = CAData.get();
         if (market == null) { close("Put the TriPad away"); return; }
-        if (!d.settings.setupDone) { CASetupUI.applyRecommended(d.settings); d.settings.setupDone = true; CASync.enforce(d.settings); }
+        if (!d.settings.setupDone) {
+            // 0.3.6.2: LunaLib's settings from a set-up save stay (as in the colony panel), never overwritten with the recommended ones
+            if (!CALunaSync.keepsSetup()) CASetupUI.applyRecommended(d.settings);
+            d.settings.setupDone = true;
+            CASync.enforce(d.settings);
+        }
         CAData.Colony c = d.colony(market.getId());
         d.setMode(c, CASync.has("auto") ? CAData.Mode.AUTO : CAData.Mode.APPROVE);
         if (CASync.modeNote != null) {

@@ -23,6 +23,8 @@ public class CAAutarchListener implements ColonyInteractionListener, ShowLootLis
             if (sold == null) return;
             float n = sold.getQuantity(CargoAPI.CargoItemType.SPECIAL, CAAutarch.item());
             if (n <= 0f) return;
+            // 0.3.6.2: a move into a Storage tab is reported the same way; it's not a sale (CAAutarch.anywhere counts Storage)
+            if (tr.getSubmarket() != null && tr.getSubmarket().getPlugin() != null && tr.getSubmarket().getPlugin().isFreeTransfer()) return;
             if (tr.getSubmarket() != null && tr.getSubmarket().getCargo() != null)
                 tr.getSubmarket().getCargo().removeItems(CargoAPI.CargoItemType.SPECIAL, CAAutarch.item(), n);
             CASync.sold(true);
