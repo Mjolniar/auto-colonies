@@ -22,7 +22,7 @@
 ## What it does
 
 - Colonies: Ranked build queue, items, AI cores, administrators, policies, defense, optional new colonies.
-- Mods: 20+ supported, none required.
+- Mods: 45+ supported, none required.
 
 ## Guides
 
