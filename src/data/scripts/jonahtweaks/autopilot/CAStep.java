@@ -43,6 +43,7 @@ public class CAStep {
     public static boolean guard(String name, Body body) { return run(name, body, false); }
 
     static boolean run(String name, Body body, boolean breaker) {
+        if (!CASync.step(name)) return true;   // 0.3.6.0 story mode: a step whose ability is off doesn't run
         Stat st = stat(name);
         if (st.broken != null) return false;
         long t0 = System.nanoTime();

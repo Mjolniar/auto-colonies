@@ -53,8 +53,13 @@ public class JTModPlugin extends BaseModPlugin {
         // 0.3.1.0: enforcer patrols (CAEnforcers): a transient script and battle listener, so a load drops them; added here
         step("enforcer patrols", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CAEnforcers.ensure(); } });
         step("calibration", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CACalibrate.migrate(); } });
-        // 0.3.4.0: the first save after the update seeds LunaLib's settings; later loads read them into this save (LunaLib only)
+        // 0.3.6.0: story mode: the costs, and in story mode the core, the holds, the Story tab and the TriPad
+        step("story mode", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CASync.onLoad(); } });
+        // 0.3.4.0: the first save after the update seeds LunaLib's settings; later loads read them into this save (LunaLib only).
+        // 0.3.6.0: the save switches to LunaLib's Story mode setting first
         step("LunaLib settings", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CALunaSync.onLoad(); } });
+        // 0.3.6.0: a new game asks Normal or Story mode once
+        if (newGame) step("story mode pop-up", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CAStoryPrompt.ask(); } });
         step("daily script", new Runnable() { public void run() {
             data.scripts.jonahtweaks.autopilot.CAAuto.reset();
             data.scripts.jonahtweaks.autopilot.CASurplus.reset();

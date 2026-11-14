@@ -74,7 +74,7 @@ public class CAThreat {
         if (m.hasCondition("blockaded")) t += 0.3f;
         if (m.hasCondition("pather_cells")) t += 0.15f;
         if (m.hasCondition("nex_rebellion_condition")) t += 0.3f;
-        try { if (CACrisis.targets().contains(m)) t += CRISIS_TARGET; } catch (Throwable ignored) { }
+        try { if (CASync.has("crisis") && CACrisis.targets().contains(m)) t += CRISIS_TARGET; } catch (Throwable ignored) { }   // 0.3.6.0 story mode: Crisis response
         return t;
     }
 

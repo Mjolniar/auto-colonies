@@ -1,0 +1,18 @@
+{
+	# Story mode numbers (docs/story-mode.md). Changes apply the next time the game starts.
+	# Processing power: what the Autarch AI Core gives, what each fed core adds, one more managed colony, and the most colonies that can be bought.
+	"pp":{"base":20, "alpha":10, "beta":3, "gamma":1, "colony":2, "maxColonies":30},
+	# The core: breakdown days and what it gives; days until a sold core returns; after a breakdown, extra random days and the chance per salvaged habitat or cryosleeper.
+	"core":{"breakdownDays":365, "breakdownAlpha":3, "breakdownBeta":2, "returnDays":365, "returnRandomDays":365, "salvageChance":0.2},
+	# Ability costs in processing power.
+	"abilities":{
+		"auto":4, "buildout":2, "cleanup":2, "stations":2, "policies":1, "storyPoints":3, "capital":1, "logistics":1, "objectives":1, "crisis":2,
+		"items":2, "cores":2, "admins":2, "omega":3,
+		"spending":2, "surplus":4, "floors":2, "stockpiles":1, "military":3, "shipyard":3, "endgame":5, "halfFees":4, "noFees":8,
+		"expansion":6, "colonyFleets":2,
+		"lowProfile":1, "enforcers":3, "defense":3, "agents":2, "offense":3, "diplomacy":2, "autonomy":1,
+		"retaliate":3, "strike":5, "conquest":8, "scorched":5,
+		"terraform":3, "surplusTerra":4, "research":3, "surplusResearch":3, "mega":4, "wonders":5, "contracts":1, "indevo":2, "augments":2, "settlement":2,
+		"instantBuild":15, "freeBuild":25
+	}
+}

@@ -313,6 +313,7 @@ public class CAData {
     /** 0.3.3.0: sets a colony's mode; a change clears its waiting proposal (the planner proposes again for the new mode). */
     public void setMode(Colony c, Mode mode) {
         if (c == null || mode == null) return;
+        mode = CASync.allowMode(this, c, mode);   // 0.3.6.0 story mode: the managed-colony limit and Auto mode
         if (c.mode != mode) clearPending(c);
         c.mode = mode;
     }

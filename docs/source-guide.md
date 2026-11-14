@@ -206,6 +206,7 @@ Pattern 3, ids only:
 - `stores`, `shipments`: each colony's Autopilot Storage cargo and shipments in transit.
 - `noted`, `notedAt`: once-keys (`CALog.once`) with times. `keep:` keys are `CAMark` stamps that do not expire.
 - Other fields: money tier and rung spending, tombstones, orders (ships, stockpiles, expansion, objectives, TASC), war state, calibration ratios, agents. `CASettings` lists every setting with its default.
+- Story mode (`CASync`): under the persistent-data key `ac_story`. The save's mode, the core's state and timers, PP, fed cores, abilities bought, colonies bought, remembered settings and colony modes, beats seen. Costs: `data/config/colony_autopilot_story.json` (`CASyncCatalog`).
 
 Rules for saves:
 - Schema: `CAMigrate.SCHEMA` is 5. `CAMigrate` moves an older save forward once, stamped first so a failure is not retried. Nothing is raised above an older version's behavior, except settings the player never changed, which follow the new mode defaults.

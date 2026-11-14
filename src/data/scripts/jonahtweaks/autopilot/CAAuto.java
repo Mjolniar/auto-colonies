@@ -113,6 +113,7 @@ public class CAAuto {
         final CASettings s = d.settings;
         final com.fs.starfarer.api.ModManagerAPI mods = Global.getSettings().getModManager();
         CAApprovals.beginPass();   // 0.3.3.0: today's steps offer their live asks again
+        CAStep.guard("story", () -> CASync.daily());   // 0.3.6.0 story mode: the Autarch AI Core's timers, the settings holds and the colony modes
         CAStep.run("month roll-over", () -> CABudget.rollMonth(s));
         CAStep.run("upkeep cap check", () -> CABudget.migrateUpkeepCap(s));
         CAStep.run("calibration", () -> CACalibrate.run(now));   // weekly: compare estimates with what your buildings really do
@@ -123,6 +124,7 @@ public class CAAuto {
         // is held to defenses only, and 0.2.45.1 retried them every day
         CAStep.guard("siege check", () -> CASiege.update(d));
         CAStep.run("Autopilot Storage shipping", () -> CAStores.daily());   // shipments between colonies' Autopilot Storage arrive
+        if (CASync.dormant()) return;   // 0.3.6.0 story mode: nothing else runs while the Autopilot is dormant
         CAStep.run("storage logistics", () -> CALogistics.daily(d, s, now));   // storage logistics: loads to the refit and sell hubs (0.2.39.0)
         CAStep.run("colony crisis step", () -> CACrisis.daily(d, s));   // inspection orders, and a log line when a colony crisis is picked
         CAStep.run("surplus investment step", () -> CASurplus.daily(s));   // the focus world for credits over the surplus line
@@ -439,8 +441,8 @@ public class CAAuto {
     /** 0.3.3.0: quiet: your own Build click is logged to starsector.log only (the panel shows what started). */
     static String execute(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String who, boolean quiet) {
         CASettings s = CAData.settings();
-        float fee = CABudget.constructionFee(s, p.cost);
-        if (CABuild.credits() < p.cost + fee) return "Not enough credits: build plus " + Misc.getDGSCredits(fee) + " fee";
+        float fee = CABudget.constructionFee(s, p.cost), price = CASync.buildPrice(p.cost);   // 0.3.6.0 story mode: Free construction
+        if (CABuild.credits() < price + fee) return "Not enough credits: build plus " + Misc.getDGSCredits(fee) + " fee";
         String err = CABuild.start(m, p);
         if (err != null) {
             // 0.3.0.9: a failed start is starsector.log only. An approval you clicked gets the error back from approve(), and
@@ -448,7 +450,7 @@ public class CAAuto {
             CALog.quiet(m.getName() + ": could not start " + p.name + ": " + err);
             return err;
         }
-        CABudget.charge(s, m.getId(), p.cost, fee, p.upkeep);   // 0.3.0.0: booked under this colony for the monthly colony lines
+        CABudget.charge(s, m.getId(), price, fee, p.upkeep);   // 0.3.0.0: booked under this colony for the monthly colony lines
         try { CAMarket.claim(m, p); }   // what it'll make counts as made while it's under construction (0.2.44.0)
         catch (Throwable t) { CAStep.warn("build pass", "market model claim failed at " + m.getName(), t); }
         CALog.forget(m.getId() + ":" + p.id);

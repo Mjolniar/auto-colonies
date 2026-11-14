@@ -111,6 +111,13 @@ public class CAIntel extends BaseIntelPlugin {
      */
     static List<String[]> pages(CAData data, CASettings s, List<MarketAPI> markets) {
         List<String[]> p = new ArrayList<String[]>();
+        // 0.3.6.0 story mode: the Story page first; while dormant, it and Diagnostics are all there is
+        if (CASync.on()) p.add(new String[]{"story", CASyncPage.navLabel()});
+        if (CASync.dormant()) {
+            int iss = CADiagnostics.count(CADiagnostics.Level.ANALYZED) + CADiagnostics.count(CADiagnostics.Level.QUARANTINED);
+            p.add(new String[]{"diag", iss > 0 ? "Diagnostics (" + iss + ")" : "Diagnostics"});
+            return p;
+        }
         int pending = CAApprovals.collect().size();   // 0.3.3.0: every kind of decision
         p.add(new String[]{"colonies", pending > 0 ? "Colonies (" + pending + " to approve)" : "Colonies"});
         p.add(new String[]{"storage", "Autopilot Storage"});
@@ -214,6 +221,9 @@ public class CAIntel extends BaseIntelPlugin {
     void renderPage(TooltipMakerAPI t, CAData data, CASettings s, List<MarketAPI> markets, float width) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
 
+        if (CASync.dormant() && !page.equals("diag")) page = "story";   // 0.3.6.0 story mode
+        if (!CASync.on() && page.equals("story")) page = "colonies";
+        if (page.equals("story")) { CASyncPage.render(t, width); return; }
         if (page.equals("colonies")) {
             // 0.3.0.0 (WS-F2, research 04 section 7): shorter
             t.addPara("Colony panels: the Autopilot button on each colony screen.", gray, 0f);   // 0.3.0.0 (WS-F3 fix pass 3)
@@ -425,7 +435,7 @@ public class CAIntel extends BaseIntelPlugin {
             int[] c = CALogWatch.counts(m[0]);
             t.addPara("%s " + CALog.esc(ver) + ": %s warnings, %s errors this session", 6f, c[0] + c[1] > 0 ? bad : hl, m[1], "" + c[0], "" + c[1]);
             String status;
-            if (m[2].equals("jonah_tweaks")) {
+            if (m[2].equals(CASync.MOD_ID)) {
                 status = CAItems.autoMarkets().size() + " Auto colonies, " + (CABreaker.tripped().size() + CAStep.broken().size()) + " actions paused, "
                         + CADiagnostics.count(CADiagnostics.Level.QUARANTINED) + " quarantined, surplus " + CASurplus.lineName(CAData.settings()).toLowerCase();
             } else {
@@ -554,7 +564,9 @@ public class CAIntel extends BaseIntelPlugin {
             ui.updateUIForItem(this);
             return;
         }
-        if (CANav.page(buttonId) != null) {
+        if (CASync.handle(buttonId)) {
+            // 0.3.6.0 story mode: the Story page's buttons; CASync keeps their state, the page redraws below
+        } else if (CANav.page(buttonId) != null) {
             page = CANav.page(buttonId);
         } else if (THINKING.equals(buttonId)) {
             d.settings.showThinking = !d.settings.showThinking;   // 0.3.2.0: the setting the Settings page's Thinking list row shows

@@ -75,6 +75,13 @@ public final class CALunaSync {
 
     static {
         tab = GENERAL;
+        // 0.3.6.0: story mode, first, under its own header. Each save follows it on load and on a save in this menu (onLoad, changed)
+        header("storymode", "Story mode");
+        Row st = row(BOOL, "storymode", "Story mode", "On: the Colony Autopilot stays dormant until you find the Autarch AI Core, then runs the "
+                + "abilities you buy with the AI cores you give it. Off: every feature works from the start. Each save keeps its story progress "
+                + "when you switch, but processing power you spent is not refunded.");
+        st.get = s -> CASync.on();
+        st.set = (s, v, b) -> { };   // applied before the other rows (story())
         text("presets", "Presets set several fields at once; each field is on the Advanced tab. Mode default: the empire mode's values. "
                 + "Custom: the fields match no option. Picking Mode default or Custom changes nothing.");
         header("playstyle", "Playstyle");
@@ -569,7 +576,10 @@ public final class CALunaSync {
 
     /** Writes CASettings into the JSON: every row, the reset box unticked, the set-by-you names, the flags. Returns what was written. */
     static Map<String, Object> push(CASettings s, JSONObject j) throws Exception {
-        Map<String, Object> vals = values(s);
+        // 0.3.6.0: LunaLib is global, so it gets the values you set, never a story-mode hold (CASync.release); the holds go back on
+        CASync.release(s);
+        Map<String, Object> vals;
+        try { vals = values(s); } finally { CASync.enforce(s); }
         for (Map.Entry<String, Object> e : vals.entrySet()) if (e.getValue() != null) j.put(e.getKey(), e.getValue());
         Set<String> mine = new HashSet<String>(s.playerSet());
         mine.retainAll(covered());
@@ -602,7 +612,7 @@ public final class CALunaSync {
             changed.add("empire");
         }
         for (Row r : ROWS) {
-            if (!r.value() || r.preset || "empire".equals(r.key) || "reset".equals(r.key)) continue;
+            if (!r.value() || r.preset || "empire".equals(r.key) || "reset".equals(r.key) || "storymode".equals(r.key)) continue;
             Object v = read(j, r);
             if (v == null || same(r, v, value(r, s))) continue;
             try { r.set.set(s, v, null); changed.add(r.key); }
@@ -641,7 +651,7 @@ public final class CALunaSync {
         List<String> mine = new ArrayList<String>();
         for (int pass = 0; pass < 2; pass++) {
             for (Row r : ROWS) {
-                if (!batch.contains(r.key) || r.preset != (pass == 0) || "empire".equals(r.key) || "reset".equals(r.key)) continue;
+                if (!batch.contains(r.key) || r.preset != (pass == 0) || "empire".equals(r.key) || "reset".equals(r.key) || "storymode".equals(r.key)) continue;
                 try { r.set.set(s, read(j, r), batch); mine.add(r.key); }
                 catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "LunaLib setting " + r.id() + " not applied", t); }
             }
@@ -658,6 +668,12 @@ public final class CALunaSync {
         for (String k : applied) sideEffect(k, s);
         try { CACache.bump("settings"); } catch (Throwable ignored) { }
         return applied;
+    }
+
+    /** 0.3.6.0: the save switches to LunaLib's Story mode setting (CASync.setOn); nothing when the file has no value yet. */
+    static void story(JSONObject j) {
+        Object v = read(j, find("storymode"));
+        if (v instanceof Boolean) CASync.setOn((Boolean) v);
     }
 
     /** The caches a change feeds, as CASetupUI.handle drops them. */
@@ -722,7 +738,10 @@ public final class CALunaSync {
                 last = push(s, j);
                 CADiagnostics.LOG.info(CADiagnostics.TAG + "LunaLib settings seeded from this save");
             } else {
-                List<String> changed = pull(s, j);
+                story(j);
+                CASync.release(s);   // 0.3.6.0: LunaLib's values are the ones you set; the story-mode holds go back on after
+                List<String> changed;
+                try { changed = pull(s, j); } finally { CASync.enforce(s); }
                 if (!changed.isEmpty()) CADiagnostics.LOG.info(CADiagnostics.TAG + "LunaLib settings read into this save: " + changed);
                 last = push(s, j);
             }
@@ -741,7 +760,10 @@ public final class CALunaSync {
         try {
             CASettings s = CAData.settings();
             JSONObject j = load();
-            List<String> applied = applyChanges(s, j, last);
+            story(j);
+            CASync.release(s);   // 0.3.6.0: as on load
+            List<String> applied;
+            try { applied = applyChanges(s, j, last); } finally { CASync.enforce(s); }
             if (!applied.isEmpty()) CADiagnostics.LOG.info(CADiagnostics.TAG + "LunaLib settings applied: " + applied);
             last = push(s, j);
             configured = j.optBoolean(SETUP, false);
