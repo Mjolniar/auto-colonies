@@ -6,10 +6,11 @@
 ## The short version
 
 - Cost: every action charges what that UI charges, plus a convenience fee that can be set to Off.
-- Game data: no game setting, ship, weapon, faction, market condition or other mod's numbers are changed.
+- Game data: no game setting, ship, weapon, faction, market condition or other mod's numbers are changed, except three Ashes of the Domain values (see [What it does not do](#what-it-does-not-do)).
 - War (Nexerelin): 0.3.0 can raid, blockade, invade and bombard other factions' markets. Defaults: War level Retaliate (retake is off in 0.2.45 saves), every stance Auto, bombardment not authorized.
 - War (Nexerelin): War fleets act in every colony mode, Advisor included. War on a non-hostile faction starts only from the War page's Declare war confirmation.
-- Adding the mod: safe in a running save. Removing it: not safe from a save that used it, because Autopilot Storage is a market submarket.
+- Adding the mod: safe in a running save. Removing it: a save made with Auto Colonies enabled does not load without it.
+- Other mods: checked only to turn integrations on. No mod is disabled, blocked or changed for being installed.
 
 ## Everything it can change in your game
 
@@ -75,10 +76,10 @@
 
 ## What it does not do
 
-- Game data: change `Global.getSettings()` values, specs, conditions or other mods' data.
+- Game data: change `Global.getSettings()` values, specs, conditions or other mods' data. Exceptions, Ashes of the Domain only: the hypershunt range (the setting its panel offers), research flags marked and put back within one check (`CAResearch.valueBuildings`), and the R&D council order before paying for research.
 - Creation: create goods, credits, story points, items, cores or ships.
 - Your choices: touch buildings, items or augments you locked or installed, your research queue, or agents you did not hand over.
-- Files and network: write files, read other files, or open network connections.
+- Files and network: open network connections, start threads or processes, or write any file except its Diagnostics report (`saves/common/colony_autopilot_diagnostics.json.data`).
 - Attacks: attack Ally, Friendly or Neutral factions, allies, your commissioner, or a faction with a ceasefire.
 - War: start a war without the War page confirmation, bombard without Authorize bombardment, or invade while you hold a commission.
 - Settings: raise the War level, set a stance, turn on Auto-expansion or authorize bombardment by itself.
@@ -104,11 +105,11 @@ Searches across `src/`:
 | `java.io`, `java.net`, `java.lang.reflect` | `java.io` once, in `CALinkScan.read`: an `InputStream` from `getResourceAsStream` reading the mod's own class files for the link check; nothing is written. `java.lang.reflect` only as class name strings in `CARefl` (`Class.forName`) and in a comment in `CALuna`. No `java.net`. |
 | `CAStores.ship` | Shipping between colonies |
 
-- Build checks (before every release; outside the repo; see the [source guide](source-guide.md#building-and-checking)): banned-class scan, bytecode verification for every mod combination, script-loader load, `%` check, and 75 offline test suites (including a scan that fails any file outside `CABudget` that changes credits).
+- Build checks (before every release; outside the repo; see the [source guide](source-guide.md#building-and-checking)): banned-class scan, bytecode verification for every mod combination, script-loader load, `%` check, and 86 offline test suites (including a scan that fails any file outside `CABudget` that changes credits).
 
 ## Removing it
 
-- Saves: do not remove it from a save that used it. The save does not load without the Autopilot Storage submarket.
+- Saves: do not remove it from a save made with it enabled. The save needs its saved data and the Autopilot Storage tab.
 - Stopping it:
 
 1. Set every colony to Off, and War, New colonies, Extras and every money ladder rung to Off.
