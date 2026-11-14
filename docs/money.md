@@ -67,3 +67,4 @@
 - Setting (Settings, Advanced, People and diplomacy): Off, Recommend (recommended), Auto.
 - Effect: An autonomous colony pays you a quarter of its profit or loss and is outside the colony limit.
 - Used for: Colonies a year old or more with three straight losing months, or in a money emergency. One per 30 days at most.
+- Rejected offer: That colony is not offered again for a year. Its Recommend line stays quiet for that year.

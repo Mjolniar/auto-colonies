@@ -19,8 +19,17 @@ public final class CAApprovals {
     private CAApprovals() { }
 
     public static final String EMPIRE = "Empire";
-    /** Days a rejected live ask is held. */
-    static final float HOLD_DAYS = 30f;
+    /** Days a rejected live ask is held. 0.3.5.1: autonomy is held a year (holdDays). */
+    static final float HOLD_DAYS = CATuning.ASK_HOLD_DAYS;
+
+    /** Pure (0.3.5.1): days a rejected live ask of this kind is held: autonomy CATuning.AUTONOMY_HOLD_DAYS, the rest HOLD_DAYS. */
+    static float holdDays(String kind) { return "autonomy".equals(kind) ? CATuning.AUTONOMY_HOLD_DAYS : HOLD_DAYS; }
+
+    /** Pure (0.3.5.1): whether a rejection this many days old still holds an ask of this kind. */
+    static boolean holds(String kind, float days) { return days < holdDays(kind); }
+
+    /** "a year" or "30 days", for the If rejected line. */
+    static String holdText(String kind) { float d = holdDays(kind); return d >= 365f ? "a year" : Math.round(d) + " days"; }
 
     public interface Act { String run(); }
 
@@ -52,9 +61,9 @@ public final class CAApprovals {
         }
     }
 
-    /** A module offers a live ask (an Approve colony's recommendation). Held for 30 days after you reject it. */
+    /** A module offers a live ask (an Approve colony's recommendation). Held after you reject it: holdDays(kind). */
     static void offer(String key, String kind, MarketAPI m, String title, float cost, float fee, String why, Act approve, String... details) {
-        if (key == null || approve == null || held(key)) return;
+        if (key == null || approve == null || held(key, kind)) return;
         Item it = new Item();
         it.key = key; it.kind = kind; it.marketId = m == null ? null : m.getId(); it.place = m == null ? EMPIRE : m.getName();
         it.title = title; it.cost = cost; it.fee = fee; it.why = why;
@@ -68,11 +77,14 @@ public final class CAApprovals {
         LIVE.put(key, it);
     }
 
-    /** Whether you rejected this live ask within 30 days (an older mark is cleared). */
-    static boolean held(String key) {
+    /**
+     * Whether you rejected this live ask within its kind's hold (holdDays; an older mark is cleared). The mark is the day you
+     * rejected it, so a mark from before 0.3.5.1 counts toward autonomy's year.
+     */
+    static boolean held(String key, String kind) {
         Long at = CAMark.at("askno:" + key);
         if (at == null) return false;
-        if (CAMark.days(at, CAMark.now()) < HOLD_DAYS) return true;
+        if (holds(kind, CAMark.days(at, CAMark.now()))) return true;
         CAMark.clear("askno:" + key);
         return false;
     }
@@ -130,7 +142,7 @@ public final class CAApprovals {
         else if (it.monthly < 0f) out.add("Upkeep: " + Misc.getDGSCredits(-it.monthly) + " more a month.");
         if (it.why != null && !it.why.isEmpty()) out.add("Why: " + it.why);
         if ("expand".equals(k)) out.add("If rejected: that target is skipped for 180 days.");
-        else if ("build".equals(k) || LIVE.containsKey(it.key)) out.add("If rejected: not offered again for 30 days.");
+        else if ("build".equals(k) || LIVE.containsKey(it.key)) out.add("If rejected: not offered again for " + holdText(k) + ".");
         return out;
     }
 
@@ -334,7 +346,7 @@ public final class CAApprovals {
         }
     }
 
-    /** Rejects one item (each kind holds it: builds and live asks 30 days, expeditions 180). Returns null or the reason. */
+    /** Rejects one item (each kind holds it: builds and live asks 30 days, autonomy a year, expeditions 180). Returns null or the reason. */
     public static String reject(Item it) {
         if (it == null || it.reject == null) return "Not available";
         try { return it.reject.run(); }
