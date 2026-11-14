@@ -130,7 +130,8 @@ public class CASync {
         if (off != 0L && !phase().isEmpty()) num("phaseShift", num("phaseShift") - Math.round(daysSince(off)));
         stamp("offAt", 0L);
         try { CASyncCatalog.load(); } catch (Throwable ignored) { }
-        try { CAAutarch.ensurePlaced(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autarch AI Core placement failed", t); }
+        // 0.3.6.2: on a new game the core waits for the pop-up's answer, so choosing Normal leaves no station behind
+        if (!askMode()) try { CAAutarch.ensurePlaced(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autarch AI Core placement failed", t); }
         fit();
         enforce(s);
         try { enforceModes(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode colony modes failed", t); }
@@ -168,6 +169,8 @@ public class CASync {
         CAData d = CAData.get();
         for (Map.Entry<String, String> e : new ArrayList<Map.Entry<String, String>>(want.entrySet())) {
             if (!d.colonies.containsKey(e.getKey())) continue;
+            MarketAPI held = market(e.getKey());   // 0.3.6.2: a colony lost while story mode was on keeps no remembered mode
+            if (held == null || !held.isPlayerOwned()) continue;
             CAData.Colony c = d.colony(e.getKey());
             CAData.Mode mo;
             try { mo = CAData.Mode.valueOf(e.getValue()); } catch (Throwable t) { continue; }
@@ -954,10 +957,14 @@ public class CASync {
         String ph = phase();
         if (ph.isEmpty()) {
             if (CAAutarch.inCargo() > 0) flag("hadCore", true);
-            // lost (jettisoned, left behind, gone with a ship): like a sale without the credits. The core in the TriPad isn't lost
-            if (flag("hadCore") && (!installed() || pulled()) && CAAutarch.inCargo() == 0 && !CAAutarch.anywhere()) {
+            // lost (jettisoned, left behind, gone with a ship): like a sale without the credits. The core in the TriPad isn't lost.
+            // 0.3.6.2: also when its station is gone without the core ever reaching your cargo (left in the loot screen). A core
+            // sold at a market while story mode was off counts as sold, and is taken off that market so there's never two
+            boolean missing = (!installed() || pulled()) && CAAutarch.inCargo() == 0 && !CAAutarch.anywhere();
+            if (missing && flag("autarchPlaced") && (flag("hadCore") || !CAAutarch.siteExists())) {
+                boolean atMarket = CAAutarch.takeFromMarkets();
                 flag("hadCore", false);
-                sold(false);
+                sold(atMarket);
             }
             return;
         }
@@ -1077,6 +1084,8 @@ public class CASync {
             num("fedPP", fedPoints() + 100);
             notice = "Beta: +100 PP.";
         } else if (op.equals("reset")) {
+            // 0.3.6.2: held settings and colony modes come back, and the watcher and listener stop, before the state goes
+            try { switchOff(CAData.settings()); stopGame(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story reset release failed", t); }
             state().clear();
             notice = "Beta: story state cleared. Reload the save to place a new core.";
         } else if (op.equals("year")) {
@@ -1109,7 +1118,7 @@ public class CASync {
         queued = null; armed = null; notice = null; modeNote = null;
         if (askMode()) CAStoryPrompt.watch();   // a new game's pop-up not answered yet
         if (!on()) return;
-        try { CAAutarch.ensurePlaced(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autarch AI Core placement failed", t); }
+        if (!askMode()) try { CAAutarch.ensurePlaced(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autarch AI Core placement failed", t); }
         fit();
         enforce(CAData.settings());
         enforceModes();

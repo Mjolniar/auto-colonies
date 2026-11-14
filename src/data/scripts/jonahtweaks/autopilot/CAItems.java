@@ -652,6 +652,12 @@ public class CAItems {
             Industry adv = best.getIndustry("ix_fuel_production");
             if (core != null) adv.setAICoreId(core);
             adv.setImproved(improved);
+            // 0.3.6.2: an item that only fits vanilla Fuel Production (Shrouded or Pristine Synchrotron, Servosync Pump) isn't
+            // taken by Advanced Fuel Production; it goes back to this colony's Autopilot Storage, never deleted
+            if (item != null && (adv.getSpecialItem() == null || !item.equals(adv.getSpecialItem().getId()))) {
+                st.addSpecial(new SpecialItemData(item, null), 1f);
+                CALog.did(best.getName() + ": " + name(item) + " moved to Autopilot Storage.");
+            }
             fuel.setAICoreId(null);
             fuel.setSpecialItem(null);
             best.removeIndustry("fuelprod", null, false);

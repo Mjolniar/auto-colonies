@@ -113,7 +113,8 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         else if (SAVE_SETUP.equals(id)) {
             d.settings.setupDone = true; setupPage = false;
             if (setupMode != null) d.setMode(c, setupMode);
-            CAModeTable.setEmpire(d.settings, c.mode);   // 0.3.3.0: the first setup sets the empire mode
+            // 0.3.3.0: the first setup sets the empire mode. 0.3.6.2: the mode you chose, even when story mode holds this colony back
+            CAModeTable.setEmpire(d.settings, setupMode != null ? setupMode : c.mode);
             message = "Saved. Mode: " + c.mode.label;
             CALog.did(market.getName() + ": setup saved, mode " + c.mode.label + ".", true);   // 0.3.0.0 (WS-F3): "SETUP / Place: ..." on screen
         }

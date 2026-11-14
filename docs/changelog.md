@@ -1,5 +1,26 @@
 # Patch notes
 
+## 0.3.6.2 - 2026-11-14
+
+- Parts: The parts and fleet d-mods line goes to the Thinking list and starsector.log only. It no longer shows on screen.
+- Antimatter Stabilizer: Fixed a colony item in Fuel Production being deleted when it doesn't fit Advanced Fuel Production. It goes to Autopilot Storage.
+- Fast buildout: Fixed it spending the credit reserve. It stops at the reserve or its own floor, whichever is higher.
+- Approvals: A build approval checks the credit reserve against the price on the day you approve it.
+- Settlement: Fixed a second founding while an expedition is on its way charging again. A founding that fails is undone and refunded.
+- Make room: Fixed an industry being taken down for a building that then could not start.
+- Autonomy: Conquered colonies are not offered autonomy.
+- Autopilot Storage: What a decivilized colony's Autopilot Storage held moves to your biggest colony's.
+- Building: A building that started is kept when a later record step fails.
+- Story mode: Fixed moving the Autarch AI Core into a Storage tab counting as a sale.
+- Story mode: A core left in its station's salvage, or sold while story mode was off, counts as lost or sold. A new one turns up as after a sale.
+- Story mode: On a new game the core is placed after the pop-up's answer. Choosing Normal leaves no station.
+- Story mode: The Story page has the Story mode row when LunaLib is off.
+- Story mode: The TriPad's colony hand-over keeps LunaLib's settings.
+- Story mode: No decisions are offered or run while the Colony Autopilot is dormant.
+- Story mode: The first colony setup sets the empire mode you chose.
+- Story mode: The core can be placed in sectors with no system in the fringe band.
+- Crash safety: The intel screen, the approval summary, the fast buildout offer and the Story tab catch their own errors. The approval summary always has a Close option.
+
 ## 0.3.6.1 - 2026-11-14
 
 - Story mode: Fixed the 0.3.6.0 download missing the Autarch AI Core's icon and portrait.

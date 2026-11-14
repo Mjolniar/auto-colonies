@@ -478,6 +478,8 @@ public class CAAuto {
         if (c.pendingReplace != null) {
             for (CAEngine.Pick p : r.floorNoSlot) {
                 if (!p.id.equals(c.pendingId) || p.upgrade != c.pendingUpgrade) continue;
+                String now = reserveNow(d, p);   // 0.3.6.2: today's price, not the proposal's
+                if (now != null) return now;
                 String err = CAFloors.swap(m, c, p, c.pendingReplace, prof);
                 if (err != null) return err;
                 return execute(m, c, p, "Approved:");
@@ -486,10 +488,18 @@ public class CAAuto {
             return "Proposal out of date. Cleared";
         }
         for (CAEngine.Pick p : r.picks) {
-            if (p.id.equals(c.pendingId) && p.upgrade == c.pendingUpgrade) return execute(m, c, p, "Approved:");
+            if (!p.id.equals(c.pendingId) || p.upgrade != c.pendingUpgrade) continue;
+            String now = reserveNow(d, p);   // 0.3.6.2: today's price, not the proposal's
+            return now != null ? now : execute(m, c, p, "Approved:");
         }
         d.clearPending(c);
         return "Proposal out of date. Cleared";
+    }
+
+    /** 0.3.6.2: the reserve check on the price the pick has today (the proposal's price can be up to a summary interval old). */
+    static String reserveNow(CAData d, CAEngine.Pick p) {
+        float price = CASync.buildPrice(p.cost);
+        return CAApprovals.reserveGate(price + CABudget.constructionFee(d.settings, p.cost));
     }
 
     public static void reject(MarketAPI m) {

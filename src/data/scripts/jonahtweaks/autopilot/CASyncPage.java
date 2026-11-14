@@ -81,6 +81,7 @@ public class CASyncPage {
             }
         }
 
+        if (!CALunaSync.active()) settingsRow(t);   // 0.3.6.2: switch back from here while dormant, without LunaLib
         if (!awake) { story(t); devTools(t); return; }
 
         // managed colonies

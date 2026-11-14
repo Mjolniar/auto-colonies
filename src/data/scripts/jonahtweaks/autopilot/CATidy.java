@@ -159,8 +159,15 @@ public final class CATidy {
                 Map.Entry<String, com.fs.starfarer.api.campaign.CargoAPI> e = it.next();
                 if (!gone.contains(e.getKey())) continue;
                 com.fs.starfarer.api.campaign.CargoAPI c = e.getValue();
-                if (c == null || c.isEmpty()) { it.remove(); n++; }
-                else CALog.quiet("Autopilot Storage of a colony that's gone (" + e.getKey() + ") still holds " + c.getStacksCopy().size() + " stacks; left in the save");
+                if (c == null || c.isEmpty()) { it.remove(); n++; continue; }
+                // 0.3.6.2: what a decivilized colony's Autopilot Storage held moves to your biggest colony's, so nothing is stranded
+                List<com.fs.starfarer.api.campaign.econ.MarketAPI> to;
+                try { to = CAStores.markets(); } catch (Throwable t) { to = Collections.emptyList(); }   // no game (offline checks): kept
+                if (to.isEmpty()) { CALog.quiet("Autopilot Storage of a colony that's gone (" + e.getKey() + ") still holds " + c.getStacksCopy().size() + " stacks; no colony to move it to"); continue; }
+                com.fs.starfarer.api.campaign.CargoAPI dest = CAStores.of(to.get(0));
+                dest.addAll(c, true);   // ships in it too
+                it.remove(); n++;
+                CALog.did("Autopilot Storage: A lost colony's items moved to " + to.get(0).getName() + ".");
             }
         }
         return n;

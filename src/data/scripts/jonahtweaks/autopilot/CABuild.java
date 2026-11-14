@@ -118,7 +118,9 @@ public class CABuild {
             // 0.3.0.0 (B4, 03 F12): sunk-cost memory: what it cost, when and under which valuation (CATombstone: removal log, teardown loss)
             try { CATombstone.paid(m, p.id, p.upgrade && p.existing != null ? p.existing.getId() : null, p.cost); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "build record failed for " + p.id, t); }
-            CACache.bump("build");   // 0.3.0.0 (A4): kept evaluations are worked out again after a build (the colony signature catches it too)
+            // 0.3.6.2: guarded on its own, so a throw here can't remove a building that's already paid for
+            try { CACache.bump("build"); }   // 0.3.0.0 (A4): kept evaluations are worked out again after a build (the colony signature catches it too)
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "cache refresh failed after building " + p.id, t); }
             return null;
         } catch (Throwable t) {
             // 0.2.45.1: a building half-added when something threw comes off again, so nothing is left unpaid or stuck
