@@ -46,7 +46,7 @@ public class CAStoryPrompt implements InteractionDialogPlugin {
         try { dialog.getVisualPanel().showImageVisual(new InteractionDialogImageVisual("illustrations", "orbital_construction", 640, 400)); }
         catch (Throwable ignored) { }
         TextPanelAPI text = dialog.getTextPanel();
-        text.addPara("Your TriPad has a setup prompt waiting. The Colony Autopilot, a Domain-era program for running colonies, asks how it should start in this sector.");
+        text.addPara("Your TriPad is showing a setup screen for the Colony Autopilot, an old Domain program for running colonies.");
         text.addPara("In Normal mode it works from the start. You set each colony to Advisor, Approve or Auto, and it plans, builds and hires within the budget you give it.");
         text.addPara("In Story mode it stays dormant until you find the Autarch AI Core it was written for. After that, each AI core you give it adds processing power, and you choose which of its abilities it runs.");
         text.addPara(luna() ? "You can change this later in LunaLib's settings menu (F3), under Auto Colonies. A save switched back keeps its story progress."

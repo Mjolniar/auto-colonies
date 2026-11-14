@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.6.5 - 2026-11-14
+
+- Story mode: Rewrote the TriPad dialogue. The chief engineer and tech officer talk you through the core, and the Autarch speaks like a Domain administration program. Player choices are lines you say.
+- Story mode: Rewrote the Autarch AI Core item description and the first line of the new-save pop-up.
+
 ## 0.3.6.4 - 2026-11-14
 
 - Approvals: A rejected proposal is held 180 days, up from 30. This covers builds, settlements, Shipyard, Stockpiles, Military goods, Military upgrades, hypershunt restores, megastructures, station augments and TASC projects. Autonomy is still held a year. Expedition targets are still skipped 180 days.
