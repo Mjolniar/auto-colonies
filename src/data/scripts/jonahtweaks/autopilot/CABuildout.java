@@ -193,6 +193,7 @@ public class CABuildout {
         CAData d = CAData.get();
         CAData.Colony c = d.colony(m.getId());
         boolean first = !d.settings.setupDone;
+        if (first && CALunaSync.keepsSetup()) { d.settings.setupDone = true; first = false; }   // 0.3.4.0: LunaLib's settings stay
         if (first) {
             CASetupUI.applyRecommended(d.settings);
             d.settings.setupDone = true;

@@ -205,12 +205,12 @@ public class CASetupUI {
             {"Inspection points", "from AI cores; the Hegemony inspects over the line."}};
     /** The box on the Settings page for 30 days after a save moves to 0.3.0 (WS-F4). */
     static final String[] WHATS_NEW = {
-            "20 main rows; Advanced has every older setting.",
+            "Advanced has every older setting.",
             "Nothing you set changed.",
             "New: War level, faction stances, New colonies, What to buy."};
     static final float WHATS_NEW_DAYS = 30f;
-    static final String SETUP_REST = "Everything else uses the recommended settings.";
-    static final String RESET_NOTE = "Returns settings to the empire mode's defaults; keeps stances and picks.";
+    static final String SETUP_REST = "The rest: recommended settings.";
+    static final String RESET_NOTE = "Sets the empire mode's defaults. Keeps stances and picks.";
 
     /** The main rows' keys, in menu order (20 with every supported mod; JTMenuTextCheck). */
     static final String[] MAIN_KEYS = {"empire", "lowprofile", "p_spend", "p_extras", "p_newcol", "p_war", "reserve", "surplus", "richpreset", "endgame",
@@ -307,6 +307,7 @@ public class CASetupUI {
     // ---------------- the Settings page ----------------
 
     public static void render(TooltipMakerAPI t, CASettings s, float width) {
+        if (CALunaSync.active()) { renderLuna(t, s); return; }   // 0.3.4.0: the settings are in LunaLib's menu
         Color gray = Misc.getGrayColor(), hl = Misc.getHighlightColor();
         marked.clear();
         try { marked.addAll(markedRows(s)); } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "set-by-you markers failed", e); }
@@ -363,12 +364,7 @@ public class CASetupUI {
                 row(t, "Ambassadors", s.disableAmbassadors ? "Off" : "Hire and install", "Hire and install", "amb", true);
                 desc(t, "amb");
             }
-            ButtonAPI b = t.addButton("OPEN", CANav.PREFIX + FACTIONS_PAGE, Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
-                    Alignment.MID, CutStyle.TL_BR, 86f, 20f, 4f);
-            LabelAPI l = t.addPara("%s  ::  %s", 0f, hl, "FACTION STANCES", stanceSummary(s));
-            l.getPosition().rightOfMid(b, 12f);
-            CALog.endRow(t, b);
-            desc(t, "stances");
+            stancesLink(t, s);
         }
         if (group(t, "interface", "Interface", "log " + lower(CALog.SCREEN_NAMES[clamp(s.screenLog, 3)]))) {
             row(t, "On-screen log", CALog.SCREEN_NAMES[clamp(s.screenLog, 3)], "Every entry", "screenlog", true);
@@ -381,6 +377,33 @@ public class CASetupUI {
         t.addButton("Reset to recommended", PREFIX + "recommend:x", Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
                 Alignment.MID, CutStyle.TL_BR, 260f, 24f, 14f);
         t.addPara(CALog.esc(RESET_NOTE), gray, 4f);
+    }
+
+    /** The Faction stances row: OPEN goes to the Factions page. */
+    static void stancesLink(TooltipMakerAPI t, CASettings s) {
+        ButtonAPI b = t.addButton("OPEN", CANav.PREFIX + FACTIONS_PAGE, Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
+                Alignment.MID, CutStyle.TL_BR, 86f, 20f, 4f);
+        LabelAPI l = t.addPara("%s  ::  %s", 0f, Misc.getHighlightColor(), "FACTION STANCES", stanceSummary(s));
+        l.getPosition().rightOfMid(b, 12f);
+        CALog.endRow(t, b);
+        desc(t, "stances");
+    }
+
+    /**
+     * 0.3.4.0: the Settings page while LunaLib holds the settings (CALunaSync): one line saying where they are, then what
+     * LunaLib can't hold because it is global: this save's picks (capital, refit hub, sell hub, offense target) and the
+     * faction stances.
+     */
+    static void renderLuna(TooltipMakerAPI t, CASettings s) {
+        marked.clear();
+        t.addPara(CALog.esc(CALunaSync.WHERE), Misc.getGrayColor(), 6f);
+        if (CACapital.on(s)) row(t, "Capital", CACapital.name(s), "Autopilot picks", "capid", true);
+        else row(t, "Capital", "None", "Autopilot picks", "capid", true);
+        desc(t, "capid");
+        row(t, "Refit hub", CALogistics.hubName(s.logisticsHub, true), null, "logihub", true);
+        row(t, "Sell hub", CALogistics.hubName(s.logisticsSellHub, false), null, "logisell", true);
+        if (nex() && s.spyMode == 2) row(t, "Offense target", spyTargetName(s.spyTarget), spyTargetName(null), "spytarget", true);
+        stancesLink(t, s);
     }
 
     /**

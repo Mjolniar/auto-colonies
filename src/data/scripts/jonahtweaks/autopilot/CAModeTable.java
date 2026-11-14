@@ -167,9 +167,11 @@ public final class CAModeTable {
     public static void clickEnd(CASettings s, Object id) {
         if (depth <= 0) { depth = 0; return; }
         if (--depth > 0) return;
+        boolean any = false;
         try {
             if (clickBefore == null || s == null) return;
             Set<String> changed = diff(clickBefore, snapshot(s));
+            any = !changed.isEmpty() || CASetupUI.rowKey(id) != null;
             changed.removeAll(SYSTEM);
             if (changed.isEmpty()) return;
             s.playerSet().addAll(changed);
@@ -177,7 +179,10 @@ public final class CAModeTable {
             if (key != null) s.playerRows().add(key);
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "settings change tracking failed", t);
-        } finally { clickBefore = null; SYSTEM.clear(); }
+        } finally {
+            clickBefore = null; SYSTEM.clear();
+            if (any) CALunaSync.sync();   // 0.3.4.0: LunaLib's menu shows what the click changed
+        }
     }
 
     /** Runs a write the mod makes itself (recommended values, a mode column): what it changes is never flagged. */

@@ -634,7 +634,9 @@ public class CAIntel extends BaseIntelPlugin {
             } else if ("mode".equals(a[0])) {
                 CAData.Mode[] all = CAData.Mode.values();
                 d.setMode(c, all[(c.mode.ordinal() + 1) % all.length]);   // 0.3.3.0: a change clears the colony's waiting proposal
-                if ((c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO) && !d.settings.setupDone) {
+                if ((c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO) && !d.settings.setupDone && CALunaSync.keepsSetup()) {
+                    d.settings.setupDone = true;   // 0.3.4.0: LunaLib's settings stay
+                } else if ((c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO) && !d.settings.setupDone) {
                     CASetupUI.applyRecommended(d.settings);
                     d.settings.setupDone = true;
                     CALog.did("Settings: recommended values applied. Review them on the Settings page of the Colony Autopilot intel.", true);

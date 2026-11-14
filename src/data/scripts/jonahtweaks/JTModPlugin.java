@@ -14,6 +14,15 @@ public class JTModPlugin extends BaseModPlugin {
     public void onApplicationLoad() {
         try { data.scripts.jonahtweaks.autopilot.CALogWatch.install(); }
         catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] log watch failed", t); }
+        // 0.3.4.0: saves in LunaLib's settings menu reach the loaded game (only with LunaLib enabled)
+        try { data.scripts.jonahtweaks.autopilot.CALunaSync.register(); }
+        catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] LunaLib listener failed", t); }
+    }
+
+    /** 0.3.4.0: LunaLib's settings get what changed in the game since the last sync. */
+    public void beforeGameSave() {
+        try { data.scripts.jonahtweaks.autopilot.CALunaSync.sync(); }
+        catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] LunaLib settings write failed", t); }
     }
 
     /**
@@ -44,6 +53,8 @@ public class JTModPlugin extends BaseModPlugin {
         // 0.3.1.0: enforcer patrols (CAEnforcers): a transient script and battle listener, so a load drops them; added here
         step("enforcer patrols", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CAEnforcers.ensure(); } });
         step("calibration", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CACalibrate.migrate(); } });
+        // 0.3.4.0: the first save after the update seeds LunaLib's settings; later loads read them into this save (LunaLib only)
+        step("LunaLib settings", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CALunaSync.onLoad(); } });
         step("daily script", new Runnable() { public void run() {
             data.scripts.jonahtweaks.autopilot.CAAuto.reset();
             data.scripts.jonahtweaks.autopilot.CASurplus.reset();

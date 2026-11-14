@@ -1,5 +1,16 @@
 # Patch notes
 
+## 0.3.4.0 - 2026-11-13
+
+- Settings: With LunaLib enabled, every Settings page option is in LunaLib's settings menu (F3 by default), Auto Colonies. General tab: the main rows. Advanced tab: one header per Advanced group.
+- Settings: LunaLib values are global. The first save loaded after the update copies its settings into LunaLib, so that game does not change. Later loads read LunaLib into the save.
+- Settings: Presets are radio options and write the same fields as the intel rows. Numbers keep their range and step.
+- Settings: A field changed in LunaLib counts as set by you and keeps its value through empire mode changes.
+- Settings: Reset to recommended is a tick box in LunaLib. It unticks itself after the save.
+- Intel Settings page: With LunaLib it shows where the settings are, this save's picks (Capital, Refit hub, Sell hub, Offense target) and Faction stances.
+- First-time setup: With LunaLib holding settings from a set-up save, a new save's first Approve or Auto colony keeps them.
+- Compatibility: LunaLib is optional. Without it the intel Settings page has every row.
+
 ## 0.3.3.5 - 2026-11-13
 
 - Approval summary: Each decision lists what it does, what it costs, why, and what rejecting does.
