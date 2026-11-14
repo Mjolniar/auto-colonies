@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.5.1 - 2026-11-13
+
+- Autonomy: A rejected autonomy offer for a colony returns after a year. Other rejected offers still return after 30 days.
+- Autonomy: While a colony's offer is held, its Recommend line stays quiet. The next colony that qualifies is offered.
+
 ## 0.3.5.0 - 2026-11-13
 
 - Settings page: Rows read "Label: value." A row off its recommendation adds "Recommended: X." A row you set adds "Set by you."

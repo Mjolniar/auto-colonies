@@ -151,6 +151,7 @@ final class CAAutonomy {
         Cand pick = null;
         for (Cand k : losers(d, s.autonomyMode == 2)) {
             if (e == null && (rich || !longLoss(d.colony(k.m.getId()).lossStreak))) continue;   // outside an emergency: a long loss, and no pool paying for it
+            if (s.autonomyMode != 2 && CAApprovals.held("autonomy:" + k.m.getId(), "autonomy")) continue;   // 0.3.5.1: you rejected it: no offer and no line for a year
             pick = k;
             break;
         }
@@ -182,7 +183,7 @@ final class CAAutonomy {
                 "Effect: it stops counting against your colony limit, and nothing can be built there while it is autonomous.",
                 "Saves: about " + Misc.getDGSCredits(saving) + " a month. Why: " + why + ".",
                 "Undo: take it back any time under Intel, Colony Autopilot, Mod features. That adds " + REVOKE_UNREST + " unrest.",
-                "If rejected: not offered again for 30 days.");
+                "If rejected: not offered again for a year.");
     }
 
     /** Your order, or Auto's. The colony stays autonomous until you take it back. */
