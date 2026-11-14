@@ -82,8 +82,8 @@ public final class CALunaSync {
                 + "when you switch, but processing power you spent is not refunded.");
         st.get = s -> CASync.on();
         st.set = (s, v, b) -> { };   // applied before the other rows (story())
-        text("presets", "Presets set several fields at once; each field is on the Advanced tab. Mode default: the empire mode's values. "
-                + "Custom: the fields match no option. Picking Mode default or Custom changes nothing.");
+        text("presets", "Presets set several fields at once; each field is on the Advanced tab. Mode default sets the group to the empire mode's "
+                + "values, which then follow the mode. Custom shows that the fields match no option; picking it changes nothing.");
         header("playstyle", "Playstyle");
         Row r = row(RADIO, "empire", "Empire mode", "Empire-wide settings follow it. Off: nothing. Advisor: advice. Approve: asks first. Auto: acts. "
                 + "A setting you change keeps its value through mode changes.");
@@ -649,15 +649,26 @@ public final class CALunaSync {
         }
         Map<String, Object> before = CAModeTable.snapshot(s);
         List<String> mine = new ArrayList<String>();
+        List<Row> followMode = new ArrayList<Row>();   // 0.3.6.3: preset rows set to Mode default
         for (int pass = 0; pass < 2; pass++) {
             for (Row r : ROWS) {
                 if (!batch.contains(r.key) || r.preset != (pass == 0) || "empire".equals(r.key) || "reset".equals(r.key) || "storymode".equals(r.key)) continue;
-                try { r.set.set(s, read(j, r), batch); mine.add(r.key); }
+                try {
+                    Object v = read(j, r);
+                    if (r.preset && CAPresets.MODE_DEFAULT.equals(v)) { CAModeTable.resetGroup(s, r.fields); followMode.add(r); continue; }
+                    r.set.set(s, v, batch); mine.add(r.key);
+                }
                 catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "LunaLib setting " + r.id() + " not applied", t); }
             }
         }
         Set<String> fields = CAModeTable.diff(before, CAModeTable.snapshot(s));
         s.playerSet().addAll(fields);
+        for (Row r : followMode) {   // their fields follow the empire mode, never "set by you"
+            s.playerSet().removeAll(Arrays.asList(r.fields));
+            s.playerRows().remove(intelKey(r));
+            applied.add(r.key);
+            try { CALog.did("Settings: " + r.name + " follows the empire mode (" + s.empire().label + ").", true); } catch (Throwable ignored) { }
+        }
         for (String k : mine) {
             Row r = find(k);
             boolean any = false;

@@ -871,10 +871,10 @@ public class CAWar {
             t.addPara("Authorize saturation bombardment of Destroy factions' capitals?", bad, 0f);
             for (String l : CAScorched.preview()) t.addPara(CALog.esc(l), 4f);
         } else if ("recall".equals(action)) {
-            t.addPara("Stand down and recall offensives travelling or in action? Refunds %s travelling, %s in action.",   // 0.3.0.0 (WS-F3 fix pass 3): the button's hover said it stands down
+            t.addPara("Recalls every offensive. Refunds %s travelling, %s in action.",   // 0.3.0.0 (WS-F3 fix pass 3): the button's hover said it stands down
                     0f, hl, "67 percent", "33 percent");
         } else if ("standdown".equals(action)) {
-            t.addPara("Stand down: War level to %s, authorizations cleared, organizing offensives cancelled.",
+            t.addPara("Stand down: War level %s, authorizations cleared, organizing offensives cancelled.",
                     0f, hl, "Defend");
         }
     }

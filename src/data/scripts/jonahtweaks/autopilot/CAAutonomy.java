@@ -240,7 +240,7 @@ final class CAAutonomy {
         CATheme.heading(t, "Autonomy (Nexerelin)", 0f);
         // 0.3.0.0 (WS-F3 fix, research 04 section 7 #6): the mode as a readout, one short line and who qualifies on hover (was 60 words)
         CATheme.mode(t, CASettings.AUTONOMY_NAMES[Math.max(0, Math.min(2, s.autonomyMode))]);
-        t.addPara("Autonomous colonies give %s of profit or loss, outside the colony limit. Taking one back costs %s unrest.",
+        t.addPara("Autonomous colonies: %s of profit or loss, outside the colony limit. Revoking: %s unrest.",
                 4f, hl, Math.round(incomeMult() * 100f) + "%", "" + REVOKE_UNREST);
         tidy(d);
         Emergency e = emergency(s);
@@ -251,7 +251,7 @@ final class CAAutonomy {
         for (Cand k : losers) {
             if (shown++ >= 6) break;
             int streak = d.colony(k.m.getId()).lossStreak;
-            t.addPara("%s loses %s/month (%s months in a row): autonomy saves %s/month.", 6f, hl, k.m.getName(),
+            t.addPara("%s loses %s/month (%s months): autonomy saves %s/month.", 6f, hl, k.m.getName(),
                     Misc.getDGSCredits(-colonyNet(k.m)), "" + streak, Misc.getDGSCredits(k.saving));
             t.addButton("Grant autonomy: " + k.m.getName(), new String[]{"auton", "grant", k.m.getId()}, base, dark, Alignment.MID, CutStyle.TL_BR, 260f, 22f, 4f);
         }

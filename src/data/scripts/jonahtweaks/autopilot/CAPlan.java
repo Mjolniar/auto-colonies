@@ -53,6 +53,8 @@ public class CAPlan {
             {"patrolhq", "militarybase", "highcommand"}, {"orbitalstation", "battlestation", "starfortress"},
             {"orbitalstation_mid", "battlestation_mid", "starfortress_mid"}, {"orbitalstation_high", "battlestation_high", "starfortress_high"},
             {"ii_orbitalstation", "ii_battlestation", "ii_starfortress", "ii_stellacastellum"},
+            {"diableavionics_orbitalstation", "diableavionics_battlestation", "diableavionics_starfortress"},   // 0.3.6.3
+            {"roider_orbitalstation", "roider_battlestation", "roider_starfortress"},
             {"kol_battlestation_libra", "kol_battlestar_libra"}, {"IndEvo_ComArray", "IndEvo_IntArray"},
             {"fuelprod", "ix_fuel_production"}};
 

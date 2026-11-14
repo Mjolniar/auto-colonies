@@ -239,6 +239,25 @@ public final class CAModeTable {
         return v == null ? null : v[c];
     }
 
+    /**
+     * 0.3.6.2 (0.3.6.3 release): a preset row's Mode default pick: its fields follow the empire mode again. They stop counting
+     * as set by you and take the empire mode's column. Fields with no column keep their values. Returns what changed.
+     */
+    public static List<String> resetGroup(final CASettings s, final String[] fields) {
+        final List<String> out = new ArrayList<String>();
+        if (s == null || fields == null) return out;
+        for (String f : fields) s.playerSet().remove(f);
+        system(s, new Runnable() { public void run() {
+            CAData.Mode m = s.empire();
+            for (String f : fields) {
+                if (f.indexOf('[') >= 0) continue;
+                Object v = value(f, m);
+                if (v != null && !same(get(s, f), v) && set(s, f, v)) out.add(f);
+            }
+        } });
+        return out;
+    }
+
     /** Sets the empire mode (a player choice) and writes its column; returns what changed. */
     public static List<String> setEmpire(CASettings s, CAData.Mode mode) {
         if (s == null || mode == null) return new ArrayList<String>();

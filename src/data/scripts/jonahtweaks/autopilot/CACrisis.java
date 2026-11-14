@@ -493,8 +493,8 @@ public class CACrisis {
                     name(r.factor), CAContracts.join(names));
         }
         float best = bestMilitaryMult();
-        t.addPara(best >= 1f ? "No military structure yet (they slow crises)."
-                : "Your best military structure slows every crisis to x%s.", 4f, hl, Misc.getRoundedValueMaxOneAfterDecimal(best));
+        t.addPara(best >= 1f ? "No military structure; they slow crises."
+                : "Crises run at x%s (best military structure).", 4f, hl, Misc.getRoundedValueMaxOneAfterDecimal(best));
         CALowProfile.render(t, s);   // 0.2.43.0
         CAOddisz.render(t);   // Sol Renewed's own crisis, when it's running (0.2.45.0)
 

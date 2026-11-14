@@ -21,7 +21,7 @@ package data.scripts.jonahtweaks.autopilot;
  *  Admins         Off, Place only, Hire and place*                        adminHiring, adminOptimal
  *  Policies       Auto*, Don't touch                                      hazardPayMode, freePortMode, disableEdicts (IndEvo)
  *  Story points   Yours only*, One per colony, 2 a month, 5 a month       storyPointRule, storyPointMonthlyCap
- *  Stations       Pick by score*, Low tech .. Imperium, Only where they pay   stationLine, noStationPlan
+ *  Stations       Pick by score*, Low tech .. Roider Union, Only where they pay   stationLine, noStationPlan
  *  War            Off .. Scorched (CAWarPolicy.LEVEL_NAMES), Retaliate*   warLevel
  *  Production     Off, Light*, Full                                       productionMode, floorHullSources, floorCapacity,
  *                                                                         floorOrderMonths, floorQuality, floorPartsReserve,
@@ -86,8 +86,8 @@ public class CAPresets {
     static final int[] STORY_RULE = {0, 1, 2, 2}, STORY_CAP = {-1, -1, 2, 5};
 
     /** CASettings.STATION_NAMES, then "Only where they pay" (noStationPlan: no station planned at every colony, the line kept). */
-    static final String[] STATION_NAMES = {"Pick by score", "Low tech", "Midline", "High tech", "Imperium", "Only where they pay"};
-    public static final int STATIONS_ONLY_WHERE_THEY_PAY = 5;
+    static final String[] STATION_NAMES = {"Pick by score", "Low tech", "Midline", "High tech", "Imperium", "Diable Avionics", "Roider Union", "Only where they pay"};
+    public static final int STATIONS_ONLY_WHERE_THEY_PAY = 7;   // 0.3.6.3: after Diable Avionics and Roider Union
 
     /** 0.3.2.0: Production: Off (the 0.3.1.0 picks), Light, Full; each value's floors (index 0 unused: Off keeps them). */
     static final String[] PRODUCTION_NAMES = CASettings.PRODUCTION_NAMES;

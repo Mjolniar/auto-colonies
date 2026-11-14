@@ -64,6 +64,7 @@ public class CAReset {
         if (on("nexerelin")) {
             failed += run("defense fleet cooldowns", () -> { CADefense.lastSent.clear(); CADefense.warned.clear(); });
             failed += run("relief fleet cooldowns", () -> { CAWar.lastRelief.clear(); CAWar.warned.clear(); CAWar.summary = null; });
+            failed += run("station line ask", () -> { CAStationAsk.reset(); CAStations.reset(); });   // 0.3.6.3
             failed += run("agents' rival", () -> { CASpies.rivalCache = null; CASpies.rivalDay = Integer.MIN_VALUE; });   // 0.3.0.9: the day's automatic rival held the last save's
         }
         failed += run("colony crises", () -> {

@@ -430,7 +430,9 @@ public class CAEngine {
             if (CAPlan.hasOrBetter(m, id)) continue;
             if (!CASync.mayBuild(spec)) continue;   // 0.3.6.0 story mode: stations need Stations
             if (spec.hasTag("station") && hasStation) continue;
-            if (spec.hasTag("station") && !"score".equals(line) && !stationMatches(id, line)) continue;
+            if (spec.hasTag("station") && CAStationAsk.hold) continue;   // 0.3.6.3: the first station waits for your line
+            // 0.3.6.3: a line whose first station this colony can't build (Diable Avionics needs their blueprints or relations) reads as Pick by score here
+            if (spec.hasTag("station") && !"score".equals(line) && !stationMatches(id, line) && lineOpen(m, line, menu)) continue;
             if (id.equals(CAWonders.SITE)) continue;   // a Grand Wonder site is only ever built for a wonder (CAWonders)
             if (rog != null && CARogue.forbids(rog, id, null) != null) continue;   // 0.3.2.1: Fragile Biosphere, the reactor pair, the vault's Tech-Mining
             boolean supported = CADiagnostics.industryLevel(id) == CADiagnostics.Level.SUPPORTED;
@@ -465,6 +467,7 @@ public class CAEngine {
                     else effects(m, id, p, deficit);   // vanilla formulas, and CAEstimates' at the end
                 } finally { scoring(null, null); }
                 p.recording = false;
+                if (spec.hasTag("station")) CAStations.fleetValue(id, p);   // 0.3.6.3: by its fleet's strength
                 if (!worth) continue;
                 trust(spec, p, p.measured);
                 CAItems.idleBonus(m, inst, p, profile);   // a colony item waiting in Autopilot Storage that would go in it
@@ -531,6 +534,7 @@ public class CAEngine {
                         } else effects(m, up, p, deficit);
                     } finally { scoring(null, null); }
                     p.recording = false;
+                    if (upSpec.hasTag("station")) CAStations.fleetValue(up, p);   // 0.3.6.3: by its fleet's strength
                     trust(upSpec, p, p.measured);
                     CASynergies.score(syn, p);
                     upkeep(m, upSpec, ind.getSpec(), p);
@@ -1088,6 +1092,19 @@ public class CAEngine {
             if (a > bestAcc) { bestAcc = a; best = o; }
         }
         return best == m;
+    }
+
+    /** 0.3.6.3: the line's first station is in this colony's build menu (asked once a day, as the other buildings are). */
+    static boolean lineOpen(MarketAPI m, String line, Menu menu) {
+        String st = CASettings.stationStarter(line);
+        if (st == null) return false;
+        Boolean o = menu.open.get(st);
+        if (o == null) {
+            try { IndustrySpecAPI sp = Global.getSettings().getIndustrySpec(st); o = sp != null && sp.getNewPluginInstance(m).isAvailableToBuild(); }
+            catch (Throwable t) { o = false; }
+            menu.open.put(st, o);
+        }
+        return o;
     }
 
     static boolean stationMatches(String id, String line) {

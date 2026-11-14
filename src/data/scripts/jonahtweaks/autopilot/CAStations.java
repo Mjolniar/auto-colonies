@@ -1,11 +1,17 @@
 package data.scripts.jonahtweaks.autopilot;
 
+import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.Industry;
+import com.fs.starfarer.api.combat.ShipVariantAPI;
+import com.fs.starfarer.api.loading.WeaponSpecAPI;
+import org.json.JSONObject;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.loading.IndustrySpecAPI;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A station at every colony (0.2.42.0). A station fights next to your fleet and patrols, and a raid, bombardment or
@@ -57,6 +63,83 @@ public class CAStations {
             id = sp.getUpgrade();
         }
         return null;
+    }
+
+    // ---------------- 0.3.6.3: station strength ----------------
+
+    /** The fleet value a low-tech station of each tier gets in CAEngine.effects (index = tier; 4 reads like 3). */
+    static final float[] REF = {0f, 0.3f, 0.3f, 0.5f, 0.5f};
+    static final String[] LOW = {null, "orbitalstation", "battlestation", "starfortress", "starfortress"};
+    static final Map<String, Float> STRENGTH = new HashMap<String, Float>();
+
+    public static void reset() { STRENGTH.clear(); }
+
+    /**
+     * The station's fleet: durability (hull and armor) and firepower (weapon OP, fighter bays) of its core and modules, from the
+     * variant its industry's data names. 0 when unknown (no data, no variant).
+     */
+    public static float strength(String industryId) {
+        Float c = STRENGTH.get(industryId);
+        if (c != null) return c;
+        float v = 0f;
+        try {
+            IndustrySpecAPI sp = Global.getSettings().getIndustrySpec(industryId);
+            String data = sp == null ? null : sp.getData();
+            if (data != null && !data.trim().isEmpty()) {
+                String vid = new JSONObject(data).optString("variant", null);
+                if (vid != null) {
+                    ShipVariantAPI var = Global.getSettings().getVariant(vid);
+                    float[] df = new float[2];
+                    add(var, df);
+                    if (var != null && var.getStationModules() != null)
+                        for (String mv : var.getStationModules().values()) add(Global.getSettings().getVariant(mv), df);
+                    v = pureStrength(df[0], df[1]);
+                }
+            }
+        } catch (Throwable t) { v = 0f; }
+        STRENGTH.put(industryId, v);
+        return v;
+    }
+
+    static void add(ShipVariantAPI v, float[] df) {
+        if (v == null || v.getHullSpec() == null) return;
+        df[0] += v.getHullSpec().getHitpoints() + 10f * v.getHullSpec().getArmorRating();
+        for (String slot : v.getFittedWeaponSlots()) {
+            WeaponSpecAPI w = Global.getSettings().getWeaponSpec(v.getWeaponId(slot));
+            if (w != null) df[1] += w.getOrdnancePointCost(null);
+        }
+        df[1] += 20f * v.getFittedWings().size();
+    }
+
+    /** Pure (JTStationCheck): durability and firepower as one number, their geometric mean. */
+    static float pureStrength(float durability, float firepower) {
+        return durability <= 0f ? 0f : (float) Math.sqrt(durability * Math.max(1f, firepower));
+    }
+
+    /** Pure (JTStationCheck): strength against the low-tech station of the tier, 0.5 to 2.5; 1 when either is unknown. */
+    static float ratio(float s, float base) {
+        if (s <= 0f || base <= 0f) return 1f;
+        return Math.max(0.5f, Math.min(2.5f, s / base));
+    }
+
+    /** Pure (JTStationCheck): the fleet value effects() already gave this station (vanilla and Imperium are written in). */
+    static float already(String id, int tier) {
+        if (id.startsWith("orbitalstation") || id.startsWith("battlestation") || id.startsWith("starfortress")) return REF[tier];
+        if (id.startsWith("ii_")) return tier == 1 ? 0.3f : tier == 2 ? 0.6f : 1f;
+        return 0f;
+    }
+
+    /** Scores a station build or upgrade by its fleet's strength (CAEngine, after the effects): the low-tech station's value times the ratio. */
+    public static void fleetValue(String id, CAEngine.Pick p) {
+        try {
+            int tier = CAPlan.stationTier(CAPlan.spec(id));
+            if (tier <= 0) return;
+            float r = ratio(strength(id), strength(LOW[Math.min(4, tier)]));
+            float adj = REF[Math.min(4, tier)] * r - already(id, Math.min(4, tier));
+            if (adj == 0f) return;
+            p.fx[4] += adj;
+            p.lines.add("Station fleet: " + Math.round(r * 100f) + "% of the low-tech station's strength");
+        } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station strength failed for " + id, t); }
     }
 
     /** A station step here, or what leads to one (an Orbital Station on the way to a Battlestation). */
