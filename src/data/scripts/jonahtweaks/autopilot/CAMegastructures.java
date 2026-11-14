@@ -346,6 +346,6 @@ public class CAMegastructures {
             t.addPara("You set it. Autopilot leaves it.", gray, 4f);
             t.addButton("Let Autopilot manage it", CAColonyDialog.MEGA + "manage:x", base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
         }
-        t.addPara(g.kind.equals(PLUTO) ? "Full laser. Ore goes to the Purification Core." : "Manpower goes to the Nexus Core while its inputs are supplied.", gray, 6f);
+        t.addPara(g.kind.equals(PLUTO) ? "Full laser. Ore to the Purification Core." : "Manpower to the Nexus Core while its inputs last.", gray, 6f);
     }
 }

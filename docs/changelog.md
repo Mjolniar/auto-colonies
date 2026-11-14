@@ -1,5 +1,13 @@
 # Patch notes
 
+## 0.3.6.3 - 2026-11-14
+
+- Settings: Picking Mode default in a preset row sets that group to the empire mode's values. They follow the mode again and stop counting as set by you.
+- Stations: Diable Avionics and Roider Union are lines in the Stations row. A line whose first station a colony can't build counts as Pick by score there.
+- Stations: Stations are scored by their fleet's strength: hull, armor, weapons and fighter bays of the station and its modules, against the low-tech station of the same tier.
+- Stations: Before the first station is built, a pop-up lists each line a colony can build with its strength, cost and upkeep. Your pick sets the Stations row. It asks once per save.
+- Text: Shorter lines on the War, Megastructures, Autonomy, Settlement, Crisis, Research, Projects, Fast buildout and Diagnostics pages.
+
 ## 0.3.6.2 - 2026-11-14
 
 - Parts: The parts and fleet d-mods line goes to the Thinking list and starsector.log only. It no longer shows on screen.

@@ -425,7 +425,7 @@ public class CAProjects {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), bad = Misc.getNegativeHighlightColor();
         // 0.3.0.0 (WS-F3 fix, research 04 section 7 #13): the mode as a readout, one short line and the plan rule on hover (was 70 words)
         CATheme.mode(t, CASettings.PROJECT_SUPPLY_NAMES[Math.max(0, Math.min(2, s.projectSupplyMode))]);
-        t.addPara("A special project takes goods monthly. A stage stops while a good is missing.", 4f);
+        t.addPara("Special projects take goods monthly. A stage stops while one is missing.", 4f);
         // 0.3.0.0 (WS-F3 fix pass 2): the producers it plans are listed below
         if (project == null) {
             t.addPara("No special project is running.", gray, 4f);

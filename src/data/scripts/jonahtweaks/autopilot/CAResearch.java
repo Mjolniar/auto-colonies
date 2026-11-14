@@ -1112,7 +1112,7 @@ public class CAResearch {
             // 0.3.0.0 (C4, research 03 F5): credits per tech. Every facility pays the running tech's upkeep; each past the first adds 10% speed
             if (fac > 1) {
                 float per = CAEconomy.costPerTech(facilityUpkeepMult(), fac);
-                t.addPara("Upkeep: %s a month per tech tier and facility. %s facilities: %s faster, %s times the cost.",
+                t.addPara("Upkeep: %s a month per tier and facility. %s facilities: %s faster, %s the cost.",
                         4f, gray, hl, Misc.getDGSCredits(TIER_UPKEEP), "" + fac, Math.round((CASurplusResearch.speed(fac) - 1f) * 100f) + " percent",
                         String.format(java.util.Locale.ROOT, "%.2f", per));
             }

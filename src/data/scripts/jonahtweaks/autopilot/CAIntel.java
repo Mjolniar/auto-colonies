@@ -466,7 +466,7 @@ public class CAIntel extends BaseIntelPlugin {
         try { renderAuthorMods(t); }
         catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Mjolniar's mods section failed", e); }
         CATheme.heading(t, "Diagnostics", 0f);
-        t.addPara("Last scan: %s. Probe-measured: %s. Not acted on: %s analyzed, %s quarantined. "
+        t.addPara("Scan: %s. Probe-measured: %s. Unused: %s analyzed, %s quarantined. "
                         + "Report: saves/common/" + CADiagnostics.REPORT + ".data", 8f, hl,
                 CADiagnostics.getLastScan(), "" + CADiagnostics.count(CADiagnostics.Level.MEASURED),
                 "" + CADiagnostics.count(CADiagnostics.Level.ANALYZED), "" + CADiagnostics.count(CADiagnostics.Level.QUARANTINED));

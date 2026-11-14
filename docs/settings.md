@@ -20,7 +20,7 @@
 - First load after 0.3.4.0: The loaded save's settings are copied into LunaLib once. That game does not change.
 - Later loads: LunaLib's values go into the loaded save, with its "set by you" marks.
 - Saving in LunaLib's menu: The changed fields apply to the loaded game. A changed field counts as set by you.
-- Presets: Radio options. They write the same fields as the intel rows. Mode default and Custom show the state; picking one changes nothing.
+- Presets: Radio options. They write the same fields as the intel rows. Mode default sets the group to the empire mode's values, which then follow the mode. Custom shows that no option matches; picking it changes nothing.
 - Numbers: The same range and step as the intel rows. A typed value is rounded to the step.
 - Reset to recommended: A tick box (General, Reset). It unticks itself after the save.
 - Intel Settings page: One line on where the settings are, then this save's picks (Capital, Refit hub, Sell hub, Offense target) and Faction stances.
@@ -43,7 +43,7 @@
 | What to buy | Balanced (recommended), Fleet, Expansion, Economy, Save | [Money ladder](money.md#the-money-ladder) |
 | Endgame | From 1,000,000/month (recommended), 2,000,000, 500,000, Off | Build for production and defense |
 | Story points | Yours only (recommended), One per colony, 2 a month, 5 a month | |
-| Stations | Pick by score (recommended), Low tech, Midline, High tech, Imperium, Only where they pay | [How it builds](how-it-builds.md) |
+| Stations | Pick by score (recommended), Low tech, Midline, High tech, Imperium, Diable Avionics, Roider Union, Only where they pay. Asked once before the first station. | [How it builds](how-it-builds.md) |
 | Take down buildings | Never, Clean up (recommended), Free hand | |
 | Colony policies | Auto (recommended), Don't touch | |
 | AI cores | Off, Safe (recommended), Small colonies only, Defended, No limit | |

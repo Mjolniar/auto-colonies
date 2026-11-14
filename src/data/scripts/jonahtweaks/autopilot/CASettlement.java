@@ -424,7 +424,7 @@ public class CASettlement {
         java.awt.Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         if (!active()) { t.addPara("Frontiers is off (RAT setting).", gray, 6f); return; }
         CATheme.mode(t, CASettings.SETTLE_NAMES[Math.max(0, Math.min(3, s.settlementMode))]);   // 0.3.0.0 (WS-F3 fix): the mode as a readout
-        t.addPara("Founds a settlement at a site making %s a month or more. Builds facilities that pay.",
+        t.addPara("Founds a settlement at a site making %s a month or more, then paying facilities.",
                 4f, hl, Misc.getDGSCredits(s.settlementMinIncome));
         if (d.settleExpeditionPlanet != null) {
             float left = Math.max(0f, d.settleExpeditionDays - Global.getSector().getClock().getElapsedDaysSince(d.settleExpeditionAt));

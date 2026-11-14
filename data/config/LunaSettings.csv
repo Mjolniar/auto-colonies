@@ -1,7 +1,7 @@
 fieldID,fieldName,fieldType,defaultValue,secondaryValue,fieldDescription,minValue,maxValue,tab
 ca_h_storymode,Story mode,Header,Story mode,,,,,
 ca_storymode,Story mode,Boolean,false,,"On: the Colony Autopilot stays dormant until you find the Autarch AI Core, then runs the abilities you buy with the AI cores you give it. Off: every feature works from the start. Each save keeps its story progress when you switch, but processing power you spent is not refunded.",,,
-ca_t_presets,,Text,Presets set several fields at once; each field is on the Advanced tab. Mode default: the empire mode's values. Custom: the fields match no option. Picking Mode default or Custom changes nothing.,,,,,
+ca_t_presets,,Text,"Presets set several fields at once; each field is on the Advanced tab. Mode default sets the group to the empire mode's values, which then follow the mode. Custom shows that the fields match no option; picking it changes nothing.",,,,,
 ,,,,,,,,
 ca_h_playstyle,Playstyle,Header,Playstyle,,,,,
 ca_empire,Empire mode,Radio,Advisor,"Off, Advisor, Approve, Auto",Empire-wide settings follow it. Off: nothing. Advisor: advice. Approve: asks first. Auto: acts. A setting you change keeps its value through mode changes.,,,
@@ -19,7 +19,7 @@ ca_endgame,Endgame,Radio,Off,"From 1M/month, From 2M/month, From 500k/month, Off
 ca_p_story,Story points,Radio,Yours only,"Yours only, One per colony, 2 a month, 5 a month, Mode default, Custom",Story points Autopilot may spend on improvements.,,,
 ,,,,,,,,
 ca_h_building,Building,Header,Building,,,,,
-ca_p_station,Stations,Radio,Pick by score,"Pick by score, Low tech, Midline, High tech, Imperium, Only where they pay, Mode default, Custom","Stations from size 4, upgraded with growth. Battlestation from size 6, Star Fortress from 8, a size sooner at the capital. Imperium needs Interstellar Imperium.",,,
+ca_p_station,Stations,Radio,Pick by score,"Pick by score, Low tech, Midline, High tech, Imperium, Diable Avionics, Roider Union, Only where they pay, Mode default, Custom","Stations from size 4, upgraded with growth. Battlestation from size 6, Star Fortress from 8, a size sooner at the capital. Imperium needs Interstellar Imperium.",,,
 ca_p_takedown,Take down buildings,Radio,Clean up,"Never, Clean up, Free hand, Mode default, Custom","Never: nothing is taken down. Clean up: industries that stopped paying, room for capital trade buildings and endgame changes. Free hand: Clean up and Allow removals.",,,
 ca_p_policy,Colony policies,Radio,Auto,"Auto, Don't touch, Mode default, Custom","Auto: hazard pay, free port and edicts where they pay. Don't touch: left as you set them.",,,
 ,,,,,,,,

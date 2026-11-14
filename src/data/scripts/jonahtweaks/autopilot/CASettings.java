@@ -416,10 +416,11 @@ public class CASettings {
     public static final String[] ALPHA_NAMES = {"Only where removable", "Anywhere", "Never"};
     public static final String[] CORE_RISK_NAMES = {"More where defended", "Never inspected", "No limit", "Small colonies only"};
     public static final String[] INSPECTION_NAMES = {"Advise", "Resist where defended", "Off"};
-    public static final String[] STATION_IDS = {"score", "low", "mid", "high", "imperium"};
-    public static final String[] STATION_NAMES = {"Pick by score", "Low tech", "Midline", "High tech", "Imperium"};
+    public static final String[] STATION_IDS = {"score", "low", "mid", "high", "imperium", "diable", "roider"};
+    public static final String[] STATION_NAMES = {"Pick by score", "Low tech", "Midline", "High tech", "Imperium", "Diable Avionics", "Roider Union"};
     /** The first station of each line; a line whose station the game doesn't have (its mod is off) isn't offered and counts as Pick by score. */
-    public static final String[] STATION_STARTERS = {null, "orbitalstation", "orbitalstation_mid", "orbitalstation_high", "ii_orbitalstation"};
+    public static final String[] STATION_STARTERS = {null, "orbitalstation", "orbitalstation_mid", "orbitalstation_high", "ii_orbitalstation",
+            "diableavionics_orbitalstation", "roider_orbitalstation"};   // 0.3.6.3: Diable Avionics and Roider Union
 
     /** The station the line starts with, or null for Pick by score (also when that station's mod isn't enabled). */
     public static String stationStarter(String line) {

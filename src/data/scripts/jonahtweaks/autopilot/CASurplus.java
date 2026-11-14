@@ -443,7 +443,7 @@ public class CASurplus {
         boolean legacy = CABudget.legacy(s);
         // 0.3.0.0 (WS-F3 fix): spending freely in one line each (was 32 and 41 words); what it spends on is hover text (RICH_HOVER)
         if (rich(s) && legacy) {
-            t.addPara("Spending freely from %s to under %s. New upkeep up to %s.", 2f, hl,
+            t.addPara("Spending freely from %s to under %s. New upkeep to %s.", 2f, hl,
                     Misc.getDGSCredits(RICH), Misc.getDGSCredits(RICH_OFF), Misc.getDGSCredits(a / RICH_UPKEEP_MONTHS));
             CATheme.hover(t, RICH_HOVER);
         }

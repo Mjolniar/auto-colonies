@@ -123,6 +123,7 @@ public class CAAuto {
         // 0.3.0.0 (A1 fix): guarded, never stopped for the session: the siege start and end lines are how you learn a colony
         // is held to defenses only, and 0.2.45.1 retried them every day
         CAStep.guard("siege check", () -> CASiege.update(d));
+        CAStep.guard("station line ask", () -> CAStationAsk.daily());   // 0.3.6.3: once, before the first station
         CAStep.run("Autopilot Storage shipping", () -> CAStores.daily());   // shipments between colonies' Autopilot Storage arrive
         if (CASync.dormant()) return;   // 0.3.6.0 story mode: nothing else runs while the Autopilot is dormant
         CAStep.run("storage logistics", () -> CALogistics.daily(d, s, now));   // storage logistics: loads to the refit and sell hubs (0.2.39.0)

@@ -107,6 +107,8 @@ public class CAData {
     public float settlePendingCost;
     // a Random Assortment of Things settlement expedition on its way (0.2.37.0): the planet, when it left, its days, and what it cost
     public String settleExpeditionPlanet;
+    /** 0.3.6.3: the station line was asked (CAStationAsk), or there was nothing to ask. */
+    public boolean stationAsked;
     public long settleExpeditionAt;
     public float settleExpeditionDays, settleExpeditionCost;
     // Nexerelin agents Autopilot hired (person ids); only these are given orders

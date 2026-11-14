@@ -311,7 +311,7 @@ public class CABuildout {
         // 0.3.0.0 fix pass 3: shorter lines, for the mod-wide word budget (JTScreenButtonCheck)
         if (!c.buildout && !CASync.has("buildout")) { CASyncPage.buildoutOff(t, m); return; }   // 0.3.6.0 story mode
         if (!c.buildout) {
-            t.addPara("Loses %s a month. Fast buildout spends credits above a floor here.", 6f,
+            t.addPara("Loses %s a month. Fast buildout spends above a floor here.", 6f,
                     Misc.getNegativeHighlightColor(), Misc.getDGSCredits(-m.getNetIncome()));
             CATheme.hover(t, hoverText());
             t.addButton("Start fast buildout, keep at least " + Misc.getDGSCredits(DEFAULT_FLOOR), PREFIX + "start",
