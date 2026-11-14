@@ -90,6 +90,9 @@ public final class CAFactionsPage {
         return n;
     }
 
+    /** The first letter in upper case (0.3.5.0: row notes are sentences). */
+    static String cap(String v) { return v == null || v.isEmpty() ? "" : Character.toUpperCase(v.charAt(0)) + v.substring(1); }
+
     /** "hostile (-62)" or "welcoming (31)": the relation as the game names it, and its number. */
     static String relation(FactionAPI f) {
         float rel = Global.getSector().getPlayerFaction().getRelationship(f.getId());
@@ -116,7 +119,7 @@ public final class CAFactionsPage {
         CATheme.heading(t, "Factions", 0f);
         t.addPara(CALog.esc(CASetupUI.DESC.get("stances") + " [<] friendlier, [>] more hostile."), gray, 6f);   // 0.3.0.0 (WS-F3 fix pass 2): the Settings row's line, said once
         t.addTooltipToPrevious(tip(MEANINGS), TooltipMakerAPI.TooltipLocation.BELOW);
-        if (!nex && !indevo) t.addPara("Stances need Nexerelin or Industrial Evolution; neither is on.", hl, 4f);
+        if (!nex && !indevo) t.addPara("Stances need Nexerelin or Industrial Evolution. Neither is on.", hl, 4f);
         else if (!nex) t.addPara("Without Nexerelin, stances set ambassador priority only.", gray, 4f);
         else if (CALowProfile.on()) t.addPara("Low profile: no raids, sabotage or declarations.", gray, 4f);
 
@@ -154,8 +157,8 @@ public final class CAFactionsPage {
         String war = nex ? attacks(d, s, f, rival) : null;
         if (war != null) notes.append(", ").append(war);
         else if (!nex && mod(INDEVO)) notes.append(", ambassador priority ").append(CASettings.PRIORITY_NAMES[CAStance.ambassadorPriority(st)]);
-        LabelAPI l = t.addPara("%s  ::  %s   // " + CALog.esc(notes.toString()), 0f, new Color[]{Misc.getHighlightColor(), tone(st)},
-                f.getDisplayName().toUpperCase(Locale.ROOT), CAStance.name(st).toUpperCase(Locale.ROOT));
+        LabelAPI l = t.addPara("%s: %s. " + CALog.esc(cap(notes.toString())) + ".", 0f, new Color[]{Misc.getHighlightColor(), tone(st)},
+                f.getDisplayName(), CAStance.name(st));
         l.getPosition().rightOfMid(higher, 10f);
         CALog.endRow(t, lower);
     }

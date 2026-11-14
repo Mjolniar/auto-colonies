@@ -95,7 +95,7 @@ public final class CAWarPage {
         if (mgr != null) {
             int cap = mgr.getFleetRequestCapacity();
             float share = rich ? CAWar.RICH_RESERVE : CAWar.RESERVE;
-            t.addPara("Fleet request points: %s of %s; %s kept (%s percent" + (rich ? ", rich" : "") + ").", 4f, hl,
+            t.addPara("Fleet request points: %s of %s. %s kept (%s percent" + (rich ? ", rich" : "") + ").", 4f, hl,
                     String.valueOf((int) mgr.getFleetRequestStock()), String.valueOf(cap), String.valueOf(Math.round(share * cap)),
                     String.valueOf(Math.round(share * 100f)));
             float exp = CAExpansion.reservedFP();
@@ -106,7 +106,7 @@ public final class CAWarPage {
         float pend = CAConquest.pendingInfamy() + CAScorched.pendingInfamy();
         float now = CAWarPolicy.infamy(badboy, dom), after = CAWarPolicy.infamy(badboy + pend, dom);
         Color ic = after >= CAWarPolicy.INFAMY_NEAR ? bad : hl;
-        if (pend > 0f) t.addPara("Infamy: %s of %s (coalition line); %s after operations under way.", 4f, ic,
+        if (pend > 0f) t.addPara("Infamy: %s of %s (coalition line). %s after operations under way.", 4f, ic,
                 String.valueOf(Math.round(now)), String.valueOf(Math.round(CAWarPolicy.INFAMY_LINE)), String.valueOf(Math.round(after)));
         else t.addPara("Infamy: %s of %s (coalition line).", 4f, ic, String.valueOf(Math.round(now)), String.valueOf(Math.round(CAWarPolicy.INFAMY_LINE)));
         t.addTooltipToPrevious(CAFactionsPage.tip(new String[]{

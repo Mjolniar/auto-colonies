@@ -248,7 +248,7 @@ public class CASetupUI {
         boolean isOpen = isOpen(id);
         ButtonAPI b = t.addButton((isOpen ? "[-]  " : "[+]  ") + title.toUpperCase(Locale.ROOT), PREFIX + "group:" + id,
                 isOpen ? Misc.getHighlightColor() : Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(), Alignment.LMID, CutStyle.TL_BR, 300f, 24f, 10f);
-        LabelAPI l = t.addPara(CALog.esc("// " + summary), Misc.getGrayColor(), 0f);
+        LabelAPI l = t.addPara(CALog.esc(summary.isEmpty() ? "" : Character.toUpperCase(summary.charAt(0)) + summary.substring(1) + "."), Misc.getGrayColor(), 0f);   // 0.3.5.0: a sentence
         l.getPosition().rightOfMid(b, 12f);
         CALog.endRow(t, b);
         return isOpen;
@@ -383,7 +383,7 @@ public class CASetupUI {
     static void stancesLink(TooltipMakerAPI t, CASettings s) {
         ButtonAPI b = t.addButton("OPEN", CANav.PREFIX + FACTIONS_PAGE, Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
                 Alignment.MID, CutStyle.TL_BR, 86f, 20f, 4f);
-        LabelAPI l = t.addPara("%s  ::  %s", 0f, Misc.getHighlightColor(), "FACTION STANCES", stanceSummary(s));
+        LabelAPI l = t.addPara("%s: %s.", 0f, Misc.getHighlightColor(), "Faction stances", stanceSummary(s));
         l.getPosition().rightOfMid(b, 12f);
         CALog.endRow(t, b);
         desc(t, "stances");
@@ -810,7 +810,7 @@ public class CASetupUI {
 
     // ---------------- rows ----------------
 
-    /** One compact line: the buttons on the left, then "LABEL :: value", and "// rec ..." only when the value differs. */
+    /** One compact line: the buttons on the left, then "Label: value.", and "Recommended: X." only when the value differs. 0.3.5.0: sentences. */
     static ButtonAPI row(TooltipMakerAPI t, String label, String value, String rec, String key, boolean toggle) {
         return row(t, label, value, rec, key, toggle, HOVER.get(key));
     }
@@ -828,8 +828,8 @@ public class CASetupUI {
         // 0.3.0.0 (WS-F1, research 04 section 3): the recommendation shows only when the value differs from it
         boolean showRec = rec != null && !rec.isEmpty() && !rec.equalsIgnoreCase(value);
         boolean mine = marked.contains(key);   // 0.3.3.0: a row you set keeps its value through empire mode changes
-        LabelAPI l = t.addPara("%s  ::  %s" + (showRec ? "   // rec " + CALog.esc(rec) : "") + (mine ? "   // set by you" : ""), 0f, Misc.getHighlightColor(),
-                label.toUpperCase(Locale.ROOT), value);
+        LabelAPI l = t.addPara("%s: %s." + (showRec ? " Recommended: " + CALog.esc(rec) + "." : "") + (mine ? " Set by you." : ""), 0f, Misc.getHighlightColor(),
+                label, value);
         l.getPosition().rightOfMid(last, 12f);
         if (tip != null) t.addTooltipToPrevious(tip(tip), TooltipMakerAPI.TooltipLocation.BELOW);
         CALog.endRow(t, first);
@@ -864,8 +864,8 @@ public class CASetupUI {
         higher.getPosition().rightOfTop(lower, 4f);
         int tone = CAStance.tone(stance);
         Color c = tone > 0 ? Misc.getPositiveHighlightColor() : tone < 0 ? Misc.getNegativeHighlightColor() : Misc.getHighlightColor();
-        LabelAPI l = t.addPara("%s  ::  %s   // now " + CALog.esc(relation), 0f, new Color[]{Misc.getHighlightColor(), c},
-                label.toUpperCase(Locale.ROOT), CAStance.name(stance).toUpperCase(Locale.ROOT));
+        LabelAPI l = t.addPara("%s: %s. Now " + CALog.esc(relation) + ".", 0f, new Color[]{Misc.getHighlightColor(), c},
+                label, CAStance.name(stance));
         l.getPosition().rightOfMid(higher, 12f);
         CALog.endRow(t, lower);
     }

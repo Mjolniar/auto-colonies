@@ -1479,7 +1479,7 @@ public class CAExpansion {
             t.addPara("Best candidates (value at size %s):", 6f, hl, String.valueOf(VALUE_SIZE));
             for (int i = 0; i < Math.min(TOP, list.size()); i++) {
                 Prospect p = list.get(i);
-                t.addPara("%s. %s, %s: %s, goal %s. %s a month; %s by %s (+ %s fee); payback %s months.", 4f, hl,
+                t.addPara("%s. %s, %s: %s, goal %s. %s a month. %s by %s (+ %s fee). Payback %s months.", 4f, hl,
                         String.valueOf(i + 1), p.planetName, p.systemName, p.plan, goalLabel(p.goal), Misc.getDGSCredits(p.value),
                         Misc.getDGSCredits(p.cost), methodName(p.method), Misc.getDGSCredits(p.fee),
                         p.payback >= 1000f ? "over 1,000" : String.valueOf(Math.max(1, Math.round(p.payback))));

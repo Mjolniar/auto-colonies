@@ -473,7 +473,7 @@ public final class CALunaSync {
     static Row credits(String key, String name, final String field, int min, int max, int step, String desc) {
         final Row r = number(INT, key, name, desc, min, max, step);
         r.fields = new String[]{field};
-        r.get = s -> { Object v = CAModeTable.get(s, field); return v instanceof Float ? (int) Math.round((Float) v) : null; };
+        r.get = s -> { Object v = CAModeTable.get(s, field); return v instanceof Float ? Math.round((Float) v) : null; };
         r.set = (s, v, b) -> CAModeTable.set(s, field, (float) fit(r, ((Number) v).doubleValue(), b));
         return r;
     }

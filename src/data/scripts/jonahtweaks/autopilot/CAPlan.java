@@ -469,7 +469,7 @@ public class CAPlan {
             // (0.2.38.0: these three had slipped into the comment above in 0.2.30.0, so a Paradise plan was nearly empty)
             b(p, "lightindustry", "Light Industry"); b(p, "commerce", "Commerce"); b(p, "waystation", "Waystation");
             b(p, "tme_agricultural_laboratory", "Agricultural Laboratory"); c(p, farm ? "farmland_bountiful" : "farmland_adequate", "Better farmland");
-            c(p, "mild_climate", "Mild climate (Stellar Manufactory, start it yourself)");
+            c(p, "mild_climate", "Mild climate (Stellar Manufactory, started by you)");
             b(p, "tme_unification_center", "Unification Center"); c(p, "tme_paradise_world", "Paradise World");
         } else if (sec) {
             p.name = "Bastion";
@@ -808,8 +808,8 @@ public class CAPlan {
         p.name = CAWorldPlanner.name(w); p.world = w;
         for (String[] g : CAWorldPlanner.groups(r.likedInd, new ArrayList<Boolean>())) for (String ind : g) {
             p.exact.add(ind);
-            String label = CAWorldPlanner.industryName(ind) + (ind.equals("mining") && m.hasIndustry("IndEvo_SwitchableMining") ? " (vanilla Mining; Specialized Mining doesn't count)" :
-                    ind.equals("fuelprod") && m.hasIndustry("ix_fuel_production") ? " (vanilla Fuel Production; Advanced doesn't count)" : "");
+            String label = CAWorldPlanner.industryName(ind) + (ind.equals("mining") && m.hasIndustry("IndEvo_SwitchableMining") ? " (vanilla Mining only)" :
+                    ind.equals("fuelprod") && m.hasIndustry("ix_fuel_production") ? " (vanilla Fuel Production only)" : "");
             Step st = new Step(Kind.BUILD, ind, label);
             st.exact = true;
             p.steps.add(st);
@@ -1441,8 +1441,8 @@ public class CAPlan {
                 }
             } else if (!d.stepStuck().containsKey(k)) d.stepStuck().put(k, now);
             else if (dead(m, s.id) && CALog.once("plan:dead:" + k)) {
-                CALog.think(m.getName() + ": the plan's " + s.label + " step can't be reached here (no way to build it for " + Math.round(DEAD_DAYS)
-                        + " days). The plan goes on without it. It counts again if that changes.");
+                CALog.think(m.getName() + ": the plan's " + s.label + " step is out of reach here (no way to build it for " + Math.round(DEAD_DAYS)
+                        + " days). The plan goes on without it. It counts again once reachable.");
                 CACache.bump("plan step dead");   // 0.3.0.0 (A4): evaluations kept today still ranked it
             }
         }

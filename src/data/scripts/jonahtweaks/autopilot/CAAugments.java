@@ -213,11 +213,11 @@ public class CAAugments {
             combat = 0;
             float fx = CAAugmentModel.fleetEffect(g, ctx.kit.tier, threatened);
             p.fx[4] += fx;
-            p.lines.add(g.line + (fx > 0f && threatened ? "; combat counts four times while the colony is threatened" : ""));
+            p.lines.add(g.line + (fx > 0f && threatened ? ". Combat counts x4 while the colony is threatened" : ""));
         }
         if (id.equals("SA_commsCenter")) { p.fx[2] += 0.1f; p.lines.add("+10% accessibility"); }
-        else if (id.equals("SA_logisticsDrones")) { p.fx[2] += 0.1f; p.lines.add("+10% accessibility; up to +15% combat readiness for your fleets near the station"); }
-        else if (id.equals("SA_jumpEngine")) { p.fx[2] += 0.2f; p.lines.add("+20% accessibility; opens a jump point at the station"); }
+        else if (id.equals("SA_logisticsDrones")) { p.fx[2] += 0.1f; p.lines.add("+10% accessibility. Up to +15% combat readiness for your fleets near the station"); }
+        else if (id.equals("SA_jumpEngine")) { p.fx[2] += 0.2f; p.lines.add("+20% accessibility. Opens a jump point at the station"); }
         else if (id.equals("SA_efficiencyOverhaul")) { p.fx[0] += 0.3f * upkeep; p.lines.add("Station upkeep -30%: about " + Misc.getDGSCredits(0.3f * upkeep) + " per month"); }
         else if (id.equals("SA_hydroponics")) {
             // a colony's supply is its largest single source, so only output above what's already made here counts
@@ -261,7 +261,7 @@ public class CAAugments {
         if (combat != 0) {
             p.fx[4] += combat * COMBAT * (threatened && combat > 0 ? THREAT_COMBAT : 1f);
             p.lines.add(combat > 0 ? "Stronger station in combat (Station Augments rates it " + combat + ")"
-                    + (threatened ? "; counts ten times while the colony is threatened" : "") : "Weaker station in combat");
+                    + (threatened ? ". Counts x10 while the colony is threatened" : "") : "Weaker station in combat");
         }
         float[] w = CAEngine.goalWeights(profile);
         float v = extra;
@@ -342,7 +342,7 @@ public class CAAugments {
         Plan pl = new Plan();
         Industry ind = Misc.getStationIndustry(m);
         if (!(ind instanceof OrbitalStation)) { pl.note = "No orbital station."; return pl; }
-        if (ind.isHidden()) { pl.note = "This colony's station is built in and hidden, so its augments are left to you."; return pl; }
+        if (ind.isHidden()) { pl.note = "Station: built in and hidden. Its augments are left to you."; return pl; }
         pl.station = ind.getCurrentName();
         pl.budget = MarketUtils.getAugmentBudget((OrbitalStation) ind);
         pl.used = MarketUtils.getUsedAugmentBudget(m);
@@ -454,7 +454,7 @@ public class CAAugments {
     static String apply(MarketAPI m, CAData.Colony c, Plan pl, String who) {
         // Station Augments lets an augment come off mid-battle but not go on, so nothing changes while the station fights
         com.fs.starfarer.api.campaign.CampaignFleetAPI sf = Misc.getStationFleet(m);
-        if (sf != null && sf.getBattle() != null) return "The station is in a battle; its augments change once it's over";
+        if (sf != null && sf.getBattle() != null) return "Station in battle. Its augments change after the battle";
         Map<String, stationAttachment> installed = new HashMap<String, stationAttachment>();
         for (stationAttachment a : MarketUtils.getStationAugments(m)) installed.put(a.getId(), a);
         List<String> done = new ArrayList<String>(), failed = new ArrayList<String>();
@@ -584,7 +584,7 @@ public class CAAugments {
                 "High threat: combat augments first.", gray, 6f);
         else if (CAThreat.effective(m, c.profile) == CAData.Profile.SECURITY && c.profile != CAData.Profile.SECURITY)
             t.addPara("High threat, defended here: output augments first.", gray, 6f);
-        else t.addPara("Calm: output augments first; combat loadout before a raid.", gray, 6f);   // 0.3.0.0 (WS-F3 fix pass 2): shorter
+        else t.addPara("Calm: output augments first. Combat loadout before a raid.", gray, 6f);   // 0.3.0.0 (WS-F3 fix pass 2): shorter
         if (!c.augSkip().isEmpty()) {
             List<String> names = new ArrayList<String>();
             for (String id : c.augSkip()) { stationAugmentSpec sp = specs().get(id); names.add(sp == null ? id : sp.getName()); }

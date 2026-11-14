@@ -188,7 +188,7 @@ public class CASynergies {
             if (have.contains("cryosanctum")) supply(m, p, "organs", 3, deficit);
             float pct = have.contains("aotd_druglight") ? 0.6f * eff : have.contains("lightindustry") ? 0.1f * eff : 0f;
             p.fx[0] += pct * Math.max(0f, m.getGrossIncome());
-            p.lines.add((have.contains("cryosanctum") ? "+3 organs; " : "") + "colony income +" + Math.round(pct * 100f) + "%");
+            p.lines.add((have.contains("cryosanctum") ? "+3 organs, " : "") + "colony income +" + Math.round(pct * 100f) + "%");
         } else if (id.equals("aotd_lockheed_martin")) {
             p.lines.add("Black site projects up to 10% faster");
         } else if (id.equals("cabbage_gas_station")) {
@@ -348,8 +348,8 @@ public class CASynergies {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "industry synergy panel failed at " + m.getName(), ex);
         }
         t.addPara("Synergy efficiency: %s.", 6f, hl, Math.round(c.eff * 100f) + "%");
-        t.addPara("Active: %s", 4f, hl, active.isEmpty() ? "none" : join(active));
-        if (!near.isEmpty()) t.addPara("One building away: %s", 4f, hl, join(near, "; "));
+        t.addPara("Active: %s.", 4f, hl, active.isEmpty() ? "none" : join(active));
+        if (!near.isEmpty()) t.addPara("One building away: %s.", 4f, hl, join(near, "; "));
         if (c.locked > 0) t.addPara(c.locked + " more need research first.", gray, 4f);
         t.addPara("Build values include synergies.", gray, 4f);
     }

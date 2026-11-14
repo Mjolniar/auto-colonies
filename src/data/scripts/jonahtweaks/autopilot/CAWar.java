@@ -941,14 +941,14 @@ public class CAWar {
                 + Math.round(rel * 100f) + "), " + (alive ? markets + (markets == 1 ? " market" : " markets") : "eliminated")
                 + (st != s.stanceOf(fid) ? ", picked as rival" : "") + ", allows " + CAWarPolicy.levelName(effective(d, s, f, rival)).toLowerCase(Locale.ROOT)
                 + (CAStance.fromOldPriority(s, d, fid) ? ", from your 0.2.45 priority" : "");
-        com.fs.starfarer.api.ui.LabelAPI l = t.addPara("%s  ::  %s   // " + CALog.esc(state), 0f, new Color[]{Misc.getHighlightColor(), toneColor(st)},
-                f.getDisplayName().toUpperCase(Locale.ROOT), CAStance.name(st).toUpperCase(Locale.ROOT));
+        com.fs.starfarer.api.ui.LabelAPI l = t.addPara("%s: %s. " + CALog.esc(Character.toUpperCase(state.charAt(0)) + state.substring(1)) + ".", 0f,
+                new Color[]{Misc.getHighlightColor(), toneColor(st)}, f.getDisplayName(), CAStance.name(st));
         l.getPosition().rightOfMid(higher, 10f);
         CALog.endRow(t, lower);
         if (CAStance.wantsWar(st) && !hostile) {
             String why = CADiplomacy.declareWhy(d, s, f);
             if (why == null) t.addButton("Declare war on " + f.getDisplayName(), new String[]{"war", "declare", fid}, base, dark, Alignment.MID, CutStyle.TL_BR, 260f, 20f, 2f);
-            else t.addPara("Not at war: " + CALog.esc(why) + "; acts as Rival.", gray, 2f);
+            else t.addPara("Not at war: " + CALog.esc(why) + ". Acts as Rival.", gray, 2f);
         }
         for (OffensiveFleetIntel o : offensives()) {
             if (!yours(o) || o.getTarget() == null || o.getTarget().getFaction() != f || o instanceof DefenseFleetIntel) continue;

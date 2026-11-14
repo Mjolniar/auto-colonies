@@ -495,7 +495,7 @@ public class CAHypershunt {
             t.addPara("%s: restoring, %s done, %s days left, about %s a month.", 6f, hl, s.name,
                     Math.round(s.progress * 100f) + "%", "" + (int) Math.ceil(s.daysLeft), Misc.getDGSCredits(s.monthlyCredits));
         } else {
-            t.addPara("%s: not restored; about %s a month for %s months.", 6f, hl, s.name, Misc.getDGSCredits(s.monthlyCredits), "" + s.months());
+            t.addPara("%s: not restored. About %s a month for %s months.", 6f, hl, s.name, Misc.getDGSCredits(s.monthlyCredits), "" + s.months());
         }
         List<String> needs = new ArrayList<String>();
         for (Map.Entry<String, Integer> e : s.monthly.entrySet()) {
@@ -539,7 +539,7 @@ public class CAHypershunt {
         section(t, h, h.wormhole, buttons, CAColonyDialog.HS + "restore:" + WORMHOLE);
         if (!researched(TECH_RESTORE)) t.addPara("Restoring sections needs %s researched.", 4f, hl, techName(TECH_RESTORE));
         int tgt = target(h);
-        t.addPara("Range %s ly (%s set); upkeep %s and %s transplutonics a month.", 8f, hl, "" + h.reachLY(),
+        t.addPara("Range %s ly (%s set). Upkeep %s and %s transplutonics a month.", 8f, hl, "" + h.reachLY(),
                 "" + h.range * h.mult, Misc.getDGSCredits((h.effective - 1) * STEP_UPKEEP), "" + (h.range - 1) * STEP_PTM);
         if (h.effective < h.range) t.addPara("Short of transplutonics: range %s ly.", 4f, Misc.getNegativeHighlightColor(), "" + h.reachLY());
         if (tgt > 0 && tgt != h.range) {
@@ -547,13 +547,13 @@ public class CAHypershunt {
             if (buttons) t.addButton("Set range to " + tgt * h.mult + " ly", CAColonyDialog.HS + "range:" + tgt, base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
         }
         if (c.hsManual) {
-            t.addPara("You set the range; Autopilot leaves it.", gray, 4f);
+            t.addPara("You set the range. Autopilot leaves it.", gray, 4f);
             t.addButton("Let Autopilot manage it", CAColonyDialog.HS + "manage:x", base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
         }
         receivers(t, h);
         String[] why = new String[1];
         Section next = nextRestore(h, why);
-        t.addPara(next != null ? "Next: restore the " + CALog.esc(next.name) + "." : "Next: nothing to restore; " + CALog.esc(why[0]) + ".", hl, 8f);
+        t.addPara(next != null ? "Next: restore the " + CALog.esc(next.name) + "." : "Next: nothing to restore (" + CALog.esc(why[0]) + ").", hl, 8f);
         String when = s.hypershuntMode == 2 ? "Off in Settings."
                 : s.hypershuntMode == 1 ? "Recommend only: click to change."
                 : c.mode == CAData.Mode.AUTO ? "Auto sets the range and restores within the budget."
@@ -566,7 +566,7 @@ public class CAHypershunt {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         List<Shunt> shunts = all();
         CATheme.mode(t, CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.hypershuntMode))]);   // 0.3.0.0 (WS-F3 fix): the mode as a readout
-        t.addPara("Sets the range to reach your receivers; restores useful sections.", 4f);
+        t.addPara("Sets the range to reach your receivers. Restores useful sections.", 4f);
         for (Shunt h : shunts) {
             CAData.Colony c = d.colony(h.m.getId());
             String[] why = new String[1];
@@ -585,7 +585,7 @@ public class CAHypershunt {
         }
         List<Spot> spots = spots(shunts);
         if (spots.isEmpty()) return;
-        t.addPara("Receiver sites (built in person; %s taps):", 8f, hl, "" + taps());
+        t.addPara("Receiver sites (built in person, %s taps):", 8f, hl, "" + taps());
         int shown = 0;
         for (Spot sp : spots) {
             if (shown++ >= 5) break;

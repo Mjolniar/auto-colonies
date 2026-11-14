@@ -68,7 +68,7 @@ public class CAMods {
         p.fx[3] += 1.5f;
         if (!m.isFreePort()) p.fx[1] += 0.5f;
         p.confidence = 0.85f;   // an estimate of the mod's flat bonus, not a formula
-        p.lines.add("Planetary Shield (Access Control): +300 ground defense; Pather interest -4 while free port is off");
+        p.lines.add("Planetary Shield (Access Control): +300 ground defense. Pather interest -4 while the free port is off");
     }
 
     /** With Access Control, a working shield keeps Pathers out only while the port is closed. */
@@ -267,14 +267,14 @@ public class CAMods {
                 else if (u > 0) CAEngine.supply(p, com, u, deficit);
             }
             if (total <= 0) return false;
-            if (nets && counted < total) p.lines.add(counted == 0 ? "Everything Roider miners would dig up here is already made here in larger amounts (a colony's supply is its largest single source)"
-                    : "Only " + counted + " of the " + total + " units Roider miners would dig up are more than this colony already makes");
-            if (cut > 0) p.lines.add("Your colonies lack heavy machinery, and Roider miners lose the shortage from every output");
+            if (nets && counted < total) p.lines.add(counted == 0 ? "Roider miners: everything they would dig up is already made here in larger amounts. A colony's supply is its largest single source"
+                    : "Roider miners: " + counted + " of " + total + " units are more than this colony already makes");
+            if (cut > 0) p.lines.add("Heavy machinery shortage: Roider miners lose it from every output");
             CAEngine.supply(p, "crew", nets ? above(3, otherSupply(m, "roider_dives", "crew") - admin) : 3, deficit);
             CAEngine.demand(p, "heavy_machinery", 1, deficit); CAEngine.demand(p, "drugs", drugs, deficit); CAEngine.demand(p, "supplies", 2, deficit);
             String what = reachText(m, range, x);
             p.lines.add(area ? "Roider miners work deposits within " + Math.round(divesRange() + add) + " light-years: " + what
-                    : "Roider Union counts only this planet's deposits after a save load (Fixes refreshes the area): " + what);
+                    : "After a save load Roider Union counts this planet's deposits only. Fixes refreshes the area: " + what);
             return true;
         }
         int x = extra(m), cutWas = machineryShort(deficit, 1), cutNow = machineryShort(deficit, Math.max(1, s - 2));   // the HQ needs size - 2
@@ -288,7 +288,7 @@ public class CAMods {
         p.fx[1] += 1f; p.fx[3] += 0.2f; p.fx[4] += 0.2f;
         CAEngine.demand(p, "heavy_machinery", s - 3, deficit); CAEngine.demand(p, "supplies", s - 2, deficit); CAEngine.demand(p, "fuel", s - 2, deficit);
         p.lines.add(area ? "Union HQ: mines deposits within " + Math.round(hqRange() + add) + " light-years (" + reachText(m, rangeNow, x - cutNow) + "), stability +1, patrols"
-                : "Union HQ: stability +1, patrols; its longer mining range counts only in the session it's built (Roider Union, without Fixes' area refresh)");
+                : "Union HQ: stability +1, patrols. Its longer mining range counts only in the session it is built (Roider Union, without Fixes' area refresh)");
         return true;
     }
 
@@ -399,7 +399,7 @@ public class CAMods {
         float mult = f != null ? 1.5f : 1f;
         CAEngine.demand(p, "metals", Math.round(s * mult), deficit); CAEngine.demand(p, "rare_metals", Math.round((s - 2) * mult), deficit);
         p.lines.add(f != null ? "Secondary Drydocks next to " + f.getCurrentName() + ": " + out + " of each line, what it adds beyond that building counts"
-                : "Secondary Drydocks: a Heavy Industry without pollution; takes no nanoforge");
+                : "Secondary Drydocks: a Heavy Industry without pollution. Takes no nanoforge");
         return true;
     }
 
@@ -456,10 +456,10 @@ public class CAMods {
         LEFT.put("NSI_ASBUplink", "it works through an area that damages fleets, which a probe colony can't show");
         LEFT.put("NSI_expertDockworks", "it takes a nanoforge of its own for fleet s-mods, a military choice");
         LEFT.put("roider_nomadBase", "only Roider nomads build it");
-        LEFT.put(BAZAAR, "it's a market for you to trade at; it does nothing for the colony, so Autopilot builds it only at your capital (0.2.42.0)");
+        LEFT.put(BAZAAR, "a market for you to trade at. No colony effect. Built only at your capital");
         // Reverse Engineered Private Arsenal (0.2.45.0): it only works on gear you put in it, and taking it down deletes both of
         // its markets with everything in them, so it's never built or taken down, and its core and item stay where you put them
-        for (String h : CAOddisz.HUB) LEFT.put(h, "it reverse-engineers gear you feed it; taking it down deletes its markets and everything in them, so its core and item stay as you set them");
+        for (String h : CAOddisz.HUB) LEFT.put(h, "it reverse-engineers gear you feed it. Taking it down deletes its markets and their goods. Its core and item stay as you set them");
         // 0.3.3.2: Mod Index batch 1 (CAIndexMods): JaydeePiracy, Scy Nation, CJY's Toy Box, AI-Retrofits
         LEFT.putAll(CAIndexMods.left());
     }

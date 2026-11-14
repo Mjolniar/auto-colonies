@@ -189,7 +189,7 @@ public class CAOddisz {
         CATheme.heading(t, "Sol Renewed", 12f);
         try {
             // 0.3.0.0 (WS-F3 fix): one line (was 43 words); how the meter works on hover
-            t.addPara("Discovering the Past: %s of %s, %s a month; a point is priced at %s.", 6f, hl,
+            t.addPara("Discovering the Past: %s of %s, %s a month. A point is priced at %s.", 6f, hl,
                     "" + ev.getProgress(), "" + ev.getMaxProgress(), "+" + ev.getMonthlyProgress(),
                     Misc.getDGSCredits(solCost(1f, solStrength(), CALowProfile.on())));
             CATheme.hover(t, "Waves at 200, 450, 700 and 1,000; the meter does not go down.");

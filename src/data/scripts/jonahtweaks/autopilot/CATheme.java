@@ -49,23 +49,23 @@ public final class CATheme {
         return t.addButton(label.toUpperCase(Locale.ROOT), data, text, dim(), Alignment.MID, CutStyle.TL_BR, w, h, pad);
     }
 
-    /** A status readout line under a panel title: "SYS // ONLINE  ::  MODE AUTO  ::  GOAL BALANCED". */
+    /** A status readout line under a panel title: "Mode: Auto. Goal: Balanced." 0.3.5.0: sentences (THE FORMAT), no "::". */
     public static void readout(TooltipMakerAPI t, float pad, String... parts) {
         StringBuilder sb = new StringBuilder();
-        for (String p : parts) { if (p == null || p.isEmpty()) continue; if (sb.length() > 0) sb.append("  ::  "); sb.append(p.toUpperCase(Locale.ROOT)); }
+        for (String p : parts) { if (p == null || p.isEmpty()) continue; if (sb.length() > 0) sb.append(' '); sb.append(p).append('.'); }
         t.addPara(CALog.esc(sb.toString()), line(), pad);
     }
 
     /**
      * 0.3.0.0 (WS-F3 fix, research 04 section 7 quick trims): a feature's mode as a readout line under its section heading,
-     * "MODE  AUTO". It replaces the "Mode: %s (Settings, X)." lead-in each Mod features paragraph started with.
+     * "Mode: Auto." It replaces the "Mode: %s (Settings, X)." lead-in each Mod features paragraph started with.
      */
     public static void mode(TooltipMakerAPI t, String mode) {
-        if (mode != null && !mode.isEmpty()) readout(t, 2f, "mode  " + mode);
+        if (mode != null && !mode.isEmpty()) readout(t, 2f, "Mode: " + mode);
     }
 
     /** 0.3.0.0 (WS-F3 fix pass 2): the line a page or section shows when drawing it failed; one text for every panel. */
-    static final String NOT_SHOWN = "This part couldn't be shown; see starsector.log.";
+    static final String NOT_SHOWN = "Not shown: drawing failed. See starsector.log.";
     /** 0.3.0.0 (WS-F3 fix pass 3): lines the colony panel and the empire panel both show, one text each. */
     static final String PAUSED = "Spending paused: colony net is negative.", APPROVAL = "Waiting for approval";
 

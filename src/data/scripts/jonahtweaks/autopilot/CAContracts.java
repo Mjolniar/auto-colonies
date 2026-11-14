@@ -439,7 +439,7 @@ public class CAContracts {
             if ("Auto".equals(who)) taken.add(o);   // one line for the day's contracts (run)
             else CALog.did("Contract taken: " + goods(o) + ", " + Misc.getDGSCredits(o.pay) + "/month for " + o.months + " months.");
             CALog.quiet("trade contract " + o.name + ": " + join(o.lines) + ", " + o.months + " months, " + Misc.getDGSCredits(o.pay)
-                    + "/month (" + Misc.getDGSCredits(o.gain) + " over exporting)" + (o.rewards.isEmpty() ? "" : "; rewards: " + join(o.rewards)));
+                    + "/month (" + Misc.getDGSCredits(o.gain) + " over exporting)" + (o.rewards.isEmpty() ? "" : ". Rewards: " + join(o.rewards)));
             cached = null;
             return null;
         } catch (Throwable t) {
@@ -639,7 +639,7 @@ public class CAContracts {
             int shown = 0;
             for (Offer o : list) {
                 if (shown++ >= 6) break;
-                t.addPara("%s, %s months: " + CALog.esc(join(o.lines)) + ". Pays %s per month, %s over exporting" + (o.rewards.isEmpty() ? "." : "; rewards: " + CALog.esc(join(o.rewards)) + "."),
+                t.addPara("%s, %s months: " + CALog.esc(join(o.lines)) + ". Pays %s per month, %s over exporting" + (o.rewards.isEmpty() ? "." : ". Rewards: " + CALog.esc(join(o.rewards)) + "."),
                         6f, o.feasible ? hl : gray, o.name, "" + o.months, Misc.getDGSCredits(o.pay), Misc.getDGSCredits(o.gain));
                 if (!o.feasible) { t.addPara("    Can't fill: " + CALog.esc(o.why), gray, 2f); continue; }
                 if (s.contractMode == 0) {

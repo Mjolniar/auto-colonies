@@ -236,9 +236,9 @@ public class CACompat {
     public static String describe(Entry e) {
         switch (e.status) {
             case OK: return "OK";
-            case NEWER: return "written for " + e.tested + "; every id and name still found, so it keeps working (estimates trusted a little less)";
-            case PARTIAL: return "partly off (the rest keeps working), missing " + String.join(", ", e.missing);
-            case OFF: return "off: its code can't be read (likely renamed in an update)";
+            case NEWER: return "written for " + e.tested + ". Every id and name found. Estimates count a little less";
+            case PARTIAL: return "partly off. Missing: " + String.join(", ", e.missing) + ". The rest works";
+            case OFF: return "off. Its code can't be read, likely renamed in an update";
             default: return "not installed";
         }
     }

@@ -187,7 +187,7 @@ public class CADevelopment {
         else what = "no effect on building choices";
         t.addPara("Management style: %s. " + CALog.esc(Character.toUpperCase(what.charAt(0)) + what.substring(1)) + ".",
                 6f, hl, name(dev));
-        if (!linked && Global.getSettings().getModManager().isModEnabled(MOD)) t.addPara("(Styles couldn't be read; scored as standard.)", gray, 2f);
+        if (!linked && Global.getSettings().getModManager().isModEnabled(MOD)) t.addPara("Styles: not read. Scored as standard.", gray, 2f);
     }
 
     static String signed(int v) { return (v > 0 ? "+" : "") + v; }

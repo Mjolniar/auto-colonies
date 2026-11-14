@@ -436,21 +436,21 @@ public class CASurplus {
         MarketAPI f = focus();
         float a = amount(s);
         if (f == null) t.addPara("Surplus: no Auto colony for a focus world.", gray, 4f);
-        else if (a <= 0f) t.addPara("Surplus line %s, focus world %s; under the line now.", 4f, hl,
+        else if (a <= 0f) t.addPara("Surplus line %s, focus world %s. Under the line now.", 4f, hl,
                 Misc.getDGSCredits(line(s)), f.getName());
         else t.addPara("Surplus: %s over the %s line goes into %s" + (f.getId().equals(s.focusId) ? " (your pick)." : " ("
                 + CALog.esc(whys.get(f.getId())) + ")."), 4f, hl, Misc.getDGSCredits(a), Misc.getDGSCredits(line(s)), f.getName());
         boolean legacy = CABudget.legacy(s);
         // 0.3.0.0 (WS-F3 fix): spending freely in one line each (was 32 and 41 words); what it spends on is hover text (RICH_HOVER)
         if (rich(s) && legacy) {
-            t.addPara("Spending freely from %s to under %s; new upkeep up to %s.", 2f, hl,
+            t.addPara("Spending freely from %s to under %s. New upkeep up to %s.", 2f, hl,
                     Misc.getDGSCredits(RICH), Misc.getDGSCredits(RICH_OFF), Misc.getDGSCredits(a / RICH_UPKEEP_MONTHS));
             CATheme.hover(t, RICH_HOVER);
         }
         // 0.3.0.0 (C2): spending freely and the half money weight follow the money tier (CARich)
         // 0.3.0.0 (C12 fix): with the surplus band it starts and ends at (richStart, richHold)
         else if (rich(s)) {
-            t.addPara("Spending freely (tier %s) from %s over the line to under %s; new upkeep up to %s.",
+            t.addPara("Spending freely (tier %s) from %s over the line to under %s. New upkeep up to %s.",
                     2f, hl, CARich.name(CARich.tier()), Misc.getDGSCredits(richStart(line(s))), Misc.getDGSCredits(richHold(line(s))),
                     Misc.getDGSCredits(a / RICH_UPKEEP_MONTHS));
             CATheme.hover(t, RICH_HOVER);
