@@ -1,0 +1,189 @@
+fieldID,fieldName,fieldType,defaultValue,secondaryValue,fieldDescription,minValue,maxValue,tab
+ca_t_presets,,Text,Presets set several fields at once; each field is on the Advanced tab. Mode default: the empire mode's values. Custom: the fields match no option. Picking Mode default or Custom changes nothing.,,,,,
+,,,,,,,,
+ca_h_playstyle,Playstyle,Header,Playstyle,,,,,
+ca_empire,Empire mode,Radio,Advisor,"Off, Advisor, Approve, Auto",Empire-wide settings follow it. Off: nothing. Advisor: advice. Approve: asks first. Auto: acts. A setting you change keeps its value through mode changes.,,,
+ca_lowprofile,Low profile,Boolean,false,,"Slows colony crises and earns less. No AI cores above size 3, no Pather interest, free ports, raids or sabotage. Off: Full expansion.",,,
+ca_p_spend,Spending,Radio,Normal,"Thrifty, Normal, Lavish, Mode default, Custom","Thrifty: 30%% of net income and 5%% of savings. Normal: 50%% and 15%%. Lavish: 80%% and 30%%. The per-project cap is half, all or twice net income.",,,
+ca_p_extras,Extras,Radio,Mode default,"Auto, Recommend only, Off, Mode default, Custom","Mod buildings and features: stable locations, measured mod buildings, trade contracts, research, special project supply, megastructures, station augments, RAT settlement, IndEvo automation, Antimatter Stabilizers.",,,
+ca_p_newcol,New colonies,Radio,Off,"Off, Ask first, Auto, Mode default, Custom",Founds colonies with idle money. Ask first: each one waits for your approval.,,,
+ca_p_war,War,Radio,Off,"Off, Defend, Retaliate, Hold them down, Conquer, Scorched, Mode default, Custom","How far war fleets go; stances cap it. Defend: relief. Retaliate: raids on attackers, retakes of your lost colonies. Hold them down: raids on Rival and up. Conquer: invasions. Scorched: bombardment. Needs Nexerelin.",,,
+,,,,,,,,
+ca_h_money,Money,Header,Money,,,,,
+ca_reserve,Credit reserve,Int,50000,,"Credits Autopilot does not spend. From 0 to 100,000,000, steps of 50,000.",0,100000000,
+ca_surplus,Surplus investment,Radio,Off,"Off, Over 1M, Over 3M, Over 5M, Over 10M",Credits over this go to one focus world.,,,
+ca_richpreset,What to buy,Radio,Balanced,"Balanced, Fleet, Expansion, Economy, Save","What idle money buys first. Each rung is on the Advanced tab, Surplus and money ladder.",,,
+ca_endgame,Endgame,Radio,Off,"From 1M/month, From 2M/month, From 500k/month, Off","At this income, build for production and defense.",,,
+ca_p_story,Story points,Radio,Yours only,"Yours only, One per colony, 2 a month, 5 a month, Mode default, Custom",Story points Autopilot may spend on improvements.,,,
+,,,,,,,,
+ca_h_building,Building,Header,Building,,,,,
+ca_p_station,Stations,Radio,Pick by score,"Pick by score, Low tech, Midline, High tech, Imperium, Only where they pay, Mode default, Custom","Stations from size 4, upgraded with growth. Battlestation from size 6, Star Fortress from 8, a size sooner at the capital. Imperium needs Interstellar Imperium.",,,
+ca_p_takedown,Take down buildings,Radio,Clean up,"Never, Clean up, Free hand, Mode default, Custom","Never: nothing is taken down. Clean up: industries that stopped paying, room for capital trade buildings and endgame changes. Free hand: Clean up and Allow removals.",,,
+ca_p_policy,Colony policies,Radio,Auto,"Auto, Don't touch, Mode default, Custom","Auto: hazard pay, free port and edicts where they pay. Don't touch: left as you set them.",,,
+,,,,,,,,
+ca_h_people,Items and people,Header,Items and people,,,,,
+ca_p_cores,AI cores,Radio,Safe,"Off, Safe, Small colonies only, Defended, No limit, Mode default, Custom","AI cores from Autopilot Storage. Safe: never inspected. Defended resists inspections, which makes the Hegemony hostile.",,,
+ca_p_admins,Administrators,Radio,Hire and place,"Off, Place only, Hire and place, Mode default, Custom",Place only: assigns the administrators you have. Hire and place: also hires them.,,,
+,,,,,,,,
+ca_h_security,Security and diplomacy,Header,Security and diplomacy,,,,,
+ca_spy,Agents,Radio,Off,"Off, Defense, Defense and offense",Security and relations; offense adds sabotage. Needs Nexerelin.,,,
+ca_amb,Ambassadors,Boolean,true,,"Hires and installs ambassadors, Ally and Friendly factions first. Needs Industrial Evolution.",,,
+ca_t_picks,,Text,"Faction stances and this save's picks (capital, refit hub, sell hub, offense target) are on the intel Settings page.",,,,,
+,,,,,,,,
+ca_h_interface,Interface,Header,Interface,,,,,
+ca_screenlog,On-screen log,Radio,Every entry,"Every entry, Important only, Off",Short lines on screen. The Log page keeps every entry.,,,
+,,,,,,,,
+ca_h_reset,Reset,Header,Reset,,,,,
+ca_reset,Reset to recommended,Boolean,false,,"Tick and save: settings return to the empire mode's defaults. Low profile, faction stances and this save's picks are kept. Other changes in the same save are applied after the reset. The box unticks itself.",,,
+,,,,,,,,
+ca_h_adv_budget,Budget,Header,Budget,,,,,Advanced
+ca_type,Budget type,Radio,Automatic,"Automatic, Share of net income, Fixed amount",Automatic: a share of net income and a share of savings above the reserve. Share of net income: the first share only. Fixed amount: Monthly budget.,,,Advanced
+ca_budget,From net income (percent),Int,50,,"Used by Automatic and Share of net income. From 10 to 100, steps of 10.",10,100,Advanced
+ca_savings,From savings (percent),Int,15,,"Used by Automatic: this share of the credits above the reserve each month. From 5 to 50, steps of 5.",5,50,Advanced
+ca_budgetfixed,Monthly budget,Int,1000000,,"Used by Fixed amount. From 0 to 100,000,000, steps of 250,000.",0,100000000,Advanced
+ca_captype,Per-project cap,Radio,Automatic,"Automatic, Fixed","Automatic: half, all or twice net income, by Spending. Fixed: Fixed cap.",,,Advanced
+ca_cap,Fixed cap,Int,1000000,,"Most one project may cost. A changed value sets the cap to Fixed. From 250,000 to 100,000,000, steps of 500,000.",250000,100000000,Advanced
+ca_upkeeptype,New upkeep per month,Radio,Automatic,"Automatic, Fixed","Automatic: a share of net income set by Spending, 10%% on Normal. Fixed: Fixed upkeep.",,,Advanced
+ca_upkeep,Fixed upkeep,Int,20000,,"Most new upkeep a month with Fixed. From 0 to 10,000,000, steps of 10,000.",0,10000000,Advanced
+ca_pause,Pause on loss,Boolean,false,,No spending while net income is below 0.,,,Advanced
+ca_fees,Convenience fees,Radio,Standard,"Off, Low, Standard, High","On remote building, shipping and orders.",,,Advanced
+,,,,,,,,
+ca_h_adv_rich,Surplus and money ladder,Header,Surplus and money ladder,,,,,Advanced
+ca_surplusrich,"Surplus over 10,000,000",Radio,Every colony,"Every colony, Focus world only","Past this much over the surplus line: every Approve and Auto colony spends from the surplus, or the focus world only.",,,Advanced
+ca_wonders,Wonders and gates,Boolean,true,,The Daedalus Array and Bifrost gates once their goods are made. Needs Vaults of Knowledge.,,,Advanced
+ca_surplustf,Surplus terraforming,Radio,Max output,"Max output, Pays back in 10 years, Off",What the focus world leaves goes into terraforming. Needs Terraforming Made Easy.,,,Advanced
+ca_surplusres,Surplus research,Boolean,true,,More Research Facilities from the surplus while research is worth the speed. Needs Vaults of Knowledge.,,,Advanced
+ca_rung_1,Stockpiles rung,Radio,Off,"Off, On, Recommend only",Off: its share goes to the next rung.,,,Advanced
+ca_rung_2,Growth rung,Radio,Off,"Off, On, Recommend only",Off: its share goes to the next rung.,,,Advanced
+ca_rung_3,Military rung,Radio,Off,"Off, On, Recommend only",Off: its share goes to the next rung.,,,Advanced
+ca_rung_4,Shipyard rung,Radio,Off,"Off, On, Recommend only",Off: its share goes to the next rung.,,,Advanced
+ca_rung_5,Expansion rung,Radio,Off,"Off, On, Recommend only",Off: its share goes to the next rung.,,,Advanced
+ca_rung_6,Economy rung,Radio,Off,"Off, On, Recommend only",Off: its share goes to the next rung.,,,Advanced
+ca_rung_7,Wonders rung,Radio,Off,"Off, On, Recommend only",Off: its share goes to the next rung.,,,Advanced
+ca_shipyardstop,Shipyard stops at,Int,6,,"Unclaimed hulls the shipyard ordered, in the capital's Storage. From 1 to 30.",1,30,Advanced
+,,,,,,,,
+ca_h_adv_build,Building,Header,Building,,,,,Advanced
+ca_overlimit,Over-limit fix,Boolean,true,,A colony over its industry limit takes down its weakest industry.,,,Advanced
+ca_marketmodel,Exports valued by market share,Boolean,true,,Exports are valued by your share of each sector market.,,,Advanced
+ca_prune,Take down unpaying industries,Boolean,true,,An industry that stopped paying for 30 days is taken down.,,,Advanced
+ca_endgamerep,Endgame replaces industries,Boolean,true,,"Weak industries make way for production chains, fleets and defense.",,,Advanced
+ca_removals,Allow removals,Boolean,false,,Autopilot may remove buildings for better ones.,,,Advanced
+ca_spcap,Story points a month,Int,2,,"Used when Story points is 2 a month, 5 a month or Custom. From 0 to 50.",0,50,Advanced
+,,,,,,,,
+ca_h_adv_cores,AI cores and items,Header,AI cores and items,,,,,Advanced
+ca_cores,Use AI cores,Boolean,true,,AI cores from Autopilot Storage go into colony buildings.,,,Advanced
+ca_alpha,Alpha cores,Radio,Only where removable,"Only where removable, Anywhere, Never",Where Alpha cores may go.,,,Advanced
+ca_corerisk,Inspection risk,Radio,Never inspected,"More where defended, Never inspected, No limit, Small colonies only",How many AI cores colonies hold against Hegemony inspections.,,,Advanced
+ca_inspect,Hegemony inspections,Radio,Advise,"Advise, Resist where defended, Off",Resist where defended makes the Hegemony hostile.,,,Advanced
+ca_researchcores,Alphas in research buildings,Radio,First,"First, By value",Alpha cores halve research buildings' costs. Needs Vaults of Knowledge.,,,Advanced
+ca_resitems,Research uses colony items,Radio,Off,"Off, From storage, From storage and buildings",Only while credits are over the surplus line. Needs Vaults of Knowledge.,,,Advanced
+,,,,,,,,
+ca_h_adv_policy,Colony policies,Header,Colony policies,,,,,Advanced
+ca_hazard,Hazard pay,Radio,Auto,"Auto, Don't touch",Auto: hazard pay where it speeds growth up enough.,,,Advanced
+ca_hpcol,Hazard pay growth threshold (percent),Int,25,,"Hazard pay where it speeds growth up by at least this much. From 5 to 100, steps of 5.",5,100,Advanced
+ca_hpemp,Hazard pay budget (percent of net income),Int,30,,All hazard pay stays within this share of net income. From 1 to 100.,1,100,Advanced
+ca_freeport,Free port,Radio,Auto,"Auto, Don't touch",Auto: a free port where it pays.,,,Advanced
+ca_edicts,Senate edicts,Boolean,true,,Needs Industrial Evolution.,,,Advanced
+,,,,,,,,
+ca_h_adv_people,People and diplomacy,Header,People and diplomacy,,,,,Advanced
+ca_admin,Administrator hiring,Boolean,true,,Hires administrators for colonies without one.,,,Advanced
+ca_adminopt,Assign administrators optimally,Boolean,true,,Places each administrator where their skills pay most.,,,Advanced
+ca_ambfocus,"Among equal stances, first",Radio,Worst relations first,"Worst relations first, Strongest factions, Nearest neighbors, Priority list only",Which factions ambassadors and agents work on first. Needs Industrial Evolution or Nexerelin.,,,Advanced
+ca_ambstop,Stop raising relations at,Radio,Cooperative,"Welcoming, Friendly, Cooperative, Never stop",Needs Industrial Evolution or Nexerelin.,,,Advanced
+ca_spyhire,Recruit agents,Boolean,true,,Needs Nexerelin.,,,Advanced
+ca_spykeep,Agents to keep,Radio,Auto,"Auto, 1, 2, 3, 4",Needs Nexerelin.,,,Advanced
+ca_autonomy,Autonomy,Radio,Recommend,"Off, Recommend, Auto",Recommend: names the colony that would help in a money emergency. Auto also only recommends. Needs Nexerelin.,,,Advanced
+,,,,,,,,
+ca_h_adv_war,War,Header,War,,,,,Advanced
+ca_defense,Emergency defense fleets,Boolean,true,,Needs Nexerelin.,,,Advanced
+ca_warretake,Retake your lost colonies,Boolean,true,,At Retaliate and up. Needs Nexerelin.,,,Advanced
+ca_warrivals,Top hostile threat as Rival,Boolean,false,,Needs Nexerelin.,,,Advanced
+ca_warconq,Conquered colonies start in,Radio,Advisor,"Auto, Approve, Advisor",Needs Nexerelin.,,,Advanced
+ca_warscorch,Bombardment targets,Radio,Capitals only,"Capitals only, Capitals and small colonies",At Scorched. Needs Nexerelin.,,,Advanced
+ca_warcoal,Coalition risk allowed,Boolean,false,,Off: offensives stop before a coalition forms. Needs Nexerelin.,,,Advanced
+ca_enf,Enforcer patrols,Boolean,false,,Your colony patrols attack the fleet types set to On. Charge: once per fleet your forces defeat. A battle you fight yourself gets the game's penalty.,,,Advanced
+ca_enfk_0,Hegemony investigators,Boolean,false,,Used with Enforcer patrols.,,,Advanced
+ca_enfk_1,Hegemony AI inspections,Boolean,false,,Used with Enforcer patrols.,,,Advanced
+ca_enfk_2,Persean League enforcers,Boolean,false,,Used with Enforcer patrols.,,,Advanced
+ca_enfk_3,Luddic sacred protectors,Boolean,false,,Used with Enforcer patrols.,,,Advanced
+ca_enfk_4,Tri-Tachyon commerce raiders,Boolean,false,,Used with Enforcer patrols.,,,Advanced
+ca_enfk_5,Nexerelin police,Boolean,false,,Used with Enforcer patrols. Needs Nexerelin.,,,Advanced
+ca_enfcost,Enforcer cost,Radio,Reputation,"Reputation, Credits, Both, None","Reputation: the game's penalty for defeating that fleet yourself, -3. Commerce raiders and police: none. Credits: fleet points times Nexerelin's fleet request price (400 without it), paid above the credit reserve.",,,Advanced
+ca_enfwhere,Enforcer patrols in,Radio,Systems with Auto colonies,"Systems with Auto colonies, Systems with any colony",Systems where colony patrols attack.,,,Advanced
+ca_enfcomm,Skip your commissioner,Boolean,true,,No attacks on the faction you hold a commission with.,,,Advanced
+ca_enfally,Skip allies and League membership,Boolean,true,,"No attacks on allies, or on the League while you are a member.",,,Advanced
+ca_enfcease,Skip ceasefires,Boolean,true,,Needs Nexerelin.,,,Advanced
+ca_enflow,Off in Low profile,Boolean,true,,No attacks while Low profile is on.,,,Advanced
+ca_enfnear,Off in your fleet's system,Boolean,true,,Your system: a marked fleet is hostile to your fleet too.,,,Advanced
+ca_enfint,Patrols intercept,Boolean,false,,Colony patrols in the system get an order to intercept the fleet.,,,Advanced
+,,,,,,,,
+ca_h_adv_capital,Capital and storage,Header,Capital and storage,,,,,Advanced
+ca_capmode,Capital does,Radio,Off,"Deliveries and commerce, Deliveries only, Off",Deliveries and Storage gather at the capital. Off: no capital. The capital pick is on the intel Settings page.,,,Advanced
+ca_capstart,Trade hub starts at,Radio,Net income over 100k,"Net income over 100k, Net income over 50k, Net income over 250k, Right away",When the capital starts its trade buildings.,,,Advanced
+ca_caproom,Make room for trade buildings,Boolean,true,,The capital takes down an industry for its trade buildings.,,,Advanced
+ca_capgather,Gather Storage at the capital,Boolean,true,,Autopilot Storage gathers at the capital.,,,Advanced
+ca_logi,Storage logistics,Radio,Off,"Off, On",Moves goods to the refit hub weekly. The hubs are on the intel Settings page.,,,Advanced
+ca_logiships,Ships to the refit hub,Boolean,true,,Used with Storage logistics.,,,Advanced
+ca_logigoods,"Supplies, fuel, crew, marines too",Boolean,true,,Used with Storage logistics.,,,Advanced
+,,,,,,,,
+ca_h_adv_extras,Extras,Header,Extras,,,,,Advanced
+ca_objectives,Stable locations,Radio,Recommend only,"Auto, Recommend only, Off","Comm relays, nav buoys and sensor arrays at stable locations.",,,Advanced
+ca_measured,Measured mod buildings,Radio,Build when best,"Build when best, Recommend only, Ignore",Mod buildings scored from probe-colony measurements.,,,Advanced
+ca_contract,Trade contracts,Radio,Advisor,"Advisor, Auto, Off",Needs Theory of Toolbox.,,,Advanced
+ca_research,Research,Radio,Advisor,"Advisor, Auto, Off",Needs Vaults of Knowledge.,,,Advanced
+ca_projsupply,Special project supply,Radio,Warn only,"Auto, Warn only, Off",A producer for goods a special project takes that no colony makes. Needs Vaults of Knowledge.,,,Advanced
+ca_hs,Megastructures,Radio,Follow colony mode,"Follow colony mode, Recommend only, Off",Coronal Hypershunt range and restoration. Needs Vaults of Knowledge.,,,Advanced
+ca_aug,Station augments,Radio,Follow colony mode,"Follow colony mode, Recommend only, Off",Needs Station Augments.,,,Advanced
+ca_settle,RAT settlement,Radio,Advisor,"Advisor, Approve, Auto, Off",Needs Random Assortment of Things.,,,Advanced
+ca_settleinc,Found when a site earns,Int,20000,,"Needs Random Assortment of Things. From 5,000 to 10,000,000, steps of 5,000.",5000,10000000,Advanced
+ca_spec,IndEvo specialties,Boolean,true,,Needs Industrial Evolution.,,,Advanced
+ca_vpc,VPC chips,Boolean,true,,Needs Industrial Evolution.,,,Advanced
+ca_forge,Forge may use up chips,Boolean,true,,Needs Industrial Evolution.,,,Advanced
+ca_ship,Courier shipping,Boolean,true,,Needs Industrial Evolution.,,,Advanced
+ca_stab,Antimatter Stabilizers,Boolean,true,,Needs Emergent Threats IX Revival.,,,Advanced
+,,,,,,,,
+ca_h_adv_expand,New colonies,Header,New colonies,,,,,Advanced
+ca_expline,Money for new colonies,Radio,Money ladder (Idle money and up),"Money ladder (Idle money and up), Over 5M, Over 25M, Over 50M",Used with New colonies on Ask first or Auto.,,,Advanced
+ca_expscope,Where,Radio,Systems you hold,"Systems you hold, Those first then nearby systems, Within 15 ly of the capital",Low profile: systems you hold only.,,,Advanced
+ca_expgoal,Goal of a new colony,Radio,Fits its plan,"Fits its plan, Balanced, Money, Security, War production, Rapid growth, Self-sufficiency",The goal a new colony starts with.,,,Advanced
+ca_expmethod,Method,Radio,Nexerelin colony fleet when possible,"Nexerelin colony fleet when possible, Autopilot crew only",Needs Nexerelin.,,,Advanced
+ca_expmax,Most colonies,Radio,Colony limit and administrators,"Colony limit and administrators, 5 colonies, 10 colonies, 15 colonies, 20 colonies",New colonies stop at this count.,,,Advanced
+ca_expbuildout,Fast buildout,Boolean,true,,A new colony is built up at once.,,,Advanced
+ca_expadmins,Administrator past the limit,Boolean,true,,An administrator is hired for a new colony past the limit.,,,Advanced
+ca_tascst,TASC stations,Radio,Recommend only,"Recommend only, Auto, Off","With New colonies on Auto, Auto stations only recommend while the Expansion rung asks first. Needs Terraforming and Station Construction.",,,Advanced
+,,,,,,,,
+ca_h_adv_prod,Production,Header,Production,,,,,Advanced
+ca_p_prod,Production,Radio,Light,"Off, Light, Full, Mode default, Custom",Off: the 0.3.1.0 picks. Light and Full set the floors below.,,,Advanced
+ca_fhulls,Hull sources,Int,1,,Ship producers wanted. From 0 to 3.,0,3,Advanced
+ca_fcap,Hull capacity a month,Int,100000,,"Ship production capacity wanted, in credits a month. From 0 to 1,000,000, steps of 50,000.",0,1000000,Advanced
+ca_fmonths,Order goods within (months),Int,6,,Months for Ashes of the Domain order goods. From 3 to 24.,3,24,Advanced
+ca_fqual,Production quality,Double,0.8,,"Ship production quality wanted. From 0.5 to 1.2, steps of 0.1.",0.5,1.2,Advanced
+ca_fparts,Parts reserve,Int,100,,"Domain-grade Parts kept on top of the fleet's repair need. From 0 to 1,000, steps of 50.",0,1000,Advanced
+ca_fsup,Supplies floor,Radio,No shortage,"Off, No shortage, Fleet use",Supplies production wanted.,,,Advanced
+ca_ffuel,Fuel floor,Radio,No shortage,"Off, No shortage, Fleet use",Fuel production wanted.,,,Advanced
+ca_fmoney,Floors at Money colonies,Boolean,false,,Floors also apply at colonies with the Money goal.,,,Advanced
+ca_fneeds,Floor builds first,Boolean,true,,Floor builds rank ahead of other builds.,,,Advanced
+ca_froom,Make room,Radio,Off,"Off, Ask first, Auto",A floor producer may replace the weakest income industry.,,,Advanced
+ca_ftaper,Money taper,Radio,Gentle,"Off, Gentle, Strong",Money counts for less in the planner at high income.,,,Advanced
+ca_ftlow,Taper from,Int,300000,,"Used by Gentle. Stays 100,000 below Taper top from. From 100,000 to 9,900,000, steps of 100,000.",100000,9900000,Advanced
+ca_fthigh,Taper top from,Int,1000000,,"Used by Gentle. Stays 100,000 above Taper from. From 200,000 to 10,000,000, steps of 100,000.",200000,10000000,Advanced
+ca_fdivn,Same building copies,Int,2,,Copies of a building family before the next counts less. 0: off. From 0 to 6.,0,6,Advanced
+ca_fdivd,Next copy counts (percent),Int,75,,"What each copy past that count is worth. From 50 to 100, steps of 5.",50,100,Advanced
+ca_fweights,Goal weights,Radio,0.3.2 table,"0.3.2 table, 0.3.0 table",Which table weighs each colony goal.,,,Advanced
+ca_fkeep,Contracts keep floor goods,Boolean,true,,Trade contracts leave floor goods alone while their floor is open.,,,Advanced
+ca_fpartscap,Parts to the capital,Boolean,false,,Storage logistics brings Domain-grade Parts to the capital's Storage weekly.,,,Advanced
+ca_fshipyard,Shipyard from Surplus,Boolean,true,,The Shipyard rung opens at Surplus while floors are on.,,,Advanced
+ca_fvhull,Value: hull source,Int,40000,,"Worth of one hull source a month in the planner. From 0 to 10,000,000, steps of 10,000.",0,10000000,Advanced
+ca_fvcap,Value: capacity credit,Double,0.5,,"Worth of one credit of capacity a month. From 0 to 100, steps of 0.1.",0,100,Advanced
+ca_fvqual,Value: 1.0 quality,Int,50000,,"Worth of 1.0 production quality a month. From 0 to 10,000,000, steps of 10,000.",0,10000000,Advanced
+ca_fvpart,Value: a part,Int,250,,"Worth of one Domain-grade Part. From 0 to 100,000, steps of 50.",0,100000,Advanced
+ca_fvorder,Value: order goods (times),Double,3,,"Multiplier on order goods' worth. From 0 to 100, steps of 0.5.",0,100,Advanced
+ca_fvgoods,Value: goods (times),Double,2,,"Multiplier on floor goods' worth. From 0 to 100, steps of 0.5.",0,100,Advanced
+,,,,,,,,
+ca_h_adv_ui,Interface,Header,Interface,,,,,Advanced
+ca_voice,Announcement voice,Radio,Machine,"Machine, Plain",Machine or plain wording in announcements.,,,Advanced
+ca_screenbtn,Button on the colony screen,Boolean,true,,The Colony Autopilot button on your colony's screen.,,,Advanced
+ca_thinking,Thinking list,Radio,Hide,"Hide, Show",The Log page's list of what Autopilot weighed.,,,Advanced
+ca_approvaldays,Approval summary,Radio,Every 60 days,"Off, Every 15 days, Every 30 days, Every 45 days, Every 60 days, Every 90 days, Every 120 days, Every 180 days",One dialog with every decision waiting for approval.,,,Advanced
+ca_hints,Build menu hints,Radio,Advisor colonies,"Advisor colonies, Every colony not Off, Off",Autopilot's ranking beside the game's build menu.,,,Advanced
+ca_hintscore,Score on open,Boolean,false,,Scores an out-of-date colony once a day when its build menu opens.,,,Advanced

@@ -32,6 +32,7 @@
 - Fast buildout ranking: Money goal weights, with ground defense, fleets and ship quality worth nothing. It builds no defenses, patrols or stations.
 - Fast buildout end: After 30 days in a row of positive colony net income. The colony stays in Auto with its own goal.
 - First switch to Approve or Auto: Opens the setup page (0.3.0.0, `CASetupUI.renderFirstTime`) with the recommended settings. Everything that pays for itself is on. Removals, story points and offense stay with the player. 5 rows: Spending, Extras, New colonies, War with Nexerelin, Credit reserve.
+- First switch with LunaLib (0.3.4.0): Once LunaLib holds settings from a set-up save, the switch keeps them. No setup page, no recommended values, no empire mode change.
 - Reset to recommended (`CASetupUI.resetToRecommended`): A Settings page button. It clears "set by you" and applies the empire mode's defaults. It keeps Expansion style, faction stances, the capital pick and the focus world.
 - Orbital Fusion Lamp: Cancels Cold, Very Cold, Poor Light and Dark. Needs 10 volatiles.
 - Orbital Fusion Lamp: On a world that is not cold it adds heat. Autopilot places it only where the cancelled cold or darkness is worth more than the heat, or where the plan needs Extreme Heat.
@@ -148,6 +149,10 @@
 - Settings page (`CASetupUI`): Groups: Playstyle (Expansion style, Spending, Extras, New colonies, War). Money (Credit reserve, Surplus investment, What to buy, Endgame, Story points).
 - Settings page (`CASetupUI`): Building (Stations, Take down buildings, Colony policies). Items and people (AI cores, Administrators, Capital, Storage logistics).
 - Settings page (`CASetupUI`): Security and diplomacy (Agents, Ambassadors, Faction stances link). Interface (On-screen log).
+- LunaLib settings (0.3.4.0, `CALunaSync`, `data/config/LunaSettings.csv`): With LunaLib enabled every Settings page row is a LunaLib field: main rows on the General tab, one header per Advanced group on the Advanced tab. Presets are radio options.
+- LunaLib settings: Values are global. The first save loaded after the update seeds them from its `CASettings` (flag `ca__seeded` in LunaLib's file). Later loads read them into the save. Saving in LunaLib's menu applies the fields that changed since the last sync, as set by you.
+- LunaLib settings: The game writes `CASettings` back to LunaLib after a settings click, after a LunaLib save and before each game save. The "set by you" names of LunaLib's fields are kept in LunaLib (`ca__playerSet`, `ca__playerRows`).
+- LunaLib settings: The intel Settings page keeps this save's picks (Capital, Refit hub, Sell hub, Offense target) and the Faction stances link. `CALunaLink` is the only class that references LunaLib.
 - War page (`CAWarPage`, with Nexerelin): Level, fleet request points, infamy, money, Stand down, Recall all, Authorize bombardment with confirmations, a block per faction at Rival or higher with up to 3 planned operations, conquered colonies.
 
 ## Any mix of mods
@@ -407,7 +412,7 @@ jar cf jars/jonahtweaks.jar -C build data
 ```
 
 - Script class loader: Refuses any mod class that names `java.lang.reflect` or file classes. `CARefl` does all reflection through method handles. `check_banned.ps1` fails the build on a banned class reference. `JTLoaderCheck` loads every class under that loader and runs `CARefl`.
-- Optional-mod classes: `CATerraform`, `CAIndEvo`, `CACourier`, `CADefense`, `CASettlement` and `CAAugments` reference optional mods and are called only when that mod is enabled. `CASettlement` and `CAAugments` also need the Kotlin runtime (LazyLib) and LunaLib on the compile classpath.
+- Optional-mod classes: `CATerraform`, `CAIndEvo`, `CACourier`, `CADefense`, `CASettlement` and `CAAugments` reference optional mods and are called only when that mod is enabled. `CASettlement` and `CAAugments` also need the Kotlin runtime (LazyLib) and LunaLib on the compile classpath. `CALunaLink` references LunaLib and is called only when LunaLib is enabled.
 - Combinations: The author's build checks prove any combination works: only those classes reference each optional mod, every caller checks `isModEnabled`, and the jar links under `-Xverify:all` against all 32 combinations.
 - Reflection-only classes: `CASynergies`, `CAContracts`, `CAHypershunt`, `CAMegastructures`, `CAResearch`, `CADevelopment` and `CAAotD` reach Vaults of Knowledge and Theory of Toolbox through `CARefl`. A name that cannot be found is left out and the log says why.
 - Reflection-only classes: `JTAotDEconLinkCheck.java` checks those names; run it with `-XX:+UnlockDiagnosticVMOptions -XX:-BytecodeVerificationRemote`.

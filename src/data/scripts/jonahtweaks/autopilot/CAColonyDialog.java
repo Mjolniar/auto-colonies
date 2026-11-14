@@ -99,6 +99,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         else if (id instanceof CAData.Mode) {
             CAData.Mode mo = (CAData.Mode) id;
             boolean needsSetup = (mo == CAData.Mode.APPROVE || mo == CAData.Mode.AUTO) && !d.settings.setupDone;
+            if (needsSetup && CALunaSync.keepsSetup()) { d.settings.setupDone = true; needsSetup = false; }   // 0.3.4.0: LunaLib's settings stay
             // 0.3.0.0 (WS-F3): the Settings page opens on Playstyle afterwards (CASetupUI's groups since F1)
             if (needsSetup) {
                 setupPage = true; setupMode = mo; CASetupUI.applyRecommended(d.settings); CASetupUI.open.clear(); CASetupUI.open.add("playstyle");
