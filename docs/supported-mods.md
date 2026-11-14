@@ -35,6 +35,11 @@
 - [Gladiator Society](https://fractalsoftworks.com/forum/index.php?topic=33586.0): no new colony on The Gulf.
 - [Scy Nation](https://fractalsoftworks.com/forum/index.php?topic=29535.0), [CJY's Toy Box](https://fractalsoftworks.com/forum/index.php?topic=35093.0), [AI-Retrofits](https://fractalsoftworks.com/forum/index.php?topic=22261.0): Intelligence Command Center, Private Production Facility, both greenhouses and Population Replacement Center left to you.
 - [Blue](https://fractalsoftworks.com/forum/index.php?topic=14041.0), [Oculian Armada](https://fractalsoftworks.com/forum/index.php?topic=9035.0): Lanestate Battleyards and Orbital Matrix count as ship producers for the production floors.
+- [Cloning](https://fractalsoftworks.com/forum/index.php?topic=35130.0), [Coalesced Little Mods](https://github.com/andrzejsokolowski/starsector-coalesced-little-mods): Clone Vat Experiments, Cloning Industry, Megafactory built when worth it.
+- [Reverse Engineered Private Arsenal](https://fractalsoftworks.com/forum/index.php?topic=35627.0): left to you.
+- [Toolbox Economy Curves](https://fractalsoftworks.com/forum/index.php?topic=36178.0): plans with the chosen curve.
+- [Sol Renewed](https://fractalsoftworks.com/forum/index.php?topic=35983.0): industries priced for Sol's crisis.
+- [Secrets of the Frontier](https://fractalsoftworks.com/forum/index.php?topic=15820.0): its habitat objective is left to you. Station Augments' Warmind Refit is skipped while the Dustkeepers are hostile.
 
 ## Terraforming & Station Construction (Boggled)
 
@@ -66,15 +71,6 @@
 - New colonies: Antimatter Anomaly fuel and crustquake goods count. Fragile Biosphere counts farmland only.
 - Left to you: Forgotten Vault-World's Tech-Mining, the Trash King's seat, the Violet Dwarf system, the Afterlight. Cold Sky Observatory and Resonant Signal Trap get no build value.
 - Colony panel: Mod features lists each condition at the colony and how Autopilot handles it.
-
-## Oddisz's mods
-
-[Mod list](https://fractalsoftworks.com/forum/index.php?topic=36175.0)
-
-- [Cloning](https://fractalsoftworks.com/forum/index.php?topic=35130.0), [Coalesced Little Mods](https://github.com/andrzejsokolowski/starsector-coalesced-little-mods): Clone Vat Experiments, Cloning Industry, Megafactory built when worth it.
-- [Reverse Engineered Private Arsenal](https://fractalsoftworks.com/forum/index.php?topic=35627.0): left to you.
-- [Toolbox Economy Curves](https://fractalsoftworks.com/forum/index.php?topic=36178.0): plans with the chosen curve.
-- [Sol Renewed](https://fractalsoftworks.com/forum/index.php?topic=35983.0): industries priced for Sol's crisis.
 
 ## Any other mod
 
