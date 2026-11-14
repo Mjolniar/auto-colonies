@@ -1,2 +1,4 @@
 name,id,tags,tech/manufacturer,rarity,base price,stack size,cargo space,baseRaidDanger,icon,sound id,sound id drop,plugin,plugin params,desc,order
-Autarch AI Core,autarch_core,,Domain Restricted,,1000000,1,1,LOW,graphics/icons/cargo/autarch_core.png,ai_core_pickup,ui_alpha_core_drop,com.fs.starfarer.api.campaign.impl.items.GenericSpecialItemPlugin,,"A Domain-era AI core built for one job: governing a colony. It plans a colony from the ground up, places its industry, balances its books and hires its people. The Colonial Administration Suite on your TriPad was written to run on it. No building takes it; the TriPad does.",1000
+Autarch AI Core,autarch_core,,Domain Restricted,,1000000,1,1,LOW,graphics/icons/cargo/autarch_core.png,ai_core_pickup,ui_alpha_core_drop,com.fs.starfarer.api.campaign.impl.items.GenericSpecialItemPlugin,,"An AI core the Domain built for colonial administration. An Autarch-class core ran a colony's planning, budget and staffing with little human oversight. Few records of the type survived the Collapse.
+
+The Colonial Administration Suite on your TriPad is written to run on this core. It can't be installed in an industry.",1000
