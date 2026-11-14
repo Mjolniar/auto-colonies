@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.5.3 - 2026-11-14
+
+- Approval summary: Decision details are whole sentences in the game's dialog style. The "What:", "Why:" and "If rejected:" labels are removed.
+- Autonomy: The decision reads "Grant autonomy. +X a month." Its details use Nexerelin's own wording for autonomy.
+
 ## 0.3.5.2 - 2026-11-13
 
 - War fleets: Fixed a relief fleet message appearing every day for a colony under siege while the relief waited for fleet points or credits. The relief is posted only when it launches.

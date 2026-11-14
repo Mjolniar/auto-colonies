@@ -37,7 +37,7 @@ public final class CAApprovals {
         public String key, kind, marketId, place, title, why;
         public float cost, fee, monthly;
         public long since;
-        /** 0.3.3.5: what the decision does, costs and why, one line each ("What: ...", "Cost: ..."), for the summary and panels. */
+        /** 0.3.3.5: what the decision does, costs and why, one sentence each, for the summary and panels. */
         public List<String> details = new ArrayList<String>();
         /** Live asks: the game day the module last offered it. */
         int seen;
@@ -62,8 +62,8 @@ public final class CAApprovals {
     }
 
     /** A module offers a live ask (an Approve colony's recommendation). Held after you reject it: holdDays(kind). */
-    static void offer(String key, String kind, MarketAPI m, String title, float cost, float fee, String why, Act approve, String... details) {
-        if (key == null || approve == null || held(key, kind)) return;
+    static Item offer(String key, String kind, MarketAPI m, String title, float cost, float fee, String why, Act approve, String... details) {
+        if (key == null || approve == null || held(key, kind)) return null;
         Item it = new Item();
         it.key = key; it.kind = kind; it.marketId = m == null ? null : m.getId(); it.place = m == null ? EMPIRE : m.getName();
         it.title = title; it.cost = cost; it.fee = fee; it.why = why;
@@ -75,6 +75,7 @@ public final class CAApprovals {
         final String k = key;
         it.reject = new Act() { public String run() { CAMark.set("askno:" + k, CAMark.now()); LIVE.remove(k); return null; } };
         LIVE.put(key, it);
+        return it;
     }
 
     /**
@@ -121,29 +122,39 @@ public final class CAApprovals {
     static List<String> describe(Item it) {
         List<String> out = new ArrayList<String>();
         String k = it.kind == null ? "" : it.kind, t = it.title == null ? "" : it.title;
+        // 0.3.5.3: whole sentences in the game's dialog style, no "What:" labels
         if ("build".equals(k)) {
             int cut = t.indexOf(", takes down ");
-            out.add("What: builds " + (cut >= 0 ? t.substring(0, cut) : t) + " at " + it.place + ".");
-            if (cut >= 0) out.add("Slot: takes down " + t.substring(cut + ", takes down ".length()) + " first to free the industry slot.");
-        } else if ("settle".equals(k)) out.add("What: founds a Random Assortment of Things Frontiers settlement.");
-        else if ("expand".equals(k)) out.add("What: sends a colony expedition that founds a new colony there.");
-        else if ("shipyard".equals(k)) out.add("What: adds these hulls to your custom production queue.");
-        else if ("stock".equals(k)) out.add("What: buys the goods and ships them into " + it.place + "'s Local Resources.");
-        else if ("military".equals(k)) out.add("What: upgrades " + it.place + "'s military building.");
-        else if ("augments".equals(k)) out.add("What: installs these Station Augments on the station. Installing is free and can be undone.");
-        else if ("hypershunt".equals(k)) out.add("What: changes the Coronal Hypershunt's range.");
-        else if ("megastructure".equals(k)) out.add("What: applies the settings Autopilot recommends for it.");
-        else if ("tasc".equals(k)) out.add("What: starts this Terraforming & Station Construction project at " + it.place + ".");
+            out.add((cut >= 0 ? t.substring(0, cut) : t) + " will be built at " + it.place + ".");
+            if (cut >= 0) out.add(t.substring(cut + ", takes down ".length()) + " will be shut down first to free the industry slot.");
+        } else if ("settle".equals(k)) out.add("A Random Assortment of Things frontier settlement will be founded.");
+        else if ("expand".equals(k)) out.add("A colony expedition will set out and found a new colony there.");
+        else if ("shipyard".equals(k)) out.add("These hulls will be added to your custom production orders.");
+        else if ("stock".equals(k)) out.add("The goods will be bought and delivered to " + it.place + "'s local resources.");
+        else if ("military".equals(k)) out.add(it.place + "'s military base will be upgraded.");
+        else if ("augments".equals(k)) out.add("These station augments will be installed. Installing them is free and can be undone.");
+        else if ("hypershunt".equals(k)) out.add("The Coronal Hypershunt's range will change.");
+        else if ("megastructure".equals(k)) out.add("The recommended settings will be applied.");
+        else if ("tasc".equals(k)) out.add("This Terraforming & Station Construction project will start at " + it.place + ".");
         if (it.total() > 0f) {
-            if ("expand".equals(k)) out.add("Cost: " + Misc.getDGSCredits(it.total()) + ", fee included.");
-            else out.add("Cost: " + Misc.getDGSCredits(it.cost) + (it.fee > 0f ? " plus a " + Misc.getDGSCredits(it.fee) + " fee" : "") + ".");
+            if ("expand".equals(k)) out.add("It costs " + Misc.getDGSCredits(it.total()) + ", fee included.");
+            else out.add("It costs " + Misc.getDGSCredits(it.cost) + (it.fee > 0f ? ", plus a " + Misc.getDGSCredits(it.fee) + " fee" : "") + ".");
         }
-        if (it.monthly > 0f) out.add("Gain: about " + Misc.getDGSCredits(it.monthly) + " a month.");
-        else if (it.monthly < 0f) out.add("Upkeep: " + Misc.getDGSCredits(-it.monthly) + " more a month.");
-        if (it.why != null && !it.why.isEmpty()) out.add("Why: " + it.why);
-        if ("expand".equals(k)) out.add("If rejected: that target is skipped for 180 days.");
-        else if ("build".equals(k) || LIVE.containsKey(it.key)) out.add("If rejected: not offered again for " + holdText(k) + ".");
+        if (it.monthly > 0f) out.add("Income rises by about " + Misc.getDGSCredits(it.monthly) + " a month.");
+        else if (it.monthly < 0f) out.add("Upkeep rises by " + Misc.getDGSCredits(-it.monthly) + " a month.");
+        if (it.why != null && !it.why.isEmpty()) out.add(sentence(it.why));
+        if ("expand".equals(k)) out.add("If you reject it, that target is skipped for 180 days.");
+        else if ("build".equals(k) || LIVE.containsKey(it.key)) out.add("If you reject it, it will not be offered again for " + holdText(k) + ".");
         return out;
+    }
+
+    /** Pure (0.3.5.3): a reason as a sentence: capital first letter, a full stop at the end. */
+    static String sentence(String s) {
+        String t = s.trim();
+        if (t.isEmpty()) return t;
+        t = Character.toUpperCase(t.charAt(0)) + t.substring(1);
+        char last = t.charAt(t.length() - 1);
+        return last == '.' || last == '!' || last == '?' ? t : t + ".";
     }
 
     /** Pure: colony groups by name, Empire last; inside a group, oldest first. */
