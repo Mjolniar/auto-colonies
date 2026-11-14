@@ -489,7 +489,7 @@ public class CACrisis {
         if (r != null) {
             List<String> names = new ArrayList<String>();
             for (MarketAPI m : targets()) names.add(m.getName());
-            t.addPara("Coming: %s" + (names.isEmpty() ? "." : ", most likely at %s; Auto colonies there plan with Security."), 8f, bad,
+            t.addPara("Coming: %s" + (names.isEmpty() ? "." : ", most likely at %s. Auto colonies there plan with Security."), 8f, bad,
                     name(r.factor), CAContracts.join(names));
         }
         float best = bestMilitaryMult();

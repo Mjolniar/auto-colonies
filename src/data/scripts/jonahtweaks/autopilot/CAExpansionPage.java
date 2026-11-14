@@ -79,9 +79,9 @@ public final class CAExpansionPage {
             if (c.hire != null) t.addPara("Administrator: %s plus a %s fee, %s a month.", 4f, hl,
                     Misc.getDGSCredits(c.hire.price), Misc.getDGSCredits(c.hire.fee), Misc.getDGSCredits(c.hire.salary));
             if (CABuild.credits() - c.total < s.reserve)
-                t.addPara("Over your credit reserve (%s); it won't go.", 4f, bad, Misc.getDGSCredits(s.reserve));
+                t.addPara("Over your credit reserve (%s). It does not go.", 4f, bad, Misc.getDGSCredits(s.reserve));
         }
-        t.addPara("Plan: %s, goal %s. %s a month at size %s; payback %s months.", 6f, hl, p.plan, CAExpansion.goalLabel(p.goal),
+        t.addPara("Plan: %s, goal %s. %s a month at size %s. Payback %s months.", 6f, hl, p.plan, CAExpansion.goalLabel(p.goal),
                 Misc.getDGSCredits(p.value), String.valueOf(CAExpansion.VALUE_SIZE), p.payback >= 1000f ? "over 1,000" : String.valueOf(Math.max(1, Math.round(p.payback))));
     }
 }

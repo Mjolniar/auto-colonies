@@ -193,7 +193,7 @@ public class CATasc {
             v += CAConditions.value(m, "inimical_biosphere", prof);   // added for good when it's built
             if (v <= 0f) return false;
             p.fx[0] += v;
-            p.lines.add("Park income scales with accessibility and stability; adds a permanent inimical biosphere");
+            p.lines.add("Park income scales with accessibility and stability. Adds a permanent inimical biosphere");
             return true;
         }
         if (id.equals("BOGGLED_KLETKA_SIMULATOR")) {
@@ -289,7 +289,7 @@ public class CATasc {
         try { CARefl.invoke(start, p.raw); }
         catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "starting TASC project failed at " + m.getName(), t);
-            return "That failed; see starsector.log";
+            return "Failed. See starsector.log";
         }
         cache.remove(m.getId());
         if (!CABreaker.check(START, running(m) != null, m.getName())) return "TASC didn't start it";

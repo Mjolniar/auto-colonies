@@ -234,7 +234,7 @@ final class CAAutonomy {
         CATheme.heading(t, "Autonomy (Nexerelin)", 0f);
         // 0.3.0.0 (WS-F3 fix, research 04 section 7 #6): the mode as a readout, one short line and who qualifies on hover (was 60 words)
         CATheme.mode(t, CASettings.AUTONOMY_NAMES[Math.max(0, Math.min(2, s.autonomyMode))]);
-        t.addPara("Autonomous colonies give %s of profit or loss, outside the colony limit; taking one back costs %s unrest.",
+        t.addPara("Autonomous colonies give %s of profit or loss, outside the colony limit. Taking one back costs %s unrest.",
                 4f, hl, Math.round(incomeMult() * 100f) + "%", "" + REVOKE_UNREST);
         tidy(d);
         Emergency e = emergency(s);

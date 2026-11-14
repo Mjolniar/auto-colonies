@@ -99,7 +99,7 @@ public class CADiagnostics {
             }
             if (CATasc.unsafeToProbe(spec)) {   // spawns entities, removes itself, or fails without a planet: never test-built
                 industries.put(spec.getId(), Level.ANALYZED);
-                addIssue("building", spec.getId(), spec.getName(), mod, Level.ANALYZED, "TASC building whose effects need its planet or time; left to you");
+                addIssue("building", spec.getId(), spec.getName(), mod, Level.ANALYZED, "Left to you: a TASC building whose effects need its planet or time");
                 continue;
             }
             String detail = probeIndustry(spec, probe);
@@ -123,7 +123,7 @@ public class CADiagnostics {
             }
             conditions.put(spec.getId(), Level.ANALYZED);
             addIssue("condition", spec.getId(), spec.getName(), src.getId(), Level.ANALYZED,
-                    "Unmapped condition; read only through the colony's live stats");
+                    "Unmapped condition. Read through the colony's live stats only");
         }
         for (SpecialItemSpecAPI spec : Global.getSettings().getAllSpecialItemSpecs()) {
             ModSpecAPI src = spec.getSourceMod();
@@ -252,7 +252,7 @@ public class CADiagnostics {
         if (first) try { CACache.bump("start paused"); } catch (Throwable ignored) { }   // evaluations kept today still offered it
         if (first) LOG.warn(TAG + "vanilla building " + industryId + " failed in " + where + "; not started again this session (a reload tries again)", t);
         addIssue("building", industryId, spec == null ? industryId : spec.getName(), "vanilla", Level.QUARANTINED,
-                "Paused for this session: " + where + " failed (" + what + "). A vanilla building is never quarantined for a planning error; a failed start pauses it until the next load");
+                "Paused for this session: " + where + " failed (" + what + "). Vanilla buildings are not quarantined for planning errors. A failed start pauses one until the next load");
         reportLater();
     }
 

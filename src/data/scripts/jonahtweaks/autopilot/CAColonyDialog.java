@@ -278,7 +278,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         plugin.navW = CANav.W;
         TooltipMakerAPI nav = content.createUIElement(CANav.W, H, false);
         nav.addTitle(market.getName().toUpperCase(java.util.Locale.ROOT));
-        CATheme.readout(nav, 2f, "AP\\\\ " + (c.mode == null ? "advisor" : c.mode.name()), c.profile == null ? null : c.profile.name());
+        CATheme.readout(nav, 2f, "Mode: " + (c.mode == null ? CAData.Mode.ADVISOR.label : c.mode.label), c.profile == null ? null : "Goal: " + c.profile.label);
         CANav.render(nav, pages, page);
         content.addUIElement(nav).inTL(0f, 0f);
 

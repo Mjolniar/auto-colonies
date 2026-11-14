@@ -309,7 +309,7 @@ public class CABuildout {
             return;
         }
         float days = c.buildoutProfitSince == 0L ? 0f : Global.getSector().getClock().getElapsedDaysSince(c.buildoutProfitSince);
-        t.addPara("Floor %s. Net income %s a month" + (days > 0f ? "; %s of 30 days earning." : "."), 6f,
+        t.addPara("Floor %s. Net income %s a month" + (days > 0f ? ". %s of 30 days earning." : "."), 6f,
                 Misc.getHighlightColor(), Misc.getDGSCredits(floor(c)), Misc.getDGSCredits(m.getNetIncome()), "" + (int) days);
         CATheme.hover(t, hoverText());
         if (CAThreat.isHigh(m)) t.addPara("High threat: defenses wait until it ends.",

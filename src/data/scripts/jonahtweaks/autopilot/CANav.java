@@ -19,7 +19,7 @@ final class CANav {
 
     static void render(TooltipMakerAPI nav, List<String[]> pages, String current) {
         for (String[] p : pages) {
-            if (p[0] == null) { nav.addPara(CALog.esc("// " + p[1].toUpperCase(java.util.Locale.ROOT)), Misc.getGrayColor(), 12f); continue; }
+            if (p[0] == null) { nav.addPara(CALog.esc(p[1].toUpperCase(java.util.Locale.ROOT)), Misc.getGrayColor(), 12f); continue; }
             boolean on = p[0].equals(current);
             nav.addButton((on ? "> " : "  ") + p[1].toUpperCase(java.util.Locale.ROOT), PREFIX + p[0], on ? Misc.getHighlightColor() : Misc.getBasePlayerColor(),
                     Misc.getDarkPlayerColor(), Alignment.LMID, CutStyle.TL_BR, W - 6f, 24f, 4f);

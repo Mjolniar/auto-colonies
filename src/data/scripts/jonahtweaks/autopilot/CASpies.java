@@ -616,10 +616,10 @@ public class CASpies {
             t.addPara("Recruiting for %s: %s days left.", 4f, hl, roleName(e.getKey()), "" + (int) Math.ceil(left));
         }
         // 0.3.0.0 (WS-F3 fix, research 04 section 7 #7): one line, the roles on hover (two paragraphs of 37 and 69 words)
-        t.addPara("Agent one: security; two: relations; three, with offense: sabotage.", gray, 4f);
+        t.addPara("Agent one: security. Two: relations. Three, with offense: sabotage.", gray, 4f);
         CATheme.hover(t, "A recruit costs 12,000 plus the fee and takes " + Math.round(RECRUIT_DAYS) + " days.");
         List<AgentIntel> all = agents(mgr), mine = managed(d, mgr);
-        if (all.isEmpty()) t.addPara(s.spyMode != 0 && !s.spyNoHiring ? "No agents; Autopilot hires one when there is work." : "No agents.", gray, 6f);
+        if (all.isEmpty()) t.addPara(s.spyMode != 0 && !s.spyNoHiring ? "No agents. Autopilot hires one when there is work." : "No agents.", gray, 6f);
         for (AgentIntel a : all) {
             boolean auto = mine.contains(a);
             String role = auto ? d.spyRoles().get(a.getAgent().getId()) : null;

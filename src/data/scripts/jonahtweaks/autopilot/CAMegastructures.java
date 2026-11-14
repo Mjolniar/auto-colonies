@@ -319,7 +319,7 @@ public class CAMegastructures {
                         : tgt.equals(now) ? "best settings (" + describe(g, now) + ")" : "recommends " + describe(g, tgt);
             } catch (Throwable e) { state = "settings can't be read"; }
             CAHypershunt.Section next = nextRestore(g);
-            t.addPara("%s, %s (%s): %s of %s sections; %s." + (next != null ? " Next: " + CALog.esc(next.name) + "." : ""), 8f, hl,
+            t.addPara("%s, %s (%s): %s of %s sections, %s." + (next != null ? " Next: " + CALog.esc(next.name) + "." : ""), 8f, hl,
                     g.name, g.m.getName(), c.mode.label, "" + done, "" + g.sections.size(), state);
         }
         t.addPara("Apply settings and restorations on the colony's panel.", gray, 4f);
@@ -343,9 +343,9 @@ public class CAMegastructures {
             } else if (!now.isEmpty()) t.addPara("These are the best settings.", gray, 4f);
         } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "megastructure settings failed at " + m.getName(), e); }
         if (c.megaManual) {
-            t.addPara("You set it; Autopilot leaves it.", gray, 4f);
+            t.addPara("You set it. Autopilot leaves it.", gray, 4f);
             t.addButton("Let Autopilot manage it", CAColonyDialog.MEGA + "manage:x", base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
         }
-        t.addPara(g.kind.equals(PLUTO) ? "Full laser; ore goes to the Purification Core." : "Manpower goes to the Nexus Core while its inputs are supplied.", gray, 6f);
+        t.addPara(g.kind.equals(PLUTO) ? "Full laser. Ore goes to the Purification Core." : "Manpower goes to the Nexus Core while its inputs are supplied.", gray, 6f);
     }
 }

@@ -80,7 +80,7 @@ public class CAIntel extends BaseIntelPlugin {
         } catch (Throwable e) {
             // 0.3.0.0 (WS-F2): a prompt that fails still opens, with a line instead of the details
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "confirmation text failed", e);
-            prompt.addPara("Go ahead? " + CATheme.NOT_SHOWN, 0f);
+            prompt.addPara("Details: " + CATheme.NOT_SHOWN, 0f);
         }
     }
     @Override public String getSortString() { return "Colony Autopilot"; }
@@ -192,7 +192,7 @@ public class CAIntel extends BaseIntelPlugin {
         nav.addTitle("AUTOPILOT\\\\ CORE");
         int auto = 0;
         for (MarketAPI m : markets) if (data.colony(m.getId()).mode == CAData.Mode.AUTO) auto++;
-        CATheme.readout(nav, 2f, "online", auto + " of " + markets.size() + " auto");
+        CATheme.readout(nav, 2f, "Online", auto + " of " + markets.size() + " Auto");
         CANav.render(nav, pages, page);
         panel.addUIElement(nav).inTL(0f, 0f);
 
@@ -226,7 +226,7 @@ public class CAIntel extends BaseIntelPlugin {
             t.addPara("New upkeep this month: %s of %s (%s).", 4f, hl, Misc.getDGSCredits(s.upkeepAdded), Misc.getDGSCredits(CABudget.upkeepCap(s)),
                     s.upkeepCapAuto ? "automatic, at least " + Misc.getDGSCredits(CABudget.UPKEEP_FLOOR) : "fixed");
             // 0.3.0.0 (B5, research 03 F4): colony net runs the budget; cash flow (the whole report) is only for what you can afford
-            t.addPara("Colony net: %s a month (%s-month median); cash flow %s.", 4f, hl,
+            t.addPara("Colony net: %s a month (%s-month median). Cash flow: %s.", 4f, hl,
                     Misc.getDGSCredits(CABudget.netIncome(s)), String.valueOf(CABudget.NET_MONTHS), Misc.getDGSCredits(CABudget.cashFlow(s)));
             // 0.3.0.0 (B3): the planner's last pass, what it's saving up for and the upkeep room it keeps
             try { for (String line : CAPlanner.status()) t.addPara(CALog.esc(line), gray, 4f); }
@@ -264,7 +264,7 @@ public class CAIntel extends BaseIntelPlugin {
             }
 
             CATheme.heading(t, "Colonies", 12f);
-            if (markets.isEmpty()) t.addPara("You have no colonies yet.", gray, 8f);
+            if (markets.isEmpty()) t.addPara("No colonies yet.", gray, 8f);
             else {
                 // 0.3.0.0 (A4 fix, 07 M6): the picks below are what the daily pass kept; this scores the out-of-date ones now
                 ButtonAPI rb = t.addButton("Refresh picks", REFRESH, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 22f, 6f);
@@ -483,7 +483,7 @@ public class CAIntel extends BaseIntelPlugin {
             }
         }
         for (Map.Entry<String, String> e : CABreaker.tripped().entrySet())
-            t.addPara("Paused: %s (no effect three times; last at " + CALog.esc(e.getValue()) + ")", 4f, Misc.getNegativeHighlightColor(), e.getKey());
+            t.addPara("Paused: %s. No effect three times. Last: " + CALog.esc(e.getValue()) + ".", 4f, Misc.getNegativeHighlightColor(), e.getKey());
         for (Map.Entry<String, String> e : CAStep.broken().entrySet())
             t.addPara("Stopped this session: %s (" + CALog.esc(e.getValue()) + ")", 4f, Misc.getNegativeHighlightColor(), e.getKey());
         if (!CAConst.drift.isEmpty()) t.addPara("Mod values changed (new ones used): " + CALog.esc(String.join("; ", CAConst.drift)), gray, 4f);

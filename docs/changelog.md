@@ -1,5 +1,15 @@
 # Patch notes
 
+## 0.3.5.0 - 2026-11-13
+
+- Settings page: Rows read "Label: value." A row off its recommendation adds "Recommended: X." A row you set adds "Set by you."
+- Factions and War pages: Faction rows read "Faction: stance." followed by the relation and markets as a sentence.
+- Panels: The line under each panel title reads "Mode: Auto. Goal: Balanced." The empire panel reads "Online. 3 of 5 Auto."
+- Intel pages and colony panel: Clauses joined by semicolons are separate sentences (budget, surplus, expansion, war, hypershunt, megastructures, projects, agents, Low profile).
+- Reason lines: Station augments, AotD synergies, TASC, Roider Union, Planetary Shield and Secondary Drydocks reasons use short sentences.
+- Plan steps: Mining and Fuel Production steps read "(vanilla Mining only)" and "(vanilla Fuel Production only)" next to IndEvo's and IX's versions. Mild climate reads "started by you".
+- Diagnostics: Integration status lines and left-to-you reasons use short sentences.
+
 ## 0.3.4.0 - 2026-11-13
 
 - Settings: With LunaLib enabled, every Settings page option is in LunaLib's settings menu (F3 by default), Auto Colonies. General tab: the main rows. Advanced tab: one header per Advanced group.

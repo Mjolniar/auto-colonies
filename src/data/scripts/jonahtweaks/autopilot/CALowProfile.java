@@ -468,7 +468,7 @@ public class CALowProfile {
             t.addPara("Off (Settings, Expansion style).", gray, 6f);
             return;
         }
-        t.addPara("On: crisis progress counts %s; a rule lifts once its crisis ends.", 6f, hl, "x" + (int) PRICE_MULT);
+        t.addPara("On: crisis progress counts %s. A rule lifts once its crisis ends.", 6f, hl, "x" + (int) PRICE_MULT);
         rule(t, "Hegemony", hegemony(), "no AI cores above size 3", hl, good);
         rule(t, "Luddic Path", pather(), "no colony reaches " + (int) cellLine() + " Pather interest", hl, good);
         rule(t, "Luddic Church", church(), "Luddic-majority colonies are priced in", hl, good);
@@ -481,6 +481,6 @@ public class CALowProfile {
 
     static void rule(TooltipMakerAPI t, String who, boolean live, String what, Color hl, Color good) {
         if (live) t.addPara("%s: " + what + ".", 4f, hl, who);
-        else t.addPara("%s: crisis over for good; rule lifted.", 4f, good, who);
+        else t.addPara("%s: crisis over for good. Rule lifted.", 4f, good, who);
     }
 }
