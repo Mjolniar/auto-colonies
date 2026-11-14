@@ -40,7 +40,7 @@ public final class CAMilitary {
     private CAMilitary() { }
 
     /** Days a rejected proposal holds that upgrade at that colony off. */
-    static final float REJECT_DAYS = 30f;
+    static final float REJECT_DAYS = CATuning.ASK_HOLD_DAYS;
     /** CAMark key prefix: a rejected proposal, "milno:<marketId>|<building id>". */
     static final String REJECTED = "milno:";
     /** 0.3.0.0 (C3 fix): CAMark key prefix: an upgrade the rung started, "milup:<marketId>|<building now>|<building it started from>". */

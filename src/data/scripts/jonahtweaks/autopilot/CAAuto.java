@@ -45,11 +45,11 @@ public class CAAuto {
     static final Map<String, String> rejectedId = new HashMap<String, String>();
     static final Map<String, Float> rejectedUntil = new HashMap<String, Float>();
 
-    /** Remembers a rejection at a colony for MAX_WAIT days. 0.3.3.0: also as a saved mark, so a load keeps the hold. */
+    /** Remembers a rejection at a colony for REJECT_HOLD days. 0.3.3.0: also as a saved mark, so a load keeps the hold. */
     static void noteRejected(String marketId, String pickId, float now) {
         if (marketId == null || pickId == null) return;
         rejectedId.put(marketId, pickId);
-        rejectedUntil.put(marketId, now + MAX_WAIT);
+        rejectedUntil.put(marketId, now + REJECT_HOLD);
         CAMark.set(REJECT_MARK + marketId + "|" + pickId, CAMark.now());
     }
 
@@ -60,7 +60,7 @@ public class CAAuto {
     static float markedDays(String marketId, String pickId) {
         Long at = CAMark.at(REJECT_MARK + marketId + "|" + pickId);
         if (at == null) return 0f;
-        float left = MAX_WAIT - CAMark.days(at, CAMark.now());
+        float left = REJECT_HOLD - CAMark.days(at, CAMark.now());
         if (left > 0f) return left;
         CAMark.clear(REJECT_MARK + marketId + "|" + pickId);
         return 0f;
@@ -73,11 +73,14 @@ public class CAAuto {
         Float until = rejectedUntil.get(marketId);
         if (until == null) return 0f;
         float left = until - now;
-        return left > 0f && left <= MAX_WAIT + 1f ? left : 0f;
+        return left > 0f && left <= REJECT_HOLD + 1f ? left : 0f;
     }
 
     /** Longest wait Autopilot sets before a colony's next look: 30 days after you reject a proposal. */
     static final float MAX_WAIT = 30f;
+
+    /** 0.3.6.4: days a rejected pick is held at its colony (180). The colony still looks again after MAX_WAIT. */
+    static final float REJECT_HOLD = CATuning.ASK_HOLD_DAYS;
 
     /**
      * Pure cadence rule (07 H4; 0.3.0.0 pulled it out so JTStepCheck tests it): a colony gets a pass when a build finished
@@ -512,7 +515,7 @@ public class CAAuto {
         // 0.3.0.0 (A1): from today on the game clock; lastNow was 0 until the first pass after a load, so a rejection then wasn't held
         float now = CATime.now();
         nextPass.put(m.getId(), now + MAX_WAIT);
-        noteRejected(m.getId(), id, now);   // 0.3.0.0 (B3 fix): the planner doesn't propose or start it there for 30 days, whatever wakes the colony
+        noteRejected(m.getId(), id, now);   // the planner doesn't propose or start it there for REJECT_HOLD days (180), whatever wakes the colony
     }
 
     public static MarketAPI market(String id) {

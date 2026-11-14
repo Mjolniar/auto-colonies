@@ -37,7 +37,7 @@ import java.util.*;
  *   fix: rule-only and module actions fit within the cap, as in 0.2.45.1). Fix: the hold keeps the room from that roll-over
  *   on, not for the rest of the month it was set in, which its step could never use.
  * - Fix: defenses at a colony under siege are emergencies, as in 0.2.45.1: never held for the earmark or the upkeep hold.
- * - Fix: a proposal you rejected isn't proposed (or started) again at that colony for 30 days, whatever wakes it.
+ * - Fix: a proposal you rejected isn't proposed (or started) again at that colony for 180 days (0.3.6.4), whatever wakes it.
  * - The plan's own TME projects (CATerraform) and CAItems' paid core, item and administrator moves don't offer actions yet
  *   (deferred to 0.3.0.x): they still spend in their own steps after this pass, but ask setAside first, so they never spend
  *   what's saved up for the earmarked pick or take the upkeep room kept for the hold.
@@ -452,7 +452,7 @@ public class CAPlanner {
             a.started = false; a.dropped = false; a.passed = false; a.reason = null; a.reasonKind = null; a.failWaits = false; a.openWait = false;
             if (!a.worthwhile()) { mark(a, true, CAAction.WORTHLESS, "doesn't pay back its price within the horizon"); continue; }
             if (a.tombstone > 0f) { mark(a, true, CAAction.TOMBSTONE, "was taken down here; not built again for " + Math.round(a.tombstone) + " more days"); continue; }
-            // 0.3.0.0 (B3 fix): you rejected it here: not proposed or started again till the rejection's 30 days are up
+            // 0.3.0.0 (B3 fix): you rejected it here: not proposed or started again till the rejection's 180 days are up
             if (a.rejected > 0f) { mark(a, true, CAAction.REJECTED, "you turned it down; not proposed again for " + Math.max(1, Math.round(a.rejected)) + " more days"); continue; }
             alive.add(a);
         }
@@ -1026,7 +1026,7 @@ public class CAPlanner {
         a.approveOnly = approveOnly;
         if (!approveOnly) a.approval = approval(m, p, s);
         a.tombstone = tombstoneDays(m.getId(), p.id);
-        a.rejected = CAAuto.rejectedDays(m.getId(), p.id, CATime.now());   // 0.3.0.0 (B3 fix): you rejected it here within 30 days
+        a.rejected = CAAuto.rejectedDays(m.getId(), p.id, CATime.now());   // 0.3.0.0 (B3 fix): you rejected it here within 180 days
         a.payload = new PickRef(c, p, remove);
         a.starter = PICK_START;
         a.rescore = PICK_RESCORE;

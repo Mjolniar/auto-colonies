@@ -407,7 +407,7 @@ public class CAHypershunt {
                 if (err == null) CABudget.charge(CAData.settings(), nn.monthlyCredits, 0f, nn.upkeep);
                 return err;
             }, "Restoration of the " + next.name + " at " + m.getName() + " will begin.", "It costs " + cost + ".",
-                    "If you reject it, it will not be offered again for 30 days.");
+                    "If you reject it, it will not be offered again for " + CAApprovals.holdText("restore") + ".");
             return;
         }
         if (next.total() > CAPresets.projectCap(s)) {   // 0.3.0.0 (WS-F1 fix): the cap in effect

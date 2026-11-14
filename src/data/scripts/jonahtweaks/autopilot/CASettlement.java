@@ -341,7 +341,7 @@ public class CASettlement {
             kind = "facility"; id = f.id; cost = f.cost;
             name = "Build " + f.name + " at the settlement (+" + Misc.getDGSCredits(f.gain) + "/month)";
         }
-        if (rejected(kind, id)) return;   // 0.3.3.0: you rejected it within 30 days
+        if (rejected(kind, id)) return;   // you rejected it within 180 days
         if (approve || cost > CAPresets.projectCap(s)) { propose(d, kind, id, name, cost, approve ? CAPlanner.APPROVE_MODE : "Approval needed: over the per-project cap"); return; }
         float total = cost + CABudget.constructionFee(s, cost);
         if (total > CABudget.available(s)) {
@@ -358,12 +358,12 @@ public class CASettlement {
         CAApprovals.say("Settlement: Proposal: " + name + " for " + Misc.getDGSCredits(cost) + ". " + why + ".", true);
     }
 
-    /** 0.3.3.0: a rejected proposal is held 30 days (saved mark "settleno:<kind>:<id>"); an older mark is cleared. */
+    /** A rejected proposal is held CATuning.ASK_HOLD_DAYS (180) (saved mark "settleno:<kind>:<id>"); an older mark is cleared. */
     static boolean rejected(String kind, String id) {
         String key = "settleno:" + kind + ":" + id;
         Long at = CAMark.at(key);
         if (at == null) return false;
-        if (CAMark.days(at, CAMark.now()) < 30f) return true;
+        if (CAMark.days(at, CAMark.now()) < CATuning.ASK_HOLD_DAYS) return true;
         CAMark.clear(key);
         return false;
     }
@@ -482,7 +482,7 @@ public class CASettlement {
     public static void handle(String action, String id, CAData d, CASettings s) {
         if ("reject".equals(action)) {
             if (d.settlePendingName != null) CALog.did("Settlement: Proposal rejected: " + d.settlePendingName + ".");
-            if (d.settlePendingKind != null) CAMark.set("settleno:" + d.settlePendingKind + ":" + d.settlePendingId, CAMark.now());   // 0.3.3.0: held 30 days
+            if (d.settlePendingKind != null) CAMark.set("settleno:" + d.settlePendingKind + ":" + d.settlePendingId, CAMark.now());   // held 180 days
             clearPending(d);
             return;
         }

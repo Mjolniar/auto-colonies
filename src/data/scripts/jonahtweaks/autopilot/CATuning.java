@@ -145,8 +145,8 @@ public final class CATuning {
     public static final float PRUNE_BELOW_DAYS = 30f, PRUNE_GAP_DAYS = 30f, PRUNE_EVERY_DAYS = 5f;
     /** CAOverLimit (0.2.42.1): days between two industries shed at a colony, and between two alerts while a colony sits at 0 stability. */
     public static final float OVER_LIMIT_GAP_DAYS = 1f, OVER_LIMIT_ALERT_DAYS = 30f;
-    /** CAApprovals (0.3.5.1): days a rejected live ask is held; autonomy a year (a rejected autonomy offer comes back too soon at 30). */
-    public static final float ASK_HOLD_DAYS = 30f, AUTONOMY_HOLD_DAYS = 365f;
+    /** 0.3.6.4: days any rejected proposal is held (builds, settlements, shipyard, stockpiles, military, live asks); autonomy a year. */
+    public static final float ASK_HOLD_DAYS = 180f, AUTONOMY_HOLD_DAYS = 365f;
     /** CAOverLimit: days between two stability-costing buildings taken down at 0, and how long one stays off the capital's plan. */
     public static final float OVER_LIMIT_SHED_DAYS = 10f, OVER_LIMIT_SHED_HOLD_DAYS = 365f;
     /** CAOverLimit: days at 0 stability before a stability-costing building is taken down (decivilization takes months at 0). */

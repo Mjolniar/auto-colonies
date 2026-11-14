@@ -52,7 +52,7 @@ public class CAShipyard {
     public static class Order { public String hullId; public int qty; public float cost; public long month; }
 
     /** Days between looks, days a rejected proposal holds the next one off. */
-    static final float LOOK_DAYS = 7f, REJECT_DAYS = 30f;
+    static final float LOOK_DAYS = 7f, REJECT_DAYS = CATuning.ASK_HOLD_DAYS;
     /** Order lines kept before each hull's lines are joined into one (0.3.0.0, C3 fix: none is dropped while its hulls are unclaimed). */
     static final int MAX_ORDERS = 60;
     /** CAMark key: when you last rejected a proposal. */

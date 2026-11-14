@@ -70,7 +70,7 @@ public class CAStockpile {
     /** Months of draw bought at most, and the cover under which it buys again. */
     static final float MONTHS = 3f, REFILL_MONTHS = 1f;
     /** Days between looks; purchases a look at most; days a rejected proposal holds that good at that colony off. */
-    static final float LOOK_DAYS = 7f, REJECT_DAYS = 30f;
+    static final float LOOK_DAYS = 7f, REJECT_DAYS = CATuning.ASK_HOLD_DAYS;
     static final int MAX_BUYS = 3;
     /** Sources looked at per good (nearest first). */
     static final int MAX_SOURCES = 12;

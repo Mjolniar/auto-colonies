@@ -19,7 +19,7 @@ public final class CAApprovals {
     private CAApprovals() { }
 
     public static final String EMPIRE = "Empire";
-    /** Days a rejected live ask is held. 0.3.5.1: autonomy is held a year (holdDays). */
+    /** Days a rejected live ask is held (180). Autonomy is held a year (holdDays). */
     static final float HOLD_DAYS = CATuning.ASK_HOLD_DAYS;
 
     /** Pure (0.3.5.1): days a rejected live ask of this kind is held: autonomy CATuning.AUTONOMY_HOLD_DAYS, the rest HOLD_DAYS. */
@@ -28,7 +28,7 @@ public final class CAApprovals {
     /** Pure (0.3.5.1): whether a rejection this many days old still holds an ask of this kind. */
     static boolean holds(String kind, float days) { return days < holdDays(kind); }
 
-    /** "a year" or "30 days", for the If rejected line. */
+    /** "a year" or "180 days", for the If rejected line. */
     static String holdText(String kind) { float d = holdDays(kind); return d >= 365f ? "a year" : Math.round(d) + " days"; }
 
     public interface Act { String run(); }
@@ -359,7 +359,7 @@ public final class CAApprovals {
         }
     }
 
-    /** Rejects one item (each kind holds it: builds and live asks 30 days, autonomy a year, expeditions 180). Returns null or the reason. */
+    /** Rejects one item (each kind holds it: 180 days, autonomy a year). Returns null or the reason. */
     public static String reject(Item it) {
         if (it == null || it.reject == null) return "Not available";
         try { return it.reject.run(); }
