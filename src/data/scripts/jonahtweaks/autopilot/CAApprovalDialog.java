@@ -11,6 +11,9 @@ import com.fs.starfarer.api.campaign.InteractionDialogPlugin;
 import com.fs.starfarer.api.campaign.OptionPanelAPI;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.campaign.TextPanelAPI;
+import com.fs.starfarer.api.campaign.PlanetAPI;
+import com.fs.starfarer.api.campaign.VisualPanelAPI;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import com.fs.starfarer.api.combat.EngagementResultAPI;
 import com.fs.starfarer.api.ui.Alignment;
@@ -39,6 +42,8 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
             ONE_YES = "ca:sum:yes", ONE_NO = "ca:sum:no", ONE_NEXT = "ca:sum:next";
     /** Item lines in the dialog's text before "N more under Choose each". */
     static final int MAX_LINES = 12;
+    /** 0.3.3.5: the first this many decisions show their detail lines in the summary text; Choose each shows them all. */
+    static final int DETAILED = 4;
     static final float W = 760f, H = 520f;
     static final long LOAD_GRACE_MS = 10000L, SAFE_MS = 3000L;
     /** The interval's choices on the Settings page (-1 Off). */
@@ -144,9 +149,63 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
     public void init(InteractionDialogAPI dialog) {
         this.dialog = dialog;
         dialog.setPromptText("Colony Autopilot");
-        try { dialog.hideVisualPanel(); } catch (Throwable ignored) { }
+        showVisual();
         summary();
         options();
+    }
+
+    // ---------------- 0.3.3.5: the picture, like a vanilla event ----------------
+
+    /** Pure: the vanilla illustration for a kind of decision (all present in 0.98a and 0.98.5a). */
+    static String imageFor(String kind) {
+        if (kind == null) return "orbital_construction";
+        switch (kind) {
+            case "autonomy": return "city_from_above";
+            case "expand": case "settle": return "vacuum_colony";
+            case "hypershunt": case "restore": case "megastructure": return "terran_orbit";
+            case "augments": return "orbital";
+            case "shipyard": case "stock": return "industrial_megafacility";
+            default: return "orbital_construction";
+        }
+    }
+
+    /** Pure: the illustration for most of these decisions. */
+    static String illustration(List<CAApprovals.Item> items) {
+        Map<String, Integer> n = new HashMap<String, Integer>();
+        String best = "orbital_construction";
+        int top = 0;
+        for (CAApprovals.Item it : items) {
+            String id = imageFor(it.kind);
+            int c = n.containsKey(id) ? n.get(id) + 1 : 1;
+            n.put(id, c);
+            if (c > top) { top = c; best = id; }
+        }
+        return best;
+    }
+
+    /** Pure: the market id when every decision is at that one colony, else null. */
+    static String oneColony(List<CAApprovals.Item> items) {
+        String id = null;
+        for (CAApprovals.Item it : items) {
+            if (it.marketId == null) return null;
+            if (id == null) id = it.marketId;
+            else if (!id.equals(it.marketId)) return null;
+        }
+        return id;
+    }
+
+    /** The colony's world when every decision is at one planet, else a vanilla illustration; no picture if both fail. */
+    void showVisual() {
+        try {
+            VisualPanelAPI v = dialog.getVisualPanel();
+            List<CAApprovals.Item> open = open();
+            String only = oneColony(open);
+            MarketAPI m = only == null ? null : Global.getSector().getEconomy().getMarket(only);
+            if (m != null && m.getPrimaryEntity() instanceof PlanetAPI) { v.showPlanetInfo(m.getPrimaryEntity()); return; }
+            v.showImagePortion("illustrations", illustration(open), 640, 400, 0, 0, 480, 300);
+        } catch (Throwable t) {
+            try { dialog.hideVisualPanel(); } catch (Throwable ignored) { }
+        }
     }
 
     void summary() {
@@ -156,16 +215,24 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
         List<CAApprovals.Item> open = open();
         t.addPara("Decisions: %s. Credits %s. Reserve %s.", hl, String.valueOf(open.size()), Misc.getDGSCredits(CABuild.credits()),
                 Misc.getDGSCredits(s.reserve));
-        int lines = 0;
+        para(t, "Nothing changes until you choose, and Autopilot never spends below the reserve. Later keeps every decision open: this "
+                + "summary comes back in " + Math.max(1, s.approvalDays) + " days, and the list stays on the Intel screen (Colony Autopilot, "
+                + "Colonies page, Waiting for approval).", gray);
+        int lines = 0, detailed = 0;
         for (Map.Entry<String, List<CAApprovals.Item>> g : CAApprovals.group(open).entrySet()) {
             if (lines >= MAX_LINES) break;
             para(t, g.getKey() + ":", hl);
             for (CAApprovals.Item it : g.getValue()) {
                 if (lines++ >= MAX_LINES) break;
                 para(t, "  " + line(it), Misc.getTextColor());
+                if (detailed < DETAILED) {
+                    detailed++;
+                    for (String d : it.details) para(t, "    " + d, gray);
+                }
             }
         }
         if (open.size() > MAX_LINES) para(t, (open.size() - MAX_LINES) + " more under Choose each.", gray);
+        if (open.size() > DETAILED) para(t, "Choose each shows the details of every decision.", gray);
     }
 
     void options() {
@@ -176,12 +243,13 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
             float total = 0f;
             for (CAApprovals.Item it : open) total += it.total();
             o.addOption("Approve all (" + open.size() + ", " + Misc.getDGSCredits(total) + ")", APPROVE_ALL);
-            o.addOptionConfirmation(APPROVE_ALL, "Approve " + open.size() + " for " + Misc.getDGSCredits(total) + " with fees.", "Approve all", "Back");
-            o.addOption("Choose each", CHOOSE);
+            o.addOptionConfirmation(APPROVE_ALL, "Approve all " + open.size() + " for " + Misc.getDGSCredits(total) + " with fees? One that doesn't fit the reserve stays open.", "Approve all", "Back");
+            o.addOption("Choose each (" + open.size() + ")", CHOOSE);
             o.addOption("Reject all", REJECT_ALL);
-            o.addOptionConfirmation(REJECT_ALL, "Reject " + open.size() + ".", "Reject all", "Back");
+            o.addOptionConfirmation(REJECT_ALL, "Reject all " + open.size() + "? They come back after 30 days (expeditions 180).", "Reject all", "Back");
         }
-        o.addOption(open.isEmpty() ? "Close" : "Later", LATER);
+        int days = Math.max(1, CAData.settings().approvalDays);
+        o.addOption(open.isEmpty() ? "Close" : "Later (back in " + days + " days)", LATER);
         o.setShortcut(LATER, Keyboard.KEY_ESCAPE, false, false, false, true);
     }
 
@@ -258,6 +326,7 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
         if (one < 0 || one >= open.size()) { one = -1; options(); return; }
         CAApprovals.Item it = open.get(one);
         para(dialog.getTextPanel(), (one + 1) + " of " + open.size() + ". " + it.place + ": " + line(it), Misc.getHighlightColor());
+        for (String d : it.details) para(dialog.getTextPanel(), "    " + d, Misc.getGrayColor());
         o.addOption("Approve", ONE_YES);
         o.addOption("Reject", ONE_NO);
         o.addOption("Next", ONE_NEXT);
@@ -363,7 +432,7 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
                     LabelAPI l = t.addPara(CALog.esc(line(it)), 0f);
                     l.getPosition().rightOfMid(n, 10f);
                     CALog.endRow(t, y);
-                    if (it.why != null && !it.why.isEmpty()) t.addPara(CALog.esc(it.why), gray, 2f);
+                    for (String d : it.details) t.addPara(CALog.esc(d), gray, 2f);   // 0.3.3.5: what it does, costs, why
                 }
             }
             content.addUIElement(t).inTL(0f, 0f);

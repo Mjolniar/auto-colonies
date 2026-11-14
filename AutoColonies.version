@@ -5,7 +5,7 @@
   "modVersion": {
     "major": 0,
     "minor": 3,
-    "patch": "3.4"
+    "patch": "3.5"
   },
   "directDownloadURL": "https://github.com/Mjolniar/auto-colonies/releases/latest/download/AutoColonies.zip",
   "changelogURL": "https://raw.githubusercontent.com/Mjolniar/auto-colonies/main/docs/changelog.md"

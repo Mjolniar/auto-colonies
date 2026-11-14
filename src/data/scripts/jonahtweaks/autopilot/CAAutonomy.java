@@ -170,12 +170,19 @@ final class CAAutonomy {
             CAApprovals.say(pick.m.getName() + ": autonomy would save " + Misc.getDGSCredits(pick.saving) + "/month (" + why + "). Grant on the Mod features page.", true);
         // 0.3.3.0: a decision in the approval summary
         final MarketAPI mm = pick.m; final float saving = pick.saving;
+        int share = Math.round(incomeMult() * 100f);
         CAApprovals.offer("autonomy:" + pick.m.getId(), "autonomy", pick.m, "Grant autonomy (saves " + Misc.getDGSCredits(saving) + " a month)", 0f, 0f, why, () -> {
             if (!Global.getSettings().getModManager().isModEnabled(MOD)) return "Nexerelin is off";
             if (!mm.isPlayerOwned()) return "Not your colony now";
             grant(CAData.get(), mm, "your approval", saving);
             return null;
-        });
+        },
+                // 0.3.3.5: what autonomy means, so the summary isn't dismissed without it
+                "What: Nexerelin runs " + mm.getName() + " for you. You keep " + share + "% of its profit or loss.",
+                "Effect: it stops counting against your colony limit, and nothing can be built there while it is autonomous.",
+                "Saves: about " + Misc.getDGSCredits(saving) + " a month. Why: " + why + ".",
+                "Undo: take it back any time under Intel, Colony Autopilot, Mod features. That adds " + REVOKE_UNREST + " unrest.",
+                "If rejected: not offered again for 30 days.");
     }
 
     /** Your order, or Auto's. The colony stays autonomous until you take it back. */
