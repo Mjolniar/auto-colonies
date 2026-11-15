@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.7.6 - 2026-11-15
+
+- Story mode: The Colony page shows the core's status for the colony, the waiting approval, the next plan step, the top build and the Goal and Mode buttons. Colony numbers, Money and capital, Plan and builds, Locks and Mod features open on a click.
+- Story mode: Settings is a page under More. The capital stays automatic unless you pick one, and the refit and sell hubs follow it.
+- Station augments: No colony section. They run on their own (Mod projects in story mode); the empire Mod features page still shows them.
+
 ## 0.3.7.5 - 2026-11-15
 
 - Story mode: The TriPad's summary lists each package switched on once, with one line on what it does. Packages on the Story page show the same line.

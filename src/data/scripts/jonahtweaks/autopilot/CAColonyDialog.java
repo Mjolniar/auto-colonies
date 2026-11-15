@@ -53,6 +53,9 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     String page = "colony", lastPage;
     /** 0.3.7.3: the More page's sub-page (an old intel tab page id); the first one when null. */
     String morePage = null;
+    /** 0.3.7.6: story mode's Colony page: the sections opened (numbers, money, plan, locks, mods); all closed when the panel opens. */
+    final java.util.Set<String> openSec = new java.util.HashSet<String>();
+    static final String SEC = "ca:sec:";
 
     /** Scroll position of the previous build, kept across rebuilds of the same page. */
     float savedScroll() {
@@ -102,6 +105,12 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         // 0.3.7.1: the Empire pages' buttons go to their own handler; a button that asks first waits for Confirm
         if (CONFIRM.equals(id)) { Object p = pending; pending = null; if (p != null) CAIntel.pressEmpire(p); dirty = true; return; }
         if (CANCEL.equals(id)) { pending = null; dirty = true; return; }
+        if (id instanceof String && ((String) id).startsWith(SEC)) {   // 0.3.7.6
+            String sec = ((String) id).substring(SEC.length());
+            if (!openSec.remove(sec)) openSec.add(sec);
+            dirty = true;
+            return;
+        }
         if (id instanceof String && ((String) id).startsWith(MORE)) { morePage = ((String) id).substring(MORE.length()); pending = null; message = null; dirty = true; return; }
         if (CANav.page(id) == null && (page.startsWith(EMP) || page.equals("more"))) {
             if (CAIntel.needsConfirm(id)) pending = id;
@@ -233,7 +242,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         if (CASync.on()) p.add(new String[]{EMP + "story", CASyncPage.navLabel()});
         if (!CASync.dormant()) {
             p.add(new String[]{"colony", c.pendingId != null ? "Colony (approval)" : "Colony"});
-            p.add(new String[]{EMP + "settings", "Settings"});
+            if (!CASync.on()) p.add(new String[]{EMP + "settings", "Settings"});   // 0.3.7.6: story mode keeps it under More
         }
         p.add(new String[]{"more", "More"});
         return p;
@@ -245,7 +254,8 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         List<String[]> emp;
         try { emp = CAIntel.empirePages(); }
         catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "empire page list failed", e); emp = new ArrayList<String[]>(); emp.add(new String[]{"diag", "Diagnostics"}); }
-        for (String[] e : emp) if (e[0] != null && !e[0].equals("story") && !e[0].equals("settings")) out.add(e);
+        boolean story = CASync.on();
+        for (String[] e : emp) if (e[0] != null && !e[0].equals("story") && (story || !e[0].equals("settings"))) out.add(e);
         return out;
     }
 
@@ -256,7 +266,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
         if (CATasc.enabled() && !shunt) l.add("tasc");
         if (mm.isModEnabled(CAHypershunt.MOD) && CAMegastructures.has(market)) l.add("mega");
-        if (mm.isModEnabled(CAAugments.MOD) && s.augmentMode != 2 && !shunt) l.add("augments");
+        // 0.3.7.6: station augments run on their own (Mod projects in story mode); no colony section
         if (mm.isModEnabled(CASynergies.MOD) && !shunt) l.add("synergies");
         if (mm.isModEnabled(CARogue.MOD) && CARogue.any(market)) l.add("rogue");   // 0.3.2.1: Rogue Planets' conditions here
         return l;
@@ -371,7 +381,11 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         CAData.Profile planWith = planWith(c);
 
         boolean all = page.equals("colony");   // 0.3.7.3: the four colony sections on one page
-        if (all || page.equals("overview")) {
+        // 0.3.7.6: story mode: the core's status, the approval, the next step, the top build and the mode up top; the rest in
+        // sections that open on a click
+        boolean story = all && CASync.on();
+        if (story) renderStoryHeader(t, data, c, s, cw, planWith, buildout, shunt, outpost);
+        if (story ? section(t, "numbers", "Colony numbers") : (all || page.equals("overview"))) {
             float threat = CAThreat.estimate(market);
             boolean threatened = threat >= CAThreat.THRESHOLD || c.threatHigh;
             float cell = (cw - 30f) / 4f;
@@ -419,41 +433,12 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             }
             Industry imp = CAStory.bestImprovement(market, c);
             if (imp != null) t.addPara("Best story point use: %s" + (s.storyPointRule == 0 ? " (yours)" : ""), 4f, hl, imp.getCurrentName());
-
-            if (c.pendingId != null) {
-                CATheme.heading(t, CATheme.APPROVAL, 10f);
-                t.addPara("%s for %s, fee %s.", 6f, hl, c.pendingName, Misc.getDGSCredits(c.pendingCost),
-                        Misc.getDGSCredits(CABudget.constructionFee(s, c.pendingCost)));
-                if (c.pendingWhy != null) t.addPara(CALog.esc(c.pendingWhy), gray, 2f);   // 0.3.3.0
-                ButtonAPI a = t.addButton("Approve", APPROVE, hl, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 6f);
-                ButtonAPI r = t.addButton("Reject", REJECT, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 0f);
-                r.getPosition().rightOfTop(a, 6f);
-                CALog.endRow(t, a);
-            }
-
-            CATheme.heading(t, "Goal", 12f);
-            CAData.Profile[] goals = CAData.Profile.values();
-            float goalW = (cw - 12f) / 3f;
-            ButtonAPI prev = null, first = null;
-            for (int i = 0; i < goals.length; i++) {
-                if (i == 3) { CALog.endRow(t, first); prev = null; first = null; }   // two rows of three
-                prev = rowButton(t, prev, goals[i].label, goals[i], goals[i] == c.profile, goalW);
-                if (first == null) first = prev;
-            }
-            CALog.endRow(t, first);
-            CATheme.heading(t, "Mode", 12f);
-            prev = null; first = null;
-            for (CAData.Mode mo : CAData.Mode.values()) { prev = rowButton(t, prev, mo.label, mo, mo == c.mode, (cw - 18f) / 4f); if (first == null) first = prev; }
-            CALog.endRow(t, first);
-            t.addPara(MODE_TEXT[c.mode.ordinal()], gray, 6f);
-            // 0.3.3.0: a colony above the empire mode: one line and a button, no pop-up
-            CAData.Mode em = s.empire();
-            if (c.mode.ordinal() > em.ordinal()) {
-                ButtonAPI eb = t.addButton("Empire mode to " + c.mode.label, EMPIRE, base, dark, Alignment.MID, CutStyle.TL_BR, 220f, 22f, 6f);
-                LabelAPI el = t.addPara(CALog.esc("Empire: " + em.label + "."), gray, 0f);
-                el.getPosition().rightOfMid(eb, 10f);
-                CALog.endRow(t, eb);
-            }
+        }
+        if (!story && (all || page.equals("overview"))) {
+            renderApproval(t, c, s);
+            renderGoalMode(t, c, s, cw, true);
+        }
+        if (story ? section(t, "money", "Money and capital") : (all || page.equals("overview"))) {
             CABuildout.render(t, market, c);
             if (c.mode == CAData.Mode.AUTO && !outpost && !shunt) {
                 try { CASurplus.renderColony(t, market, s, 12f); }
@@ -468,7 +453,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 t.addPara(OUTPOST_LINE, gray, 6f);   // 0.3.0.0 (WS-F3): 53 words down to 16
             }
         }
-        if ((all && !outpost) || page.equals("builds")) {
+        if (story ? (!outpost && section(t, "plan", "Plan and builds")) : ((all && !outpost) || page.equals("builds"))) {
             CAPlan.Plan plan = CAPlan.build(market, planWith);
             CATheme.heading(t, "Plan: " + plan.name + " (" + plan.doneCount(market) + " of " + plan.steps.size() + " done)", all ? 16f : message != null ? 8f : 0f);
             List<String> doneSteps = new ArrayList<String>();
@@ -497,8 +482,8 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 else renderPicks(t, data, planWith, buildout);
             }
         }
-        if (all || page.equals("locks")) {
-            CATheme.heading(t, "Locks", all ? 16f : message != null ? 8f : 0f);
+        if (story ? section(t, "locks", "Locks") : (all || page.equals("locks"))) {
+            if (!story) CATheme.heading(t, "Locks", all ? 16f : message != null ? 8f : 0f);
             t.addPara(LOCKS_LINE, gray, 6f);
             ButtonAPI lockPrev = null, lockFirst = null;
             int inRow = 0;
@@ -515,8 +500,8 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             List<String> odd = CADiagnostics.unsupportedConditions(market);
             if (!odd.isEmpty() && !shunt) t.addPara(CALog.esc("Unmapped conditions: " + odd + ". Scores may be off."), gray, 10f);
         }
-        if (all || page.equals("mods")) {
-            float pad = all ? 16f : message != null ? 8f : 0f;
+        if (story ? (!modSections(c, s, shunt).isEmpty() && section(t, "mods", "Mod features")) : (all || page.equals("mods"))) {
+            float pad = story ? 6f : all ? 16f : message != null ? 8f : 0f;
             for (String id : modSections(c, s, shunt)) {
                 renderMod(t, id, c, s, planWith, pad);
                 pad = 16f;
@@ -526,6 +511,94 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         content.addUIElement(t).inTL(CANav.W + CANav.GAP, 0f);
         root.addComponent(content).inTL(0f, 0f);
         restoreScroll(t, scrollY);
+    }
+
+    /** 0.3.7.6: a story-mode section's toggle row; true when it's open. */
+    boolean section(TooltipMakerAPI t, String id, String label) {
+        boolean open = openSec.contains(id);
+        Color base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
+        t.addButton((open ? "- " : "+ ") + label, SEC + id, base, dark, Alignment.LMID, CutStyle.TL_BR, 260f, 22f, 10f);
+        return open;
+    }
+
+    /** The waiting approval with Approve and Reject. */
+    void renderApproval(TooltipMakerAPI t, CAData.Colony c, CASettings s) {
+        if (c.pendingId == null) return;
+        Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
+        CATheme.heading(t, CATheme.APPROVAL, 10f);
+        t.addPara("%s for %s, fee %s.", 6f, hl, c.pendingName, Misc.getDGSCredits(c.pendingCost),
+                Misc.getDGSCredits(CABudget.constructionFee(s, c.pendingCost)));
+        if (c.pendingWhy != null) t.addPara(CALog.esc(c.pendingWhy), gray, 2f);   // 0.3.3.0
+        ButtonAPI a = t.addButton("Approve", APPROVE, hl, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 6f);
+        ButtonAPI r = t.addButton("Reject", REJECT, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 0f);
+        r.getPosition().rightOfTop(a, 6f);
+        CALog.endRow(t, a);
+    }
+
+    /** The Goal and Mode buttons; with headings and the mode's line in normal mode, bare rows in story mode. */
+    void renderGoalMode(TooltipMakerAPI t, CAData.Colony c, CASettings s, float cw, boolean labels) {
+        Color gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
+        if (labels) CATheme.heading(t, "Goal", 12f);
+        CAData.Profile[] goals = CAData.Profile.values();
+        float goalW = (cw - 12f) / 3f;
+        ButtonAPI prev = null, first = null;
+        for (int i = 0; i < goals.length; i++) {
+            if (i == 3) { CALog.endRow(t, first); prev = null; first = null; }   // two rows of three
+            prev = rowButton(t, prev, goals[i].label, goals[i], goals[i] == c.profile, goalW);
+            if (first == null) first = prev;
+        }
+        CALog.endRow(t, first);
+        if (labels) CATheme.heading(t, "Mode", 12f);
+        prev = null; first = null;
+        for (CAData.Mode mo : CAData.Mode.values()) { prev = rowButton(t, prev, mo.label, mo, mo == c.mode, (cw - 18f) / 4f); if (first == null) first = prev; }
+        CALog.endRow(t, first);
+        if (labels) t.addPara(MODE_TEXT[c.mode.ordinal()], gray, 6f);
+        // 0.3.3.0: a colony above the empire mode: one line and a button, no pop-up
+        CAData.Mode em = s.empire();
+        if (c.mode.ordinal() > em.ordinal()) {
+            ButtonAPI eb = t.addButton("Empire mode to " + c.mode.label, EMPIRE, base, dark, Alignment.MID, CutStyle.TL_BR, 220f, 22f, 6f);
+            LabelAPI el = t.addPara(CALog.esc("Empire: " + em.label + "."), gray, 0f);
+            el.getPosition().rightOfMid(eb, 10f);
+            CALog.endRow(t, eb);
+        }
+    }
+
+    /**
+     * 0.3.7.6: story mode's Colony page top: the core's status for this colony in its terminal style, the approval, the next
+     * plan step, the top build with its button, then the Goal and Mode rows.
+     */
+    void renderStoryHeader(TooltipMakerAPI t, CAData data, CAData.Colony c, CASettings s, float cw, CAData.Profile planWith,
+                           boolean buildout, boolean shunt, boolean outpost) {
+        Color screen = CATriPad.SCREEN, gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
+        t.setParaFontOrbitron();
+        t.addPara(CALog.esc(market.getName().toUpperCase(java.util.Locale.ROOT) + ": " + c.mode.label.toUpperCase(java.util.Locale.ROOT)
+                + ". GOAL: " + c.profile.label.toUpperCase(java.util.Locale.ROOT) + "."), screen, message != null ? 8f : 0f);
+        if (outpost) t.addPara(CALog.esc(OUTPOST_LINE.toUpperCase(java.util.Locale.ROOT)), screen, 4f);
+        if (!outpost && !shunt) {
+            try {
+                CAPlan.Plan plan = CAPlan.build(market, planWith);
+                for (CAPlan.Step st : plan.steps) {
+                    if (st.done(market)) continue;
+                    t.addPara(CALog.esc("NEXT: " + st.label.toUpperCase(java.util.Locale.ROOT) + "."), screen, 4f);
+                    break;
+                }
+            } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story header plan failed at " + market.getName(), e); }
+        }
+        t.setParaFontDefault();
+        renderApproval(t, c, s);
+        if (!outpost && !shunt && c.mode != CAData.Mode.OFF) {
+            CAEngine.Kept k = CAEngine.kept(market, planWith, data.settings.minStability, buildout);
+            if (k != null && !k.result.picks.isEmpty() && CAEngine.worthwhile(k.result.picks.get(0))) {
+                CAEngine.Pick p = k.result.picks.get(0);
+                boolean waits = !p.upgrade && k.result.blocked != null, poor = CABuild.credits() < p.cost, old = !k.current;
+                ButtonAPI b = t.addButton(p.verb + " " + p.name + " (" + Misc.getDGSCredits(p.cost) + ")", p, base, dark,
+                        Alignment.MID, CutStyle.TL_BR, 360f, 24f, 8f);
+                b.setEnabled(!waits && !poor && !old);
+                CATheme.hover(t, rankLines(p, buildout ? "fast buildout (money only)" : "the " + planWith.label + " goal"));
+            }
+        }
+        renderGoalMode(t, c, s, cw, false);
+        t.addSpacer(4f);
     }
 
     /** The Recommended builds list: the top three options with what they're worth and a button each. */
