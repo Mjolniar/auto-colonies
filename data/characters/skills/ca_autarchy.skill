@@ -1,0 +1,17 @@
+{
+	"id":"ca_autarchy",
+	"governingAptitude":"technology",
+	"compressHullmods":false,
+	"scope":"GOVERNED_OUTPOST",
+	"effectGroups":[
+		{
+			"requiredSkillLevel":1,
+			"effectBasedOnLevel":false,
+			"effects":[
+				{"type":"GOVERNED_OUTPOST", "script":"data.scripts.jonahtweaks.autopilot.CAAutarchSkill$Level1"},
+				{"type":"GOVERNED_OUTPOST", "script":"data.scripts.jonahtweaks.autopilot.CAAutarchSkill$Level2"},
+				{"type":"GOVERNED_OUTPOST", "script":"data.scripts.jonahtweaks.autopilot.CAAutarchSkill$Level3"},
+			]
+		},
+	],
+}

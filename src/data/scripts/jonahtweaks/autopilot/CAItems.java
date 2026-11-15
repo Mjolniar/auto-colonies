@@ -1259,8 +1259,23 @@ public class CAItems {
         float vulp = p.getStats().getSkillLevel("vulpoid_brain") > 0f ? stabilityWorth(m, m.getStability().getModifiedValue(), 1f) + 0.2f * ACCESS_WORTH : 0f;
         // 0.3.7.9: Hypercognition (AI administrators, the Autarch administrator): +1 stability and +10% accessibility
         if (p.getStats().getSkillLevel("hypercognition") > 0f) vulp += stabilityWorth(m, m.getStability().getModifiedValue(), 1f) + 0.1f * ACCESS_WORTH;
+        if (p.getStats().getSkillLevel(CAAutarchSkill.ID) > 0f) vulp += autarchyWorth(m);   // 0.3.8.0
         if (p.getStats().getSkillLevel("industrial_planning") <= 0f) return vulp;
         return vulp + planningWorth(m);
+    }
+
+    /**
+     * 0.3.8.0: Autarchy at m: 20% of its upkeep, +1 stability, and its extra industry at half of what an industry there earns
+     * on average (gross income over the industries).
+     */
+    static float autarchyWorth(MarketAPI m) {
+        float upkeep = 0f;
+        int n = 0;
+        for (Industry ind : m.getIndustries()) {
+            try { upkeep += ind.getUpkeep().getModifiedValue(); if (ind.isIndustry()) n++; } catch (Throwable ignored) { }
+        }
+        float slot = 0.5f * Math.max(0f, m.getGrossIncome()) / Math.max(1, n);
+        return (1f - CAAutarchSkill.UPKEEP_MULT) * upkeep + stabilityWorth(m, m.getStability().getModifiedValue(), CAAutarchSkill.STABILITY) + slot;
     }
 
     /** Credits a month for +100% accessibility, at the Balanced goal's weight (CAEngine.WEIGHTS). */

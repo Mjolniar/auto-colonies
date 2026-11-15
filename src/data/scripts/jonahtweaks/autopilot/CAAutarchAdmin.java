@@ -10,17 +10,24 @@ import com.fs.starfarer.api.impl.campaign.ids.Ranks;
 import com.fs.starfarer.api.impl.campaign.ids.Skills;
 import com.fs.starfarer.api.util.Misc;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
 /**
- * 0.3.7.9: Autarch administrator (story mode, Tier III). The Autarch AI Core governs each managed colony (Approve or Auto)
- * that you govern yourself, where that is worth more than you governing it (CAItems.adminWorth, the colony limit counted)
- * and the colony stays at or over the stability floor (CAStability). It has an Alpha Core administrator's skills (Industrial
- * Planning, Hypercognition) and no AI core id: the colony screen has no core to hand back, and it adds no inspection points
- * or Pather interest. One person per colony, marked in its memory.
+ * 0.3.7.9: Autarch administrator (story mode). 0.3.8.0: Tier IV, one colony per CASyncCatalog.SEAT_PP bandwidth (CASync.seats),
+ * and its own skill, Autarchy (CAAutarchSkill). The Autarch AI Core governs managed colonies (Approve or Auto) that you
+ * govern yourself, up to its seats, the ones it adds most to first (CAItems.adminWorth, the colony limit counted), where the
+ * colony stays at or over the stability floor (CAStability). It has an Alpha Core administrator's skills (Industrial Planning,
+ * Hypercognition) plus Autarchy, and no AI core id: the colony screen has no core to hand back, and it adds no inspection
+ * points or Pather interest. One person per colony, marked in its memory.
  *
- * Once seated it stays. It leaves a colony that is no longer managed, and every colony when the package is not bought,
- * story mode is off or the core is dormant: one colony a day, and never while that would take the colony, or a colony you
- * govern, under the floor. An administrator you place replaces it. Where you govern a colony yourself in its place, it
- * does not return until that colony leaves management.
+ * Once seated it stays. It leaves a colony that is no longer managed, the colony it adds least to while it holds more
+ * colonies than its seats, and every colony when the package is not bought, story mode is off or the core is dormant: one
+ * colony a day, and never while that would take the colony, or a colony you govern, under the floor (Autarchy's industry
+ * counted: a colony left over the industry limit pays the game's penalty). An administrator you place replaces it. Where you
+ * govern a colony yourself in its place, it does not return until that colony leaves management.
  */
 public final class CAAutarchAdmin {
     private CAAutarchAdmin() { }
@@ -35,7 +42,14 @@ public final class CAAutarchAdmin {
 
     public static boolean governs(MarketAPI m) { return m != null && is(m.getAdmin()); }
 
-    /** A new administrator person: the core's name and portrait, an Alpha Core administrator's skills, no AI core id. */
+    /** Your colonies it governs now. */
+    public static int count() {
+        int n = 0;
+        try { for (MarketAPI m : Misc.getPlayerMarkets(false)) if (governs(m)) n++; } catch (Throwable ignored) { }
+        return n;
+    }
+
+    /** A new administrator person: the core's name and portrait, an Alpha Core administrator's skills and Autarchy, no AI core id. */
     static PersonAPI person() {
         PersonAPI p = Global.getFactory().createPerson();
         p.setFaction(Factions.PLAYER);
@@ -45,6 +59,7 @@ public final class CAAutarchAdmin {
         p.setPostId(Ranks.POST_ADMINISTRATOR);
         p.getStats().setSkillLevel(Skills.INDUSTRIAL_PLANNING, 1);
         p.getStats().setSkillLevel(Skills.HYPERCOGNITION, 1);
+        p.getStats().setSkillLevel(CAAutarchSkill.ID, 1);
         p.getMemoryWithoutUpdate().set(FLAG, true);
         return p;
     }
@@ -52,7 +67,9 @@ public final class CAAutarchAdmin {
     /** Daily, from CASync.daily (story mode on or off): its seats are checked, one is left if it must, and new ones are taken. */
     public static void daily() {
         boolean on = CASync.has("autarchAdmin");   // false with story mode off, while dormant, or not bought
+        int seats = CASync.seats();
         boolean left = false;
+        List<MarketAPI> held = new ArrayList<MarketAPI>();
         for (MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) {
             MemoryAPI mem = m.getMemoryWithoutUpdate();
             boolean seated = mem.getBoolean(SEATED), here = governs(m);
@@ -67,19 +84,53 @@ public final class CAAutarchAdmin {
                 continue;
             }
             if (!seated) mem.set(SEATED, true);
+            learn(m);
             if (!left && (!on || !CASync.manages(m))) left = leave(m);
+            else if (on && CASync.manages(m)) held.add(m);
         }
         if (!on) return;
-        PersonAPI p = null;
+        if (held.size() > seats) {   // more colonies than seats (a seat taken back): the one it adds least to goes first
+            if (left) return;
+            MarketAPI least = null;
+            float worst = Float.MAX_VALUE;
+            for (MarketAPI m : held) {
+                float w = CAItems.adminWorth(m, m.getAdmin());
+                if (w < worst) { worst = w; least = m; }
+            }
+            if (least != null) leave(least);
+            return;
+        }
+        int room = seats - held.size();
+        if (room <= 0) return;
+        final PersonAPI probe = person();
+        List<MarketAPI> open = new ArrayList<MarketAPI>();
+        final java.util.Map<MarketAPI, Float> worth = new java.util.HashMap<MarketAPI, Float>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             if (!CASync.manages(m) || !CAItems.governedByYou(m) || CARogue.noCores(m)) continue;
             if (m.getMemoryWithoutUpdate().getBoolean(DECLINED)) continue;
-            if (p == null) p = person();
-            if (CAItems.adminWorth(m, p) <= 0f) continue;
+            float w = CAItems.adminWorth(m, probe);
+            if (w <= 0f) continue;
+            worth.put(m, w);
+            open.add(m);
+        }
+        Collections.sort(open, new Comparator<MarketAPI>() {
+            public int compare(MarketAPI a, MarketAPI b) { return Float.compare(worth.get(b), worth.get(a)); }
+        });
+        for (MarketAPI m : open) {
+            if (room <= 0) break;
+            PersonAPI p = person();
             if (!CAStability.canLose(m, CAStability.adminArrives(CAStability.adminOwn(p), CAStability.governedPenalty()), null)) continue;
             seat(m, p);
-            p = null;
+            room--;
         }
+    }
+
+    /** 0.3.8.0: a core seated by 0.3.7.9 learns Autarchy; setAdmin again so the colony applies it. */
+    static void learn(MarketAPI m) {
+        PersonAPI p = m.getAdmin();
+        if (p == null || p.getStats().getSkillLevel(CAAutarchSkill.ID) > 0f) return;
+        p.getStats().setSkillLevel(CAAutarchSkill.ID, 1);
+        m.setAdmin(p);
     }
 
     static void seat(MarketAPI m, PersonAPI p) {
@@ -91,12 +142,17 @@ public final class CAAutarchAdmin {
     }
 
     /**
-     * Leaves m to you if m and every colony you govern stay at or over the floor: m loses the core's own stability and takes
-     * the colony limit's number with one more colony governed by you; the others each pay one more colony's share.
+     * Leaves m to you if m and every colony you govern stay at or over the floor: m loses the core's own stability, takes the
+     * colony limit's number with one more colony governed by you, and pays the industry limit's penalty if Autarchy's industry
+     * was in use; the others each pay one more colony's share.
      */
     static boolean leave(MarketAPI m) {
         float per = CAStability.oneMoreGoverned();
         float delta = -CAStability.adminOwn(m.getAdmin()) - (CAStability.governedPenalty() + per);
+        try {
+            boolean slot = m.getAdmin().getStats().getSkillLevel(CAAutarchSkill.ID) > 0f;
+            if (slot && Misc.getNumIndustries(m) > Misc.getMaxIndustries(m) - CAAutarchSkill.INDUSTRIES) delta -= Misc.OVER_MAX_INDUSTRIES_PENALTY;
+        } catch (Throwable ignored) { }
         if (!CAStability.canLose(m, delta, null) || !CAStability.canGovernedLose(-per, null)) {
             if (CALog.once("autarchAdmin:stay:" + m.getId()))
                 CALog.quiet(m.getName() + ": Autarch AI Core stays as administrator while leaving would take a colony under "

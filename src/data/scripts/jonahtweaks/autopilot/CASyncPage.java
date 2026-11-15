@@ -89,6 +89,16 @@ public class CASyncPage {
             minus.getPosition().rightOfTop(plus, 6f);
             CALog.endRow(t, plus);
         }
+        // 0.3.8.0: the Autarch administrator's colonies
+        if (CASync.has("autarchAdmin")) {
+            t.addSectionHeading("Autarch administrator", Alignment.MID, 12f);
+            t.addPara("Governs %s of up to %s colonies: one, plus %s more at %s bandwidth each.", 6f, hl,
+                    "" + CAAutarchAdmin.count(), "" + CASync.seats(), "" + CASync.extraSeats(), "" + CASyncCatalog.SEAT_PP);
+            ButtonAPI plus = button(t, "+1 colony", "seat+", CASync.free() >= CASyncCatalog.SEAT_PP && CASync.seats() < CASync.managedCap(), 120f, 4f);
+            ButtonAPI minus = button(t, "-1 colony", "seat-", CASync.extraSeats() > 0, 120f, 0f);
+            minus.getPosition().rightOfTop(plus, 6f);
+            CALog.endRow(t, plus);
+        }
 
         // abilities
         // 0.3.7.3: by tier. Open tiers list their abilities; the next tier shows what opens it; later tiers don't show

@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.8.0 - 2026-11-15
+
+- Story mode: Autarch administrator moved to Tier IV. It costs 10 bandwidth per colony it governs: the package covers one, and each more is bought on the Story page.
+- Story mode: Added Autarchy, the Autarch administrator's own skill: +1 industry limit, -20% upkeep, +1 stability at the colony it governs. Cores seated by 0.3.7.9 learn it.
+- Story mode: With more colonies than bought, the core leaves the one it adds least to, one a day, never under the stability floor.
+
 ## 0.3.7.9 - 2026-11-15
 
 - Story mode: Added Autarch administrator (Tier III, 8 bandwidth, needs Cores and staff). The core governs each managed colony you govern yourself where that adds more than you governing it. It has an Alpha Core administrator's skills, no AI core to take back, and no inspection or Pather weight.

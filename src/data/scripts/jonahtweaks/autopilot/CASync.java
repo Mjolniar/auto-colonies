@@ -208,6 +208,10 @@ public class CASync {
     /** All PP: the core's own plus every core fed to it; 0 before it's ever installed. */
     public static int total() { return installed() ? CASyncCatalog.BASE_PP + fedPoints() : 0; }
     public static int extraColonies() { return num("colonies"); }
+    /** 0.3.8.0: colonies bought for the Autarch administrator past the one its package gives. */
+    public static int extraSeats() { return num("seats"); }
+    /** 0.3.8.0: colonies the Autarch administrator may govern: one with the package, plus each bought; 0 without it. */
+    public static int seats() { return has("autarchAdmin") ? 1 + extraSeats() : 0; }
 
     public static List<String> ticked() { return list("ticks"); }
 
@@ -215,7 +219,7 @@ public class CASync {
 
     /** Bandwidth the bought packages and colonies use (a package none of whose mods is on doesn't count). 0.3.7.4: packages. */
     public static int spent() {
-        int n = extraColonies() * CASyncCatalog.COLONY_PP;
+        int n = extraColonies() * CASyncCatalog.COLONY_PP + extraSeats() * CASyncCatalog.SEAT_PP;   // 0.3.8.0: Autarch seats
         for (String id : ticked()) {
             CASyncCatalog.Pack p = CASyncCatalog.pack(id);
             if (p != null && p.available()) n += p.cost;
@@ -260,6 +264,7 @@ public class CASync {
     /** Unticks a package and every package that needs it. */
     static void untick(String id) {
         if (!ticked().remove(id)) return;
+        if ("autarch".equals(id)) num("seats", 0);   // 0.3.8.0: its bought colonies go with it
         CASyncCatalog.Pack p = CASyncCatalog.pack(id);
         if (p != null) CALog.quiet("Autopilot: " + p.name + " is off.");
         for (CASyncCatalog.Pack x : CASyncCatalog.PACKS) if (id.equals(x.requires)) untick(x.id);
@@ -269,7 +274,7 @@ public class CASync {
 
     /** Packages, bandwidth and managed colonies before the first change since the last summary; null when nothing changed. */
     static List<String> beforeTicks = null;
-    static int beforeTotal = 0, beforeCap = 0;
+    static int beforeTotal = 0, beforeCap = 0, beforeSeats = 0;
 
     /** Called before each change on the Story page: keeps the state from before the first one. */
     static void noteChange() {
@@ -277,6 +282,7 @@ public class CASync {
         beforeTicks = new ArrayList<String>(ticked());
         beforeTotal = total();
         beforeCap = managedCap();
+        beforeSeats = seats();   // 0.3.8.0
     }
 
     /** The TriPad's summary of what changed since noteChange, or null when it all came back to where it was. */
@@ -286,11 +292,11 @@ public class CASync {
         for (String id : ticked()) if (!beforeTicks.contains(id)) on.add(id);
         for (String id : beforeTicks) if (!ticked(id)) off.add(id);
         int gained = total() - beforeTotal, cap = managedCap();
-        boolean capChanged = cap != beforeCap;
+        boolean capChanged = cap != beforeCap, seatsChanged = seats() != beforeSeats;
         beforeTicks = null;
-        if (on.isEmpty() && off.isEmpty() && gained == 0 && !capChanged) return null;
+        if (on.isEmpty() && off.isEmpty() && gained == 0 && !capChanged && !seatsChanged) return null;
         CATriPad t = new CATriPad(CATriPad.UPDATE, null, false);
-        t.turnedOn = on; t.turnedOff = off; t.gained = gained; t.capChanged = capChanged;
+        t.turnedOn = on; t.turnedOff = off; t.gained = gained; t.capChanged = capChanged; t.seatsChanged = seatsChanged;
         return t;
     }
 
@@ -314,6 +320,26 @@ public class CASync {
         return null;
     }
 
+    /** 0.3.8.0: one more colony for the Autarch administrator, up to the managed colonies. */
+    public static String addSeat() {
+        if (!on()) return "Story mode is off.";
+        if (!has("autarchAdmin")) return "Autarch administrator comes first.";
+        noteChange();
+        if (seats() >= managedCap()) return "It governs as many colonies as you have managed ones.";
+        if (free() < CASyncCatalog.SEAT_PP) return "One more colony needs " + CASyncCatalog.SEAT_PP + " bandwidth, and " + Math.max(0, free()) + " are free.";
+        num("seats", extraSeats() + 1);
+        afterChange();
+        return null;
+    }
+
+    public static String removeSeat() {
+        if (extraSeats() <= 0) return "There are no bought colonies to remove.";
+        noteChange();
+        num("seats", extraSeats() - 1);
+        afterChange();
+        return null;
+    }
+
     /** After any change to the abilities or colonies: settings, modes and the engine's lists follow. */
     static void afterChange() {
         fit();
@@ -328,6 +354,7 @@ public class CASync {
         if (!on()) return;
         List<String> t = ticked();
         while (spent() > total() && !t.isEmpty()) untick(t.get(t.size() - 1));
+        while (spent() > total() && extraSeats() > 0) num("seats", extraSeats() - 1);   // 0.3.8.0
         while (spent() > total() && extraColonies() > 0) num("colonies", extraColonies() - 1);
     }
 
@@ -1172,6 +1199,8 @@ public class CASync {
         if (rest.startsWith("tick:")) err = toggle(rest.substring(5));
         else if (rest.equals("col+")) err = addColony();
         else if (rest.equals("col-")) err = removeColony();
+        else if (rest.equals("seat+")) err = addSeat();   // 0.3.8.0
+        else if (rest.equals("seat-")) err = removeSeat();
         else if (rest.startsWith("feed:")) {
             int[] h = onHand();
             String what = rest.substring(5);

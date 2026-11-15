@@ -1,7 +1,8 @@
 {
 	# Story mode numbers (docs/story-mode.md). Changes apply the next time the game starts.
-	# Bandwidth: what the Autarch AI Core gives, what each fed core adds, one more managed colony, and the most colonies that can be bought.
-	"pp":{"base":10, "alpha":10, "beta":3, "gamma":1, "colony":2, "maxColonies":30},
+	# Bandwidth: what the Autarch AI Core gives, what each fed core adds, one more managed colony, the most colonies that can be bought,
+	# and one more colony for the Autarch administrator.
+	"pp":{"base":10, "alpha":10, "beta":3, "gamma":1, "colony":2, "maxColonies":30, "autarchSeat":10},
 	# The core: breakdown days and what it gives; days until a sold core returns; after a breakdown, extra random days and the chance per salvaged habitat or cryosleeper.
 	"core":{"breakdownDays":365, "breakdownAlpha":3, "breakdownBeta":2, "returnDays":365, "returnRandomDays":365, "salvageChance":0.2},
 	# Share of a tier's packages (the ones their mods allow) you must own to open the next tier.
@@ -12,7 +13,7 @@
 	"packs":{
 		"advice":2, "oversight":4, "upkeep":5, "supply":5,
 		"automation":6, "staff":6, "economy":5, "security":6, "projects":6,
-		"growth":9, "industry":8, "frontier":8, "warfare":7, "megaprojects":8, "autarch":8,
-		"dominion":15, "warlord":15, "parallel":12, "instant":20, "terraforming":12
+		"growth":9, "industry":8, "frontier":8, "warfare":7, "megaprojects":8,
+		"dominion":15, "warlord":15, "parallel":12, "instant":20, "terraforming":12, "autarch":10
 	}
 }

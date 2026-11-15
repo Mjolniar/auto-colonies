@@ -35,7 +35,7 @@ public class CATriPad implements InteractionDialogPlugin {
     public static final String UPDATE = "update";
     java.util.List<String> turnedOn = new java.util.ArrayList<String>(), turnedOff = new java.util.ArrayList<String>();
     int gained = 0;
-    boolean capChanged = false;
+    boolean capChanged = false, seatsChanged = false;
     static final String CLOSE = "close", LATER = "later", SLOT = "slot", CRADLE = "cradle", BREAK = "break", BREAK_YES = "breakYes", RESEAT = "reseat",
             WHAT = "what", NOTES = "notes", HAND = "hand", KEEP = "keep", OUT = "out";
 
@@ -366,6 +366,7 @@ public class CATriPad implements InteractionDialogPlugin {
             if (p != null) lines.add("Suspended: " + p.name + ".");
         }
         if (capChanged) lines.add("Managed colonies: " + CASync.managedCap() + ".");
+        if (seatsChanged && CASync.seats() > 0) lines.add("Colonies it governs: up to " + CASync.seats() + ".");   // 0.3.8.0
         lines.add("Bandwidth: " + CASync.total() + (gained > 0 ? " (+" + gained + ")" : "") + ". Free: " + Math.max(0, CASync.free()) + ".");
         screen(lines.toArray(new String[0]));
         close("Put the TriPad away");

@@ -162,6 +162,7 @@ public class CAStability {
         try { if (p.getStats().getSkillLevel("hypercognition") > 0f) v += com.fs.starfarer.api.impl.campaign.skills.Hypercognition.STABILITY_BONUS; }
         catch (Throwable ignored) { }
         try { if (p.getStats().getSkillLevel("vulpoid_brain") > 0f) v += 1f; } catch (Throwable ignored) { }
+        try { if (p.getStats().getSkillLevel(CAAutarchSkill.ID) > 0f) v += CAAutarchSkill.STABILITY; } catch (Throwable ignored) { }   // 0.3.8.0
         return v;
     }
 
