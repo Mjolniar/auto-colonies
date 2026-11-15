@@ -117,6 +117,37 @@ public class CASyncCatalog {
     /** The Story perks group: past the game's rules, so they run only in story mode. */
     static final int PERKS = 6;
 
+    // ---------------- 0.3.7.3: tiers ----------------
+
+    /** The tiers, in order. A tier opens when you own TIER_SHARE of the abilities in the tier before it (CASync.openTier). */
+    public static final String[] TIERS = {"Tier I", "Tier II", "Tier III", "Tier IV"};
+    /** Share of a tier's abilities (the ones its mods allow) that opens the next tier; "tierShare" in the config file. */
+    static float TIER_SHARE = 2f / 3f;
+    static final Map<String, Integer> TIER = new HashMap<String, Integer>();
+    static {
+        tier(0, "advisor", "approve", "cleanup", "stations", "policies", "capital", "logistics", "objectives", "crisis", "items", "stockpiles", "lowProfile");
+        tier(1, "auto", "cores", "admins", "storyPoints", "spending", "floors", "enforcers", "defense", "agents", "diplomacy", "autonomy",
+                "terraform", "research", "contracts", "indevo", "augments", "settlement");
+        tier(2, "buildout", "omega", "surplus", "military", "shipyard", "halfFees", "expansion", "colonyFleets", "retaliate", "offense",
+                "surplusTerra", "surplusResearch", "mega");
+        tier(3, "endgame", "noFees", "strike", "conquest", "scorched", "wonders", "instantBuild", "freeBuild", "twoBuilds", "threeBuilds");
+    }
+
+    static void tier(int t, String... ids) { for (String id : ids) TIER.put(id, t); }
+
+    /** The tier an ability is in (0 for Tier I). */
+    public static int tierOf(String id) { Integer t = TIER.get(id); return t == null ? 0 : t; }
+
+    /** The abilities in a tier that their mods allow. */
+    public static List<Ability> inTier(int t) {
+        List<Ability> out = new ArrayList<Ability>();
+        for (Ability a : ALL) if (a.available() && tierOf(a.id) == t) out.add(a);
+        return out;
+    }
+
+    /** Pure: abilities to own in a tier of `count` to open the next one. */
+    public static int needed(int count, float share) { return count <= 0 ? 0 : Math.max(1, (int) Math.ceil(count * share - 1e-4)); }
+
     public static Ability get(String id) { return BY_ID.get(id); }
 
     /** 0.3.6.7: a Story perk (off with story mode off). */
@@ -183,6 +214,7 @@ public class CASyncCatalog {
                 RETURN_RANDOM_DAYS = Math.max(0, core.optInt("returnRandomDays", RETURN_RANDOM_DAYS));
                 SALVAGE_CHANCE = (float) Math.max(0.0, Math.min(1.0, core.optDouble("salvageChance", SALVAGE_CHANCE)));
             }
+            TIER_SHARE = (float) Math.max(0.0, Math.min(1.0, j.optDouble("tierShare", TIER_SHARE)));   // 0.3.7.3
             JSONObject costs = j.optJSONObject("abilities");
             if (costs != null) for (Ability a : ALL) a.cost = Math.max(0, costs.optInt(a.id, a.cost));
         } catch (Throwable t) {

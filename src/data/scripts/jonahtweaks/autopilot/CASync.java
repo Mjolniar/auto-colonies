@@ -244,6 +244,7 @@ public class CASync {
             return null;
         }
         if (dormant()) return "The Colony Autopilot is dormant.";
+        if (CASyncCatalog.tierOf(id) > openTier()) return CASyncCatalog.TIERS[CASyncCatalog.tierOf(id)] + " isn't open yet.";   // 0.3.7.3
         if (a.requires != null && !ticked(a.requires)) return a.name + " needs " + CASyncCatalog.get(a.requires).name + " first.";
         if (free() < a.cost) return a.name + " needs " + a.cost + " bandwidth, and " + Math.max(0, free()) + " are free.";
         ticked().add(id);
@@ -281,6 +282,7 @@ public class CASync {
     /** After any change to the abilities or colonies: settings, modes and the engine's lists follow. */
     static void afterChange() {
         fit();
+        updateTiers();   // 0.3.7.3
         enforce(CAData.settings());
         enforceModes();
         CAAuto.nextPass.clear();
@@ -537,6 +539,50 @@ public class CASync {
         if (!t.contains("approve")) t.add(0, "approve");
         if (!t.contains("advisor")) t.add(0, "advisor");
         fit();
+    }
+
+    // ---------------- 0.3.7.3: tiers ----------------
+
+    /** The highest open tier (0: Tier I only). A tier stays open once it opened. */
+    public static int openTier() { return Math.max(0, Math.min(CASyncCatalog.TIERS.length - 1, num("tier"))); }
+
+    /** {owned, needed} in a tier: what you own of its abilities, and what opens the next tier. */
+    public static int[] tierProgress(int t) {
+        int owned = 0;
+        List<CASyncCatalog.Ability> l = CASyncCatalog.inTier(t);
+        for (CASyncCatalog.Ability a : l) if (ticked(a.id)) owned++;
+        return new int[]{owned, CASyncCatalog.needed(l.size(), CASyncCatalog.TIER_SHARE)};
+    }
+
+    /** Opens each next tier whose tier before it has enough owned. */
+    static void updateTiers() {
+        int last = CASyncCatalog.TIERS.length - 1;
+        int[] owned = new int[last + 1], count = new int[last + 1];
+        for (int t = 0; t <= last; t++) {
+            List<CASyncCatalog.Ability> l = CASyncCatalog.inTier(t);
+            count[t] = l.size();
+            for (CASyncCatalog.Ability a : l) if (ticked(a.id)) owned[t]++;
+        }
+        int was = openTier(), now = tierAfter(was, owned, count, CASyncCatalog.TIER_SHARE);
+        if (now == was) return;
+        num("tier", now);
+        CALog.did("Autopilot: " + CASyncCatalog.TIERS[now] + " is open.", true);
+    }
+
+    /** Pure: the open tier after opening every tier whose tier before it has `share` of its abilities owned. Never lower. */
+    static int tierAfter(int open, int[] owned, int[] count, float share) {
+        int t = open;
+        while (t + 1 < count.length && owned[t] >= CASyncCatalog.needed(count[t], share)) t++;
+        return Math.max(open, t);
+    }
+
+    /** 0.3.7.3, once per save: a save from before the tiers opens up to the highest tier it already owns an ability in. */
+    static void migrateTiers() {
+        if (flag("tiersSet")) return;
+        flag("tiersSet", true);
+        int top = 0;
+        for (String id : ticked()) top = Math.max(top, CASyncCatalog.tierOf(id));
+        if (top > openTier()) num("tier", top);
     }
 
     // ---------------- settings held at "off" while their ability is off ----------------
@@ -1135,6 +1181,7 @@ public class CASync {
     public static void onLoad() {
         CASyncCatalog.load();
         try { migrateModes(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode ability migration failed", t); }
+        try { migrateTiers(); updateTiers(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode tiers failed", t); }
         queued = null; armed = null; notice = null; modeNote = null;
         if (askMode()) CAStoryPrompt.watch();   // a new game's pop-up not answered yet
         if (!on()) return;

@@ -9,18 +9,20 @@
 
 ## Story mode on
 
-- Start: The Autopilot is dormant. Nothing at your colonies runs on its own. No build-menu hints, and the monthly ledger line goes to starsector.log only. The Autopilot panel shows only the Story page and Diagnostics.
+- Start: The Autopilot is dormant. Nothing at your colonies runs on its own. No build-menu hints, and the monthly ledger line goes to starsector.log only. The Autopilot panel shows only Story and More.
 - The core: The Autarch AI Core is placed once per save in a derelict research station in an uninhabited fringe system. After your first colony, your TriPad names the constellation the station is in.
 - Intel: One entry, Colony Autopilot, in the Story tab. While you search for the core, its map marker is on the constellation's label and it is marked important. Its text names the system's star and where the station orbits among the planets. It does not name the system.
 - Finding it: Your TriPad asks what to do with the core. Install it, install it in an isolation cradle (1 story point, can be pulled out later), have Engineering break it down, or decide later.
 - Break down: 365 days, then 3 Alpha and 2 Beta cores.
 - Selling: A kept core can be sold at any market (base price 1,000,000).
 - Bandwidth: The core gives 20 bandwidth. Each AI core you feed it on the Story page adds bandwidth: Alpha 10, Beta 3, Gamma 1. Fed cores are used up.
-- Abilities: 52 abilities, each with a bandwidth cost, switched on and off on the Story page of the Autopilot panel. Costs are in `data/config/colony_autopilot_story.json`.
+- Abilities: 52 abilities in 4 tiers, each with a bandwidth cost, switched on and off on the Story page of the Autopilot panel. Costs are in `data/config/colony_autopilot_story.json`.
+- Tiers: Tier I is open from the start. The next tier opens when you own 2/3 of the abilities in the tier before it ("tierShare" in the config file), counting only abilities whose mods you have. An open tier stays open. The Story page lists open tiers and what opens the next one.
+- Panel: Story (open first), Colony (Overview, Plan and builds, Locks and the colony's mod features on one page), Settings, and More (Colonies, Autopilot Storage, Colony crises, Expansion, War, Mod features, Factions, Log, Diagnostics, picked from a row of buttons).
 - Modes: Every colony mode is bought. With nothing bought every colony is Off. Advisor mode (1) gives Advisor; Approve mode (2) gives one colony in Approve or Auto, plus one more for each 2 bandwidth; Auto mode (4) needs Approve mode. A colony past what is bought waits in the next mode down, and its mode comes back when the ability is bought.
 - Settings: A setting an ability that's off covers is held at off. Its row says which ability it needs. Your value comes back when the ability is on.
 - Keep cores for feeding: On by default. Autopilot leaves enough cores in Autopilot Storage for your next ability.
-- Story perks: Instant construction (15 bandwidth), Free construction (25 bandwidth), Two builds at once (6 bandwidth) and Three builds at once (8 bandwidth, needs Two) exist only in story mode.
+- Story perks: Instant construction (15 bandwidth), Free construction (25 bandwidth), Two builds at once (6 bandwidth) and Three builds at once (8 bandwidth, needs Two) exist only in story mode. They are in Tier IV.
 - Builds at once: Each colony builds 2 or 3 new buildings at the same time. Without the perks it builds one, as in the game. Upgrades always run beside them.
 
 ## Switching
@@ -35,15 +37,12 @@
 
 ## Costs
 
-| Group | Abilities (bandwidth) |
+| Tier | Abilities (bandwidth) |
 |---|---|
-| Colony management | Advisor mode 1, Approve mode 2, Auto mode 4, Fast buildout 2, Clean up 2, Stations 2, Colony policies 1, Story point improvements 3, Capital 1, Storage logistics 1, Stable locations 1, Crisis response 2 |
-| Items and people | Colony items 2, AI cores 2, Administrators 2, Omega and IX cores 3 |
-| Money | Higher spending 2, Surplus investment 4, Production floors 2, Stockpiles 1, Military 3, Shipyard 3, Endgame economy 5, Half fees 4, No fees 8 |
-| Expansion | Auto-expansion 6, Colony fleets 2 |
-| Security and war | Low profile 1, Enforcer patrols 3, Emergency defense 3, Agents: defense 2, Agents: offense 3, Diplomacy 2, Autonomy 1, War: Retaliate 3, War: Hold them down 5, War: Conquer 8, War: Scorched 5 |
-| Mod features | Terraforming 3, Surplus terraforming 4, Research 3, Surplus research 3, Megastructures 4, Wonders and gates 5, Trade contracts 1, Industrial Evolution 2, Station augments 2, Settlement 2 |
-| Story perks | Instant construction 15, Free construction 25, Two builds at once 6, Three builds at once 8 |
+| Tier I | Advisor mode 1, Approve mode 2, Clean up 2, Stations 2, Colony policies 1, Capital 1, Storage logistics 1, Stable locations 1, Crisis response 2, Colony items 2, Stockpiles 1, Low profile 1 |
+| Tier II | Auto mode 4, AI cores 2, Administrators 2, Story point improvements 3, Higher spending 2, Production floors 2, Enforcer patrols 3, Emergency defense 3, Agents: defense 2, Diplomacy 2, Autonomy 1, Terraforming 3, Research 3, Trade contracts 1, Industrial Evolution 2, Station augments 2, Settlement 2 |
+| Tier III | Fast buildout 2, Omega and IX cores 3, Surplus investment 4, Military 3, Shipyard 3, Half fees 4, Auto-expansion 6, Colony fleets 2, War: Retaliate 3, Agents: offense 3, Surplus terraforming 4, Surplus research 3, Megastructures 4 |
+| Tier IV | Endgame economy 5, No fees 8, War: Hold them down 5, War: Conquer 8, War: Scorched 5, Wonders and gates 5, Instant construction 15, Free construction 25, Two builds at once 6, Three builds at once 8 |
 
-- Totals: Every vanilla ability except the story perks is 67 bandwidth. Every ability with every supported mod is 173 bandwidth.
+- Totals: Every vanilla ability except the story perks is 70 bandwidth. Every ability with every supported mod is 176 bandwidth.
 - Mods: An ability for a mod you don't have doesn't show.

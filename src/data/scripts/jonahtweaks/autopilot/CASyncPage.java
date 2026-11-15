@@ -93,14 +93,19 @@ public class CASyncPage {
         }
 
         // abilities
-        List<CASyncCatalog.Ability> list = CASyncCatalog.available();
-        for (int gi = 0; gi < CASyncCatalog.GROUPS.length; gi++) {
-            boolean any = false;
-            for (CASyncCatalog.Ability a : list) if (a.group == gi) { any = true; break; }
-            if (!any) continue;
-            t.addSectionHeading(CASyncCatalog.GROUPS[gi], Alignment.MID, 12f);
+        // 0.3.7.3: by tier. Open tiers list their abilities; the next tier shows what opens it; later tiers don't show
+        int open = CASync.openTier();
+        for (int ti = 0; ti < CASyncCatalog.TIERS.length; ti++) {
+            List<CASyncCatalog.Ability> list = CASyncCatalog.inTier(ti);
+            if (list.isEmpty()) continue;
+            if (ti > open) {
+                int[] pr = CASync.tierProgress(open);
+                t.addSectionHeading(CASyncCatalog.TIERS[ti], Alignment.MID, 12f);
+                t.addPara("Opens with %s of the " + CASyncCatalog.TIERS[open] + " abilities. You have %s.", 6f, gray, hl, "" + pr[1], "" + pr[0]);
+                break;
+            }
+            t.addSectionHeading(CASyncCatalog.TIERS[ti], Alignment.MID, 12f);
             for (CASyncCatalog.Ability a : list) {
-                if (a.group != gi) continue;
                 boolean on = CASync.ticked(a.id);
                 boolean needs = a.requires != null && !CASync.ticked(a.requires);
                 boolean afford = CASync.free() >= a.cost;
@@ -109,7 +114,6 @@ public class CASyncPage {
                 row(t, on ? "On" : "Off", "tick:" + a.id, on || (!needs && afford), 60f, desc, on ? Misc.getTextColor() : gray, a.name);
             }
         }
-        t.addPara("While an ability is off, the settings it covers stay off, and their rows on the Settings page say what they need. The values you set come back when you switch it on.", gray, 8f);
 
         story(t);
         devTools(t);

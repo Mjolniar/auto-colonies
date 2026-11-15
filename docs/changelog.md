@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.7.3 - 2026-11-14
+
+- Story mode: Abilities are in 4 tiers. Tier I is open from the start; the next tier opens when you own 2/3 of the tier before it, and stays open. Tier IV holds the story perks, Conquer, Scorched, No fees, Endgame economy and Wonders. Saves from before open up to the highest tier they own an ability in.
+- Story mode: The Story page lists open tiers and what opens the next one. Later tiers don't show. The line about held settings is removed.
+- Autopilot panel: Four pages. Story (open first in story mode), Colony (Overview, Plan and builds, Locks and the colony's mod features on one page), Settings, and More, where Colonies, Autopilot Storage, Colony crises, Expansion, War, Mod features, Factions, Log and Diagnostics are picked from a row of buttons.
+
 ## 0.3.7.2 - 2026-11-14
 
 - Story mode: Advisor mode (1 bandwidth) and Approve mode (2 bandwidth) are abilities. With nothing bought every colony is Off and nothing runs. Auto mode needs Approve mode. Saves that had bought abilities get both once, since they were free before.

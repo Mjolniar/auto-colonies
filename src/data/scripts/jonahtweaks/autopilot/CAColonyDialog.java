@@ -36,7 +36,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     static final String MEGA = "ca:mega:";   // Pluto / Nidavelir actions: ca:mega:<action>:<arg>
     static final String TASC = "ca:tasc:";   // start a TASC terraforming project: ca:tasc:<project name>
     /** 0.3.7.1: the Empire pages (the old intel tab's) carry this prefix in the page list; Confirm and Cancel for a button that asks first. */
-    static final String EMP = "e:", CONFIRM = "ca:confirm", CANCEL = "ca:cancel";
+    static final String EMP = "e:", CONFIRM = "ca:confirm", CANCEL = "ca:cancel", MORE = "ca:more:";
     /** 0.3.7.1: an Empire page's button waiting for Confirm (the intel's confirmation dialog). */
     Object pending;
     /** 0.3.0.0 (WS-F3): the message after a button that threw. */
@@ -50,7 +50,9 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     TooltipMakerAPI lastTooltip;
     boolean lastSetupPage;
     /** The page shown; Overview each time the panel opens. */
-    String page = "overview", lastPage;
+    String page = "colony", lastPage;
+    /** 0.3.7.3: the More page's sub-page (an old intel tab page id); the first one when null. */
+    String morePage = null;
 
     /** Scroll position of the previous build, kept across rebuilds of the same page. */
     float savedScroll() {
@@ -100,7 +102,8 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         // 0.3.7.1: the Empire pages' buttons go to their own handler; a button that asks first waits for Confirm
         if (CONFIRM.equals(id)) { Object p = pending; pending = null; if (p != null) CAIntel.pressEmpire(p); dirty = true; return; }
         if (CANCEL.equals(id)) { pending = null; dirty = true; return; }
-        if (CANav.page(id) == null && page.startsWith(EMP)) {
+        if (id instanceof String && ((String) id).startsWith(MORE)) { morePage = ((String) id).substring(MORE.length()); pending = null; message = null; dirty = true; return; }
+        if (CANav.page(id) == null && (page.startsWith(EMP) || page.equals("more"))) {
             if (CAIntel.needsConfirm(id)) pending = id;
             else { pending = null; CAIntel.pressEmpire(id); }
             message = null;
@@ -224,19 +227,26 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
      * 0.3.7.1 the Empire pages (the old intel tab's). While story mode's Autopilot is dormant: the Empire pages only.
      */
     List<String[]> pages(CAData.Colony c, CASettings s, boolean shunt, boolean outpost) {
+        // 0.3.7.3: four pages. Story first in story mode (the panel opens on it); Colony is Overview, Plan and builds, Locks
+        // and Mod features on one page; More holds the rest of the old intel tab's pages behind one row of buttons
         List<String[]> p = new ArrayList<String[]>();
+        if (CASync.on()) p.add(new String[]{EMP + "story", CASyncPage.navLabel()});
         if (!CASync.dormant()) {
-            p.add(new String[]{"overview", c.pendingId != null ? "Overview (approval)" : "Overview"});
-            if (!outpost) p.add(new String[]{"builds", shunt ? "Coronal Hypershunt" : "Plan and builds"});
-            p.add(new String[]{"locks", "Locks"});
-            if (!modSections(c, s, shunt).isEmpty()) p.add(new String[]{"mods", "Mod features"});
-            p.add(new String[]{null, "Empire"});
+            p.add(new String[]{"colony", c.pendingId != null ? "Colony (approval)" : "Colony"});
+            p.add(new String[]{EMP + "settings", "Settings"});
         }
+        p.add(new String[]{"more", "More"});
+        return p;
+    }
+
+    /** 0.3.7.3: the More page's sub-pages: the old intel tab's pages but Story and Settings. */
+    static List<String[]> moreSubs() {
+        List<String[]> out = new ArrayList<String[]>();
         List<String[]> emp;
         try { emp = CAIntel.empirePages(); }
         catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "empire page list failed", e); emp = new ArrayList<String[]>(); emp.add(new String[]{"diag", "Diagnostics"}); }
-        for (String[] e : emp) p.add(new String[]{e[0] == null ? null : EMP + e[0], e[1]});
-        return p;
+        for (String[] e : emp) if (e[0] != null && !e[0].equals("story") && !e[0].equals("settings")) out.add(e);
+        return out;
     }
 
     /** The mod features that apply to this colony, in the order the Mod features page shows them. */
@@ -313,8 +323,28 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         TooltipMakerAPI t = content.createUIElement(cw, H, true);
         if (message != null) t.addPara(CALog.esc(message), hl, 0f);
 
-        // 0.3.7.1: an Empire page (the old intel tab's), with a button that asks first shown above it
-        if (page.startsWith(EMP)) {
+        // 0.3.7.1: an Empire page (the old intel tab's), with a button that asks first shown above it. 0.3.7.3: More shows
+        // one of them, picked from a row of buttons
+        if (page.startsWith(EMP) || page.equals("more")) {
+            String show = page.startsWith(EMP) ? page.substring(EMP.length()) : null;
+            if (page.equals("more")) {
+                List<String[]> subs = moreSubs();
+                boolean known = false;
+                for (String[] e : subs) if (e[0].equals(morePage)) known = true;
+                if (!known) morePage = subs.isEmpty() ? null : subs.get(0)[0];
+                ButtonAPI prev = null, first = null;
+                int inRow = 0;
+                float bw = (cw - 18f) / 4f;
+                for (String[] e : subs) {
+                    if (inRow == 4) { CALog.endRow(t, first); prev = null; first = null; inRow = 0; }
+                    prev = rowButton(t, prev, e[1], MORE + e[0], e[0].equals(morePage), bw);
+                    if (first == null) first = prev;
+                    inRow++;
+                }
+                if (first != null) CALog.endRow(t, first);
+                t.addSpacer(12f);
+                show = morePage;
+            }
             if (pending != null) {
                 CATheme.heading(t, "Confirm", message != null ? 8f : 0f);
                 try { CAIntel.confirmPrompt(t, pending); }
@@ -325,7 +355,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 CALog.endRow(t, ok);
                 t.addSpacer(12f);
             }
-            try { CAIntel.renderEmpire(t, page.substring(EMP.length()), cw); }
+            try { if (show != null) CAIntel.renderEmpire(t, show, cw); }
             catch (Throwable e) {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "empire page " + page + " failed", e);
                 t.addPara(CATheme.NOT_SHOWN, gray, 6f);
@@ -340,7 +370,8 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         boolean buildout = buildoutRanking(c);   // fast buildout ranks by money only (CABuildout)
         CAData.Profile planWith = planWith(c);
 
-        if (page.equals("overview")) {
+        boolean all = page.equals("colony");   // 0.3.7.3: the four colony sections on one page
+        if (all || page.equals("overview")) {
             float threat = CAThreat.estimate(market);
             boolean threatened = threat >= CAThreat.THRESHOLD || c.threatHigh;
             float cell = (cw - 30f) / 4f;
@@ -436,9 +467,10 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 CATheme.heading(t, "Nexerelin outpost", 12f);
                 t.addPara(OUTPOST_LINE, gray, 6f);   // 0.3.0.0 (WS-F3): 53 words down to 16
             }
-        } else if (page.equals("builds")) {
+        }
+        if ((all && !outpost) || page.equals("builds")) {
             CAPlan.Plan plan = CAPlan.build(market, planWith);
-            CATheme.heading(t, "Plan: " + plan.name + " (" + plan.doneCount(market) + " of " + plan.steps.size() + " done)", message != null ? 8f : 0f);
+            CATheme.heading(t, "Plan: " + plan.name + " (" + plan.doneCount(market) + " of " + plan.steps.size() + " done)", all ? 16f : message != null ? 8f : 0f);
             List<String> doneSteps = new ArrayList<String>();
             boolean nextShown = false;
             for (CAPlan.Step st : plan.steps) {
@@ -464,8 +496,9 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 if (c.mode == CAData.Mode.OFF) t.addPara("Autopilot is off here.", gray, 8f);
                 else renderPicks(t, data, planWith, buildout);
             }
-        } else if (page.equals("locks")) {
-            CATheme.heading(t, "Locks", message != null ? 8f : 0f);
+        }
+        if (all || page.equals("locks")) {
+            CATheme.heading(t, "Locks", all ? 16f : message != null ? 8f : 0f);
             t.addPara(LOCKS_LINE, gray, 6f);
             ButtonAPI lockPrev = null, lockFirst = null;
             int inRow = 0;
@@ -481,8 +514,9 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             if (lockFirst != null) CALog.endRow(t, lockFirst);
             List<String> odd = CADiagnostics.unsupportedConditions(market);
             if (!odd.isEmpty() && !shunt) t.addPara(CALog.esc("Unmapped conditions: " + odd + ". Scores may be off."), gray, 10f);
-        } else if (page.equals("mods")) {
-            float pad = message != null ? 8f : 0f;
+        }
+        if (all || page.equals("mods")) {
+            float pad = all ? 16f : message != null ? 8f : 0f;
             for (String id : modSections(c, s, shunt)) {
                 renderMod(t, id, c, s, planWith, pad);
                 pad = 16f;

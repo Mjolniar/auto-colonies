@@ -4,6 +4,8 @@
 	"pp":{"base":20, "alpha":10, "beta":3, "gamma":1, "colony":2, "maxColonies":30},
 	# The core: breakdown days and what it gives; days until a sold core returns; after a breakdown, extra random days and the chance per salvaged habitat or cryosleeper.
 	"core":{"breakdownDays":365, "breakdownAlpha":3, "breakdownBeta":2, "returnDays":365, "returnRandomDays":365, "salvageChance":0.2},
+	# Share of a tier's abilities (the ones its mods allow) you must own to open the next tier.
+	"tierShare":0.666,
 	# Ability costs in bandwidth.
 	"abilities":{
 		"advisor":1, "approve":2, "auto":4, "buildout":2, "cleanup":2, "stations":2, "policies":1, "storyPoints":3, "capital":1, "logistics":1, "objectives":1, "crisis":2,
