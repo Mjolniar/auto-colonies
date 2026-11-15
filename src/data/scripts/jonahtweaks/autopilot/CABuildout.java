@@ -334,7 +334,7 @@ public class CABuildout {
     static String handle(MarketAPI m, String action) {
         CAData.Colony c = CAData.get().colony(m.getId());
         if (action.equals("start")) {
-            if (!CASync.has("buildout")) return "Fast buildout is off. It costs " + CASyncCatalog.get("buildout").cost + " PP on the Story page.";   // 0.3.6.0 story mode
+            if (!CASync.has("buildout")) return "Fast buildout is off. It costs " + CASyncCatalog.get("buildout").cost + " bandwidth on the Story page.";   // 0.3.6.0 story mode
             start(m, DEFAULT_FLOOR);
             return "Fast buildout started";
         }

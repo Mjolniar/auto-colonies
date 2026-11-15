@@ -99,8 +99,41 @@ public final class CAAutarch {
     /** Puts one in the fleet's cargo (the cradle's cutoff). */
     public static void give() { Global.getSector().getPlayerFleet().getCargo().addSpecial(item(), 1); }
 
-    /** The system the TriPad points to, or null when there's no hint. */
+    /** The system the core is in, or null when there's no hint. The TriPad names only its constellation (area). */
     public static String system() { return CASync.text("autarchSystem"); }
+
+    /**
+     * 0.3.6.6: the constellation the TriPad points to ("Gamma Ceti constellation", used after "the"), or null when there's no
+     * hint. A save from before 0.3.6.6 gets it from the system once.
+     */
+    public static String area() {
+        String a = CASync.text("autarchArea");
+        if (a != null) return a;
+        String sys = system();
+        if (sys == null) return null;
+        try {
+            for (StarSystemAPI s : Global.getSector().getStarSystems()) {
+                if (!sys.equals(s.getBaseName())) continue;
+                a = areaOf(s);
+                CASync.text("autarchArea", a);
+                return a;
+            }
+        } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autarch AI Core constellation failed", t); }
+        return null;
+    }
+
+    /** 0.3.6.6: the system's constellation as the map names it; a lone system: the fringe near the closest constellation. */
+    static String areaOf(StarSystemAPI s) {
+        if (s.isInConstellation() && s.getConstellation() != null) return s.getConstellation().getNameWithLowercaseType();
+        StarSystemAPI best = null;
+        float bd = Float.MAX_VALUE;
+        for (StarSystemAPI o : Global.getSector().getStarSystems()) {
+            if (o == s || !o.isInConstellation() || o.getConstellation() == null) continue;
+            float d = Misc.getDistance(o.getLocation(), s.getLocation());
+            if (d < bd) { bd = d; best = o; }
+        }
+        return best != null ? "fringe near the " + best.getConstellation().getNameWithLowercaseType() : "fringe";
+    }
 
     /** On every load: places the first core once. */
     public static void ensurePlaced() {
@@ -127,6 +160,7 @@ public final class CAAutarch {
         st.getMemoryWithoutUpdate().set("$autarch_core_site", true);
         CASync.text("autarchSite", st.getId());   // 0.3.6.2: siteExists
         CASync.text("autarchSystem", sys.getBaseName());
+        CASync.text("autarchArea", areaOf(sys));   // 0.3.6.6: the TriPad names the constellation only
         CADiagnostics.LOG.info(CADiagnostics.TAG + "Autarch AI Core placed in a derelict research station in " + sys.getName());
         return true;
     }
@@ -141,7 +175,7 @@ public final class CAAutarch {
             if (!Misc.getMarketsInLocation(s).isEmpty()) continue;
             float d = s.getLocation().length();
             if (d < MIN_DIST || d > MAX_DIST) continue;
-            p.add(s, 1f);
+            p.add(s, s.isInConstellation() ? 1f : 0.05f);   // 0.3.6.6: the TriPad points to a constellation
         }
         if (p.isEmpty()) {   // 0.3.6.2: no system in the fringe band (small or modded sectors): any uninhabited procgen system
             for (StarSystemAPI s : Global.getSector().getStarSystems()) {

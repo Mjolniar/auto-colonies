@@ -14,7 +14,7 @@ import java.util.Set;
 
 /**
  * 0.3.6.0 story mode: the Autopilot's storyline in the Intel screen's Story tab (the game's own tab for its main story): the
- * core's state, its processing power and what to do next. It appears once the TriPad has said something.
+ * core's state, its bandwidth and what to do next. It appears once the TriPad has said something.
  */
 public class CAStoryIntel extends BaseIntelPlugin {
 
@@ -28,7 +28,7 @@ public class CAStoryIntel extends BaseIntelPlugin {
     }
 
     static String state() {
-        if (CASync.installed() && !CASync.pulled()) return "online, " + CASync.total() + " PP";
+        if (CASync.installed() && !CASync.pulled()) return "online, " + CASync.total() + " bandwidth";
         if (CASync.pulled()) return "dormant, core pulled";
         String ph = CASync.phase();
         if ("breaking".equals(ph)) return "core being broken down";
@@ -64,16 +64,16 @@ public class CAStoryIntel extends BaseIntelPlugin {
 
     /** The objective, one line. */
     static String objective() {
-        String sys = CAAutarch.system();
-        if (CASync.installed() && !CASync.pulled()) return "Feed it AI cores for more PP, and pick its abilities on the Story page.";
+        String area = CAAutarch.area();
+        if (CASync.installed() && !CASync.pulled()) return "Feed it AI cores for more bandwidth, and pick its abilities on the Story page.";
         if (CAAutarch.inCargo() > 0) return CASync.pulled() ? "Put the Autarch AI Core back in the cradle (the Story page)."
                 : "Decide what to do with the Autarch AI Core (the Story page).";
         String ph = CASync.phase();
         if ("breaking".equals(ph)) return "Engineering is breaking the core down.";
         if ("broken".equals(ph) || "salvage".equals(ph)) return "None. Another Autarch-class core may turn up in salvage one day.";
         if ("sold".equals(ph)) return "None for now.";
-        if (CASync.pulled()) return "Find an Autarch AI Core to put back in the cradle" + (sys != null ? ": the " + sys + " system." : ".");
-        return sys != null && CASync.seen(CATriPad.FOUND) ? "Find the Autarch AI Core: a derelict research station in the " + sys + " system."
+        if (CASync.pulled()) return "Find an Autarch AI Core to put back in the cradle" + (area != null ? ", somewhere in the " + area + "." : ".");
+        return area != null && CASync.seen(CATriPad.FOUND) ? "Find the Autarch AI Core: a derelict research station somewhere in the " + area + "."
                 : "Find the Autarch AI Core.";
     }
 
@@ -93,13 +93,17 @@ public class CAStoryIntel extends BaseIntelPlugin {
 
     void describe(TooltipMakerAPI info) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor();
-        info.addPara("The Colonial Administration Suite on your TriPad runs on the Autarch AI Core. Every AI core you give it adds processing power (PP), "
-                + "and you pick the abilities it runs with that PP.", 0f);
+        // 0.3.6.6: before the core is installed, nothing about feeding cores or abilities (the story tells it)
+        if (CASync.installed()) info.addPara("The Colonial Administration Suite on your TriPad runs on the Autarch AI Core. Every AI core you give it adds bandwidth, "
+                + "and you pick the abilities it runs with that bandwidth.", 0f);
+        else info.addPara("The Colonial Administration Suite on your TriPad is an old Domain program for running colonies. It needs an Autarch-class AI core to run.", 0f);
         info.addPara(CALog.esc(status()), hl, 10f);
-        if (CASync.installed()) info.addPara("The core has %s PP. Your abilities use %s, and %s are free.", 4f, hl, "" + CASync.total(), "" + CASync.spent(), "" + Math.max(0, CASync.free()));
+        if (CASync.installed()) info.addPara("The core has %s bandwidth. Your abilities use %s, and %s are free.", 4f, hl, "" + CASync.total(), "" + CASync.spent(), "" + Math.max(0, CASync.free()));
         info.addPara(CALog.esc(objective()), hl, 10f);
-        int[] h = CASync.onHand();
-        info.addPara("You have %s on hand, in your cargo and in Autopilot Storage.", 10f, hl, CASyncCatalog.cores(h[0], h[1], h[2]));
+        if (CASync.installed()) {
+            int[] h = CASync.onHand();
+            info.addPara("You have %s on hand, in your cargo and in Autopilot Storage.", 10f, hl, CASyncCatalog.cores(h[0], h[1], h[2]));
+        }
         info.addPara("The Story page of the Colony Autopilot intel has the abilities, the cores and the story so far.", gray, 10f);
     }
 }

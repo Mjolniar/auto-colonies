@@ -162,6 +162,12 @@ public class CATriPad implements InteractionDialogPlugin {
 
     // ---------------- the dormant firmware (first colony) ----------------
 
+    /** 0.3.6.6: "sir" or "ma'am", as the game's $playerSirOrMadam. */
+    static String sir() {
+        try { return Global.getSector().getPlayerPerson().getGender() == FullName.Gender.FEMALE ? "ma'am" : "sir"; }
+        catch (Throwable t) { return "Captain"; }
+    }
+
     void found() {
         art("orbital_construction");
         if (!CASync.dormant() && !reread) { foundOnline(); return; }
@@ -171,10 +177,10 @@ public class CATriPad implements InteractionDialogPlugin {
         screen("COLONIAL ADMINISTRATION SUITE REV 7.31",
                 "CHARTER RECEIVED: " + colony().toUpperCase(),
                 "ADMINISTRATIVE SUBSTRATE NOT FOUND. CONTACT YOUR COLONIAL OFFICE.");
-        para("You forward it to Engineering. Your chief engineer calls back a few minutes later.");
-        para("\"It's old Domain firmware, Captain. Every TriPad has some buried in it, and most of it never runs. This one's a colony governor. "
-                + "It'd run the whole place for you if it could.\"");
-        para("They scroll through something on their end. \"Problem is, it wants a particular AI core to run on. 'Autarch-class.' Never heard of it.\"", "Autarch-class");
+        para("You forward it to Engineering. A few minutes later your chief engineer and your tech officer are both on the comm, partway into an argument.");
+        para("\"Domain administrative firmware,\" Tech says. \"Colonial grade. It's been in the TriPad's base layer the whole time, and the charter woke it up-\"");
+        para("\"-and it can't do anything,\" Engineering cuts in. \"It wants an AI core to run on. Some model called 'Autarch-class'. It won't take anything else.\"", "Autarch-class");
+        para("\"Never heard of it,\" your chief engineer adds. Tech starts to answer, then thinks better of it.");
         if (reread) { close("Put the TriPad away"); return; }
         options.clearOptions();
         options.addOption("\"What else does it say?\"", NOTES);
@@ -183,16 +189,17 @@ public class CATriPad implements InteractionDialogPlugin {
     }
 
     void foundNotes() {
-        String sys = CAAutarch.system();
+        String area = CAAutarch.area();
         para("The suite has already drawn up a plan for " + colony() + ". Most of it is building orders, with the first industry picked out and a few "
                 + "structures marked NOT RECOMMENDED. Every entry carries the same flag.");
         screen("AWAITING SUBSTRATE");
-        para("At the bottom is a maintenance log. Its last entry lists one Autarch-class core at a Domain research station "
-                + (sys != null ? "in the " + sys + " system" : "somewhere in the fringe") + ", scheduled for pickup, with no record that anyone came for it.",
-                sys != null ? sys : "fringe");
-        para("\"A Domain station that far out has probably been picked over,\" your chief engineer says. \"But salvagers go for plating and fuel. "
-                + "They wouldn't know what that core is. Might be worth a look.\"");
-        note("New objective: find the Autarch AI Core" + (sys != null ? " in the " + sys + " system." : "."));
+        para("At the bottom is a maintenance log. Its last entry lists one Autarch-class core at a Domain research station, scheduled for pickup. "
+                + "Nothing says anyone came for it.");
+        screen("LOCATION: " + (area != null ? area.toUpperCase() : "UNKNOWN") + ". FURTHER DATA CORRUPTED.");
+        para("\"That's all it has on where,\" Tech says. \"The station's own entry is gone. Someone would have to go out there and look.\"");
+        para("Engineering shrugs. \"Salvagers will have been through it. But they go for plating and fuel, not cores they can't identify. "
+                + "It could still be sitting there.\"");
+        note("New objective: find the Autarch AI Core" + (area != null ? " somewhere in the " + area + "." : "."));
         close("Put the TriPad away");
     }
 
@@ -236,13 +243,14 @@ public class CATriPad implements InteractionDialogPlugin {
         art("ai_core_uninstall");
         para("Your TriPad chimes with a tone you don't recognize.");
         screen("AUTARCH-CLASS SUBSTRATE DETECTED. CARGO HOLD.");
-        para("Your chief engineer is already down in the hold when you get there, running a scanner over a salvage crate. "
+        para("You find your chief engineer and your tech officer down in the hold, standing over an open salvage crate. "
                 + "Inside, packed in crash foam, is a dark steel cube with a small gold triangle on its lid.");
         options.clearOptions();
         if (CAAutarch.inCargo() < 1) { para("(The Autarch AI Core isn't in your cargo anymore.)"); close("Put the TriPad away"); return; }
         if (!CASync.dormant()) { para("(The Autopilot is already running.)"); close("Put the TriPad away"); return; }
-        para("\"It's an AI core, Captain, but not a pattern I know. Domain restricted markings all over it.\" They nod at your TriPad. "
-                + "\"That thing hasn't stopped pinging since we brought it aboard. What do you want done with it?\"");
+        para("\"That's the one,\" Tech says. \"The TriPad knew it the moment it came aboard.\"");
+        para("Engineering has their arms crossed. \"Restricted Domain markings on every face. Whatever this is, the Hegemony would want it.\" "
+                + "They look at you. \"Your call, " + sir() + ".\"");
         if (CASync.installed() && CASync.pulled()) {
             para("The cradle is still empty, and the suite on your TriPad still has its records.");
             options.addOption("\"Put it back in the cradle.\"", RESEAT);
@@ -262,8 +270,9 @@ public class CATriPad implements InteractionDialogPlugin {
         CASync.see(INSTALL);
         AddRemoveCommodity.addItemLossText(CAAutarch.item(), 1, text);
         if (cradle) {
-            para("Your chief engineer and your tech officer spend most of a shift building a shielded cradle out of spare parts, with a manual cutoff on top.");
-            para("\"If it does anything you don't like, you flip this,\" your chief engineer says, tapping the switch.");
+            para("It takes Engineering most of a shift to build a shielded cradle out of spare parts. Tech hovers the whole time, offering suggestions that mostly go ignored.");
+            para("\"Manual cutoff,\" your chief engineer says, tapping a switch on top. \"No software between this and the core. "
+                    + "If it does anything you don't like, you flip it.\"");
         }
         portrait();
         installText(cradle);
@@ -276,26 +285,27 @@ public class CATriPad implements InteractionDialogPlugin {
     void installText(boolean cradle) {
         if (cradle) para("The cradle's status light goes green.");
         else para("Your chief engineer seats the core in the TriPad's expansion port, and the latch clicks shut. "
-                + "\"That's not coming back out without tools,\" they say. \"Maybe not with them, either.\"");
+                + "\"That's not coming back out without a cutting torch,\" they say. \"Maybe not with one.\"");
         para("After a few seconds the progress bar finishes and the screen fills with text.");
         screen("COLONIAL ADMINISTRATION SUITE REV 7.31. SUBSTRATE: AUTARCH. SELF-TEST PASSED.",
                 "Good morning, Administrator.",
                 "Colonial Office link not found. Retrying.",
                 "Colonial Office link not found. Continuing under emergency provisions.",
                 "Charters on file: " + Math.max(1, Misc.getPlayerMarkets(false).size()) + ". Approved budget: none. Please submit a budget at your earliest convenience.");
-        para("Your tech officer reads it over your shoulder. \"Emergency provisions,\" they say. \"Well, it's not wrong.\"");
-        gained("The Colony Autopilot is running with " + CASync.total() + " processing power (PP). Pick what it runs on the Story page of the Colony Autopilot intel.");
-        note("Each core you give it adds PP: Alpha " + CASyncCatalog.ALPHA_PP + ", Beta " + CASyncCatalog.BETA_PP + ", Gamma " + CASyncCatalog.GAMMA_PP + ".");
+        para("Tech reads it over your shoulder. \"Emergency provisions,\" they say. \"Well, it's not wrong.\"");
+        para("\"It wants a budget,\" Engineering says. \"Of course it does.\"");
+        gained("The Colony Autopilot is running with " + CASync.total() + " bandwidth. Pick what it runs on the Story page of the Colony Autopilot intel.");
+        note("Each AI core you give it adds bandwidth: Alpha " + CASyncCatalog.ALPHA_PP + ", Beta " + CASyncCatalog.BETA_PP + ", Gamma " + CASyncCatalog.GAMMA_PP + ".");
     }
 
     void what() {
         screen("SERVICES AT CURRENT CAPACITY:",
                 "Advice, all colonies. Approve mode, one colony. No charge.",
-                "Auto mode: " + CASyncCatalog.get("auto").cost + " PP. Each additional colony: " + CASyncCatalog.COLONY_PP + " PP.",
-                "Items, cores and administrators: " + CASyncCatalog.get("items").cost + " PP each.",
-                "Expansion: " + CASyncCatalog.get("expansion").cost + " PP. War: " + CASyncCatalog.get("retaliate").cost + " PP and up.",
-                "Construction without waiting: " + CASyncCatalog.get("instantBuild").cost + " PP. Without cost: " + CASyncCatalog.get("freeBuild").cost + " PP.",
-                "Capacity: " + CASync.total() + " PP. Additional substrate accepted. Alpha-level preferred.");
+                "Auto mode: " + CASyncCatalog.get("auto").cost + " bandwidth. Each additional colony: " + CASyncCatalog.COLONY_PP + " bandwidth.",
+                "Items, cores and administrators: " + CASyncCatalog.get("items").cost + " bandwidth each.",
+                "Expansion: " + CASyncCatalog.get("expansion").cost + " bandwidth. War: " + CASyncCatalog.get("retaliate").cost + " bandwidth and up.",
+                "Construction without waiting: " + CASyncCatalog.get("instantBuild").cost + " bandwidth. Without cost: " + CASyncCatalog.get("freeBuild").cost + " bandwidth.",
+                "Bandwidth: " + CASync.total() + ". Additional substrate accepted. Alpha-level preferred.");
         para("The full list is on the Story page of the Colony Autopilot intel.");
         close("Put the TriPad away");
     }
@@ -306,14 +316,15 @@ public class CATriPad implements InteractionDialogPlugin {
         AddRemoveCommodity.addItemLossText(CAAutarch.item(), 1, text);
         portrait();
         screen("SUBSTRATE RESTORED. RESUMING FROM LAST RECORD.", "Welcome back, Administrator.");
-        gained("The Autopilot is running again with " + CASync.total() + " PP and every ability it had.");
+        gained("The Autopilot is running again with " + CASync.total() + " bandwidth and every ability it had.");
         close("Continue");
     }
 
     void breakAsk() {
-        para("Your chief engineer turns the core over in their hands for a while before answering.");
-        para("\"I can take it apart. Done carefully, it's about a year of work, and I'd want to do it carefully.\" They tap at their TriPad.");
-        para("\"The lattice should give us three alpha cores and two betas. Ordinary ones. Nothing that would raise questions at a Hegemony inspection.\"");
+        para("Your chief engineer turns the core over in their hands, frowning. Tech looks pained at the idea.");
+        para("\"I can take it apart, " + sir() + ". Carefully. That's about a year of work, and I'm not rushing it.\"");
+        para("\"The lattice is modular. Done right, we get three alpha cores and two betas out of it. Ordinary ones. "
+                + "Nothing a Hegemony inspector would look at twice.\"");
         options.clearOptions();
         options.addOption("\"Do it.\"", BREAK_YES);
         options.addOption("\"Not yet.\"", LATER);
@@ -335,7 +346,7 @@ public class CATriPad implements InteractionDialogPlugin {
         portrait();
         int[] f = CASync.fed();
         screen("SUBSTRATE ADDED: " + CASyncCatalog.cores(f[0], f[1], f[2]).toUpperCase() + ".", "Capacity increased. Thank you, Administrator.");
-        gained("The Autopilot has " + CASync.total() + " PP.");
+        gained("The Autopilot has " + CASync.total() + " bandwidth.");
         close("Put the TriPad away");
     }
 
@@ -362,13 +373,14 @@ public class CATriPad implements InteractionDialogPlugin {
         CASync.see(PULL);
         pulledText();
         AddRemoveCommodity.addItemGainText(CAAutarch.item(), 1, text);
-        note("The Autopilot is dormant. Putting the core back in the cradle brings back every ability and all its PP.");
+        note("The Autopilot is dormant. Putting the core back in the cradle brings back every ability and all its bandwidth.");
         close("Continue");
     }
 
     void broken() {
         art("ai_core_uninstall");
-        para("Engineering sends up a short report. The breakdown is done, and three alpha cores and two beta cores are packed in crash foam in the cargo hold.");
+        para("Engineering sends up a short report. The breakdown is done, and three alpha cores and two beta cores are packed in crash foam in the cargo hold. "
+                + "Tech has attached a much longer report of their own.");
         if (!reread) {
             AddRemoveCommodity.addCommodityGainText(CASyncCatalog.ALPHA, CASyncCatalog.BREAKDOWN_ALPHA, text);
             AddRemoveCommodity.addCommodityGainText(CASyncCatalog.BETA, CASyncCatalog.BREAKDOWN_BETA, text);
@@ -378,11 +390,11 @@ public class CATriPad implements InteractionDialogPlugin {
 
     void returned() {
         art("abandoned_station");
-        String sys = CAAutarch.system();
-        screen("AUTARCH-CLASS SUBSTRATE SIGNAL. SOURCE: " + (sys != null ? sys.toUpperCase() : "UNKNOWN") + ".");
-        para("Your TriPad has picked up another Autarch-class core" + (sys != null ? " in the " + sys + " system" : "")
-                + ". Your sensors officer checks the reading twice and can't find anything wrong with it.");
-        if (sys != null) note("New objective: find the Autarch AI Core in the " + sys + " system.");
+        String area = CAAutarch.area();
+        screen("AUTARCH-CLASS SUBSTRATE SIGNAL. SOURCE: " + (area != null ? area.toUpperCase() : "UNKNOWN") + ".");
+        para("Your TriPad has picked up another Autarch-class core" + (area != null ? " somewhere in the " + area : "")
+                + ". Your sensors officer checks the reading twice. It's real, but too faint to pin to one system.");
+        if (area != null) note("New objective: find the Autarch AI Core somewhere in the " + area + ".");
         close("Put the TriPad away");
     }
 

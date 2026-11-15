@@ -192,7 +192,7 @@ public class CASetupUI {
                 "Charge: once per fleet your forces defeat. A battle you fight yourself gets the game's penalty."});
         HOVER.put("enfcost", new String[]{"Reputation: the game's penalty for defeating that fleet yourself, -3. Commerce raiders and police: none.",
                 "Credits: fleet points x Nexerelin's fleet request price (400 without it), paid above the credit reserve."});
-        HOVER.put("enfnear", new String[]{"Your system: a marked fleet is hostile to your fleet too."});
+        HOVER.put("enfhere", new String[]{"A marked fleet is hostile to your fleet too."});
         HOVER.put("enfint", new String[]{"Intercept: colony patrols in the system get an order to intercept the fleet."});
     }
 
@@ -660,7 +660,7 @@ public class CASetupUI {
         row(t, "Skip allies and League membership", onOff(!s.enfAlliesOK), on, "enfally", true);
         if (nex) row(t, "Skip ceasefires", onOff(!s.enfCeasefireOK), on, "enfcease", true);
         row(t, "Off in Low profile", onOff(!s.enfLowProfileOK), on, "enflow", true);
-        row(t, "Off in your fleet's system", onOff(!s.enfNearYouOK), on, "enfnear", true);
+        row(t, "Attack in your fleet's system", onOff(s.enfNearYouOK), on, "enfhere", true);
         row(t, "Patrols intercept", onOff(s.enfIntercept), off, "enfint", true);
     }
 
@@ -998,7 +998,7 @@ public class CASetupUI {
         else if (k.equals("enfally")) s.enfAlliesOK = !s.enfAlliesOK;
         else if (k.equals("enfcease")) s.enfCeasefireOK = !s.enfCeasefireOK;
         else if (k.equals("enflow")) s.enfLowProfileOK = !s.enfLowProfileOK;
-        else if (k.equals("enfnear")) s.enfNearYouOK = !s.enfNearYouOK;
+        else if (k.equals("enfhere")) s.enfNearYouOK = !s.enfNearYouOK;
         else if (k.equals("enfint")) s.enfIntercept = !s.enfIntercept;
         else if (k.equals("ambfocus")) s.ambassadorFocus = (Math.max(0, Math.min(3, s.ambassadorFocus)) + 1) % 4;
         else if (k.equals("ambstop")) s.ambassadorStopAt = (Math.max(0, Math.min(3, s.ambassadorStopAt)) + 1) % 4;

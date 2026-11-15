@@ -13,8 +13,8 @@ import java.util.Map;
  * and is never retried every frame.
  */
 public class CAMigrate {
-    /** The saved-data layout this build writes (CAData.schema and CASettings.settingsVersion). 0.3.2.0: 4 (production floors). 0.3.3.0: 5 (mode presets). */
-    public static final int SCHEMA = 5;
+    /** The saved-data layout this build writes (CAData.schema and CASettings.settingsVersion). 0.3.2.0: 4 (production floors). 0.3.3.0: 5 (mode presets). 0.3.6.6: 6 (enforcer patrols in your fleet's system). */
+    public static final int SCHEMA = 6;
     /** The 0.3.0 layout: a save below it gets to3 as well. */
     static final int SCHEMA_030 = 3;
 
@@ -53,6 +53,7 @@ public class CAMigrate {
         else if (fromData < SCHEMA_030) ok = stances(s);
         if (fromSettings < 4 && !to4(d, s)) ok = false;
         if (fromSettings < 5 && !to5(d, s)) ok = false;
+        if (fromSettings < 6 && !to6(s)) ok = false;
         if (before030) {
             try { d.migratedAt = Global.getSector().getClock().getTimestamp(); } catch (Throwable ignored) { }
             try {
@@ -106,6 +107,15 @@ public class CAMigrate {
             } catch (Throwable ignored) { }
             return true;
         } catch (Throwable t) { warn("mode presets", t); return false; }
+    }
+
+    /** 0.3.6.6: patrols attack enforcement fleets while your fleet is in the system (the old default left them alone then). */
+    static boolean to6(CASettings s) {
+        try {
+            s.enfNearYouOK = true;
+            if (s.enfOn) { try { CALog.quiet("Settings: Attack in your fleet's system is on (0.3.6.6)."); } catch (Throwable ignored) { } }
+            return true;
+        } catch (Throwable t) { warn("enforcer patrols", t); return false; }
     }
 
     /** What an older save's settings started as: the recommended values after setup, a new save's before it. */

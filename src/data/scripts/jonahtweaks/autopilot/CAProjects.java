@@ -373,7 +373,7 @@ public class CAProjects {
                 // first in the plan forever (0.2.38.0): it's yours to build instead
                 if (!CADiagnostics.autopilotBuilds(pl.building) && !CAEngine.isSupported(pl.building)) {
                     if (CALog.once("yours:" + pl.good))   // 0.3.1.0: one key per good (it held per project and host before)
-                        CALog.advise(pl.hostName + ": " + buildingName(pl.building) + " would make " + name(pl.good) + " (" + forWhat + "). Autopilot does not build it. Yours to build.", true);
+                        CALog.quiet(pl.hostName + ": " + buildingName(pl.building) + " would make " + name(pl.good) + " (" + forWhat + "). Autopilot does not build it.");   // 0.3.6.6: starsector.log only
                     continue;
                 }
                 if (s.projectSupplyMode == 0) {
@@ -386,9 +386,9 @@ public class CAProjects {
                             + " (" + forWhat + (pl.locked ? ", research first" : "") + ").");
             }
             for (String g : last.unresolved) if (CALog.once("yours:" + g))
-                CALog.advise(name(g) + " (" + forWhat(g) + "): no Auto colony can host " + hostText(g) + ". Yours to build.", true);
+                CALog.quiet(name(g) + " (" + forWhat(g) + "): no Auto colony can host " + hostText(g) + ".");   // 0.3.6.6: starsector.log only
             if (project != null && !other.isEmpty() && CALog.once("projo:" + project + ":" + other))
-                CALog.advise(project + " also needs " + CAContracts.join(other) + ". Yours to find.");
+                CALog.quiet(project + " also needs " + CAContracts.join(other) + ".");   // 0.3.6.6: starsector.log only
         } catch (Throwable t) {
             broken = true;
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "can't read Vaults of Knowledge's special projects; their supply is left to you", t);

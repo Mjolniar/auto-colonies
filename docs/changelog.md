@@ -1,5 +1,17 @@
 # Patch notes
 
+## 0.3.6.6 - 2026-11-14
+
+- Story mode: The TriPad names the constellation the Autarch AI Core is in. The system is not named.
+- Story mode: Before the core is installed, the intel, the Story page, the new-save pop-up and the settings text do not mention feeding cores or abilities.
+- Story mode: Processing power (PP) is renamed bandwidth.
+- Story mode: Rewrote the chief engineer and tech officer lines.
+- Enforcer patrols: Patrols attack while your fleet is in the system. The row is now Attack in your fleet's system, On by default. Older saves get it On once.
+- Enforcer patrols: A Persean League blockade's escort fleets count as League enforcers.
+- Enforcer patrols: A fleet the game made hostile to your fleet only is attacked.
+- Stations: Strength counts shields and fighter wing OP and weights firepower 2 to 1 over durability. Armor counts 5x, down from 10x.
+- Projects: Lines about buildings Autopilot can't build or goods it can't find go to starsector.log only.
+
 ## 0.3.6.5 - 2026-11-14
 
 - Story mode: Rewrote the TriPad dialogue. The chief engineer and tech officer talk you through the core, and the Autarch speaks like a Domain administration program. Player choices are lines you say.

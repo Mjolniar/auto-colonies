@@ -23,13 +23,13 @@
 
 - Settings: Advanced, War. Enforcer patrols Off by default. Each fleet type Off by default.
 - Fleet types: Hegemony investigators, Hegemony AI inspections, Persean League enforcers, Luddic sacred protectors, Tri-Tachyon commerce raiders, Nexerelin police (with Nexerelin).
-- Finding: by the game's memory flag on the fleet. Inspection task forces: by the inspection's intel.
+- Finding: by the game's memory flag on the fleet. Inspection task forces: by the inspection's intel. League blockade escorts: by their hassle type.
 - Where: systems with Auto colonies (default), or systems with any colony of yours.
 - Checks: four a day. A target is hostile to your faction for one day, renewed while it stays. Colony patrols and stations engage it.
 - End: the fleet leaves the system, a gate applies, or the setting is turned off.
-- Left alone: your faction's fleets, support fleets, stations, factions already hostile to you, fleets the game already made hostile.
-- Gates, each On by default: your commissioner, allies and League membership, ceasefires (Nexerelin), Low profile, the system your fleet is in.
-- Your fleet: a marked fleet is hostile to your fleet too.
+- Left alone: your faction's fleets, support fleets, stations, factions already hostile to you, fleets the game already made hostile to your faction.
+- Gates, each On by default: your commissioner, allies and League membership, ceasefires (Nexerelin), Low profile.
+- Your fleet: Attack in your fleet's system is On by default. A marked fleet is hostile to your fleet too.
 - Patrols intercept: Off by default. On: colony patrols in the system get an intercept order.
 - Charge: once per fleet, when it loses a battle to your faction's fleets. A battle you fight yourself gets only the game's own penalty.
 - Enforcer cost: Reputation (default), Credits, Both, None.

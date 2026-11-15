@@ -266,7 +266,8 @@ public class CASettings {
     public static final String[] ENF_KIND_NAMES = {"Hegemony investigators", "Hegemony AI inspections", "Persean League enforcers",
             "Luddic sacred protectors", "Tri-Tachyon commerce raiders", "Nexerelin police"};
     /** 0.3.1.0: gates, inverted so false keeps the gate on: your commissioner, allies, ceasefires, Low profile, your fleet's system. */
-    public boolean enfCommissionOK = false, enfAlliesOK = false, enfCeasefireOK = false, enfLowProfileOK = false, enfNearYouOK = false;
+    /** 0.3.6.6: enfNearYouOK is true by default (patrols attack while your fleet is in the system); CAMigrate.to6 sets it once in older saves. */
+    public boolean enfCommissionOK = false, enfAlliesOK = false, enfCeasefireOK = false, enfLowProfileOK = false, enfNearYouOK = true;
     /** 0.3.1.0: false: systems with Auto colonies only; true: systems with any colony of yours. */
     public boolean enfAllColonies = false;
     /** 0.3.1.0: colony patrols in the system get an intercept order. */

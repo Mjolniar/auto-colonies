@@ -1,6 +1,6 @@
 fieldID,fieldName,fieldType,defaultValue,secondaryValue,fieldDescription,minValue,maxValue,tab
 ca_h_storymode,Story mode,Header,Story mode,,,,,
-ca_storymode,Story mode,Boolean,false,,"On: the Colony Autopilot stays dormant until you find the Autarch AI Core, then runs the abilities you buy with the AI cores you give it. Off: every feature works from the start. Each save keeps its story progress when you switch, but processing power you spent is not refunded.",,,
+ca_storymode,Story mode,Boolean,false,,"On: the Colony Autopilot starts dormant, and a storyline unlocks it. Off: every feature works from the start. Each save keeps its story progress when you switch.",,,
 ca_t_presets,,Text,"Presets set several fields at once; each field is on the Advanced tab. Mode default sets the group to the empire mode's values, which then follow the mode. Custom shows that the fields match no option; picking it changes nothing.",,,,,
 ,,,,,,,,
 ca_h_playstyle,Playstyle,Header,Playstyle,,,,,
@@ -116,7 +116,7 @@ ca_enfcomm,Skip your commissioner,Boolean,true,,No attacks on the faction you ho
 ca_enfally,Skip allies and League membership,Boolean,true,,"No attacks on allies, or on the League while you are a member.",,,Advanced
 ca_enfcease,Skip ceasefires,Boolean,true,,Needs Nexerelin.,,,Advanced
 ca_enflow,Off in Low profile,Boolean,true,,No attacks while Low profile is on.,,,Advanced
-ca_enfnear,Off in your fleet's system,Boolean,true,,Your system: a marked fleet is hostile to your fleet too.,,,Advanced
+ca_enfhere,Attack in your fleet's system,Boolean,true,,On: patrols attack while your fleet is in the system. A marked fleet is hostile to your fleet too.,,,Advanced
 ca_enfint,Patrols intercept,Boolean,false,,Colony patrols in the system get an order to intercept the fleet.,,,Advanced
 ,,,,,,,,
 ca_h_adv_capital,Capital and storage,Header,Capital and storage,,,,,Advanced

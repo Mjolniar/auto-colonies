@@ -101,19 +101,35 @@ public class CAStations {
         return v;
     }
 
+    /**
+     * 0.3.6.6: durability is hull, armor x5 and shield (flux capacity over flux per damage); firepower is weapon OP plus each
+     * fighter wing's OP twice (wings replace their losses). Armor counted x10 before, so armor plates outweighed guns and fighters.
+     */
     static void add(ShipVariantAPI v, float[] df) {
         if (v == null || v.getHullSpec() == null) return;
-        df[0] += v.getHullSpec().getHitpoints() + 10f * v.getHullSpec().getArmorRating();
+        com.fs.starfarer.api.combat.ShipHullSpecAPI h = v.getHullSpec();
+        df[0] += h.getHitpoints() + 5f * h.getArmorRating();
+        try {
+            com.fs.starfarer.api.combat.ShieldAPI.ShieldType st = h.getShieldType();
+            if (st == com.fs.starfarer.api.combat.ShieldAPI.ShieldType.FRONT || st == com.fs.starfarer.api.combat.ShieldAPI.ShieldType.OMNI) {
+                float per = h.getShieldSpec() == null ? 1f : h.getShieldSpec().getFluxPerDamageAbsorbed();
+                df[0] += h.getFluxCapacity() / Math.max(0.1f, per);
+            }
+        } catch (Throwable ignored) { }
         for (String slot : v.getFittedWeaponSlots()) {
             WeaponSpecAPI w = Global.getSettings().getWeaponSpec(v.getWeaponId(slot));
             if (w != null) df[1] += w.getOrdnancePointCost(null);
         }
-        df[1] += 20f * v.getFittedWings().size();
+        for (String wing : v.getFittedWings()) {
+            float op = 10f;
+            try { op = Global.getSettings().getFighterWingSpec(wing).getOpCost(null); } catch (Throwable ignored) { }
+            df[1] += 2f * op;
+        }
     }
 
-    /** Pure (JTStationCheck): durability and firepower as one number, their geometric mean. */
+    /** Pure (JTStationStrengthCheck): durability and firepower as one number, firepower weighted 2 to 1 (0.3.6.6; was their geometric mean). */
     static float pureStrength(float durability, float firepower) {
-        return durability <= 0f ? 0f : (float) Math.sqrt(durability * Math.max(1f, firepower));
+        return durability <= 0f ? 0f : (float) (Math.cbrt(durability) * Math.pow(Math.max(1f, firepower), 2.0 / 3.0));
     }
 
     /** Pure (JTStationCheck): strength against the low-tech station of the tier, 0.5 to 2.5; 1 when either is unknown. */

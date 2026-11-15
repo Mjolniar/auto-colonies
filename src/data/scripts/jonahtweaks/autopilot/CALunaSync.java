@@ -77,9 +77,8 @@ public final class CALunaSync {
         tab = GENERAL;
         // 0.3.6.0: story mode, first, under its own header. Each save follows it on load and on a save in this menu (onLoad, changed)
         header("storymode", "Story mode");
-        Row st = row(BOOL, "storymode", "Story mode", "On: the Colony Autopilot stays dormant until you find the Autarch AI Core, then runs the "
-                + "abilities you buy with the AI cores you give it. Off: every feature works from the start. Each save keeps its story progress "
-                + "when you switch, but processing power you spent is not refunded.");
+        Row st = row(BOOL, "storymode", "Story mode", "On: the Colony Autopilot starts dormant, and a storyline unlocks it. Off: every feature "
+                + "works from the start. Each save keeps its story progress when you switch.");
         st.get = s -> CASync.on();
         st.set = (s, v, b) -> { };   // applied before the other rows (story())
         text("presets", "Presets set several fields at once; each field is on the Advanced tab. Mode default sets the group to the empire mode's "
@@ -270,7 +269,8 @@ public final class CALunaSync {
         bool("enfally", "Skip allies and League membership", "enfAlliesOK", true, "No attacks on allies, or on the League while you are a member.");
         bool("enfcease", "Skip ceasefires", "enfCeasefireOK", true, "Needs Nexerelin.");
         bool("enflow", "Off in Low profile", "enfLowProfileOK", true, "No attacks while Low profile is on.");
-        bool("enfnear", "Off in your fleet's system", "enfNearYouOK", true, "Your system: a marked fleet is hostile to your fleet too.");
+        // 0.3.6.6: was "Off in your fleet's system" (enfnear, inverted, default on); patrols now attack while you are there by default
+        bool("enfhere", "Attack in your fleet's system", "enfNearYouOK", false, "On: patrols attack while your fleet is in the system. A marked fleet is hostile to your fleet too.");
         bool("enfint", "Patrols intercept", "enfIntercept", false, "Colony patrols in the system get an order to intercept the fleet.");
 
         header("adv_capital", "Capital and storage");

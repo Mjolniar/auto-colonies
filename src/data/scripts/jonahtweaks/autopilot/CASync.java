@@ -115,8 +115,8 @@ public class CASync {
         if (want) switchOn(s); else switchOff(s);
         if (want) {
             try { startGame(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode start failed", t); }
-            CALog.did(dormant() ? "Story mode is on. The Colony Autopilot is a dormant program on your TriPad until it has the Autarch AI Core."
-                    : "Story mode is on. The Autarch AI Core runs the abilities you bought with its processing power.", true);
+            CALog.did(dormant() ? "Story mode is on. The Colony Autopilot on your TriPad is dormant."
+                    : "Story mode is on. The Autarch AI Core runs the abilities you switched on.", true);
         } else {
             try { stopGame(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode stop failed", t); }
             CALog.did("Story mode is off. Every Colony Autopilot feature works again. The Autarch AI Core's story picks up where it stopped when you switch story mode back on.", true);
@@ -245,10 +245,10 @@ public class CASync {
         }
         if (dormant()) return "The Colony Autopilot is dormant.";
         if (a.requires != null && !ticked(a.requires)) return a.name + " needs " + CASyncCatalog.get(a.requires).name + " first.";
-        if (free() < a.cost) return a.name + " needs " + a.cost + " PP, and " + Math.max(0, free()) + " are free.";
+        if (free() < a.cost) return a.name + " needs " + a.cost + " bandwidth, and " + Math.max(0, free()) + " are free.";
         ticked().add(id);
         afterChange();
-        CALog.did("Autopilot: " + a.name + " is on (" + a.cost + " PP).");
+        CALog.did("Autopilot: " + a.name + " is on (" + a.cost + " bandwidth).");
         return null;
     }
 
@@ -264,7 +264,7 @@ public class CASync {
         if (!on()) return "Story mode is off.";
         if (dormant()) return "The Colony Autopilot is dormant.";
         if (extraColonies() >= CASyncCatalog.MAX_COLONIES) return "It can't run more colonies.";
-        if (free() < CASyncCatalog.COLONY_PP) return "One more managed colony needs " + CASyncCatalog.COLONY_PP + " PP, and " + Math.max(0, free()) + " are free.";
+        if (free() < CASyncCatalog.COLONY_PP) return "One more managed colony needs " + CASyncCatalog.COLONY_PP + " bandwidth, and " + Math.max(0, free()) + " are free.";
         num("colonies", extraColonies() + 1);
         afterChange();
         return null;
@@ -338,7 +338,7 @@ public class CASync {
         int pts = CASyncCatalog.points(g, b, a);
         num("fedPP", fedPoints() + pts);
         num("fedG", num("fedG") + g); num("fedB", num("fedB") + b); num("fedA", num("fedA") + a);
-        CALog.did("Autopilot: integrated " + CASyncCatalog.cores(g, b, a) + ", +" + pts + " PP (" + total() + " PP).", true);
+        CALog.did("Autopilot: integrated " + CASyncCatalog.cores(g, b, a) + ", +" + pts + " bandwidth (" + total() + " in all).", true);
         if (!seen(CATriPad.FEED)) queued = new CATriPad(CATriPad.FEED, null, false);
         return null;
     }
@@ -462,9 +462,9 @@ public class CASync {
     /** Why a colony can't have this mode now. */
     public static String manageWhy(CAData.Mode mode) {
         if (dormant()) return pulled() ? "The Autarch AI Core is out of its cradle." : "The Colony Autopilot needs the Autarch AI Core.";
-        if (mode == CAData.Mode.AUTO && !has("auto")) return "Auto mode is off; it costs " + CASyncCatalog.get("auto").cost + " PP on the Story page.";
+        if (mode == CAData.Mode.AUTO && !has("auto")) return "Auto mode is off; it costs " + CASyncCatalog.get("auto").cost + " bandwidth on the Story page.";
         int cap = managedCap();
-        return "All " + cap + " managed colonies are in use; one more costs " + CASyncCatalog.COLONY_PP + " PP on the Story page.";
+        return "All " + cap + " managed colonies are in use; one more costs " + CASyncCatalog.COLONY_PP + " bandwidth on the Story page.";
     }
 
     /** Daily and after every change: colonies over the limit wait in Advisor, Auto without Auto mode is Approve, and wanted modes come back. */
@@ -889,7 +889,7 @@ public class CASync {
             if (!r.field.equals(f) || has(r.ability)) continue;
             CASyncCatalog.Ability a = CASyncCatalog.get(r.ability);
             if (a == null || !a.available()) continue;
-            String n = a.name + " (" + a.cost + " PP)";
+            String n = a.name + " (" + a.cost + " bandwidth)";
             if (!names.contains(n)) names.add(n);
         }
         if (names.isEmpty()) return null;
@@ -907,7 +907,7 @@ public class CASync {
         return false;
     }
 
-    static String cost(String id) { CASyncCatalog.Ability a = CASyncCatalog.get(id); return a == null ? "" : a.cost + " PP"; }
+    static String cost(String id) { CASyncCatalog.Ability a = CASyncCatalog.get(id); return a == null ? "" : a.cost + " bandwidth"; }
 
     // ---------------- the core's life: install, cradle, pull, break down, sell, return ----------------
 
@@ -921,7 +921,7 @@ public class CASync {
         if (!back) flag("cradle", cradle);
         phase("");
         afterChange();
-        CALog.did("Autopilot: AUTARCH ONLINE. " + total() + " PP.", true);
+        CALog.did("Autopilot: AUTARCH ONLINE. " + total() + " bandwidth.", true);
         return null;
     }
 
@@ -999,6 +999,7 @@ public class CASync {
         phase("");
         num("gen", generation() + 1);
         text("autarchSystem", null);
+        text("autarchArea", null);
         return true;
     }
 
@@ -1052,7 +1053,7 @@ public class CASync {
             else if (what.equals("b1")) err = feed(0, 1, 0);
             else if (what.equals("g1")) err = feed(1, 0, 0);
             else if (what.equals("all")) err = feed(h[0], h[1], h[2]);
-            if (err == null) notice = total() + " PP.";
+            if (err == null) notice = total() + " bandwidth.";
         }
         else if (rest.equals("keep")) flag("noKeep", keepCores());
         else if (rest.equals("storymode")) setOn(!on());   // the intel Settings page while LunaLib is off (CASetupUI.storyRow)
@@ -1082,7 +1083,7 @@ public class CASync {
             notice = "Beta: an Autarch AI Core in your cargo.";
         } else if (op.equals("pp")) {
             num("fedPP", fedPoints() + 100);
-            notice = "Beta: +100 PP.";
+            notice = "Beta: +100 bandwidth.";
         } else if (op.equals("reset")) {
             // 0.3.6.2: held settings and colony modes come back, and the watcher and listener stop, before the state goes
             try { switchOff(CAData.settings()); stopGame(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story reset release failed", t); }

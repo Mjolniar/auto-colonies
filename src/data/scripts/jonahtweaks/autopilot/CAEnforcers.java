@@ -43,8 +43,9 @@ import java.util.function.Predicate;
  *   ($nex_HA_police). Hegemony AI inspection task forces: the active fleets of a HegemonyInspectionIntel's routes. Fleet
  *   types such as "inspectionFleet" and "taskForce" are not used: unrelated fleets, your support fleets among them, carry them.
  * - Skipped: your fleet, your faction's fleets, support fleets, stations, a faction already hostile to you, a fleet the game
- *   already made hostile, and the gates (your commissioner, allies including League membership, ceasefires, Low profile,
- *   your fleet's system), each a setting.
+ *   already made hostile to your faction, and the gates (your commissioner, allies including League membership, ceasefires,
+ *   Low profile, your fleet's system), each a setting. 0.3.6.6: patrols attack in your fleet's system by default, and a League
+ *   blockade's escorts count as League enforcers.
  * - Mark: Misc.makeHostileToFaction(fleet, player, 1 day) and Auto Colonies' record in the fleet's memory (MEM_*), renewed by
  *   each check. Colony patrols ("marketId_military" routes) and stations then engage it. The mark ends when the fleet leaves
  *   the scope, a gate closes or the setting turns off. With the intercept setting, colony patrols in the system get an
@@ -267,6 +268,8 @@ public class CAEnforcers implements EveryFrameScript {
                 MemoryAPI mem = f.getMemoryWithoutUpdate();
                 boolean ours = mem.contains(MEM_KIND);
                 int k = kindOf(mem::getBoolean);
+                // 0.3.6.6: a League blockade's escorts carry the enforcers' hassle type, not their flag
+                if (k < 0 && "leagueEnforcer".equals(mem.getString(MemFlags.HASSLE_TYPE))) k = LEAGUE;
                 if (k < 0 && ours) k = kindIndex(mem.getString(MEM_KIND));
                 if (k >= 0 && (ours || s.enfKind(k))) out.put(f, k);   // a type set to Off is looked at only to end its mark
             }
@@ -300,7 +303,8 @@ public class CAEnforcers implements EveryFrameScript {
         x.ceasefire = ceasefire(fac);
         x.hostile = fac.isHostileTo(Factions.PLAYER);
         MemoryAPI mem = f.getMemoryWithoutUpdate();
-        x.flagged = !mem.contains(MEM_KIND) && (mem.contains(MemFlags.MEMORY_KEY_MAKE_HOSTILE) || mem.getBoolean(HOSTILE_TO_YOU));
+        // 0.3.6.6: only a fleet the game already made hostile to your faction (patrols fight it anyway); one hostile to your fleet alone is marked
+        x.flagged = !mem.contains(MEM_KIND) && mem.getBoolean(HOSTILE_TO_YOU);
         x.nearYou = here != null && f.getContainingLocation() == here;
         return x;
     }
