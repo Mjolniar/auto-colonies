@@ -263,6 +263,7 @@ public class CASync {
     public static String addColony() {
         if (!on()) return "Story mode is off.";
         if (dormant()) return "The Colony Autopilot is dormant.";
+        if (!has("approve")) return "Approve mode comes first.";   // 0.3.7.2
         if (extraColonies() >= CASyncCatalog.MAX_COLONIES) return "It can't run more colonies.";
         if (free() < CASyncCatalog.COLONY_PP) return "One more managed colony needs " + CASyncCatalog.COLONY_PP + " bandwidth, and " + Math.max(0, free()) + " are free.";
         num("colonies", extraColonies() + 1);
@@ -415,8 +416,8 @@ public class CASync {
 
     // ---------------- colony modes ----------------
 
-    /** Colonies in Approve or Auto the abilities allow: the first one, plus each bought; none while dormant. */
-    public static int managedCap() { return !on() ? Integer.MAX_VALUE : dormant() ? 0 : 1 + extraColonies(); }
+    /** Colonies in Approve or Auto the abilities allow: one with Approve mode, plus each bought; none while dormant. */
+    public static int managedCap() { return !on() ? Integer.MAX_VALUE : dormant() || !has("approve") ? 0 : 1 + extraColonies(); }   // 0.3.7.2: Approve mode is bought
 
     static boolean counts(MarketAPI m) {
         try { return m != null && !CAEngine.isOutpost(m) && !CAHypershunt.is(m); } catch (Throwable t) { return m != null; }
@@ -447,82 +448,95 @@ public class CASync {
         MarketAPI m = id == null ? null : market(id);
         if (id == null || !counts(m)) return mode;
         Map<String, String> want = wanted();
-        if (!managing(mode)) { want.remove(id); return mode; }
-        CAData.Mode got = mode;
-        if (got == CAData.Mode.AUTO && !has("auto")) got = CAData.Mode.APPROVE;
-        if (!managing(c.mode)) {
+        boolean room = true;
+        if (managing(mode) && !managing(c.mode)) {
             int n = 0;
             for (MarketAPI x : Misc.getPlayerMarkets(false)) if (x != m && counts(x) && managing(d.colony(x.getId()).mode)) n++;
-            if (n >= managedCap()) got = CAData.Mode.ADVISOR;
+            room = n < managedCap();
         }
+        CAData.Mode got = allowed(mode, has("auto"), has("approve"), has("advisor"), room);
         if (got != mode) {
             want.put(id, mode.name());
-            modeNote = m.getName() + " is in " + got.label + " for now. " + manageWhy(mode);
+            modeNote = m.getName() + " is " + (got == CAData.Mode.OFF ? "Off" : "in " + got.label) + " for now. " + manageWhy(mode);
         } else want.remove(id);
         return got;
+    }
+
+    /**
+     * 0.3.7.2, pure: the mode a colony gets for the one it wants. Auto without Auto mode is Approve; Approve or Auto without
+     * Approve mode, or with no managed colony left (room), is Advisor; Advisor without Advisor mode is Off.
+     */
+    static CAData.Mode allowed(CAData.Mode wanted, boolean auto, boolean approve, boolean advisor, boolean room) {
+        CAData.Mode to = wanted;
+        if (to == CAData.Mode.AUTO && !auto) to = CAData.Mode.APPROVE;
+        if (managing(to) && (!approve || !room)) to = CAData.Mode.ADVISOR;
+        if (to == CAData.Mode.ADVISOR && !advisor) to = CAData.Mode.OFF;
+        return to;
     }
 
     /** Why a colony can't have this mode now. */
     public static String manageWhy(CAData.Mode mode) {
         if (dormant()) return pulled() ? "The Autarch AI Core is out of its cradle." : "The Colony Autopilot needs the Autarch AI Core.";
-        if (mode == CAData.Mode.AUTO && !has("auto")) return "Auto mode is off; it costs " + CASyncCatalog.get("auto").cost + " bandwidth on the Story page.";
+        if (managing(mode) && !has("approve")) return "Approve mode costs " + CASyncCatalog.get("approve").cost + " bandwidth in the Autopilot panel.";
+        if (mode == CAData.Mode.AUTO && !has("auto")) return "Auto mode costs " + CASyncCatalog.get("auto").cost + " bandwidth in the Autopilot panel.";
+        if (mode == CAData.Mode.ADVISOR && !has("advisor")) return "Advisor mode costs " + CASyncCatalog.get("advisor").cost + " bandwidth in the Autopilot panel.";
         int cap = managedCap();
-        return "All " + cap + " managed colonies are in use; one more costs " + CASyncCatalog.COLONY_PP + " bandwidth on the Story page.";
+        return "All " + cap + " managed colonies are in use; one more costs " + CASyncCatalog.COLONY_PP + " bandwidth in the Autopilot panel.";
     }
 
-    /** Daily and after every change: colonies over the limit wait in Advisor, Auto without Auto mode is Approve, and wanted modes come back. */
+    /**
+     * Daily and after every change: each colony gets the mode it wants as far as the bought abilities allow (allowed), and
+     * what it wanted comes back when they do. 0.3.7.2: with nothing bought every colony is Off. Colonies already in Approve
+     * or Auto keep their managed places first, then the biggest. A colony you set to Off stays Off.
+     */
     public static void enforceModes() {
         if (!on()) return;
-        CAData d;
+        final CAData d;
         try { d = CAData.get(); } catch (Throwable t) { return; }
         Map<String, String> want = wanted();
         List<MarketAPI> mine = new ArrayList<MarketAPI>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) if (counts(m)) mine.add(m);
-        Collections.sort(mine, new Comparator<MarketAPI>() {   // biggest first: they keep their place, and get it back first
+        Collections.sort(mine, new Comparator<MarketAPI>() {
             public int compare(MarketAPI a, MarketAPI b) {
+                boolean ma = managing(d.colony(a.getId()).mode), mb = managing(d.colony(b.getId()).mode);
+                if (ma != mb) return ma ? -1 : 1;
                 if (a.getSize() != b.getSize()) return b.getSize() - a.getSize();
                 return a.getName().compareTo(b.getName());
             }
         });
         int cap = managedCap(), n = 0;
-        boolean auto = has("auto");
+        boolean auto = has("auto"), approve = has("approve"), advisor = has("advisor");
         for (MarketAPI m : mine) {
-            CAData.Colony c = d.colony(m.getId());
-            if (!managing(c.mode)) continue;
-            if (n >= cap) {
-                want.put(m.getId(), c.mode.name());
-                c.mode = CAData.Mode.ADVISOR;
-                d.clearPending(c);
-                CALog.did(m.getName() + ": moved to Advisor. " + manageWhy(CAData.Mode.APPROVE), true);
-                continue;
-            }
-            n++;
-            if (c.mode == CAData.Mode.AUTO && !auto) {
-                want.put(m.getId(), CAData.Mode.AUTO.name());
-                c.mode = CAData.Mode.APPROVE;
-                d.clearPending(c);
-                CALog.did(m.getName() + ": stays in Approve until Auto mode is on.", true);
-            }
+            String id = m.getId();
+            CAData.Colony c = d.colony(id);
+            String w = want.get(id);
+            CAData.Mode wanted = c.mode;
+            if (w != null) { try { wanted = CAData.Mode.valueOf(w); } catch (Throwable t) { want.remove(id); w = null; } }
+            if (w == null && c.mode == CAData.Mode.OFF) continue;   // you set it Off
+            if (wanted == CAData.Mode.OFF) { want.remove(id); continue; }
+            CAData.Mode to = allowed(wanted, auto, approve, advisor, n < cap);
+            if (managing(to)) n++;
+            if (to == wanted) want.remove(id); else want.put(id, wanted.name());
+            if (c.mode == to) continue;
+            boolean down = to.ordinal() < c.mode.ordinal();
+            c.mode = to;
+            d.clearPending(c);
+            CALog.did(m.getName() + (down ? ": " + (to == CAData.Mode.OFF ? "Off" : to.label) + " for now. " + manageWhy(wanted) : ": back in " + to.label + "."), true);
         }
-        for (MarketAPI m : mine) {
-            String w = want.get(m.getId());
-            if (w == null) continue;
-            CAData.Mode mo;
-            try { mo = CAData.Mode.valueOf(w); } catch (Throwable t) { want.remove(m.getId()); continue; }
-            CAData.Colony c = d.colony(m.getId());
-            if (c.mode == CAData.Mode.OFF) { want.remove(m.getId()); continue; }   // you turned it off since
-            CAData.Mode to = mo == CAData.Mode.AUTO && !auto ? CAData.Mode.APPROVE : mo;
-            if (!managing(c.mode)) {
-                if (n >= cap) continue;
-                n++;
-            }
-            if (c.mode != to) {
-                c.mode = to;
-                d.clearPending(c);
-                CALog.did(m.getName() + ": back in " + to.label + ".", true);
-            }
-            if (to == mo) want.remove(m.getId());
-        }
+    }
+
+    /**
+     * 0.3.7.2, once per save: Advisor and Approve mode were free before. A save that had bought abilities gets both, first in
+     * the list, so an over-spent core gives up its newest abilities instead (fit). A save with nothing bought gets nothing.
+     */
+    static void migrateModes() {
+        if (flag("modesBought")) return;
+        flag("modesBought", true);
+        List<String> t = ticked();
+        if (t.isEmpty()) return;
+        if (!t.contains("approve")) t.add(0, "approve");
+        if (!t.contains("advisor")) t.add(0, "advisor");
+        fit();
     }
 
     // ---------------- settings held at "off" while their ability is off ----------------
@@ -1120,6 +1134,7 @@ public class CASync {
     /** On every load: costs, placement, the holds, the story intel, the watcher and the core's listener. */
     public static void onLoad() {
         CASyncCatalog.load();
+        try { migrateModes(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode ability migration failed", t); }
         queued = null; armed = null; notice = null; modeNote = null;
         if (askMode()) CAStoryPrompt.watch();   // a new game's pop-up not answered yet
         if (!on()) return;

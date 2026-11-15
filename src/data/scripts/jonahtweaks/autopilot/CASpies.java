@@ -572,11 +572,11 @@ public class CASpies {
                 d.spyRoles().put(a.getAgent().getId(), SECURITY);
                 mine.add(a);
                 CALog.did("Agents: your idle agent " + name(a) + " (" + types(a) + ") assigned to " + roleName(SECURITY)
-                        + ". Take it back in a colony's Autopilot panel: Empire, Mod features, Agents.", true);
+                        + ". Take it back in the Autopilot panel: Empire, Mod features, Agents.", true);
                 return;
             }
             if (CALog.once("spy:yours")) CALog.advise("Agents: your agent " + name(a) + " (" + types(a) + ") is idle. Autopilot does not recruit while it is. "
-                    + "To hand it over: Let Autopilot use it, in a colony's Autopilot panel: Empire, Mod features, Agents.");
+                    + "To hand it over: Let Autopilot use it, in the Autopilot panel: Empire, Mod features, Agents.");
             return;
         }
         if (mgr.getAgents().size() + d.spyRecruits().size() >= mgr.getMaxAgents().getModifiedInt()) {

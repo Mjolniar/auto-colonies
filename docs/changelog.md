@@ -1,5 +1,13 @@
 # Patch notes
 
+## 0.3.7.2 - 2026-11-14
+
+- Story mode: Advisor mode (1 bandwidth) and Approve mode (2 bandwidth) are abilities. With nothing bought every colony is Off and nothing runs. Auto mode needs Approve mode. Saves that had bought abilities get both once, since they were free before.
+- Story mode: The install dialog no longer explains bandwidth or lists core values. "What can you do?" points to the Autopilot panel. The list of services and costs is removed.
+- Story mode: The story entry no longer lists cores on hand or tells you to feed cores. It has no objective line while the core is online.
+- Story mode: The Story page's bandwidth section is the bandwidth line, the feed buttons and Keep cores for feeding. The core counts and the explanations are removed. Managed colonies shows once Approve mode is bought.
+- Text: "The Story page of a colony's Autopilot panel" is now "the Autopilot panel".
+
 ## 0.3.7.1 - 2026-11-14
 
 - Intel: Removed the Colony Autopilot intel tab. Its pages are under Empire in each colony's Autopilot panel: Colonies, Autopilot Storage, Colony crises, Expansion, War, Mod features, Settings, Factions, Log and Diagnostics.

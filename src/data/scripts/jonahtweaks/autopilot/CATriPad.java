@@ -233,7 +233,7 @@ public class CATriPad implements InteractionDialogPlugin {
             para(CASync.modeNote + ".");
         } else {
             screen("ACKNOWLEDGED. " + colony().toUpperCase() + ": " + c.mode.label.toUpperCase() + ".");
-            gained(colony() + " is in " + c.mode.label + ", with the recommended settings (the Settings page of the Autopilot panel has them).");
+            gained(colony() + " is in " + c.mode.label + ", with the recommended settings.");
         }
         close("Put the TriPad away");
     }
@@ -295,19 +295,12 @@ public class CATriPad implements InteractionDialogPlugin {
                 "Charters on file: " + Math.max(1, Misc.getPlayerMarkets(false).size()) + ". Approved budget: none. Please submit a budget at your earliest convenience.");
         para("Tech reads it over your shoulder. \"Emergency provisions,\" they say. \"Well, it's not wrong.\"");
         para("\"It wants a budget,\" Engineering says. \"Of course it does.\"");
-        gained("The Colony Autopilot is running with " + CASync.total() + " bandwidth. Pick what it runs on the Story page of a colony's Autopilot panel.");
-        note("Each AI core you give it adds bandwidth: Alpha " + CASyncCatalog.ALPHA_PP + ", Beta " + CASyncCatalog.BETA_PP + ", Gamma " + CASyncCatalog.GAMMA_PP + ".");
     }
 
+    /** 0.3.7.2: the Autarch points to its panel; the panel shows the rest (no list of services and costs here). */
     void what() {
-        screen("SERVICES AT CURRENT CAPACITY:",
-                "Advice, all colonies. Approve mode, one colony. No charge.",
-                "Auto mode: " + CASyncCatalog.get("auto").cost + " bandwidth. Each additional colony: " + CASyncCatalog.COLONY_PP + " bandwidth.",
-                "Items, cores and administrators: " + CASyncCatalog.get("items").cost + " bandwidth each.",
-                "Expansion: " + CASyncCatalog.get("expansion").cost + " bandwidth. War: " + CASyncCatalog.get("retaliate").cost + " bandwidth and up.",
-                "Construction without waiting: " + CASyncCatalog.get("instantBuild").cost + " bandwidth. Without cost: " + CASyncCatalog.get("freeBuild").cost + " bandwidth.",
-                "Bandwidth: " + CASync.total() + ". Additional substrate accepted. Alpha-level preferred.");
-        para("The full list is on the Story page of a colony's Autopilot panel.");
+        screen("CURRENT CAPACITY IS AVAILABLE FOR REVIEW IN THE ADMINISTRATION PANEL, ADMINISTRATOR.");
+        para("\"The Autopilot button on the colony screens,\" Tech says. \"That's its panel.\"");
         close("Put the TriPad away");
     }
 

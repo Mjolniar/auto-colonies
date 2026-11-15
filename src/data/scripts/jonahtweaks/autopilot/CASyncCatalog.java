@@ -54,7 +54,9 @@ public class CASyncCatalog {
 
     static {
         // Colony management
-        add("auto", 0, 4, null, null, "Auto mode", "Colonies in Auto act without asking you first.");
+        add("advisor", 0, 1, null, null, "Advisor mode", "Colonies in Advisor get build advice in the build menu and the colony panel.");   // 0.3.7.2
+        add("approve", 0, 2, null, null, "Approve mode", "One colony in Approve proposes builds and waits for your answer.");   // 0.3.7.2
+        add("auto", 0, 4, null, "approve", "Auto mode", "Colonies in Auto act without asking you first.");
         add("buildout", 0, 2, null, "auto", "Fast buildout", "It pours your savings into a new or money-losing colony until the colony earns.");
         add("cleanup", 0, 2, null, null, "Clean up", "It takes down industries that stopped paying and frees their slots for better ones.");
         add("stations", 0, 2, null, null, "Stations", "It builds and upgrades orbital stations.");

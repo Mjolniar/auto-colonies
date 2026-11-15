@@ -30,7 +30,7 @@ ca_p_admins,Administrators,Radio,Hire and place,"Off, Place only, Hire and place
 ca_h_security,Security and diplomacy,Header,Security and diplomacy,,,,,
 ca_spy,Agents,Radio,Off,"Off, Defense, Defense and offense",Security and relations; offense adds sabotage. Needs Nexerelin.,,,
 ca_amb,Ambassadors,Boolean,true,,"Hires and installs ambassadors, Ally and Friendly factions first. Needs Industrial Evolution.",,,
-ca_t_picks,,Text,"Faction stances and this save's picks (capital, refit hub, sell hub, offense target) are on the Settings page of a colony's Autopilot panel.",,,,,
+ca_t_picks,,Text,"Faction stances and this save's picks (capital, refit hub, sell hub, offense target) are on the Settings page of the Autopilot panel.",,,,,
 ,,,,,,,,
 ca_h_interface,Interface,Header,Interface,,,,,
 ca_screenlog,On-screen log,Radio,Every entry,"Every entry, Important only, Off",Short lines on screen. The Log page keeps every entry.,,,

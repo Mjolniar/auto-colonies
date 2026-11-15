@@ -118,7 +118,7 @@ public class CAStoryIntel extends BaseIntelPlugin {
     /** The objective, one line. While the search runs, the description's clues say where instead. */
     static String objective() {
         String area = CAAutarch.area();
-        if (CASync.installed() && !CASync.pulled()) return "Feed it AI cores for more bandwidth, and pick its abilities on the Story page of a colony's Autopilot panel.";
+        if (CASync.installed() && !CASync.pulled()) return null;   // 0.3.7.2: online, nothing to point at
         if (CAAutarch.inCargo() > 0) return CASync.pulled() ? "Put the Autarch AI Core back in the cradle." : "Decide what to do with the Autarch AI Core.";
         String ph = CASync.phase();
         if ("breaking".equals(ph)) return "Engineering is breaking the core down.";
@@ -132,7 +132,7 @@ public class CAStoryIntel extends BaseIntelPlugin {
     public void createIntelInfo(TooltipMakerAPI info, IntelInfoPlugin.ListInfoMode mode) {
         Color c = getTitleColor(mode);
         info.addPara(getName(), c, 0f);
-        try { info.addPara(CALog.esc(objective()), 3f, Misc.getGrayColor(), Misc.getHighlightColor()); }   // 0.3.6.2: guarded
+        try { String o = objective(); if (o != null) info.addPara(CALog.esc(o), 3f, Misc.getGrayColor(), Misc.getHighlightColor()); }   // 0.3.6.2: guarded
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story intel line failed", t); }
     }
 
@@ -146,17 +146,12 @@ public class CAStoryIntel extends BaseIntelPlugin {
         Color hl = Misc.getHighlightColor();
         info.addImage(CAAutarch.PORTRAIT, width, 128f, 0f);
         // 0.3.6.6: before the core is installed, nothing about feeding cores or abilities (the story tells it)
-        if (CASync.installed()) info.addPara("The Colonial Administration Suite on your TriPad runs on the Autarch AI Core. Every AI core you give it adds bandwidth, "
-                + "and you pick the abilities it runs with that bandwidth.", 10f);
+        if (CASync.installed()) info.addPara("The Colonial Administration Suite on your TriPad runs on the Autarch AI Core.", 10f);
         else info.addPara("The Colonial Administration Suite on your TriPad is an old Domain program for running colonies. It needs an Autarch-class AI core to run.", 10f);
         info.addPara(CALog.esc(status()), hl, 10f);
         if (CASync.installed()) info.addPara("The core has %s bandwidth. Your abilities use %s, and %s are free.", 4f, hl, "" + CASync.total(), "" + CASync.spent(), "" + Math.max(0, CASync.free()));
         if (CAAutarchIntel.active()) clues(info, hl);
-        else info.addPara(CALog.esc(objective()), hl, 10f);
-        if (CASync.installed()) {
-            int[] h = CASync.onHand();
-            info.addPara("You have %s on hand, in your cargo and in Autopilot Storage.", 10f, hl, CASyncCatalog.cores(h[0], h[1], h[2]));
-        }
+        else if (objective() != null) info.addPara(CALog.esc(objective()), hl, 10f);
         if (CASync.dormant() && CAAutarch.inCargo() > 0)   // 0.3.7.1: the Story page's button, here too (no colony needed)
             info.addButton(CASync.pulled() ? "Reseat the core" : "Decide on the core", CASync.PREFIX + "core", Misc.getBasePlayerColor(),
                     Misc.getDarkPlayerColor(), Alignment.MID, CutStyle.TL_BR, 200f, 24f, 10f);

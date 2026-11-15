@@ -61,10 +61,7 @@ public class CASyncPage {
             int[] f = CASync.fed();
             t.addSectionHeading("Bandwidth", Alignment.MID, 12f);
             t.addPara("The core has %s bandwidth. Your abilities use %s, and %s are free.", 6f, hl, "" + CASync.total(), "" + CASync.spent(), "" + Math.max(0, CASync.free()));
-            t.addPara("That is the core's own " + CASyncCatalog.BASE_PP + ", plus " + CASyncCatalog.cores(f[0], f[1], f[2]) + " you fed it.", gray, 4f);
-            int[] cargo = CASync.inCargo(), store = CASync.inStorage(), h = CASync.onHand();
-            t.addPara("You have %s Alpha, %s Beta and %s Gamma cores on hand, in your cargo and in Autopilot Storage.", 6f, hl, "" + h[2], "" + h[1], "" + h[0]);
-            t.addPara("Your cargo has " + CASyncCatalog.cores(cargo[0], cargo[1], cargo[2]) + "; Autopilot Storage has " + CASyncCatalog.cores(store[0], store[1], store[2]) + ".", gray, 2f);
+            int[] h = CASync.onHand();   // 0.3.7.2: the buttons are the core slots; no counts or explanations
             if (awake) {
                 ButtonAPI a = button(t, feedLabel("a1", "1 Alpha (+" + CASyncCatalog.ALPHA_PP + ")", CASyncCatalog.ALPHA_PP), "feed:a1", h[2] > 0, 150f, 6f);
                 ButtonAPI b = button(t, feedLabel("b1", "1 Beta (+" + CASyncCatalog.BETA_PP + ")", CASyncCatalog.BETA_PP), "feed:b1", h[1] > 0, 150f, 0f);
@@ -75,7 +72,6 @@ public class CASyncPage {
                 ButtonAPI x = button(t, feedLabel("all", "All of them (+" + all + ")", all), "feed:all", all > 0, 180f, 0f);
                 x.getPosition().rightOfTop(g, 6f);
                 CALog.endRow(t, a);
-                t.addPara("A core you feed it becomes part of it and is used up.", gray, 4f);
                 int[] keep = CASync.keepForFeeding();
                 row(t, "Change", "keep", true, 86f, "Keep cores for feeding is " + (CASync.keepCores() ? "on" : "off")
                         + ". Autopilot leaves " + CASyncCatalog.cores(keep[2], keep[1], keep[0]) + " in storage for your next ability.", gray);
@@ -85,15 +81,16 @@ public class CASyncPage {
         if (!CALunaSync.active()) settingsRow(t);   // 0.3.6.2: switch back from here while dormant, without LunaLib
         if (!awake) { story(t); devTools(t); return; }
 
-        // managed colonies
-        t.addSectionHeading("Managed colonies", Alignment.MID, 12f);
-        int cap = CASync.managedCap();
-        t.addPara("It can run %s colonies in Approve or Auto: the first one, plus %s more at %s bandwidth each.", 6f, hl,
-                "" + cap, "" + CASync.extraColonies(), "" + CASyncCatalog.COLONY_PP);
-        ButtonAPI plus = button(t, "+1 colony", "col+", CASync.free() >= CASyncCatalog.COLONY_PP, 120f, 4f);
-        ButtonAPI minus = button(t, "-1 colony", "col-", CASync.extraColonies() > 0, 120f, 0f);
-        minus.getPosition().rightOfTop(plus, 6f);
-        CALog.endRow(t, plus);
+        // managed colonies (0.3.7.2: with Approve mode bought)
+        if (CASync.has("approve")) {
+            t.addSectionHeading("Managed colonies", Alignment.MID, 12f);
+            t.addPara("%s colonies in Approve or Auto: one, plus %s more at %s bandwidth each.", 6f, hl,
+                    "" + CASync.managedCap(), "" + CASync.extraColonies(), "" + CASyncCatalog.COLONY_PP);
+            ButtonAPI plus = button(t, "+1 colony", "col+", CASync.free() >= CASyncCatalog.COLONY_PP, 120f, 4f);
+            ButtonAPI minus = button(t, "-1 colony", "col-", CASync.extraColonies() > 0, 120f, 0f);
+            minus.getPosition().rightOfTop(plus, 6f);
+            CALog.endRow(t, plus);
+        }
 
         // abilities
         List<CASyncCatalog.Ability> list = CASyncCatalog.available();

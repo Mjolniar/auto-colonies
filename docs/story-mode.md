@@ -16,8 +16,8 @@
 - Break down: 365 days, then 3 Alpha and 2 Beta cores.
 - Selling: A kept core can be sold at any market (base price 1,000,000).
 - Bandwidth: The core gives 20 bandwidth. Each AI core you feed it on the Story page adds bandwidth: Alpha 10, Beta 3, Gamma 1. Fed cores are used up.
-- Abilities: 50 abilities, each with a bandwidth cost, switched on and off on the Story page. Costs are in `data/config/colony_autopilot_story.json`.
-- Managed colonies: One colony in Approve or Auto, plus one more for each 2 bandwidth. Others wait in Advisor.
+- Abilities: 52 abilities, each with a bandwidth cost, switched on and off on the Story page of the Autopilot panel. Costs are in `data/config/colony_autopilot_story.json`.
+- Modes: Every colony mode is bought. With nothing bought every colony is Off. Advisor mode (1) gives Advisor; Approve mode (2) gives one colony in Approve or Auto, plus one more for each 2 bandwidth; Auto mode (4) needs Approve mode. A colony past what is bought waits in the next mode down, and its mode comes back when the ability is bought.
 - Settings: A setting an ability that's off covers is held at off. Its row says which ability it needs. Your value comes back when the ability is on.
 - Keep cores for feeding: On by default. Autopilot leaves enough cores in Autopilot Storage for your next ability.
 - Story perks: Instant construction (15 bandwidth), Free construction (25 bandwidth), Two builds at once (6 bandwidth) and Three builds at once (8 bandwidth, needs Two) exist only in story mode.
@@ -37,7 +37,7 @@
 
 | Group | Abilities (bandwidth) |
 |---|---|
-| Colony management | Auto mode 4, Fast buildout 2, Clean up 2, Stations 2, Colony policies 1, Story point improvements 3, Capital 1, Storage logistics 1, Stable locations 1, Crisis response 2 |
+| Colony management | Advisor mode 1, Approve mode 2, Auto mode 4, Fast buildout 2, Clean up 2, Stations 2, Colony policies 1, Story point improvements 3, Capital 1, Storage logistics 1, Stable locations 1, Crisis response 2 |
 | Items and people | Colony items 2, AI cores 2, Administrators 2, Omega and IX cores 3 |
 | Money | Higher spending 2, Surplus investment 4, Production floors 2, Stockpiles 1, Military 3, Shipyard 3, Endgame economy 5, Half fees 4, No fees 8 |
 | Expansion | Auto-expansion 6, Colony fleets 2 |

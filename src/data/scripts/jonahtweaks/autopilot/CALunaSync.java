@@ -129,7 +129,7 @@ public final class CALunaSync {
         header("security", "Security and diplomacy");
         radio("spy", "Agents", "spyMode", CASettings.SPY_NAMES, "Security and relations; offense adds sabotage. Needs Nexerelin.");
         bool("amb", "Ambassadors", "disableAmbassadors", true, "Hires and installs ambassadors, Ally and Friendly factions first. Needs Industrial Evolution.");
-        text("picks", "Faction stances and this save's picks (capital, refit hub, sell hub, offense target) are on the Settings page of a colony's Autopilot panel.");
+        text("picks", "Faction stances and this save's picks (capital, refit hub, sell hub, offense target) are on the Settings page of the Autopilot panel.");
 
         header("interface", "Interface");
         radio("screenlog", "On-screen log", "screenLog", CALog.SCREEN_NAMES, "Short lines on screen. The Log page keeps every entry.");

@@ -6,7 +6,7 @@
 	"core":{"breakdownDays":365, "breakdownAlpha":3, "breakdownBeta":2, "returnDays":365, "returnRandomDays":365, "salvageChance":0.2},
 	# Ability costs in bandwidth.
 	"abilities":{
-		"auto":4, "buildout":2, "cleanup":2, "stations":2, "policies":1, "storyPoints":3, "capital":1, "logistics":1, "objectives":1, "crisis":2,
+		"advisor":1, "approve":2, "auto":4, "buildout":2, "cleanup":2, "stations":2, "policies":1, "storyPoints":3, "capital":1, "logistics":1, "objectives":1, "crisis":2,
 		"items":2, "cores":2, "admins":2, "omega":3,
 		"spending":2, "surplus":4, "floors":2, "stockpiles":1, "military":3, "shipyard":3, "endgame":5, "halfFees":4, "noFees":8,
 		"expansion":6, "colonyFleets":2,
