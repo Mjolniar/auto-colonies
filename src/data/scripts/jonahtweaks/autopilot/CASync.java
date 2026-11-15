@@ -463,6 +463,12 @@ public class CASync {
 
     static boolean managing(CAData.Mode mo) { return mo == CAData.Mode.APPROVE || mo == CAData.Mode.AUTO; }
 
+    /** 0.3.7.9: story mode is on and this colony of yours is managed (Approve or Auto). */
+    public static boolean manages(MarketAPI m) {
+        try { return on() && m != null && m.isPlayerOwned() && counts(m) && managing(CAData.get().colony(m.getId()).mode); }
+        catch (Throwable t) { return false; }
+    }
+
     static String idOf(CAData d, CAData.Colony c) {
         for (Map.Entry<String, CAData.Colony> e : d.colonies.entrySet()) if (e.getValue() == c) return e.getKey();
         return null;
@@ -1120,12 +1126,19 @@ public class CASync {
     /** Daily, before the steps: the core's timers, the settings holds and the colony modes. */
     public static void daily() {
         CAStoryIntel.ensure();   // 0.3.7.1: the story entry and its search for the core (removed while story mode is off)
-        if (!on()) return;
+        if (!on()) { autarchAdmins(); return; }   // 0.3.7.9: with story mode off the core's administrators leave
         try { lifecycle(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autarch AI Core timers failed", t); }
         fit();
         enforce(CAData.settings());
         enforceModes();
+        autarchAdmins();
+        try { CARapidTerra.daily(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "rapid terraforming failed", t); }
         if (!has("buildout")) stopBuildouts();
+    }
+
+    /** 0.3.7.9: the Autarch administrator package (CAAutarchAdmin); never throws. */
+    static void autarchAdmins() {
+        try { CAAutarchAdmin.daily(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autarch administrator failed", t); }
     }
 
     /** Fast buildout turned off (or dormant): every running buildout stops; the colony keeps its mode. */

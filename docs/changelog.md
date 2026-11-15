@@ -1,5 +1,12 @@
 # Patch notes
 
+## 0.3.7.9 - 2026-11-15
+
+- Story mode: Added Autarch administrator (Tier III, 8 bandwidth, needs Cores and staff). The core governs each managed colony you govern yourself where that adds more than you governing it. It has an Alpha Core administrator's skills, no AI core to take back, and no inspection or Pather weight.
+- Story mode: Added Rapid terraforming (Tier IV, 12 bandwidth). Terraforming projects at managed colonies take half the time, for Terraforming Made Easy and Terraforming and Station Construction.
+- Administrators: Hypercognition counts in an administrator's worth (+1 stability, +10% accessibility).
+- Autonomy: Never picks a colony the Autarch AI Core governs.
+
 ## 0.3.7.8 - 2026-11-15
 
 - Story mode: Rapid construction replaces Instant and Free construction (Tier IV, 20 bandwidth): builds and upgrades take a third of the time and cost 100,000 more each. Saves that bought Instant construction have Rapid construction.

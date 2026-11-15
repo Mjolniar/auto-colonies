@@ -1257,6 +1257,8 @@ public class CAItems {
         // Vulpoids' Profecto administrators: their own skill gives +1 stability and +20% accessibility (VulpoidBrain); they
         // learn Industrial Planning after a year, which the line below then counts
         float vulp = p.getStats().getSkillLevel("vulpoid_brain") > 0f ? stabilityWorth(m, m.getStability().getModifiedValue(), 1f) + 0.2f * ACCESS_WORTH : 0f;
+        // 0.3.7.9: Hypercognition (AI administrators, the Autarch administrator): +1 stability and +10% accessibility
+        if (p.getStats().getSkillLevel("hypercognition") > 0f) vulp += stabilityWorth(m, m.getStability().getModifiedValue(), 1f) + 0.1f * ACCESS_WORTH;
         if (p.getStats().getSkillLevel("industrial_planning") <= 0f) return vulp;
         return vulp + planningWorth(m);
     }

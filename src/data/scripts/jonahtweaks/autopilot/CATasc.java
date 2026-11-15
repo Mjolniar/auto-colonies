@@ -47,6 +47,7 @@ public class CATasc {
     static MethodHandle projects, isStation, setting, controllerOf;
     static Object reqs, reqsMet, start, daysLeft, projName, after, current;
     static Object reqText, reqMet;
+    static Class<?> projCls;
     static boolean linked = false, broken = false;
 
     public static boolean enabled() { return Global.getSettings().getModManager().isModEnabled(MOD); }
@@ -57,6 +58,7 @@ public class CATasc {
             ClassLoader cl = Global.getSettings().getScriptClassLoader();
             Class<?> tools = Class.forName("boggled.campaign.econ.boggledTools", true, cl);
             Class<?> proj = Class.forName("boggled.terraforming.BoggledBaseTerraformingProject", true, cl);
+            projCls = proj;   // 0.3.7.9: Rapid terraforming reads its day counters
             Class<?> req = Class.forName("boggled.terraforming.BoggledBaseTerraformingProject$TerraformingRequirementObject", true, cl);
             Class<?> ctl = Class.forName("boggled.campaign.econ.conditions.Terraforming_Controller", true, cl);
             MethodHandles.Lookup lk = MethodHandles.publicLookup();
@@ -281,6 +283,33 @@ public class CATasc {
             if (cur == null) return null;
             return CARefl.invoke(projName, cur) + " (" + CARefl.invoke(daysLeft, cur) + " days left)";
         } catch (Throwable t) { return null; }
+    }
+
+    /** 0.3.7.9: TASC's running project here, or null. */
+    static Object currentProject(MarketAPI m) {
+        if (!link() || !m.hasCondition("terraforming_controller")) return null;
+        try {
+            Object ctl = controllerOf.invokeWithArguments(m);
+            return ctl == null ? null : CARefl.invoke(current, ctl);
+        } catch (Throwable t) { return null; }
+    }
+
+    static String projectName(Object p) {
+        try { return String.valueOf(CARefl.invoke(projName, p)); } catch (Throwable t) { return "a terraforming project"; }
+    }
+
+    /**
+     * 0.3.7.9: Rapid terraforming: the project keeps `share` of its days left. TASC counts daysCompleted up to
+     * requiredDaysToCompleteProject (BoggledBaseTerraformingProject's own fields, 10.0.9). The days left after, or -1.
+     */
+    static int halve(Object p, float share) throws Exception {
+        if (projCls == null) return -1;
+        Object done = CARefl.declared(projCls, "daysCompleted"), need = CARefl.declared(projCls, "requiredDaysToCompleteProject");
+        if (done == null || need == null) return -1;
+        int d = CARefl.getInt(done, p), r = CARefl.getInt(need, p), left = Math.max(0, r - d);
+        int after = CARapidTerra.daysAfter(left, share);
+        if (after < left) CARefl.set(done, p, Integer.valueOf(r - after));
+        return Math.min(after, left);
     }
 
     static String startProject(MarketAPI m, Proj p, String who) {

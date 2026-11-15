@@ -113,6 +113,8 @@ public class CASyncCatalog {
         add("rapidBuild", 6, 20, null, null, "Rapid construction", "Builds and upgrades it starts take a third of the time, at a flat fee more each.");   // 0.3.7.8: replaces Instant and Free construction
         add("twoBuilds", 6, 6, null, null, "Two builds at once", "Each colony can build two new buildings at once.");
         add("threeBuilds", 6, 8, null, "twoBuilds", "Three builds at once", "Each colony can build three new buildings at once.");
+        add("autarchAdmin", 6, 8, null, null, "Autarch administrator", "It governs managed colonies you govern yourself.");   // 0.3.7.9
+        add("rapidTerra", 6, 12, "terra", null, "Rapid terraforming", "Terraforming at managed colonies takes half the time.");   // 0.3.7.9
     }
 
     /** The Story perks group: past the game's rules, so they run only in story mode. */
@@ -183,10 +185,12 @@ public class CASyncCatalog {
         pack("frontier", 2, 8, null, "Expansion", "expansion", "colonyFleets");
         pack("warfare", 2, 7, "security", "War", "retaliate", "offense");
         pack("megaprojects", 2, 8, "projects", "Large projects", "surplusTerra", "surplusResearch", "mega");
+        pack("autarch", 2, 8, "staff", "Autarch administrator", "autarchAdmin");   // 0.3.7.9
         pack("dominion", 3, 15, "growth", "Endgame", "endgame", "noFees", "wonders");
         pack("warlord", 3, 15, "warfare", "Conquest", "strike", "conquest", "scorched");
         pack("parallel", 3, 12, null, "Parallel construction", "twoBuilds", "threeBuilds");
         pack("instant", 3, 20, null, "Rapid construction", "rapidBuild");   // 0.3.7.8: the id stays, so saves that bought it keep it
+        pack("terraforming", 3, 12, null, "Rapid terraforming", "rapidTerra");   // 0.3.7.9
         desc("advice", "Advises colony administrators on the next suitable construction.");
         desc("oversight", "Proposes construction at one colony and waits for your approval.");
         desc("upkeep", "Retires unprofitable industry, maintains orbital stations, sets colony policy and prepares colonies for crises.");
@@ -205,6 +209,8 @@ public class CASyncCatalog {
         desc("warlord", "Strikes, invades and, once authorized, bombards hostile factions.");
         desc("parallel", "Runs up to three new constructions per colony at once.");
         desc("instant", "Completes construction in a third of the time, for 100,000 credits more per building.");
+        desc("autarch", "Governs managed colonies as their administrator.");
+        desc("terraforming", "Halves terraforming time at managed colonies.");
     }
 
     static void desc(String id, String text) { PACK_BY_ID.get(id).desc = text; }
