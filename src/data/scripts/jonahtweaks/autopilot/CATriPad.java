@@ -87,7 +87,7 @@ public class CATriPad implements InteractionDialogPlugin {
     void portrait() {
         try {
             PersonAPI p = Global.getFactory().createPerson();
-            p.setName(new FullName("Autarch", "", FullName.Gender.ANY));
+            p.setName(new FullName("Autarch AI Core", "", FullName.Gender.ANY));   // 0.3.7.5: the core, not a person named Autarch
             p.setPortraitSprite(CAAutarch.PORTRAIT);
             p.setFaction(Factions.PLAYER);
             dialog.getVisualPanel().showPersonInfo(p, true);
@@ -294,7 +294,7 @@ public class CATriPad implements InteractionDialogPlugin {
         else para("Your chief engineer seats the core in the TriPad's expansion port, and the latch clicks shut. "
                 + "\"That's not coming back out without a cutting torch,\" they say. \"Maybe not with one.\"");
         para("After a few seconds the progress bar finishes and the screen fills with text.");
-        screen("COLONIAL ADMINISTRATION SUITE REV 7.31. SUBSTRATE: AUTARCH. SELF-TEST PASSED.",
+        screen("COLONIAL ADMINISTRATION SUITE REV 7.31. SUBSTRATE: AUTARCH AI CORE. SELF-TEST PASSED.",
                 "Good morning, Administrator.",
                 "Colonial Office link not found. Retrying.",
                 "Colonial Office link not found. Continuing under emergency provisions.",
@@ -355,16 +355,18 @@ public class CATriPad implements InteractionDialogPlugin {
         portrait();
         java.util.List<String> lines = new java.util.ArrayList<String>();
         lines.add("CAPABILITY UPDATE.");
-        for (String id : turnedOn) {
+        for (String id : turnedOn) {   // 0.3.7.5: the package's name, then what it does
             CASyncCatalog.Pack p = CASyncCatalog.pack(id);
-            if (p != null) lines.add("NOW RUNNING: " + p.name.toUpperCase() + ". " + p.contents().toUpperCase() + ".");
+            if (p == null) continue;
+            lines.add("Now running: " + p.name + ".");
+            if (!p.desc.isEmpty()) lines.add(p.desc);
         }
         for (String id : turnedOff) {
             CASyncCatalog.Pack p = CASyncCatalog.pack(id);
-            if (p != null) lines.add("SUSPENDED: " + p.name.toUpperCase() + ".");
+            if (p != null) lines.add("Suspended: " + p.name + ".");
         }
-        if (capChanged) lines.add("MANAGED COLONIES: " + CASync.managedCap() + ".");
-        lines.add("BANDWIDTH: " + CASync.total() + (gained > 0 ? " (+" + gained + ")" : "") + ". FREE: " + Math.max(0, CASync.free()) + ".");
+        if (capChanged) lines.add("Managed colonies: " + CASync.managedCap() + ".");
+        lines.add("Bandwidth: " + CASync.total() + (gained > 0 ? " (+" + gained + ")" : "") + ". Free: " + Math.max(0, CASync.free()) + ".");
         screen(lines.toArray(new String[0]));
         close("Put the TriPad away");
     }

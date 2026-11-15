@@ -21,7 +21,6 @@
 - Panel: Story (open first), Colony (Overview, Plan and builds, Locks and the colony's mod features on one page), Settings, and More (Colonies, Autopilot Storage, Colony crises, Expansion, War, Mod features, Factions, Log, Diagnostics, picked from a row of buttons).
 - Modes: Every colony mode is bought. With nothing bought every colony is Off. Advisor mode (2) gives Advisor; Approve mode (4) gives one colony in Approve or Auto, plus one more for each 2 bandwidth; Auto mode (6) needs Approve mode. A colony past what is bought waits in the next mode down, and its mode comes back when the ability is bought.
 - Settings: A setting an ability that's off covers is held at off. Its row says which ability it needs. Your value comes back when the ability is on.
-- Keep cores for feeding: On by default. Autopilot leaves enough cores in Autopilot Storage for your next ability.
 - Story perks: Instant and free construction (Instant construction, 30 bandwidth) and two or three builds at once (Parallel construction, 12 bandwidth) exist only in story mode. Both packages are in Tier IV.
 - Summary: After you change packages, colonies or bandwidth on the Story page, the TriPad lists what runs now, what stopped and the bandwidth once you close the panel.
 - Builds at once: Each colony builds 2 or 3 new buildings at the same time. Without the perks it builds one, as in the game. Upgrades always run beside them.

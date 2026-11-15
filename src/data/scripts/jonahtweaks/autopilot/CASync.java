@@ -198,7 +198,8 @@ public class CASync {
     /** Which core this is: goes up each time a new one is placed, so finding it chimes again. */
     public static int generation() { return num("gen"); }
     /** Keep cores in Autopilot Storage for the next ability (on unless turned off). */
-    public static boolean keepCores() { return !flag("noKeep"); }
+    /** 0.3.7.5: removed (feeding is manual); Autopilot never holds cores back for feeding. keepForFeeding gives none. */
+    public static boolean keepCores() { return false; }
 
     // ---------------- processing power ----------------
 

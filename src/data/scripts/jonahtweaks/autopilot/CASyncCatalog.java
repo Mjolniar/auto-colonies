@@ -129,6 +129,8 @@ public class CASyncCatalog {
         public final String[] members;
         public final int tier;
         public int cost;
+        /** 0.3.7.5: what it does, one line in the core's words: the Story page and the TriPad's summary show it. */
+        public String desc = "";
 
         Pack(String id, int tier, int cost, String requires, String name, String... members) {
             this.id = id; this.tier = tier; this.cost = cost; this.requires = requires; this.name = name; this.members = members;
@@ -184,7 +186,27 @@ public class CASyncCatalog {
         pack("warlord", 3, 15, "warfare", "Conquest", "strike", "conquest", "scorched");
         pack("parallel", 3, 12, null, "Parallel construction", "twoBuilds", "threeBuilds");
         pack("instant", 3, 30, null, "Instant construction", "instantBuild", "freeBuild");
+        desc("advice", "Advises colony administrators on the next suitable construction.");
+        desc("oversight", "Proposes construction at one colony and waits for your approval.");
+        desc("upkeep", "Retires unprofitable industry, maintains orbital stations, sets colony policy and prepares colonies for crises.");
+        desc("supply", "Manages the capital, storage shipments, stable locations, colony items and stockpiles.");
+        desc("automation", "Builds at colonies in Auto without waiting for approval.");
+        desc("staff", "Places AI cores, hires administrators and spends story points on improvements.");
+        desc("economy", "Raises the spending limit, keeps production floors and takes trade contracts.");
+        desc("security", "Runs enforcer patrols, emergency defense, agents, diplomacy and autonomy.");
+        desc("projects", "Runs terraforming, research and other mod projects.");
+        desc("growth", "Invests savings in new colonies and the surplus, at reduced fees.");
+        desc("industry", "Funds military buildings and hulls, and places Omega-class cores.");
+        desc("frontier", "Founds new colonies with idle funds.");
+        desc("warfare", "Retaliates against attackers and directs agent sabotage.");
+        desc("megaprojects", "Funds large terraforming, research and megastructure projects.");
+        desc("dominion", "Runs the endgame economy and wonders, with no fees.");
+        desc("warlord", "Strikes, invades and, once authorized, bombards hostile factions.");
+        desc("parallel", "Runs up to three new constructions per colony at once.");
+        desc("instant", "Completes construction the day it starts, at no cost.");
     }
+
+    static void desc(String id, String text) { PACK_BY_ID.get(id).desc = text; }
 
     public static Pack pack(String id) { return PACK_BY_ID.get(id); }
 

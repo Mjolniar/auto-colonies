@@ -72,9 +72,7 @@ public class CASyncPage {
                 ButtonAPI x = button(t, feedLabel("all", "All of them (+" + all + ")", all), "feed:all", all > 0, 180f, 0f);
                 x.getPosition().rightOfTop(g, 6f);
                 CALog.endRow(t, a);
-                int[] keep = CASync.keepForFeeding();
-                row(t, "Change", "keep", true, 86f, "Keep cores for feeding is " + (CASync.keepCores() ? "on" : "off")
-                        + ". Autopilot leaves " + CASyncCatalog.cores(keep[2], keep[1], keep[0]) + " in storage for your next ability.", gray);
+                t.addPara("On hand: %s Alpha, %s Beta, %s Gamma.", 4f, gray, hl, "" + h[2], "" + h[1], "" + h[0]);   // 0.3.7.5: cargo and Autopilot Storage
             }
         }
 
@@ -109,7 +107,7 @@ public class CASyncPage {
                 boolean on = CASync.ticked(p.id);
                 boolean needs = p.requires != null && !CASync.ticked(p.requires);
                 boolean afford = CASync.free() >= p.cost;
-                String desc = p.name + " (" + p.cost + " bandwidth). " + p.contents() + "."
+                String desc = p.name + " (" + p.cost + " bandwidth). " + p.desc   // 0.3.7.5: what it does
                         + (needs ? " It needs " + CASyncCatalog.pack(p.requires).name + " first." : "");
                 row(t, on ? "On" : "Off", "tick:" + p.id, on || (!needs && afford), 60f, desc, on ? Misc.getTextColor() : gray, p.name);
             }
@@ -142,7 +140,7 @@ public class CASyncPage {
 
     static String beatTitle(String b) {
         if (CATriPad.FOUND.equals(b)) return "Dormant firmware";
-        if (CATriPad.INSTALL.equals(b)) return "Autarch online";
+        if (CATriPad.INSTALL.equals(b)) return "Autarch AI Core online";
         if (CATriPad.FEED.equals(b)) return "Integrating";
         if (CATriPad.PULL.equals(b)) return "Pulling the core";
         if (CATriPad.BROKEN.equals(b)) return "Broken down";

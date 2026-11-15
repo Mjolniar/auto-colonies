@@ -1,5 +1,12 @@
 # Patch notes
 
+## 0.3.7.5 - 2026-11-15
+
+- Story mode: The TriPad's summary lists each package switched on once, with one line on what it does. Packages on the Story page show the same line.
+- Story mode: The Story page shows the Alpha, Beta and Gamma cores on hand under the feed buttons.
+- Story mode: The core's name in dialogs is Autarch AI Core.
+- Story mode: Removed Keep cores for feeding. Autopilot no longer holds AI cores back in storage; feeding stays on the Story page.
+
 ## 0.3.7.4 - 2026-11-15
 
 - Story mode: The 52 abilities are bought in 18 packages, 4 or 5 per tier, each with a higher cost. Saves keep what they bought, as the packages that hold it.
