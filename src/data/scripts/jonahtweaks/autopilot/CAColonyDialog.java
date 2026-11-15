@@ -36,7 +36,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     static final String MEGA = "ca:mega:";   // Pluto / Nidavelir actions: ca:mega:<action>:<arg>
     static final String TASC = "ca:tasc:";   // start a TASC terraforming project: ca:tasc:<project name>
     /** 0.3.7.1: the Empire pages (the old intel tab's) carry this prefix in the page list; Confirm and Cancel for a button that asks first. */
-    static final String EMP = "e:", CONFIRM = "ca:confirm", CANCEL = "ca:cancel", MORE = "ca:more:";
+    static final String EMP = "e:", CONFIRM = "ca:confirm", CANCEL = "ca:cancel", MORE = "ca:more:", LOWPROF = "ca:lowprofile";
     /** 0.3.7.1: an Empire page's button waiting for Confirm (the intel's confirmation dialog). */
     Object pending;
     /** 0.3.0.0 (WS-F3): the message after a button that threw. */
@@ -147,6 +147,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         }
         else if (BACK.equals(id)) { setupPage = false; message = null; }
         else if (EMPIRE.equals(id)) { CAModeTable.setEmpire(d.settings, c.mode); message = "Empire mode set to " + c.mode.label; }
+        else if (LOWPROF.equals(id)) CALowProfile.set(d.settings, !d.settings.lowProfile, "Colony panel");   // 0.3.7.8
         else if (REFRESH.equals(id)) {   // 0.3.0.0 (A4 fix, 07 M6): scored on a click, never while the panel draws; no plan tracking
             CAEngine.refresh(market, planWith(c), d.settings.minStability, buildoutRanking(c));
             message = null;
@@ -208,9 +209,9 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     // 0.3.0.0 (WS-F3 fix pass 2): every text on this panel shorter, for the mod-wide word budget (JTScreenButtonCheck)
     static final String[] MODE_TEXT = {
             "Off: does nothing.",
-            "Advisor: ranks builds. You build.",
+            "Advisor: ranks builds.",
             "Approve: proposes. You approve.",
-            "Auto: builds and sets policies within budget."};
+            "Auto: builds and sets policies."};
 
     // ---------------- text (0.3.0.0, WS-F3: each paragraph 40 words or fewer, JTScreenButtonCheck) ----------------
 
@@ -553,6 +554,10 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         for (CAData.Mode mo : CAData.Mode.values()) { prev = rowButton(t, prev, mo.label, mo, mo == c.mode, (cw - 18f) / 4f); if (first == null) first = prev; }
         CALog.endRow(t, first);
         if (labels) t.addPara(MODE_TEXT[c.mode.ordinal()], gray, 6f);
+        // 0.3.7.8: Low profile here too (an empire setting); in story mode only once its package allows it
+        if (!CASync.on() || CASync.rowLock("lowprofile", s) == null)
+            t.addButton("Low profile: " + (s.lowProfile ? "On" : "Off"), LOWPROF, s.lowProfile ? Misc.getHighlightColor() : base, dark,
+                    Alignment.MID, CutStyle.TL_BR, 200f, 22f, 6f);
         // 0.3.3.0: a colony above the empire mode: one line and a button, no pop-up
         CAData.Mode em = s.empire();
         if (c.mode.ordinal() > em.ordinal()) {

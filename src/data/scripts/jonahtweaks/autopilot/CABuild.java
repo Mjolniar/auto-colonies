@@ -68,6 +68,20 @@ public class CABuild {
     }
 
     /** 0.3.6.7: room for more new buildings here: CASync.buildsAtOnce (1, the game's rule; 2 or 3 with the story perks) less those under way. */
+    /**
+     * 0.3.7.8: Rapid construction: the build or upgrade just started finishes in CASyncCatalog.RAPID_TIME of its time. The
+     * game counts buildProgress up to buildTime (BaseIndustry's own fields), so progress starts at the rest.
+     */
+    static void rapid(Industry ind) throws Exception {
+        if (!(ind instanceof com.fs.starfarer.api.impl.campaign.econ.impl.BaseIndustry)) return;
+        Class<?> base = com.fs.starfarer.api.impl.campaign.econ.impl.BaseIndustry.class;
+        Object time = CARefl.declared(base, "buildTime"), progress = CARefl.declared(base, "buildProgress");
+        if (time == null || progress == null) return;
+        float total = CARefl.getFloat(time, ind), done = CARefl.getFloat(progress, ind);
+        if (total <= 0f) return;
+        CARefl.set(progress, ind, Math.max(done, total * (1f - CASyncCatalog.RAPID_TIME)));
+    }
+
     public static int buildRoom(MarketAPI m) { return Math.max(0, CASync.buildsAtOnce() - newBuilds(m)); }
 
     /** 0.3.6.7: no room for another new building here. Upgrades still run. */
@@ -128,9 +142,9 @@ public class CABuild {
                 return "It did not take effect. Nothing charged";
             }
             if (price > 0f) CABudget.payPrice(price);   // 0.3.6.0 story mode: Free construction pays nothing
-            if (now != null && CASync.instantBuild()) {   // 0.3.6.0 story mode: Instant construction
-                try { now.finishBuildingOrUpgrading(); }
-                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "instant construction failed for " + p.id + " at " + m.getName(), t); }
+            if (now != null && CASync.rapidBuild()) {   // 0.3.7.8 story mode: Rapid construction
+                try { rapid(now); }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "rapid construction failed for " + p.id + " at " + m.getName(), t); }
             }
             // 0.3.0.0 (C12 fix, research 03 F3): credits move only in CABudget; the caller books the price and takes the fee with charge() or payFromPool() as before
             CADiagnostics.LOG.info(CADiagnostics.TAG + (p.upgrade ? "upgrade to " : "build ") + p.id + " at " + m.getName()

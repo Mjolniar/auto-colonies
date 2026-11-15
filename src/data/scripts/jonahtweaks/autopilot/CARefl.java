@@ -12,7 +12,7 @@ import java.lang.invoke.MethodType;
  * The results are the same as plain reflection.
  */
 public final class CARefl {
-    static final MethodHandle GET_METHOD, GET_FIELD, INVOKE, FIELD_GET, FIELD_SET, DECLARED_FIELDS, SET_ACCESSIBLE;
+    static final MethodHandle GET_METHOD, GET_FIELD, INVOKE, FIELD_GET, FIELD_SET, DECLARED_FIELDS, SET_ACCESSIBLE, FIELD_NAME;
     static {
         try {
             Class<?> method = Class.forName("java.lang.reflect.Method", false, null);
@@ -27,6 +27,7 @@ public final class CARefl {
             FIELD_SET = l.findVirtual(field, "set", MethodType.methodType(void.class, Object.class, Object.class));
             DECLARED_FIELDS = l.findVirtual(Class.class, "getDeclaredFields", MethodType.methodType(fieldArray));
             SET_ACCESSIBLE = l.findVirtual(field, "setAccessible", MethodType.methodType(void.class, boolean.class));
+            FIELD_NAME = l.findVirtual(field, "getName", MethodType.methodType(String.class));
         } catch (Throwable t) {
             throw new ExceptionInInitializerError(t);
         }
@@ -61,6 +62,16 @@ public final class CARefl {
     /** Field.set (unboxes into primitive fields). */
     public static void set(Object field, Object target, Object value) throws Exception {
         try { FIELD_SET.invoke(field, target, value); } catch (Throwable t) { throw wrap(t); }
+    }
+
+    /** 0.3.7.8: a field declared on c by name, opened (protected and private ones too); null when there is none. */
+    public static Object declared(Class<?> c, String name) {
+        Object[] fields;
+        try { fields = (Object[]) DECLARED_FIELDS.invoke(c); } catch (Throwable t) { return null; }
+        for (Object f : fields) {
+            try { if (name.equals((String) FIELD_NAME.invoke(f))) { SET_ACCESSIBLE.invoke(f, true); return f; } } catch (Throwable ignored) { }
+        }
+        return null;
     }
 
     /** A public no-argument method by name, e.g. call(panel, "getChildrenCopy"). */

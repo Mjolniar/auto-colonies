@@ -47,14 +47,14 @@ public class CAStoryPrompt implements InteractionDialogPlugin {
         catch (Throwable ignored) { }
         TextPanelAPI text = dialog.getTextPanel();
         text.addPara("Your TriPad is showing a setup screen for the Colony Autopilot, an old Domain program for running colonies.");
+        text.addPara("In Story mode it starts dormant, and you have to find what it needs to run.");   // 0.3.7.8: Story first, the default
         text.addPara("In Normal mode it works from the start. You set each colony to Advisor, Approve or Auto, and it plans, builds and hires within the budget you give it.");
-        text.addPara("In Story mode it starts dormant, and you have to find what it needs to run.");
         text.addPara(luna() ? "You can change this later in LunaLib's settings menu (F3), under Auto Colonies. A save switched back keeps its story progress."
                 : "You can change this later on the Settings page of the Autopilot panel. A save switched back keeps its story progress.", Misc.getGrayColor());
         OptionPanelAPI o = dialog.getOptionPanel();
-        o.addOption("Normal mode", NORMAL);
         o.addOption("Story mode", STORY);
-        o.setShortcut(NORMAL, Keyboard.KEY_ESCAPE, false, false, false, true);
+        o.addOption("Normal mode", NORMAL);
+        o.setShortcut(STORY, Keyboard.KEY_ESCAPE, false, false, false, true);
     }
 
     public void optionSelected(String label, Object data) {

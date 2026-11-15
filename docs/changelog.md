@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.7.8 - 2026-11-15
+
+- Story mode: Rapid construction replaces Instant and Free construction (Tier IV, 20 bandwidth): builds and upgrades take a third of the time and cost 100,000 more each. Saves that bought Instant construction have Rapid construction.
+- Story mode: The new-game pop-up lists Story mode first, and Escape picks it.
+- Colony page: A Low profile button. In story mode it shows once Colony upkeep is bought.
+
 ## 0.3.7.7 - 2026-11-15
 
 - Random Assortment of Things: Forge-Assisted Industry BPs go in Autopilot Storage. Autopilot counts one held there as available for its industry and builds it like any other pick; the build moves the BP to the colony's Storage, where Random Assortment uses it up.

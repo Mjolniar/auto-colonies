@@ -27,6 +27,8 @@ public class CASyncCatalog {
     /** After a breakdown: at least RETURN_DAYS, then up to this many more, before salvage can hold one; then this chance per site. */
     public static int RETURN_RANDOM_DAYS = 365;
     public static float SALVAGE_CHANCE = 0.2f;
+    /** 0.3.7.8: Rapid construction's flat fee per build or upgrade, and the share of the build time it takes. */
+    public static float RAPID_FEE = 100000f, RAPID_TIME = 1f / 3f;
 
     public static final String[] GROUPS = {"Colony management", "Items and people", "Money", "Expansion", "Security and war", "Mod features", "Story perks"};
 
@@ -108,8 +110,7 @@ public class CASyncCatalog {
         add("augments", 5, 2, "niko_stationAugments", null, "Station augments", "It fits Station Augments loadouts.");
         add("settlement", 5, 2, "assortment_of_things", null, "Settlement", "It runs Random Assortment of Things' settlement.");
         // Story perks
-        add("instantBuild", 6, 15, null, null, "Instant construction", "Builds and upgrades it starts finish the same day.");
-        add("freeBuild", 6, 25, null, "instantBuild", "Free construction", "Builds and upgrades it starts cost nothing.");
+        add("rapidBuild", 6, 20, null, null, "Rapid construction", "Builds and upgrades it starts take a third of the time, at a flat fee more each.");   // 0.3.7.8: replaces Instant and Free construction
         add("twoBuilds", 6, 6, null, null, "Two builds at once", "Each colony can build two new buildings at once.");
         add("threeBuilds", 6, 8, null, "twoBuilds", "Three builds at once", "Each colony can build three new buildings at once.");
     }
@@ -185,7 +186,7 @@ public class CASyncCatalog {
         pack("dominion", 3, 15, "growth", "Endgame", "endgame", "noFees", "wonders");
         pack("warlord", 3, 15, "warfare", "Conquest", "strike", "conquest", "scorched");
         pack("parallel", 3, 12, null, "Parallel construction", "twoBuilds", "threeBuilds");
-        pack("instant", 3, 30, null, "Instant construction", "instantBuild", "freeBuild");
+        pack("instant", 3, 20, null, "Rapid construction", "rapidBuild");   // 0.3.7.8: the id stays, so saves that bought it keep it
         desc("advice", "Advises colony administrators on the next suitable construction.");
         desc("oversight", "Proposes construction at one colony and waits for your approval.");
         desc("upkeep", "Retires unprofitable industry, maintains orbital stations, sets colony policy and prepares colonies for crises.");
@@ -203,7 +204,7 @@ public class CASyncCatalog {
         desc("dominion", "Runs the endgame economy and wonders, with no fees.");
         desc("warlord", "Strikes, invades and, once authorized, bombards hostile factions.");
         desc("parallel", "Runs up to three new constructions per colony at once.");
-        desc("instant", "Completes construction the day it starts, at no cost.");
+        desc("instant", "Completes construction in a third of the time, for 100,000 credits more per building.");
     }
 
     static void desc(String id, String text) { PACK_BY_ID.get(id).desc = text; }
@@ -310,6 +311,7 @@ public class CASyncCatalog {
                 SALVAGE_CHANCE = (float) Math.max(0.0, Math.min(1.0, core.optDouble("salvageChance", SALVAGE_CHANCE)));
             }
             TIER_SHARE = (float) Math.max(0.0, Math.min(1.0, j.optDouble("tierShare", TIER_SHARE)));   // 0.3.7.3
+            RAPID_FEE = (float) Math.max(0.0, j.optDouble("rapidFee", RAPID_FEE));   // 0.3.7.8
             JSONObject costs = j.optJSONObject("packs");   // 0.3.7.4: packages are what costs bandwidth
             if (costs != null) for (Pack p : PACKS) p.cost = Math.max(0, costs.optInt(p.id, p.cost));
         } catch (Throwable t) {

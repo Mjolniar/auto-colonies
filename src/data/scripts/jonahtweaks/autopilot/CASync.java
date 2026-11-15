@@ -411,10 +411,11 @@ public class CASync {
     // ---------------- what the rest of the mod asks ----------------
 
     /** What a build costs in credits: nothing with Free construction. */
-    public static float buildPrice(float cost) { return has("freeBuild") ? 0f : cost; }
+    public static float buildPrice(float cost) { return rapidBuild() ? cost + CASyncCatalog.RAPID_FEE : cost; }   // 0.3.7.8: Rapid construction's flat fee
 
     /** Instant construction: builds and upgrades it starts finish the same day. */
-    public static boolean instantBuild() { return has("instantBuild"); }
+    /** 0.3.7.8: Rapid construction (story mode only): a third of the build time, at RAPID_FEE more. Instant construction is gone. */
+    public static boolean rapidBuild() { return has("rapidBuild"); }
 
     /** 0.3.6.7: new buildings a colony may build at once: 1 (the game's rule), 2 or 3 with the story perks. Upgrades always run alongside. */
     public static int buildsAtOnce() { return has("threeBuilds") ? 3 : has("twoBuilds") ? 2 : 1; }

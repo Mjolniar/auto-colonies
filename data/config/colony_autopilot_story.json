@@ -6,11 +6,13 @@
 	"core":{"breakdownDays":365, "breakdownAlpha":3, "breakdownBeta":2, "returnDays":365, "returnRandomDays":365, "salvageChance":0.2},
 	# Share of a tier's packages (the ones their mods allow) you must own to open the next tier.
 	"tierShare":0.666,
+	# Rapid construction's flat fee per build or upgrade, in credits.
+	"rapidFee":100000,
 	# Package costs in bandwidth (CASyncCatalog lists what each package holds and its tier).
 	"packs":{
 		"advice":2, "oversight":4, "upkeep":5, "supply":5,
 		"automation":6, "staff":6, "economy":5, "security":6, "projects":6,
 		"growth":9, "industry":8, "frontier":8, "warfare":7, "megaprojects":8,
-		"dominion":15, "warlord":15, "parallel":12, "instant":30
+		"dominion":15, "warlord":15, "parallel":12, "instant":20
 	}
 }
