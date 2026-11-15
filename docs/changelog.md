@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.8.1 - 2026-11-15
+
+- Autarch administrator: Fixed the colony screen showing the faction's administrator title before its name ("Secretary Autarch AI Core" with Nexerelin). Cores already seated lose the title on the next day.
+
 ## 0.3.8.0 - 2026-11-15
 
 - Story mode: Autarch administrator moved to Tier IV. It costs 10 bandwidth per colony it governs: the package covers one, and each more is bought on the Story page.

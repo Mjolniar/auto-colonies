@@ -6,7 +6,6 @@ import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import com.fs.starfarer.api.characters.FullName;
 import com.fs.starfarer.api.characters.PersonAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
-import com.fs.starfarer.api.impl.campaign.ids.Ranks;
 import com.fs.starfarer.api.impl.campaign.ids.Skills;
 import com.fs.starfarer.api.util.Misc;
 
@@ -56,7 +55,7 @@ public final class CAAutarchAdmin {
         p.setName(new FullName(NAME, "", FullName.Gender.ANY));
         p.setPortraitSprite(CAAutarch.PORTRAIT);
         p.setRankId(null);
-        p.setPostId(Ranks.POST_ADMINISTRATOR);
+        p.setPostId(null);   // 0.3.8.1: no post; the colony screen put the faction's post name first ("Secretary" with Nexerelin)
         p.getStats().setSkillLevel(Skills.INDUSTRIAL_PLANNING, 1);
         p.getStats().setSkillLevel(Skills.HYPERCOGNITION, 1);
         p.getStats().setSkillLevel(CAAutarchSkill.ID, 1);
@@ -125,10 +124,15 @@ public final class CAAutarchAdmin {
         }
     }
 
-    /** 0.3.8.0: a core seated by 0.3.7.9 learns Autarchy; setAdmin again so the colony applies it. */
+    /**
+     * 0.3.8.0: a core seated by 0.3.7.9 learns Autarchy; setAdmin again so the colony applies it. 0.3.8.1: and loses the
+     * administrator post (shown before its name).
+     */
     static void learn(MarketAPI m) {
         PersonAPI p = m.getAdmin();
-        if (p == null || p.getStats().getSkillLevel(CAAutarchSkill.ID) > 0f) return;
+        if (p == null) return;
+        if (p.getPostId() != null) p.setPostId(null);
+        if (p.getStats().getSkillLevel(CAAutarchSkill.ID) > 0f) return;
         p.getStats().setSkillLevel(CAAutarchSkill.ID, 1);
         m.setAdmin(p);
     }
