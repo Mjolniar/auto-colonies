@@ -146,6 +146,7 @@ public class CABuildHints implements EveryFrameScript {
     /** Whether a colony gets hints: yours, its mode in the scope (0 Advisor, 1 any but Off), not an outpost or hypershunt. */
     static boolean inScope(MarketAPI m, CASettings s) {
         if (m == null || !m.isPlayerOwned() || s.buildHints == 2) return false;
+        if (CASync.dormant()) return false;   // 0.3.6.8: story mode's dormant Autopilot gives no advice
         CAData.Mode mode = CAData.get().colony(m.getId()).mode;
         if (!scope(s.buildHints, mode)) return false;
         return !CAEngine.isOutpost(m) && !CAHypershunt.is(m);

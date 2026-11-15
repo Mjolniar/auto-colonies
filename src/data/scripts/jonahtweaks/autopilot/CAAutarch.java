@@ -124,7 +124,14 @@ public final class CAAutarch {
 
     /** 0.3.6.6: the system's constellation as the map names it; a lone system: the fringe near the closest constellation. */
     static String areaOf(StarSystemAPI s) {
-        if (s.isInConstellation() && s.getConstellation() != null) return s.getConstellation().getNameWithLowercaseType();
+        com.fs.starfarer.api.impl.campaign.procgen.Constellation c = constellationOf(s);
+        if (c == null) return "fringe";
+        return s.isInConstellation() && c == s.getConstellation() ? c.getNameWithLowercaseType() : "fringe near the " + c.getNameWithLowercaseType();
+    }
+
+    /** 0.3.6.8: the system's constellation; a lone system: the closest one (the objective's map marker, CAAutarchIntel). Null: none. */
+    static com.fs.starfarer.api.impl.campaign.procgen.Constellation constellationOf(StarSystemAPI s) {
+        if (s.isInConstellation() && s.getConstellation() != null) return s.getConstellation();
         StarSystemAPI best = null;
         float bd = Float.MAX_VALUE;
         for (StarSystemAPI o : Global.getSector().getStarSystems()) {
@@ -132,7 +139,7 @@ public final class CAAutarch {
             float d = Misc.getDistance(o.getLocation(), s.getLocation());
             if (d < bd) { bd = d; best = o; }
         }
-        return best != null ? "fringe near the " + best.getConstellation().getNameWithLowercaseType() : "fringe";
+        return best != null ? best.getConstellation() : null;
     }
 
     /** On every load: places the first core once. */

@@ -275,7 +275,7 @@ public class CARich {
     static void monthEnded(CASettings s, float spent, float budget) {
         if (CALog.whatIf()) return;
         CAData d = CAData.get();
-        boolean counted = CAPlanner.inCharge() && !CAPlanner.idle.isEmpty();
+        boolean counted = CAPlanner.inCharge() && !CAPlanner.idle.isEmpty() && !CASync.dormant();   // 0.3.6.8: a dormant month isn't counted
         float share = counted ? CAPlanner.idleShare() : 0f;
         float all = Math.max(0f, spent) + total(d.rungSpent());
         boolean idle = idleMonth(share, all, budget);
@@ -286,7 +286,7 @@ public class CARich {
         resetLadder();   // 0.3.0.0 (C3): a new month's pool, from the new month's free cash
         CALog.quiet("Money tiers: last month " + (counted ? (idle ? "idle" : "not idle") + " (" + Math.round(share * 100f)
                 + "% of colonies with nothing worth starting; Auto Colonies spent " + Misc.getDGSCredits(all) + " of a "
-                + Misc.getDGSCredits(budget) + " budget)" : "not counted (no planner look this session)") + "; idle months " + was + " -> " + d.idleMonths);
+                + Misc.getDGSCredits(budget) + " budget)" : CASync.dormant() ? "not counted (the Autopilot is dormant)" : "not counted (no planner look this session)") + "; idle months " + was + " -> " + d.idleMonths);
     }
 
     static float total(Map<String, Float> m) {

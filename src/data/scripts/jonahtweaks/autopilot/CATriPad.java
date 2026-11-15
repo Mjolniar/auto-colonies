@@ -200,6 +200,7 @@ public class CATriPad implements InteractionDialogPlugin {
         para("Engineering shrugs. \"Salvagers will have been through it. But they go for plating and fuel, not cores they can't identify. "
                 + "It could still be sitting there.\"");
         note("New objective: find the Autarch AI Core" + (area != null ? " somewhere in the " + area + "." : "."));
+        CAAutarchIntel.showIn(text);   // 0.3.6.8: the objective's intel, as a mission shows when you take it
         close("Put the TriPad away");
     }
 
@@ -395,6 +396,7 @@ public class CATriPad implements InteractionDialogPlugin {
         para("Your TriPad has picked up another Autarch-class core" + (area != null ? " somewhere in the " + area : "")
                 + ". Your sensors officer checks the reading twice. It's real, but too faint to pin to one system.");
         if (area != null) note("New objective: find the Autarch AI Core somewhere in the " + area + ".");
+        CAAutarchIntel.showIn(text);   // 0.3.6.8
         close("Put the TriPad away");
     }
 

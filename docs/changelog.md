@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.6.8 - 2026-11-14
+
+- Story mode: Added the Find the Autarch AI Core objective (Story, Exploration and Accepted intel tabs). Its map marker is on the constellation's label. Its text names the system's star and where the station orbits among the planets. It does not name the system.
+- Story mode: A core returned after a sale gets a new objective. The objective ends when the core is in your cargo, a storage tab or the cradle.
+- Story mode: While the Autopilot is dormant, the monthly ledger line goes to starsector.log only, the month does not count toward the money tiers, and the build menu shows no hints.
+
 ## 0.3.6.7 - 2026-11-14
 
 - Upgrades: At the Surplus money tier an upgrade's price counts 25% in its score, and from Idle money up 10%. Industry and station upgrades with a positive value start while the colony's new building is under way.

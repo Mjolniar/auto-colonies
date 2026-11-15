@@ -19,6 +19,7 @@ import java.util.Set;
 public class CAStoryIntel extends BaseIntelPlugin {
 
     public static void ensure() {
+        CAAutarchIntel.update();   // 0.3.6.8: the search for the core as its own objective
         try {
             if (!CASync.seen(CATriPad.FOUND) && CASync.generation() == 0 && !CASync.installed() && CASync.phase().isEmpty()
                     && !CASync.seen(CATriPad.CHIME + ":0")) return;

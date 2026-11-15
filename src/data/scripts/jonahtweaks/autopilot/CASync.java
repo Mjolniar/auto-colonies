@@ -1010,6 +1010,7 @@ public class CASync {
 
     /** Daily, before the steps: the core's timers, the settings holds and the colony modes. */
     public static void daily() {
+        CAAutarchIntel.update();   // 0.3.6.8: the core's objective (ends when story mode is off)
         if (!on()) return;
         try { lifecycle(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autarch AI Core timers failed", t); }
         fit();
