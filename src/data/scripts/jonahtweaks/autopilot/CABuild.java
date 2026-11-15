@@ -78,7 +78,7 @@ public class CABuild {
         if (!p.upgrade && buildsFull(m)) return "A new building is already under construction here" + (CASync.buildsAtOnce() > 1 ? " (" + CASync.buildsAtOnce() + " at once)" : "") + ". Upgrades can still run";
         float price = CASync.buildPrice(p.cost);   // 0.3.6.0 story mode: Free construction
         if (credits() < price) return "Not enough credits (" + Misc.getDGSCredits(price) + " needed)";
-        if (!CASync.mayBuild(p.id)) return "Stations is off on the Story page.";
+        if (!CASync.mayBuild(p.id)) return "Stations need " + CASyncCatalog.buy("stations") + " on the Story page.";
         if (!CADiagnostics.usable(p.id)) return "Not supported by Colony Autopilot";
         // 0.3.0.0: the one stability rule (CAStability) as the last gate for a new building or upgrade: what it costs once built must
         // leave the colony at or above the floor. The planner already holds such picks back; this catches any path that doesn't

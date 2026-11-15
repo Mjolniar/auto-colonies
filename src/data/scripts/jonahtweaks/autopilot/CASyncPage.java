@@ -96,7 +96,7 @@ public class CASyncPage {
         // 0.3.7.3: by tier. Open tiers list their abilities; the next tier shows what opens it; later tiers don't show
         int open = CASync.openTier();
         for (int ti = 0; ti < CASyncCatalog.TIERS.length; ti++) {
-            List<CASyncCatalog.Ability> list = CASyncCatalog.inTier(ti);
+            List<CASyncCatalog.Pack> list = CASyncCatalog.inTier(ti);
             if (list.isEmpty()) continue;
             if (ti > open) {
                 int[] pr = CASync.tierProgress(open);
@@ -105,13 +105,13 @@ public class CASyncPage {
                 break;
             }
             t.addSectionHeading(CASyncCatalog.TIERS[ti], Alignment.MID, 12f);
-            for (CASyncCatalog.Ability a : list) {
-                boolean on = CASync.ticked(a.id);
-                boolean needs = a.requires != null && !CASync.ticked(a.requires);
-                boolean afford = CASync.free() >= a.cost;
-                String desc = a.name + " (" + a.cost + " bandwidth). " + a.text
-                        + (needs ? " It needs " + CASyncCatalog.get(a.requires).name + " first." : "");
-                row(t, on ? "On" : "Off", "tick:" + a.id, on || (!needs && afford), 60f, desc, on ? Misc.getTextColor() : gray, a.name);
+            for (CASyncCatalog.Pack p : list) {   // 0.3.7.4: packages
+                boolean on = CASync.ticked(p.id);
+                boolean needs = p.requires != null && !CASync.ticked(p.requires);
+                boolean afford = CASync.free() >= p.cost;
+                String desc = p.name + " (" + p.cost + " bandwidth). " + p.contents() + "."
+                        + (needs ? " It needs " + CASyncCatalog.pack(p.requires).name + " first." : "");
+                row(t, on ? "On" : "Off", "tick:" + p.id, on || (!needs && afford), 60f, desc, on ? Misc.getTextColor() : gray, p.name);
             }
         }
 
@@ -151,7 +151,7 @@ public class CASyncPage {
     }
 
     /** The empire panel's list entry for this page. */
-    public static String navLabel() { return CASync.dormant() ? "Story (dormant)" : "Story (" + Math.max(0, CASync.free()) + " bandwidth free)"; }
+    public static String navLabel() { return "Story"; }   // 0.3.7.4: the bandwidth is on the page; the longer label ran past the button
 
     /** The Story mode line, first on the intel Settings page while LunaLib is off. Its button is CASync's (handle: "storymode"). */
     public static void settingsRow(TooltipMakerAPI t) {
@@ -165,8 +165,8 @@ public class CASyncPage {
 
     /** The colony panel's Fast buildout section while the ability is off. */
     public static void buildoutOff(TooltipMakerAPI t, com.fs.starfarer.api.campaign.econ.MarketAPI m) {
-        t.addPara("Loses %s a month. Fast buildout is off; it costs %s bandwidth on the Story page.", 6f, Misc.getNegativeHighlightColor(),
-                Misc.getDGSCredits(-m.getNetIncome()), "" + CASyncCatalog.get("buildout").cost);
+        t.addPara("Loses %s a month. Fast buildout needs %s on the Story page.", 6f, Misc.getNegativeHighlightColor(),
+                Misc.getDGSCredits(-m.getNetIncome()), CASyncCatalog.buy("buildout"));
     }
 
     // 0.3.7.1: renderDormantColony is gone: the dormant colony panel shows this page and Diagnostics (CAColonyDialog.pages)

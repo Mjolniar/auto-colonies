@@ -1,5 +1,12 @@
 # Patch notes
 
+## 0.3.7.4 - 2026-11-15
+
+- Story mode: The 52 abilities are bought in 18 packages, 4 or 5 per tier, each with a higher cost. Saves keep what they bought, as the packages that hold it.
+- Story mode: The core gives 10 bandwidth, down from 20. Tier I costs 16 in all, and opening Tier II takes 3 of its 4 packages.
+- Story mode: Closing the panel after changes brings up one TriPad summary: what runs now, what stopped, managed colonies and bandwidth. Feeding cores no longer brings up its own dialog.
+- Autopilot panel: The Story button says Story. The bandwidth no longer runs past the button.
+
 ## 0.3.7.3 - 2026-11-14
 
 - Story mode: Abilities are in 4 tiers. Tier I is open from the start; the next tier opens when you own 2/3 of the tier before it, and stays open. Tier IV holds the story perks, Conquer, Scorched, No fees, Endgame economy and Wonders. Saves from before open up to the highest tier they own an ability in.

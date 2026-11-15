@@ -31,6 +31,11 @@ import java.util.Map;
  */
 public class CATriPad implements InteractionDialogPlugin {
     public static final String FOUND = "found", CHIME = "chime", INSTALL = "install", FEED = "feed", PULL = "pull", BROKEN = "broken", RETURN = "return";
+    /** 0.3.7.4: what the core runs now, after the Story page changed it (CASync.summary); never read again. */
+    public static final String UPDATE = "update";
+    java.util.List<String> turnedOn = new java.util.ArrayList<String>(), turnedOff = new java.util.ArrayList<String>();
+    int gained = 0;
+    boolean capChanged = false;
     static final String CLOSE = "close", LATER = "later", SLOT = "slot", CRADLE = "cradle", BREAK = "break", BREAK_YES = "breakYes", RESEAT = "reseat",
             WHAT = "what", NOTES = "notes", HAND = "hand", KEEP = "keep", OUT = "out";
 
@@ -102,7 +107,7 @@ public class CATriPad implements InteractionDialogPlugin {
         this.text = dialog.getTextPanel();
         this.options = dialog.getOptionPanel();
         dialog.setPromptText("");
-        if (!reread && !CHIME.equals(beat) && !PULL.equals(beat)) CASync.see(beat);   // the chime is seen per core (CASync.nextBeat), the pull once it's done
+        if (!reread && !CHIME.equals(beat) && !PULL.equals(beat) && !UPDATE.equals(beat)) CASync.see(beat);   // the chime is seen per core (CASync.nextBeat), the pull once it's done
         try { show(); }
         catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "story beat " + beat + " failed", t);
@@ -120,6 +125,7 @@ public class CATriPad implements InteractionDialogPlugin {
         else if (PULL.equals(beat)) pullIntro();
         else if (BROKEN.equals(beat)) broken();
         else if (RETURN.equals(beat)) returned();
+        else if (UPDATE.equals(beat)) update();
         else close("Put the TriPad away");
     }
 
@@ -341,6 +347,25 @@ public class CATriPad implements InteractionDialogPlugin {
         int[] f = CASync.fed();
         screen("SUBSTRATE ADDED: " + CASyncCatalog.cores(f[0], f[1], f[2]).toUpperCase() + ".", "Capacity increased. Thank you, Administrator.");
         gained("The Autopilot has " + CASync.total() + " bandwidth.");
+        close("Put the TriPad away");
+    }
+
+    /** 0.3.7.4: the core's own summary of the changes made on the Story page: what runs now, what stopped, its bandwidth. */
+    void update() {
+        portrait();
+        java.util.List<String> lines = new java.util.ArrayList<String>();
+        lines.add("CAPABILITY UPDATE.");
+        for (String id : turnedOn) {
+            CASyncCatalog.Pack p = CASyncCatalog.pack(id);
+            if (p != null) lines.add("NOW RUNNING: " + p.name.toUpperCase() + ". " + p.contents().toUpperCase() + ".");
+        }
+        for (String id : turnedOff) {
+            CASyncCatalog.Pack p = CASyncCatalog.pack(id);
+            if (p != null) lines.add("SUSPENDED: " + p.name.toUpperCase() + ".");
+        }
+        if (capChanged) lines.add("MANAGED COLONIES: " + CASync.managedCap() + ".");
+        lines.add("BANDWIDTH: " + CASync.total() + (gained > 0 ? " (+" + gained + ")" : "") + ". FREE: " + Math.max(0, CASync.free()) + ".");
+        screen(lines.toArray(new String[0]));
         close("Put the TriPad away");
     }
 

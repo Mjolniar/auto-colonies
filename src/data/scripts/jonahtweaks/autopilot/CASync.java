@@ -212,12 +212,12 @@ public class CASync {
 
     public static boolean ticked(String id) { return ticked().contains(id); }
 
-    /** PP the ticked abilities and the bought colonies use (abilities whose mod is off don't count). */
+    /** Bandwidth the bought packages and colonies use (a package none of whose mods is on doesn't count). 0.3.7.4: packages. */
     public static int spent() {
         int n = extraColonies() * CASyncCatalog.COLONY_PP;
         for (String id : ticked()) {
-            CASyncCatalog.Ability a = CASyncCatalog.get(id);
-            if (a != null && a.available()) n += a.cost;
+            CASyncCatalog.Pack p = CASyncCatalog.pack(id);
+            if (p != null && p.available()) n += p.cost;
         }
         return n;
     }
@@ -229,42 +229,75 @@ public class CASync {
         if (!on()) return !CASyncCatalog.perk(id);   // story mode off: everything but the story perks
         if (dormant()) return false;
         CASyncCatalog.Ability a = CASyncCatalog.get(id);
-        if (a == null || !a.available() || !ticked(id)) return false;
+        CASyncCatalog.Pack p = CASyncCatalog.packOf(id);   // 0.3.7.4: an ability runs when its package is bought
+        if (a == null || p == null || !a.available() || !ticked(p.id)) return false;
         return a.requires == null || has(a.requires);
     }
 
     /** Ticks or unticks an ability. Null on success, else why not. */
     public static String toggle(String id) {
-        CASyncCatalog.Ability a = CASyncCatalog.get(id);
-        if (a == null || !a.available()) return "That ability isn't available.";
+        CASyncCatalog.Pack p = CASyncCatalog.pack(id);   // 0.3.7.4: packages are bought, not single abilities
+        if (p == null || !p.available()) return "That package isn't available.";
         if (!on()) return "Story mode is off.";
         if (ticked(id)) {
+            noteChange();
             untick(id);
             afterChange();
             return null;
         }
         if (dormant()) return "The Colony Autopilot is dormant.";
-        if (CASyncCatalog.tierOf(id) > openTier()) return CASyncCatalog.TIERS[CASyncCatalog.tierOf(id)] + " isn't open yet.";   // 0.3.7.3
-        if (a.requires != null && !ticked(a.requires)) return a.name + " needs " + CASyncCatalog.get(a.requires).name + " first.";
-        if (free() < a.cost) return a.name + " needs " + a.cost + " bandwidth, and " + Math.max(0, free()) + " are free.";
+        if (p.tier > openTier()) return CASyncCatalog.TIERS[p.tier] + " isn't open yet.";   // 0.3.7.3
+        if (p.requires != null && !ticked(p.requires)) return p.name + " needs " + CASyncCatalog.pack(p.requires).name + " first.";
+        if (free() < p.cost) return p.name + " needs " + p.cost + " bandwidth, and " + Math.max(0, free()) + " are free.";
+        noteChange();
         ticked().add(id);
         afterChange();
-        CALog.did("Autopilot: " + a.name + " is on (" + a.cost + " bandwidth).");
+        CALog.quiet("Autopilot: " + p.name + " is on (" + p.cost + " bandwidth).");   // 0.3.7.4: the TriPad's summary says it on screen
         return null;
     }
 
-    /** Unticks an ability and everything that needs it. */
+    /** Unticks a package and every package that needs it. */
     static void untick(String id) {
         if (!ticked().remove(id)) return;
-        CASyncCatalog.Ability a = CASyncCatalog.get(id);
-        if (a != null) CALog.did("Autopilot: " + a.name + " is off.");
-        for (CASyncCatalog.Ability x : CASyncCatalog.ALL) if (id.equals(x.requires)) untick(x.id);
+        CASyncCatalog.Pack p = CASyncCatalog.pack(id);
+        if (p != null) CALog.quiet("Autopilot: " + p.name + " is off.");
+        for (CASyncCatalog.Pack x : CASyncCatalog.PACKS) if (id.equals(x.requires)) untick(x.id);
+    }
+
+    // ---------------- 0.3.7.4: the summary after the panel closes ----------------
+
+    /** Packages, bandwidth and managed colonies before the first change since the last summary; null when nothing changed. */
+    static List<String> beforeTicks = null;
+    static int beforeTotal = 0, beforeCap = 0;
+
+    /** Called before each change on the Story page: keeps the state from before the first one. */
+    static void noteChange() {
+        if (beforeTicks != null) return;
+        beforeTicks = new ArrayList<String>(ticked());
+        beforeTotal = total();
+        beforeCap = managedCap();
+    }
+
+    /** The TriPad's summary of what changed since noteChange, or null when it all came back to where it was. */
+    static CATriPad summary() {
+        if (beforeTicks == null) return null;
+        List<String> on = new ArrayList<String>(), off = new ArrayList<String>();
+        for (String id : ticked()) if (!beforeTicks.contains(id)) on.add(id);
+        for (String id : beforeTicks) if (!ticked(id)) off.add(id);
+        int gained = total() - beforeTotal, cap = managedCap();
+        boolean capChanged = cap != beforeCap;
+        beforeTicks = null;
+        if (on.isEmpty() && off.isEmpty() && gained == 0 && !capChanged) return null;
+        CATriPad t = new CATriPad(CATriPad.UPDATE, null, false);
+        t.turnedOn = on; t.turnedOff = off; t.gained = gained; t.capChanged = capChanged;
+        return t;
     }
 
     public static String addColony() {
         if (!on()) return "Story mode is off.";
         if (dormant()) return "The Colony Autopilot is dormant.";
         if (!has("approve")) return "Approve mode comes first.";   // 0.3.7.2
+        noteChange();   // 0.3.7.4
         if (extraColonies() >= CASyncCatalog.MAX_COLONIES) return "It can't run more colonies.";
         if (free() < CASyncCatalog.COLONY_PP) return "One more managed colony needs " + CASyncCatalog.COLONY_PP + " bandwidth, and " + Math.max(0, free()) + " are free.";
         num("colonies", extraColonies() + 1);
@@ -274,6 +307,7 @@ public class CASync {
 
     public static String removeColony() {
         if (extraColonies() <= 0) return "There are no bought colonies to remove.";
+        noteChange();   // 0.3.7.4
         num("colonies", extraColonies() - 1);
         afterChange();
         return null;
@@ -326,6 +360,7 @@ public class CASync {
         int[] h = onHand();
         if (h[0] < g || h[1] < b || h[2] < a) return "Not enough cores: you have " + CASyncCatalog.cores(h[0], h[1], h[2]);
         if (g + b + a <= 0) return "No cores to feed";
+        noteChange();   // 0.3.7.4: part of the summary when the panel closes
         int[] need = {g, b, a};
         for (int k = 0; k < 3; k++) {
             int left = need[k];
@@ -341,8 +376,7 @@ public class CASync {
         int pts = CASyncCatalog.points(g, b, a);
         num("fedPP", fedPoints() + pts);
         num("fedG", num("fedG") + g); num("fedB", num("fedB") + b); num("fedA", num("fedA") + a);
-        CALog.did("Autopilot: integrated " + CASyncCatalog.cores(g, b, a) + ", +" + pts + " bandwidth (" + total() + " in all).", true);
-        if (!seen(CATriPad.FEED)) queued = new CATriPad(CATriPad.FEED, null, false);
+        CALog.quiet("Autopilot: integrated " + CASyncCatalog.cores(g, b, a) + ", +" + pts + " bandwidth (" + total() + " in all).");   // 0.3.7.4: no thank-you beat; the summary covers it
         return null;
     }
 
@@ -354,7 +388,7 @@ public class CASync {
         int[] keep = new int[3];
         if (!on() || dormant() || !keepCores()) return keep;
         int cheapest = Integer.MAX_VALUE;
-        for (CASyncCatalog.Ability a : CASyncCatalog.available()) if (!ticked(a.id)) cheapest = Math.min(cheapest, a.cost);
+        for (CASyncCatalog.Pack p : CASyncCatalog.packs()) if (!ticked(p.id) && p.tier <= openTier()) cheapest = Math.min(cheapest, p.cost);
         if (extraColonies() < CASyncCatalog.MAX_COLONIES) cheapest = Math.min(cheapest, CASyncCatalog.COLONY_PP);
         if (cheapest == Integer.MAX_VALUE) return keep;
         int left = cheapest - Math.max(0, free());
@@ -479,9 +513,9 @@ public class CASync {
     /** Why a colony can't have this mode now. */
     public static String manageWhy(CAData.Mode mode) {
         if (dormant()) return pulled() ? "The Autarch AI Core is out of its cradle." : "The Colony Autopilot needs the Autarch AI Core.";
-        if (managing(mode) && !has("approve")) return "Approve mode costs " + CASyncCatalog.get("approve").cost + " bandwidth in the Autopilot panel.";
-        if (mode == CAData.Mode.AUTO && !has("auto")) return "Auto mode costs " + CASyncCatalog.get("auto").cost + " bandwidth in the Autopilot panel.";
-        if (mode == CAData.Mode.ADVISOR && !has("advisor")) return "Advisor mode costs " + CASyncCatalog.get("advisor").cost + " bandwidth in the Autopilot panel.";
+        if (managing(mode) && !has("approve")) return "It needs " + CASyncCatalog.buy("approve") + " in the Autopilot panel.";
+        if (mode == CAData.Mode.AUTO && !has("auto")) return "It needs " + CASyncCatalog.buy("auto") + " in the Autopilot panel.";
+        if (mode == CAData.Mode.ADVISOR && !has("advisor")) return "It needs " + CASyncCatalog.buy("advisor") + " in the Autopilot panel.";
         int cap = managedCap();
         return "All " + cap + " managed colonies are in use; one more costs " + CASyncCatalog.COLONY_PP + " bandwidth in the Autopilot panel.";
     }
@@ -536,9 +570,22 @@ public class CASync {
         flag("modesBought", true);
         List<String> t = ticked();
         if (t.isEmpty()) return;
-        if (!t.contains("approve")) t.add(0, "approve");
-        if (!t.contains("advisor")) t.add(0, "advisor");
+        if (!t.contains("oversight")) t.add(0, "oversight");   // 0.3.7.4: as packages
+        if (!t.contains("advice")) t.add(0, "advice");
         fit();
+    }
+
+    /** 0.3.7.4, once per save: abilities bought one by one before packages are swapped for the packages that hold them. */
+    static void migratePacks() {
+        if (flag("packsSet")) return;
+        flag("packsSet", true);
+        List<String> t = ticked(), out = new ArrayList<String>();
+        for (String id : t) {
+            CASyncCatalog.Pack p = CASyncCatalog.pack(id) != null ? CASyncCatalog.pack(id) : CASyncCatalog.packOf(id);
+            if (p != null && !out.contains(p.id)) out.add(p.id);
+        }
+        t.clear();
+        t.addAll(out);
     }
 
     // ---------------- 0.3.7.3: tiers ----------------
@@ -549,8 +596,8 @@ public class CASync {
     /** {owned, needed} in a tier: what you own of its abilities, and what opens the next tier. */
     public static int[] tierProgress(int t) {
         int owned = 0;
-        List<CASyncCatalog.Ability> l = CASyncCatalog.inTier(t);
-        for (CASyncCatalog.Ability a : l) if (ticked(a.id)) owned++;
+        List<CASyncCatalog.Pack> l = CASyncCatalog.inTier(t);
+        for (CASyncCatalog.Pack p : l) if (ticked(p.id)) owned++;
         return new int[]{owned, CASyncCatalog.needed(l.size(), CASyncCatalog.TIER_SHARE)};
     }
 
@@ -559,9 +606,9 @@ public class CASync {
         int last = CASyncCatalog.TIERS.length - 1;
         int[] owned = new int[last + 1], count = new int[last + 1];
         for (int t = 0; t <= last; t++) {
-            List<CASyncCatalog.Ability> l = CASyncCatalog.inTier(t);
+            List<CASyncCatalog.Pack> l = CASyncCatalog.inTier(t);
             count[t] = l.size();
-            for (CASyncCatalog.Ability a : l) if (ticked(a.id)) owned[t]++;
+            for (CASyncCatalog.Pack p : l) if (ticked(p.id)) owned[t]++;
         }
         int was = openTier(), now = tierAfter(was, owned, count, CASyncCatalog.TIER_SHARE);
         if (now == was) return;
@@ -944,15 +991,15 @@ public class CASync {
      * the off one is held (the row shows the note in place of Change).
      */
     public static String rowLock(String key, CASettings s) {
-        if ("p_spend".equals(key)) return has("spending") ? null : "Lavish needs Higher spending (" + cost("spending") + ") on the Story page.";
+        if ("p_spend".equals(key)) return has("spending") ? null : "Lavish needs " + CASyncCatalog.buy("spending") + " on the Story page.";
         String[] fields = ROWS.get(key);
         if (fields == null) return null;
         List<String> names = new ArrayList<String>();
         for (String f : fields) for (Rule r : RULES) {
             if (!r.field.equals(f) || has(r.ability)) continue;
             CASyncCatalog.Ability a = CASyncCatalog.get(r.ability);
-            if (a == null || !a.available()) continue;
-            String n = a.name + " (" + a.cost + " bandwidth)";
+            if (a == null || !a.available() || CASyncCatalog.packOf(r.ability) == null) continue;
+            String n = CASyncCatalog.buy(r.ability);   // 0.3.7.4: the package that has it
             if (!names.contains(n)) names.add(n);
         }
         if (names.isEmpty()) return null;
@@ -970,7 +1017,7 @@ public class CASync {
         return false;
     }
 
-    static String cost(String id) { CASyncCatalog.Ability a = CASyncCatalog.get(id); return a == null ? "" : a.cost + " bandwidth"; }
+    static String cost(String id) { CASyncCatalog.Pack p = CASyncCatalog.packOf(id); return p == null ? "" : p.cost + " bandwidth"; }
 
     // ---------------- the core's life: install, cradle, pull, break down, sell, return ----------------
 
@@ -1174,15 +1221,17 @@ public class CASync {
         if (first != null && !seen(CATriPad.FOUND)) return new CATriPad(CATriPad.FOUND, first, false);
         String chime = CATriPad.CHIME + ":" + generation();
         if (dormant() && CAAutarch.inCargo() > 0 && !seen(chime)) { see(chime); return new CATriPad(CATriPad.CHIME, null, false); }
+        if (beforeTicks != null && !dormant()) { CATriPad u = summary(); if (u != null) return u; }   // 0.3.7.4
         return null;
     }
 
     /** On every load: costs, placement, the holds, the story intel, the watcher and the core's listener. */
     public static void onLoad() {
         CASyncCatalog.load();
+        try { migratePacks(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode package migration failed", t); }
         try { migrateModes(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode ability migration failed", t); }
         try { migrateTiers(); updateTiers(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode tiers failed", t); }
-        queued = null; armed = null; notice = null; modeNote = null;
+        queued = null; armed = null; notice = null; modeNote = null; beforeTicks = null;
         if (askMode()) CAStoryPrompt.watch();   // a new game's pop-up not answered yet
         if (!on()) return;
         if (!askMode()) try { CAAutarch.ensurePlaced(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autarch AI Core placement failed", t); }

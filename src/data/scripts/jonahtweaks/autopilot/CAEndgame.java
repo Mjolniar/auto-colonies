@@ -399,7 +399,7 @@ public class CAEndgame {
         // 0.3.6.2: CABuild.start's other refusals, checked before anything comes down, so a takedown never leaves an empty slot
         if (!p.upgrade && CABuild.buildsFull(m)) return "another building is under construction";
         if (!p.upgrade && m.hasIndustry(p.id)) return "it's already built";
-        if (!CASync.mayBuild(p.id)) return "Stations is off on the Story page";
+        if (!CASync.mayBuild(p.id)) return "Stations need " + CASyncCatalog.buy("stations") + " on the Story page";
         if (p.upgrade && (p.existing == null || p.existing.isUpgrading() || p.existing.isBuilding())) return "that building can't be upgraded right now";
         return null;
     }

@@ -19,7 +19,7 @@ public class CASyncCatalog {
     public static final String GAMMA = "gamma_core", BETA = "beta_core", ALPHA = "alpha_core";
     public static final String PATH = "data/config/colony_autopilot_story.json";
 
-    public static int BASE_PP = 20, ALPHA_PP = 10, BETA_PP = 3, GAMMA_PP = 1;
+    public static int BASE_PP = 10, ALPHA_PP = 10, BETA_PP = 3, GAMMA_PP = 1;   // 0.3.7.4: the core's own 10, down from 20
     /** One more managed colony (Approve or Auto) past the first; at most MAX_COLONIES bought. */
     public static int COLONY_PP = 2, MAX_COLONIES = 30;
     /** Breakdown: days it takes, and what it gives. Sale: days until a new core is placed. */
@@ -117,32 +117,105 @@ public class CASyncCatalog {
     /** The Story perks group: past the game's rules, so they run only in story mode. */
     static final int PERKS = 6;
 
-    // ---------------- 0.3.7.3: tiers ----------------
+    // ---------------- 0.3.7.4: packages and tiers ----------------
 
-    /** The tiers, in order. A tier opens when you own TIER_SHARE of the abilities in the tier before it (CASync.openTier). */
-    public static final String[] TIERS = {"Tier I", "Tier II", "Tier III", "Tier IV"};
-    /** Share of a tier's abilities (the ones its mods allow) that opens the next tier; "tierShare" in the config file. */
-    static float TIER_SHARE = 2f / 3f;
-    static final Map<String, Integer> TIER = new HashMap<String, Integer>();
-    static {
-        tier(0, "advisor", "approve", "cleanup", "stations", "policies", "capital", "logistics", "objectives", "crisis", "items", "stockpiles", "lowProfile");
-        tier(1, "auto", "cores", "admins", "storyPoints", "spending", "floors", "enforcers", "defense", "agents", "diplomacy", "autonomy",
-                "terraform", "research", "contracts", "indevo", "augments", "settlement");
-        tier(2, "buildout", "omega", "surplus", "military", "shipyard", "halfFees", "expansion", "colonyFleets", "retaliate", "offense",
-                "surplusTerra", "surplusResearch", "mega");
-        tier(3, "endgame", "noFees", "strike", "conquest", "scorched", "wonders", "instantBuild", "freeBuild", "twoBuilds", "threeBuilds");
+    /**
+     * What you buy on the Story page: a package of abilities with one cost, in a tier. The abilities stay the switches the
+     * code asks (CASync.has); a package's abilities run once it's bought, each as far as its own mod and what it needs allow.
+     * A package shows while one of its abilities has its mod.
+     */
+    public static class Pack {
+        public final String id, name, requires;
+        public final String[] members;
+        public final int tier;
+        public int cost;
+
+        Pack(String id, int tier, int cost, String requires, String name, String... members) {
+            this.id = id; this.tier = tier; this.cost = cost; this.requires = requires; this.name = name; this.members = members;
+        }
+
+        public boolean available() {
+            for (String m : members) { Ability a = BY_ID.get(m); if (a != null && a.available()) return true; }
+            return false;
+        }
+
+        /** Its abilities' names, the ones their mods allow. */
+        public String contents() {
+            StringBuilder sb = new StringBuilder();
+            for (String m : members) {
+                Ability a = BY_ID.get(m);
+                if (a == null || !a.available()) continue;
+                sb.append(sb.length() == 0 ? "" : ", ").append(a.name);
+            }
+            return sb.toString();
+        }
     }
 
-    static void tier(int t, String... ids) { for (String id : ids) TIER.put(id, t); }
+    /** The tiers, in order. A tier opens when you own TIER_SHARE of the packages in the tier before it (CASync.openTier). */
+    public static final String[] TIERS = {"Tier I", "Tier II", "Tier III", "Tier IV"};
+    /** Share of a tier's packages (the ones their mods allow) that opens the next tier; "tierShare" in the config file. */
+    static float TIER_SHARE = 2f / 3f;
+    static final List<Pack> PACKS = new ArrayList<Pack>();
+    static final Map<String, Pack> PACK_BY_ID = new LinkedHashMap<String, Pack>(), PACK_OF = new HashMap<String, Pack>();
 
-    /** The tier an ability is in (0 for Tier I). */
-    public static int tierOf(String id) { Integer t = TIER.get(id); return t == null ? 0 : t; }
+    static void pack(String id, int tier, int cost, String requires, String name, String... members) {
+        Pack p = new Pack(id, tier, cost, requires, name, members);
+        PACKS.add(p);
+        PACK_BY_ID.put(id, p);
+        for (String m : members) PACK_OF.put(m, p);
+    }
 
-    /** The abilities in a tier that their mods allow. */
-    public static List<Ability> inTier(int t) {
-        List<Ability> out = new ArrayList<Ability>();
-        for (Ability a : ALL) if (a.available() && tierOf(a.id) == t) out.add(a);
+    static {
+        pack("advice", 0, 2, null, "Advisor mode", "advisor");
+        pack("oversight", 0, 4, null, "Approve mode", "approve");
+        pack("upkeep", 0, 5, null, "Colony upkeep", "cleanup", "stations", "policies", "crisis", "lowProfile");
+        pack("supply", 0, 5, null, "Supply and items", "capital", "logistics", "objectives", "items", "stockpiles");
+        pack("automation", 1, 6, "oversight", "Auto mode", "auto");
+        pack("staff", 1, 6, null, "Cores and staff", "cores", "admins", "storyPoints");
+        pack("economy", 1, 5, null, "Economy", "spending", "floors", "contracts");
+        pack("security", 1, 6, null, "Security", "enforcers", "defense", "agents", "diplomacy", "autonomy");
+        pack("projects", 1, 6, null, "Mod projects", "terraform", "research", "indevo", "augments", "settlement");
+        pack("growth", 2, 9, "automation", "Growth", "buildout", "surplus", "halfFees");
+        pack("industry", 2, 8, null, "Industry", "military", "shipyard", "omega");
+        pack("frontier", 2, 8, null, "Expansion", "expansion", "colonyFleets");
+        pack("warfare", 2, 7, "security", "War", "retaliate", "offense");
+        pack("megaprojects", 2, 8, "projects", "Large projects", "surplusTerra", "surplusResearch", "mega");
+        pack("dominion", 3, 15, "growth", "Endgame", "endgame", "noFees", "wonders");
+        pack("warlord", 3, 15, "warfare", "Conquest", "strike", "conquest", "scorched");
+        pack("parallel", 3, 12, null, "Parallel construction", "twoBuilds", "threeBuilds");
+        pack("instant", 3, 30, null, "Instant construction", "instantBuild", "freeBuild");
+    }
+
+    public static Pack pack(String id) { return PACK_BY_ID.get(id); }
+
+    /** The package an ability is in, or null. */
+    public static Pack packOf(String ability) { return PACK_OF.get(ability); }
+
+    /** The tier of a package, or of an ability's package (0 for Tier I). */
+    public static int tierOf(String id) {
+        Pack p = PACK_BY_ID.get(id);
+        if (p == null) p = PACK_OF.get(id);
+        return p == null ? 0 : p.tier;
+    }
+
+    /** The packages in a tier that their mods allow. */
+    public static List<Pack> inTier(int t) {
+        List<Pack> out = new ArrayList<Pack>();
+        for (Pack p : PACKS) if (p.tier == t && p.available()) out.add(p);
         return out;
+    }
+
+    /** The packages their mods allow, in menu order. */
+    public static List<Pack> packs() {
+        List<Pack> out = new ArrayList<Pack>();
+        for (Pack p : PACKS) if (p.available()) out.add(p);
+        return out;
+    }
+
+    /** "Approve mode (4 bandwidth)": the package an ability is bought in, for "needs" lines. */
+    public static String buy(String ability) {
+        Pack p = PACK_OF.get(ability);
+        return p == null ? "" : p.name + " (" + p.cost + " bandwidth)";
     }
 
     /** Pure: abilities to own in a tier of `count` to open the next one. */
@@ -215,8 +288,8 @@ public class CASyncCatalog {
                 SALVAGE_CHANCE = (float) Math.max(0.0, Math.min(1.0, core.optDouble("salvageChance", SALVAGE_CHANCE)));
             }
             TIER_SHARE = (float) Math.max(0.0, Math.min(1.0, j.optDouble("tierShare", TIER_SHARE)));   // 0.3.7.3
-            JSONObject costs = j.optJSONObject("abilities");
-            if (costs != null) for (Ability a : ALL) a.cost = Math.max(0, costs.optInt(a.id, a.cost));
+            JSONObject costs = j.optJSONObject("packs");   // 0.3.7.4: packages are what costs bandwidth
+            if (costs != null) for (Pack p : PACKS) p.cost = Math.max(0, costs.optInt(p.id, p.cost));
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "story costs: " + PATH + " couldn't be read, using the built-in costs", t);
         }
