@@ -318,6 +318,29 @@ public class CASurplus {
         return !legacy && managed && tier >= CARich.T2 ? CARich.IDLE_MONEY : 1f;
     }
 
+    /**
+     * 0.3.6.7: what an upgrade's price counts in its score at an Approve or Auto colony while money is spare: a quarter at the
+     * Surplus tier, a tenth from Idle money up (CATuning). 1 for a new building, at Tight, with legacyPlanner, or elsewhere.
+     * Upgrades run alongside new buildings, so spare money starts them while a colony's new building is under way.
+     */
+    public static float upgradePriceWeight(MarketAPI m, boolean upgrade) {
+        if (m == null || !upgrade) return 1f;
+        try {
+            if (CABudget.legacy(CAData.settings())) return 1f;
+            int tier = CARich.tier();
+            if (tier < CARich.T1) return 1f;
+            CAData.Mode mode = CAData.get().colony(m.getId()).mode;
+            boolean managed = (mode == CAData.Mode.AUTO || mode == CAData.Mode.APPROVE) && !CAEngine.isOutpost(m) && !CAHypershunt.is(m);
+            return upgradePriceWeight(true, managed, tier, false);
+        } catch (Throwable t) { return 1f; }
+    }
+
+    /** Pure (JTParallelCheck): as above, from its inputs. */
+    static float upgradePriceWeight(boolean upgrade, boolean managed, int tier, boolean legacy) {
+        if (!upgrade || !managed || legacy || tier < CARich.T1) return 1f;
+        return tier >= CARich.T2 ? CATuning.UPGRADE_PRICE_IDLE : CATuning.UPGRADE_PRICE_SURPLUS;
+    }
+
     /** Spending the colony may do beyond the monthly budget: the surplus, at the focus world (every colony while rich). 0 elsewhere. */
     public static float extra(MarketAPI m, CASettings s) { return spends(m) ? amount(s) : 0f; }
 

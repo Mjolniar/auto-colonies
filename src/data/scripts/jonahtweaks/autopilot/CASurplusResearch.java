@@ -129,7 +129,7 @@ public class CASurplusResearch {
                 + Misc.getDGSCredits(sv) + " a month for " + Misc.getDGSCredits(up) + " upkeep";
         if (cands.isEmpty()) { summary = head + ", but no Auto colony without one can build it now."; return; }
         MarketAPI m = null;
-        for (MarketAPI c : cands) if (Misc.getCurrentlyBeingConstructed(c) == null) { m = c; break; }   // one new building at a time per colony
+        for (MarketAPI c : cands) if (!CABuild.buildsFull(c)) { m = c; break; }   // room for a new building (one at a time; 2 or 3 in story mode, 0.3.6.7)
         if (m == null) { summary = head + "; the colonies that could build it are busy building something else."; return; }
         float cost;
         try { cost = sp.getNewPluginInstance(m).getBuildCost(); } catch (Throwable t) { cost = sp.getCost(); }

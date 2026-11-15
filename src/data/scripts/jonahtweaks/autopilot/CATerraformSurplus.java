@@ -237,7 +237,7 @@ public class CATerraformSurplus {
         if (CAData.get().colony(m.getId()).locks.contains(mv.structure)) return 0f;
         Industry ind = m.getIndustry(mv.structure);
         if (ind == null) {
-            if (Misc.getCurrentlyBeingConstructed(m) != null) return 0f;   // one new building at a time; it waits its turn
+            if (CABuild.buildsFull(m)) return 0f;   // no room for another new building; it waits its turn (0.3.6.7: 2 or 3 at once in story mode)
             IndustrySpecAPI sp = spec(mv.structure);
             if (sp == null) return 0f;
             float cost = sp.getCost(), fee = CABudget.constructionFee(s, cost), up = CAEngine.baseUpkeep(m, sp);
@@ -435,7 +435,7 @@ public class CATerraformSurplus {
             a.usesSlot = CAEngine.isIndustry(mv.structure);
             a.tombstone = CAPlanner.tombstoneDays(m.getId(), mv.structure);   // taken down here lately: not built again within the year (B4)
             a.starter = (x) -> {
-                if (Misc.getCurrentlyBeingConstructed(x.market) != null) return "a new building is already under construction here";
+                if (CABuild.buildsFull(x.market)) return "a new building is already under construction here";
                 IndustrySpecAPI xs = spec(x.id);
                 if (xs == null) return "not supported";
                 // 0.3.0.0 (C4, research 03 F6): surplus credits, or the month's budget for a sequence that pays back within 24 months

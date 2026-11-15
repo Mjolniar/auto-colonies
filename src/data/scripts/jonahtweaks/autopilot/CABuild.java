@@ -54,9 +54,28 @@ public class CABuild {
         } catch (Throwable t) { return false; }
     }
 
+    /** 0.3.6.7: new buildings under construction here, counted as Misc.getCurrentlyBeingConstructed finds one (upgrades and the population building not counted). */
+    public static int newBuilds(MarketAPI m) {
+        int n = 0;
+        if (m == null) return 0;
+        for (Industry ind : m.getIndustries()) {
+            try {
+                if (ind.getSpec().hasTag(com.fs.starfarer.api.impl.campaign.ids.Industries.TAG_POPULATION)) continue;
+                if (ind.isBuilding() && !ind.isUpgrading()) n++;
+            } catch (Throwable ignored) { }
+        }
+        return n;
+    }
+
+    /** 0.3.6.7: room for more new buildings here: CASync.buildsAtOnce (1, the game's rule; 2 or 3 with the story perks) less those under way. */
+    public static int buildRoom(MarketAPI m) { return Math.max(0, CASync.buildsAtOnce() - newBuilds(m)); }
+
+    /** 0.3.6.7: no room for another new building here. Upgrades still run. */
+    public static boolean buildsFull(MarketAPI m) { return buildRoom(m) <= 0; }
+
     /** Returns null on success, or the reason it couldn't start. */
     public static String start(MarketAPI m, CAEngine.Pick p) {
-        if (!p.upgrade && Misc.getCurrentlyBeingConstructed(m) != null) return "A new building is already under construction here. Upgrades can still run";
+        if (!p.upgrade && buildsFull(m)) return "A new building is already under construction here" + (CASync.buildsAtOnce() > 1 ? " (" + CASync.buildsAtOnce() + " at once)" : "") + ". Upgrades can still run";
         float price = CASync.buildPrice(p.cost);   // 0.3.6.0 story mode: Free construction
         if (credits() < price) return "Not enough credits (" + Misc.getDGSCredits(price) + " needed)";
         if (!CASync.mayBuild(p.id)) return "Stations is off on the Story page.";

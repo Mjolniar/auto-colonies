@@ -85,7 +85,7 @@ The pass, in order:
 
 The planner:
 - Offers: `CAAction`s from builds and upgrades (`CAEngine`), surplus terraforming, surplus research, the wonder site, stable-location crews and story points, each scored by NPV (`CAValue.npv`, `CAHorizon`).
-- Per colony: new buildings share one construction queue, ranked by NPV per construction day. Upgrades run beside it.
+- Per colony: new buildings share one construction queue, ranked by NPV per construction day. Room: 1, or 2 or 3 with the story perks (`CABuild.buildRoom`, `CAPlanner.Pool.buildRoom`). Upgrades run beside it.
 - Across colonies: money goes by NPV per credit. The first pick that waits for money gets an earmark.
 - New-upkeep cap: counts only upkeep a building does not cover itself.
 - After each start: actions sharing a colony, good, building or one-per-empire flag are re-scored.
@@ -120,6 +120,7 @@ Rules for every step:
 - Pollution: an upgrade that would pollute a habitable world scores negative and is not started. `CAItems.wouldPollute` keeps polluting items out of forges. `CAItems.pullPollutingForge` takes one back while it can still be undone.
 - Plan bonus (`CAPlan.bonusFor`): the flat bonus goes only to enabler steps. Other steps count what they earn plus half of what they lead to (`CATuning.DOWNSTREAM_SHARE`).
 - Money tiers: from Idle money, a credit counts half at Approve and Auto colonies, a quarter while spending freely (`CASurplus.moneyWeight`) and 5% in the endgame.
+- Upgrade price: at Surplus an upgrade's price counts 25% in its score, from Idle money up 10% (`CASurplus.upgradePriceWeight`).
 - Price: score = worth - (price + fee) / H - worth x construction days / 30 / H (`CAHorizon.npvMonthly`, `CAValue.npv`).
 - Horizon H: 36 months, rising to 120 as surplus credits reach 10,000,000. It falls only below 60% of what raised it (`CAHorizon.slide`).
 - `CAValue`: `add` values a new build and `keep` values an existing one. `keep` is what the colony loses a month without it, plus the shortage it leaves, plus the synergies it keeps. Buildings under construction count as supply.

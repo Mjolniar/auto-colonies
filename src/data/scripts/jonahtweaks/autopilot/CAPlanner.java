@@ -226,6 +226,8 @@ public class CAPlanner {
         final Map<String, Integer> slots = new HashMap<String, Integer>();
         /** Colonies with a new building under way, buildings ("market|id") busy, one-per-empire flags taken this pass. */
         final Set<String> busyQueue = new HashSet<String>(), busyBuildings = new HashSet<String>(), onceTaken = new HashSet<String>();
+        /** 0.3.6.7: per colony, room for more new buildings at once (no entry: 1, the game's rule); at 0 the colony is in busyQueue. */
+        final Map<String, Integer> buildRoom = new HashMap<String, Integer>();
         Earmark earmark;
         Hold hold;
 
@@ -248,7 +250,12 @@ public class CAPlanner {
             upkeepAdded += a.netUpkeep();
             storyPoints -= Math.max(0, a.storyPoints);
             String m = a.marketId;
-            if (a.usesQueue && m != null) busyQueue.add(m);
+            if (a.usesQueue && m != null) {   // 0.3.6.7: a colony with room for 2 or 3 at once (story mode) takes another new building
+                Integer r = buildRoom.get(m);
+                int left = (r == null ? 1 : r) - 1;
+                buildRoom.put(m, left);
+                if (left <= 0) busyQueue.add(m);
+            }
             if (a.building != null) busyBuildings.add(m + "|" + a.building);
             if (a.once != null) onceTaken.add(a.once);
             if (a.usesSlot && m != null && slots.containsKey(m)) slots.put(m, slots.get(m) - 1);
@@ -917,7 +924,7 @@ public class CAPlanner {
     static Offer look(MarketAPI m, CAData.Colony c, CASettings s, float now, boolean siege) {
         Offer o = new Offer();
         o.approve = c.mode == CAData.Mode.APPROVE;
-        boolean building = Misc.getCurrentlyBeingConstructed(m) != null;
+        boolean building = CABuild.buildsFull(m);   // 0.3.6.7: no room for another new building (story mode may build 2 or 3 at once)
         if (c.buildout && c.mode == CAData.Mode.AUTO) {
             if (siege) return o;   // a buildout builds no defenses, so it waits out the siege
             try { if (CABuildout.pass(m, c, now, building)) return o; }
@@ -973,7 +980,7 @@ public class CAPlanner {
         for (CAEngine.Pick q : r.picks) {
             if (!CAEngine.worthwhile(q)) continue;   // never the least-bad option: only what pays for itself
             if (siege && !CASiege.defensive(q)) continue;   // under siege only defenses are built
-            if (!q.upgrade && building) continue;   // one new building at a time; upgrades still run
+            if (!q.upgrade && building) continue;   // no room for another new building (one at a time, 2 or 3 in story mode); upgrades still run
             try {
                 CAAction a = fromPick(m, c, q, s, approve, null);
                 a.emergency = siege && CASiege.defensive(q);   // 0.3.0.0 (B3 fix): a siege's defenses never wait for the earmark or the upkeep hold
@@ -1141,7 +1148,7 @@ public class CAPlanner {
         CASettings s = d.settings;
         CAData.Colony c = d.colony(m.getId());
         if (c.mode != CAData.Mode.AUTO && c.mode != CAData.Mode.APPROVE) return out;
-        boolean building = Misc.getCurrentlyBeingConstructed(m) != null, siege = CASiege.held(m);
+        boolean building = CABuild.buildsFull(m), siege = CASiege.held(m);
         CAData.Profile used = siege ? CAData.Profile.SECURITY : CAThreat.effective(m, c.profile);
         CAEngine.Result r = CAEngine.evaluate(m, used, s.minStability);
         for (CAAction x : pickActions(m, c, s, r, building, siege)) out.put(x.key(), x);
@@ -1196,7 +1203,9 @@ public class CAPlanner {
             try {
                 p.stability.put(a.marketId, CAStability.now(m));
                 p.slots.put(a.marketId, CABuild.freeSlots(m));
-                if (Misc.getCurrentlyBeingConstructed(m) != null) p.busyQueue.add(a.marketId);
+                int room = CABuild.buildRoom(m);   // 0.3.6.7: 1 by the game's rule, 2 or 3 with the story perks
+                p.buildRoom.put(a.marketId, room);
+                if (room <= 0) p.busyQueue.add(a.marketId);
                 for (Industry ind : m.getIndustries()) if (ind.isUpgrading() || ind.isBuilding()) p.busyBuildings.add(a.marketId + "|" + ind.getId());
             } catch (Throwable t) { CAStep.warn("planner", "planner read failed at " + m.getName(), t); }
         }
@@ -1206,7 +1215,7 @@ public class CAPlanner {
             if (id == null || seen.contains(id)) continue;
             try {
                 MarketAPI m = CAAuto.market(id);
-                if (m != null && Misc.getCurrentlyBeingConstructed(m) != null) p.busyQueue.add(id);
+                if (m != null && CABuild.buildsFull(m)) p.busyQueue.add(id);
             } catch (Throwable t) { CAStep.warn("planner", "planner read failed at " + id, t); }
         }
         return p;

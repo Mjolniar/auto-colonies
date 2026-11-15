@@ -62,7 +62,7 @@
 ## The one queue
 
 - Scope: Buildings, upgrades, surplus terraforming, extra Research Facilities, the wonder site, stable-location crews and story point improvements.
-- Construction: One new building at a time per colony, by value per day of construction. Upgrades run beside it. Limit: 12 buildings per colony.
+- Construction: One new building at a time per colony (2 or 3 with the [story perks](story-mode.md)), by value per day of construction. Upgrades run beside it. Limit: 12 buildings per colony.
 - Money: Goes to the best value per credit. Other picks spend only what keeps the top pick on schedule, unless it is over six months of budget away.
 
 ## Taking buildings down

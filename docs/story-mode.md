@@ -15,11 +15,12 @@
 - Break down: 365 days, then 3 Alpha and 2 Beta cores.
 - Selling: A kept core can be sold at any market (base price 1,000,000).
 - Bandwidth: The core gives 20 bandwidth. Each AI core you feed it on the Story page adds bandwidth: Alpha 10, Beta 3, Gamma 1. Fed cores are used up.
-- Abilities: 48 abilities, each with a bandwidth cost, switched on and off on the Story page. Costs are in `data/config/colony_autopilot_story.json`.
+- Abilities: 50 abilities, each with a bandwidth cost, switched on and off on the Story page. Costs are in `data/config/colony_autopilot_story.json`.
 - Managed colonies: One colony in Approve or Auto, plus one more for each 2 bandwidth. Others wait in Advisor.
 - Settings: A setting an ability that's off covers is held at off. Its row says which ability it needs. Your value comes back when the ability is on.
 - Keep cores for feeding: On by default. Autopilot leaves enough cores in Autopilot Storage for your next ability.
-- Story perks: Instant construction (15 bandwidth) and Free construction (25 bandwidth) exist only in story mode.
+- Story perks: Instant construction (15 bandwidth), Free construction (25 bandwidth), Two builds at once (6 bandwidth) and Three builds at once (8 bandwidth, needs Two) exist only in story mode.
+- Builds at once: Each colony builds 2 or 3 new buildings at the same time. Without the perks it builds one, as in the game. Upgrades always run beside them.
 
 ## Switching
 
@@ -41,7 +42,7 @@
 | Expansion | Auto-expansion 6, Colony fleets 2 |
 | Security and war | Low profile 1, Enforcer patrols 3, Emergency defense 3, Agents: defense 2, Agents: offense 3, Diplomacy 2, Autonomy 1, War: Retaliate 3, War: Hold them down 5, War: Conquer 8, War: Scorched 5 |
 | Mod features | Terraforming 3, Surplus terraforming 4, Research 3, Surplus research 3, Megastructures 4, Wonders and gates 5, Trade contracts 1, Industrial Evolution 2, Station augments 2, Settlement 2 |
-| Story perks | Instant construction 15, Free construction 25 |
+| Story perks | Instant construction 15, Free construction 25, Two builds at once 6, Three builds at once 8 |
 
 - Totals: Every vanilla ability except the story perks is 67 bandwidth. Every ability with every supported mod is 173 bandwidth.
 - Mods: An ability for a mod you don't have doesn't show.

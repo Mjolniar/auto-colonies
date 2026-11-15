@@ -108,9 +108,20 @@ public class CASyncCatalog {
         // Story perks
         add("instantBuild", 6, 15, null, null, "Instant construction", "Builds and upgrades it starts finish the same day.");
         add("freeBuild", 6, 25, null, "instantBuild", "Free construction", "Builds and upgrades it starts cost nothing.");
+        add("twoBuilds", 6, 6, null, null, "Two builds at once", "Each colony can build two new buildings at once.");
+        add("threeBuilds", 6, 8, null, "twoBuilds", "Three builds at once", "Each colony can build three new buildings at once.");
     }
 
+    /** The Story perks group: past the game's rules, so they run only in story mode. */
+    static final int PERKS = 6;
+
     public static Ability get(String id) { return BY_ID.get(id); }
+
+    /** 0.3.6.7: a Story perk (off with story mode off). */
+    public static boolean perk(String id) {
+        Ability a = BY_ID.get(id);
+        return a != null && a.group == PERKS;
+    }
 
     /** Abilities whose mod is enabled, in menu order. */
     public static List<Ability> available() {

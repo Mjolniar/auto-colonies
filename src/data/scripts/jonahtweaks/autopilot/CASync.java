@@ -226,7 +226,7 @@ public class CASync {
 
     /** Whether an ability runs: the core is awake, it's ticked, its mod is on, and so is what it needs. */
     public static boolean has(String id) {
-        if (!on()) return !"instantBuild".equals(id) && !"freeBuild".equals(id);   // story mode off: everything but the two story perks
+        if (!on()) return !CASyncCatalog.perk(id);   // story mode off: everything but the story perks
         if (dormant()) return false;
         CASyncCatalog.Ability a = CASyncCatalog.get(id);
         if (a == null || !a.available() || !ticked(id)) return false;
@@ -377,6 +377,9 @@ public class CASync {
 
     /** Instant construction: builds and upgrades it starts finish the same day. */
     public static boolean instantBuild() { return has("instantBuild"); }
+
+    /** 0.3.6.7: new buildings a colony may build at once: 1 (the game's rule), 2 or 3 with the story perks. Upgrades always run alongside. */
+    public static int buildsAtOnce() { return has("threeBuilds") ? 3 : has("twoBuilds") ? 2 : 1; }
 
     /** Whether the engine may plan this building: stations need Stations. */
     public static boolean mayBuild(String id) {

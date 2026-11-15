@@ -117,7 +117,7 @@ public class CAWonders {
     static String startSite(CAAction a) {
         MarketAPI m = a.market;
         CASettings s = CAData.settings();
-        if (Misc.getCurrentlyBeingConstructed(m) != null) return "a new building is already under construction here";
+        if (CABuild.buildsFull(m)) return "a new building is already under construction here";
         CAEngine.Pick p = new CAEngine.Pick();
         p.id = SITE; p.name = a.name; p.verb = "Build"; p.cost = a.cost; p.upkeep = a.upkeep;
         String err = CABuild.start(m, p);
@@ -167,7 +167,7 @@ public class CAWonders {
             }
             if (site == null) {
                 if (!Boolean.TRUE.equals(CARefl.invoke(slots, null, m))) continue;   // no Grand Wonder slot left here
-                if (Misc.getCurrentlyBeingConstructed(m) != null) { lines.add(name(DAEDALUS) + " at " + m.getName() + " waits for the current construction"); return; }
+                if (CABuild.buildsFull(m)) { lines.add(name(DAEDALUS) + " at " + m.getName() + " waits for the current construction"); return; }
                 IndustrySpecAPI sp = Global.getSettings().getIndustrySpec(SITE);
                 Industry probe = sp.getNewPluginInstance(m);
                 if (!probe.isAvailableToBuild()) continue;

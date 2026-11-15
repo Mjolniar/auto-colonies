@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.6.7 - 2026-11-14
+
+- Upgrades: At the Surplus money tier an upgrade's price counts 25% in its score, and from Idle money up 10%. Industry and station upgrades with a positive value start while the colony's new building is under way.
+- Story mode: Added two Story perks. Two builds at once (6 bandwidth) and Three builds at once (8 bandwidth, needs Two) let each colony build that many new buildings at the same time.
+- Story mode: Story perks run only in story mode. Without them a colony builds one new building at a time, as in the game.
+
 ## 0.3.6.6 - 2026-11-14
 
 - Story mode: The TriPad names the constellation the Autarch AI Core is in. The system is not named.

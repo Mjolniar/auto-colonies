@@ -130,6 +130,8 @@ public final class CATuning {
     public static final float RICH_UPKEEP_MONTHS = 60f;
     /** While spending freely a build's price counts this much (CASurplus, 0.2.33.0). legacyPlanner (and CATerraform/CATascStations until they move to CAHorizon). */
     public static final float RICH_PRICE = 0.05f;
+    /** 0.3.6.7: an upgrade's price at an Approve or Auto colony counts this much at the Surplus money tier, and UPGRADE_PRICE_IDLE from Idle money up (CASurplus.upgradePriceWeight). */
+    public static final float UPGRADE_PRICE_SURPLUS = 0.25f, UPGRADE_PRICE_IDLE = 0.1f;
     /** Hazard pay defaults: only where it speeds growth up by this share, and all of it within this share of empire net income (CAPolicies, 0.2.20.0). */
     public static final float HAZARD_COLONY_SHARE = 0.25f, HAZARD_EMPIRE_SHARE = 0.30f;
 

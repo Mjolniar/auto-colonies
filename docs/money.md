@@ -21,6 +21,7 @@
 | Endgame | Rich, with N at the Endgame line | 80% |
 
 - Credit value: From Idle money, a credit counts half in build value.
+- Upgrade price: At Surplus an upgrade's price counts 25% in its score, from Idle money up 10%. Industry and station upgrades start beside a new building under construction.
 
 ## Money taper
 

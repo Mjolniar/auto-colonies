@@ -411,7 +411,7 @@ public class CAEngine {
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "plan step check failed at " + m.getName(), t); }
         }
         Industry building = Misc.getCurrentlyBeingConstructed(m);
-        if (building != null) r.blocked = "Already building " + building.getCurrentName();
+        if (building != null && CABuild.buildsFull(m)) r.blocked = "Already building " + building.getCurrentName();   // 0.3.6.7: story mode may build 2 or 3 at once
         String full = CAGrand.full(m);   // the vanilla colony screen shows 12 buildings; a 13th couldn't be seen or managed
         if (full != null && r.blocked == null) r.blocked = full;
         Map<String, Integer> deficit = empireDeficits(day, ep, empire);
@@ -645,7 +645,10 @@ public class CAEngine {
         boolean ordinary = match != null && !fixedKind;
         float down = ordinary && !profitOnly ? downstream(m, plan, p, profile, h) : 0f;
         float gross = value + down;
-        float price = CAHorizon.price(p.cost, fee, gross, p.days, h);
+        // 0.3.6.7: spare money pays for upgrades: at the Surplus money tier their price counts a quarter, from Idle money up a tenth
+        float pw = profitOnly ? 1f : CASurplus.upgradePriceWeight(m, p.upgrade);
+        float price = CAHorizon.price(p.cost * pw, fee * pw, gross, p.days, h);
+        if (pw < 1f && gross > 0f) p.lines.add("Spare money: an upgrade's price counts " + Math.round(pw * 100f) + "%");
         float own = gross - price;
         float fixed = 0f, tie = 0f;
         CAPlan.Step waitsFor = null;
@@ -683,7 +686,7 @@ public class CAEngine {
         if (p.pollution) { planBonus = 0f; p.planBonus = 0f; }
         // only a pick that passes because surplus credits stretch the horizon says so
         float base = CAHorizon.heldBase;
-        if (!Float.isNaN(base) && h > base + 0.5f && own > 0f && gross - CAHorizon.price(p.cost, fee, gross, p.days, base) <= 0f)
+        if (!Float.isNaN(base) && h > base + 0.5f && own > 0f && gross - CAHorizon.price(p.cost * pw, fee * pw, gross, p.days, base) <= 0f)
             p.lines.add("Payback horizon: " + Math.round(h) + " months with surplus credits (usually " + Math.round(base) + ")");
         float asStep = value + planBonus - price;   // what it scores as the plan's step, before any slot reserve
         p.score = asStep - reserve;
