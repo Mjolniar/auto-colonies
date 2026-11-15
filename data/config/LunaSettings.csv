@@ -30,7 +30,7 @@ ca_p_admins,Administrators,Radio,Hire and place,"Off, Place only, Hire and place
 ca_h_security,Security and diplomacy,Header,Security and diplomacy,,,,,
 ca_spy,Agents,Radio,Off,"Off, Defense, Defense and offense",Security and relations; offense adds sabotage. Needs Nexerelin.,,,
 ca_amb,Ambassadors,Boolean,true,,"Hires and installs ambassadors, Ally and Friendly factions first. Needs Industrial Evolution.",,,
-ca_t_picks,,Text,"Faction stances and this save's picks (capital, refit hub, sell hub, offense target) are on the intel Settings page.",,,,,
+ca_t_picks,,Text,"Faction stances and this save's picks (capital, refit hub, sell hub, offense target) are on the Settings page of a colony's Autopilot panel.",,,,,
 ,,,,,,,,
 ca_h_interface,Interface,Header,Interface,,,,,
 ca_screenlog,On-screen log,Radio,Every entry,"Every entry, Important only, Off",Short lines on screen. The Log page keeps every entry.,,,
@@ -120,11 +120,11 @@ ca_enfhere,Attack in your fleet's system,Boolean,true,,On: patrols attack while 
 ca_enfint,Patrols intercept,Boolean,false,,Colony patrols in the system get an order to intercept the fleet.,,,Advanced
 ,,,,,,,,
 ca_h_adv_capital,Capital and storage,Header,Capital and storage,,,,,Advanced
-ca_capmode,Capital does,Radio,Off,"Deliveries and commerce, Deliveries only, Off",Deliveries and Storage gather at the capital. Off: no capital. The capital pick is on the intel Settings page.,,,Advanced
+ca_capmode,Capital does,Radio,Off,"Deliveries and commerce, Deliveries only, Off",Deliveries and Storage gather at the capital. Off: no capital. The capital pick is on the Autopilot panel's Settings page.,,,Advanced
 ca_capstart,Trade hub starts at,Radio,Net income over 100k,"Net income over 100k, Net income over 50k, Net income over 250k, Right away",When the capital starts its trade buildings.,,,Advanced
 ca_caproom,Make room for trade buildings,Boolean,true,,The capital takes down an industry for its trade buildings.,,,Advanced
 ca_capgather,Gather Storage at the capital,Boolean,true,,Autopilot Storage gathers at the capital.,,,Advanced
-ca_logi,Storage logistics,Radio,Off,"Off, On",Moves goods to the refit hub weekly. The hubs are on the intel Settings page.,,,Advanced
+ca_logi,Storage logistics,Radio,Off,"Off, On",Moves goods to the refit hub weekly. The hubs are on the Autopilot panel's Settings page.,,,Advanced
 ca_logiships,Ships to the refit hub,Boolean,true,,Used with Storage logistics.,,,Advanced
 ca_logigoods,"Supplies, fuel, crew, marines too",Boolean,true,,Used with Storage logistics.,,,Advanced
 ,,,,,,,,

@@ -50,7 +50,7 @@ public class CAStoryPrompt implements InteractionDialogPlugin {
         text.addPara("In Normal mode it works from the start. You set each colony to Advisor, Approve or Auto, and it plans, builds and hires within the budget you give it.");
         text.addPara("In Story mode it starts dormant, and you have to find what it needs to run.");
         text.addPara(luna() ? "You can change this later in LunaLib's settings menu (F3), under Auto Colonies. A save switched back keeps its story progress."
-                : "You can change this later on the Settings page of the Colony Autopilot intel. A save switched back keeps its story progress.", Misc.getGrayColor());
+                : "You can change this later on the Settings page of a colony's Autopilot panel. A save switched back keeps its story progress.", Misc.getGrayColor());
         OptionPanelAPI o = dialog.getOptionPanel();
         o.addOption("Normal mode", NORMAL);
         o.addOption("Story mode", STORY);

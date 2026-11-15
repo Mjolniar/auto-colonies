@@ -3,27 +3,27 @@
 ## Quick version
 
 - Location with LunaLib: LunaLib's settings menu (F3 by default), Auto Colonies. General tab: the main rows. Advanced tab: the Advanced groups. [LunaLib](#lunalib).
-- Location without LunaLib: Empire panel (Intel screen, Colony Autopilot filter), Settings.
+- Location without LunaLib: The colony panel, Empire, Settings.
 - Layout: 20 main rows in 6 groups. The rest is under Advanced.
 - Story mode: The first row. Off by default. [Story mode](story-mode.md).
 - Empire mode: Off, Advisor, Approve or Auto. Empire-wide settings follow it ([Mode defaults](#mode-defaults)). The first-time setup sets it.
 - Set by you: A row you change shows "set by you". It keeps its value when the empire mode changes.
 - Presets: most main rows are presets. Custom: no preset matches. Mode default: each field at the empire mode's value.
 - Reset to recommended: clears "set by you" and returns every setting to the empire mode's defaults. Keeps Expansion style, faction stances, the capital pick and the focus world.
-- Missing mods: rows for missing mods are hidden on the intel page. In LunaLib they show "Needs" and the mod's name, and do nothing.
+- Missing mods: rows for missing mods are hidden on the Settings page. In LunaLib they show "Needs" and the mod's name, and do nothing.
 
 ## LunaLib
 
-- LunaLib: Optional. Without it the intel Settings page has every row.
+- LunaLib: Optional. Without it the Settings page has every row.
 - Values: Global. Every save uses LunaLib's values.
 - Story mode: Each save switches to LunaLib's Story mode value when loaded and when LunaLib's menu is saved. A setting story mode holds at off keeps your value in LunaLib.
 - First load after 0.3.4.0: The loaded save's settings are copied into LunaLib once. That game does not change.
 - Later loads: LunaLib's values go into the loaded save, with its "set by you" marks.
 - Saving in LunaLib's menu: The changed fields apply to the loaded game. A changed field counts as set by you.
-- Presets: Radio options. They write the same fields as the intel rows. Mode default sets the group to the empire mode's values, which then follow the mode. Custom shows that no option matches; picking it changes nothing.
-- Numbers: The same range and step as the intel rows. A typed value is rounded to the step.
+- Presets: Radio options. They write the same fields as the Settings page rows. Mode default sets the group to the empire mode's values, which then follow the mode. Custom shows that no option matches; picking it changes nothing.
+- Numbers: The same range and step as the Settings page rows. A typed value is rounded to the step.
 - Reset to recommended: A tick box (General, Reset). It unticks itself after the save.
-- Intel Settings page: One line on where the settings are, then this save's picks (Capital, Refit hub, Sell hub, Offense target) and Faction stances.
+- Settings page (colony panel, Empire): One line on where the settings are, then this save's picks (Capital, Refit hub, Sell hub, Offense target) and Faction stances.
 - First-time setup: Once LunaLib holds settings from a set-up save, a new save's first Approve or Auto colony keeps them. No recommended values, no empire mode change.
 
 ## Main rows

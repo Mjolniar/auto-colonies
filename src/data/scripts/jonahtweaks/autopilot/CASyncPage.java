@@ -168,14 +168,5 @@ public class CASyncPage {
                 Misc.getDGSCredits(-m.getNetIncome()), "" + CASyncCatalog.get("buildout").cost);
     }
 
-    /** The colony panel while the Autopilot is dormant. */
-    public static void renderDormantColony(TooltipMakerAPI t, String name) {
-        Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor();
-        t.addTitle(name + ": Colony Autopilot");
-        t.addSectionHeading("Colonial Administration Suite", Alignment.MID, 0f);
-        if (CASync.pulled()) t.addPara("The Autarch AI Core is out of its cradle. You can put it back from the Story page of the Colony Autopilot intel.", hl, 6f);
-        else t.addPara("STATUS: DORMANT. REQUIRED COGNITIVE SUBSTRATE NOT PRESENT.", hl, 6f);
-        t.addPara("This old Domain program on your TriPad plans, builds and runs colonies. It needs an Autarch-class AI core to run on.", gray, 6f);
-        t.addPara("The Story page of the Colony Autopilot intel has the objective.", gray, 6f);
-    }
+    // 0.3.7.1: renderDormantColony is gone: the dormant colony panel shows this page and Diagnostics (CAColonyDialog.pages)
 }

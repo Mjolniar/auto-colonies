@@ -225,8 +225,8 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
         t.addPara("Decisions: %s. Credits %s. Reserve %s.", hl, String.valueOf(open.size()), Misc.getDGSCredits(CABuild.credits()),
                 Misc.getDGSCredits(s.reserve));
         para(t, "Nothing changes until you choose, and Autopilot never spends below the reserve. Later keeps every decision open: this "
-                + "summary comes back in " + Math.max(1, s.approvalDays) + " days, and the list stays on the Intel screen (Colony Autopilot, "
-                + "Colonies page, Waiting for approval).", gray);
+                + "summary comes back in " + Math.max(1, s.approvalDays) + " days, and the list stays in each colony's Autopilot panel (Empire, "
+                + "Colonies, Waiting for approval).", gray);
         int lines = 0, detailed = 0;
         for (Map.Entry<String, List<CAApprovals.Item>> g : CAApprovals.group(open).entrySet()) {
             if (lines >= MAX_LINES) break;

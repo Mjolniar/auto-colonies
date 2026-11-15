@@ -26,7 +26,7 @@ import java.util.List;
  * setup shows the 5 rows of DECISIONS 17 (CASetupUI.renderFirstTime) in place of the whole settings screen.
  */
 public class CAColonyDialog extends BaseCustomDialogDelegate {
-    public static final float W = 860f, H = 620f;
+    public static final float W = 980f, H = 640f;   // 0.3.7.1: wider for the Empire pages (the intel tab's)
     static final String APPROVE = "ca:approve", REJECT = "ca:reject", SAVE_SETUP = "ca:savesetup", BACK = "ca:back";
     /** 0.3.3.0: sets the empire mode to this colony's mode. */
     static final String EMPIRE = "ca:empire";
@@ -35,6 +35,10 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     static final String HS = "ca:hs:";   // Coronal Hypershunt actions: ca:hs:<action>:<arg>
     static final String MEGA = "ca:mega:";   // Pluto / Nidavelir actions: ca:mega:<action>:<arg>
     static final String TASC = "ca:tasc:";   // start a TASC terraforming project: ca:tasc:<project name>
+    /** 0.3.7.1: the Empire pages (the old intel tab's) carry this prefix in the page list; Confirm and Cancel for a button that asks first. */
+    static final String EMP = "e:", CONFIRM = "ca:confirm", CANCEL = "ca:cancel";
+    /** 0.3.7.1: an Empire page's button waiting for Confirm (the intel's confirmation dialog). */
+    Object pending;
     /** 0.3.0.0 (WS-F3): the message after a button that threw. */
     static final String FAILED = "Failed. See starsector.log";
     final MarketAPI market;
@@ -93,6 +97,17 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     void handle(Object id) {
         CAData d = CAData.get();
         CAData.Colony c = d.colony(market.getId());
+        // 0.3.7.1: the Empire pages' buttons go to their own handler; a button that asks first waits for Confirm
+        if (CONFIRM.equals(id)) { Object p = pending; pending = null; if (p != null) CAIntel.pressEmpire(p); dirty = true; return; }
+        if (CANCEL.equals(id)) { pending = null; dirty = true; return; }
+        if (CANav.page(id) == null && page.startsWith(EMP)) {
+            if (CAIntel.needsConfirm(id)) pending = id;
+            else { pending = null; CAIntel.pressEmpire(id); }
+            message = null;
+            dirty = true;
+            return;
+        }
+        if (CANav.page(id) != null) pending = null;
         if (CASync.handle(id)) { dirty = true; return; }   // 0.3.6.0 story mode
         if (CASetupUI.handle(id, d.settings)) { dirty = true; return; }
         if (CANav.page(id) != null) { page = CANav.page(id); message = null; dirty = true; return; }
@@ -204,13 +219,23 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         return b;
     }
 
-    /** The pages in the list on the left: Overview, Plan and builds, Locks, plus Mod features when one applies here. */
+    /**
+     * The pages in the list on the left: Overview, Plan and builds, Locks, plus Mod features when one applies here; then
+     * 0.3.7.1 the Empire pages (the old intel tab's). While story mode's Autopilot is dormant: the Empire pages only.
+     */
     List<String[]> pages(CAData.Colony c, CASettings s, boolean shunt, boolean outpost) {
         List<String[]> p = new ArrayList<String[]>();
-        p.add(new String[]{"overview", c.pendingId != null ? "Overview (approval)" : "Overview"});
-        if (!outpost) p.add(new String[]{"builds", shunt ? "Coronal Hypershunt" : "Plan and builds"});
-        p.add(new String[]{"locks", "Locks"});
-        if (!modSections(c, s, shunt).isEmpty()) p.add(new String[]{"mods", "Mod features"});
+        if (!CASync.dormant()) {
+            p.add(new String[]{"overview", c.pendingId != null ? "Overview (approval)" : "Overview"});
+            if (!outpost) p.add(new String[]{"builds", shunt ? "Coronal Hypershunt" : "Plan and builds"});
+            p.add(new String[]{"locks", "Locks"});
+            if (!modSections(c, s, shunt).isEmpty()) p.add(new String[]{"mods", "Mod features"});
+            p.add(new String[]{null, "Empire"});
+        }
+        List<String[]> emp;
+        try { emp = CAIntel.empirePages(); }
+        catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "empire page list failed", e); emp = new ArrayList<String[]>(); emp.add(new String[]{"diag", "Diagnostics"}); }
+        for (String[] e : emp) p.add(new String[]{e[0] == null ? null : EMP + e[0], e[1]});
         return p;
     }
 
@@ -254,15 +279,6 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         CAData.Colony c = data.colony(market.getId());
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
 
-        if (CASync.dormant()) {   // 0.3.6.0 story mode: nothing to show but the TriPad's note
-            plugin.navW = 0f;
-            TooltipMakerAPI t = content.createUIElement(W, H, true);
-            CASyncPage.renderDormantColony(t, market.getName());
-            content.addUIElement(t).inTL(0f, 0f);
-            root.addComponent(content).inTL(0f, 0f);
-            return;
-        }
-
         if (setupPage) {
             plugin.navW = 0f;
             TooltipMakerAPI t = content.createUIElement(W, H, true);
@@ -296,6 +312,29 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         float cw = W - CANav.W - CANav.GAP;
         TooltipMakerAPI t = content.createUIElement(cw, H, true);
         if (message != null) t.addPara(CALog.esc(message), hl, 0f);
+
+        // 0.3.7.1: an Empire page (the old intel tab's), with a button that asks first shown above it
+        if (page.startsWith(EMP)) {
+            if (pending != null) {
+                CATheme.heading(t, "Confirm", message != null ? 8f : 0f);
+                try { CAIntel.confirmPrompt(t, pending); }
+                catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "confirmation text failed", e); }
+                ButtonAPI ok = t.addButton("Confirm", CONFIRM, hl, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 8f);
+                ButtonAPI no = t.addButton("Cancel", CANCEL, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 0f);
+                no.getPosition().rightOfTop(ok, 8f);
+                CALog.endRow(t, ok);
+                t.addSpacer(12f);
+            }
+            try { CAIntel.renderEmpire(t, page.substring(EMP.length()), cw); }
+            catch (Throwable e) {
+                CADiagnostics.LOG.warn(CADiagnostics.TAG + "empire page " + page + " failed", e);
+                t.addPara(CATheme.NOT_SHOWN, gray, 6f);
+            }
+            content.addUIElement(t).inTL(CANav.W + CANav.GAP, 0f);
+            root.addComponent(content).inTL(0f, 0f);
+            restoreScroll(t, scrollY);
+            return;
+        }
 
         boolean managed = c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO;
         boolean buildout = buildoutRanking(c);   // fast buildout ranks by money only (CABuildout)

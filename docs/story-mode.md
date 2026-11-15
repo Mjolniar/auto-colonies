@@ -3,15 +3,15 @@
 ## Quick version
 
 - Story mode: Optional. Off by default. The Colony Autopilot stays dormant until you find the Autarch AI Core, then runs the abilities you buy with its bandwidth.
-- Setting: LunaLib's settings menu (F3), Auto Colonies, first row. Without LunaLib: the first row of the intel Settings page.
+- Setting: LunaLib's settings menu (F3), Auto Colonies, first row. Without LunaLib: the first row of the Autopilot panel's Settings page.
 - New games: A pop-up asks Normal or Story mode once. Older saves never see it.
 - Switching: Works in any save, at any time. Each save keeps its story progress.
 
 ## Story mode on
 
-- Start: The Autopilot is dormant. Nothing at your colonies runs on its own. No build-menu hints, and the monthly ledger line goes to starsector.log only. The Story page and Diagnostics are the only intel pages.
+- Start: The Autopilot is dormant. Nothing at your colonies runs on its own. No build-menu hints, and the monthly ledger line goes to starsector.log only. The Autopilot panel shows only the Story page and Diagnostics.
 - The core: The Autarch AI Core is placed once per save in a derelict research station in an uninhabited fringe system. After your first colony, your TriPad names the constellation the station is in.
-- Objective: Find the Autarch AI Core is an intel item in the Story, Exploration and Accepted tabs. Its map marker is on the constellation's label. It names the system's star and where the station orbits among the planets. It does not name the system.
+- Intel: One entry, Colony Autopilot, in the Story tab. While you search for the core, its map marker is on the constellation's label and it is marked important. Its text names the system's star and where the station orbits among the planets. It does not name the system.
 - Finding it: Your TriPad asks what to do with the core. Install it, install it in an isolation cradle (1 story point, can be pulled out later), have Engineering break it down, or decide later.
 - Break down: 365 days, then 3 Alpha and 2 Beta cores.
 - Selling: A kept core can be sold at any market (base price 1,000,000).

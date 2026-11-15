@@ -1,5 +1,13 @@
 # Patch notes
 
+## 0.3.7.1 - 2026-11-14
+
+- Intel: Removed the Colony Autopilot intel tab. Its pages are under Empire in each colony's Autopilot panel: Colonies, Autopilot Storage, Colony crises, Expansion, War, Mod features, Settings, Factions, Log and Diagnostics.
+- Intel: Buttons that asked for confirmation in the intel show Confirm and Cancel at the top of the page.
+- Story mode: One intel entry, Colony Autopilot, in the Story tab. The search for the Autarch AI Core is part of it: map marker on the constellation's label, the clues, marked important while the search runs.
+- Story mode: The Story page is in the Autopilot panel. While the Autopilot is dormant the panel shows the Story page and Diagnostics. The story entry has a Decide on the core button when the core is in your cargo.
+- Colony panel: Wider (980 by 640) for the Empire pages.
+
 ## 0.3.7.0 - 2026-11-14
 
 - Story mode: Removed text that repeats what you already know. This covers the core objective's sensors line and recovered line, Tech's line about going out to look, the faint signal line, and the note after pulling the core.

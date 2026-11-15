@@ -129,7 +129,7 @@ public final class CALunaSync {
         header("security", "Security and diplomacy");
         radio("spy", "Agents", "spyMode", CASettings.SPY_NAMES, "Security and relations; offense adds sabotage. Needs Nexerelin.");
         bool("amb", "Ambassadors", "disableAmbassadors", true, "Hires and installs ambassadors, Ally and Friendly factions first. Needs Industrial Evolution.");
-        text("picks", "Faction stances and this save's picks (capital, refit hub, sell hub, offense target) are on the intel Settings page.");
+        text("picks", "Faction stances and this save's picks (capital, refit hub, sell hub, offense target) are on the Settings page of a colony's Autopilot panel.");
 
         header("interface", "Interface");
         radio("screenlog", "On-screen log", "screenLog", CALog.SCREEN_NAMES, "Short lines on screen. The Log page keeps every entry.");
@@ -274,8 +274,8 @@ public final class CALunaSync {
         bool("enfint", "Patrols intercept", "enfIntercept", false, "Colony patrols in the system get an order to intercept the fleet.");
 
         header("adv_capital", "Capital and storage");
-        r = row(RADIO, "capmode", "Capital does", "Deliveries and Storage gather at the capital. Off: no capital. The capital pick is on the intel "
-                + "Settings page.");
+        r = row(RADIO, "capmode", "Capital does", "Deliveries and Storage gather at the capital. Off: no capital. The capital pick is on the "
+                + "Autopilot panel's Settings page.");
         r.opts = labels(CACapital.MODE_NAMES);
         r.fields = new String[]{"capitalMode"};
         r.get = s -> idxName("capmode", clamp(s.capitalMode, 3));
@@ -289,7 +289,7 @@ public final class CALunaSync {
         bool("caproom", "Make room for trade buildings", "capitalNoRoom", true, "The capital takes down an industry for its trade buildings.");
         bool("capgather", "Gather Storage at the capital", "capitalNoGather", true, "Autopilot Storage gathers at the capital.");
         radio("logi", "Storage logistics", "logisticsMode", new String[]{"Off", "On"}, "Moves goods to the refit hub weekly. The hubs are on the "
-                + "intel Settings page.");
+                + "Autopilot panel's Settings page.");
         bool("logiships", "Ships to the refit hub", "logisticsShips", false, "Used with Storage logistics.");
         bool("logigoods", "Supplies, fuel, crew, marines too", "logisticsSupplies", false, "Used with Storage logistics.");
 

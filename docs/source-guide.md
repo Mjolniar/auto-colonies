@@ -51,7 +51,7 @@
 
 ## Where to start reading
 
-1. [JTModPlugin](../src/data/scripts/jonahtweaks/JTModPlugin.java): on every save load, clears caches, loads and migrates the saved data, adds the scripts, the colony menu option and the intel panel, and runs the diagnostics scan.
+1. [JTModPlugin](../src/data/scripts/jonahtweaks/JTModPlugin.java): on every save load, clears caches, loads and migrates the saved data, adds the scripts and the colony menu option, takes out the old Colony Autopilot intel entry, and runs the diagnostics scan.
 2. [CAScript](../src/data/scripts/jonahtweaks/autopilot/CAScript.java): every frame, checks the fast buildout offer and the approval summary. Once a game day, calls `CAAuto.runPass`.
 3. [CAAuto](../src/data/scripts/jonahtweaks/autopilot/CAAuto.java): the daily pass and the order of every step.
 4. [CAEngine](../src/data/scripts/jonahtweaks/autopilot/CAEngine.java): scores every building a colony could build or upgrade to.
@@ -60,7 +60,7 @@
 7. [CAPlan](../src/data/scripts/jonahtweaks/autopilot/CAPlan.java): the target layout per colony.
 8. [CABuild](../src/data/scripts/jonahtweaks/autopilot/CABuild.java): starts a build the way the build menu does.
 9. [CARich](../src/data/scripts/jonahtweaks/autopilot/CARich.java): money tiers and the money ladder.
-10. [CAColonyDialog](../src/data/scripts/jonahtweaks/autopilot/CAColonyDialog.java) and [CAIntel](../src/data/scripts/jonahtweaks/autopilot/CAIntel.java): the colony panel and the empire panel.
+10. [CAColonyDialog](../src/data/scripts/jonahtweaks/autopilot/CAColonyDialog.java) and [CAIntel](../src/data/scripts/jonahtweaks/autopilot/CAIntel.java): the colony panel; the Empire pages in it are drawn and handled by `CAIntel` (no intel entry since 0.3.7.1).
 
 - Integration classes: readable on their own after those.
 
@@ -257,7 +257,7 @@ Modes, panels and settings:
 | `CAModeTable`, `CAPresets` | Per-mode defaults and player-set tracking; preset rows (`apply`, `match`) |
 | `CAApprovals`, `CAApprovalDialog` | The list of waiting decisions; the summary dialog |
 | `CABuildHints`, `CAOptionProvider`, `CAScreenButton` | Advisor panel beside the build menu; the colony menu option and tooltip line; the button on the colony screen |
-| `CAColonyDialog`, `CAIntel`, `CANav` | Colony panel (Overview, Plan and builds, Locks, Mod features); empire panel (Colonies, Storage, Colony crises, Expansion, War, Mod features, Settings, Factions, Log, Diagnostics); the page list |
+| `CAColonyDialog`, `CAIntel`, `CANav` | Colony panel (Overview, Plan and builds, Locks, Mod features), then its Empire pages (Colonies, Storage, Colony crises, Expansion, War, Mod features, Settings, Factions, Log, Diagnostics); the page list |
 | `CASetupUI`, `CASettings`, `CASettingsFile` | The Settings page and first-time setup (text in `DESC` and `HOVER`); every setting; defaults from the config file |
 | `CAFactionsPage`, `CAStance`, `CAWarPage`, `CAExpansionPage` | Faction stances (pure, no Nexerelin classes); War page; Expansion page |
 | `CATheme` | Look (`heading`, `button`, `readout`, frames) and the log voice (`CODE / Place: what`) |

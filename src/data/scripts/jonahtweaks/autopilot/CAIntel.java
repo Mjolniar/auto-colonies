@@ -43,13 +43,53 @@ public class CAIntel extends BaseIntelPlugin {
     /** UI handles are never saved with the game. */
     transient TooltipMakerAPI lastTooltip;
 
+    /**
+     * 0.3.7.1: the Colony Autopilot intel tab is gone. Its pages are the Empire pages of the colony panel (CAColonyDialog,
+     * through renderEmpire, pressEmpire and the confirm helpers below); story mode is one entry in the Story tab
+     * (CAStoryIntel). On load this takes the old entry out of the intel list. The class stays so older saves load.
+     */
     public static void ensure() {
         com.fs.starfarer.api.campaign.comm.IntelManagerAPI mgr = Global.getSector().getIntelManager();
-        if (!mgr.hasIntelOfClass(CAIntel.class)) mgr.addIntel(new CAIntel(), true);
-        // before 0.2.8.0 it was marked important; it has its own filter now
-        com.fs.starfarer.api.campaign.comm.IntelInfoPlugin i = mgr.getFirstIntel(CAIntel.class);
-        if (i != null && i.isImportant()) i.setImportant(false);
+        for (com.fs.starfarer.api.campaign.comm.IntelInfoPlugin i : new ArrayList<com.fs.starfarer.api.campaign.comm.IntelInfoPlugin>(mgr.getIntel(CAIntel.class)))
+            mgr.removeIntel(i);
     }
+
+    // ---------------- 0.3.7.1: the Empire pages in the colony panel ----------------
+
+    /** The Empire pages for the colony panel's list, in the order the intel had them. */
+    static List<String[]> empirePages() {
+        CAData data = CAData.get();
+        return pages(data, data.settings, Misc.getPlayerMarkets(false));
+    }
+
+    /** Draws one Empire page into the colony panel. */
+    static void renderEmpire(TooltipMakerAPI t, String p, float width) {
+        CAData data = CAData.get();
+        CASettings s = data.settings;
+        try { CABudget.rollMonth(s); } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "month roll from the panel failed", e); }
+        page = p;
+        long t0 = System.nanoTime();
+        try { new CAIntel().renderPage(t, data, s, Misc.getPlayerMarkets(false), width); }
+        finally { CAPerf.record("empire panel: " + p, System.nanoTime() - t0); }
+    }
+
+    /** An Empire page's button that asks first (war declarations, Reset all, Found now). */
+    static boolean needsConfirm(Object id) { return new CAIntel().doesButtonHaveConfirmDialog(id); }
+
+    /** The question for such a button, drawn above the Confirm and Cancel buttons. */
+    static void confirmPrompt(TooltipMakerAPI t, Object id) { new CAIntel().createConfirmationPrompt(id, t); }
+
+    /** An Empire page's button, from the colony panel (it redraws itself afterwards). */
+    static void pressEmpire(Object id) {
+        try { new CAIntel().pressed(id, null); }
+        catch (Throwable t) {
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "empire page button failed", t);
+            CALog.advise("Button failed. See starsector.log.", true);
+        }
+    }
+
+    /** Redraws the intel item when there is one (the old intel); the colony panel redraws itself. */
+    void refresh(IntelUIAPI ui) { if (ui != null) ui.updateUIForItem(this); }
 
     @Override protected String getName() { return "Colony Autopilot"; }
     @Override public String getIcon() { return "graphics/icons/markets/headquarters.png"; }
@@ -234,9 +274,7 @@ public class CAIntel extends BaseIntelPlugin {
         if (!CASync.on() && page.equals("story")) page = "colonies";
         if (page.equals("story")) { CASyncPage.render(t, width); return; }
         if (page.equals("colonies")) {
-            // 0.3.0.0 (WS-F2, research 04 section 7): shorter
-            t.addPara("Colony panels: the Autopilot button on each colony screen.", gray, 0f);   // 0.3.0.0 (WS-F3 fix pass 3)
-            CATheme.heading(t, "Budget", 12f);
+            CATheme.heading(t, "Budget", 0f);   // 0.3.7.1: the pointer to the colony panels went with the intel tab
             t.addPara("Budget: %s of %s spent (%s fees), %s saved, %s free. Reserve %s.", 6f, hl,
                     Misc.getDGSCredits(s.spent), Misc.getDGSCredits(CABudget.limit(s)), Misc.getDGSCredits(s.fees),
                     Misc.getDGSCredits(CABudget.saved(s)), Misc.getDGSCredits(CABudget.available(s)), Misc.getDGSCredits(s.reserve));
@@ -553,7 +591,7 @@ public class CAIntel extends BaseIntelPlugin {
         try { pressed(buttonId, ui); }
         catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "empire panel button failed", t);
-            try { CALog.advise("Button failed. See starsector.log.", true); ui.updateUIForItem(this); } catch (Throwable ignored) { }
+            try { CALog.advise("Button failed. See starsector.log.", true); refresh(ui); } catch (Throwable ignored) { }
         }
     }
 
@@ -570,7 +608,7 @@ public class CAIntel extends BaseIntelPlugin {
         String ladder = CARich.handle(buttonId);   // 0.3.0.0 (C3): the money ladder's Approve and Reject buttons
         if (ladder != null) {
             if (!ladder.isEmpty()) CALog.advise(ladder, true);
-            ui.updateUIForItem(this);
+            refresh(ui);
             return;
         }
         if (CASync.handle(buttonId)) {
@@ -660,7 +698,7 @@ public class CAIntel extends BaseIntelPlugin {
                 } else if ((c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO) && !d.settings.setupDone) {
                     CASetupUI.applyRecommended(d.settings);
                     d.settings.setupDone = true;
-                    CALog.did("Settings: recommended values applied. Review them on the Settings page of the Colony Autopilot intel.", true);
+                    CALog.did("Settings: recommended values applied. Review them on the Settings page of the Autopilot panel.", true);
                     CAModeTable.setEmpire(d.settings, c.mode);   // 0.3.3.0: the first setup sets the empire mode
                 }
             } else if ("approve".equals(a[0]) && m != null) {
@@ -677,6 +715,6 @@ public class CAIntel extends BaseIntelPlugin {
             } else if (APPR_ALL.equals(a[0])) CAApprovals.approveAll(CAApprovals.collect());
             else if (REJT_ALL.equals(a[0])) CAApprovals.rejectAll(CAApprovals.collect());
         }
-        ui.updateUIForItem(this);
+        refresh(ui);
     }
 }

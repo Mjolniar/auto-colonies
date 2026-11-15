@@ -149,7 +149,7 @@ public class CATriPad implements InteractionDialogPlugin {
             if (LATER.equals(data)) {
                 para("You leave the core in the hold. The TriPad adds a reminder to its notes.");
                 screen("SUBSTRATE IN CARGO HOLD. AWAITING INSTRUCTIONS.");
-                para("You can decide later from the Story page of the Colony Autopilot intel.");
+                para("You can decide later from the Colony Autopilot entry in the intel's Story tab.");
                 close("Put the TriPad away");
                 return;
             }
@@ -200,7 +200,7 @@ public class CATriPad implements InteractionDialogPlugin {
         para("Engineering shrugs. \"Salvagers will have been through it. But they go for plating and fuel, not cores they can't identify. "
                 + "It could still be sitting there.\"");
         note("New objective: find the Autarch AI Core" + (area != null ? " somewhere in the " + area + "." : "."));
-        CAAutarchIntel.showIn(text);   // 0.3.6.8: the objective's intel, as a mission shows when you take it
+        CAStoryIntel.showIn(text);   // 0.3.6.8: the objective's intel, as a mission shows when you take it (0.3.7.1: the story entry)
         close("Put the TriPad away");
     }
 
@@ -233,7 +233,7 @@ public class CATriPad implements InteractionDialogPlugin {
             para(CASync.modeNote + ".");
         } else {
             screen("ACKNOWLEDGED. " + colony().toUpperCase() + ": " + c.mode.label.toUpperCase() + ".");
-            gained(colony() + " is in " + c.mode.label + ", with the recommended settings (the Colony Autopilot intel has them).");
+            gained(colony() + " is in " + c.mode.label + ", with the recommended settings (the Settings page of the Autopilot panel has them).");
         }
         close("Put the TriPad away");
     }
@@ -295,7 +295,7 @@ public class CATriPad implements InteractionDialogPlugin {
                 "Charters on file: " + Math.max(1, Misc.getPlayerMarkets(false).size()) + ". Approved budget: none. Please submit a budget at your earliest convenience.");
         para("Tech reads it over your shoulder. \"Emergency provisions,\" they say. \"Well, it's not wrong.\"");
         para("\"It wants a budget,\" Engineering says. \"Of course it does.\"");
-        gained("The Colony Autopilot is running with " + CASync.total() + " bandwidth. Pick what it runs on the Story page of the Colony Autopilot intel.");
+        gained("The Colony Autopilot is running with " + CASync.total() + " bandwidth. Pick what it runs on the Story page of a colony's Autopilot panel.");
         note("Each AI core you give it adds bandwidth: Alpha " + CASyncCatalog.ALPHA_PP + ", Beta " + CASyncCatalog.BETA_PP + ", Gamma " + CASyncCatalog.GAMMA_PP + ".");
     }
 
@@ -307,7 +307,7 @@ public class CATriPad implements InteractionDialogPlugin {
                 "Expansion: " + CASyncCatalog.get("expansion").cost + " bandwidth. War: " + CASyncCatalog.get("retaliate").cost + " bandwidth and up.",
                 "Construction without waiting: " + CASyncCatalog.get("instantBuild").cost + " bandwidth. Without cost: " + CASyncCatalog.get("freeBuild").cost + " bandwidth.",
                 "Bandwidth: " + CASync.total() + ". Additional substrate accepted. Alpha-level preferred.");
-        para("The full list is on the Story page of the Colony Autopilot intel.");
+        para("The full list is on the Story page of a colony's Autopilot panel.");
         close("Put the TriPad away");
     }
 
@@ -395,7 +395,7 @@ public class CATriPad implements InteractionDialogPlugin {
         para("Your TriPad has picked up another Autarch-class core" + (area != null ? " somewhere in the " + area : "")
                 + ". Your sensors officer checks the reading twice.");
         if (area != null) note("New objective: find the Autarch AI Core somewhere in the " + area + ".");
-        CAAutarchIntel.showIn(text);   // 0.3.6.8
+        CAStoryIntel.showIn(text);   // 0.3.6.8
         close("Put the TriPad away");
     }
 

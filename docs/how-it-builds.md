@@ -9,7 +9,7 @@
 
 - Off: The colony is left alone.
 - Advisor (default): A ranking beside the game's build menu: Best, Good and Poor with a reason. The colony panel lists every option with a Build button. You build.
-- Approve: Proposes one build at a time. It waits in the approval summary, the Intel page and the colony panel. A rejected build is held 180 days, through loads.
+- Approve: Proposes one build at a time. It waits in the approval summary and the colony panel. A rejected build is held 180 days, through loads.
 - Auto: Builds within your budget. Items, cores, administrators, policies and terraforming run only on Auto colonies.
 - Empire mode: Empire-wide settings follow one mode of their own. [Settings](settings.md#mode-defaults).
 - Costs: Approvals and the colony panel's Build button pay the price plus the convenience fee, from credits above the reserve.
@@ -18,7 +18,7 @@
 
 - Summary: One dialog with every decision waiting, grouped by colony. Options: Approve all, Choose each, Reject all, Later.
 - Interval: Every 60 days (Settings, Advanced, Interface). Off, 15 to 180 days.
-- Timing: Opens when no dialog, menu, screen or battle is up. Between summaries, decisions wait on the Intel page and the colony panel.
+- Timing: Opens when no dialog, menu, screen or battle is up. Between summaries, decisions wait in the colony panel.
 - Kinds: Builds and make room, the RAT settlement, colony expeditions, the money ladder's proposals, hypershunt, megastructures, TASC projects, station augments and autonomy.
 
 ## Build menu hints
