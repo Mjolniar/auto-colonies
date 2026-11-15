@@ -45,15 +45,26 @@ public final class CAPerf {
         if (ms > s.max) s.max = ms;
     }
 
-    /** The whole daily pass: recorded under PASS, and one quiet log line when it ran over SLOW_PASS_MS. */
-    public static void pass(long nanos) {
-        float ms = nanos / 1000000f;
+    /** 0.3.6.9: the longest frame a daily pass used (CAPass spreads the pass over frames). */
+    public static final String FRAME = "daily pass (longest frame)";
+
+    /** The whole daily pass in one call (no frames): as pass(nanos, 1, nanos). */
+    public static void pass(long nanos) { pass(nanos, 1, nanos); }
+
+    /**
+     * The whole daily pass: its steps' time recorded under PASS, its longest frame under FRAME, and one quiet log line when
+     * the steps took over SLOW_PASS_MS in all. 0.3.6.9: the pass runs over several frames (CAPass).
+     */
+    public static void pass(long nanos, int frames, long longestNanos) {
+        float ms = nanos / 1000000f, frame = longestNanos / 1000000f;
         recordMs(PASS, ms);
+        recordMs(FRAME, frame);
         int day = CAEngine.today();
         if (!slow(ms) || day == slowLoggedDay) return;
         slowLoggedDay = day;
         try {
-            CADiagnostics.LOG.info(CADiagnostics.TAG + "daily pass took " + Math.round(ms) + " ms; slowest steps: " + summary(3));
+            CADiagnostics.LOG.info(CADiagnostics.TAG + "daily pass took " + Math.round(ms) + " ms over " + frames + " frames, longest frame "
+                    + ms(frame) + " ms; slowest steps: " + summary(3));
         } catch (Throwable ignored) { }
     }
 
@@ -65,7 +76,7 @@ public final class CAPerf {
     /** The steps by rolling average, slowest first (the pass total left out), at most n. */
     public static List<Stat> top(int n) {
         List<Stat> l = new ArrayList<Stat>();
-        for (Stat s : STATS.values()) if (!PASS.equals(s.name)) l.add(s);
+        for (Stat s : STATS.values()) if (!PASS.equals(s.name) && !FRAME.equals(s.name)) l.add(s);
         Collections.sort(l, new Comparator<Stat>() { public int compare(Stat a, Stat b) { return Float.compare(b.avg, a.avg); } });
         return l.size() > n ? new ArrayList<Stat>(l.subList(0, n)) : l;
     }

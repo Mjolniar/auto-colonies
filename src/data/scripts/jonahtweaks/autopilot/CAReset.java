@@ -27,6 +27,7 @@ public class CAReset {
         failed += run("action breaker", () -> CABreaker.reset());
         failed += run("game constants", () -> CAConst.reset());
         failed += run("step timings", () -> CAPerf.reset());
+        failed += run("daily pass queue", () -> CAPass.reset());   // 0.3.6.9: a pass cut off by the load
         failed += run("probe measurements", () -> CASimulator.reset());
         failed += run("engine caches", () -> { CAEngine.resetCaches(); CAPlan.resetCaches(); });   // A4: the spec list, CACache memos, CAPlan's memos
         // its error memory; the scan results themselves are replaced by CADiagnostics.runScan at the end of the load (A5)

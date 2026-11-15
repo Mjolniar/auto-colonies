@@ -236,6 +236,10 @@ public final class CATuning {
 
     /** 0.3.1.0: days between two checks (four a day). */
     public static final float ENFORCER_CHECK_DAYS = 0.25f;
+    /** 0.3.6.9: the daily pass's share of each frame in milliseconds (CAPass.drain runs at least one step a frame). */
+    public static final float PASS_FRAME_MS = 4f;
+    /** 0.3.6.9: frames in a row the pass waits while Theory of Toolbox's economy threads read markets. */
+    public static final int PASS_MAX_WAIT = 120;
     /** 0.3.1.0: days a mark (the hostility flag and Auto Colonies' record on the fleet) lasts unless a check renews it. */
     public static final float ENFORCER_HOSTILE_DAYS = 1f;
     /** 0.3.1.0: credits per fleet point without Nexerelin: Nexerelin's default fleetRequestCostPerFP (exerelin_config.json). */

@@ -43,6 +43,7 @@ public class CAStep {
     public static boolean guard(String name, Body body) { return run(name, body, false); }
 
     static boolean run(String name, Body body, boolean breaker) {
+        if (CAPass.building()) { CAPass.add(() -> run(name, body, breaker)); return true; }   // 0.3.6.9: queued, run in a later frame
         boolean allowed = true;
         try { allowed = CASync.step(name); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story check for step " + name + " failed", t); }   // 0.3.6.2
         if (!allowed) return true;   // 0.3.6.0 story mode: a step whose ability is off doesn't run

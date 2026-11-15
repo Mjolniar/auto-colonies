@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.6.9 - 2026-11-14
+
+- Performance: The daily pass runs over several frames, about 4 ms of each frame and at least one step a frame. The planner looks at one colony per step. Before, the whole pass ran in one frame and took 50 to 150 ms, up to about 600 ms.
+- Approvals: The approval summary opens after the day's pass is done.
+- Diagnostics: The slow-pass log line gives the frames the pass used and its longest frame.
+
 ## 0.3.6.8 - 2026-11-14
 
 - Story mode: Added the Find the Autarch AI Core objective (Story, Exploration and Accepted intel tabs). Its map marker is on the constellation's label. Its text names the system's star and where the station orbits among the planets. It does not name the system.

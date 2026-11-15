@@ -195,7 +195,7 @@ public class CAPlanner {
             CASettings s = CAData.settings();
             if (s == null || s.legacyPlanner) return false;
         } catch (Throwable t) { return false; }
-        return !CAStep.broken("planner");
+        return !CAStep.broken("planner") && !CAStep.broken("planner actions");   // 0.3.6.9: the actions are their own step
     }
 
     /** Marks a wake-up: "finish:<market>", "slot:<market>", "threat:<market>" for one colony; "month", "tier" for all. */
@@ -833,23 +833,52 @@ public class CAPlanner {
 
     public static void run(CAData d, CASettings s) { run(d, s, null); }
 
-    /** Daily from CAAuto (step "planner"). auto: the Auto colonies not under siege (null: worked out here). */
+    /** 0.3.6.9: one planner pass: what begin() works out once, each colony's look adds to, and finish() starts from. */
+    static final class Run {
+        CAData d; CASettings s; List<MarketAPI> auto; float now; int today; boolean rich;
+        final List<MarketAPI> markets = new ArrayList<MarketAPI>();
+        final List<CAAction> all = new ArrayList<CAAction>();
+        final Set<String> managed = new HashSet<String>();
+    }
+
+    /**
+     * Daily from CAAuto (step "planner"). auto: the Auto colonies not under siege (null: worked out here). 0.3.6.9: during
+     * the daily pass (CAPass.draining) each colony's look is its own queued task ("planner look") and the actions start in a
+     * last task ("planner actions", with its own breaker); called any other way, it all runs at once.
+     */
     public static void run(CAData d, CASettings s, List<MarketAPI> auto) {
         if (!inCharge()) return;
-        float now = CATime.now();
-        int today = CATime.today();
-        if (auto == null) auto = CASiege.free(CAItems.autoMarkets());
-        boolean rich = CASurplus.rich(s);
+        final Run r = begin(d, s, auto);
+        List<Runnable> tasks = new ArrayList<Runnable>();
+        for (final MarketAPI m : r.markets) tasks.add(() -> CAStep.guard("planner look", () -> lookColony(r, m)));
+        tasks.add(() -> CAStep.run("planner actions", () -> finish(r)));   // its own breaker: three failed days stop the planner (inCharge)
+        CAPass.next(tasks);
+    }
+
+    static Run begin(CAData d, CASettings s, List<MarketAPI> auto) {
+        Run r = new Run();
+        r.d = d; r.s = s;
+        r.now = CATime.now();
+        r.today = CATime.today();
+        r.auto = auto != null ? auto : CASiege.free(CAItems.autoMarkets());
+        r.rich = CASurplus.rich(s);
         empireEvents(d, s);
         regen.clear();
-        List<CAAction> all = new ArrayList<CAAction>();
-        Set<String> managed = new HashSet<String>();
-        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+        r.markets.addAll(Misc.getPlayerMarkets(false));
+        return r;
+    }
+
+    /** One colony's part of the pass: its look, or its kept offer re-scored. */
+    static void lookColony(Run r, MarketAPI m) {
+        CAData d = r.d; CASettings s = r.s; float now = r.now; int today = r.today; boolean rich = r.rich;
+        List<CAAction> all = r.all; Set<String> managed = r.managed;
+        if (m == null || !m.isPlayerOwned()) return;   // lost since the pass began
+        {
             String id = m.getId();
             try {   // one colony's failure never skips the rest
                 CAData.Colony c = d.colony(id);
                 if (c.buildout && c.mode != CAData.Mode.AUTO) CABuildout.stop(m, c, "the colony left Auto");
-                if (c.mode != CAData.Mode.APPROVE && c.mode != CAData.Mode.AUTO) { offers.remove(id); idle.remove(id); continue; }
+                if (c.mode != CAData.Mode.APPROVE && c.mode != CAData.Mode.AUTO) { offers.remove(id); idle.remove(id); return; }
                 managed.add(id);
                 boolean siege = CASiege.held(m);
                 String ev = colonyEvent(m, c, siege);
@@ -860,14 +889,14 @@ public class CAPlanner {
                 if (kept != null && kept.approve != (c.mode == CAData.Mode.APPROVE)) woke = true;   // switched between Approve and Auto: a fresh look
                 if (!dueColony(woke, next, now)) {
                     Offer o = kept;
-                    if (o == null || o.approve || !CATime.fresh(o.day, now, OFFER_DAYS)) continue;
+                    if (o == null || o.approve || !CATime.fresh(o.day, now, OFFER_DAYS)) return;
                     for (CAAction a : o.list) {   // kept: re-scored before anything starts
                         a.fresh = false;
                         if (o.day < today) a.stale = true;
                         if (CAAction.SOURCE_BUILD.equals(a.source)) a.rejected = CAAuto.rejectedDays(id, a.id, now);   // 0.3.0.0 (B3 fix): rejected since the look
                         all.add(a);
                     }
-                    continue;
+                    return;
                 }
                 CAAuto.nextPass.put(id, now + wait);
                 Offer o = look(m, c, s, now, siege);
@@ -876,6 +905,12 @@ public class CAPlanner {
                 all.addAll(o.list);
             } catch (Throwable t) { CAStep.warn("planner", "planner look failed at " + m.getName(), t); }
         }
+    }
+
+    /** The day's actions from every colony's look: the modules' own, the money pool, then what starts. */
+    static void finish(Run run) {
+        CAData d = run.d; CASettings s = run.s; float now = run.now; List<MarketAPI> auto = run.auto;
+        List<CAAction> all = run.all; Set<String> managed = run.managed;
         wakes.clear();
         for (Iterator<String> it = offers.keySet().iterator(); it.hasNext(); ) if (!managed.contains(it.next())) it.remove();   // colonies lost or Off
         all.addAll(modules(d, s, auto));

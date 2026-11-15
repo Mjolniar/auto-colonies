@@ -42,7 +42,7 @@
 
 ## Overview
 
-- Daily pass: one pass over the colonies once a game day. Each step runs through `CAStep`, so one failure does not stop the rest.
+- Daily pass: one pass over the colonies once a game day. Each step runs through `CAStep`, so one failure does not stop the rest. `CAPass` runs the steps over several frames, about 4 ms of each frame, and the planner looks at one colony per step.
 - Scoring: for each Approve or Auto colony, `CAEngine` lists every building and upgrade it could start and values each in credits a month, weighted by the colony's goal.
 - Planner: `CAPlanner` turns each value into a net present value over the payback horizon (36 to 120 months), queues every module's offers together, and starts the best value per construction day and per credit.
 - After the planner: money tiers and the money ladder, Auto-expansion, removers, item placement, then one step per optional mod.
@@ -224,7 +224,7 @@ Core:
 | File | What it does |
 |---|---|
 | `JTModPlugin` | Starts everything on each save load |
-| `CAScript`, `CAAuto` | Frame checks and the daily pass; `buildPass` behind `legacyPlanner` |
+| `CAScript`, `CAAuto`, `CAPass` | Frame checks and the daily pass; the pass spread over frames; `buildPass` behind `legacyPlanner` |
 | `CAEngine`, `CAEstimates` | Scoring: candidates, effects, estimates, shortages, trust, upkeep, goal weights |
 | `CAPlan`, `CAStations` | Target layouts, the plan bonus, station tiers |
 | `CABuild`, `CABuildout` | Starting builds like the build menu; the first-colony offer and fast buildout |

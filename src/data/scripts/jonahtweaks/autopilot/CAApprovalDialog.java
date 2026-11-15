@@ -99,6 +99,7 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
         CAData d = CAData.get();
         CASettings s = d.settings;
         if (s.approvalDays <= 0) return;
+        if (CAPass.running()) return;   // 0.3.6.9: the daily pass is still running over frames; its asks aren't all in yet
         if (unsafe() != null) { safeSinceMs = 0L; return; }
         if (safeSinceMs == 0L) safeSinceMs = ms;
         if (ms - loadedMs < LOAD_GRACE_MS || ms - safeSinceMs < SAFE_MS) return;

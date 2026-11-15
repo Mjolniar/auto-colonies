@@ -115,7 +115,7 @@ public class CAAuto {
         final CAData d = CAData.get();
         final CASettings s = d.settings;
         final com.fs.starfarer.api.ModManagerAPI mods = Global.getSettings().getModManager();
-        CAApprovals.beginPass();   // 0.3.3.0: today's steps offer their live asks again
+        CAPass.later(() -> CAApprovals.beginPass());   // 0.3.3.0: today's steps offer their live asks again (0.3.6.9: when the pass starts running)
         CAStep.guard("story", () -> CASync.daily());   // 0.3.6.0 story mode: the Autarch AI Core's timers, the settings holds and the colony modes
         CAStep.run("month roll-over", () -> CABudget.rollMonth(s));
         CAStep.run("upkeep cap check", () -> CABudget.migrateUpkeepCap(s));
@@ -129,6 +129,7 @@ public class CAAuto {
         CAStep.guard("station line ask", () -> CAStationAsk.daily());   // 0.3.6.3: once, before the first station
         CAStep.run("Autopilot Storage shipping", () -> CAStores.daily());   // shipments between colonies' Autopilot Storage arrive
         if (CASync.dormant()) return;   // 0.3.6.0 story mode: nothing else runs while the Autopilot is dormant
+        CAPass.later(() -> { if (CASync.dormant()) CAPass.stop(); });   // 0.3.6.9: and when it went dormant before the queue got here
         CAStep.run("storage logistics", () -> CALogistics.daily(d, s, now));   // storage logistics: loads to the refit and sell hubs (0.2.39.0)
         CAStep.run("colony crisis step", () -> CACrisis.daily(d, s));   // inspection orders, and a log line when a colony crisis is picked
         CAStep.run("surplus investment step", () -> CASurplus.daily(s));   // the focus world for credits over the surplus line
@@ -169,42 +170,44 @@ public class CAAuto {
         CAStep.run("Autopilot Storage tabs", () -> CAItems.ensureStorageTabs());
         CAStep.guard("item, core or administrator placement", () -> CAItems.run(auto));
         CAStep.run("Autopilot Storage clean-up", () -> CAStoragePlugin.evict());   // campaign consumables and blueprints don't belong in Autopilot Storage
-        if (!auto.isEmpty() && mods.isModEnabled("terraformingmadeeasy")) {
-            CAStep.run("terraforming planner", () -> { if (mods.isModEnabled("terraformingmadeeasy") && CACompat.linked("CATerraform")) CATerraform.run(auto); });
+        // 0.3.6.9: the colony lists fill when their step runs, a frame or more after this queues: `auto` is checked inside the steps
+        if (mods.isModEnabled("terraformingmadeeasy")) {
+            CAStep.run("terraforming planner", () -> { if (!auto.isEmpty() && mods.isModEnabled("terraformingmadeeasy") && CACompat.linked("CATerraform")) CATerraform.run(auto); });
             // after the plan's own projects, so it only takes structures they leave idle
-            CAStep.run("surplus terraforming", () -> { if (mods.isModEnabled("terraformingmadeeasy") && CACompat.linked("CATerraformSurplus")) CATerraformSurplus.run(auto); });
+            CAStep.run("surplus terraforming", () -> { if (!auto.isEmpty() && mods.isModEnabled("terraformingmadeeasy") && CACompat.linked("CATerraformSurplus")) CATerraformSurplus.run(auto); });
         }
         if (mods.isModEnabled(CAResearch.MOD)) {
             CAStep.run("surplus research", () -> CASurplusResearch.run(auto));
             CAStep.run("wonders and gates step", () -> CAWonders.run());
         }
-        if (!auto.isEmpty() && mods.isModEnabled("IndEvo")) {
-            CAStep.run("Industrial Evolution automation", () -> { if (mods.isModEnabled("IndEvo") && CACompat.linked("CAIndEvo")) CAIndEvo.run(auto); });
-            CAStep.run("Courier Port shipping", () -> { if (mods.isModEnabled("IndEvo") && CACompat.linked("CACourier")) CACourier.run(auto); });
+        if (mods.isModEnabled("IndEvo")) {
+            CAStep.run("Industrial Evolution automation", () -> { if (!auto.isEmpty() && mods.isModEnabled("IndEvo") && CACompat.linked("CAIndEvo")) CAIndEvo.run(auto); });
+            CAStep.run("Courier Port shipping", () -> { if (!auto.isEmpty() && mods.isModEnabled("IndEvo") && CACompat.linked("CACourier")) CACourier.run(auto); });
         }
         if (mods.isModEnabled("nexerelin")) {
             // 0.3.0.0 (A0 fix): emergencies keep trying every day (guarded, never stopped for the session)
             CAStep.guard("emergency defense step", () -> { if (mods.isModEnabled("nexerelin") && CACompat.linked("CADefense")) CADefense.run(managed); });
             // 0.3.0.0 (A1): CABreaker already stops these after three failures in a row, so they use CAStep.guard (timing and
             // quiet logs, no second breaker and no second "stopped" line)
-            if (CABreaker.allowed(CAWar.MOD + ":war")) {   // after emergencies, so they get fleet request points first
+            // 0.3.6.9: each breaker block runs as one queued task, so CABreaker reads the step's real result
+            CAPass.later(() -> { if (CABreaker.allowed(CAWar.MOD + ":war")) {   // after emergencies, so they get fleet request points first
                 boolean ok = CAStep.guard("war fleet step", () -> { if (mods.isModEnabled("nexerelin") && CACompat.linked("CAWar")) CAWar.run(managed); });
                 CABreaker.check(CAWar.MOD + ":war", ok, "Nexerelin war fleets");
-            }
-            if (CABreaker.allowed(CASpies.MOD + ":agents")) {
+            } });
+            CAPass.later(() -> { if (CABreaker.allowed(CASpies.MOD + ":agents")) {
                 boolean ok = CAStep.guard("agent step", () -> { if (mods.isModEnabled("nexerelin") && CACompat.linked("CASpies")) CASpies.run(d, s); });
                 CABreaker.check(CASpies.MOD + ":agents", ok, "Nexerelin agents");
-            }
+            } });
             // 0.3.0.0 slots (WS-E, stubs): ceasefire and peace answers by stance, then looking after conquered colonies
-            if (CABreaker.allowed("nexerelin:diplomacy")) {
+            CAPass.later(() -> { if (CABreaker.allowed("nexerelin:diplomacy")) {
                 boolean ok = CAStep.guard("diplomacy step", () -> { if (mods.isModEnabled("nexerelin") && CACompat.linked("CADiplomacy")) CADiplomacy.run(d, s); });
                 CABreaker.check("nexerelin:diplomacy", ok, "Nexerelin diplomacy");
-            }
+            } });
             // 0.3.0.0 (fix): its own breaker key; "nexerelin:conquest" is CAWar's retake and conquer (CAWar.CONQUERED_KEY)
-            if (CABreaker.allowed("nexerelin:conquered")) {
+            CAPass.later(() -> { if (CABreaker.allowed("nexerelin:conquered")) {
                 boolean ok = CAStep.guard("conquered colonies step", () -> { if (mods.isModEnabled("nexerelin") && CACompat.linked("CAConquest")) CAConquest.tend(d, s); });
                 CABreaker.check("nexerelin:conquered", ok, "Nexerelin conquered colonies");
-            }
+            } });
             CAStep.guard("emergency autonomy step", () -> { if (mods.isModEnabled("nexerelin") && CACompat.linked("CAAutonomy")) CAAutonomy.run(d, s); });
         }
         // holds changes under siege itself, but still switches off in an emergency. 0.3.0.0 (A0 fix): guarded, never stopped for
