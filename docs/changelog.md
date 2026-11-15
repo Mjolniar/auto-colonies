@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.7.0 - 2026-11-14
+
+- Story mode: Removed text that repeats what you already know. This covers the core objective's sensors line and recovered line, Tech's line about going out to look, the faint signal line, and the note after pulling the core.
+
 ## 0.3.6.9 - 2026-11-14
 
 - Performance: The daily pass runs over several frames, about 4 ms of each frame and at least one step a frame. The planner looks at one colony per step. Before, the whole pass ran in one frame and took 50 to 150 ms, up to about 600 ms.

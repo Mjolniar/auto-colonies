@@ -198,18 +198,13 @@ public class CAAutarchIntel extends BaseIntelPlugin {
     }
 
     void describe(TooltipMakerAPI info, float width) {
-        Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor();
+        Color hl = Misc.getHighlightColor();
         info.addImage(CAAutarch.PORTRAIT, width, 128f, 10f);
-        if (recovered) {
-            info.addPara("You recovered the Autarch AI Core. The Story page of the Colony Autopilot intel has what comes next.", 10f);
-            return;
-        }
-        info.addPara("Find the derelict research station that holds the Autarch AI Core, and salvage it.", 10f);
+        if (recovered) return;
         if (signal) info.addPara("Your TriPad picked up the core's signal from the %s.", 10f, hl, area);
-        else info.addPara("The maintenance log on your TriPad places the station in the %s.", 10f, hl, area);
+        else info.addPara("The maintenance log on your TriPad places the core at a derelict research station in the %s.", 10f, hl, area);
         String where = orbit == null ? "" : ", with the " + (signal ? "core" : "station") + " orbiting " + orbit;
         if (signal) info.addPara("Your sensors officer reads the source as an uncolonized system around %s" + where + ".", 10f, hl, star);
         else info.addPara("The rest of the entry is damaged. It describes an uncolonized system around %s" + where + ".", 10f, hl, star);
-        info.addPara("The station isn't on any chart. Your sensors pick it up once your fleet is close.", gray, 10f);
     }
 }

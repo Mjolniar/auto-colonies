@@ -196,7 +196,7 @@ public class CATriPad implements InteractionDialogPlugin {
         para("At the bottom is a maintenance log. Its last entry lists one Autarch-class core at a Domain research station, scheduled for pickup. "
                 + "Nothing says anyone came for it.");
         screen("LOCATION: " + (area != null ? area.toUpperCase() : "UNKNOWN") + ". FURTHER DATA CORRUPTED.");
-        para("\"That's all it has on where,\" Tech says. \"The station's own entry is gone. Someone would have to go out there and look.\"");
+        para("\"That's all it has on where,\" Tech says. \"The station's own entry is gone.\"");
         para("Engineering shrugs. \"Salvagers will have been through it. But they go for plating and fuel, not cores they can't identify. "
                 + "It could still be sitting there.\"");
         note("New objective: find the Autarch AI Core" + (area != null ? " somewhere in the " + area + "." : "."));
@@ -374,7 +374,6 @@ public class CATriPad implements InteractionDialogPlugin {
         CASync.see(PULL);
         pulledText();
         AddRemoveCommodity.addItemGainText(CAAutarch.item(), 1, text);
-        note("The Autopilot is dormant. Putting the core back in the cradle brings back every ability and all its bandwidth.");
         close("Continue");
     }
 
@@ -394,7 +393,7 @@ public class CATriPad implements InteractionDialogPlugin {
         String area = CAAutarch.area();
         screen("AUTARCH-CLASS SUBSTRATE SIGNAL. SOURCE: " + (area != null ? area.toUpperCase() : "UNKNOWN") + ".");
         para("Your TriPad has picked up another Autarch-class core" + (area != null ? " somewhere in the " + area : "")
-                + ". Your sensors officer checks the reading twice. It's real, but too faint to pin to one system.");
+                + ". Your sensors officer checks the reading twice.");
         if (area != null) note("New objective: find the Autarch AI Core somewhere in the " + area + ".");
         CAAutarchIntel.showIn(text);   // 0.3.6.8
         close("Put the TriPad away");
