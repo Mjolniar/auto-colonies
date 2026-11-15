@@ -109,6 +109,7 @@ public class CABuild {
             } else {
                 if (m.hasIndustry(p.id)) return "Already built";
                 if (CAAotD.enabled() && !CAAotD.allows(p.id, m)) return "Locked in the build menu: " + CAAotD.lockReason(p.id, m);
+                CARatForge.stage(m, p.id);   // 0.3.7.7: a Forge-Assisted BP from Autopilot Storage, where Random Assortment uses it up
                 m.addIndustry(p.id);
                 added = true;
                 Industry ind = m.getIndustry(p.id);

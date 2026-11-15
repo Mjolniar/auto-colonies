@@ -60,7 +60,7 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
         if (stack.isSpecialStack() && stack.getSpecialDataIfSpecial() != null && "IndEvo_amb".equals(stack.getSpecialDataIfSpecial().getId()))
             return "Keep ambassadors in a colony's normal Storage; Autopilot installs them from there";
         if (stack.isSpecialStack())
-            return "Autopilot has no use for this, so it stays out of Autopilot Storage: only colony items it can install, VPC chips and recipes go in. "
+            return "Autopilot has no use for this, so it stays out of Autopilot Storage: only colony items it can install, VPC chips, recipes and Forge-Assisted BPs go in. "
                     + "Keep blueprints, key cards and the like in your cargo or a colony's normal Storage";
         return "Only colony items, AI cores and research databanks can go in Autopilot Storage";
     }
@@ -84,6 +84,7 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
         try {
             com.fs.starfarer.api.campaign.SpecialItemData data = stack.getSpecialDataIfSpecial();
             if (data == null) return false;
+            if (CARatForge.ITEM.equals(data.getId())) return true;   // 0.3.7.7: Autopilot builds with Forge-Assisted Industry BPs
             boolean installable = com.fs.starfarer.api.impl.campaign.econ.impl.ItemEffectsRepo.ITEM_EFFECTS.containsKey(data.getId());
             return usable(data.getId(), installable) && !consumable(stack);
         } catch (Throwable t) { return false; }

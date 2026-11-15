@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.7.7 - 2026-11-15
+
+- Random Assortment of Things: Forge-Assisted Industry BPs go in Autopilot Storage. Autopilot counts one held there as available for its industry and builds it like any other pick; the build moves the BP to the colony's Storage, where Random Assortment uses it up.
+
 ## 0.3.7.6 - 2026-11-15
 
 - Story mode: The Colony page shows the core's status for the colony, the waiting approval, the next plan step, the top build and the Goal and Mode buttons. Colony numbers, Money and capital, Plan and builds, Locks and Mod features open on a click.

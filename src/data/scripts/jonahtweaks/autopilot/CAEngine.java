@@ -443,7 +443,7 @@ public class CAEngine {
                 Boolean open = menu.open.get(id);
                 if (open == null) {
                     inst = spec.getNewPluginInstance(m);
-                    open = CATasc.isTasc(spec) ? CATasc.available(m, inst) : inst.isAvailableToBuild();
+                    open = CATasc.isTasc(spec) ? CATasc.available(m, inst) : CARatForge.available(m, inst, spec);   // 0.3.7.7: a Forge-Assisted BP in Autopilot Storage counts
                     menu.open.put(id, open);
                 }
                 if (!open) continue;
