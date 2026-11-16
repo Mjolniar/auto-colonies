@@ -90,14 +90,6 @@ public class CASynergies {
         groups.put(id, g);
     }
 
-    static String join(List<String> l) { return join(l, ", "); }
-
-    static String join(List<String> l, String sep) {
-        StringBuilder sb = new StringBuilder();
-        for (String s : l) { if (sb.length() > 0) sb.append(sep); sb.append(s); }
-        return sb.toString();
-    }
-
     /** One building from each group is needed. Ids as VoK registers them. */
     static Map<String, List<Set<String>>> groups() {
         if (groups != null) return groups;
@@ -319,7 +311,7 @@ public class CASynergies {
             else if (change > 0.001f) strengthened.add(name);
         }
         if (!strengthened.isEmpty() && eff > c.eff) {
-            p.lines.add("Synergy efficiency " + Math.round(c.eff * 100f) + "% -> " + Math.round(eff * 100f) + "%: strengthens " + join(strengthened));
+            p.lines.add("Synergy efficiency " + Math.round(c.eff * 100f) + "% -> " + Math.round(eff * 100f) + "%: strengthens " + String.join(", ", strengthened));
         }
     }
 
@@ -342,14 +334,14 @@ public class CASynergies {
                     try { opts.add(Global.getSettings().getIndustrySpec(id).getName()); } catch (Throwable ignored) { }
                     if (opts.size() >= 2) break;
                 }
-                if (!opts.isEmpty()) near.add(c.names.get(e.getKey()) + " (needs " + join(opts, " or ") + ")");
+                if (!opts.isEmpty()) near.add(c.names.get(e.getKey()) + " (needs " + String.join(" or ", opts) + ")");
             }
         } catch (Throwable ex) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "industry synergy panel failed at " + m.getName(), ex);
         }
         t.addPara("Synergy efficiency: %s.", 6f, hl, Math.round(c.eff * 100f) + "%");
-        t.addPara("Active: %s.", 4f, hl, active.isEmpty() ? "none" : join(active));
-        if (!near.isEmpty()) t.addPara("One building away: %s.", 4f, hl, join(near, "; "));
+        t.addPara("Active: %s.", 4f, hl, active.isEmpty() ? "none" : String.join(", ", active));
+        if (!near.isEmpty()) t.addPara("One building away: %s.", 4f, hl, String.join("; ", near));
         if (c.locked > 0) t.addPara(c.locked + " more need research first.", gray, 4f);
         t.addPara("Build values include synergies.", gray, 4f);
     }

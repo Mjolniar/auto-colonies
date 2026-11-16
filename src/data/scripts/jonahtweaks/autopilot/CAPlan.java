@@ -161,7 +161,28 @@ public class CAPlan {
 
     static void sameSettings() {
         Object s = Global.getSettings();
-        if (s != specsFrom) { SPECS.clear(); MISSING.clear(); DOWN.clear(); specsFrom = s; }
+        if (s != specsFrom) { SPECS.clear(); MISSING.clear(); DOWN.clear(); UP.clear(); upBuilt = false; specsFrom = s; }
+    }
+
+    /** 0.3.9.1 (H P2): downgrade id -> the specs that upgrade from it (CAAotD.children), built once per load. */
+    static final java.util.Map<String, List<String>> UP = new java.util.HashMap<String, List<String>>();
+    static boolean upBuilt = false;
+
+    /** 0.3.9.1 (H P2): the specs whose downgrade is this building, in the game's spec order (a new list each call). */
+    static List<String> upgradesFrom(String id) {
+        sameSettings();
+        if (!upBuilt) {
+            for (IndustrySpecAPI s : Global.getSettings().getAllIndustrySpecs()) {
+                String d = s.getDowngrade();
+                if (d == null) continue;
+                List<String> l = UP.get(d);
+                if (l == null) { l = new ArrayList<String>(2); UP.put(d, l); }
+                l.add(s.getId());
+            }
+            upBuilt = true;
+        }
+        List<String> l = UP.get(id);
+        return l == null ? new ArrayList<String>() : new ArrayList<String>(l);
     }
 
     /**
@@ -236,6 +257,7 @@ public class CAPlan {
     /** On load and on a rescan (CAEngine.resetCaches). */
     static void resetCaches() {
         SPECS.clear(); MISSING.clear(); DOWN.clear(); specsFrom = null;
+        UP.clear(); upBuilt = false;   // 0.3.9.1 (H P2)
         focusAt = null; FOCUS_HAS.clear(); FOCUS_CHAIN.clear();
         lockedDay = -1; lockedCache = 0;
         WORTH.clear(); WORTHLESS_LOGGED.clear(); worthSeq = 0;   // 0.3.0.0 (B2): what plan steps scored, this session only

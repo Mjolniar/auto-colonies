@@ -85,7 +85,7 @@ public class CALogistics {
     }
 
     /** Next refit hub choice: the gathering point (null), then each choice. */
-    public static String next(String cur, boolean allowNone) {
+    public static String next(String cur) {   // 0.3.9.1 (K L15): the unused allowNone parameter removed
         List<String> order = new ArrayList<String>();
         order.add(null);
         for (MarketAPI m : choices()) order.add(m.getId());
@@ -137,7 +137,7 @@ public class CALogistics {
     // ---------------- daily ----------------
 
     public static void daily(CAData d, CASettings s, float now) {
-        deliver(d);
+        try { deliver(d); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "storage logistics deliveries failed", t); }   // 0.3.9.1 (K L8)
         try { partsMove(d, s, now); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "parts move failed", t); }
         if (!active(s) || !CATime.due(lastRun, now, 7f)) return;   // 0.3.0.0 (A1 fix): on the game's own (negative) clock
         lastRun = now;
@@ -182,19 +182,23 @@ public class CALogistics {
         int held = 0;
         for (MarketAPI m : choices()) held += CAFloors.parts(Misc.getStorageCargo(m));
         try { held += CAFloors.parts(Global.getSector().getPlayerFleet().getCargo()); } catch (Throwable ignored) { }
+        for (Load l : d.loads()) if (l != null) held += CAFloors.parts(l.cargo);   // 0.3.9.1 (K M2): parts on their way count
         int want = st.partsWant() - held;
         if (want <= 0) return;
         float price = Global.getSettings().getCommoditySpec("parts").getBasePrice() * CAFloors.setting("stockpileCostMult", 1f);
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             if (want <= 0 || m == cap) continue;
+            if (d.colony(m.getId()).mode == CAData.Mode.OFF) continue;   // 0.3.9.1 (K L7): an Off colony is left alone
             CargoAPI local = CAFloors.localCargo(m);
             float ly = CAStores.ly(m, cap), fee = CABudget.fee(s, CAStores.baseFee(ly));
-            int n = partsToMove(CAFloors.parts(local), s.floorPartsReserve, want, Math.min(CABudget.available(s), CABuild.credits() - s.reserve) - fee, price);
-            if (n <= 0) continue;
+            float room = Math.min(CABudget.available(s), CABuild.credits() - s.reserve);
+            int n = partsToMove(CAFloors.parts(local), s.floorPartsReserve, want, room - fee, price);
+            if (n <= 0 || fee > room) continue;   // 0.3.9.1 (K M2): the fee fits the budget also at a price of 0
+            float cost = n * price;
+            if (CAPlanner.setAside(cost + fee, cost + fee, 0f, null) != null) continue;   // 0.3.9.1 (K L6): the planner's set-aside first
             Load l = load(m, cap, "parts for the fleet's d-mods");
             local.removeCommodity("parts", n);
             l.cargo.addCommodity("parts", n);
-            float cost = n * price;
             l.days = CAStores.days(ly);
             l.sent = Global.getSector().getClock().getTimestamp();
             CABudget.charge(s, 0f, fee, 0f);              // the shipment fee, as every load
@@ -285,7 +289,8 @@ public class CALogistics {
         String mark = "logi:last:" + l.from + ":" + l.to;
         Long last = CAMark.at(mark);
         float since = last == null ? Float.MAX_VALUE : CAMark.days(last, CAMark.now());
-        if (!CAEconomy.loadWorthSending(CAEconomy.cargoValue(l.cargo), fee, since)) {
+        // 0.3.9.1 (K L6): also waits while the planner keeps the credits for its next pick
+        if (!CAEconomy.loadWorthSending(CAEconomy.cargoValue(l.cargo), fee, since) || CAPlanner.setAside(fee, fee, 0f, null) != null) {
             back.addAll(l.cargo);
             for (FleetMemberAPI fm : l.cargo.getMothballedShips().getMembersListCopy()) back.getMothballedShips().addFleetMember(fm);
             return;
@@ -323,19 +328,28 @@ public class CALogistics {
         if (d.loads == null || d.loads.isEmpty()) return;
         for (Iterator<Load> it = d.loads.iterator(); it.hasNext(); ) {
             Load l = it.next();
-            if (Global.getSector().getClock().getElapsedDaysSince(l.sent) < l.days) continue;
-            MarketAPI to = market(l.to);
-            if (!access(to)) {
-                to = null;
-                for (MarketAPI m : Misc.getPlayerMarkets(false)) if (access(m) && (to == null || m.getSize() > to.getSize())) to = m;
+            try {   // 0.3.9.1 (K L8): one bad load is skipped; the rest still arrive
+                if (Global.getSector().getClock().getElapsedDaysSince(l.sent) < l.days) continue;
+                MarketAPI to = market(l.to);
+                if (!access(to)) {
+                    to = null;
+                    for (MarketAPI m : Misc.getPlayerMarkets(false)) if (access(m) && (to == null || m.getSize() > to.getSize())) to = m;
+                }
+                if (to == null) continue;   // no Storage anywhere yet: it waits in transit
+                CargoAPI st = Misc.getStorageCargo(to);
+                String what = describe(l);
+                if (st.getMothballedShips() == null) st.initMothballedShips(Factions.PLAYER);
+                // 0.3.9.1 (K L8): each ship leaves the load as it arrives, so a failure later can't deliver it twice
+                for (FleetMemberAPI fm : l.cargo.getMothballedShips().getMembersListCopy()) {
+                    st.getMothballedShips().addFleetMember(fm);
+                    l.cargo.getMothballedShips().removeFleetMember(fm);
+                }
+                st.addAll(l.cargo);
+                it.remove();
+                CALog.did("Storage logistics: " + what + " delivered to " + to.getName() + "'s Storage" + (to.getId().equals(l.to) ? "" : " (" + l.toName + "'s Storage was gone)") + ".");
+            } catch (Throwable t) {
+                if (CALog.once("logifail:" + (l == null ? "?" : l.from + ":" + l.to + ":" + l.sent))) CADiagnostics.LOG.warn(CADiagnostics.TAG + "storage logistics: a load failed to arrive; skipped", t);
             }
-            if (to == null) continue;   // no Storage anywhere yet: it waits in transit
-            CargoAPI st = Misc.getStorageCargo(to);
-            st.addAll(l.cargo);
-            if (st.getMothballedShips() == null) st.initMothballedShips(Factions.PLAYER);
-            for (FleetMemberAPI fm : l.cargo.getMothballedShips().getMembersListCopy()) st.getMothballedShips().addFleetMember(fm);
-            it.remove();
-            CALog.did("Storage logistics: " + describe(l) + " delivered to " + to.getName() + "'s Storage" + (to.getId().equals(l.to) ? "" : " (" + l.toName + "'s Storage was gone)") + ".");
         }
     }
 

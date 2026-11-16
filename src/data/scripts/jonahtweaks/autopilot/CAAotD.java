@@ -10,8 +10,9 @@ import java.util.*;
 /**
  * Ashes of the Domain support. AotD locks buildings behind research and adds upgrade paths through Building Menu
  * Overhaul (BMO), and only BMO's build menu enforces them; market.addIndustry() doesn't. So the autopilot asks BMO the
- * same questions its menu does. Reflection only, so the mod runs without either mod. If BMO can't be asked, nothing
- * is built or upgraded while it's enabled (fails closed) and the reason is logged once.
+ * same questions its menu does. Reflection only, so the mod runs without either mod. If BMO's code can't be linked,
+ * fallbackAllows decides (since 0.2.38.0): other mods' buildings are open, AotD's own stay locked, and the vanilla ones
+ * AotD gates open once their tech is researched; the reason is logged once. 0.3.9.1 (H C2): comment matches the code.
  */
 public class CAAotD {
     static Object reqInstance, reqSet, metCriteria, reason, affected, hiddenSet;
@@ -35,7 +36,7 @@ public class CAAotD {
             linked = true;
         } catch (Throwable t) {
             broken = true;
-            CADiagnostics.LOG.warn(CADiagnostics.TAG + "can't read Building Menu Overhaul's build rules; nothing is built or upgraded while it's enabled", t);
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "can't read Building Menu Overhaul's build rules; research-locked buildings stay locked, the rest is open", t);   // 0.3.9.1 (H C2)
         }
         return linked;
     }
@@ -50,6 +51,9 @@ public class CAAotD {
         return out;
     }
 
+    /** 0.3.9.1 (H L1): hidden() when BMO's list couldn't be read: allows() then lets nothing through (fails closed). */
+    static final Set<String> UNREADABLE = Collections.unmodifiableSet(new HashSet<String>());
+
     /** Buildings BMO hides from this colony's build menu right now (AotD hides some until researched). */
     @SuppressWarnings("unchecked")
     public static Set<String> hidden(MarketAPI m) {
@@ -59,7 +63,7 @@ public class CAAotD {
             return s == null ? Collections.<String>emptySet() : new HashSet<String>((Collection<String>) s);
         } catch (Throwable t) {
             CAStep.warn("BMO rules", "Building Menu Overhaul's hidden-building check failed at " + m.getName(), t);   // 0.3.0.0 (07 M8): one trace, then a short line weekly
-            return Collections.emptySet();
+            return UNREADABLE;   // 0.3.9.1 (H L1)
         }
     }
 
@@ -67,7 +71,7 @@ public class CAAotD {
     public static boolean allows(String id, MarketAPI m, Set<String> hidden) {
         if (!enabled()) return true;
         if (!link()) return fallbackAllows(id);
-        if (hidden.contains(id)) return false;
+        if (hidden == UNREADABLE || hidden.contains(id)) return false;   // 0.3.9.1 (H L1): an unreadable hidden list allows nothing
         try { return unmet(id, m).isEmpty(); }
         catch (Throwable t) {
             CAStep.warn("BMO rules", "Building Menu Overhaul's requirement check failed for " + id + " at " + m.getName(), t);   // 0.3.0.0 (07 M8): one trace, then a short line weekly
@@ -101,7 +105,7 @@ public class CAAotD {
                 Object text = CARefl.invoke(reason, r, m, id);
                 if (text != null && !String.valueOf(text).trim().isEmpty()) why.add(String.valueOf(text).trim());
             }
-            if (!why.isEmpty()) return join(why);
+            if (!why.isEmpty()) return String.join("; ", why);   // 0.3.9.1 (H C3)
             if (hidden(m).contains(id)) return "hidden in the build menu here";
         } catch (Throwable t) {
             CAStep.warn("BMO rules", "Building Menu Overhaul's requirement text failed for " + id, t);   // 0.3.0.0 (07 M8): one trace, then a short line weekly
@@ -109,18 +113,8 @@ public class CAAotD {
         return null;
     }
 
-    static String join(List<String> parts) {
-        StringBuilder sb = new StringBuilder();
-        for (String p : parts) { if (sb.length() > 0) sb.append("; "); sb.append(p); }
-        return sb.toString();
-    }
-
-    /** Buildings that upgrade from this one in the build menu: every spec whose downgrade is this building. */
-    public static List<String> children(String id) {
-        List<String> out = new ArrayList<String>();
-        for (IndustrySpecAPI s : Global.getSettings().getAllIndustrySpecs()) if (id.equals(s.getDowngrade())) out.add(s.getId());
-        return out;
-    }
+    /** Buildings that upgrade from this one in the build menu: every spec whose downgrade is this building. 0.3.9.1 (H P2): a map built once per load (CAPlan.upgradesFrom). */
+    public static List<String> children(String id) { return CAPlan.upgradesFrom(id); }
 
     /** True when this building is reached by upgrading another one (AotD sets these links on vanilla buildings too). */
     public static boolean upgradeOnly(IndustrySpecAPI spec) { return enabled() && spec.getDowngrade() != null; }

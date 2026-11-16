@@ -36,7 +36,6 @@ public class CASurplusResearch {
     /** VoK counts this many colonies with a research building at most (AoTDFactionResearchManager.getAmountOfResearchFacilities). */
     public static final int MAX = 8;
     static final float SPEED = 0.1f, MAINTENANCE = 10000f;
-    static final String ACTION = "surplus research";
     public static String summary;
 
     static boolean has(MarketAPI m) { return m.hasIndustry(FACILITY) || m.hasIndustry(BLACK_SITE); }
@@ -81,6 +80,7 @@ public class CASurplusResearch {
             if (CAResearch.mgr() == null) return;   // VoK hasn't made its research manager yet
             ranked = CAResearch.ranked();
         } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus research couldn't read research", t); return; }
+        if (CAResearch.totalCount == 0) return;   // 0.3.9.1 (K L4): VoK's research list is empty (not filled yet), so nothing is judged done
         if (CAResearch.openCount == 0) {
             takeDown(d);
             summary = "Surplus research: nothing is left to research.";

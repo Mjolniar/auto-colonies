@@ -145,12 +145,14 @@ public class CABudget {
         java.util.List<Float> h;
         try { h = CAData.get().colonyNetHistory(); } catch (Throwable t) { return null; }
         if (h.isEmpty() && !CALog.whatIf()) {
-            try {   // a save from before 0.3.0, or the first month: last month's report, once
+            try {   // a save from before 0.3.0, or the first month: last month's report, once per report
                 if (CAData.settings().lastNetKnown) {
                     MonthlyReport prev = SharedData.getData().getPreviousReport();
-                    if (prev != null && prev.getRoot() != null) {
+                    // 0.3.9.1 (K L12): a report with no Colonies node is read once
+                    if (prev != null && prev.getRoot() != null && System.identityHashCode(prev) != netTried) {
                         prev.computeTotals();
                         float month = monthNet(prev);
+                        if (Float.isNaN(month)) netTried = System.identityHashCode(prev);
                         record(h, month);
                         // 0.3.0.0 (B5 fix): before the endgame reads its room against colony net, its 0.2.45 reference moves to it
                         if (!Float.isNaN(month)) rebaseEndgame(CAData.settings(), month, prev.getRoot().totalIncome - prev.getRoot().totalUpkeep);
@@ -284,7 +286,7 @@ public class CABudget {
         return Math.max(0f, Math.min(byBudget, byReserve));
     }
 
-    /** The Automatic new-upkeep cap: this share of last month's net income, never under the floor. */
+    /** The Automatic new-upkeep cap: a share of colony net (netIncome), never under the floor. 0.3.9.1 (K L16): comment matches the code. */
     static final float UPKEEP_SHARE = CATuning.UPKEEP_SHARE, UPKEEP_FLOOR = CATuning.UPKEEP_FLOOR;
 
     static float autoUpkeepCap(float net) { return autoUpkeepCap(net, UPKEEP_SHARE); }
@@ -296,9 +298,9 @@ public class CABudget {
     }
 
     /**
-     * New upkeep Auto may add this month: Automatic, 10% of last month's net income and at least 20,000, so it keeps up
-     * as income grows (a fixed number set at setup went stale: 20,000 against 760,000 a month held a plan step back for
-     * seven months); or your Fixed amount.
+     * New upkeep Auto may add this month: Automatic, the Spending preset's share (upkeepShare) of the colony net median
+     * (netIncome) and at least 200,000 x that share, so it keeps up as income grows; or your Fixed amount. 0.3.9.1 (K L16):
+     * comment matches the code.
      */
     public static float upkeepCap(CASettings s) { return s.upkeepCapAuto ? autoUpkeepCap(netIncome(s), s.upkeepShare) : s.newUpkeepCap; }
 
@@ -308,7 +310,8 @@ public class CABudget {
         s.upkeepCapChecked = true;
         if (s.upkeepCapAuto) return;
         s.upkeepCapAuto = true;
-        CALog.did("New upkeep cap per month: Automatic. 10% of last month's net income, at least 20,000 (" + Misc.getDGSCredits(upkeepCap(s))
+        // 0.3.9.1 (K L16): the line states the current rule
+        CALog.did("New upkeep cap per month: Automatic. The Spending preset's share of colony net income (" + Misc.getDGSCredits(upkeepCap(s))
                 + " now, was a fixed " + Misc.getDGSCredits(s.newUpkeepCap) + "). Set it to Fixed again in Settings, Advanced, Budget.", true);   // 0.3.8.6: the upkeep row, set to Fixed
     }
 
@@ -444,6 +447,13 @@ public class CABudget {
     /** Free cash now. */
     public static float freeCash(CASettings s) { return freeCash(CABuild.credits(), s.reserve, committed(), runway(s)); }
 
+    /**
+     * 0.3.9.1 (K L11): runway()'s day cache: the game day, the report (System.identityHashCode) and the runway. 0.3.9.1 (K L12):
+     * netTried, the last report colonyNet() read with no Colonies node (0: none). Session only; CARich.reset clears them.
+     */
+    static int runwayDay = Integer.MIN_VALUE, runwayReport = 0, netTried = 0;
+    static float runwayCache = 0f;
+
     /** Pure: the runway, RUNWAY_MONTHS of the colonies' gross upkeep and the fleet's monthly cost. */
     static float runwayOf(float coloniesUpkeep, float fleetCost) {
         return RUNWAY_MONTHS * (Math.max(0f, coloniesUpkeep) + Math.max(0f, fleetCost));
@@ -460,8 +470,13 @@ public class CABudget {
             MonthlyReport.FDNode root = prev == null ? null : prev.getRoot();
             MonthlyReport.FDNode col = root == null ? null : root.getChildren().get(MonthlyReport.OUTPOSTS);
             if (col != null) {
+                // 0.3.9.1 (K L11): worked out once a game day per report
+                int today = CATime.today(), id = System.identityHashCode(prev);
+                if (today == runwayDay && id == runwayReport) return runwayCache;
                 prev.computeTotals();
-                return runwayOf(coloniesUpkeep(col), fleetCost(root.getChildren().get(MonthlyReport.FLEET)));
+                float r = runwayOf(coloniesUpkeep(col), fleetCost(root.getChildren().get(MonthlyReport.FLEET)));
+                runwayDay = today; runwayReport = id; runwayCache = r;
+                return r;
             }
         } catch (Throwable ignored) { }
         float up = 0f;

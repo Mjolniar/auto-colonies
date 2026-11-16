@@ -112,7 +112,7 @@ public final class CATuning {
 
     /** Months of unspent budget the savings can hold (CABudget.rollMonth, 0.2.39.0). */
     public static final float CARRY_MONTHS = 6f;
-    /** The automatic upkeep cap: this share of last month's net income, at least UPKEEP_FLOOR (CABudget, 0.2.24.0; CASettings.upkeepShare's default). */
+    /** The automatic upkeep cap: this share of colony net, at least UPKEEP_FLOOR at this share (CABudget, 0.2.24.0; CASettings.upkeepShare's default). */
     public static final float UPKEEP_SHARE = 0.10f, UPKEEP_FLOOR = 20_000f;
     /** B5 (CABudget, research 03 F4): months the colony net median looks back over; colony net as a scale never goes under NET_FLOOR. */
     public static final int NET_MONTHS = 3;

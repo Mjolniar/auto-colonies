@@ -1,5 +1,36 @@
 # Patch notes
 
+## 0.3.9.1 - 2026-11-16
+
+- Shipyard: Fixed free cash not counting a ship order placed the same moment.
+- Shipyard: Fixed your own mothballed ships at the gathering point counting as unclaimed hulls.
+- Shipyard: A hull taken off the production list refunds the fee that was paid.
+- Shipyard: Fixed hulls taken off the production list still counting as the month's spending.
+- Story mode: Stockpile deliveries and the shipyard free cash check run while the Autopilot is dormant.
+- Autopilot Storage: Fixed chained shipments on one route paying a single fee.
+- Autopilot Storage: A shipment that fails to arrive is skipped and the others arrive.
+- Storage logistics: Fixed Domain-grade Parts being sent again while a load is on its way.
+- Storage logistics: Parts are not taken from Off colonies.
+- Storage logistics: Parts and loads wait while the planner sets credits aside.
+- Stockpiles: Fixed the rung note naming the wrong reason when a purchase waits.
+- Stockpiles: Removed the colony lost sentence from the arrival line.
+- Surplus research: Fixed Research Facilities being removed while the research list is empty.
+- Budget: The upkeep cap line on old saves states the current rule.
+- Megastructures: Auto raises Pluto's laser within the new upkeep cap and above the credit reserve.
+- Megastructures: Approve shows and books the laser's added upkeep.
+- Megastructures: Nexus Core steps go to starsector.log, with one line when it stops rising.
+- Megastructures: Pluto's forge split changes only for moves of 4 units or more.
+- Courier Port: Fixed contracts cancelling after one delivery while stockpiles cover the shortage.
+- Courier Port: No contracts at colonies that do not use stockpiles for shortages.
+- Courier Port: No new contracts under the credit reserve. Running ones are cancelled while credits are under it.
+- Research: Auto starts no tech while credits are under the reserve.
+- Research: Sophia Anderson is made head of R&D only when no head is picked.
+- Research: Plan steps are not held for research while research is Off.
+- Floating City: The fuel guard works when the colony styles can't be read.
+- Industrial Evolution: A switched mining or refining specialty is kept for 90 days.
+- Ashes of the Domain: A failed hidden-building check builds nothing at that colony.
+- Performance: Fewer repeated reads of last month's report, market sources, AotD orders and upgrade links.
+
 ## 0.3.9.0 - 2026-11-16
 
 - Compatibility: Starsector 0.98.5a-RC7. The colony screen button finds RC7's dialog classes.

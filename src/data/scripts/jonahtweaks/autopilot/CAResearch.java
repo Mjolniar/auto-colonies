@@ -28,7 +28,8 @@ import java.util.*;
  * Easy's own tech ids) is traced to its tech and the whole chain of techs it still needs, and the step's plan value
  * (CAPlan.bonusFor) is shared along that chain by research days, so the first tech of a long chain counts too.
  * Auto starts the best tech whenever nothing is running or queued, only for techs that cost databanks and AI cores (the
- * cores from Autopilot Storage, counted at CORE_VALUE); colony items are left to you. When no tech pays for itself within a
+ * cores from Autopilot Storage, counted at CORE_VALUE); colony items only while Research spends colony items is on (spendable;
+ * 0.3.9.1, H C2), else they are left to you. When no tech pays for itself within a
  * year, the best of the rest goes anyway, so the facility doesn't sit idle; when nothing can start, the log says why. With surplus credits (CASurplus) the
  * focus world's plan counts twice and research upkeep a quarter. While a plan tech waits for databanks, the ones you have aren't spent on techs no
  * plan needs; the log says what's needed. Research upkeep is temporary, so plan techs aren't held back by the new-upkeep
@@ -162,8 +163,10 @@ public class CAResearch {
         public List<String> lines = new ArrayList<String>();
         Object raw;
 
-        boolean databanksOnly() { for (String k : items.keySet()) if (!DATABANK.equals(k)) return false; return true; }
-        /** Auto may start it: it costs databanks and AI cores only (cores come from Autopilot Storage); colony items are yours. */
+        /**
+         * Auto may start it: it costs databanks, AI cores (from Autopilot Storage) and colony items it may spend (spendable),
+         * nothing else. 0.3.9.1 (H C1, C2): databanksOnly() removed (no caller); comment matches the code.
+         */
         boolean autoOk() { for (String k : items.keySet()) if (!DATABANK.equals(k) && !CORE_VALUE.containsKey(k) && !spendable(k)) return false; return true; }
         int databanks() { Integer n = items.get(DATABANK); return n == null ? 0 : n; }
         /** What its AI cores are worth, counted as part of its cost. */
@@ -198,6 +201,7 @@ public class CAResearch {
         return t;
     }
 
+    /** A commodity's or special item's name, else the id. 0.3.9.1 (H C3): the one shared helper (CAContracts and CAHypershunt use it). */
     static String commodityName(String id) {
         try { if (Global.getSettings().getCommoditySpec(id) != null) return Global.getSettings().getCommoditySpec(id).getName(); } catch (Throwable ignored) { }
         try { return Global.getSettings().getSpecialItemSpec(id).getName(); } catch (Throwable ignored) { }
@@ -215,6 +219,8 @@ public class CAResearch {
     static List<Tech> cached;
     static float cachedAt = -99f;
     static int openCount;   // unresearched techs at the last ranking, startable or not
+    static int totalCount;   // 0.3.9.1 (K L4): every tech in VoK's list at the last ranking, done or not
+    static boolean rankFull;   // 0.3.9.1 (H P1): the Research page's Refresh: value the buildings also with no facility
     static final List<Tech> itemTechs = new ArrayList<Tech>();   // unresearched techs that take colony items, which Auto leaves to you
 
     /** Items Auto may spend on research while spending freely (CASurplus.rich), from any Storage: AotD's production makes Fullerene Spools. */
@@ -415,6 +421,7 @@ public class CAResearch {
             if (t.available || t.needsItems) cands.add(t);
         }
         openCount = open.size();
+        totalCount = all.size();   // 0.3.9.1 (K L4)
         itemTechs.clear();
         for (Tech t : open.values()) if (!t.autoOk()) itemTechs.add(t);
         try { needs = planNeeds(open); } catch (Throwable e) { needs = new ArrayList<Need>(); CADiagnostics.LOG.warn(CADiagnostics.TAG + "research plan needs failed", e); }
@@ -429,7 +436,10 @@ public class CAResearch {
         }
         List<Tech> scored = new ArrayList<Tech>(cands);
         scored.addAll(children.values());
-        valueBuildings(scored);
+        // 0.3.9.1 (H P1): with no working Research Facility nothing can start, so only Refresh runs the what-if valuation
+        boolean value = rankFull;
+        if (!value) try { value = ((Number) CARefl.invoke(facilities, mgr)).intValue() > 0; } catch (Throwable e) { value = true; }
+        if (value) valueBuildings(scored);
         for (Tech t : scored) t.own += effects(t);
         for (Tech t : cands) if (t.plan > 0f) {
             t.own += t.plan;
@@ -635,10 +645,13 @@ public class CAResearch {
         }
     }
 
-    /** Puts Sophia Anderson at the head of R&D before paying: she takes one databank off every tech. */
+    /**
+     * Puts Sophia Anderson at the head of R&D before paying: she takes one databank off every tech. 0.3.9.1 (H L2): only while
+     * the seat is empty (VoK leaves it empty until you pick a head), so a head you picked stays.
+     */
     @SuppressWarnings("unchecked")
     static void sophiaFirst(Object mgr, Tech t) throws Exception {
-        if (t.databanks() <= 0) return;
+        if (t.databanks() <= 0 || CARefl.get(fHead, mgr) != null) return;
         List<Object> council = (List<Object>) CARefl.get(fCouncil, mgr);
         if (council == null) return;
         for (Object s : council) {
@@ -1006,7 +1019,7 @@ public class CAResearch {
         // 0.3.0.0 (A4 fix): the Research page never ranks while it draws, so the daily pass keeps one ranking a day for it while the page shows (research not Off)
         if (s.researchMode != 2) {
             try { ranked(); } catch (Throwable t) { CAStep.warn("research step", "research ranking failed", t); }
-        }
+        } else CAPlan.BLOCKED.clear();   // 0.3.9.1 (H L3): research Off blocks no plan step
         if (s.researchMode != 1) return;
         try {
             Object mgr = mgr();
@@ -1017,6 +1030,12 @@ public class CAResearch {
             }
             CALog.forget("research:nofacility");
             if (CABudget.paused(s)) return;
+            // 0.3.9.1 (H M4): a running tech adds facility upkeep; none starts while credits are under the reserve
+            if (CABuild.credits() < s.reserve) {
+                if (CALog.once("research:reserve")) CALog.quiet("Research: credits are under the reserve, so Auto starts no tech");
+                return;
+            }
+            CALog.forget("research:reserve");
             float fac = facilityUpkeepMult();
             float have = databanksOnHand(mgr);
             // after WAIT_DAYS of holding them, the best tech you can afford goes ahead anyway, rather than research sitting idle
@@ -1078,7 +1097,7 @@ public class CAResearch {
     /** A panel button: start <techId>. Returns a message. */
     public static String handle(String action, String id) {
         try {
-            if ("refresh".equals(action)) { cached = null; ranked(); return null; }   // 0.3.0.0 (A4 fix): the Research page's Refresh ranking button (runs outside drawing)
+            if ("refresh".equals(action)) { cached = null; rankFull = true; try { ranked(); } finally { rankFull = false; } return null; }   // 0.3.0.0 (A4 fix): the Research page's Refresh ranking button (runs outside drawing)
             for (Tech t : ranked()) if (t.id.equals(id)) return "start".equals(action) ? start(t, "you") : "Unknown action";
         } catch (Throwable e) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "research action failed", e);
@@ -1128,9 +1147,7 @@ public class CAResearch {
                 t.addPara("Plans waiting on research:", 8f);
                 int k = 0;
                 for (Need n : needs) {
-                    if (k++ >= 6) break;
-                    List<String> names = new ArrayList<String>();
-                    for (Tech x : rankedNow) if (n.chain.contains(x.id)) names.add(x.name);
+                    if (k++ >= 6) break;   // 0.3.9.1 (H C1): an unread names list removed
                     t.addPara("    %s at %s: %s techs, %s databanks, about %s days" + (n.manual ? " (needs items)" : ""), 2f, hl,
                             n.step, n.colony, "" + n.chain.size(), "" + n.databanks, "" + Math.round(n.days));   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
                 }

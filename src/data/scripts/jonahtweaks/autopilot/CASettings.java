@@ -25,7 +25,7 @@ public class CASettings {
     // CAData before 0.3.0; a save from before 0.3.0 loads 0 here and CAData.get() brings that one over, once
     public float minStability = CATuning.MIN_STABILITY;
     public float newUpkeepCap = 50000f;   // the Fixed cap; the Automatic one follows net income (CABudget.upkeepCap)
-    // new upkeep cap: Automatic (10% of last month's net income, at least 20,000) unless set to Fixed. upkeepCapChecked
+    // new upkeep cap: Automatic (the Spending preset's share of colony net, CABudget.upkeepCap) unless set to Fixed. upkeepCapChecked
     // is false loading a save from before 0.2.24.0, whose fixed cap (set once at setup) becomes Automatic once
     public boolean upkeepCapAuto = true, upkeepCapChecked = true;
     public boolean pauseOnLoss = true;

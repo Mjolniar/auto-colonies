@@ -265,18 +265,21 @@ public class CAStores {
         float travel = days(ly);
         if (!load.isEmpty()) {
             // 0.3.0.0 (C4): joins the load on this route: one fee paid already; everything on it arrives once this part has travelled
-            Shipment joined = null;
+            Shipment joined = null, first = null;
             float sentAgo = 0f;
             for (Shipment sh : load) {
                 float el = elapsed(sh);
                 sh.days = joinedDays(sh.days, el, travel);
                 if (joined == null && same(sh, commodity, special)) joined = sh;
+                if (first == null || sh.sent < first.sent) first = sh;
                 sentAgo = Math.max(sentAgo, el);
             }
             String name;
             if (joined != null) { joined.qty += qty; name = joined.name(); }
             else {
                 Shipment sh = shipment(commodity, special, qty, fromId, fromName, to, travel, why);
+                // 0.3.9.1 (K M4): it leaves with the paid load, so the merge window stays the paid load's
+                if (first != null) { sh.sent = first.sent; sh.days = first.days; }
                 CAData.get().shipments().add(sh);
                 name = sh.name();
             }
@@ -363,20 +366,24 @@ public class CAStores {
         Iterator<Shipment> it = d.shipments().iterator();
         while (it.hasNext()) {
             Shipment sh = it.next();
-            if (Global.getSector().getClock().getElapsedDaysSince(sh.sent) < sh.days) continue;
-            MarketAPI to = CAAuto.market(sh.to);
-            if (!holds(to)) {   // the colony was lost or abandoned on the way: the biggest one you have takes it
-                List<MarketAPI> ms = markets();
-                if (ms.isEmpty()) continue;   // nowhere to deliver yet; it waits
-                to = ms.get(0);
+            try {   // 0.3.9.1 (K L8): one bad shipment is skipped; the rest still arrive
+                if (Global.getSector().getClock().getElapsedDaysSince(sh.sent) < sh.days) continue;
+                MarketAPI to = CAAuto.market(sh.to);
+                if (!holds(to)) {   // the colony was lost or abandoned on the way: the biggest one you have takes it
+                    List<MarketAPI> ms = markets();
+                    if (ms.isEmpty()) continue;   // nowhere to deliver yet; it waits
+                    to = ms.get(0);
+                }
+                CargoAPI st = of(to);
+                if (sh.commodity != null) st.addCommodity(sh.commodity, sh.qty);
+                else st.addSpecial(sh.special, sh.qty);
+                it.remove();
+                ARRIVED.put(to.getId() + "|" + (sh.commodity != null ? sh.commodity : sh.special.getId()),
+                        new Object[]{sh.from, sh.fee, Global.getSector().getClock().getTimestamp()});
+                CALog.think(to.getName() + ": " + (sh.qty > 1 ? sh.qty + " " : "") + sh.name() + " arrived in Autopilot Storage.");
+            } catch (Throwable t) {
+                if (CALog.once("shipfail:" + sh.to + ":" + sh.id())) CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autopilot Storage: a shipment to " + sh.to + " failed to arrive; skipped", t);
             }
-            CargoAPI st = of(to);
-            if (sh.commodity != null) st.addCommodity(sh.commodity, sh.qty);
-            else st.addSpecial(sh.special, sh.qty);
-            it.remove();
-            ARRIVED.put(to.getId() + "|" + (sh.commodity != null ? sh.commodity : sh.special.getId()),
-                    new Object[]{sh.from, sh.fee, Global.getSector().getClock().getTimestamp()});
-            CALog.think(to.getName() + ": " + (sh.qty > 1 ? sh.qty + " " : "") + sh.name() + " arrived in Autopilot Storage.");
         }
     }
 

@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * WS-C3 rung 4: the shipyard. Research 03 F2 and sections 4a-4c; DECISIONS 7, 8 and 9.
  *
- * 0.3.0.0 (C3): with the money tier at Idle money or higher, Auto Colonies orders the ships on your Doctrine screen's priority
+ * 0.3.0.0 (C3): with the money tier at Idle money or higher (Surplus with production floors and shipyardFromSurplus on; 0.3.9.1, K L16), Auto Colonies orders the ships on your Doctrine screen's priority
  * list through the game's own custom production, at the game's prices. It adds them to the production list
  * (FactionProductionAPI.addItem, after knowsShip); the game builds them at month end within its monthly capacity, charges them
  * in the monthly report (outside colony net, CABudget.NOT_COLONY) and delivers them to the gathering point's Storage, which
@@ -49,7 +49,13 @@ import java.util.*;
  */
 public class CAShipyard {
     /** One order line Auto Colonies placed. month: the game timestamp it was placed at. cost: the price of one hull then. */
-    public static class Order { public String hullId; public int qty; public float cost; public long month; }
+    public static class Order {
+        public String hullId; public int qty; public float cost; public long month;
+        /** 0.3.9.1 (K L1): the fee paid per hull (guard refunds this); 0 on lines from older saves. */
+        public float fee;
+        /** 0.3.9.1 (K M3): your own hulls of this type in the gathering point's Storage when it was placed; 0 on lines from older saves. */
+        public int own;
+    }
 
     /** Days between looks, days a rejected proposal holds the next one off. */
     static final float LOOK_DAYS = 7f, REJECT_DAYS = CATuning.ASK_HOLD_DAYS;
@@ -165,6 +171,40 @@ public class CAShipyard {
         return n;
     }
 
+    /**
+     * Pure, 0.3.9.1 (K M3): hull id -> your own hulls in the gathering point's Storage when that hull's newest order line was
+     * placed (Order.own; 0 on lines from older saves).
+     */
+    static Map<String, Integer> own(List<Order> lines) {
+        Map<String, Integer> out = new HashMap<String, Integer>();
+        Map<String, Long> at = new HashMap<String, Long>();
+        if (lines == null) return out;
+        for (Order o : lines) {
+            if (o == null || o.hullId == null || o.qty <= 0) continue;
+            Long t = at.get(o.hullId);
+            if (t == null || o.month >= t) { at.put(o.hullId, o.month); out.put(o.hullId, Math.max(0, o.own)); }
+        }
+        return out;
+    }
+
+    /** Pure, 0.3.9.1 (K M3): Storage less your own hulls, per hull, never below 0: the hulls that can be Auto Colonies'. */
+    static Map<String, Integer> less(Map<String, Integer> stored, Map<String, Integer> own) {
+        Map<String, Integer> out = new HashMap<String, Integer>();
+        if (stored == null) return out;
+        for (String h : stored.keySet()) out.put(h, Math.max(0, get(stored, h) - get(own, h)));
+        return out;
+    }
+
+    /**
+     * Pure, 0.3.9.1 (K M3): your own hulls of one type in Storage now: Storage less Auto Colonies' unclaimed hulls there
+     * (what it ordered and isn't on the list, up to Storage less the own count its lines recorded).
+     */
+    static int ownNow(int ordered, int queued, int stored, int ownBefore) {
+        int o = Math.max(0, ordered), q = Math.min(o, Math.max(0, queued)), st = Math.max(0, stored);
+        int ours = Math.min(o - q, Math.max(0, st - Math.max(0, ownBefore)));
+        return st - ours;
+    }
+
     /** Pure: the convenience fee share: shipyardFee, or none at the Off fee level (DECISIONS 9, 11). */
     static float feeShare(int feeLevel, float shipyardFee) { return feeLevel <= 0 ? 0f : Math.max(0f, shipyardFee); }
 
@@ -271,7 +311,8 @@ public class CAShipyard {
     static void tidy(CAData d, FactionProductionAPI prod, MarketAPI gp) {
         if (CALog.whatIf() || d.shipyardOrders == null || d.shipyardOrders.isEmpty() || prod == null || gp == null) return;
         List<Order> l = d.shipyardOrders();
-        Map<String, Integer> ord = ordered(l), q = queued(prod, ord.keySet()), st = stored(gp), held = new HashMap<String, Integer>();
+        // 0.3.9.1 (K M3): your own hulls in Storage don't hold Auto Colonies' lines
+        Map<String, Integer> ord = ordered(l), q = queued(prod, ord.keySet()), st = less(stored(gp), own(l)), held = new HashMap<String, Integer>();
         for (String h : ord.keySet()) held.put(h, get(q, h) + get(st, h));
         trim(l, held);
         compact(l, MAX_ORDERS);
@@ -365,7 +406,7 @@ public class CAShipyard {
             say("no priority ships you can build; set them on the Doctrine screen");
             return;
         }
-        int stop = Math.max(0, s.shipyardStop), un = unclaimed(ordered, queued, stored);
+        int stop = Math.max(0, s.shipyardStop), un = unclaimed(ordered, queued, less(stored, own(d.shipyardOrders())));   // 0.3.9.1 (K M3): your own hulls don't count
         if (un >= stop) {
             say(un + " hulls it ordered are unclaimed (on the production list or in " + gp.getName() + "'s Storage); it stops at " + stop);
             return;
@@ -481,20 +522,26 @@ public class CAShipyard {
         long now = CAMark.now();
         Map<String, Integer> placed = new LinkedHashMap<String, Integer>();
         float value = 0f, fee = 0f, fs = p.value > 0f ? p.fee / p.value : 0f;
+        // 0.3.9.1 (K M3): your own hulls in Storage now, read before the new hulls go on the list
+        MarketAPI gp0 = prod.getGatheringPoint();
+        Map<String, Integer> ord0 = ordered(d), q0 = queued(prod, p.qty.keySet()), st0 = stored(gp0), own0 = own(d.shipyardOrders());
         for (Map.Entry<String, Integer> e : p.qty.entrySet()) {
             boolean ok;
+            int own = ownNow(get(ord0, e.getKey()), get(q0, e.getKey()), get(st0, e.getKey()), get(own0, e.getKey()));
             try { ok = prod.addItem(ProductionItemType.SHIP, e.getKey(), e.getValue()); }
             catch (Throwable t) { ok = false; CADiagnostics.LOG.warn(CADiagnostics.TAG + "shipyard: adding " + e.getKey() + " to the production list failed", t); }
             if (!ok) continue;
             float unit = p.unit.containsKey(e.getKey()) ? p.unit.get(e.getKey()) : 0f;
             Order o = new Order();
             o.hullId = e.getKey(); o.qty = e.getValue(); o.cost = unit; o.month = now;
+            o.fee = unit * fs; o.own = own;   // 0.3.9.1 (K L1, K M3)
             d.shipyardOrders().add(o);
             placed.put(e.getKey(), e.getValue());
             value += unit * e.getValue();
             fee += unit * e.getValue() * fs;
         }
         if (placed.isEmpty()) return "the game refused the order";
+        CASurplus.invalidateCommitted();   // 0.3.9.1 (K M1): free cash counts the new hulls in this frame
         MarketAPI gp = prod.getGatheringPoint();
         String to = gp == null ? p.to : gp.getName();
         // the fee now, from the pool; the price is the game's to charge at month end, recorded against the rung now
@@ -541,33 +588,37 @@ public class CAShipyard {
         Arrays.sort(idx, new Comparator<Integer>() { public int compare(Integer a, Integer b) { return Float.compare(pr.get(b), pr.get(a)); } });
         Map<String, Integer> removed = new LinkedHashMap<String, Integer>();
         Map<String, String> names = new HashMap<String, String>();
-        float back = 0f, fs = feeShare(s.feeLevel, s.shipyardFee);
+        // 0.3.9.1 (K L1): the fee back is what each line paid; (K L2): the rung's spending goes down by price and fee
+        float back = 0f, value = 0f;
         for (int i = 0; i < n; i++) {
             String h = hullOf.get(idx[i]);
             try { prod.removeItem(ProductionItemType.SHIP, h, 1); } catch (Throwable t) { continue; }
             Integer v = removed.get(h);
             removed.put(h, (v == null ? 0 : v) + 1);
             try { names.put(h, Global.getSettings().getHullSpec(h).getHullName()); } catch (Throwable ignored) { }
-            back += prices.get(idx[i]) * fs;
-            takeOff(d, h);
+            Order o = takeOff(d, h);
+            if (o != null) { back += Math.max(0f, o.fee); value += Math.max(0f, o.cost); }
         }
         if (removed.isEmpty()) return;
+        CASurplus.invalidateCommitted();   // 0.3.9.1 (K M1): free cash sees the shorter list in this frame
+        CARich.unspend(CARich.SHIPYARD, value + back);
         MarketAPI gp = prod.getGatheringPoint();
         if (back > 0f) CABudget.refund(s, gp == null ? null : gp.getId(), back);
         CALog.did("Shipyard: took " + text(removed, names) + " off the production list" + (back > 0f ? ", " + Misc.getDGSCredits(back) + " fee back" : "")
                 + ". Free cash was under 0.", true);   // 0.3.8.6: the action only
     }
 
-    /** One hull of an order comes off: the newest order line of that hull loses one. */
-    static void takeOff(CAData d, String hull) {
+    /** One hull of an order comes off: the newest order line of that hull loses one. 0.3.9.1 (K L1): returns that line, or null. */
+    static Order takeOff(CAData d, String hull) {
         List<Order> l = d.shipyardOrders();
         for (int i = l.size() - 1; i >= 0; i--) {
             Order o = l.get(i);
             if (o == null || !hull.equals(o.hullId) || o.qty <= 0) continue;
             o.qty--;
             if (o.qty <= 0) l.remove(i);
-            return;
+            return o;
         }
+        return null;
     }
 
     // ---------------- panel (wired by WS-F) ----------------
@@ -583,7 +634,7 @@ public class CAShipyard {
         MarketAPI gp = prod.getGatheringPoint();
         Map<String, Integer> ordered = ordered(d);
         if (!ordered.isEmpty()) {
-            Map<String, Integer> queued = queued(prod, ordered.keySet()), stored = stored(gp);
+            Map<String, Integer> queued = queued(prod, ordered.keySet()), stored = less(stored(gp), own(d.shipyardOrders()));   // 0.3.9.1 (K M3)
             int q = 0;
             for (Map.Entry<String, Integer> e : ordered.entrySet()) q += Math.min(e.getValue(), get(queued, e.getKey()));
             int un = unclaimed(ordered, queued, stored);

@@ -160,17 +160,13 @@ public class CAIndEvo {
         AmbassadorPersonManager.removeAmbassadorFromMarket(src);
         CABudget.charge(s, 0f, fee, 0f);
         String who = src.getFaction().getDisplayName() + " ambassador " + person.getNameString();
-        if (true) {   // always travels (0.2.37.0): a hire made from afar arrives in 30 days, never on the spot
-            CargoAPI st = storageOf(target);
-            if (st == null) { emb.setSpecialItem(data); CALog.did(target.getName() + ": Hired and installed the " + who + "."); return true; }
-            st.addSpecial(data, 1f);
-            CAData.get().ambTransit().put(person.getId(), Global.getSector().getClock().getTimestamp());
-            CALog.did(target.getName() + ": Hired the " + who + " from " + src.getName()
-                    + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : "") + ". Arrives in 30 days.");
-        } else {
-            emb.setSpecialItem(data);
-            CALog.did(target.getName() + ": Hired and installed the " + who + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : "") + ".");
-        }
+        // always travels (0.2.37.0): a hire made from afar arrives in 30 days, never on the spot. 0.3.9.1 (H C1): the unreachable branch removed
+        CargoAPI st = storageOf(target);
+        if (st == null) { emb.setSpecialItem(data); CALog.did(target.getName() + ": Hired and installed the " + who + "."); return true; }
+        st.addSpecial(data, 1f);
+        CAData.get().ambTransit().put(person.getId(), Global.getSector().getClock().getTimestamp());
+        CALog.did(target.getName() + ": Hired the " + who + " from " + src.getName()
+                + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : "") + ". Arrives in 30 days.");
         return true;
     }
 
@@ -315,13 +311,20 @@ public class CAIndEvo {
         return com == null ? 0f : 1.5f * commodityValue(m, com, deficit);
     }
 
+    /** 0.3.9.1 (H M6): days a switched specialty is kept before Auto looks at it again (a switch costs about 50,000). */
+    static final float SWITCH_HOLD_DAYS = 90f;
+
     static boolean specialize(CASettings s, List<MarketAPI> markets) {
         java.util.Map<String, Integer> deficit = CAEngine.empireDeficits();
+        long now = CAMark.now();
         for (MarketAPI m : markets) {
             for (String id : new String[]{"IndEvo_SwitchableMining", "IndEvo_SwitchableRefining"}) {
                 Industry ind = m.getIndustry(id);
                 if (!(ind instanceof SwitchableIndustryAPI) || !ind.isFunctional() || ind.isBuilding() || ind.isUpgrading()) continue;
                 if (CAData.get().colony(m.getId()).locks.contains(id)) continue;
+                String mark = "specialty:" + m.getId() + ":" + id;   // 0.3.9.1 (H M6): no switching back and forth
+                Long at = CAMark.at(mark);
+                if (at != null && now >= at && CAMark.days(at, now) < SWITCH_HOLD_DAYS) continue;
                 SwitchableIndustryAPI sw = (SwitchableIndustryAPI) ind;
                 if (!sw.canChange() || sw.getCurrent() == null) continue;
                 float current = specialtyValue(m, sw.getCurrent().getId(), deficit);
@@ -339,6 +342,7 @@ public class CAIndEvo {
                 if (best.cost + fee > CABudget.available(s) || CABuild.credits() < best.cost + fee) return false;
                 sw.setCurrent(best.newInstance(), false);
                 CABudget.pay(s, null, best.cost, fee, 0f);
+                CAMark.set(mark, now);   // 0.3.9.1 (H M6)
                 CALog.did(m.getName() + ": Switched " + ind.getCurrentName() + " to " + best.name + " for " + Misc.getDGSCredits(best.cost)
                         + ". Estimated " + CAEngine.credits(bestV) + "/month, current " + CAEngine.credits(current) + ".");
                 return true;

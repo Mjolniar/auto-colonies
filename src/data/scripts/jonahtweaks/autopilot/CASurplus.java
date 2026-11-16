@@ -46,6 +46,7 @@ public class CASurplus {
     public static void reset() {
         focusId = null; computedAt = -99f; scores.clear(); whys.clear(); CAItems.idle = null; CAItems.idleAt = -99f;
         committedAt = Long.MIN_VALUE;
+        AOTD_LINKS.clear();   // 0.3.9.1 (K L14)
         CASurplusResearch.summary = null;
         CAProjects.reset();
         CARich.reset();   // 0.3.0.0 (C2): the money tier's day cache; the tier itself is in the save
@@ -67,6 +68,9 @@ public class CASurplus {
 
     static long committedAt = Long.MIN_VALUE;
     static float committedCache;
+
+    /** 0.3.9.1 (K M1): the production list changed; the next committed() reads it again. */
+    static void invalidateCommitted() { committedAt = Long.MIN_VALUE; }
 
     /**
      * Credits already promised: the game's custom production still to build, and with Ashes of the Domain its production
@@ -96,21 +100,33 @@ public class CASurplus {
 
     /** What Ashes of the Domain's production orders still owe: each order line's remaining units at its price. By reflection. */
     static float aotdOrders() throws Exception {
-        Class<?> mgr = Class.forName(AOTD_PRODUCTION, true, Global.getSettings().getScriptClassLoader());
-        Object inst = CARefl.invoke(CARefl.method(mgr, "getInstance"), null);
-        Object snaps = inst == null ? null : CARefl.call(inst, "getCurrentSnapshots");
+        Object mgr = AOTD_LINKS.get(AOTD_PRODUCTION);   // 0.3.9.1 (K L14): the class and members are looked up once
+        if (mgr == null) { mgr = Class.forName(AOTD_PRODUCTION, true, Global.getSettings().getScriptClassLoader()); AOTD_LINKS.put(AOTD_PRODUCTION, mgr); }
+        Object inst = CARefl.invoke(aotdLink((Class<?>) mgr, "getInstance", false), null);
+        Object snaps = inst == null ? null : CARefl.invoke(aotdLink(inst.getClass(), "getCurrentSnapshots", false), inst);
         float c = 0f;
         if (!(snaps instanceof List)) return c;
         for (Object snap : (List<?>) snaps) {
-            Object lines = CARefl.get(CARefl.field(snap.getClass(), "productionData"), snap);
+            Object lines = CARefl.get(aotdLink(snap.getClass(), "productionData", true), snap);
             if (!(lines instanceof List)) continue;
             for (Object d : (List<?>) lines) {
-                int left = ((Number) CARefl.call(d, "getRemainingUnits")).intValue();
-                Object spec = left > 0 ? CARefl.call(d, "getSpec") : null;
-                if (spec != null) c += left * ((Number) CARefl.call(spec, "getProductionCost")).floatValue();
+                int left = ((Number) CARefl.invoke(aotdLink(d.getClass(), "getRemainingUnits", false), d)).intValue();
+                Object spec = left > 0 ? CARefl.invoke(aotdLink(d.getClass(), "getSpec", false), d) : null;
+                if (spec != null) c += left * ((Number) CARefl.invoke(aotdLink(spec.getClass(), "getProductionCost", false), spec)).floatValue();
             }
         }
         return c;
+    }
+
+    /** 0.3.9.1 (K L14): Ashes of the Domain's production class and members ("class#name" -> class, method or field). Session only; reset() clears it. */
+    static final Map<String, Object> AOTD_LINKS = new HashMap<String, Object>();
+
+    /** A public no-argument method (field false) or a public field of c, looked up once. */
+    static Object aotdLink(Class<?> c, String name, boolean field) throws Exception {
+        String k = c.getName() + "#" + name;
+        Object o = AOTD_LINKS.get(k);
+        if (o == null) { o = field ? CARefl.field(c, name) : CARefl.method(c, name); AOTD_LINKS.put(k, o); }
+        return o;
     }
 
     public static boolean on(CASettings s) { return amount(s) > 0f; }

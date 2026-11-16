@@ -99,12 +99,15 @@ public class CAMegastructures {
     // ---------------- Pluto ----------------
 
     /** What Autopilot would set at Pluto: key -> value (laser magnitude, then ore units per forge). Empty when nothing is restored. */
+    static Map<String, Integer> plutoTarget(Mega g, Map<String, Integer> now) throws Exception { return plutoTarget(g, now, Integer.MAX_VALUE); }
+
+    /** 0.3.9.1 (H M1): as above, with the laser at most maxLaser (what the month's upkeep room pays for). */
     @SuppressWarnings("unchecked")
-    static Map<String, Integer> plutoTarget(Mega g, Map<String, Integer> now) throws Exception {
+    static Map<String, Integer> plutoTarget(Mega g, Map<String, Integer> now, int maxLaser) throws Exception {
         Map<String, Integer> t = new LinkedHashMap<String, Integer>();
         if (!up(g, OCN)) return t;
         Object ocn = g.sections.get(OCN).raw;
-        int mag = ((Number) CARefl.invoke(ocnMax, ocn)).intValue();
+        int mag = Math.max(0, Math.min(maxLaser, ((Number) CARefl.invoke(ocnMax, ocn)).intValue()));
         t.put("laser", mag);
         boolean ff = up(g, FF), pc = up(g, PC);
         if (!ff && !pc) return t;
@@ -118,10 +121,25 @@ public class CAMegastructures {
             int needRare = (d.containsKey("rare_metals") ? d.get("rare_metals") : 0) + 2 * curRare;
             ffOre = Math.min(ore, (int) Math.ceil(needMetals / 4f));
             ffRare = Math.min(rare, (int) Math.ceil(needRare / 2f));
+            // 0.3.9.1 (H L4): with the laser as it is, the split follows the deficits only when it moves by 4 units or more
+            Integer laserNow = now.get("laser");
+            if (laserNow != null && laserNow == mag && Math.abs(ffOre - curOre) < 4 && Math.abs(ffRare - curRare) < 4 && curOre <= ore && curRare <= rare) {
+                ffOre = curOre; ffRare = curRare;
+            }
         }
         if (ff) { t.put("ff:ore", ffOre); t.put("ff:rare_ore", ffRare); }
         if (pc) { t.put("pc:ore", ore - ffOre); t.put("pc:rare_ore", rare - ffRare); }
         return t;
+    }
+
+    /** 0.3.9.1 (H M1): the laser's upkeep a month per step (VoK: magnitude x upkeepMulter). */
+    static float laserUpkeep() { return Math.max(1f, CAConst.num(PKG + "impl.sections.pluto.OpticCommandNexus", "upkeepMulter", 5000f)); }
+
+    /** 0.3.9.1 (H M1): the upkeep a month a target adds over now (Pluto's laser steps up; 0 otherwise). */
+    static float addedUpkeep(Map<String, Integer> now, Map<String, Integer> t) {
+        Integer to = t.get("laser"), from = now.get("laser");
+        if (to == null) return 0f;
+        return Math.max(0, to - (from == null ? 0 : from)) * laserUpkeep();
     }
 
     @SuppressWarnings("unchecked")
@@ -223,13 +241,20 @@ public class CAMegastructures {
         return changed;
     }
 
-    static String applyTarget(Mega g, CAData.Colony c, Map<String, Integer> t, String who) throws Exception {
+    static String applyTarget(Mega g, CAData.Colony c, Map<String, Integer> t, String who) throws Exception { return applyTarget(g, c, t, who, false); }
+
+    /** 0.3.9.1 (H L4): quiet: the line goes to starsector.log only (a Nexus Core step up). */
+    static String applyTarget(Mega g, CAData.Colony c, Map<String, Integer> t, String who, boolean quiet) throws Exception {
         if (g.kind.equals(PLUTO)) plutoApply(g, t); else nidApply(g, t);
         c.megaSet().clear();
         c.megaSet().putAll(t);
-        CALog.did(g.m.getName() + ": " + g.name + " set by " + who + ": " + describe(g, t) + ".");
+        String line = g.m.getName() + ": " + g.name + " set by " + who + ": " + describe(g, t) + ".";
+        if (quiet) CALog.quiet(line); else CALog.did(line);
         return null;
     }
+
+    /** 0.3.9.1 (H L4): CAMark key: the Nexus Core rose a step quietly; one on-screen line comes once it stops rising. */
+    static final String NEXUS_RISE = "nexusrise:";
 
     /** Follow colony mode: Auto applies the best settings and starts Pluto's and the Nexus Core's restorations; Approve logs them once. */
     public static void run(CAData d, CASettings s) {
@@ -242,10 +267,28 @@ public class CAMegastructures {
                 Map<String, Integer> now = now(g);
                 if (!yours(g, c, now)) {
                     Map<String, Integer> t = target(g, now, c);
+                    // 0.3.9.1 (H M1): Auto raises Pluto's laser only within the month's new-upkeep cap and above the credit reserve
+                    if (auto && g.kind.equals(PLUTO) && addedUpkeep(now, t) > 0f) {
+                        int cur = now.containsKey("laser") ? now.get("laser") : 0;
+                        int fit = CABuild.credits() < s.reserve ? 0 : (int) Math.floor(Math.max(0f, CABudget.upkeepCap(s) - s.upkeepAdded) / laserUpkeep());
+                        if (cur + fit < t.get("laser")) {
+                            t = plutoTarget(g, now, cur + fit);
+                            if (CALog.once("megaup:" + g.m.getId())) CALog.think(g.m.getName() + ": the " + g.name + "'s laser goes up as the month's upkeep room allows ("
+                                    + Misc.getDGSCredits(laserUpkeep()) + " a month a step).");
+                        }
+                    }
+                    final float more = addedUpkeep(now, t);
+                    String rise = NEXUS_RISE + g.m.getId();
                     if (!t.isEmpty() && !t.equals(now)) {
                         Integer was = now.get("nexus"), will = t.get("nexus");
                         if (auto && was != null && will != null && will < was) c.megaHold = Global.getSector().getClock().getTimestamp();   // wait 30 days before adding again
-                        if (auto) applyTarget(g, c, t, "Auto");
+                        if (auto) {
+                            // 0.3.9.1 (H L4): a Nexus Core step up goes to starsector.log; the setting it stops at gets one line
+                            boolean up = was != null && will != null && will > was;
+                            applyTarget(g, c, t, "Auto", up);
+                            if (up) CAMark.set(rise, CAMark.now()); else CAMark.clear(rise);
+                            if (more > 0f) CABudget.charge(s, g.m.getId(), 0f, 0f, more);   // 0.3.9.1 (H M1): booked as new upkeep
+                        }
                         else {
                             // 0.3.8.5: one ask key per colony; the target is in the title and the approve. A rejection holds 180 days
                             String key = "mega:" + g.m.getId();
@@ -253,10 +296,19 @@ public class CAMegastructures {
                             if (!CAApprovals.held(key, "megastructure") && CALog.once(key)) CAApprovals.say(g.m.getName() + ": Recommends " + describe(g, t) + " at the " + g.name + ". Apply in the colony panel.", false);
                             // 0.3.3.0: a decision in the approval summary
                             final Mega gg = g; final CAData.Colony cc = c; final Map<String, Integer> tt = t;
-                            CAApprovals.offer(key, "megastructure", g.m, g.name + ": " + describe(g, t), 0f, 0f, null, () -> {
-                                try { return applyTarget(gg, cc, tt, "Approved"); } catch (Exception e) { return "Failed. See starsector.log"; }
+                            // 0.3.9.1 (H M1): the laser's added upkeep shown and booked on Approve
+                            CAApprovals.offer(key, "megastructure", g.m, g.name + ": " + describe(g, t), 0f, 0f,
+                                    more > 0f ? "Adds " + Misc.getDGSCredits(more) + " upkeep a month." : null, () -> {
+                                try {
+                                    String err = applyTarget(gg, cc, tt, "Approved");
+                                    if (err == null && more > 0f) CABudget.charge(CAData.settings(), gg.m.getId(), 0f, 0f, more);
+                                    return err;
+                                } catch (Exception e) { return "Failed. See starsector.log"; }
                             });
                         }
+                    } else if (auto && CAMark.at(rise) != null) {   // 0.3.9.1 (H L4): it stopped rising
+                        CAMark.clear(rise);
+                        if (!now.isEmpty()) CALog.did(g.m.getName() + ": " + g.name + " set by Auto: " + describe(g, now) + ".");
                     }
                 }
                 CAHypershunt.Section next = nextRestore(g);

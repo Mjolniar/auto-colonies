@@ -117,7 +117,10 @@ public class CAContracts {
                 Class<?> w = Class.forName(PKG + "scripts.economy.AoTDWorkerManager", true, Global.getSettings().getScriptClassLoader());
                 workers = CARefl.method(w, "getRunningWorkers"); barrier = CARefl.method(w, "isSaveBarrierActive");
                 workersLinked = true;
-            } catch (Throwable t) { workersBroken = true; }
+            } catch (Throwable t) {
+                workersBroken = true;
+                CADiagnostics.LOG.warn(CADiagnostics.TAG + "can't read Theory of Toolbox's economy workers; the daily pass doesn't wait for them", t);   // 0.3.9.1 (H L6)
+            }
         }
         if (!workersLinked) return false;
         try { return ((Number) CARefl.invoke(workers, null)).intValue() > 0 || Boolean.TRUE.equals(CARefl.invoke(barrier, null)); }
@@ -153,10 +156,6 @@ public class CAContracts {
             n += Math.max(0, ((Number) CARefl.invoke(sdNet, CARefl.invoke(sdData, on))).intValue());
         }
         return n;
-    }
-
-    static String commodityName(String id) {
-        try { return Global.getSettings().getCommoditySpec(id).getName(); } catch (Throwable t) { return id; }
     }
 
     static boolean live(Object c) throws Exception {
@@ -324,7 +323,7 @@ public class CAContracts {
                 if (has(l, id, e.getKey())) continue;
                 int sp = seenSpare(e.getKey(), l);
                 spare.put(e.getKey(), sp);
-                what.add(e.getValue() + " " + commodityName(e.getKey()) + " (" + Math.max(0, sp) + " spare)");
+                what.add(e.getValue() + " " + CAResearch.commodityName(e.getKey()) + " (" + Math.max(0, sp) + " spare)");
             }
             if (!spare.isEmpty() && seed(id, needs, spare, now) > 0)
                 CALog.quiet("trade contract " + CARefl.invoke(cName, c) + " was held before Auto Colonies counted it: " + join(what)
@@ -388,16 +387,16 @@ public class CAContracts {
             float cut = ((Number) CARefl.invoke(exportCut, null, com, false)).floatValue();
             o.pay += need * base * ((Number) CARefl.invoke(dCut, d)).floatValue();
             o.lost += (Math.min(Math.max(0, spare), out) - Math.min(Math.max(0, spare - need), out)) * base * cut;
-            o.lines.add(need + " " + commodityName(com) + " (" + Math.max(0, spare) + " spare)");
+            o.lines.add(need + " " + CAResearch.commodityName(com) + " (" + Math.max(0, spare) + " spare)");
             Integer was = o.needs.get(com);
             o.needs.put(com, (was == null ? 0 : was) + need);
             // 0.3.2.0 (M6): goods an open production floor needs stay home (CASettings.keepProductionGoods)
             if (CAFloors.keeps(com)) {
                 o.feasible = false;
-                o.why = "production floor: " + commodityName(com) + " stays for your own production";
+                o.why = "production floor: " + CAResearch.commodityName(com) + " stays for your own production";
             } else if (!fits(spare, 0, need)) {
                 o.feasible = false;
-                o.why = "not enough spare " + commodityName(com) + " (" + Math.max(0, spare) + " of " + (int) Math.ceil(need * (1f + MARGIN)) + " needed"
+                o.why = "not enough spare " + CAResearch.commodityName(com) + " (" + Math.max(0, spare) + " of " + (int) Math.ceil(need * (1f + MARGIN)) + " needed"
                         + (held > 0 ? "; " + held + " more is at colonies under siege or without accessibility, which can't deliver" : "")
                         + (signed > 0 ? "; ToT shows " + signed + " more, but that went to contracts already signed" : "") + ")";
             }
@@ -458,11 +457,7 @@ public class CAContracts {
         return join(l);
     }
 
-    static String join(List<String> l) {
-        StringBuilder sb = new StringBuilder();
-        for (String s : l) { if (sb.length() > 0) sb.append(", "); sb.append(s); }
-        return sb.toString();
-    }
+    static String join(List<String> l) { return String.join(", ", l); }   // 0.3.9.1 (H C3): String.join
 
     /** 0.3.2.0: what your held, running contracts pay a month (need x base price x cut), read once a day; 0 without ToT. */
     static float payCache = 0f;
@@ -618,7 +613,7 @@ public class CAContracts {
                 held++;
                 int missed = ((Number) CARefl.invoke(cMissed, c)).intValue();
                 List<String> needs = new ArrayList<String>();
-                for (Object x : ((Map<String, Object>) CARefl.invoke(cData, c)).values()) needs.add(CARefl.invoke(dReq, x) + " " + commodityName(String.valueOf(CARefl.invoke(dCom, x))));
+                for (Object x : ((Map<String, Object>) CARefl.invoke(cData, c)).values()) needs.add(CARefl.invoke(dReq, x) + " " + CAResearch.commodityName(String.valueOf(CARefl.invoke(dCom, x))));
                 // the format and its values are built together so they can't disagree
                 String fmt = "%s: %s per month, ";
                 List<String> args = new ArrayList<String>(Arrays.asList(String.valueOf(CARefl.invoke(cName, c)), join(needs)));
@@ -631,7 +626,7 @@ public class CAContracts {
             Map<String, Integer> short_ = shortfalls();
             if (!short_.isEmpty()) {
                 List<String> l = new ArrayList<String>();
-                for (Map.Entry<String, Integer> e : short_.entrySet()) l.add(e.getValue() + " " + commodityName(e.getKey()));
+                for (Map.Entry<String, Integer> e : short_.entrySet()) l.add(e.getValue() + " " + CAResearch.commodityName(e.getKey()));
                 t.addPara("Short for held contracts: %s.", 6f, bad, join(l));
             }
             List<Offer> list = offers();

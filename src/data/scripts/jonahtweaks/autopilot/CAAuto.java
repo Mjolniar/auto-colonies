@@ -126,6 +126,8 @@ public class CAAuto {
         CAStep.guard("siege check", () -> CASiege.update(d));
         CAStep.guard("station line ask", () -> CAStationAsk.daily());   // 0.3.6.3: once, before the first station
         CAStep.run("Autopilot Storage shipping", () -> CAStores.daily());   // shipments between colonies' Autopilot Storage arrive
+        // 0.3.9.1 (K L3): while dormant, stockpile deliveries and the shipyard's free cash guard (CARich.run does them otherwise)
+        CAStep.run("dormant deliveries", () -> { if (CASync.dormant()) CARich.deliveries(d, s); });
         if (CASync.dormant()) return;   // 0.3.6.0 story mode: nothing else runs while the Autopilot is dormant
         CAPass.later(() -> { if (CASync.dormant()) CAPass.stop(); });   // 0.3.6.9: and when it went dormant before the queue got here
         CAStep.run("storage logistics", () -> CALogistics.daily(d, s, now));   // storage logistics: loads to the refit and sell hubs (0.2.39.0)

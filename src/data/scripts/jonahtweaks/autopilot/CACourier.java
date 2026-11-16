@@ -40,24 +40,41 @@ public class CACourier {
 
     static String key(String toId, String com) { return toId + ":" + com; }
 
+    /**
+     * 0.3.9.1 (H M2): the shortage without what Local Resources covers now (the game adds the whole deficit to what's
+     * available while the stockpile lasts, so getDeficitQuantity reads 0 then).
+     */
+    static int rawDeficit(CommodityOnMarketAPI c) { return c == null ? 0 : Math.max(0, c.getMaxDemand() - CAStockpile.rawAvailable(c)); }
+
     public static void run(List<MarketAPI> auto) {
         CASettings s = CAData.settings();
         if (s.disableShipping || !havePort()) return;
         Map<String, ShippingContract> ours = new HashMap<String, ShippingContract>();
+        boolean underReserve = CABuild.credits() < s.reserve;   // 0.3.9.1 (H M3): IndEvo charges each delivery from your credits
+        int cut = 0;
         for (ShippingContract c : new ArrayList<ShippingContract>(ShippingContractMemory.getContractList())) {
             if (c.name == null || !c.name.startsWith(PREFIX)) continue;
             String com = c.name.substring(PREFIX.length()).split(" ")[0];
             MarketAPI to = CAAuto.market(c.toMarketId);
-            boolean stillShort = to != null && auto.contains(to) && to.getCommodityData(com).getDeficitQuantity() > 0;
-            if (!stillShort) {
+            // 0.3.9.1 (H M2): only where stockpiles counter shortages, and the shortage read without the stockpile
+            boolean managed = to != null && auto.contains(to) && to.isUseStockpilesForShortages();
+            boolean stillShort = managed && rawDeficit(to.getCommodityData(com)) > 0;
+            if (stillShort && underReserve) {
                 ShippingContractMemory.removeContract(c);
-                CALog.did((to == null ? "A colony" : to.getName()) + ": shortage of " + com + " resolved. Supply contract cancelled.");
+                cut++;
+            } else if (!stillShort) {
+                ShippingContractMemory.removeContract(c);
+                if (managed) CALog.did(to.getName() + ": shortage of " + com + " resolved. Supply contract cancelled.");
+                else CALog.did((to == null ? "A colony" : to.getName()) + ": " + com + " supply contract cancelled.");   // 0.3.9.1 (H M2): left Auto, lost, or stockpiles off
             } else ours.put(key(c.toMarketId, com), c);
         }
+        if (cut > 0) CALog.did("Courier Port: " + cut + (cut == 1 ? " supply contract" : " supply contracts") + " cancelled. Credits are under the reserve.");   // 0.3.9.1 (H M3)
+        if (underReserve || CABudget.available(s) <= 0f) return;   // 0.3.9.1 (H M3): no new contract without budget above the reserve
         for (MarketAPI to : auto) {
+            if (!to.isUseStockpilesForShortages()) continue;   // 0.3.9.1 (H M2): deliveries to Local Resources don't cover a shortage there
             for (CommodityOnMarketAPI c : to.getAllCommodities()) {
                 String com = c.getId();
-                int deficit = c.getDeficitQuantity();
+                int deficit = rawDeficit(c);   // 0.3.9.1 (H M2)
                 if (deficit <= 0 || !COMMODITIES.contains(com) || ours.containsKey(key(to.getId(), com))) continue;
                 MarketAPI from = null; float best = 0f;
                 for (MarketAPI m : Misc.getPlayerMarkets(false)) {

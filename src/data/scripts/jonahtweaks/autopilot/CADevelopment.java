@@ -68,6 +68,16 @@ public class CADevelopment {
 
     public static String name(String id) { String n = NAMES.get(id); return n == null ? id : n; }
 
+    /**
+     * 0.3.9.1 (H M5): a Floating City, also when VoK's styles can't be read (dev reads "standard"): VoK's Floating City
+     * condition keeps the altitude in the colony's memory.
+     */
+    static boolean floating(MarketAPI m, String dev) {
+        if ("floatingcity".equals(dev)) return true;
+        if (!"standard".equals(dev)) return false;
+        try { return m.getMemoryWithoutUpdate().contains(ALTITUDE); } catch (Throwable t) { return false; }
+    }
+
     @SuppressWarnings("unchecked")
     static boolean extractive(String industryId) {
         try {
@@ -116,7 +126,8 @@ public class CADevelopment {
      */
     static boolean adjust(MarketAPI m, CAEngine.Pick p, Industry inst, Map<String, Integer> deficit) {
         String dev = id(m);
-        if ("standard".equals(dev)) return true;
+        boolean fl = floating(m, dev);   // 0.3.9.1 (H M5)
+        if ("standard".equals(dev) && !fl) return true;
         int f = flat(dev, m.getSize(), p.id);
         float mu = mult(dev, p.id);
         if (f != 0 || mu != 1f) {
@@ -127,7 +138,7 @@ public class CADevelopment {
                 if (now != was) CAEngine.supplyChange(p, e.getKey(), now - was, deficit, name(dev));
             }
         }
-        if ("floatingcity".equals(dev)) {
+        if (fl) {
             int fuel = thrusterFuel(inst);
             CommodityOnMarketAPI c = m.getCommodityData("fuel");
             int shortBy = c == null ? 0 : Math.max(c.getDeficitQuantity(), c.getMaxDemand() + fuel - c.getAvailable());
@@ -138,7 +149,8 @@ public class CADevelopment {
                         + "(each building adds 3-5 fuel demand; a shortage lowers the city until it's lost)");
                 return false;
             }
-            CALog.forget("floatfuel:" + m.getId());
+            // 0.3.9.1 (H L5): forgotten only once fuel covers the biggest building (5), so a passing candidate doesn't re-log the hold
+            if (c == null || Math.max(c.getDeficitQuantity(), c.getMaxDemand() + 5 - c.getAvailable()) <= 0) CALog.forget("floatfuel:" + m.getId());
             float v = Global.getSettings().getCommoditySpec("fuel").getBasePrice() * CAEngine.unitValue * fuel;
             p.fx[0] -= v;
             p.lines.add("Floating City thrusters need " + fuel + " more fuel: about " + Misc.getDGSCredits(v) + " per month");
@@ -151,7 +163,7 @@ public class CADevelopment {
     /** Warns once per stage when a Floating City is losing altitude. */
     public static void run(List<MarketAPI> markets) {
         for (MarketAPI m : markets) {
-            if (!"floatingcity".equals(id(m))) continue;
+            if (!floating(m, id(m))) continue;   // 0.3.9.1 (H M5)
             float alt = altitude(m);
             String stage = stage(alt);
             if (alt > 750f) { CALog.forget("floatalt:" + m.getId() + ":Drifting"); CALog.forget("floatalt:" + m.getId() + ":Unstable"); CALog.forget("floatalt:" + m.getId() + ":Critical"); continue; }

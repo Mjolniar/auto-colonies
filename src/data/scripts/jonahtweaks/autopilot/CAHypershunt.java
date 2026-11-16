@@ -121,11 +121,6 @@ public class CAHypershunt {
         boolean collectorUp() { return collector != null && collector.restored; }
     }
 
-    static String commodityName(String id) {
-        CommoditySpecAPI c = Global.getSettings().getCommoditySpec(id);
-        return c == null ? id : c.getName();
-    }
-
     /** One megastructure section's state and what restoring the rest of it takes each month (any megastructure). */
     @SuppressWarnings("unchecked")
     static Section section(Object raw) throws Exception {
@@ -249,7 +244,7 @@ public class CAHypershunt {
         for (String com : s.monthly.keySet()) {
             Integer spare = CAContracts.spare(com);
             if (spare == null) return null;
-            if (spare <= 0) out.add(commodityName(com));
+            if (spare <= 0) out.add(CAResearch.commodityName(com));
         }
         return out;
     }
@@ -348,7 +343,7 @@ public class CAHypershunt {
             boolean auto = c.mode == CAData.Mode.AUTO;
             try {
                 range(h, c, s, auto);
-                restore(h, c, s, auto);
+                restore(h, s, auto);
             } catch (Throwable t) {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "hypershunt step failed at " + h.m.getName(), t);
             }
@@ -390,7 +385,7 @@ public class CAHypershunt {
         }
     }
 
-    static void restore(Shunt h, CAData.Colony c, CASettings s, boolean auto) {
+    static void restore(Shunt h, CASettings s, boolean auto) {   // 0.3.9.1 (H C1): the unread colony parameter removed
         Section next = nextRestore(h, new String[1]);
         if (next != null) restore(h.m, next, s, auto);
     }
@@ -510,7 +505,7 @@ public class CAHypershunt {
         List<String> needs = new ArrayList<String>();
         for (Map.Entry<String, Integer> e : s.monthly.entrySet()) {
             Integer spare = CAContracts.spare(e.getKey());
-            needs.add(Misc.getWithDGS(e.getValue()) + " " + commodityName(e.getKey()) + (spare == null ? "" : " (" + Misc.getWithDGS(Math.max(0, spare)) + " spare)"));
+            needs.add(Misc.getWithDGS(e.getValue()) + " " + CAResearch.commodityName(e.getKey()) + (spare == null ? "" : " (" + Misc.getWithDGS(Math.max(0, spare)) + " spare)"));
         }
         if (!needs.isEmpty()) t.addPara("    Each month: " + CAContracts.join(needs), gray, 2f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
         if (buttons && !s.restoring) {

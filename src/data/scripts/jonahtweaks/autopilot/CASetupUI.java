@@ -959,8 +959,8 @@ public class CASetupUI {
         else if (k.equals("hintscore")) s.hintScoreOnOpen = !s.hintScoreOnOpen;
         else if (k.equals("objectives")) s.objectiveMode = (Math.max(0, Math.min(2, s.objectiveMode)) + 1) % 3;
         else if (k.equals("tascst")) s.stationMode = (Math.max(0, Math.min(2, s.stationMode)) + 1) % 3;
-        else if (k.equals("logihub")) s.logisticsHub = CALogistics.next(s.logisticsHub, false);
-        else if (k.equals("logisell")) s.logisticsSellHub = CALogistics.next(s.logisticsSellHub, true);
+        else if (k.equals("logihub")) s.logisticsHub = CALogistics.next(s.logisticsHub);
+        else if (k.equals("logisell")) s.logisticsSellHub = CALogistics.next(s.logisticsSellHub);
         else if (k.equals("logiships")) s.logisticsShips = !s.logisticsShips;
         else if (k.equals("logigoods")) s.logisticsSupplies = !s.logisticsSupplies;
         else if (k.equals("capid")) {   // 0.3.0.0 (WS-F1): Autopilot picks, each colony, then None (capitalMode 2), then Autopilot picks

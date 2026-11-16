@@ -103,17 +103,16 @@ public class CARich {
     static int cached = T0;
     /** The numbers behind it, for the panels and the rungs (NaN: not worked out yet this session). */
     static float lastFree = Float.NaN, lastNet = Float.NaN, lastRunway = Float.NaN, lastCommitted = Float.NaN;
-    /** The game day the tier last changed this session (CASurplus keeps its spending-freely line off screen that day). */
-    static int changedDay = Integer.MIN_VALUE;
 
     /** Called by CASurplus.reset (on every load): the next ask works the tier out again from the saved one. */
     static void reset() {
-        day = Integer.MIN_VALUE; cached = T0; changedDay = Integer.MIN_VALUE;
+        day = Integer.MIN_VALUE; cached = T0;   // 0.3.9.1 (K L15): changedDay removed, nothing read it
         lastFree = Float.NaN; lastNet = Float.NaN; lastRunway = Float.NaN; lastCommitted = Float.NaN;
         resetLadder();   // 0.3.0.0 (C3): the pool, what each rung's buyer wants and its panel note
         CAPolicies.lastShare = 0f;   // 0.3.0.0 (C3): the Growth rung's hazard pay share, next to CAReset's CAPolicies.lastCap
         CAPolicies.lastCost = Float.NaN;   // 0.3.0.0 (C3 fix): hazard pay a month, the Growth rung's want
         CAPolicies.recommended = null;
+        CABudget.runwayDay = Integer.MIN_VALUE; CABudget.runwayReport = 0; CABudget.runwayCache = 0f; CABudget.netTried = 0;   // 0.3.9.1 (K L11, L12)
         try { CAShipyard.reset(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "shipyard reset failed", t); }
         try { CAStockpile.reset(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "stockpile reset failed", t); }
         try { CAMilitary.reset(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "military rung reset failed", t); }
@@ -158,24 +157,14 @@ public class CARich {
         if (st.tier == was && !fresh) return;
         d.richTier = st.tier;
         d.richTierSince = CAMark.now();
-        changedDay = today;
         String line = changeLine(fresh ? -1 : was, st.tier, f, n, d.idleMonths, st.idle);
         CALog.think(line);   // 0.3.0.9: a tier change is status, off screen (0.3.1.0: the Thinking list)
     }
-
-    /** Whether the tier changed today. */
-    static boolean changedToday() { return changedDay == CATime.today(); }
 
     /** Whether idle months raised the tier now, for callers that want Rich reached by free cash only. */
     public static boolean byIdle() {
         tier();
         return CAMark.at(VIA_IDLE) != null;
-    }
-
-    /** Free cash as of today's tier (NaN before it's worked out, or offline). */
-    public static float freeCash() {
-        tier();
-        return lastFree;
     }
 
     /** The tier's name. */
@@ -581,6 +570,16 @@ public class CARich {
         } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "rung spending record failed", t); }
     }
 
+    /** 0.3.9.1 (K L2): takes spending back off a rung this month (an order taken off again), never below 0. */
+    public static void unspend(int rung, float credits) {
+        if (rung < 0 || rung >= RUNGS.length || !(credits > 0f) || CALog.whatIf()) return;
+        try {
+            Map<String, Float> m = CAData.get().rungSpent();
+            Float v = m.get(RUNGS[rung]);
+            if (v != null) m.put(RUNGS[rung], Math.max(0f, v - credits));
+        } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "rung spending record failed", t); }
+    }
+
     /**
      * Daily from CAAuto (step "money tiers"): works out today's tier if nothing asked yet, which logs a change, then runs
      * the rungs bought here (0.3.0.0, C3). (C4: surplus terraforming under the 24-month payback line may use the month's
@@ -589,8 +588,7 @@ public class CARich {
     public static void run(CAData d, CASettings s) {
         tier();
         // 0.3.0.0 (C3): goods bought for Local Resources arrive, and the shipyard's free cash guard runs, whatever the ladder does now
-        try { CAStockpile.deliver(d); } catch (Throwable t) { CAStep.warn("money tiers", "stockpile deliveries failed", t); }
-        try { CAShipyard.guard(d, s); } catch (Throwable t) { CAStep.warn("money tiers", "shipyard free cash check failed", t); }
+        deliveries(d, s);
         if (CALog.whatIf()) return;
         // 0.3.0.0 (C3 fix 2): a proposal whose rung the ladder doesn't run now (legacyPlanner, or a preset without the rung)
         // can't stay on the Budget panel for Approve
@@ -625,6 +623,15 @@ public class CARich {
             // doesn't need goes down to the Shipyard and the rungs after it
             if (r == MILITARY && open(MILITARY)) want(MILITARY, militaryWant());
         }
+    }
+
+    /**
+     * Stockpile deliveries and the shipyard's free cash guard. 0.3.9.1 (K L3): run() calls it, and CAAuto calls it while story
+     * mode's Autopilot is dormant, so a shipyard order placed before the core was pulled still keeps to free cash.
+     */
+    public static void deliveries(CAData d, CASettings s) {
+        try { CAStockpile.deliver(d); } catch (Throwable t) { CAStep.warn("money tiers", "stockpile deliveries failed", t); }
+        try { CAShipyard.guard(d, s); } catch (Throwable t) { CAStep.warn("money tiers", "shipyard free cash check failed", t); }
     }
 
     /** Pure, 0.3.0.0 (C3 fix 2): whether the ladder runs a rung's buyer: not legacyPlanner, and the rung in the preset's order. */

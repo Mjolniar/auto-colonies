@@ -12,13 +12,6 @@ package data.scripts.jonahtweaks.autopilot;
 public final class CAMoneyCurve {
     private CAMoneyCurve() { }
 
-    /** The weight of one credit a month at this net income. */
-    static float weight(float at, float low, float high, float wMid, float wTop) {
-        if (at < low) return 1f;
-        if (at < high) return wMid;
-        return wTop;
-    }
-
     /** Credits of income from a to b (a <= b) on the curve. */
     static float area(float a, float b, float low, float high, float wMid, float wTop) {
         if (!(b > a)) return 0f;

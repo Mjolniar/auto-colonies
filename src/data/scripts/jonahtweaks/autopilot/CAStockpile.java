@@ -335,6 +335,7 @@ public class CAStockpile {
         List<Need> out = new ArrayList<Need>();
         boolean mil = hasMilitary(m);
         CargoAPI lr = localResources(m);
+        List<MarketAPI> srcs = null;   // 0.3.9.1 (K L13): the colony's sources, worked out once for all its goods
         for (CommodityOnMarketAPI c : m.getAllCommodities()) {
             try {
                 String com = c.getId();
@@ -347,19 +348,23 @@ public class CAStockpile {
                 if (qty <= 0) continue;
                 float lost = lostPerMonth(m, com);
                 if (!(lost > 0f)) continue;
-                Need n = best(s, m, com, qty, draw, lost);
+                if (srcs == null) srcs = sources(m);
+                Need n = best(s, m, com, qty, draw, lost, srcs);
                 if (n != null) { n.military = military; out.add(n); }
             } catch (Throwable t) { CAStep.warn("money tiers", "stockpile look failed at " + m.getName(), t); }
         }
         return out;
     }
 
-    /** The nearest source that has at least a month's draw (or all that's wanted) and passes the value test; null if none. */
-    static Need best(CASettings s, MarketAPI to, String com, int want, float draw, float lost) {
+    /**
+     * The nearest source that has at least a month's draw (or all that's wanted) and passes the value test; null if none.
+     * 0.3.9.1 (K L13): srcs is sources(to), worked out once per colony.
+     */
+    static Need best(CASettings s, MarketAPI to, String com, int want, float draw, float lost, List<MarketAPI> srcs) {
         String name;
         try { name = Global.getSettings().getCommoditySpec(com).getName(); } catch (Throwable t) { name = com; }
         int least = Math.max(1, Math.min(want, (int) Math.ceil(draw)));
-        for (MarketAPI src : sources(to)) {
+        for (MarketAPI src : srcs) {
             SubmarketAPI open = src.getSubmarket(Submarkets.SUBMARKET_OPEN);
             CargoAPI cargo = open == null ? null : open.getCargo();
             if (cargo == null) continue;
@@ -436,16 +441,17 @@ public class CAStockpile {
         for (Need n : needs) if (n.total() <= allowance) want += n.total();
         float left = allowance;
         int bought = 0;
+        boolean noted = false;   // 0.3.9.1 (K L5): a buy's own "waits" note stays
         for (Need n : needs) {
             if (bought >= MAX_BUYS) break;
             if (n.total() > left) continue;
             String err = buy(d, s, n);
             if (err == null) { left -= n.total(); bought++; want -= n.total(); }
-            else if (err.startsWith("waits")) { CARich.note(rung, n.name + " for " + n.to.getName() + " " + err); break; }
+            else if (err.startsWith("waits")) { CARich.note(rung, n.name + " for " + n.to.getName() + " " + err); noted = true; break; }
             else want -= n.total();   // the goods are gone from that market: not wanted until the next look
         }
         setWant(k, want);
-        if (bought == 0 && !military) CARich.note(CARich.STOCKPILES, "waits for its share of the pool (" + Misc.getDGSCredits(allowance) + " now; "
+        if (bought == 0 && !military && !noted) CARich.note(CARich.STOCKPILES, "waits for its share of the pool (" + Misc.getDGSCredits(allowance) + " now; "
                 + needs.get(0).name + " for " + needs.get(0).to.getName() + " costs " + Misc.getDGSCredits(needs.get(0).total()) + ")");
     }
 
@@ -505,25 +511,30 @@ public class CAStockpile {
         for (Iterator<Buy> it = d.stockpiles.iterator(); it.hasNext(); ) {
             Buy b = it.next();
             if (b == null || b.commodity == null || b.qty <= 0) { it.remove(); continue; }
-            if (CAMark.days(b.sent, now) < b.days && now >= b.sent) continue;
-            String name;
-            try { name = Global.getSettings().getCommoditySpec(b.commodity).getName(); } catch (Throwable t) { name = b.commodity; }
-            MarketAPI to = CAAuto.market(b.marketId);
-            CargoAPI lr = to != null && to.isPlayerOwned() ? localResources(to) : null;
-            if (lr != null) {
-                lr.addCommodity(b.commodity, b.qty);
-                left(to, b.commodity, b.qty);
+            try {   // 0.3.9.1 (K L8): one bad purchase is skipped; the rest still arrive
+                if (CAMark.days(b.sent, now) < b.days && now >= b.sent) continue;
+                String name;
+                try { name = Global.getSettings().getCommoditySpec(b.commodity).getName(); } catch (Throwable t) { name = b.commodity; }
+                MarketAPI to = CAAuto.market(b.marketId);
+                CargoAPI lr = to != null && to.isPlayerOwned() ? localResources(to) : null;
+                if (lr != null) {
+                    lr.addCommodity(b.commodity, b.qty);
+                    left(to, b.commodity, b.qty);
+                    it.remove();
+                    CALog.did(to.getName() + ": " + Misc.getWithDGS(b.qty) + " " + name + " arrived in Local Resources.");
+                    continue;
+                }
+                List<MarketAPI> ms = CAStores.markets();
+                if (ms.isEmpty()) continue;   // nowhere to deliver yet; it waits
+                MarketAPI alt = ms.get(0);
+                CAStores.of(alt).addCommodity(b.commodity, b.qty);
                 it.remove();
-                CALog.did(to.getName() + ": " + Misc.getWithDGS(b.qty) + " " + name + " arrived in Local Resources.");
-                continue;
+                // 0.3.9.1 (K L10): no line that the colony is lost
+                CALog.did(alt.getName() + ": " + Misc.getWithDGS(b.qty) + " " + name + " arrived in Autopilot Storage."
+                        + (to == null || !to.isPlayerOwned() ? "" : " " + to.getName() + " has no Local Resources now."));
+            } catch (Throwable t) {
+                if (CALog.once("stockfail:" + b.marketId + ":" + b.commodity)) CADiagnostics.LOG.warn(CADiagnostics.TAG + "stockpile: a purchase for " + b.marketId + " failed to arrive; skipped", t);
             }
-            List<MarketAPI> ms = CAStores.markets();
-            if (ms.isEmpty()) continue;   // nowhere to deliver yet; it waits
-            MarketAPI alt = ms.get(0);
-            CAStores.of(alt).addCommodity(b.commodity, b.qty);
-            it.remove();
-            CALog.did(alt.getName() + ": " + Misc.getWithDGS(b.qty) + " " + name + " arrived in Autopilot Storage. "
-                    + (to == null || !to.isPlayerOwned() ? "The stockpile's colony is lost." : to.getName() + " has no Local Resources now."));
         }
     }
 
