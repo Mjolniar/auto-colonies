@@ -696,9 +696,18 @@ public class CAWar {
             if (com.fs.starfarer.api.impl.campaign.econ.RecentUnrest.getPenalty(m) <= 0) continue;
             if (m.getMemoryWithoutUpdate().contains(SectorManager.MEMORY_KEY_CAPTURE_STABILIZE_TIMEOUT)) continue;
             if (reliefRecent(p.d, m)) continue;   // 0.3.8.5: the saved relief record (CAData.warOps)
+            if (stabilizeCooldown(m)) continue;   // 0.3.9.3 (D H1)
             if (launch(p.s, p.mgr, CAWarPolicy.RELIEF, m, 0f, p.rich, true, "under siege")) p.went();
             else p.waiting.add("relief for " + m.getName());
         }
+    }
+
+    /**
+     * 0.3.9.3 (D H1): Nexerelin's stabilize package cooldown runs at the colony (Nex_StabilizePackage.MEMORY_KEY_RECENT, read
+     * by its name; a stabilize package or a relief delivery sets it). Called only with Nexerelin on (CAWar, CAConquest).
+     */
+    static boolean stabilizeCooldown(MarketAPI m) {
+        return m.getMemoryWithoutUpdate().contains(com.fs.starfarer.api.impl.campaign.rulecmd.Nex_StabilizePackage.MEMORY_KEY_RECENT);
     }
 
     /** 0.3.8.5: a relief went to this colony within RELIEF_DAYS (send() records "relief:<marketId>" in CAData.warOps, saved). */

@@ -58,7 +58,8 @@ import java.util.function.Predicate;
  * - Records: by fleet id (marked), this session only; the fleet's memory carries the mark across a save.
  * 0.3.8.6: Sindrian Diktat raiders ($diktatRaider, SindrianDiktatHostileActivityFactor on 0.98.5a, read by name) are marked
  * as pirates are fought: their own setting (on by default, CASettings.enfDiktatOff), whether or not Enforcer patrols is on,
- * no gates, no credit charge and no reputation change. The game makes them hostile to your fleet only.
+ * no gates, no credit charge and no reputation change. The game makes them hostile to your fleet only. 0.3.9.3: at every
+ * colony of yours, as pirates (scope(s, true)), in story mode too.
  */
 public class CAEnforcers implements EveryFrameScript {
 
@@ -156,8 +157,10 @@ public class CAEnforcers implements EveryFrameScript {
         boolean any = s.enfOn || s.enfKind(DIKTAT);
         if (!any && marked.isEmpty()) return;
         Map<LocationAPI, List<MarketAPI>> scope = scope(s);
+        // 0.3.9.3: Sindrian Diktat raiders at every colony of yours, as pirates (no Auto colony needed, so no story package)
+        Map<LocationAPI, List<MarketAPI>> wide = s.enfKind(DIKTAT) ? scope(s, true) : scope;
         Map<CampaignFleetAPI, Integer> found = new LinkedHashMap<CampaignFleetAPI, Integer>();
-        if (any) find(s, scope, found);
+        if (any) find(s, scope, wide, found);
         // ongoing marks first, so a new one never takes the credits an ongoing one counts on
         Set<CampaignFleetAPI> order = new LinkedHashSet<CampaignFleetAPI>();
         for (Mark m : new ArrayList<Mark>(marked.values())) {
@@ -171,7 +174,7 @@ public class CAEnforcers implements EveryFrameScript {
         for (CampaignFleetAPI f : order) {
             int kind = found.get(f);
             int mode = mode(s, kind);   // 0.3.8.6: per type (Diktat raiders: None)
-            List<MarketAPI> markets = scope.get(f.getContainingLocation());
+            List<MarketAPI> markets = (kind == DIKTAT ? wide : scope).get(f.getContainingLocation());   // 0.3.9.3
             MarketAPI m = markets == null || markets.isEmpty() ? null : markets.get(0);
             String why = m == null ? "outside your systems" : why(s, kind, facts(f, here));
             if (why == null && usesCredits(mode) && !f.getMemoryWithoutUpdate().getBoolean(MEM_CHARGED)) {
@@ -278,12 +281,15 @@ public class CAEnforcers implements EveryFrameScript {
     // ---------------- finding ----------------
 
     /** 0.3.1.0: the systems in scope, each with its colonies in scope, largest first (the first names the place in the log). */
-    static Map<LocationAPI, List<MarketAPI>> scope(CASettings s) {
+    static Map<LocationAPI, List<MarketAPI>> scope(CASettings s) { return scope(s, s.enfAllColonies); }
+
+    /** 0.3.9.3: all: every colony of yours (Sindrian Diktat raiders), else Auto colonies only. */
+    static Map<LocationAPI, List<MarketAPI>> scope(CASettings s, boolean all) {
         Map<LocationAPI, List<MarketAPI>> out = new LinkedHashMap<LocationAPI, List<MarketAPI>>();
         CAData d = CAData.get();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             StarSystemAPI sys = m.getStarSystem();
-            if (sys == null || !inScope(s.enfAllColonies, d.colony(m.getId()).mode == CAData.Mode.AUTO)) continue;
+            if (sys == null || !inScope(all, d.colony(m.getId()).mode == CAData.Mode.AUTO)) continue;
             List<MarketAPI> l = out.get(sys);
             if (l == null) { l = new ArrayList<MarketAPI>(); out.put(sys, l); }
             l.add(m);
@@ -293,8 +299,8 @@ public class CAEnforcers implements EveryFrameScript {
     }
 
     /** 0.3.1.0: every enforcement fleet in scope by flag, every fleet with Auto Colonies' mark, and the inspection task forces. */
-    static void find(CASettings s, Map<LocationAPI, List<MarketAPI>> scope, Map<CampaignFleetAPI, Integer> out) {
-        for (LocationAPI loc : scope.keySet()) {
+    static void find(CASettings s, Map<LocationAPI, List<MarketAPI>> scope, Map<LocationAPI, List<MarketAPI>> wide, Map<CampaignFleetAPI, Integer> out) {
+        for (LocationAPI loc : wide.keySet()) {   // 0.3.9.3: wide holds scope, plus every colony's system for Diktat raiders
             for (CampaignFleetAPI f : loc.getFleets()) {
                 if (f == null || !alive(f)) continue;
                 MemoryAPI mem = f.getMemoryWithoutUpdate();
@@ -304,6 +310,7 @@ public class CAEnforcers implements EveryFrameScript {
                 if (k < 0 && "leagueEnforcer".equals(mem.getString(MemFlags.HASSLE_TYPE))) k = LEAGUE;
                 if (k < 0 && ours) k = kindIndex(mem.getString(MEM_KIND));
                 // a type set to Off is looked at only to end its mark; 0.3.8.6: the opt-in types only while Enforcer patrols is on
+                if (k >= 0 && k != DIKTAT && !scope.containsKey(loc)) continue;   // 0.3.9.3: the opt-in types in scope only
                 if (k >= 0 && (ours || s.enfKind(k) && (s.enfOn || k == DIKTAT))) out.put(f, k);
             }
         }

@@ -98,8 +98,9 @@ public class CASiege {
         return near >= NEAR_SHARE * Math.max(0f, defense) || daysThere >= NEAR_DAYS;
     }
 
+    /** 0.3.9.3: CAEnforcers.threat, as CADefense.hostileFP: a hostile faction's fleet, one made hostile to your faction, or a Sindrian Diktat raider. */
     static boolean hostile(CampaignFleetAPI f) {
-        return !f.isPlayerFleet() && !f.isStationMode() && f.getFaction() != null && f.getFaction().isHostileTo(Factions.PLAYER)
+        return !f.isPlayerFleet() && !f.isStationMode() && f.getFaction() != null && CAEnforcers.threat(f)
                 && !CASurvival.supportFleet(f);   // 0.3.0.9: never a support fleet (0.98.5a)
     }
 

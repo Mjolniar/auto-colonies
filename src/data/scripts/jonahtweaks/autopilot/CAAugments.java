@@ -393,8 +393,30 @@ public class CAAugments {
         return pl;
     }
 
-    /** Forgets augments Autopilot added that are gone; one you removed yourself isn't added back to this colony. */
+    /** 0.3.9.3 (J M3): CAMark key prefix of the day you removed an augment ("augskip:<marketId>|<augment id>"), per colony. */
+    static final String SKIP_AT = "augskip:";
+
+    /**
+     * 0.3.9.3 (J M3): an augment you removed is held as long as a rejection (CAApprovals.holds), then may be planned again.
+     * A mark with no date (an older save) is dated today. Nothing changes under a what-if.
+     */
+    static void expireSkips(MarketAPI m, CAData.Colony c) {
+        if (c.augSkip == null || c.augSkip.isEmpty() || CALog.whatIf()) return;
+        long now = CAMark.now();
+        for (String id : new ArrayList<String>(c.augSkip)) {
+            String key = SKIP_AT + m.getId() + "|" + id;
+            Long at = CAMark.at(key);
+            if (at == null) { CAMark.set(key, now); continue; }
+            if (CAApprovals.holds("augments", CAMark.days(at, now))) continue;
+            c.augSkip.remove(id);
+            CAMark.clear(key);
+            CALog.quiet(m.getName() + ": the hold on " + id + " ended; Autopilot may add it to the station again");   // starsector.log only
+        }
+    }
+
+    /** Forgets augments Autopilot added that are gone; one you removed yourself isn't added back to this colony for 180 days. */
     static void sync(MarketAPI m, CAData.Colony c) {
+        expireSkips(m, c);   // 0.3.9.3 (J M3)
         Set<String> mine = c.augAuto();
         if (mine.isEmpty()) return;
         boolean station = hasStation(m);
@@ -408,7 +430,8 @@ public class CAAugments {
             inst.setConsiderEngagement(false);
             if (inst.getUnavailableReason() != null) continue;   // the game took it off (station changed or disrupted), not you
             c.augSkip().add(id);
-            CALog.quiet(m.getName() + ": you removed " + spec.getName() + " from the station; Autopilot won't add it there again");   // 0.3.0.9: left alone, starsector.log only
+            CAMark.set(SKIP_AT + m.getId() + "|" + id, CAMark.now());   // 0.3.9.3 (J M3): the hold starts today
+            CALog.quiet(m.getName() + ": you removed " + spec.getName() + " from the station; Autopilot won't add it there for 180 days");   // 0.3.0.9: left alone, starsector.log only
         }
     }
 

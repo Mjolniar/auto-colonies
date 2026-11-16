@@ -66,7 +66,7 @@ public class CAIntel extends BaseIntelPlugin {
         finally { CAPerf.record("empire panel: " + p, System.nanoTime() - t0); }
     }
 
-    /** An Empire page's button that asks first (war declarations, Reset all, Found now). */
+    /** An Empire page's button that asks first (war declarations, Reset all, Found now; 0.3.9.3: Reset to recommended). */
     static boolean needsConfirm(Object id) { return new CAIntel().doesButtonHaveConfirmDialog(id); }
 
     /** The question for such a button, drawn above the Confirm and Cancel buttons. */
@@ -82,6 +82,7 @@ public class CAIntel extends BaseIntelPlugin {
     }
 
     @Override public boolean doesButtonHaveConfirmDialog(Object buttonId) {
+        if (CASetupUI.RESET.equals(buttonId)) return true;   // 0.3.9.3: Reset to recommended asks first
         if (!(buttonId instanceof String[]) || ((String[]) buttonId).length < 2) return false;
         String[] a = (String[]) buttonId;
         try {
@@ -97,6 +98,11 @@ public class CAIntel extends BaseIntelPlugin {
 
     @Override
     public void createConfirmationPrompt(Object buttonId, TooltipMakerAPI prompt) {
+        if (CASetupUI.RESET.equals(buttonId)) {   // 0.3.9.3
+            try { CASetupUI.confirmPrompt(prompt, CAData.settings()); }
+            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "confirmation text failed", e); prompt.addPara("Details: " + CATheme.NOT_SHOWN, 0f); }
+            return;
+        }
         if (!(buttonId instanceof String[]) || ((String[]) buttonId).length < 2) return;
         String[] a = (String[]) buttonId;
         try {

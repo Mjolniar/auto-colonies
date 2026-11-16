@@ -1127,7 +1127,7 @@ public class CAExpansion {
             for (CampaignFleetAPI f : sys.getFleets()) {
                 if (f.isPlayerFleet() || f.getFaction() == null || f.getFaction().isPlayerFaction() || CASurvival.supportFleet(f)) continue;   // 0.3.0.9: support fleets too
                 if (f.isStationMode()) return "A station that isn't yours is in the system.";
-                if (f.getFaction().isHostileTo(Factions.PLAYER) && f.getFleetPoints() > 25) return HOSTILE;
+                if (CAEnforcers.threat(f) && f.getFleetPoints() > 25) return HOSTILE;   // 0.3.9.3: Sindrian Diktat raiders too, as pirates
             }
         }
         if (!yours && sys.hasTag(Tags.THEME_UNSAFE)) return "An unsafe system.";

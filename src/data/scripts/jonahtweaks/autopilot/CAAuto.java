@@ -433,10 +433,31 @@ public class CAAuto {
 
     static void propose(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String why) { propose(m, c, p, why, null); }
 
+    /** 0.3.9.3 (A10): a waiting proposal is replaced only by a pick that scores at least this many times as much (10% higher). */
+    static final float REPLACE_MARGIN = 1.10f;
+
+    /** Pure (0.3.9.3, A10): whether a new pick replaces the waiting proposal: it is not offered today (NaN), scores 0 or less, or the new one scores REPLACE_MARGIN times as much. */
+    static boolean replaces(float waiting, float fresh) {
+        return Float.isNaN(waiting) || waiting <= 0f || fresh >= waiting * REPLACE_MARGIN;
+    }
+
+    /** 0.3.9.3 (A10): the waiting proposal's score in today's evaluation (the one the pass just made, CAEngine.cached), or NaN when it is not offered. */
+    static float waitingScore(MarketAPI m, CAData.Colony c) {
+        try {
+            CAData.Profile used = CASiege.held(m) ? CAData.Profile.SECURITY : CAThreat.effective(m, c.profile);   // as the planner and the build pass
+            CAEngine.Result r = CAEngine.cached(m, used, CAData.settings().minStability, false);
+            if (r == null || r.notScored) return Float.NaN;
+            for (CAEngine.Pick q : r.picks) if (q.id.equals(c.pendingId) && q.upgrade == c.pendingUpgrade) return q.score;
+            for (CAEngine.Pick q : r.floorNoSlot) if (q.id.equals(c.pendingId) && q.upgrade == c.pendingUpgrade) return q.score;
+        } catch (Throwable t) { CAStep.warn("build pass", "waiting proposal score failed at " + m.getName(), t); }
+        return Float.NaN;
+    }
+
     /** 0.3.2.0: replace: the industry a make-room swap takes down on Approve (null: none). */
     static void propose(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String why, String replace) {
         if (p.id.equals(c.pendingId) && (replace == null ? c.pendingReplace == null : replace.equals(c.pendingReplace))) return;
         if (rejectedDays(m.getId(), p.id, CATime.now()) > 0f) return;   // 0.3.8.5: you rejected it here within 180 days; no path asks again
+        if (c.pendingId != null && !p.id.equals(c.pendingId) && !replaces(waitingScore(m, c), p.score)) return;   // 0.3.9.3 (A10): the waiting proposal stays
         c.pendingId = p.id; c.pendingName = p.verb + " " + p.name; c.pendingUpgrade = p.upgrade; c.pendingCost = p.cost;
         c.pendingReplace = replace;
         c.pendingNotified = true;

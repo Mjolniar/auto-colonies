@@ -212,6 +212,13 @@ public class CASetupUI {
     static final float WHATS_NEW_DAYS = 30f;
     static final String SETUP_REST = "The rest: recommended settings.";
     static final String RESET_NOTE = "Sets the empire mode's defaults. Keeps stances and picks.";
+    /** 0.3.9.3: the Reset to recommended button's id; it asks first (CAIntel.doesButtonHaveConfirmDialog). */
+    static final String RESET = PREFIX + "recommend:x";
+
+    /** 0.3.9.3: the question above Confirm and Cancel for Reset to recommended. */
+    static void confirmPrompt(TooltipMakerAPI t, CASettings s) {
+        t.addPara("Reset to recommended clears %s set-by-you marks.", 0f, Misc.getHighlightColor(), String.valueOf(s.playerSet().size()));
+    }
 
     /** The main rows' keys, in menu order (20 with every supported mod; JTMenuTextCheck). */
     static final String[] MAIN_KEYS = {"empire", "lowprofile", "p_spend", "p_extras", "p_newcol", "p_war", "reserve", "surplus", "richpreset", "endgame",
@@ -361,7 +368,7 @@ public class CASetupUI {
             // 0.3.1.0: War shows without Nexerelin too (enforcer patrols); its Nexerelin rows stay hidden then
             for (String[] sub : ADVANCED) if (subgroup(t, sub[0], sub[1])) advanced(t, s, sub[0]);
         }
-        t.addButton("Reset to recommended", PREFIX + "recommend:x", Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
+        t.addButton("Reset to recommended", RESET, Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
                 Alignment.MID, CutStyle.TL_BR, 260f, 24f, 14f);
         t.addPara(RESET_NOTE, gray, 4f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
     }

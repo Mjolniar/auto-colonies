@@ -506,6 +506,7 @@ public class CAConquest {
         if (m.getMemoryWithoutUpdate().contains(SectorManager.MEMORY_KEY_CAPTURE_STABILIZE_TIMEOUT)) return;
         if (RecentUnrest.getPenalty(m) <= 0) return;
         if (CAWar.reliefRecent(CAData.get(), m)) return;   // 0.3.8.5: the saved relief record (CAData.warOps)
+        if (CAWar.stabilizeCooldown(m)) return;   // 0.3.9.3 (D H1): Nexerelin's stabilize package cooldown
         InvasionFleetManager mgr = InvasionFleetManager.getManager();
         if (mgr == null) return;
         CAWar.launch(s, mgr, CAWarPolicy.RELIEF, m, 0f, CASurplus.rich(s), true, "unrest after capture");   // send() records it

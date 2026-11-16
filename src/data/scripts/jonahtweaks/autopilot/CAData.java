@@ -43,7 +43,7 @@ public class CAData {
         public long lastHazardPay = 0L, lastFreePort = 0L;
         public boolean threatHigh = false;
         public long threatSince = 0L;
-        // Station Augments: ids Autopilot installed here, and ids you removed that it won't add back
+        // Station Augments: ids Autopilot installed here, and ids you removed that it won't add back (0.3.9.3: for 180 days, CAAugments.expireSkips)
         public Set<String> augAuto, augSkip;
         public boolean augDefense;   // Autopilot last set its augments for defense while the threat was high
         // Coronal Hypershunt (AotD): the range Autopilot last set, and whether you set it yourself since

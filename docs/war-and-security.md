@@ -33,7 +33,7 @@
 - Patrols intercept: Off by default. On: colony patrols in the system get an intercept order.
 - Charge: once per fleet, when it loses a battle to your faction's fleets. A battle you fight yourself gets only the game's own penalty.
 - Enforcer cost: Reputation (default), Credits, Both, None.
-- Sindrian Diktat raiders: own setting, On by default, also with Enforcer patrols Off. No gates, no credit charge, no reputation change. Emergency defense fleets count them as hostiles.
+- Sindrian Diktat raiders: handled like pirate raids at every colony of yours, in Story and Normal mode. Own setting, On by default, also with Enforcer patrols Off. No gates, no credit charge, no reputation change. Emergency defense fleets and sieges count them as hostiles.
 
 | Fleet type | Game's penalty when you defeat it | Reputation charge |
 |---|---|---|

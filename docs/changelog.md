@@ -1,5 +1,14 @@
 # Patch notes
 
+## 0.3.9.3 - 2026-11-16
+
+- Station Augments: Augments you removed are held 180 days, then Autopilot may suggest them again.
+- Settings: Reset to recommended asks before it clears your set-by-you marks.
+- War: Sindrian Diktat raiders count toward sieges.
+- Enforcer patrols: Sindrian Diktat raiders are handled like pirate raids at every colony, in Story and Normal mode. No story package is needed.
+- Planner: A waiting proposal is replaced only by a pick at least 10% better.
+- War: Relief fleets wait for Nexerelin's stabilize cooldown.
+
 ## 0.3.9.2 - 2026-11-16
 
 - Terraforming: Fixed plan projects starting on a condition that a running project changes first.

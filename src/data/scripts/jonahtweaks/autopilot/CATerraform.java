@@ -159,7 +159,8 @@ public class CATerraform {
             boolean surplus = false;   // 0.3.9.2 (I M3)
             if (k.planned) {
                 // a plan step, the world's final project too: past the per-project cap and the monthly budget, paid from
-                // savings above the credit reserve, since it's how the colony reaches its plan
+                // savings above the credit reserve, since it's how the colony reaches its plan. 0.3.9.3 (I M3): its price and fee
+                // count against the month's budget (CABudget.pay below, as every budget spend is booked)
                 if (CABudget.paused(s)) {   // 0.3.9.2 (I M2): Pause on loss holds this spending too
                     if (CALog.once("tfpaused:" + k.m.getId()))
                         CALog.think(k.m.getName() + ": Terraforming (" + k.why + ") waits while net income is below 0.");
