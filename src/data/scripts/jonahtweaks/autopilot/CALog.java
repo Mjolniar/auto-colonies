@@ -228,28 +228,7 @@ public class CALog {
         CADiagnostics.LOG.info(CADiagnostics.TAG + stamp() + text);
     }
 
-    /** Days before the same ping shows again. */
-    static final float PING_DAYS = CATuning.PING_DAYS;
-    static final java.util.Map<String, Float> pingAt = new java.util.HashMap<String, Float>();
-
-    /**
-     * A ping (0.2.41.0): a short machine line on screen about what the autopilot is weighing or doing in the background, at
-     * most once per key a week. Only with the Machine voice and every entry on screen; never in the panel log.
-     * 0.3.0.9: the same rule as add(): a ping that only says Autopilot is not acting (CALogFilter) goes to starsector.log.
-     */
-    public static void ping(String key, String text) {
-        if (whatIf()) return;
-        try {
-            CASettings s = CAData.settings();
-            if (s.voice != 0 || s.screenLog != 0) return;
-            float now = CADay.now();
-            Float at = pingAt.get(key);
-            if (at != null && now - at < PING_DAYS && now >= at) return;
-            pingAt.put(key, now);
-            if (CALogFilter.notActing(text)) { think(text); return; }   // 0.3.1.0: the Thinking list
-            Global.getSector().getCampaignUI().addMessage(CATheme.machine(text), Misc.getTextColor());
-        } catch (Throwable ignored) { }
-    }
+    // 0.3.8.7: ping() (a short on-screen line once per key a week) is gone: nothing called it
 
     /**
      * A log entry: the panel log, starsector.log, and on screen as a short line (Settings, Interface: every entry, the
@@ -318,9 +297,6 @@ public class CALog {
         Float v = l == null ? null : l.get(id + part);
         return v == null ? 0f : v;
     }
-
-    /** Monthly colony lines without the month's totals (0.2.45-era call); the empire line then sums the ledger. */
-    public static void colonyMonth() { colonyMonth(-1f, -1f, -1f); }
 
     /**
      * Monthly, after the Month line (0.3.0.0, research 01 section 5): one starsector.log line per colony with its own money and
@@ -395,7 +371,7 @@ public class CALog {
     }
 
     /** 0.3.0.0 (07 H6): the session's debounce timers, cleared on load (CAReset.onLoad) so another save's dates don't hold lines back. */
-    public static void reset() { statusAt.clear(); pingAt.clear(); CAStores.ARRIVED.clear(); }   // 0.3.1.0: and the arrival notes
+    public static void reset() { statusAt.clear(); CAStores.ARRIVED.clear(); }   // 0.3.1.0: and the arrival notes. 0.3.8.7: no ping times
 
     public static final String[] SCREEN_NAMES = {"Every entry", "Important only", "Off"};
 }

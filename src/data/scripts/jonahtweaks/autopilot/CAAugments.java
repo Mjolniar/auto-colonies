@@ -582,51 +582,7 @@ public class CAAugments {
         }
     }
 
-    /** Lets Autopilot add the augments you removed from this colony again. */
-    public static void unskip(MarketAPI m) {
-        CAData.get().colony(m.getId()).augSkip().clear();
-        lastSig.remove(m.getId());
-    }
-
-    /** The colony panel's section. */
-    public static void renderColony(TooltipMakerAPI t, MarketAPI m, CAData.Colony c, CASettings s, CAData.Profile profile) {
-        Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
-        sync(m, c);
-        Plan pl = plan(m, c, profile);
-        if (pl.station == null) { t.addPara(pl.note, gray, 6f); return; }   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
-        t.addPara("%s: %s of %s AP used.", 6f, hl, pl.station, ap(pl.used), ap(pl.budget));
-        if (pl.kit != null) t.addPara("What it fights with: " + pl.kit.describe() + ".", gray, 4f);   // 0.3.8.6: shown as is
-        if (!pl.mine.isEmpty()) t.addPara("Added by Autopilot: %s", 4f, hl, join(pl.mine));
-        if (!pl.yours.isEmpty()) t.addPara("Yours (left alone): %s", 4f, hl, join(pl.yours));
-        if (pl.note != null) t.addPara(pl.note, gray, 4f);   // 0.3.8.6: shown as is
-        if (!pl.changes()) t.addPara("Nothing to change.", gray, 6f);
-        else {
-            for (Opt o : pl.add) {
-                t.addPara("Add %s (%s AP): %s", 6f, hl, o.name, ap(o.ap), CAEngine.valueText(o.score));
-                for (int j = 0; j < Math.min(3, o.lines.size()); j++) t.addPara("    " + o.lines.get(j), gray, 2f);   // 0.3.8.6: shown as is
-            }
-            for (String n : pl.removeNames) t.addPara("Remove %s to make room", 6f, hl, n);
-            t.addPara("Value of the change: about %s", 6f, hl, CAEngine.valueText(pl.gain));
-            t.addButton("Apply augment changes", CAColonyDialog.AUG_APPLY, base, dark, Alignment.MID, CutStyle.TL_BR, 240f, 24f, 6f);
-            String when = s.augmentMode != 0 ? "Recommend only: changes on Apply."
-                    : c.mode == CAData.Mode.AUTO ? "Auto applies this within a week." : "Waits for Apply here.";
-            t.addPara(when, gray, 4f);
-        }
-        if (profile == CAData.Profile.SECURITY) t.addPara(c.profile == CAData.Profile.SECURITY ? "Security goal: combat augments first." :
-                "High threat: combat augments first.", gray, 6f);
-        else if (CAThreat.effective(m, c.profile) == CAData.Profile.SECURITY && c.profile != CAData.Profile.SECURITY)
-            t.addPara("High threat, defended here: output augments first.", gray, 6f);
-        else t.addPara("Calm: output augments first. Combat loadout before a raid.", gray, 6f);   // 0.3.0.0 (WS-F3 fix pass 2): shorter
-        if (!c.augSkip().isEmpty()) {
-            List<String> names = new ArrayList<String>();
-            for (String id : c.augSkip()) { stationAugmentSpec sp = specs().get(id); names.add(sp == null ? id : sp.getName()); }
-            t.addPara("You removed these (not added again): %s", 8f, hl, join(names));
-            t.addButton("Allow again", CAColonyDialog.AUG_UNSKIP, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 22f, 4f);
-        }
-        t.addPara("You know %s station augments.",
-                6f, gray, hl, "" + known().size());
-        t.addPara("Not added (bad for an AI-run station): " + join(new ArrayList<String>(CAAugmentModel.NEVER.values()), "; ") + ".", gray, 4f);   // 0.3.8.6: shown as is
-    }
+    // 0.3.8.7: the colony panel's section (renderColony) and its Allow again (unskip) are gone: the panel has not listed it since 0.3.7.6
 
     /** The empire panel's section: one line per colony with a station. */
     public static void renderEmpire(TooltipMakerAPI t, CAData d, CASettings s) {

@@ -6,7 +6,8 @@ import java.util.*;
  * 0.3.0.0 (WS-A4, research 07 section 2 item 8): how long each step of the daily pass takes, measured instead of guessed.
  * CAStep times every step into record(); the engine adds its own lines (an evaluation, a plan, a probe measurement); the
  * daily pass reports its total through pass(). Per name: runs, last, a rolling average and the slowest, in milliseconds.
- * Shown on the Diagnostics page; a pass over SLOW_PASS_MS writes one quiet line to starsector.log (never on screen).
+ * Shown on the Diagnostics page; a pass over SLOW_PASS_MS writes one quiet line to starsector.log (never on screen), at most
+ * once a week (0.3.8.7).
  * Nothing here is saved; reset() on every load.
  */
 public final class CAPerf {
@@ -27,8 +28,13 @@ public final class CAPerf {
     }
 
     static final Map<String, Stat> STATS = new LinkedHashMap<String, Stat>();
-    /** The game day of the last slow-pass log line, so a long slow stretch writes one line a day at most. */
+    /** The game day of the last slow-pass log line, so a long slow stretch writes one line a week at most (0.3.8.7: was a day). */
     static int slowLoggedDay = Integer.MIN_VALUE;
+    /**
+     * 0.3.8.7: days between slow-pass lines. Since 0.3.6.9 the pass runs over frames and its total is the CPU of every step, so
+     * a larger empire passes SLOW_PASS_MS on most days while no frame is slow.
+     */
+    static final int SLOW_LOG_DAYS = 7;
 
     /** One run of a step, in nanoseconds (System.nanoTime() after minus before). */
     public static void record(String name, long nanos) { recordMs(name, nanos / 1000000f); }
@@ -60,7 +66,7 @@ public final class CAPerf {
         recordMs(PASS, ms);
         recordMs(FRAME, frame);
         int day = CAEngine.today();
-        if (!slow(ms) || day == slowLoggedDay) return;
+        if (!slow(ms) || !logDue(day, slowLoggedDay)) return;
         slowLoggedDay = day;
         try {
             CADiagnostics.LOG.info(CADiagnostics.TAG + "daily pass took " + Math.round(ms) + " ms over " + frames + " frames, longest frame "
@@ -70,6 +76,11 @@ public final class CAPerf {
 
     /** Over the slow-pass line. */
     static boolean slow(float ms) { return ms > SLOW_PASS_MS; }
+
+    /** 0.3.8.7: whether a slow-pass line may be written today: never written, a day before the last (a load), or SLOW_LOG_DAYS on. Pure. */
+    static boolean logDue(int day, int last) {
+        return last == Integer.MIN_VALUE || day < last || (long) day - last >= SLOW_LOG_DAYS;
+    }
 
     public static Stat get(String name) { return STATS.get(name); }
 

@@ -38,6 +38,8 @@ public final class CALunaSync {
     public static final String MOD = "jonah_tweaks", LUNA = "lunalib";
     static final String FILE = "LunaSettings/" + MOD + ".json";
     static final String SEEDED = "ca__seeded", SETUP = "ca__setup", PLAYER_SET = "ca__playerSet", PLAYER_ROWS = "ca__playerRows";
+    /** 0.3.8.7: the values of the last sync, as a JSON string, so a load can tell what a save in the menu with no game loaded changed. */
+    static final String LAST = "ca__last";
     static final String HEADER = "Header", TEXT = "Text", BOOL = "Boolean", RADIO = "Radio", INT = "Int", DOUBLE = "Double";
     static final String GENERAL = "", ADVANCED = "Advanced";
     public static final String CUSTOM = CAPresets.CUSTOM_NAME;
@@ -57,6 +59,8 @@ public final class CALunaSync {
         Getter get;
         Setter set;
         boolean preset;
+        /** 0.3.8.7: a preset row's CAPresets row (pull applies it on load). */
+        String presetRow;
         Row(String type, String key, String name, String tab) { this.type = type; this.key = key; this.name = name; this.tab = tab; }
         String id() { return "ca_" + key; }
         boolean value() { return !HEADER.equals(type) && !TEXT.equals(type); }
@@ -285,7 +289,8 @@ public final class CALunaSync {
         r.set = (s, v, b) -> {
             int i = idx("capmode", v);
             if (i < 0 || i == s.capitalMode) return;
-            if (i == 2) { s.capitalModeBeforeNone = s.capitalMode; s.capitalId = null; }   // as the intel Capital row's None
+            // as the intel Capital row's None. 0.3.8.7: the pick is cleared only for a change in LunaLib's menu (b set), never on load
+            if (i == 2) { s.capitalModeBeforeNone = s.capitalMode; if (b != null) s.capitalId = null; }
             s.capitalMode = i;
         };
         radio("capstart", "Trade hub starts at", "capitalStart", CACapital.START_NAMES, "When the capital starts its trade buildings.");
@@ -454,6 +459,7 @@ public final class CALunaSync {
         r.opts[vals.length] = CAPresets.MODE_DEFAULT;
         r.opts[vals.length + 1] = CUSTOM;
         r.preset = true;
+        r.presetRow = presetRow;   // 0.3.8.7
         r.fields = CAPresets.fields(presetRow);
         final Row self = r;
         r.get = s -> {
@@ -592,13 +598,45 @@ public final class CALunaSync {
         j.put(PLAYER_ROWS, join(rows));
         j.put(SETUP, j.optBoolean(SETUP, false) || s.setupDone);
         j.put(SEEDED, true);
+        JSONObject l = new JSONObject();   // 0.3.8.7: read back by stored() on the next load
+        for (Map.Entry<String, Object> e : vals.entrySet()) if (e.getValue() != null) l.put(e.getKey(), e.getValue());
+        j.put(LAST, l.toString());
         return vals;
+    }
+
+    /** 0.3.8.7: the values of the last sync from the file (LAST), by id; a row it lacks takes the file's value. Null when there are none. */
+    static Map<String, Object> stored(JSONObject j) {
+        String txt = j == null ? "" : j.optString(LAST, "");
+        if (txt.isEmpty()) return null;
+        JSONObject l;
+        try { l = new JSONObject(txt); } catch (Exception e) { return null; }
+        Map<String, Object> out = new LinkedHashMap<String, Object>();
+        for (Row r : ROWS) if (r.value()) out.put(r.id(), l.has(r.id()) ? read(l, r) : read(j, r));
+        return out;
+    }
+
+    /**
+     * 0.3.8.7: the file read into this save on load. A save in LunaLib's menu with no game loaded (the title screen) only writes
+     * the file. The rows it changed differ from the values of the last sync (stored), and are applied as a save in the menu
+     * during a game is (applyChanges: Reset, presets, set by you). The rest is read as before (pull), from the last sync's
+     * values. Without stored values, pull alone. Returns the row keys that changed.
+     */
+    static List<String> readIn(CASettings s, JSONObject j) throws Exception {
+        Map<String, Object> lastSync = stored(j);
+        if (lastSync == null) return pull(s, j);
+        JSONObject base = new JSONObject(j.toString());
+        for (Row r : ROWS) { Object v = lastSync.get(r.id()); if (r.value() && v != null) base.put(r.id(), v); }
+        List<String> changed = pull(s, base);
+        for (String k : applyChanges(s, j, lastSync)) if (!changed.contains(k)) changed.add(k);
+        return changed;
     }
 
     /**
      * Reads the JSON into CASettings on load: the set-by-you names, the empire mode (its column goes into the fields LunaLib
-     * doesn't hold), then each row whose value differs. Presets are skipped: their fields carry the values. Returns the row
-     * keys that changed.
+     * doesn't hold), then each row whose value differs. 0.3.8.7: a preset row whose value is one of its options and differs
+     * from the save's is applied before the field rows: seven fields have no row of their own (War, New colonies, Story
+     * points, Stations, Production, the Spending upkeep share). The field rows after it keep their exact values. Returns the
+     * row keys that changed.
      */
     static List<String> pull(CASettings s, JSONObject j) {
         List<String> changed = new ArrayList<String>();
@@ -613,6 +651,13 @@ public final class CALunaSync {
             s.empireMode = CAData.Mode.values()[m];
             CAModeTable.apply(s, s.empireMode);
             changed.add("empire");
+        }
+        for (Row r : ROWS) {   // 0.3.8.7: presets first; Mode default and Custom write nothing
+            if (!r.preset || r.presetRow == null) continue;
+            int i = r.index(read(j, r));
+            if (i < 0 || i >= CAPresets.values(r.presetRow).length || i == CAPresets.match(s, r.presetRow)) continue;
+            try { CAPresets.apply(s, r.presetRow, i); changed.add(r.key); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "LunaLib setting " + r.id() + " not read", t); }
         }
         for (Row r : ROWS) {
             if (!r.value() || r.preset || "empire".equals(r.key) || "reset".equals(r.key) || "storymode".equals(r.key)) continue;
@@ -717,6 +762,11 @@ public final class CALunaSync {
     /** LunaLib holds this save's settings: the intel Settings page shows the picks only. */
     public static boolean active() { return last != null && lunaEnabled(); }
 
+    /** 0.3.8.7: the title screen: an exited game's settings are not the next load's. */
+    static boolean title() {
+        try { return Global.getCurrentState() == com.fs.starfarer.api.GameState.TITLE; } catch (Throwable t) { return false; }
+    }
+
     /** First-time setup keeps LunaLib's settings (no recommended values, no empire mode change). */
     public static boolean keepsSetup() { return configured && active(); }
 
@@ -755,7 +805,7 @@ public final class CALunaSync {
                 story(j);
                 CASync.release(s);   // 0.3.6.0: LunaLib's values are the ones you set; the story-mode holds go back on after
                 List<String> changed;
-                try { changed = pull(s, j); } finally { CASync.enforce(s); }
+                try { changed = readIn(s, j); } finally { CASync.enforce(s); }   // 0.3.8.7: and what the title screen changed
                 if (!changed.isEmpty()) CADiagnostics.LOG.info(CADiagnostics.TAG + "LunaLib settings read into this save: " + changed);
                 last = push(s, j);
             }
@@ -768,9 +818,12 @@ public final class CALunaSync {
         }
     }
 
-    /** A save in LunaLib's menu (CALunaLink.settingsChanged). */
+    /**
+     * A save in LunaLib's menu (CALunaLink.settingsChanged). 0.3.8.7: on the title screen (or before any load) nothing is
+     * applied: the file keeps the change and the next load reads it (readIn).
+     */
     public static void changed() {
-        if (!active()) return;
+        if (!active() || title()) return;
         try {
             CASettings s = CAData.settings();
             JSONObject j = load();

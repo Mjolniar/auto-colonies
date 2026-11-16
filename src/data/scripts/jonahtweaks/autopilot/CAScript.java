@@ -15,13 +15,14 @@ public class CAScript implements EveryFrameScript {
     public boolean runWhilePaused() { return false; }
 
     public void advance(float amount) {
+        // 0.3.8.7: both run once a second; CAStep.warn logs a failure's trace once, then one line a week
         try { CABuildout.checkOffer(amount); }
         catch (Throwable t) {
-            CADiagnostics.LOG.warn(CADiagnostics.TAG + "fast buildout offer failed", t);
+            CAStep.warn("fast buildout offer", "fast buildout offer failed", t);
             try { CAData.get().buildoutOffered = true; } catch (Throwable ignored) { }   // never let the handler itself throw into the game
         }
         try { CAApprovalDialog.check(amount); }   // 0.3.3.0: the approval summary, at a safe moment once per interval
-        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "approval summary check failed", t); }
+        catch (Throwable t) { CAStep.warn("approval summary", "approval summary check failed", t); }
         acc += Global.getSector().getClock().convertToDays(amount);
         // 0.3.6.9: a pass in progress gets this frame's share. ToT's economy threads reading markets skip the frame (up to
         // CATuning.PASS_MAX_WAIT frames in a row), as the start below waits for them

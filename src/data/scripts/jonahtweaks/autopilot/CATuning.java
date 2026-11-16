@@ -6,8 +6,9 @@ package data.scripts.jonahtweaks.autopilot;
  * each: what it is and where it came from. Every value is the one 0.2.45.1 used, so moving them here changed nothing.
  *
  * The classes that had their own name for a value keep it as an alias (CAItems.HIRE_FEE = CATuning.HIRE_FEE), so their code
- * and the offline checks read the same; the literal numbers that were inline now name the constant here. All of them are
- * compile-time constants, so nothing here is loaded or read at run time. JTTuningCheck pins every value and alias.
+ * and the offline checks read the same; the literal numbers that were inline now name the constant here. All but
+ * DIVERSITY_FAMILIES (a String[][] CAFloors reads at run time) are compile-time constants. JTTuningCheck pins every value
+ * and alias (0.3.8.7: corrected).
  */
 public final class CATuning {
     private CATuning() { }
@@ -175,8 +176,8 @@ public final class CATuning {
     public static final float TRAVEL_DAYS = 30f;
     /** Days a Nexerelin agent takes to recruit (CASpies, 0.2.37.0). */
     public static final float AGENT_RECRUIT_DAYS = 60f;
-    /** Days a flipping status waits before its next line in the panel log, and before the same ping shows again (CALog). */
-    public static final float STATUS_DAYS = 10f, PING_DAYS = 7f;
+    /** Days a flipping status waits before its next line in the panel log (CALog). 0.3.8.7: PING_DAYS gone with CALog.ping. */
+    public static final float STATUS_DAYS = 10f;
     /** Days between two "nothing worth starting" traces of a colony in starsector.log (CAAuto). */
     public static final float TRACE_DAYS = 30f;
     /** Days a building under construction stays in the market model's pending supply at most (CAMarket.prune, 0.2.44.0). */
@@ -273,8 +274,6 @@ public final class CATuning {
     public static final float FLOOR_CAPACITY_PER_UNIT = 25_000f;
     /** Days the fleet's d-mod repair need is kept before it is read again. */
     public static final float FLOOR_FLEET_DAYS = 7f;
-    /** Days between two parts advice lines while nothing changes. */
-    public static final float FLOOR_PARTS_ADVICE_DAYS = 30f;
 
     /** Money taper (CASettings.moneyTaper): Off, Gentle, Strong. Weight 1 up to low, wMid to high, wTop above. */
     public static final int TAPER_OFF = 0, TAPER_GENTLE = 1, TAPER_STRONG = 2;

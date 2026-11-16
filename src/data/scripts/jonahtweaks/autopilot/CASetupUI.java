@@ -36,12 +36,6 @@ public class CASetupUI {
     static float round(float v, float step) { return Math.max(step, Math.round(v / step) * step); }
 
     /**
-     * The recommended settings: what a player who only switches colonies to Auto should get. Everything that pays for
-     * itself and can't hurt is on; choices that are hard to undo or are really the player's (removing buildings, story
-     * points, offense) stay off. Scaled to the empire's income and credits now. Lands every CAPresets row on its
-     * recommended value (JTPresetsCheck).
-     */
-    /**
      * The recommended values (first-time setup, Reset to recommended, fast buildout). 0.3.3.0: a write the mod makes itself
      * (CAModeTable.system), so nothing it changes counts as set by you; callers then apply the empire mode's column.
      */
@@ -49,6 +43,12 @@ public class CASetupUI {
         CAModeTable.system(s, new Runnable() { public void run() { recommended(s); } });
     }
 
+    /**
+     * The recommended settings: what a player who only switches colonies to Auto should get. Everything that pays for
+     * itself and can't hurt is on; choices that are hard to undo or are really the player's (removing buildings, story
+     * points, offense) stay off. Scaled to the empire's income and credits now. Lands every CAPresets row on its
+     * recommended value (JTPresetsCheck).
+     */
     static void recommended(CASettings s) {
         float net, credits;
         try { net = Math.max(0f, CABudget.netIncome(s)); credits = CABuild.credits(); }
@@ -272,21 +272,6 @@ public class CASetupUI {
     }
 
     static boolean nex() { return mod(CASpies.MOD); }
-
-    /** Factions that own markets and could receive an ambassador (not the player, not hidden factions). */
-    static java.util.List<com.fs.starfarer.api.campaign.FactionAPI> ambassadorFactions() {
-        Set<String> seen = new HashSet<String>();
-        java.util.List<com.fs.starfarer.api.campaign.FactionAPI> out = new java.util.ArrayList<com.fs.starfarer.api.campaign.FactionAPI>();
-        for (com.fs.starfarer.api.campaign.econ.MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) {
-            com.fs.starfarer.api.campaign.FactionAPI f = m.getFaction();
-            if (f == null || m.isPlayerOwned() || f.isPlayerFaction() || !f.isShowInIntelTab() || !seen.add(f.getId())) continue;
-            out.add(f);
-        }
-        java.util.Collections.sort(out, new java.util.Comparator<com.fs.starfarer.api.campaign.FactionAPI>() {
-            public int compare(com.fs.starfarer.api.campaign.FactionAPI a, com.fs.starfarer.api.campaign.FactionAPI b) { return a.getDisplayName().compareTo(b.getDisplayName()); }
-        });
-        return out;
-    }
 
     /** Total cost of each colony's next station step under the chosen station line (new station or next upgrade). */
     public static float stationLineItem(CASettings s) {
@@ -715,31 +700,6 @@ public class CASetupUI {
 
     static int clamp(int v, int n) { return Math.max(0, Math.min(n - 1, v)); }
 
-    // ---------------- the stance table (for the Factions page, WS-F2) ----------------
-
-    /**
-     * One stance row per faction that owns markets, sorted Ally to Destroy and then by name, and a Reset all to Auto button.
-     * Its buttons are handled by handle() ("stance_<faction id>", "stancereset").
-     */
-    public static void renderStances(TooltipMakerAPI t, final CASettings s) {
-        t.addPara(DESC.get("stances") + " < friendlier, > more hostile.", Misc.getGrayColor(), 6f);   // 0.3.8.6: shown as is
-        java.util.List<com.fs.starfarer.api.campaign.FactionAPI> list = ambassadorFactions();
-        java.util.Collections.sort(list, new java.util.Comparator<com.fs.starfarer.api.campaign.FactionAPI>() {
-            public int compare(com.fs.starfarer.api.campaign.FactionAPI a, com.fs.starfarer.api.campaign.FactionAPI b) {
-                int c = Integer.compare(s.stanceOf(a.getId()), s.stanceOf(b.getId()));
-                return c != 0 ? c : a.getDisplayName().compareTo(b.getDisplayName());
-            }
-        });
-        com.fs.starfarer.api.campaign.FactionAPI player = Global.getSector().getPlayerFaction();
-        for (com.fs.starfarer.api.campaign.FactionAPI f : list) {
-            float rel = player.getRelationship(f.getId());
-            stanceRow(t, f.getDisplayName(), s.stanceOf(f.getId()), player.getRelationshipLevel(f.getId()).getDisplayName()
-                    + " (" + Math.round(rel * 100f) + ")", "stance_" + f.getId());
-        }
-        t.addButton("Reset all to Auto", PREFIX + "stancereset:x", Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
-                Alignment.MID, CutStyle.TL_BR, 200f, 22f, 10f);
-    }
-
     // ---- offense target (agents): Whoever attacks you (null), a random enemy, or one faction at war with you
 
     static String spyTargetName(String t) {
@@ -758,11 +718,6 @@ public class CASetupUI {
             if (!f.isPlayerFaction() && f.isShowInIntelTab() && f.isHostileTo("player")) order.add(f.getId());
         int i = order.indexOf(cur);
         return order.get((i + 1) % order.size());
-    }
-
-    static String stationName(String id) {
-        for (int i = 0; i < CASettings.STATION_IDS.length; i++) if (CASettings.STATION_IDS[i].equals(id)) return CASettings.STATION_NAMES[i];
-        return id;
     }
 
     // ---------------- 0.3.3.0: mode defaults and the "set by you" marker ----------------
@@ -854,29 +809,7 @@ public class CASetupUI {
         if (tip != null) t.addTooltipToPrevious(tip(tip), TooltipMakerAPI.TooltipLocation.BELOW);
     }
 
-    static TooltipMakerAPI.TooltipCreator tip(final String[] lines) {
-        return new TooltipMakerAPI.TooltipCreator() {
-            public boolean isTooltipExpandable(Object o) { return false; }
-            public float getTooltipWidth(Object o) { return TIP_W; }
-            public void createTooltip(TooltipMakerAPI tt, boolean expanded, Object o) {
-                for (int i = 0; i < lines.length; i++) tt.addPara(lines[i], i == 0 ? 0f : 6f);   // 0.3.8.6: shown as is
-            }
-        };
-    }
-
-    /** 0.3.0.0 (WS-E): one faction's stance line: < friendlier, > more hostile, the stance in its tone's colour, then the relation. */
-    static void stanceRow(TooltipMakerAPI t, String label, int stance, String relation, String key) {
-        Color base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
-        ButtonAPI lower = t.addButton("<", PREFIX + key + ":-", base, dark, Alignment.MID, CutStyle.TL_BR, 30f, 20f, 4f);
-        ButtonAPI higher = t.addButton(">", PREFIX + key + ":+", base, dark, Alignment.MID, CutStyle.TL_BR, 30f, 20f, 0f);
-        higher.getPosition().rightOfTop(lower, 4f);
-        int tone = CAStance.tone(stance);
-        Color c = tone > 0 ? Misc.getPositiveHighlightColor() : tone < 0 ? Misc.getNegativeHighlightColor() : Misc.getHighlightColor();
-        LabelAPI l = t.addPara("%s: %s. Now " + CALog.esc(relation) + ".", 0f, new Color[]{Misc.getHighlightColor(), c},
-                label, CAStance.name(stance));
-        l.getPosition().rightOfMid(higher, 12f);
-        CALog.endRow(t, lower);
-    }
+    static TooltipMakerAPI.TooltipCreator tip(final String[] lines) { return CATheme.tip(CATheme.hoverLines(lines), TIP_W); }   // 0.3.8.7: CATheme's box
 
     // ---------------- buttons ----------------
 
@@ -949,14 +882,6 @@ public class CASetupUI {
         else if (k.equals("surplus")) { s.surplusLine = (Math.max(0, s.surplusLine) + 1) % CASettings.SURPLUS_LINES.length; s.surplusChecked = true; }
         else if (k.equals("surplustf")) { s.surplusTerraform = (Math.max(0, s.surplusTerraform) + 1) % CASettings.SURPLUS_TF_NAMES.length; CATerraSim.reset(); }
         else if (k.equals("fees")) s.feeLevel = (s.feeLevel + 1) % 4;
-        else if (k.equals("station")) {   // the 0.2.45 station line row; the Stations preset row (p_station) replaced it
-            int i = 0, n = CASettings.STATION_IDS.length;
-            for (int j = 0; j < n; j++) if (CASettings.STATION_IDS[j].equals(s.stationLine)) i = j;
-            for (int step = 1; step <= n; step++) {   // the next line whose station the game has (Imperium only with Interstellar Imperium)
-                String next = CASettings.STATION_IDS[(i + step) % n];
-                if ("score".equals(next) || CASettings.stationStarter(next) != null) { s.stationLine = next; break; }
-            }
-        }
         else if (k.equals("cores")) s.useAICores = !s.useAICores;
         else if (k.equals("removals")) s.allowRemovals = !s.allowRemovals;
         else if (k.equals("alpha")) s.alphaMode = (Math.max(0, Math.min(2, s.alphaMode)) + 1) % 3;
@@ -969,7 +894,6 @@ public class CASetupUI {
         else if (k.equals("endgamerep")) s.endgameNoReplace = !s.endgameNoReplace;
         else if (k.equals("inspect")) s.inspectionMode = (Math.max(0, Math.min(2, s.inspectionMode)) + 1) % 3;
         else if (k.equals("corerisk")) s.coreRisk = (Math.max(0, Math.min(3, s.coreRisk)) + 1) % 4;
-        else if (k.equals("sp")) s.storyPointRule = (s.storyPointRule + 1) % 3;
         else if (k.equals("spcap")) s.storyPointMonthlyCap = Math.max(0, s.storyPointMonthlyCap + (int) dir);
         else if (k.equals("admin")) s.adminHiring = !s.adminHiring;
         else if (k.equals("adminopt")) s.adminOptimal = !s.adminOptimal;
@@ -1005,16 +929,7 @@ public class CASetupUI {
         else if (k.equals("enfdiktat")) s.enfDiktatOff = !s.enfDiktatOff;   // 0.3.8.6
         else if (k.equals("ambfocus")) s.ambassadorFocus = (Math.max(0, Math.min(3, s.ambassadorFocus)) + 1) % 4;
         else if (k.equals("ambstop")) s.ambassadorStopAt = (Math.max(0, Math.min(3, s.ambassadorStopAt)) + 1) % 4;
-        else if (k.startsWith("stance_")) {   // 0.3.0.0 (WS-E): the stance table (CAStance); Auto removes the entry
-            String fid = k.substring("stance_".length());
-            int st = CAStance.step(s.stanceOf(fid), "-".equals(op) ? -1 : 1);
-            if (st == CAStance.AUTO) s.factionStance().remove(fid); else s.factionStance().put(fid, st);
-            CAStance.markSetByYou(fid);   // 0.3.0.0 (WS-E fix): a stance you set acts fully in diplomacy (CAStance.fromOldPriority)
-        }
-        else if (k.equals("stancereset")) {   // 0.3.0.0 (WS-F1): Reset all to Auto, each one marked as set by you
-            for (String fid : new java.util.ArrayList<String>(s.factionStance().keySet())) CAStance.markSetByYou(fid);
-            s.factionStance().clear();
-        }
+        // 0.3.8.7: the old stance table's ids and the 0.2.45 station, stationplan and sp rows are gone: no button makes them
         else if (k.equals("hazard")) s.hazardPayMode = s.hazardPayMode == 0 ? 1 : 0;
         else if (k.equals("hpcol")) s.hazardPayColonyShare = Math.max(0.05f, Math.min(1f, s.hazardPayColonyShare + 0.05f * dir));
         else if (k.equals("hpemp")) s.hazardPayEmpireShare = Math.max(0.01f, Math.min(1f, s.hazardPayEmpireShare + 0.01f * dir));
@@ -1061,7 +976,6 @@ public class CASetupUI {
         else if (k.equals("capmode")) { if (s.capitalMode != 2) s.capitalMode = s.capitalMode == 0 ? 1 : 0; CACapital.reset(); }   // None is on the Capital row
         else if (k.equals("capstart")) s.capitalStart = (Math.max(0, Math.min(CACapital.START_NAMES.length - 1, s.capitalStart)) + 1) % CACapital.START_NAMES.length;
         else if (k.equals("caproom")) s.capitalNoRoom = !s.capitalNoRoom;
-        else if (k.equals("stationplan")) s.noStationPlan = !s.noStationPlan;
         else if (k.equals("marketmodel")) { s.noMarketModel = !s.noMarketModel; CAMarket.invalidate(); CAAuto.nextPass.clear(); }
         else if (k.equals("overlimit")) s.noOverLimitFix = !s.noOverLimitFix;
         else if (k.equals("prune")) s.noPrune = !s.noPrune;

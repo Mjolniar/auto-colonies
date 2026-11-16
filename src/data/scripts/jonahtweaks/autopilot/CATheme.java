@@ -82,13 +82,18 @@ public final class CATheme {
     public static void hover(TooltipMakerAPI t, String... lines) {
         final List<String> l = hoverLines(lines);
         if (l.isEmpty()) return;
-        t.addTooltipToPrevious(new TooltipMakerAPI.TooltipCreator() {
+        t.addTooltipToPrevious(tip(l, HOVER_W), TooltipMakerAPI.TooltipLocation.BELOW);
+    }
+
+    /** 0.3.8.7: the hover box: one paragraph per line, at a width. hover(), CASetupUI and CAFactionsPage use it. */
+    static TooltipMakerAPI.TooltipCreator tip(final List<String> l, final float width) {
+        return new TooltipMakerAPI.TooltipCreator() {
             public boolean isTooltipExpandable(Object o) { return false; }
-            public float getTooltipWidth(Object o) { return HOVER_W; }
+            public float getTooltipWidth(Object o) { return width; }
             public void createTooltip(TooltipMakerAPI tt, boolean expanded, Object o) {
                 for (int i = 0; i < l.size(); i++) tt.addPara(l.get(i), i == 0 ? 0f : 6f);   // 0.3.8.6: shown as is
             }
-        }, TooltipMakerAPI.TooltipLocation.BELOW);
+        };
     }
 
     /** The lines a hover shows: the non-empty ones, in order. Pure. */
@@ -236,6 +241,15 @@ public final class CATheme {
     };
     static final Pattern CREDITS = Pattern.compile("(\\d{1,3}(?:,\\d{3})+|\\d+)\\s?¢");
 
+    /** 0.3.8.7: CODES' patterns, compiled once (machine() compiled each one for every on-screen line). */
+    static final Pattern[] CODE_PATTERNS = compile(CODES);
+
+    static Pattern[] compile(Object[][] codes) {
+        Pattern[] out = new Pattern[codes.length];
+        for (int i = 0; i < codes.length; i++) out[i] = Pattern.compile((String) codes[i][0]);
+        return out;
+    }
+
     /** The places a log line can be about: your colonies' names and their systems' names, refreshed daily. */
     static Set<String> places;
     static float placesDay = -1f;
@@ -272,8 +286,9 @@ public final class CATheme {
             if (places.contains(head)) { place = head; body = body.substring(colon + 2); }
         }
         String code = null, lower = body.toLowerCase(Locale.ROOT);
-        for (Object[] c : CODES) {
-            Matcher m = Pattern.compile((String) c[0]).matcher(lower);
+        for (int i = 0; i < CODES.length; i++) {
+            Object[] c = CODES[i];
+            Matcher m = CODE_PATTERNS[i].matcher(lower);   // 0.3.8.7: compiled once
             if (!m.find()) continue;
             code = (String) c[1];
             if ((Boolean) c[2] && m.start() == 0) body = body.substring(m.end());

@@ -139,7 +139,7 @@ public final class CATidy {
     /** Everything kept for these gone markets. Returns how many entries went. */
     static int forget(CAData d, Set<String> gone) {
         int n = 0;
-        n += dropKeys(d.colonies == null ? null : d.colonies.keySet(), gone);
+        // 0.3.8.7: the colonies' own entries go last, after their stores (a failure there leaves them for next week's check)
         n += dropKeys(d.stepStuck == null ? null : d.stepStuck.keySet(), gone, ":");
         n += dropKeys(d.worldDead == null ? null : d.worldDead.keySet(), gone, ":");
         n += dropKeys(d.endgameBuilt == null ? null : d.endgameBuilt.keySet(), gone, ":");
@@ -155,21 +155,31 @@ public final class CATidy {
         if (d.enablerAt != null) n += dropKeys(d.enablerAt.keySet(), gone, ":");
         n += CAMark.forgetMarkets(gone);   // 0.3.0.0 (B5): per-colony keep: marks (free port reopen, world commitments)
         if (d.stores != null) {
+            // 0.3.8.7: the destination store is read before the loop: CAStores.of adds its entry to d.stores when it has none,
+            // which threw ConcurrentModificationException at it.remove() below
+            boolean any = false;
+            for (Map.Entry<String, com.fs.starfarer.api.campaign.CargoAPI> e : d.stores.entrySet())
+                if (gone.contains(e.getKey()) && e.getValue() != null && !e.getValue().isEmpty()) { any = true; break; }
+            com.fs.starfarer.api.campaign.econ.MarketAPI destMarket = null;
+            com.fs.starfarer.api.campaign.CargoAPI dest = null;
+            if (any) {
+                List<com.fs.starfarer.api.campaign.econ.MarketAPI> to;
+                try { to = CAStores.markets(); } catch (Throwable t) { to = Collections.emptyList(); }   // no game (offline checks): kept
+                if (!to.isEmpty()) { destMarket = to.get(0); dest = CAStores.of(destMarket); }
+            }
             for (Iterator<Map.Entry<String, com.fs.starfarer.api.campaign.CargoAPI>> it = d.stores.entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry<String, com.fs.starfarer.api.campaign.CargoAPI> e = it.next();
                 if (!gone.contains(e.getKey())) continue;
                 com.fs.starfarer.api.campaign.CargoAPI c = e.getValue();
                 if (c == null || c.isEmpty()) { it.remove(); n++; continue; }
                 // 0.3.6.2: what a decivilized colony's Autopilot Storage held moves to your biggest colony's, so nothing is stranded
-                List<com.fs.starfarer.api.campaign.econ.MarketAPI> to;
-                try { to = CAStores.markets(); } catch (Throwable t) { to = Collections.emptyList(); }   // no game (offline checks): kept
-                if (to.isEmpty()) { CALog.quiet("Autopilot Storage of a colony that's gone (" + e.getKey() + ") still holds " + c.getStacksCopy().size() + " stacks; no colony to move it to"); continue; }
-                com.fs.starfarer.api.campaign.CargoAPI dest = CAStores.of(to.get(0));
+                if (dest == null) { CALog.quiet("Autopilot Storage of a colony that's gone (" + e.getKey() + ") still holds " + c.getStacksCopy().size() + " stacks; no colony to move it to"); continue; }
                 dest.addAll(c, true);   // ships in it too
                 it.remove(); n++;
-                CALog.did("Autopilot Storage: A lost colony's items moved to " + to.get(0).getName() + ".");
+                CALog.did("Autopilot Storage: A lost colony's items moved to " + destMarket.getName() + ".");
             }
         }
+        n += dropKeys(d.colonies == null ? null : d.colonies.keySet(), gone);
         return n;
     }
 }

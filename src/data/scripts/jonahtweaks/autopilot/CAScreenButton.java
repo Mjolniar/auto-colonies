@@ -120,7 +120,15 @@ public class CAScreenButton implements EveryFrameScript {
         linkState = null; dialogNew = dialogShow = null;
     }
 
-    private final Map<String, Object> methods = new HashMap<String, Object>();
+    private final Methods methods = new Methods();   // 0.3.8.7: by name, then class
+    /** 0.3.8.7: the colony of the last grid read; IndustryListPanel sets its market field in its constructor only. */
+    private Object marketGrid;
+    private MarketAPI gridMarket;
+    /** 0.3.8.7: decisions waiting at a colony, counted at most every WAITING_MS. */
+    private String waitingFor;
+    private int waitingCount;
+    private long waitingAt;
+    static final long WAITING_MS = 2000L;
     private boolean broken = false;
     private float timer = 0f;
     private CustomPanelAPI button;
@@ -166,12 +174,12 @@ public class CAScreenButton implements EveryFrameScript {
         if (!colonyTab(coreTab)) return null;
         // the colony screen lives in the core UI: the campaign's own, or (docked) the open dialog's
         List<Object> cores = new ArrayList<Object>();
-        if (dialog != null) cores.add(tryCall(dialog, "getCoreUI"));
-        cores.add(tryCall(ui, "getCore"));
+        if (dialog != null) cores.add(call(dialog, "getCoreUI"));   // 0.3.8.7: cached lookups
+        cores.add(call(ui, "getCore"));
         Screen best = null;
         for (Object core : cores) {
             if (!(core instanceof UIPanelAPI)) continue;
-            Object tab = tryCall(core, "getCurrentTab");
+            Object tab = call(core, "getCurrentTab");
             Screen s = search(core, tab instanceof UIPanelAPI ? (UIPanelAPI) tab : (UIPanelAPI) core);
             if (!(tab instanceof UIPanelAPI)) s.note = "no current tab, searched the whole core UI";
             else if (s.grid == null && tab != core) {
@@ -181,7 +189,9 @@ public class CAScreenButton implements EveryFrameScript {
                 if (whole.grid != null) s = whole;
             }
             if (s.grid != null) {
-                s.market = marketOf(s.grid);
+                // 0.3.8.7: the grid's colony is read once per grid
+                if (s.grid != marketGrid) { marketGrid = s.grid; gridMarket = marketOf(s.grid); }
+                s.market = gridMarket;
                 for (int i = 0; s.market == null && i < s.tiles.size(); i++) s.market = marketOf(s.tiles.get(i));
             }
             if (s.market == null && s.grid != null && dialog != null && dialog.getInteractionTarget() != null)
@@ -227,20 +237,37 @@ public class CAScreenButton implements EveryFrameScript {
         try { return width ? Global.getSettings().getScreenWidth() : Global.getSettings().getScreenHeight(); } catch (Throwable t) { return 0f; }
     }
 
-    static Object tryCall(Object target, String name) {
-        try { return CARefl.call(target, name); } catch (Throwable t) { return null; }
+    /**
+     * 0.3.8.7: public no-argument methods, looked up once per name and class (NONE when a class has none), so no key string
+     * is built per lookup. One per script (CAScreenButton, CABuildHints); nothing static.
+     */
+    static final class Methods {
+        private final Map<String, Map<Class<?>, Object>> byName = new HashMap<String, Map<Class<?>, Object>>();
+
+        Object get(Class<?> cls, String name) {
+            Map<Class<?>, Object> byClass = byName.get(name);
+            if (byClass == null) { byClass = new IdentityHashMap<Class<?>, Object>(); byName.put(name, byClass); }
+            Object m = byClass.get(cls);
+            if (m == null) {
+                try { m = CARefl.method(cls, name); } catch (Throwable t) { m = NONE; }
+                byClass.put(cls, m);
+            }
+            return m;
+        }
+
+        /** Calls a public no-argument method by name: the result, or null when there is none or it throws. */
+        Object call(Object target, String name) {
+            if (target == null) return null;
+            Object m = get(target.getClass(), name);
+            if (m == NONE) return null;
+            try { return CARefl.invoke(m, target); } catch (Throwable t) { return null; }
+        }
     }
 
     /** A public no-argument method of a class, cached (NONE when it has none). */
-    Object method(Class<?> cls, String name) {
-        String key = cls.getName() + "#" + name;
-        Object m = methods.get(key);
-        if (m == null) {
-            try { m = CARefl.method(cls, name); } catch (Throwable t) { m = NONE; }
-            methods.put(key, m);
-        }
-        return m;
-    }
+    Object method(Class<?> cls, String name) { return methods.get(cls, name); }
+
+    Object call(Object target, String name) { return methods.call(target, name); }
 
     /** Every visible component under c, with its panel; a hidden one (no opacity) and everything under it is skipped, and so is the button itself. */
     void collect(UIComponentAPI c, UIComponentAPI from, Screen s, int depth) throws Exception {
@@ -290,9 +317,8 @@ public class CAScreenButton implements EveryFrameScript {
 
     void report(CampaignUIAPI ui, InteractionDialogAPI dialog, Screen s) {
         if (reports >= 8 || (s != null && button != null && s.sawButton)) return;
-        // only screens a colony could be on: the colonies tab, or a docked market's screens
+        // 0.3.8.7: read() returns before this on any tab but the colonies tab and a docked market's screens
         com.fs.starfarer.api.campaign.CoreUITabId tab = ui.getCurrentCoreTab();
-        if (tab != com.fs.starfarer.api.campaign.CoreUITabId.OUTPOSTS && tab != com.fs.starfarer.api.campaign.CoreUITabId.CARGO && (s == null || s.grid == null)) return;
         StringBuilder b = new StringBuilder("colony screen button: core tab ").append(tab)
                 .append(dialog != null ? ", dialog open" : ", no dialog");
         if (s == null) b.append(", no core UI found");
@@ -307,19 +333,21 @@ public class CAScreenButton implements EveryFrameScript {
     }
 
     void update() throws Exception {
-        if (!CAData.settings().noScreenButton && !linked()) { broken = true; remove(); return; }   // 0.3.0.0: no dialog to open, no button
-        Screen s = CAData.settings().noScreenButton ? null : read();
+        boolean off = CAData.settings().noScreenButton;   // 0.3.8.7: read once
+        if (!off && !linked()) { broken = true; remove(); return; }   // 0.3.0.0: no dialog to open, no button
+        Screen s = off ? null : read();
         if (s == null) { remove(); return; }
-        float[] at = place(s);
+        ButtonAPI add = addButton(s);   // 0.3.8.7: read once per update
+        float[] at = place(s, add);
         if (at == null) {
             remove();
             if (!noSpotLogged) { noSpotLogged = true; CADiagnostics.LOG.info(CADiagnostics.TAG + "no free spot for the colony screen button; the right-click option still works"); }
             return;
         }
-        UIPanelAPI in = container(s, at);
+        UIPanelAPI in = container(s, at, add);
         PositionAPI cp = in.getPosition();
         float rx = at[0] - cp.getX(), ry = at[1] - cp.getY();
-        int waiting = waiting(s.market);   // 0.3.3.0: decisions waiting at this colony, on the button
+        int waiting = waitingCached(s.market);   // 0.3.3.0: decisions waiting at this colony, on the button
         if (button != null && parent == in && s.sawButton && Math.abs(rx - relX) < 1f && Math.abs(ry - relY) < 1f && waiting == shownWaiting
                 && Math.abs(at[2] - shownW) < 1f) return;   // still in place
         remove();
@@ -333,7 +361,6 @@ public class CAScreenButton implements EveryFrameScript {
         if (placements < 6) {
             placements++;
             float[] g = gridBox(s), b = anchor(s, g);
-            ButtonAPI add = addButton(s);
             CADiagnostics.LOG.info(CADiagnostics.TAG + "colony screen button placed at " + box(at) + " on "
                     + s.market.getName() + ", in " + in.getClass().getName() + " " + box(rect(in)) + "; buildings " + box(g)
                     + (add != null ? ", under Add industry or structure at " + box(rect(add)) : b != null ? ", next to the button at " + box(b) : ", no button under them")
@@ -351,10 +378,12 @@ public class CAScreenButton implements EveryFrameScript {
      * hides with the colony screen. Never the grid itself or a tile, which lay out their own children. The searched root
      * when there's none (or nothing is known about the panels).
      */
-    static UIPanelAPI container(Screen s, float[] at) {
+    static UIPanelAPI container(Screen s, float[] at) { return container(s, at, addButton(s)); }
+
+    /** 0.3.8.7: container() with the Add industry button already read (update reads it once). */
+    static UIPanelAPI container(Screen s, float[] at, ButtonAPI add) {
         float[] r = {at[0], at[1], at.length > 2 ? at[2] : W, at.length > 3 ? at[3] : H}, g = gridBox(s);
         // 0.3.8.2: under the Add industry button, the lowest walked panel above it that holds the button's spot
-        ButtonAPI add = addButton(s);
         if (add != null && s.up.containsKey(add)) {
             UIComponentAPI c = s.up.get(add);
             for (int i = 0; c != null && i < 40; i++, c = s.up.get(c)) {
@@ -386,6 +415,17 @@ public class CAScreenButton implements EveryFrameScript {
     private int shownWaiting = -1;
     private float shownW = -1f;
 
+    /** 0.3.8.7: waiting() for the button, counted again at most every WAITING_MS (it builds every decision of every colony). */
+    int waitingCached(MarketAPI m) {
+        if (m == null) return 0;
+        long ms = System.currentTimeMillis();
+        if (m.getId().equals(waitingFor) && ms >= waitingAt && ms - waitingAt < WAITING_MS) return waitingCount;
+        waitingFor = m.getId();
+        waitingAt = ms;
+        waitingCount = waiting(m);
+        return waitingCount;
+    }
+
     /** 0.3.3.0: decisions waiting at this colony (its build proposal and the ladder's proposals there). */
     static int waiting(MarketAPI m) {
         if (m == null) return 0;
@@ -393,8 +433,6 @@ public class CAScreenButton implements EveryFrameScript {
         try { for (CAApprovals.Item it : CAApprovals.collect()) if (m.getId().equals(it.marketId)) n++; } catch (Throwable ignored) { }
         return n;
     }
-
-    CustomPanelAPI make() { return make(0, W, H); }
 
     CustomPanelAPI make(int waiting, float w, float h) {
         CustomPanelAPI p = Global.getSettings().createCustom(w, h, new BaseCustomUIPanelPlugin() {
@@ -432,8 +470,10 @@ public class CAScreenButton implements EveryFrameScript {
      * 0.3.8.2: where the button goes, {x, y, width, height} in screen coordinates: under the Add industry button, as wide as
      * it (at least BIG_MIN_W) and BIG_H tall, kept on the screen; without that button, the first free spot (spot) at W x H.
      */
-    static float[] place(Screen s) {
-        ButtonAPI add = addButton(s);
+    static float[] place(Screen s) { return place(s, addButton(s)); }
+
+    /** 0.3.8.7: place() with the Add industry button already read (update reads it once). */
+    static float[] place(Screen s, ButtonAPI add) {
         if (add != null) {
             float[] a = rect(add);
             if (a[2] > 0f && a[3] > 0f) return new float[]{a[0], Math.max(0f, a[1] - BIG_GAP - BIG_H), Math.max(a[2], BIG_MIN_W), BIG_H};
@@ -471,7 +511,6 @@ public class CAScreenButton implements EveryFrameScript {
         return a[0] >= outer[0] && a[1] >= outer[1] && a[0] + a[2] <= outer[0] + outer[2] && a[1] + a[3] <= outer[1] + outer[3];
     }
 
-    /** Bottom-left corner of the first free candidate spot, in screen coordinates, or null. */
     /** The buildings' bounding box (x, y, width, height), or null with none. */
     static float[] gridBox(Screen s) {
         if (s.tiles.isEmpty()) return null;
@@ -497,6 +536,7 @@ public class CAScreenButton implements EveryFrameScript {
         return below;
     }
 
+    /** Bottom-left corner of the first free candidate spot, in screen coordinates, or null. */
     static float[] spot(Screen s) {
         float[] tab = rect(s.tab), g = gridBox(s);
         if (g == null) return null;

@@ -183,7 +183,7 @@ public class CASettings {
     // ---------------- 0.3.0.0 (A0): every new setting of the 0.3.0 workstreams, added at once (plans/cm-3.0 FIELDS.md) ----------------
     // XStream skips constructors, so an older save loads a missing field as 0, false or null: "on by default" switches are
     // inverted (noX), numbers that must not be 0 get their default in fixNulls, and CAMigrate.to3 translates the rest once.
-    /** Settings layout version: 3 for new saves; every save from before 0.3.0 loads 0, so CAMigrate.to3 runs once. */
+    /** Settings layout version: CAMigrate.SCHEMA (6) for new saves; every save from before 0.3.0 loads 0, so CAMigrate.to3 runs once. 0.3.8.7: corrected. */
     public int settingsVersion = CAMigrate.SCHEMA;
     /** B (hidden): the 0.2.45 build engine instead of the 0.3.0 planner, kept for 0.3.0.x in case the planner misbehaves. */
     public boolean legacyPlanner = false;

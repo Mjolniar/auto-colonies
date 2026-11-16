@@ -1,6 +1,5 @@
 package data.scripts.jonahtweaks.autopilot;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -45,7 +44,7 @@ public class CAStep {
     static boolean run(String name, Body body, boolean breaker) {
         if (CAPass.building()) { CAPass.add(() -> run(name, body, breaker)); return true; }   // 0.3.6.9: queued, run in a later frame
         boolean allowed = true;
-        try { allowed = CASync.step(name); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story check for step " + name + " failed", t); }   // 0.3.6.2
+        try { allowed = CASync.step(name); } catch (Throwable t) { warn(name, "story check for step " + name + " failed", t); }   // 0.3.6.2; 0.3.8.7: deduplicated
         if (!allowed) return true;   // 0.3.6.0 story mode: a step whose ability is off doesn't run
         Stat st = stat(name);
         if (st.broken != null) return false;
@@ -132,9 +131,6 @@ public class CAStep {
         }
         return out;
     }
-
-    /** Every step's record (read-only). */
-    static Map<String, Stat> stats() { return Collections.unmodifiableMap(stats); }
 
     /** Called by CAReset.onLoad: every step runs again after a load, and its failures log their trace once more. */
     static void reset() { stats.clear(); seen.clear(); }

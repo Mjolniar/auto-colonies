@@ -47,9 +47,9 @@ public class CAReset {
         failed += run("mod watch", () -> CAModWatch.reset());
         failed += run("Rogue Planets", () -> { CARogue.on = null; CARogue.testIndustries = null; });   // 0.3.2.1: asked again; the test list is offline only
         failed += run("Corrupt.Officials", () -> CAIndexMods.reset());   // 0.3.3.2: its settings and each colony's kept share read again
-        failed += run("LunaLib settings", () -> CALunaSync.reset());
+        failed += run("LunaLib settings", () -> CALunaSync.reset());   // 0.3.4.0: the last sync was the other save's; CALunaSync.onLoad syncs again
         // 0.3.6.0: story mode's screen state (the button waiting for Confirm, the page's line, a queued TriPad beat, a mode note)
-        failed += run("story mode", () -> { CASync.queued = null; CASync.armed = null; CASync.notice = null; CASync.modeNote = null; });   // 0.3.4.0: the last sync was the other save's; CALunaSync.onLoad syncs again
+        failed += run("story mode", () -> { CASync.queued = null; CASync.armed = null; CASync.notice = null; CASync.modeNote = null; });
         if (on("niko_stationAugments")) failed += run("station augments", () -> { CAAugments.nextRun.clear(); CAAugments.lastSig.clear(); });
         // caches and cooldowns that held the other save's data (07 H6)
         failed += run("research ranking", () -> {
@@ -62,10 +62,11 @@ public class CAReset {
             CAContracts.payCache = 0f; CAContracts.payAt = Float.NaN;   // 0.3.2.0: what held contracts pay a month (the money taper)
         });
         if (on("assortment_of_things")) failed += run("settlement sites", () -> { CASettlement.cache = null; CASettlement.cachedAt = -999f; });
+        // 0.3.6.3; 0.3.8.7: in every game (neither class uses Nexerelin; CAAuto runs CAStationAsk.daily in every game)
+        failed += run("station line ask", () -> { CAStationAsk.reset(); CAStations.reset(); });
         if (on("nexerelin")) {
             failed += run("defense fleet cooldowns", () -> { CADefense.lastSent.clear(); CADefense.warned.clear(); });
             failed += run("war fleet warnings", () -> { CAWar.warned.clear(); CAWar.summary = null; });   // 0.3.8.5: the relief cooldown is the saved record (CAWar.reliefRecent)
-            failed += run("station line ask", () -> { CAStationAsk.reset(); CAStations.reset(); });   // 0.3.6.3
             failed += run("agents' rival", () -> { CASpies.rivalCache = null; CASpies.rivalDay = Integer.MIN_VALUE; });   // 0.3.0.9: the day's automatic rival held the last save's
         }
         failed += run("colony crises", () -> {

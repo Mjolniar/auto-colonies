@@ -1,5 +1,22 @@
 # Patch notes
 
+## 0.3.8.7 - 2026-11-16
+
+- First-time setup: Fixed Back and Close keeping the recommended settings and the empire mode's defaults.
+- Colony panel: Fixed Faction stances OPEN opening the Colony page.
+- Approvals: Added a confirmation to Approve all and Reject all on the Colonies page and in Choose each.
+- Approvals: Fixed the summary naming a page that no longer exists.
+- Approvals: Fixed Approve and Reject buttons adding empty colony entries to the save.
+- LunaLib: Fixed War, New colonies, Story points, Stations, Production and the Spending upkeep share not loading from LunaLib.
+- LunaLib: Fixed changes saved on the title screen losing presets, Reset to recommended and the set-by-you marks.
+- LunaLib: Fixed loading a save clearing its capital pick while Capital does is Off.
+- Autopilot Storage: Fixed the weekly move of a lost colony's items failing.
+- Stations: Fixed station builds skipped for up to a day after loading another save without Nexerelin.
+- Megastructures: Fixed a paused hypershunt range change still running every day.
+- Daily pass: Fixed a failed reset on load stopping the daily pass for the session.
+- Log: Fixed repeated failures and slow passes writing to starsector.log every second or every day.
+- Performance: Changed the colony screen button, build menu hints and on-screen log lines to use less CPU.
+
 ## 0.3.8.6 - 2026-11-16
 
 - Enforcer patrols: Colony patrols attack Sindrian Diktat raiders. No credit charge or reputation change. Own setting, on by default.

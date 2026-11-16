@@ -1,25 +1,19 @@
 package data.scripts.jonahtweaks.autopilot;
 
 import com.fs.starfarer.api.Global;
-import com.fs.starfarer.api.campaign.comm.IntelInfoPlugin;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.intel.BaseIntelPlugin;
 import com.fs.starfarer.api.ui.Alignment;
 import com.fs.starfarer.api.ui.ButtonAPI;
-import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.CutStyle;
-import com.fs.starfarer.api.ui.IntelUIAPI;
 import com.fs.starfarer.api.ui.LabelAPI;
-import com.fs.starfarer.api.ui.SectorMapAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * The empire panel: every colony's profile, mode and top pick, Autopilot Storage, one page per mod feature in use,
@@ -40,13 +34,12 @@ public class CAIntel extends BaseIntelPlugin {
     /** 0.3.3.0: Approve or Reject one decision by its key ({APPR, key}), or all of them. */
     static final String APPR = "appr", REJT = "rejt", APPR_ALL = "apprall", REJT_ALL = "rejtall";
     public static final String TAG = "Colony Autopilot";
-    /** UI handles are never saved with the game. */
-    transient TooltipMakerAPI lastTooltip;
 
     /**
      * 0.3.7.1: the Colony Autopilot intel tab is gone. Its pages are the Empire pages of the colony panel (CAColonyDialog,
      * through renderEmpire, pressEmpire and the confirm helpers below); story mode is one entry in the Story tab
      * (CAStoryIntel). On load this takes the old entry out of the intel list. The class stays so older saves load.
+     * 0.3.8.7: the old entry's own members (its list line, tags, large description and button hook) are removed.
      */
     public static void ensure() {
         com.fs.starfarer.api.campaign.comm.IntelManagerAPI mgr = Global.getSector().getIntelManager();
@@ -81,21 +74,13 @@ public class CAIntel extends BaseIntelPlugin {
 
     /** An Empire page's button, from the colony panel (it redraws itself afterwards). */
     static void pressEmpire(Object id) {
-        try { new CAIntel().pressed(id, null); }
+        try { new CAIntel().pressed(id); }
         catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "empire page button failed", t);
             CALog.advise("Button failed. See starsector.log.", true);
         }
     }
 
-    /** Redraws the intel item when there is one (the old intel); the colony panel redraws itself. */
-    void refresh(IntelUIAPI ui) { if (ui != null) ui.updateUIForItem(this); }
-
-    @Override protected String getName() { return "Colony Autopilot"; }
-    @Override public String getIcon() { return "graphics/icons/markets/headquarters.png"; }
-    @Override public boolean hasLargeDescription() { return true; }
-    @Override public boolean hasSmallDescription() { return false; }
-    @Override public boolean shouldRemoveIntel() { return false; }
     @Override public boolean doesButtonHaveConfirmDialog(Object buttonId) {
         if (!(buttonId instanceof String[]) || ((String[]) buttonId).length < 2) return false;
         String[] a = (String[]) buttonId;
@@ -105,6 +90,7 @@ public class CAIntel extends BaseIntelPlugin {
             // 0.3.0.0 (WS-F2): Reset all to Auto (Factions page) and Found now (Expansion page) ask first
             if (CAFactionsPage.ID.equals(a[0])) return CAFactionsPage.needsConfirm(a[1]);
             if ("expand".equals(a[0])) return CAExpansionPage.needsConfirm(a[1]);
+            if (APPR_ALL.equals(a[0]) || REJT_ALL.equals(a[0])) return true;   // 0.3.8.7: as the approval summary's options
         } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "confirmation check failed", e); }
         return false;
     }
@@ -117,35 +103,17 @@ public class CAIntel extends BaseIntelPlugin {
             if ("war".equals(a[0]) && Global.getSettings().getModManager().isModEnabled(CAWar.MOD)) CAWar.confirmPrompt(prompt, a[1], a.length > 2 ? a[2] : "");
             else if (CAFactionsPage.ID.equals(a[0])) CAFactionsPage.confirmPrompt(prompt, a[1], CAData.settings());
             else if ("expand".equals(a[0])) CAExpansionPage.confirmPrompt(prompt, a[1], a.length > 2 ? a[2] : null, CAData.get(), CAData.settings());
+            else if (APPR_ALL.equals(a[0])) prompt.addPara(CAApprovalDialog.approveAllPrompt(CAApprovals.collect()), 0f);   // 0.3.8.7: the summary's text
+            else if (REJT_ALL.equals(a[0])) prompt.addPara(CAApprovalDialog.rejectAllPrompt(CAApprovals.collect().size()), 0f);
         } catch (Throwable e) {
             // 0.3.0.0 (WS-F2): a prompt that fails still opens, with a line instead of the details
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "confirmation text failed", e);
             prompt.addPara("Details: " + CATheme.NOT_SHOWN, 0f);
         }
     }
-    @Override public String getSortString() { return "Colony Autopilot"; }
-
-    @Override
-    public Set<String> getIntelTags(SectorMapAPI map) {
-        Set<String> tags = new LinkedHashSet<String>();
-        tags.add(TAG);
-        return tags;
-    }
-
-    @Override
-    public void createIntelInfo(TooltipMakerAPI info, IntelInfoPlugin.ListInfoMode mode) {
-        Color c = getTitleColor(mode);
-        info.addPara(getName(), c, 0f);
-        try {   // 0.3.6.2: guarded, the game calls this outside any catch
-            info.addPara("%s colonies, %s diagnostics issues", 3f, Misc.getGrayColor(), Misc.getHighlightColor(),
-                    "" + Misc.getPlayerMarkets(false).size(),
-                    "" + (CADiagnostics.count(CADiagnostics.Level.ANALYZED) + CADiagnostics.count(CADiagnostics.Level.QUARANTINED)));
-        } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "intel list line failed", e); }
-    }
 
     /** The page shown (UI state only, not saved). */
     static String page = "colonies";
-    transient String lastPage;
 
     /**
      * The pages in the list on the left: always Colonies, Storage, Colony crises, Expansion, Settings, Factions, Log and
@@ -220,51 +188,6 @@ public class CAIntel extends BaseIntelPlugin {
             CATheme.heading(t, "Coronal Hypershunt (AotD)", 0f);
             CAHypershunt.renderEmpire(t, data, s);
         }
-    }
-
-    @Override
-    public void createLargeDescription(CustomPanelAPI panel, float width, float height) {
-        CAData data = CAData.get();
-        CASettings s = data.settings;
-        // 0.3.6.2: guarded like the page itself; a throw here reached the game
-        try { CABudget.rollMonth(s); } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "month roll from the intel failed", e); }
-        List<MarketAPI> markets = Misc.getPlayerMarkets(false);
-        List<String[]> pages;
-        try { pages = pages(data, s, markets); }
-        catch (Throwable e) {
-            CADiagnostics.LOG.warn(CADiagnostics.TAG + "intel page list failed", e);
-            pages = new ArrayList<String[]>();
-            pages.add(new String[]{"diag", "Diagnostics"});
-        }
-        page = CANav.valid(pages, page);
-        float scrollY = 0f;
-        try { if (page.equals(lastPage) && lastTooltip != null && lastTooltip.getExternalScroller() != null) scrollY = lastTooltip.getExternalScroller().getYOffset(); }
-        catch (Throwable ignored) { }
-
-        // the grid and neon frames (0.2.41.0): drawn by an empty panel added first, so it sits behind and the buttons stay the intel's
-        CustomPanelAPI backdrop = panel.createCustomPanel(width, height, new CATheme.Frame(CANav.W, CANav.GAP));
-        panel.addComponent(backdrop).inTL(0f, 0f);
-        TooltipMakerAPI nav = panel.createUIElement(CANav.W, height, false);
-        nav.addTitle("AUTOPILOT\\\\ CORE");
-        int auto = 0;
-        for (MarketAPI m : markets) if (data.colony(m.getId()).mode == CAData.Mode.AUTO) auto++;
-        CATheme.readout(nav, 2f, "Online", auto + " of " + markets.size() + " Auto");
-        CANav.render(nav, pages, page);
-        panel.addUIElement(nav).inTL(0f, 0f);
-
-        TooltipMakerAPI t = panel.createUIElement(width - CANav.W - CANav.GAP, height, true);
-        long t0 = System.nanoTime();
-        CAEngine.drawing(true);   // 0.3.0.0 (A4 fix, 07 M6): nothing drawn here evaluates a colony (CAAugments' slot value included)
-        try { renderPage(t, data, s, markets, width - CANav.W - CANav.GAP); }
-        catch (Throwable e) {
-            CADiagnostics.LOG.warn(CADiagnostics.TAG + "empire panel page " + page + " failed", e);
-            t.addPara(CATheme.NOT_SHOWN, Misc.getGrayColor(), 6f);
-        } finally { CAEngine.drawing(false); }
-        CAPerf.record("empire panel: " + page, System.nanoTime() - t0);   // 0.3.0.0 (A4): what a page costs to draw
-        panel.addUIElement(t).inTL(CANav.W + CANav.GAP, 0f);
-        try { if (t.getExternalScroller() != null) t.getExternalScroller().setYOffset(scrollY); } catch (Throwable ignored) { }
-        lastTooltip = t;
-        lastPage = page;
     }
 
     void renderPage(TooltipMakerAPI t, CAData data, CASettings s, List<MarketAPI> markets, float width) {
@@ -585,30 +508,19 @@ public class CAIntel extends BaseIntelPlugin {
                 Misc.getNegativeHighlightColor(), "" + CAEngine.drawnEvals);
     }
 
-    @Override
-    public void buttonPressConfirmed(Object buttonId, IntelUIAPI ui) {
-        // every button goes through here: an error is logged and shown in the log instead of reaching the game (0.2.37.0)
-        try { pressed(buttonId, ui); }
-        catch (Throwable t) {
-            CADiagnostics.LOG.warn(CADiagnostics.TAG + "empire panel button failed", t);
-            try { CALog.advise("Button failed. See starsector.log.", true); refresh(ui); } catch (Throwable ignored) { }
-        }
-    }
-
     /** 0.3.3.0: every click is tracked: a setting it changes is yours (CAModeTable), and keeps its value through mode changes. */
-    void pressed(Object buttonId, IntelUIAPI ui) {
+    void pressed(Object buttonId) {
         CASettings s = CAData.settings();
         CAModeTable.clickStart(s);
-        try { press(buttonId, ui); }
+        try { press(buttonId); }
         finally { CAModeTable.clickEnd(s, buttonId); }
     }
 
-    void press(Object buttonId, IntelUIAPI ui) {
+    void press(Object buttonId) {
         CAData d = CAData.get();
         String ladder = CARich.handle(buttonId);   // 0.3.0.0 (C3): the money ladder's Approve and Reject buttons
         if (ladder != null) {
             if (!ladder.isEmpty()) CALog.advise(ladder, true);
-            refresh(ui);
             return;
         }
         if (CASync.handle(buttonId)) {
@@ -687,11 +599,13 @@ public class CAIntel extends BaseIntelPlugin {
         } else if (buttonId instanceof String[]) {
             String[] a = (String[]) buttonId;
             MarketAPI m = CAAuto.market(a[1]);
-            CAData.Colony c = d.colony(a[1]);
+            // 0.3.8.7: d.colony stores an entry for any id; only the profile and mode buttons carry a market id
             if ("profile".equals(a[0])) {
+                CAData.Colony c = d.colony(a[1]);
                 CAData.Profile[] all = CAData.Profile.values();
                 c.profile = all[(c.profile.ordinal() + 1) % all.length];
             } else if ("mode".equals(a[0])) {
+                CAData.Colony c = d.colony(a[1]);
                 CAData.Mode[] all = CAData.Mode.values();
                 d.setMode(c, all[(c.mode.ordinal() + 1) % all.length]);   // 0.3.3.0: a change clears the colony's waiting proposal
                 if ((c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO) && !d.settings.setupDone && CALunaSync.keepsSetup()) {
@@ -716,6 +630,5 @@ public class CAIntel extends BaseIntelPlugin {
             } else if (APPR_ALL.equals(a[0])) CAApprovals.approveAll(CAApprovals.collect());
             else if (REJT_ALL.equals(a[0])) CAApprovals.rejectAll(CAApprovals.collect());
         }
-        refresh(ui);
     }
 }

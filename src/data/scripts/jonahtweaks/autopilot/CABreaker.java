@@ -21,6 +21,7 @@ public class CABreaker {
     /** Records whether an action worked; returns ok. */
     public static boolean check(String action, boolean ok, String where) {
         if (ok) { fails.remove(action); return true; }
+        if (tripped.containsKey(action)) return false;   // 0.3.8.7: stopped for the session: no more counting or log lines
         Integer n = fails.get(action);
         n = n == null ? 1 : n + 1;
         fails.put(action, n);

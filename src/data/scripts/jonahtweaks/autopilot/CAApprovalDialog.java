@@ -40,6 +40,8 @@ import java.util.*;
 public class CAApprovalDialog implements InteractionDialogPlugin {
     static final String APPROVE_ALL = "ca:sum:all", REJECT_ALL = "ca:sum:none", CHOOSE = "ca:sum:choose", LATER = "ca:sum:later",
             ONE_YES = "ca:sum:yes", ONE_NO = "ca:sum:no", ONE_NEXT = "ca:sum:next";
+    /** 0.3.8.7: Choose each's Confirm and Cancel for Approve all and Reject all. */
+    static final String PANEL_OK = "ca:sum:ok", PANEL_CANCEL = "ca:sum:cancel";
     /** Item lines in the dialog's text before "N more under Choose each". */
     static final int MAX_LINES = 12;
     /** 0.3.3.5: the first this many decisions show their detail lines in the summary text; Choose each shows them all. */
@@ -224,9 +226,8 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
         List<CAApprovals.Item> open = open();
         t.addPara("Decisions: %s. Credits %s. Reserve %s.", hl, String.valueOf(open.size()), Misc.getDGSCredits(CABuild.credits()),
                 Misc.getDGSCredits(s.reserve));
-        para(t, "Autopilot does not spend below the reserve. Later keeps every decision open: this "   // 0.3.8.6: plain wording
-                + "summary comes back in " + Math.max(1, s.approvalDays) + " days, and the list stays in the Autopilot panel (Empire, "
-                + "Colonies, Waiting for approval).", gray);
+        para(t, "Later keeps every decision open. The summary comes back in " + Math.max(1, s.approvalDays)   // 0.3.8.7: the list's page
+                + " days. The list is under More, Colonies, in the colony panel.", gray);
         int lines = 0, detailed = 0;
         for (Map.Entry<String, List<CAApprovals.Item>> g : CAApprovals.group(open).entrySet()) {
             if (lines >= MAX_LINES) break;
@@ -252,15 +253,25 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
             float total = 0f;
             for (CAApprovals.Item it : open) total += it.total();
             o.addOption("Approve all (" + open.size() + ", " + Misc.getDGSCredits(total) + ")", APPROVE_ALL);
-            o.addOptionConfirmation(APPROVE_ALL, "Approve all " + open.size() + " for " + Misc.getDGSCredits(total) + " with fees? One that doesn't fit the reserve stays open.", "Approve all", "Back");
+            o.addOptionConfirmation(APPROVE_ALL, approveAllPrompt(open), "Approve all", "Back");
             o.addOption("Choose each (" + open.size() + ")", CHOOSE);
             o.addOption("Reject all", REJECT_ALL);
-            o.addOptionConfirmation(REJECT_ALL, "Reject all " + open.size() + "? They come back after 180 days (autonomy a year).", "Reject all", "Back");
+            o.addOptionConfirmation(REJECT_ALL, rejectAllPrompt(open.size()), "Reject all", "Back");
         }
         int days = Math.max(1, CAData.settings().approvalDays);
         o.addOption(open.isEmpty() ? "Close" : "Later (back in " + days + " days)", LATER);
         o.setShortcut(LATER, Keyboard.KEY_ESCAPE, false, false, false, true);
     }
+
+    /** 0.3.8.7: Approve all's question, in the summary, on the More, Colonies page and in Choose each. */
+    static String approveAllPrompt(List<CAApprovals.Item> open) {
+        float total = 0f;
+        for (CAApprovals.Item it : open) total += it.total();
+        return "Approve all " + open.size() + " for " + Misc.getDGSCredits(total) + " with fees? One that doesn't fit the reserve stays open.";
+    }
+
+    /** 0.3.8.7: Reject all's question, in the same three places. */
+    static String rejectAllPrompt(int n) { return "Reject all " + n + "? They come back after 180 days (autonomy a year)."; }
 
     public void optionSelected(String text, Object data) {
         try { select(data); }
@@ -392,22 +403,28 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "approval summary panel close failed", t); owner.dialog.dismiss(); }
         }
 
+        /** 0.3.8.7: Approve all or Reject all, waiting for Confirm (the summary's options ask first too). */
+        Object pending;
+
         void pressed(Object id) {
-            if (APPROVE_ALL.equals(id)) {
-                List<CAApprovals.Item> open = owner.open();
-                Map<String, String> fail = CAApprovals.approveAll(open);
-                for (CAApprovals.Item it : open) { owner.done.add(it.key); owner.result.put(it.key, fail.containsKey(it.key) ? fail.get(it.key) : "Approved"); }
-            } else if (REJECT_ALL.equals(id)) {
-                List<CAApprovals.Item> open = owner.open();
-                Map<String, String> fail = CAApprovals.rejectAll(open);
-                for (CAApprovals.Item it : open) { owner.done.add(it.key); owner.result.put(it.key, fail.containsKey(it.key) ? fail.get(it.key) : "Rejected"); }
-            } else if (id instanceof String[]) {
+            if (APPROVE_ALL.equals(id) || REJECT_ALL.equals(id)) { pending = id; return; }   // 0.3.8.7: asks first
+            if (PANEL_CANCEL.equals(id)) { pending = null; return; }
+            if (PANEL_OK.equals(id)) { Object p = pending; pending = null; if (p != null) all(APPROVE_ALL.equals(p)); return; }
+            pending = null;
+            if (id instanceof String[]) {
                 String[] a = (String[]) id;
                 for (CAApprovals.Item it : owner.items) {
                     if (!it.key.equals(a[1]) || owner.done.contains(it.key)) continue;
                     owner.decide(it, "a".equals(a[0]));
                 }
             }
+        }
+
+        /** Approves or rejects every open decision and records what happened. */
+        void all(boolean approve) {
+            List<CAApprovals.Item> open = owner.open();
+            Map<String, String> fail = approve ? CAApprovals.approveAll(open) : CAApprovals.rejectAll(open);
+            for (CAApprovals.Item it : open) { owner.done.add(it.key); owner.result.put(it.key, fail.containsKey(it.key) ? fail.get(it.key) : approve ? "Approved" : "Rejected"); }
         }
 
         void build() {
@@ -430,6 +447,13 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
                 ButtonAPI none = t.addButton("Reject all", REJECT_ALL, base, dark, Alignment.MID, CutStyle.TL_BR, 160f, 22f, 0f);
                 none.getPosition().rightOfTop(all, 6f);
                 CALog.endRow(t, all);
+                if (pending != null) {   // 0.3.8.7: the question, then Confirm and Cancel
+                    t.addPara(APPROVE_ALL.equals(pending) ? approveAllPrompt(open) : rejectAllPrompt(open.size()), hl, 6f);
+                    ButtonAPI ok = t.addButton("Confirm", PANEL_OK, hl, dark, Alignment.MID, CutStyle.TL_BR, 160f, 22f, 4f);
+                    ButtonAPI no = t.addButton("Cancel", PANEL_CANCEL, base, dark, Alignment.MID, CutStyle.TL_BR, 160f, 22f, 0f);
+                    no.getPosition().rightOfTop(ok, 6f);
+                    CALog.endRow(t, ok);
+                }
             }
             for (Map.Entry<String, List<CAApprovals.Item>> g : CAApprovals.group(owner.items).entrySet()) {
                 CATheme.heading(t, g.getKey(), 10f);

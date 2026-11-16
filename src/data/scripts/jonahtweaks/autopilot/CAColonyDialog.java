@@ -31,7 +31,6 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     /** 0.3.3.0: sets the empire mode to this colony's mode. */
     static final String EMPIRE = "ca:empire";
     static final String REFRESH = "ca:refresh";   // 0.3.0.0 (A4 fix): Recommended builds' Refresh (CAEngine.refresh)
-    static final String AUG_APPLY = "ca:aug:apply", AUG_UNSKIP = "ca:aug:unskip";
     static final String HS = "ca:hs:";   // Coronal Hypershunt actions: ca:hs:<action>:<arg>
     static final String MEGA = "ca:mega:";   // Pluto / Nidavelir actions: ca:mega:<action>:<arg>
     static final String TASC = "ca:tasc:";   // start a TASC terraforming project: ca:tasc:<project name>
@@ -46,6 +45,8 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     String message = null;
     boolean dirty = false, setupPage = false;
     CAData.Mode setupMode = null;
+    /** 0.3.8.7: the settings before the first-time setup page opened (CAModeTable.keep); put back on Back and Close, null after Save. */
+    java.util.Map<String, Object> setupBefore;
     final Plugin plugin = new Plugin();
     TooltipMakerAPI lastTooltip;
     boolean lastSetupPage;
@@ -98,10 +99,24 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     @Override public boolean hasCancelButton() { return false; }
     @Override public String getConfirmText() { return "Close"; }
     @Override public CustomUIPanelPlugin getCustomPanelPlugin() { return plugin; }
+    @Override public void customDialogConfirm() { closed(); }
+    @Override public void customDialogCancel() { closed(); }
+
+    /** 0.3.8.7: the panel closed. A first-time setup page that was not saved puts the settings back as they were. */
+    void closed() {
+        try {
+            if (!setupPage || setupBefore == null) return;
+            CAModeTable.putBack(CAData.settings(), setupBefore);
+            setupBefore = null;
+            setupPage = false;
+            CALunaSync.sync();
+        } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony panel close failed", t); }
+    }
 
     void handle(Object id) {
         CAData d = CAData.get();
         CAData.Colony c = d.colony(market.getId());
+        String handled;
         // 0.3.7.1: the Empire pages' buttons go to their own handler; a button that asks first waits for Confirm
         if (CONFIRM.equals(id)) { Object p = pending; pending = null; if (p != null) CAIntel.pressEmpire(p); dirty = true; return; }
         if (CANCEL.equals(id)) { pending = null; dirty = true; return; }
@@ -122,7 +137,12 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         if (CANav.page(id) != null) pending = null;
         if (CASync.handle(id)) { dirty = true; return; }   // 0.3.6.0 story mode
         if (CASetupUI.handle(id, d.settings)) { dirty = true; return; }
-        if (CANav.page(id) != null) { page = CANav.page(id); message = null; dirty = true; return; }
+        if (CANav.page(id) != null) {
+            page = CANav.page(id);
+            // 0.3.8.7: a link to a page the list does not show (Faction stances' OPEN) opens it under More
+            if (!listed(pages(c, d.settings, CAHypershunt.is(market), CAEngine.isOutpost(market)), page)) { morePage = page; page = "more"; }
+            message = null; dirty = true; return;
+        }
         if (id instanceof CAData.Profile) { c.profile = (CAData.Profile) id; message = "Goal set to " + c.profile.label; }
         else if (id instanceof CAData.Mode) {
             CAData.Mode mo = (CAData.Mode) id;
@@ -130,6 +150,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             if (needsSetup && CALunaSync.keepsSetup()) { d.settings.setupDone = true; needsSetup = false; }   // 0.3.4.0: LunaLib's settings stay
             // 0.3.0.0 (WS-F3): the Settings page opens on Playstyle afterwards (CASetupUI's groups since F1)
             if (needsSetup) {
+                if (setupBefore == null) setupBefore = CAModeTable.keep(d.settings);   // 0.3.8.7: Back and Close put these back
                 setupPage = true; setupMode = mo; CASetupUI.applyRecommended(d.settings); CASetupUI.open.clear(); CASetupUI.open.add("playstyle");
                 // 0.3.3.0: the setup rows show the chosen mode's own defaults, so what you see is what Save keeps
                 d.settings.empireMode = mo;
@@ -138,14 +159,17 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             else { d.setMode(c, mo); message = CASync.modeNote != null ? CASync.modeNote : "Mode set to " + mo.label; }   // 0.3.6.0 story mode: held back
         }
         else if (SAVE_SETUP.equals(id)) {
-            d.settings.setupDone = true; setupPage = false;
+            d.settings.setupDone = true; setupPage = false; setupBefore = null;   // 0.3.8.7: saved, nothing to put back
             if (setupMode != null) d.setMode(c, setupMode);
             // 0.3.3.0: the first setup sets the empire mode. 0.3.6.2: the mode you chose, even when story mode holds this colony back
             CAModeTable.setEmpire(d.settings, setupMode != null ? setupMode : c.mode);
             message = "Saved. Mode: " + c.mode.label;
             CALog.think(market.getName() + ": setup saved, mode " + c.mode.label + ".");   // 0.3.8.6: your own click; the Thinking list only
         }
-        else if (BACK.equals(id)) { setupPage = false; message = null; }
+        else if (BACK.equals(id)) {   // 0.3.8.7: the settings go back to what they were before the setup page opened
+            if (setupBefore != null) CAModeTable.putBack(d.settings, setupBefore);
+            setupBefore = null; setupPage = false; message = null;
+        }
         else if (EMPIRE.equals(id)) { CAModeTable.setEmpire(d.settings, c.mode); message = "Empire mode set to " + c.mode.label; }
         else if (LOWPROF.equals(id)) CALowProfile.set(d.settings, !d.settings.lowProfile, "Colony panel");   // 0.3.7.8
         else if (REFRESH.equals(id)) {   // 0.3.0.0 (A4 fix, 07 M6): scored on a click, never while the panel draws; no plan tracking
@@ -154,17 +178,8 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         }
         else if (APPROVE.equals(id)) { String err = CAAuto.approve(market); message = err == null ? "Approved and started" : err; }
         else if (REJECT.equals(id)) { CAAuto.reject(market); message = "Rejected for 180 days"; }
-        else if (CASurplus.handle(market, id) != null) message = CASurplus.handle(market, id);
-        else if (CACapital.handle(market, id) != null) message = CACapital.handle(market, id);
-        else if ((AUG_APPLY.equals(id) || AUG_UNSKIP.equals(id)) && Global.getSettings().getModManager().isModEnabled(CAAugments.MOD)) {
-            try {
-                if (AUG_UNSKIP.equals(id)) { CAAugments.unskip(market); message = "Augments allowed again"; }
-                else { String err = CAAugments.applyNow(market); message = err == null ? "Augments updated" : err; }
-            } catch (Throwable e) {
-                CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment action failed at " + market.getName(), e);
-                message = FAILED;
-            }
-        }
+        else if ((handled = CASurplus.handle(market, id)) != null) message = handled;   // 0.3.8.7: each handler runs once a click
+        else if ((handled = CACapital.handle(market, id)) != null) message = handled;
         else if (id instanceof String && ((String) id).startsWith(HS)) {
             String[] a = ((String) id).substring(HS.length()).split(":", 2);
             try { message = CAHypershunt.handle(market, a[0], a.length > 1 ? a[1] : ""); }
@@ -201,9 +216,12 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     static boolean buildoutRanking(CAData.Colony c) { return c.buildout && c.mode == CAData.Mode.AUTO; }
 
     /** The goal the plan and Recommended builds use: fast buildout's Money, Security while an Approve or Auto colony is threatened, else its own (0.3.0.0: one place, so Refresh scores what's shown). */
-    CAData.Profile planWith(CAData.Colony c) {
-        boolean managed = c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO;
-        return buildoutRanking(c) ? CAData.Profile.INCOME : managed ? CAThreat.effective(market, c.profile) : c.profile;
+    CAData.Profile planWith(CAData.Colony c) { return CABuildHints.goal(market, c); }   // 0.3.8.7: the build menu hints' rule, one copy
+
+    /** 0.3.8.7: whether a page id is in the page list. */
+    static boolean listed(List<String[]> pages, String id) {
+        for (String[] p : pages) if (p[0] != null && p[0].equals(id)) return true;
+        return false;
     }
 
     // 0.3.0.0 (WS-F3 fix pass 2): every text on this panel shorter, for the mod-wide word budget (JTScreenButtonCheck)
@@ -276,13 +294,13 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     /** One section of the Mod features page; a section that fails leaves the others on the page. */
     void renderMod(TooltipMakerAPI t, String id, CAData.Colony c, CASettings s, CAData.Profile planWith, float pad) {
         com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
+        // 0.3.8.7: no augments section (modSections has not listed it since 0.3.7.6)
         String title = id.equals("tasc") ? "Terraforming (TASC)" : id.equals("mega") ? "Megastructure (AotD)"
-                : id.equals("augments") ? "Station augments" : id.equals("rogue") ? "Planet conditions (Rogue Planets)" : "Industry synergies (AotD)";
+                : id.equals("rogue") ? "Planet conditions (Rogue Planets)" : "Industry synergies (AotD)";
         CATheme.heading(t, title, pad);
         try {
             if (id.equals("tasc")) CATasc.renderColony(t, market, c);
             else if (id.equals("mega") && mm.isModEnabled(CAHypershunt.MOD)) CAMegastructures.renderColony(t, market, c, s);
-            else if (id.equals("augments") && mm.isModEnabled(CAAugments.MOD)) CAAugments.renderColony(t, market, c, s, planWith);
             else if (id.equals("synergies") && mm.isModEnabled(CASynergies.MOD)) CASynergies.render(t, market);
             else if (id.equals("rogue") && mm.isModEnabled(CARogue.MOD)) CARogue.render(t, market);
         } catch (Throwable e) {

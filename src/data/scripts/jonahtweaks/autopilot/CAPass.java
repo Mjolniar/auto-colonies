@@ -74,7 +74,7 @@ public final class CAPass {
             do {
                 Runnable r = queue.poll();
                 try { r.run(); }
-                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "daily pass task failed", t); }   // CAStep catches step failures; this is the queue's own code
+                catch (Throwable t) { CAStep.warn("daily pass task", "daily pass task failed", t); }   // CAStep catches step failures; this is the queue's own code. 0.3.8.7: deduplicated
             } while (!queue.isEmpty() && System.nanoTime() - start < budget);
         } finally { draining = false; }
         long used = System.nanoTime() - start;

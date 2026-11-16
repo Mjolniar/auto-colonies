@@ -34,6 +34,8 @@ public class CAHypershunt {
     static final float STEP_UPKEEP = 20000f, CONTRACT_CUT = 0.1f;
     static final int STEP_PTM = 2;
     static final String RESTORE = "starting megastructure restorations";
+    /** 0.3.8.7: the breaker's name for range changes; setRange checks it before writing. */
+    static final String RANGE = "setting the hypershunt range";
 
     static Object scriptOf, sections, research, researched, techSpec, techName;
     static Object sStart, sName, sDays, sProgress, sNeeds, sCan, sUpkeep, sRestored, wEffective;
@@ -282,10 +284,11 @@ public class CAHypershunt {
         if (h.wormhole == null || !h.wormhole.restored) return "The " + (h.wormhole == null ? "wormhole" : h.wormhole.name) + " isn't restored yet";
         n = Math.max(1, Math.min(h.steps, n));
         if (n == h.range) return "The range is already " + n * h.mult + " light-years";
+        if (!CABreaker.allowed(RANGE)) return "Paused for this session: the range didn't take three times";   // 0.3.8.7
         try {
             CARefl.set(wRange, h.wormholeRaw, n);
             h.m.reapplyIndustries();
-            if (!CABreaker.check("setting the hypershunt range", CARefl.getInt(wRange, h.wormholeRaw) == n, h.m.getName())) return "The range didn't take";
+            if (!CABreaker.check(RANGE, CARefl.getInt(wRange, h.wormholeRaw) == n, h.m.getName())) return "The range didn't take";
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "setting hypershunt range failed at " + h.m.getName(), t);
             return "Failed. See starsector.log";

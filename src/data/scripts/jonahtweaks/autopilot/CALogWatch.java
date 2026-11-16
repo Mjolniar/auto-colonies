@@ -52,13 +52,15 @@ public class CALogWatch extends AppenderSkeleton {
             if (e == null || e.getLevel() == null || !e.getLevel().isGreaterOrEqual(Level.WARN)) return;
             String pkg = pkgOf(e.getLoggerName());
             if (pkg == null) return;
-            int[] c = counts.get(pkg);
-            if (c == null) { c = new int[2]; counts.put(pkg, c); }
-            c[e.getLevel().isGreaterOrEqual(Level.ERROR) ? 1 : 0]++;
             String msg = String.valueOf(e.getMessage());
             Throwable th = e.getThrowableInformation() == null ? null : e.getThrowableInformation().getThrowable();
             if (th != null) msg += " (" + th + ")";
-            last.put(pkg, msg.length() > 240 ? msg.substring(0, 240) + "..." : msg);
+            synchronized (CALogWatch.class) {   // 0.3.8.7: the lock counts() and last() read under (doAppend locks the appender only)
+                int[] c = counts.get(pkg);
+                if (c == null) { c = new int[2]; counts.put(pkg, c); }
+                c[e.getLevel().isGreaterOrEqual(Level.ERROR) ? 1 : 0]++;
+                last.put(pkg, msg.length() > 240 ? msg.substring(0, 240) + "..." : msg);
+            }
         } catch (Throwable ignored) { }
     }
 

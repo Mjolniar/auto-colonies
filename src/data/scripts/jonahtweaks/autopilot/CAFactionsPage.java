@@ -201,13 +201,5 @@ public final class CAFactionsPage {
         }
     }
 
-    static TooltipMakerAPI.TooltipCreator tip(final String[] lines) {
-        return new TooltipMakerAPI.TooltipCreator() {
-            public boolean isTooltipExpandable(Object o) { return false; }
-            public float getTooltipWidth(Object o) { return 460f; }
-            public void createTooltip(TooltipMakerAPI tt, boolean expanded, Object o) {
-                for (int i = 0; i < lines.length; i++) tt.addPara(lines[i], i == 0 ? 0f : 6f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
-            }
-        };
-    }
+    static TooltipMakerAPI.TooltipCreator tip(final String[] lines) { return CATheme.tip(CATheme.hoverLines(lines), 460f); }   // 0.3.8.7: CATheme's box
 }

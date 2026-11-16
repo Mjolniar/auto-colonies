@@ -5,10 +5,12 @@ import com.fs.starfarer.api.Global;
 import java.util.Map;
 
 /**
- * 0.3.0.0 (A0): moves a save from before 0.3.0 forward, once, from CAData.get(). It only translates what you already set into
+ * 0.3.0.0 (A0): moves a save from before 0.3.0 forward, once, from CAData.get(). to3 only translates what you already set into
  * the 0.3.0 fields; it never escalates: War never goes above what 0.2.45 did for you, no faction is made an Enemy or marked
  * for Destroy, retaking lost colonies stays off, and Auto-expansion, bombardment, coalitions, Resist inspections, Free
  * hand, story point spending and every old field are left exactly as they were. Research 04 section 5, 06 sections 4.2-4.3.
+ * 0.3.8.7: to5 (0.3.3.0) writes the empire mode's column into every field you did not set, so an older save with an Auto
+ * colony gets Auto-expansion on.
  * Each step is its own try, and the save is stamped as moved before the steps run, so a failure loads the save anyway
  * and is never retried every frame.
  */

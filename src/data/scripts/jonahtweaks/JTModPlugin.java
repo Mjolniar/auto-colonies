@@ -10,7 +10,7 @@ import com.thoughtworks.xstream.XStream;
  */
 public class JTModPlugin extends BaseModPlugin {
 
-    /** Counts the three mods' warnings and errors from the start, for the Diagnostics page. */
+    /** Counts Mjolniar's mods' warnings and errors from the start, for the Diagnostics page (CALogWatch.MODS). */
     public void onApplicationLoad() {
         try { data.scripts.jonahtweaks.autopilot.CALogWatch.install(); }
         catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] log watch failed", t); }
@@ -60,11 +60,14 @@ public class JTModPlugin extends BaseModPlugin {
         step("LunaLib settings", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CALunaSync.onLoad(); } });
         // 0.3.6.0: a new game asks Normal or Story mode once
         if (newGame) step("story mode pop-up", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CAStoryPrompt.ask(); } });
-        step("daily script", new Runnable() { public void run() {
+        // 0.3.8.7: the script is added in its own step, so a throw in these resets cannot stop the daily pass
+        step("daily pass caches", new Runnable() { public void run() {
             data.scripts.jonahtweaks.autopilot.CAAuto.reset();
             data.scripts.jonahtweaks.autopilot.CASurplus.reset();
             data.scripts.jonahtweaks.autopilot.CACapital.reset();
             data.scripts.jonahtweaks.autopilot.CATerraSim.reset();
+        } });
+        step("daily script", new Runnable() { public void run() {
             Global.getSector().addTransientScript(new data.scripts.jonahtweaks.autopilot.CAScript());
         } });
         step("colony screen button", new Runnable() { public void run() {

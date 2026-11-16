@@ -186,6 +186,35 @@ public final class CAModeTable {
         }
     }
 
+    /** 0.3.8.7: the STATE fields the first-time setup writes (applyRecommended, the mode column, its rows). */
+    static final String[] SETUP_STATE = {"empireMode", "monthCredits", "upkeepCapChecked", "surplusChecked", "spyChecked", "productionChecked"};
+
+    /**
+     * 0.3.8.7: the settings before the first-time setup page opens: the tracked fields, SETUP_STATE and copies of the set-by-you
+     * names. putBack() writes them back when the page closes without Save.
+     */
+    static Map<String, Object> keep(CASettings s) {
+        Map<String, Object> out = snapshot(s);
+        if (s == null) return out;
+        for (String f : SETUP_STATE) out.put(f, get(s, f));
+        out.put("playerSet", new HashSet<String>(s.playerSet()));
+        out.put("playerRows", new HashSet<String>(s.playerRows()));
+        return out;
+    }
+
+    /** 0.3.8.7: writes back what keep() read. A write the mod makes itself: nothing it changes is flagged as set by you. */
+    @SuppressWarnings("unchecked")
+    static void putBack(final CASettings s, final Map<String, Object> kept) {
+        if (s == null || kept == null) return;
+        system(s, new Runnable() { public void run() {
+            for (Map.Entry<String, Object> e : kept.entrySet())
+                if (!"playerSet".equals(e.getKey()) && !"playerRows".equals(e.getKey())) set(s, e.getKey(), e.getValue());
+        } });
+        Object ps = kept.get("playerSet"), pr = kept.get("playerRows");
+        if (ps instanceof Set) { s.playerSet().clear(); s.playerSet().addAll((Set<String>) ps); }
+        if (pr instanceof Set) { s.playerRows().clear(); s.playerRows().addAll((Set<String>) pr); }
+    }
+
     /** Runs a write the mod makes itself (recommended values, a mode column): what it changes is never flagged. */
     public static void system(CASettings s, Runnable r) {
         Map<String, Object> before = depth > 0 ? snapshot(s) : null;

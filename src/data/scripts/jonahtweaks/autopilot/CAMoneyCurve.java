@@ -43,6 +43,7 @@ public final class CAMoneyCurve {
 
     /** Pure: the taper's lines and weights for a setting (CATuning.TAPER_*), with the Gentle lines the settings hold: {low, high, wMid, wTop}; null for Off. */
     static float[] curve(int mode, float low, float high) {
+        if (mode == CATuning.TAPER_OFF) return null;   // 0.3.8.7: Off by name
         if (mode == CATuning.TAPER_GENTLE) return new float[]{low, high, CATuning.TAPER_MID, CATuning.TAPER_TOP};
         if (mode == CATuning.TAPER_STRONG) return new float[]{CATuning.TAPER_STRONG_LOW, CATuning.TAPER_STRONG_HIGH, CATuning.TAPER_STRONG_MID, CATuning.TAPER_STRONG_TOP};
         return null;

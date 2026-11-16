@@ -911,7 +911,7 @@ public class CAFloors {
 
     static String adviceKey;
 
-    /** One advice line where the parts are and what the fleet's d-mods need, when that changes (at most every 30 days for the same text). */
+    /** One advice line where the parts are and what the fleet's d-mods need, when that changes (at most every 90 days for the same text: CALog.once). */
     static void partsAdvice(State st) {
         if (!st.partsOn || st.partsLocal <= 0 || st.fleetDmods <= 0) return;
         String key = "floor:parts:" + (st.partsLocal / 500) + ":" + (st.partsNeed / 50);

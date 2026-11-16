@@ -49,6 +49,12 @@ public class CABuildHints implements EveryFrameScript {
     private Object menu;
     private String shownFor;
     private float[] lastRect;
+    /** 0.3.8.7: cached method lookups; the colony of the last build menu read (both menus set it in their constructor only). */
+    private final CAScreenButton.Methods methods = new CAScreenButton.Methods();
+    private Object marketOwner;
+    private MarketAPI ownerMarket;
+    /** 0.3.8.7: Building Menu Overhaul enabled, read once (mods do not change during a session). */
+    private Boolean bmo;
 
     public boolean isDone() { return false; }
     public boolean runWhilePaused() { return true; }   // the colony screen pauses the game
@@ -74,16 +80,18 @@ public class CABuildHints implements EveryFrameScript {
     }
 
     void update() throws Exception {
-        CASettings s = CAData.settings();
+        CAData d = CAData.get();   // 0.3.8.7: read once per update
+        CASettings s = d.settings;
         CampaignUIAPI ui = Global.getSector().getCampaignUI();
         if (s.buildHints == 2 || !CAScreenButton.colonyTab(ui.getCurrentCoreTab())) { remove(); return; }
         InteractionDialogAPI dialog = ui.getCurrentInteractionDialog();
-        Object core = dialog != null ? CAScreenButton.tryCall(dialog, "getCoreUI") : null;
-        if (!(core instanceof UIPanelAPI)) core = CAScreenButton.tryCall(ui, "getCore");
+        Object core = dialog != null ? methods.call(dialog, "getCoreUI") : null;   // 0.3.8.7: cached lookups
+        if (!(core instanceof UIPanelAPI)) core = methods.call(ui, "getCore");
         if (!(core instanceof UIPanelAPI)) { remove(); return; }
+        if (bmo == null) bmo = Global.getSettings().getModManager().isModEnabled(BMO);
         List<UIComponentAPI> kids = children(core);
-        Found f = find(kids);
-        if (f == null || f.market == null || !inScope(f.market, s)) { remove(); return; }
+        Found f = find(kids, bmo);
+        if (f == null || f.market == null || !inScope(f.market, s, d)) { remove(); return; }
         boolean onTop = top(kids) == f.menu;
         float[] r = CAScreenButton.rect(f.menu);
         String sig = f.market.getId() + (f.upgrades ? ":up" : ":new");
@@ -104,9 +112,9 @@ public class CABuildHints implements EveryFrameScript {
         panel = p; parent = c; menu = f.menu; shownFor = sig;
     }
 
-    static List<UIComponentAPI> children(Object panel) {
+    List<UIComponentAPI> children(Object panel) {
         List<UIComponentAPI> out = new ArrayList<UIComponentAPI>();
-        Object kids = CAScreenButton.tryCall(panel, "getChildrenCopy");
+        Object kids = methods.call(panel, "getChildrenCopy");   // 0.3.8.7: cached lookup
         if (kids instanceof List) for (Object o : (List<?>) kids) if (o instanceof UIComponentAPI) out.add((UIComponentAPI) o);
         return out;
     }
@@ -118,15 +126,14 @@ public class CABuildHints implements EveryFrameScript {
     }
 
     /** The build menu among the core UI's children, the newest first, or null. */
-    static Found find(List<UIComponentAPI> kids) {
-        boolean bmo = Global.getSettings().getModManager().isModEnabled(BMO);
+    Found find(List<UIComponentAPI> kids, boolean bmo) {
         for (int i = kids.size() - 1; i >= 0; i--) {
             UIComponentAPI k = kids.get(i);
             if (k.getOpacity() <= 0f) continue;
             if (k instanceof UIPanelAPI && VANILLA.equals(k.getClass().getName())) {
                 Found f = new Found();
                 f.menu = k;
-                f.market = CAScreenButton.marketOf(k);
+                f.market = marketOf(k);
                 return f;
             }
             if (bmo && k instanceof CustomPanelAPI) {
@@ -134,8 +141,8 @@ public class CABuildHints implements EveryFrameScript {
                 if (plugin == null || !BMO_DIALOG.equals(plugin.getClass().getName())) continue;
                 Found f = new Found();
                 f.menu = k;
-                f.market = CAScreenButton.marketOf(plugin);
-                Object up = CAScreenButton.tryCall(plugin, "isInUpgradeMode");
+                f.market = marketOf(plugin);
+                Object up = methods.call(plugin, "isInUpgradeMode");
                 f.upgrades = Boolean.TRUE.equals(up);
                 return f;
             }
@@ -143,11 +150,19 @@ public class CABuildHints implements EveryFrameScript {
         return null;
     }
 
+    /** 0.3.8.7: the menu's colony, read once per menu object. */
+    MarketAPI marketOf(Object owner) {
+        if (owner != marketOwner) { marketOwner = owner; ownerMarket = CAScreenButton.marketOf(owner); }
+        return ownerMarket;
+    }
+
     /** Whether a colony gets hints: yours, its mode in the scope (0 Advisor, 1 any but Off), not an outpost or hypershunt. */
-    static boolean inScope(MarketAPI m, CASettings s) {
+    static boolean inScope(MarketAPI m, CASettings s) { return inScope(m, s, CAData.get()); }
+
+    static boolean inScope(MarketAPI m, CASettings s, CAData d) {
         if (m == null || !m.isPlayerOwned() || s.buildHints == 2) return false;
         if (CASync.dormant()) return false;   // 0.3.6.8: story mode's dormant Autopilot gives no advice
-        CAData.Mode mode = CAData.get().colony(m.getId()).mode;
+        CAData.Mode mode = d.colony(m.getId()).mode;
         if (!scope(s.buildHints, mode)) return false;
         return !CAEngine.isOutpost(m) && !CAHypershunt.is(m);
     }
