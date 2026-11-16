@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.8.4 - 2026-11-15
+
+- Story mode: Rewrote the TriPad scenes with your technology officer and chief engineer in the style of the game's own dialogs.
+- Story mode: TriPad scenes end with Leave.
+
 ## 0.3.8.3 - 2026-11-15
 
 - Story mode: Removed the TriPad summary that opened after the Story page closed.

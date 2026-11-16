@@ -27,7 +27,7 @@
 - Autarch administrator, skills: Industrial Planning and Hypercognition (an Alpha Core administrator's), and Autarchy: +1 industry limit, -20% upkeep, +1 stability. It has no AI core to take back, and the Hegemony and the Pathers do not count it.
 - Autarch administrator, leaving: It leaves a colony that is no longer managed, the colony it adds least to when it holds more colonies than bought, and every colony when the package is off, story mode is off or the core is dormant. One colony a day, never while that takes a colony under the stability floor, the industry limit counted. An administrator you place, or you yourself, replaces it, and it stays away from that colony until the colony leaves management.
 - Rapid terraforming: A terraforming project at a managed colony takes half the time: Terraforming Made Easy's terraforming structure, and Terraforming and Station Construction's projects. It covers projects you start too. An AI core's time cut stacks with it.
-- Scenes: Each tier that opens, and buying every Tier IV package, brings a TriPad scene with your tech officer. A save already past a tier gets its scene. The Story page can show each scene again.
+- Scenes: Each tier that opens, and buying every Tier IV package, brings a TriPad scene with your technology officer and chief engineer. A save already past a tier gets its scene. The Story page can show each scene again.
 - Builds at once: Each colony builds 2 or 3 new buildings at the same time. Without the perks it builds one, as in the game. Upgrades always run beside them.
 
 ## Switching
