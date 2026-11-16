@@ -38,6 +38,9 @@ ca_screenlog,On-screen log,Radio,Every entry,"Every entry, Important only, Off",
 ca_h_reset,Reset,Header,Reset,,,,,
 ca_reset,Reset to recommended,Boolean,false,,"Tick and save: settings return to the empire mode's defaults. Low profile, faction stances and this save's picks are kept. Other changes in the same save are applied after the reset. The box unticks itself.",,,
 ,,,,,,,,
+ca_h_removal,Removal,Header,Removal,,,,,
+ca_removal,Prepare for removal,Boolean,false,,"On: a dialog in the campaign asks first. Then Autopilot Storage goes to each colony's Storage, Auto Colonies takes out what it keeps in this save and stops. Save, quit and remove the mod. Off: Auto Colonies runs again in this save.",,,
+,,,,,,,,
 ca_h_adv_budget,Budget,Header,Budget,,,,,Advanced
 ca_type,Budget type,Radio,Automatic,"Automatic, Share of net income, Fixed amount",Automatic: a share of net income and a share of savings above the reserve. Share of net income: the first share only. Fixed amount: Monthly budget.,,,Advanced
 ca_budget,From net income (percent),Int,50,,"Used by Automatic and Share of net income. From 10 to 100, steps of 10.",10,100,Advanced

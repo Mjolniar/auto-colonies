@@ -21,6 +21,7 @@ public class JTModPlugin extends BaseModPlugin {
 
     /** 0.3.4.0: LunaLib's settings get what changed in the game since the last sync. */
     public void beforeGameSave() {
+        if (data.scripts.jonahtweaks.autopilot.CARemoval.off) return;   // 0.3.9.4: a save prepared for removal syncs nothing
         try { data.scripts.jonahtweaks.autopilot.CALunaSync.sync(); }
         catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] LunaLib settings write failed", t); }
     }
@@ -40,6 +41,17 @@ public class JTModPlugin extends BaseModPlugin {
     }
 
     public void onGameLoad(boolean newGame) {
+        // 0.3.9.4: a save prepared for removal (CARemoval): nothing starts, and nothing is written into it
+        step("removal state", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CARemoval.onGameLoad(); } });
+        if (data.scripts.jonahtweaks.autopilot.CARemoval.off) {
+            step("removal", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CARemoval.onLoadDormant(); } });
+            return;
+        }
+        start(newGame);
+    }
+
+    /** 0.3.9.4: the startup steps of a load; also CARemoval.resume when Prepare for removal is turned off again. */
+    public static void start(boolean newGame) {
         step("log watch", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CALogWatch.install(); } });
         step("retired condition", new Runnable() { public void run() { JTCampaignScript.removeRetired(); } });   // nothing adds it any more
         // 0.3.0.0: every cache and timer from the last save cleared before this one's data is read (CAReset, A1)

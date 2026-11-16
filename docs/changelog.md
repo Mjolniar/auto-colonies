@@ -1,5 +1,15 @@
 # Patch notes
 
+## 0.3.9.4 - 2026-11-16
+
+- Removal: Added Prepare for removal, in LunaLib (General tab) and on the Mod features page. A campaign dialog asks first.
+- Removal: Everything in Autopilot Storage goes to the same colony's Storage, or to your cargo where a colony has no Storage. Shipments on the way arrive at once.
+- Removal: Construction crews and crew expeditions on the way are refunded. The expedition fee is kept. Nexerelin expeditions and ship orders continue.
+- Removal: Each Autarch AI Core becomes an Alpha Core. The core in the TriPad becomes an Alpha Core in your cargo. An unfound core is taken out of its station.
+- Removal: Autarch AI Core administrators are replaced by an administrator with an Alpha Core administrator's skills and no Autarchy. Story progress and bandwidth packages end.
+- Removal: Stops before changing anything when a colony would fall to 0 stability from losing Autarchy, and names the colony.
+- Removal: Afterwards Auto Colonies does nothing in that save. Save, quit and remove the mod. Turning the setting off in the same session brings back the save's Auto Colonies data.
+
 ## 0.3.9.3 - 2026-11-16
 
 - Station Augments: Augments you removed are held 180 days, then Autopilot may suggest them again.

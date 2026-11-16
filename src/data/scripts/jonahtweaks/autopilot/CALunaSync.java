@@ -143,6 +143,13 @@ public final class CALunaSync {
                 + "stances and this save's picks are kept. Other changes in the same save are applied after the reset. The box unticks itself.");
         r.get = s -> Boolean.FALSE;
         r.set = (s, v, b) -> { };
+        // 0.3.9.4: Prepare for removal (CARemoval). Applied before every other row (changed); each load shows the save's state
+        header("removal", "Removal");
+        r = row(BOOL, "removal", "Prepare for removal", "On: a dialog in the campaign asks first. Then Autopilot Storage goes to each "
+                + "colony's Storage, Auto Colonies takes out what it keeps in this save and stops. Save, quit and remove the mod. "
+                + "Off: Auto Colonies runs again in this save.");
+        r.get = s -> CARemoval.off || CARemoval.asked;
+        r.set = (s, v, b) -> { };
 
         // ---------------- Advanced: one header per CASetupUI.ADVANCED subgroup, same order ----------------
         tab = ADVANCED;
@@ -660,7 +667,7 @@ public final class CALunaSync {
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "LunaLib setting " + r.id() + " not read", t); }
         }
         for (Row r : ROWS) {
-            if (!r.value() || r.preset || "empire".equals(r.key) || "reset".equals(r.key) || "storymode".equals(r.key)) continue;
+            if (!r.value() || r.preset || "empire".equals(r.key) || "reset".equals(r.key) || "storymode".equals(r.key) || "removal".equals(r.key)) continue;
             Object v = read(j, r);
             if (v == null || same(r, v, value(r, s))) continue;
             try { r.set.set(s, v, null); changed.add(r.key); }
@@ -700,7 +707,8 @@ public final class CALunaSync {
         List<Row> followMode = new ArrayList<Row>();   // 0.3.6.3: preset rows set to Mode default
         for (int pass = 0; pass < 2; pass++) {
             for (Row r : ROWS) {
-                if (!batch.contains(r.key) || r.preset != (pass == 0) || "empire".equals(r.key) || "reset".equals(r.key) || "storymode".equals(r.key)) continue;
+                if (!batch.contains(r.key) || r.preset != (pass == 0) || "empire".equals(r.key) || "reset".equals(r.key) || "storymode".equals(r.key)
+                        || "removal".equals(r.key)) continue;
                 try {
                     Object v = read(j, r);
                     if (r.preset && CAPresets.MODE_DEFAULT.equals(v)) { CAModeTable.resetGroup(s, r.fields); followMode.add(r); continue; }
@@ -823,7 +831,11 @@ public final class CALunaSync {
      * applied: the file keeps the change and the next load reads it (readIn).
      */
     public static void changed() {
-        if (!active() || title()) return;
+        if (title()) return;
+        // 0.3.9.4: Prepare for removal first; in a save prepared for removal it is the only row read
+        try { if (CARemoval.lunaChanged(load())) return; }
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "LunaLib Prepare for removal failed", t); }
+        if (!active()) return;
         try {
             CASettings s = CAData.settings();
             JSONObject j = load();
@@ -841,7 +853,7 @@ public final class CALunaSync {
 
     /** CASettings changed in the game (an intel click, first-time setup, a save): LunaLib gets the values. */
     public static void sync() {
-        if (!active()) return;
+        if (!active() || CARemoval.off) return;
         try {
             CASettings s = CAData.settings();
             JSONObject j = load();
@@ -850,6 +862,17 @@ public final class CALunaSync {
             save(j);
             reload();
         } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "LunaLib settings write failed", t); }
+    }
+
+    /** 0.3.9.4: LunaLib's Prepare for removal row shows this save's state (CARemoval). */
+    static void markRemoval(boolean on) {
+        if (!lunaEnabled()) return;
+        try {
+            JSONObject j = load();
+            j.put(CARemoval.LUNA_ROW, on);
+            save(j);
+            reload();
+        } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "LunaLib Prepare for removal write failed", t); }
     }
 
     // ---------------- the CSV (data/config/LunaSettings.csv; JTLunaCheck) ----------------

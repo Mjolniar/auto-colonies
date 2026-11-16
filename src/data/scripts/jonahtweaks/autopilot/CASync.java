@@ -54,6 +54,7 @@ public class CASync {
     static Map<String, Object> state() {
         if (testState != null) return testState;
         Map<String, Object> pd;
+        if (CARemoval.off) return CARemoval.scratch();   // 0.3.9.4: a save prepared for removal keeps nothing
         try { pd = Global.getSector().getPersistentData(); }
         catch (Throwable t) { return new HashMap<String, Object>(); }   // no game loaded (main menu, offline checks): dormant, nothing kept
         if (pd == null) return new HashMap<String, Object>();

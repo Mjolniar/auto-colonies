@@ -274,7 +274,8 @@ public class CAData {
     public Map<String, Float> monthLedger() { if (monthLedger == null) monthLedger = new HashMap<String, Float>(); return monthLedger; }
 
     public static CAData get() {
-        Map<String, Object> pd = Global.getSector().getPersistentData();
+        // 0.3.9.4: a save prepared for removal keeps nothing: code still on the stack gets a scratch map (CARemoval)
+        Map<String, Object> pd = CARemoval.off ? CARemoval.scratch() : Global.getSector().getPersistentData();
         Object o = pd.get(KEY);
         if (!(o instanceof CAData)) { o = new CAData(); pd.put(KEY, o); }
         CAData d = (CAData) o;

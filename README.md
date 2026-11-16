@@ -10,6 +10,7 @@
 - Install: Extract the [latest release](https://github.com/Mjolniar/auto-colonies/releases/latest) zip into `Starsector/mods/` and enable Auto Colonies.
 - Updating: Delete the old Colony Manager folder in `mods/` first. Saves keep working.
 - Saves: 0.3.0 saves do not load in 0.2.45.x.
+- Removing: turn on Prepare for removal (LunaLib or the Mod features page), save, then remove the mod. [Removing it](docs/audit.md#removing-it).
 - Updates: MagicLib and TriOS do not show 0.3.0.0 as an update. Use the latest release link.
 
 ## Quick start

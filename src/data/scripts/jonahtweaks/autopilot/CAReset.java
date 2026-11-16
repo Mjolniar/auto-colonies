@@ -50,6 +50,7 @@ public class CAReset {
         failed += run("LunaLib settings", () -> CALunaSync.reset());   // 0.3.4.0: the last sync was the other save's; CALunaSync.onLoad syncs again
         // 0.3.6.0: story mode's screen state (the button waiting for Confirm, the page's line, a queued TriPad beat, a mode note)
         failed += run("story mode", () -> { CASync.queued = null; CASync.armed = null; CASync.notice = null; CASync.modeNote = null; });
+        failed += run("removal", () -> CARemoval.onGameLoad());   // 0.3.9.4: the session's state from the save's flag (JTModPlugin.onGameLoad runs it first too)
         if (on("niko_stationAugments")) failed += run("station augments", () -> { CAAugments.nextRun.clear(); CAAugments.lastSig.clear(); CAAugments.drawn.clear(); });   // 0.3.9.2 (J L9): the page's plans
         // caches and cooldowns that held the other save's data (07 H6)
         failed += run("research ranking", () -> {

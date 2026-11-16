@@ -23,6 +23,7 @@
 - Presets: Radio options. They write the same fields as the Settings page rows. Mode default sets the group to the empire mode's values, which then follow the mode. Custom shows that no option matches; picking it changes nothing.
 - Numbers: The same range and step as the Settings page rows. A typed value is rounded to the step.
 - Reset to recommended: A tick box (General, Reset). It unticks itself after the save.
+- Prepare for removal: A tick box (General, Removal). On asks in a campaign dialog, then prepares the save ([Removing it](audit.md#removing-it)). Off runs Auto Colonies again in that save. Each save shows its own state when loaded.
 - Settings page (colony panel, Empire): One line on where the settings are, then this save's picks (Capital, Refit hub, Sell hub, Offense target) and Faction stances.
 - First-time setup: Once LunaLib holds settings from a set-up save, a new save's first Approve or Auto colony keeps them. No recommended values, no empire mode change.
 

@@ -9,7 +9,7 @@
 - Game data: no game setting, ship, weapon, faction, market condition or other mod's numbers are changed, except three Ashes of the Domain values (see [What it does not do](#what-it-does-not-do)).
 - War (Nexerelin): 0.3.0 can raid, blockade, invade and bombard other factions' markets. Defaults: War level Retaliate (retake is off in 0.2.45 saves), every stance Auto, bombardment not authorized.
 - War (Nexerelin): War fleets act in every colony mode, Advisor included. War on a non-hostile faction starts only from the War page's Declare war confirmation.
-- Adding the mod: safe in a running save. Removing it: a save made with Auto Colonies enabled does not load without it.
+- Adding the mod: safe in a running save. Removing it: turn on Prepare for removal first ([Removing it](#removing-it)). Without it, a save made with Auto Colonies enabled does not load.
 - Other mods: checked only to turn integrations on. No mod is disabled, blocked or changed for being installed.
 
 ## Everything it can change in your game
@@ -110,8 +110,15 @@ Searches across `src/`:
 
 ## Removing it
 
-- Saves: do not remove it from a save made with it enabled. The save needs its saved data and the Autopilot Storage tab.
-- Stopping it:
+- Prepare for removal: LunaLib (General tab, Removal) or the Mod features page (More, Mod features). A campaign dialog asks first (`CARemoval`, `CARemovalPrompt`).
+- Storage: Autopilot Storage goes to each colony's Storage, or to your cargo where a colony has none. Shipments, loads and stockpile buys on the way arrive there at once.
+- Refunds: construction crews and crew expeditions on the way. The expedition fee is kept, as when one turns back. Nexerelin expeditions and ship orders continue.
+- Story mode: each Autarch AI Core becomes an Alpha Core. The TriPad's becomes one in your cargo. An unfound one is taken out of its station's salvage. Its administrators are replaced by one with an Alpha Core administrator's skills and no Autarchy. Story progress and bandwidth packages end.
+- Stability: nothing changes when a colony would fall to 0 stability from losing Autarchy. The dialog names the colony.
+- Taken out of the save: the saved data and story data, intel, scripts and listeners, the Autopilot Storage tab, the retired condition, enforcer marks on fleets, and market memory keys.
+- Afterwards: the save is flagged (`$ac_removalDone`, a Boolean) and Auto Colonies does nothing in it. Save, quit and remove the mod.
+- Undo: turn the setting off. In the same session the save's data and the replaced cores and administrators come back. After a load, Auto Colonies starts fresh with every colony Off. Without LunaLib, load a save from before.
+- Stopping it without removing it:
 
 1. Set every colony to Off, and War, New colonies, Extras and every money ladder rung to Off.
 2. Set Capital to None (Settings, Items and people). A capital gets your production gathering point and weekly Storage gathering, also with Storage logistics Off.

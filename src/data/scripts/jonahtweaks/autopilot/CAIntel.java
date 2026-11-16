@@ -131,6 +131,7 @@ public class CAIntel extends BaseIntelPlugin {
         if (CASync.on()) p.add(new String[]{"story", CASyncPage.navLabel()});
         if (CASync.dormant()) {
             int iss = CADiagnostics.count(CADiagnostics.Level.ANALYZED) + CADiagnostics.count(CADiagnostics.Level.QUARANTINED);
+            p.add(new String[]{"mods", "Mod features"});   // 0.3.9.4: Removal only
             p.add(new String[]{"diag", iss > 0 ? "Diagnostics (" + iss + ")" : "Diagnostics"});
             return p;
         }
@@ -168,13 +169,17 @@ public class CAIntel extends BaseIntelPlugin {
         if (mm.isModEnabled(CAContracts.MOD) && s.contractMode != 2) l.add("contracts");
         if (anyMega && mm.isModEnabled(CAHypershunt.MOD) && s.hypershuntMode != 2) l.add("mega");
         if (anyShunt && mm.isModEnabled(CAHypershunt.MOD) && s.hypershuntMode != 2) l.add("shunt");
+        l.add("removal");   // 0.3.9.4: Prepare for removal (CARemoval), always last
         return l;
     }
 
     /** One section of the Mod features page. Each checks its mod again so no optional class loads without it. */
     static void renderMod(TooltipMakerAPI t, String id, CAData data, CASettings s) {
         com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
-        if (id.equals("settle") && mm.isModEnabled(CASettlement.MOD)) {
+        if (id.equals("removal")) {   // 0.3.9.4
+            CATheme.heading(t, "Removal", 0f);
+            CARemoval.render(t);
+        } else if (id.equals("settle") && mm.isModEnabled(CASettlement.MOD)) {
             CATheme.heading(t, "Settlement (RAT)", 0f);
             CASettlement.render(t, data, s);
         } else if (id.equals("agents") && mm.isModEnabled(CASpies.MOD)) {
@@ -365,7 +370,7 @@ public class CAIntel extends BaseIntelPlugin {
             CAFactionsPage.render(t, data, s);
         } else if (page.equals("mods")) {
             boolean first = true;
-            for (String id : modSections(s, markets)) {
+            for (String id : CASync.dormant() ? java.util.Collections.singletonList("removal") : modSections(s, markets)) {
                 if (!first) t.addSpacer(16f);
                 first = false;
                 // one section failing leaves the others on the page
@@ -536,6 +541,9 @@ public class CAIntel extends BaseIntelPlugin {
             page = CANav.page(buttonId);
         } else if (THINKING.equals(buttonId)) {
             d.settings.showThinking = !d.settings.showThinking;   // 0.3.2.0: the setting the Settings page's Thinking list row shows
+        } else if (CARemoval.BUTTON.equals(buttonId)) {   // 0.3.9.4: the dialog opens once the screen is closed
+            CARemoval.ask();
+            CALunaSync.sync();
         } else if (RESCAN.equals(buttonId)) {
             CADiagnostics.runScan();
         } else if (REFRESH.equals(buttonId)) {
