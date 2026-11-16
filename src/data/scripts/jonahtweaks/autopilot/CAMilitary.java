@@ -59,7 +59,7 @@ public final class CAMilitary {
         Industry from;
         String to, name;
         float cost, fee, days, upkeep;
-        float total() { return cost + fee; }
+        float total() { return cost + CABudget.rapidFee(cost) + fee; }   // 0.3.8.5: CABuild.start adds Rapid construction's fee
     }
 
     /** The game day of the last start (one a day), the last recommendation logged, and the proposal waiting. Session only. */

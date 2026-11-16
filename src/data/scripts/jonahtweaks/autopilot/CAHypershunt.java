@@ -355,9 +355,10 @@ public class CAHypershunt {
             CALog.quiet(h.m.getName() + ": you set the hypershunt range yourself; Autopilot leaves it (Let Autopilot manage it, in the colony panel)");   // 0.3.0.9: left alone, starsector.log only
         }
         if (c.hsManual || t == h.range) return;
-        String key = "hsrange:" + h.m.getId() + ":" + t;
+        String key = "hsrange:" + h.m.getId();   // 0.3.8.5: one ask key per colony; the range is in the title and the approve. A rejection holds 180 days
         if (!auto) {
-            if (CALog.once(key)) CAApprovals.say(h.m.getName() + ": Recommends a hypershunt range of " + t * h.mult + " light-years (now "
+            CAApprovals.moveHold(key);   // 0.3.8.5
+            if (!CAApprovals.held(key, "hypershunt") && CALog.once(key)) CAApprovals.say(h.m.getName() + ": Recommends a hypershunt range of " + t * h.mult + " light-years (now "
                     + h.range * h.mult + "). Set it in the colony panel.", false);
             // 0.3.3.0: a decision in the approval summary; Approve sets it as Auto would, its added upkeep booked the same way
             final Shunt hh = h; final int tt = t; final CAData.Colony cc = c; final float extra = (t - h.range) * STEP_UPKEEP;

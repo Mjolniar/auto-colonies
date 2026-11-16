@@ -77,7 +77,6 @@ public class CAWar {
      * and conquer only; 0.3.0.0 (fix): CAConquest.tend has its own, CONQUERED_KEY (CAAuto).
      */
     static final String CONQUEST_KEY = "nexerelin:conquest", SCORCHED_KEY = "nexerelin:scorched", CONQUERED_KEY = "nexerelin:conquered";
-    static final Map<String, Long> lastRelief = new HashMap<String, Long>();
     static final Set<String> warned = new HashSet<String>();
     static String summary;
 
@@ -645,12 +644,18 @@ public class CAWar {
         for (MarketAPI m : managed) {
             if (p.left <= 0) break;
             if (!CASiege.held(m)) continue;
-            Long at = lastRelief.get(m.getId());
-            if (at != null && Global.getSector().getClock().getElapsedDaysSince(at) < RELIEF_DAYS) continue;
-            if (launch(p.s, p.mgr, CAWarPolicy.RELIEF, m, 0f, p.rich, true, "under siege")) { lastRelief.put(m.getId(), p.now); p.went(); }
+            // 0.3.8.5: a relief fleet only lowers recent unrest (ReliefFleetIntelAlt.deliver): none goes where there is none, or
+            // while Nexerelin's capture timeout runs (CAConquest.reliefIfDue's rule)
+            if (com.fs.starfarer.api.impl.campaign.econ.RecentUnrest.getPenalty(m) <= 0) continue;
+            if (m.getMemoryWithoutUpdate().contains(SectorManager.MEMORY_KEY_CAPTURE_STABILIZE_TIMEOUT)) continue;
+            if (reliefRecent(p.d, m)) continue;   // 0.3.8.5: the saved relief record (CAData.warOps)
+            if (launch(p.s, p.mgr, CAWarPolicy.RELIEF, m, 0f, p.rich, true, "under siege")) p.went();
             else p.waiting.add("relief for " + m.getName());
         }
     }
+
+    /** 0.3.8.5: a relief went to this colony within RELIEF_DAYS (send() records "relief:<marketId>" in CAData.warOps, saved). */
+    static boolean reliefRecent(CAData d, MarketAPI m) { return daysSince(d, CAWarPolicy.RELIEF + ":" + m.getId()) < RELIEF_DAYS; }
 
     /**
      * 2. Proactive defense (Defend): threat high or a crisis coming, before anything arrives. 0.3.0.0 (03 F10): paid as an

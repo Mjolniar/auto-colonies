@@ -503,12 +503,10 @@ public class CAConquest {
         if (CAWarPolicy.clamp(s.warLevel) < CAWarPolicy.DEFEND || !m.isPlayerOwned()) return;
         if (m.getMemoryWithoutUpdate().contains(SectorManager.MEMORY_KEY_CAPTURE_STABILIZE_TIMEOUT)) return;
         if (RecentUnrest.getPenalty(m) <= 0) return;
-        Long last = CAWar.lastRelief.get(m.getId());
-        if (last != null && Global.getSector().getClock().getElapsedDaysSince(last) < CAWar.RELIEF_DAYS) return;
+        if (CAWar.reliefRecent(CAData.get(), m)) return;   // 0.3.8.5: the saved relief record (CAData.warOps)
         InvasionFleetManager mgr = InvasionFleetManager.getManager();
         if (mgr == null) return;
-        if (CAWar.launch(s, mgr, CAWarPolicy.RELIEF, m, 0f, CASurplus.rich(s), true, "unrest after capture"))
-            CAWar.lastRelief.put(m.getId(), Global.getSector().getClock().getTimestamp());
+        CAWar.launch(s, mgr, CAWarPolicy.RELIEF, m, 0f, CASurplus.rich(s), true, "unrest after capture");   // send() records it
     }
 
     /**

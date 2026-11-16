@@ -247,10 +247,13 @@ public class CAMegastructures {
                         if (auto && was != null && will != null && will < was) c.megaHold = Global.getSector().getClock().getTimestamp();   // wait 30 days before adding again
                         if (auto) applyTarget(g, c, t, "Auto");
                         else {
-                            if (CALog.once("mega:" + g.m.getId() + ":" + t)) CAApprovals.say(g.m.getName() + ": Recommends " + describe(g, t) + " at the " + g.name + ". Apply in the colony panel.", false);
+                            // 0.3.8.5: one ask key per colony; the target is in the title and the approve. A rejection holds 180 days
+                            String key = "mega:" + g.m.getId();
+                            CAApprovals.moveHold(key);
+                            if (!CAApprovals.held(key, "megastructure") && CALog.once(key)) CAApprovals.say(g.m.getName() + ": Recommends " + describe(g, t) + " at the " + g.name + ". Apply in the colony panel.", false);
                             // 0.3.3.0: a decision in the approval summary
                             final Mega gg = g; final CAData.Colony cc = c; final Map<String, Integer> tt = t;
-                            CAApprovals.offer("mega:" + g.m.getId() + ":" + t, "megastructure", g.m, g.name + ": " + describe(g, t), 0f, 0f, null, () -> {
+                            CAApprovals.offer(key, "megastructure", g.m, g.name + ": " + describe(g, t), 0f, 0f, null, () -> {
                                 try { return applyTarget(gg, cc, tt, "Approved"); } catch (Exception e) { return "Failed. See starsector.log"; }
                             });
                         }

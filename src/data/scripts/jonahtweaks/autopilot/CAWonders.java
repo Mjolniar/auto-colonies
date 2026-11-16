@@ -176,6 +176,7 @@ public class CAWonders {
                     a.kind = CAAction.Kind.BUILD; a.source = SOURCE; a.market = m; a.marketId = m.getId();
                     a.id = SITE; a.name = sp.getName(); a.why = "for the " + name(DAEDALUS);
                     a.cost = probe.getBuildCost(); a.fee = CABudget.constructionFee(s, a.cost); a.days = probe.getBuildTime();
+                    a.rapid = CABudget.rapidFee(a.cost);   // 0.3.8.5: CABuild.start adds Rapid construction's fee
                     a.upkeep = CAEngine.baseUpkeep(m, sp);
                     a.byRule = true;   // spending freely builds it; it earns nothing a month the engine can count
                     a.usesQueue = true; a.once = CAPlanner.ONCE_WONDER;

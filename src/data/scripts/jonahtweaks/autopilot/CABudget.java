@@ -325,6 +325,15 @@ public class CABudget {
         return Math.max(CATuning.FEE_FLOOR, CATuning.FEE_SHARE * cost) * CASettings.FEE_MULT[Math.max(0, Math.min(3, s.feeLevel))];
     }
 
+    /** 0.3.8.5: Rapid construction's fee on a build or upgrade (CASync.buildPrice less the game's price); 0 without it. */
+    public static float rapidFee(float cost) { return Math.max(0f, CASync.buildPrice(cost) - cost); }
+
+    /**
+     * 0.3.8.5: what a build or upgrade started through CABuild.start takes from your credits: the game's price, Rapid
+     * construction's fee (rapidFee) and the construction fee. Every reserve and floor check on a build or upgrade uses it.
+     */
+    public static float buildTotal(CASettings s, float cost) { return cost + rapidFee(cost) + constructionFee(s, cost); }
+
     public static float fee(CASettings s, float standard) {
         return standard * CASettings.FEE_MULT[Math.max(0, Math.min(3, s.feeLevel))];
     }

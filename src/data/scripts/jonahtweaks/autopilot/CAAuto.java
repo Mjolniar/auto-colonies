@@ -289,7 +289,7 @@ public class CAAuto {
                 if (wk != null) {
                     Cand k = new Cand();
                     k.m = m; k.c = c; k.p = r.bestNoSlot; k.remove = wk; k.gain = r.bestNoSlot.score - wk.keep;
-                    k.total = k.p.cost + CABudget.constructionFee(s, k.p.cost);
+                    k.total = CABudget.buildTotal(s, k.p.cost);   // 0.3.8.5: Rapid construction's fee included
                     cands.add(k);
                 }
                 if (r.picks.isEmpty()) continue;
@@ -313,7 +313,7 @@ public class CAAuto {
                 all.addAll(news);
                 for (CAEngine.Pick p : all) {
                     Cand k = new Cand();
-                    k.m = m; k.c = c; k.p = p; k.total = p.cost + CABudget.constructionFee(s, p.cost); k.gain = p.score;
+                    k.m = m; k.c = c; k.p = p; k.total = CABudget.buildTotal(s, p.cost); k.gain = p.score;   // 0.3.8.5: Rapid construction's fee included
                     cands.add(k);
                 }
                 // 0.2.45.1: no daily re-check while a build is under way; the colony gets a pass the day it finishes (due() above)
@@ -431,6 +431,7 @@ public class CAAuto {
     /** 0.3.2.0: replace: the industry a make-room swap takes down on Approve (null: none). */
     static void propose(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String why, String replace) {
         if (p.id.equals(c.pendingId) && (replace == null ? c.pendingReplace == null : replace.equals(c.pendingReplace))) return;
+        if (rejectedDays(m.getId(), p.id, CATime.now()) > 0f) return;   // 0.3.8.5: you rejected it here within 180 days; no path asks again
         c.pendingId = p.id; c.pendingName = p.verb + " " + p.name; c.pendingUpgrade = p.upgrade; c.pendingCost = p.cost;
         c.pendingReplace = replace;
         c.pendingNotified = true;
@@ -450,6 +451,8 @@ public class CAAuto {
         CASettings s = CAData.settings();
         float fee = CABudget.constructionFee(s, p.cost), price = CASync.buildPrice(p.cost);   // 0.3.6.0 story mode: Free construction
         if (CABuild.credits() < price + fee) return "Not enough credits: build plus " + Misc.getDGSCredits(fee) + " fee";
+        String reserve = CAApprovals.reserveGate(CABudget.buildTotal(s, p.cost));   // 0.3.8.5: the last reserve check, Rapid construction's fee included
+        if (reserve != null) return reserve;
         String err = CABuild.start(m, p);
         if (err != null) {
             // 0.3.0.9: a failed start is starsector.log only. An approval you clicked gets the error back from approve(), and
@@ -476,7 +479,7 @@ public class CAAuto {
         CAData.Colony c = d.colony(m.getId());
         if (c.pendingId == null) return "Nothing to approve";
         // 0.3.3.0: the credit reserve is not spent, whoever approves
-        String gate = CAApprovals.reserveGate(c.pendingCost + CABudget.constructionFee(d.settings, c.pendingCost));
+        String gate = CAApprovals.reserveGate(CABudget.buildTotal(d.settings, c.pendingCost));   // 0.3.8.5: Rapid construction's fee included
         if (gate != null) return gate;
         CAData.Profile prof = CAThreat.effective(m, c.profile);
         CAEngine.Result r = CAEngine.evaluate(m, prof, d.settings.minStability);
@@ -505,8 +508,7 @@ public class CAAuto {
 
     /** 0.3.6.2: the reserve check on the price the pick has today (the proposal's price can be up to a summary interval old). */
     static String reserveNow(CAData d, CAEngine.Pick p) {
-        float price = CASync.buildPrice(p.cost);
-        return CAApprovals.reserveGate(price + CABudget.constructionFee(d.settings, p.cost));
+        return CAApprovals.reserveGate(CABudget.buildTotal(d.settings, p.cost));   // 0.3.8.5: the shared total (CASync.buildPrice and the fee)
     }
 
     public static void reject(MarketAPI m) {

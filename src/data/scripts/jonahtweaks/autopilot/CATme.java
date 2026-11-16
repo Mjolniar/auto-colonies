@@ -14,7 +14,7 @@ import java.util.List;
  * | terraforming structure | industries.BaseTerraformingIndustry | industries.TerraformingIndustry |
  * | structures with projects | industries.BaseDevelopmentIndustry | TerraformingIndustry, MegastructureIndustry |
  * | project | Utils$ProjectData (fields id, name, cost, buildTime) | loading.specs.TerraformingProjectSpec (getConditionId...) |
- * | can it run | ui.plugins.ProjectListPlugin.canBuild(industry, project) | isUnlocked() and Utils.canPerformProject(market, project) |
+ * | can it run | ui.plugins.ProjectListPlugin.canBuild(industry, project) | Utils.canPerformProject(market, project) (0.3.8.5) |
  * | project table | data/campaign/tme_terraforming_options.csv | data/campaign/terraformingmadeeasy/terraforming_projects.csv |
  *
  * getProjects, getProject, setProject and hasOngoingProject keep their names in both. With neither version every
@@ -32,7 +32,7 @@ public final class CATme {
 
     private static boolean looked, v210;
     private static Class<?> terra, mega, dev, projCls;
-    private static Object canRun, setProjectM, gCond, gName, gCost, gTime, gUnlocked, fId, fName, fCost, fTime, buildMult, removeMult;
+    private static Object canRun, setProjectM, gCond, gName, gCost, gTime, fId, fName, fCost, fTime, buildMult, removeMult;   // 0.3.8.5: isUnlocked() not read
     /** 0.3.0.9: TME's Settings.BUILD_TIME_MULTIPLIER (2.9.8 and 2.10.0), read by name as the cost multipliers are. */
     private static Object timeMult;
 
@@ -49,7 +49,6 @@ public final class CATme {
             gName = CARefl.method(projCls, "getName", MarketAPI.class);
             gCost = CARefl.method(projCls, "getCost");
             gTime = CARefl.method(projCls, "getBuildTime");
-            gUnlocked = CARefl.method(projCls, "isUnlocked");
             setProjectM = CARefl.method(terra, "setProject", projCls);
             v210 = true;
         } catch (Throwable t) {
@@ -164,13 +163,15 @@ public final class CATme {
         try { return timeMult == null ? 1f : CARefl.getFloat(timeMult, null); } catch (Throwable t) { return 1f; }
     }
 
-    /** TME's own check that the structure can run this project now (requirements, and on 2.10.0 research unlocks). */
+    /**
+     * TME's own check that the structure can run this project now (its requirements). 0.3.8.5: on 2.10.0 the project table's
+     * `unlocked` column is not read (TME never calls isUnlocked(); a blank cell is false), as in TME's own dialog.
+     */
     public static boolean canRun(Industry ind, Proj p) {
         look();
         if (canRun == null || p == null || p.raw == null) return false;
         try {
             if (v210) {
-                if (!Boolean.TRUE.equals(CARefl.invoke(gUnlocked, p.raw))) return false;
                 return Boolean.TRUE.equals(CARefl.invoke(canRun, null, ind.getMarket(), p.raw));
             }
             return Boolean.TRUE.equals(CARefl.invoke(canRun, null, ind, p.raw));

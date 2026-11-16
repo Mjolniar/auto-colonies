@@ -145,7 +145,7 @@ public class CASurplusResearch {
             return;
         }
         String key = "srs:" + m.getId();
-        if (cost + fee > budget) {
+        if (CABudget.buildTotal(s, cost) > budget) {   // 0.3.8.5: Rapid construction's fee included
             summary = head + "; the next goes up at " + m.getName() + " once the surplus covers " + Misc.getDGSCredits(cost + fee) + ".";
             return;
         }
@@ -254,6 +254,7 @@ public class CASurplusResearch {
             a.kind = CAAction.Kind.BUILD; a.source = SOURCE; a.market = m; a.marketId = m.getId();
             a.id = FACILITY; a.name = sp.getName(); a.why = "+10% research speed";
             a.cost = cost; a.fee = CABudget.constructionFee(s, cost); a.days = days; a.upkeep = up;
+            a.rapid = CABudget.rapidFee(cost);   // 0.3.8.5: CABuild.start adds Rapid construction's fee
             a.worth = monthly;
             a.npv = CAValue.npv(monthly, h, days, cost, a.fee);
             a.byRule = endgame;

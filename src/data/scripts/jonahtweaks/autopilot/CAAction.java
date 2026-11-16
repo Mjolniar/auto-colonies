@@ -27,6 +27,8 @@ public class CAAction {
     public MarketAPI market;          // null for empire-wide actions
     public String id, name, why;
     public float worth, cost, fee, days, upkeep, npv;
+    /** 0.3.8.5: Rapid construction's fee CABuild.start adds to a build's price (CABudget.rapidFee); total() counts it. */
+    public float rapid;
     public boolean usesQueue, usesSlot, enabler;
     public float stabilityDelta;
     public int storyPoints;
@@ -124,8 +126,8 @@ public class CAAction {
             STABILITY = "stability", ONCE = "once", BUILDING = "building", TOMBSTONE = "tombstone", WORTHLESS = "worthless", FAILED = "failed",
             STORY = "story", RESCORE = "rescore", GATE = "gate", PROPOSED = "proposed", REJECTED = "rejected";
 
-    /** Price and fee: what it pays now. */
-    public float total() { return Math.max(0f, cost) + Math.max(0f, fee); }
+    /** Price and fee: what it pays now. 0.3.8.5: with Rapid construction's fee. */
+    public float total() { return Math.max(0f, cost) + Math.max(0f, fee) + Math.max(0f, rapid); }
 
     /** Credits the NPV is per. */
     public float basis() { return basis > 0f ? basis : Math.max(1f, total()); }

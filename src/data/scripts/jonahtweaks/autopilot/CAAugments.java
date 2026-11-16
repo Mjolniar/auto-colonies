@@ -498,6 +498,7 @@ public class CAAugments {
 
     /** Auto colonies get the best loadout applied; Approve colonies get the recommendation in the log once. */
     public static void run(CAData d, CASettings s, float now) {
+        finishRefits(d);   // 0.3.8.5: refits you approved or applied, in every augment mode
         if (s.augmentMode != 0) return;   // 1 recommend only, 2 off
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             CAData.Colony c = d.colony(m.getId());
@@ -523,13 +524,15 @@ public class CAAugments {
                     else lastSig.remove(m.getId());   // try again tomorrow (the station was fighting)
                 }
                 else {
+                    if (CAMark.at(REFIT_OK + m.getId()) != null) continue;   // 0.3.8.5: approved; its refit crew is booked (finishRefits)
                     if (CALog.once("aug:" + m.getId() + ":" + pl.summary()))
                         CAApprovals.say(m.getName() + ": Station augments suggested: " + pl.summary() + (defense ? ", for defense" : "") + ". Apply on its panel.", false);
                     // 0.3.3.0: a decision in the approval summary (installing augments is free and can be undone)
                     final MarketAPI mm = m;
                     CAApprovals.offer("aug:" + m.getId() + ":" + pl.summary(), "augments", m, "Station augments: " + pl.summary(), 0f, 0f, null, () -> {
                         if (!Global.getSettings().getModManager().isModEnabled(MOD)) return "Station Augments is off";
-                        return applyNow(mm);
+                        String r = applyNow(mm);
+                        return BOOKED.equals(r) ? null : r;   // 0.3.8.5: a booked refit crew is the approval; finishRefits makes the change
                     });
                 }
             } catch (Throwable t) {
@@ -540,14 +543,43 @@ public class CAAugments {
 
     // ---------------- panels ----------------
 
-    /** Apply button: plans afresh and applies. Returns null on success. */
+    /** 0.3.8.5: a refit crew booked for a change you approved or applied: "augok:<marketId>" (CAMark, per colony). */
+    static final String REFIT_OK = "augok:";
+
+    /** 0.3.8.5: applyNow's answer when the refit crew is booked; finishRefits makes the change when it is there. */
+    static final String BOOKED = "Refit crew booked. Augments change in " + Math.round(REFIT_DAYS) + " days, or at once with your fleet in this system";
+
+    /** Apply button: plans afresh and applies. Returns null on success, or BOOKED when the refit crew is booked. */
     public static String applyNow(MarketAPI m) {
         CAData.Colony c = CAData.get().colony(m.getId());
         sync(m, c);
         Plan pl = plan(m, c, profileFor(m, c));
-        if (!pl.changes()) return "Nothing to change";
-        if (!refitReady(m)) return "Refit crew booked. Augments change in " + Math.round(REFIT_DAYS) + " days, or at once with your fleet in this system";
+        if (!pl.changes()) { CAMark.clear(REFIT_OK + m.getId()); return "Nothing to change"; }   // 0.3.8.5
+        if (!refitReady(m)) { CAMark.set(REFIT_OK + m.getId(), CAMark.now()); return BOOKED; }   // 0.3.8.5: finishRefits makes the change
+        CAMark.clear(REFIT_OK + m.getId());   // 0.3.8.5
         return apply(m, c, pl, "you set");
+    }
+
+    /**
+     * 0.3.8.5: makes the change you approved or applied (REFIT_OK) once its refit crew is there, at a colony not set to Off,
+     * in every augment mode. The plan is made again then, as applyNow does.
+     */
+    static void finishRefits(CAData d) {
+        for (String k : CAMark.keys(REFIT_OK)) {
+            String id = k.substring(REFIT_OK.length());
+            try {
+                MarketAPI m = CAAuto.market(id);
+                CAData.Colony c = d.colonies.get(id);
+                if (m == null || !m.isPlayerOwned() || c == null || c.mode == CAData.Mode.OFF || !hasStation(m)) { CAMark.clear(k); continue; }
+                if (!refitReady(m)) continue;
+                CAMark.clear(k);
+                sync(m, c);
+                Plan pl = plan(m, c, profileFor(m, c));
+                if (pl.changes()) apply(m, c, pl, "you set");
+            } catch (Throwable t) {
+                CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment refit failed at " + id, t);
+            }
+        }
     }
 
     /** Lets Autopilot add the augments you removed from this colony again. */

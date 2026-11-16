@@ -1,5 +1,16 @@
 # Patch notes
 
+## 0.3.8.5 - 2026-11-16
+
+- Story mode: Fixed builds and upgrades under Rapid construction spending its fee from the credit reserve.
+- Story mode: Fixed colonies held at Off staying Off after story mode is switched off.
+- Fast buildout: Fixed buildings you rejected being proposed or started again within 180 days.
+- War: Fixed relief fleets going to besieged colonies with no unrest.
+- War: Fixed the relief fleet cooldown resetting on every load.
+- Approvals: Fixed rejected megastructure and hypershunt range asks coming back when their target values changed.
+- Terraforming: Fixed TME 2.10.0 projects with a blank unlocked cell never starting.
+- Station Augments: Fixed approved augment changes never finishing after the refit crew was booked.
+
 ## 0.3.8.4 - 2026-11-15
 
 - Story mode: Rewrote the TriPad scenes with your technology officer and chief engineer in the style of the game's own dialogs.

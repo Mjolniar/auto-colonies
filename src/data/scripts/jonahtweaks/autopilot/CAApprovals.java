@@ -90,6 +90,20 @@ public final class CAApprovals {
         return false;
     }
 
+    /**
+     * 0.3.8.5: rejections saved under the older key form "<key>:<target>" (megastructure and hypershunt range asks) move to
+     * the key itself with their date, the newest kept, so they hold their full time.
+     */
+    static void moveHold(String key) {
+        Long newest = CAMark.at("askno:" + key);
+        for (String k : CAMark.keys("askno:" + key + ":")) {
+            Long at = CAMark.at(k);
+            if (at != null && (newest == null || at > newest)) newest = at;
+            CAMark.clear(k);
+        }
+        if (newest != null) CAMark.set("askno:" + key, newest);
+    }
+
     public static void reset() { LIVE.clear(); }
 
     // ---------------- the list ----------------
@@ -196,7 +210,7 @@ public final class CAApprovals {
             gone = ind == null ? c.pendingReplace : ind.getCurrentName();
         }
         it.title = c.pendingName + (gone != null ? ", takes down " + gone : "");
-        it.cost = c.pendingCost; it.fee = CABudget.constructionFee(s, c.pendingCost);
+        it.cost = CASync.buildPrice(c.pendingCost); it.fee = CABudget.constructionFee(s, c.pendingCost);   // 0.3.8.5: the price with Rapid construction's fee (approve's reserve gate)
         it.monthly = c.pendingMonthly; it.why = c.pendingWhy; it.since = c.pendingSince;
         final String key = it.key;
         it.approve = new Act() { public String run() {
@@ -292,7 +306,7 @@ public final class CAApprovals {
             Item it = new Item();
             it.kind = "military"; it.marketId = u.m.getId(); it.place = u.m.getName(); it.key = "military:" + u.m.getId() + "|" + u.to;
             it.title = "Military: upgrade to " + u.name;
-            it.cost = u.cost; it.fee = u.fee; it.monthly = -u.upkeep; it.since = CAMark.now();
+            it.cost = CASync.buildPrice(u.cost); it.fee = u.fee; it.monthly = -u.upkeep; it.since = CAMark.now();   // 0.3.8.5: with Rapid construction's fee
             it.approve = new Act() { public String run() {
                 if (CAMilitary.pending != u) return "Changed since the list was made";
                 return ladderResult(CAMilitary.handle(CAMilitary.APPROVE), CAMilitary.pending == null);
@@ -411,8 +425,7 @@ public final class CAApprovals {
     public static String startByPlayer(MarketAPI m, CAEngine.Pick p) {
         if (m == null || p == null) return "Not available";
         CASettings s = CAData.settings();
-        float fee = CABudget.constructionFee(s, p.cost);
-        String gate = reserveGate(p.cost + fee);
+        String gate = reserveGate(CABudget.buildTotal(s, p.cost));   // 0.3.8.5: Rapid construction's fee included
         if (gate != null) return gate;
         CAData.Colony c = CAData.get().colony(m.getId());
         String keepId = c.pendingId;

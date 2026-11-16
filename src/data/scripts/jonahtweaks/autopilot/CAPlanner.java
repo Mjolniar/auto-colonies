@@ -1048,6 +1048,7 @@ public class CAPlanner {
         a.id = p.id; a.name = p.name;
         a.why = p.lines.isEmpty() ? null : p.lines.get(0);
         a.cost = p.cost; a.fee = CABudget.constructionFee(s, p.cost); a.days = p.days;
+        a.rapid = CABudget.rapidFee(p.cost);   // 0.3.8.5: Rapid construction's fee counts in the reserve and money checks (total)
         a.upkeep = p.upkeep - (remove != null ? remove.upkeep : 0f);   // a replaced industry's upkeep stops
         a.worth = p.worth;
         a.gross = p.fx[0] + p.upkeep;   // money before upkeep (fx[0] is after it)
@@ -1128,7 +1129,7 @@ public class CAPlanner {
             float loss = eg ? (ref.remove != null ? ref.remove.money : 0f) - p.fx[0] : 0f;
             // 0.3.0.0 (B3 fix): failWaits marks the failures that are for now (the income floor, credits, stability), so a better
             // new build that hit one still keeps long builds out of its colony's queue
-            boolean noCredits = CABuild.credits() < CASync.buildPrice(p.cost) + CABudget.constructionFee(s, p.cost);   // 0.3.6.0 story mode: Free construction
+            boolean noCredits = CABuild.credits() - s.reserve < CABudget.buildTotal(s, p.cost);   // 0.3.8.5: above the reserve, Rapid construction's fee included (CAAuto.execute's gate)
             if (eg && !CAEndgame.lossFits(s, loss)) {
                 if (CALog.once(m.getId() + ":" + p.id + ":endgame")) CALog.think(m.getName() + ": " + p.name + " waits. Income cost: " + Misc.getDGSCredits(loss)
                         + "/month. Endgame floor: " + Misc.getDGSCredits(CAEndgame.floor(s)) + "/month.");
@@ -1193,6 +1194,7 @@ public class CAPlanner {
     /** Copies what scoring decides from a re-scored action (not the pass's own marks). */
     static void copyNumbers(CAAction f, CAAction a) {
         a.worth = f.worth; a.cost = f.cost; a.fee = f.fee; a.days = f.days; a.upkeep = f.upkeep; a.npv = f.npv;
+        a.rapid = f.rapid;   // 0.3.8.5
         a.gross = f.gross; a.confidence = f.confidence; a.stabilityDelta = f.stabilityDelta; a.usesSlot = f.usesSlot;
         a.goods = f.goods; a.upkeepCap = f.upkeepCap; a.fromBudget = f.fromBudget; a.fromSurplus = f.fromSurplus;
         a.approval = f.approval; a.tombstone = f.tombstone; a.payload = f.payload; a.basis = f.basis; a.why = f.why;

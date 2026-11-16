@@ -392,7 +392,7 @@ public class CAEndgame {
     /** Why the new industry couldn't start once the old one is down (checked first, so nothing is taken down for nothing); null if it can. */
     static String cantStart(MarketAPI m, CAEngine.Pick p) {
         CASettings s = CAData.settings();
-        if (CABuild.credits() < p.cost + CABudget.constructionFee(s, p.cost)) return "the credits aren't there";
+        if (CABuild.credits() - s.reserve < CABudget.buildTotal(s, p.cost)) return "the credits aren't there";   // 0.3.8.5: above the reserve, Rapid construction's fee included (CAAuto.execute's gate)
         if (!CADiagnostics.usable(p.id)) return "Autopilot can't build it";
         if (!CABreaker.allowed("building " + p.name)) return "building it is paused this session";
         if (CAAotD.enabled() && !CAAotD.allows(p.id, m)) return "research hasn't unlocked it";

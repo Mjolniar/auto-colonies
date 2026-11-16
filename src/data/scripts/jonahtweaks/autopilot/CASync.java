@@ -174,7 +174,9 @@ public class CASync {
             CAData.Colony c = d.colony(e.getKey());
             CAData.Mode mo;
             try { mo = CAData.Mode.valueOf(e.getValue()); } catch (Throwable t) { continue; }
-            if (c.mode != CAData.Mode.OFF && c.mode != mo) { c.mode = mo; d.clearPending(c); }
+            // 0.3.8.5: a colony held at Off gets its mode back too. Only held colonies have an entry; a mode you pick yourself,
+            // Off included, removes it (allowMode). A colony you set to Off stays Off
+            if (c.mode != mo) { c.mode = mo; d.clearPending(c); }
         }
         want.clear();
     }

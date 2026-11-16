@@ -263,7 +263,8 @@ public class CABuildout {
             // doesn't build it back either (it ranks CAEngine.evaluateForProfit picks and starts them through CAAuto.execute,
             // which never read the marks, so a pruned or over-limit building could come back the day a slot opened)
             if (CAEndgame.rebuildBlocked(m, q.id)) continue;
-            float ratio = q.score / Math.max(1f, q.cost + CABudget.constructionFee(s, q.cost));
+            if (CAAuto.rejectedDays(m.getId(), q.id, CATime.now()) > 0f) continue;   // 0.3.8.5: you rejected it here within 180 days: not proposed or started
+            float ratio = q.score / Math.max(1f, CABudget.buildTotal(s, q.cost));   // 0.3.8.5: Rapid construction's fee included
             if (q.upgrade) { if (bestUp == null || ratio > upRatio) { bestUp = q; upRatio = ratio; } }
             else if (!building && (bestNew == null || ratio > newRatio)) { bestNew = q; newRatio = ratio; }
             if (!q.upgrade && !building && q.planStep && CAEngine.isIndustry(q.id) && (bestPlanInd == null || ratio > planRatio)) { bestPlanInd = q; planRatio = ratio; }
@@ -287,7 +288,7 @@ public class CABuildout {
         for (CAEngine.Pick p : order) {
             if (p == null) continue;
             if (p.measured && s.measuredMode == 1) { CAAuto.propose(m, c, p, "Approval needed: mod building scored from measurements"); continue; }
-            float total = p.cost + CABudget.constructionFee(s, p.cost);
+            float total = CABudget.buildTotal(s, p.cost);   // 0.3.8.5: Rapid construction's fee included
             if (CABuild.credits() - total < floor) {
                 if (CALog.once(m.getId() + ":" + p.id + ":floor")) CALog.think(m.getName() + ": Fast buildout: " + p.name + " waits. "
                         + Misc.getDGSCredits(total) + " would go below the " + Misc.getDGSCredits(floor) + " floor.");

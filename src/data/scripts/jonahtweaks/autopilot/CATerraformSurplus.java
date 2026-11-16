@@ -241,12 +241,13 @@ public class CATerraformSurplus {
             IndustrySpecAPI sp = spec(mv.structure);
             if (sp == null) return 0f;
             float cost = sp.getCost(), fee = CABudget.constructionFee(s, cost), up = CAEngine.baseUpkeep(m, sp);
-            if (cost + fee > budget) { waits(m, key, "building " + sp.getName() + " (" + what + ")", cost + fee); return 0f; }
+            float total = CABudget.buildTotal(s, cost);   // 0.3.8.5: Rapid construction's fee included
+            if (total > budget) { waits(m, key, "building " + sp.getName() + " (" + what + ")", total); return 0f; }
             if (s.upkeepAdded + up > CASurplus.upkeepCap(m, s)) {
                 if (CALog.once("tsu:" + key)) CALog.think(m.getName() + ": " + sp.getName() + " waits for next month's upkeep room.");
                 return 0f;
             }
-            return buildStructure(m, k.q, sp, cost, fee, up) == null ? cost + fee : 0f;
+            return buildStructure(m, k.q, sp, cost, fee, up) == null ? total : 0f;
         }
         if (!(CATme.isTerraforming(ind))) return 0f;
         Industry ti = ind;
@@ -431,6 +432,7 @@ public class CATerraformSurplus {
             if (sp == null) return null;
             a.kind = CAAction.Kind.BUILD; a.id = mv.structure; a.name = sp.getName();
             a.cost = sp.getCost(); a.fee = CABudget.constructionFee(s, a.cost); a.days = sp.getBuildTime(); a.upkeep = CAEngine.baseUpkeep(m, sp);
+            a.rapid = CABudget.rapidFee(a.cost);   // 0.3.8.5: CABuild.start adds Rapid construction's fee
             a.usesQueue = true;
             a.usesSlot = CAEngine.isIndustry(mv.structure);
             a.tombstone = CAPlanner.tombstoneDays(m.getId(), mv.structure);   // taken down here lately: not built again within the year (B4)
