@@ -119,7 +119,8 @@ public class CAStoryIntel extends BaseIntelPlugin {
     static String objective() {
         String area = CAAutarch.area();
         if (CASync.installed() && !CASync.pulled()) return null;   // 0.3.7.2: online, nothing to point at
-        if (CAAutarch.inCargo() > 0) return CASync.pulled() ? "Put the Autarch AI Core back in the cradle." : "Decide what to do with the Autarch AI Core.";
+        // 0.3.8.9: a core in a storage tab is yours too (no pointer to the old station)
+        if (CAAutarch.inCargo() > 0 || CAAutarch.anywhere()) return CASync.pulled() ? "Put the Autarch AI Core back in the cradle." : "Decide what to do with the Autarch AI Core.";
         String ph = CASync.phase();
         if ("breaking".equals(ph)) return "Engineering is breaking the core down.";
         if ("broken".equals(ph) || "salvage".equals(ph)) return "None. Another Autarch-class core may turn up in salvage one day.";

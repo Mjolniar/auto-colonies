@@ -49,7 +49,7 @@ public class CASyncPage {
 
         if (CASync.dormant() && CAAutarch.inCargo() > 0)
             row(t, CASync.pulled() ? "Reseat the core" : "Decide on the core", "core", true, 200f, "Your TriPad asks once you close this screen.", gray);
-        else if (CASync.dormant() && CAAutarch.inCargo() == 0 && ph.isEmpty()) {
+        else if (CASync.dormant() && CAAutarch.inCargo() == 0 && ph.isEmpty() && !CAAutarch.anywhere()) {   // 0.3.8.9: not while it sits in a storage tab
             String area = CAAutarch.area();
             t.addPara(area != null && CASync.seen(CATriPad.FOUND) ? "Your TriPad points to a derelict research station somewhere in the " + area + "."
                     : "You haven't found it yet.", gray, 4f);
@@ -57,8 +57,7 @@ public class CASyncPage {
         if (awake && CASync.cradle()) row(t, "Pull the core", "pull", true, 200f, "This takes the cradled core out, and the Colony Autopilot goes dormant.", gray);
 
         // processing power
-        if (CASync.installed()) {
-            int[] f = CASync.fed();
+        if (CASync.installed()) {   // 0.3.8.9: the unused fed() read is removed
             t.addSectionHeading("Bandwidth", Alignment.MID, 12f);
             t.addPara("The core has %s bandwidth. Your abilities use %s, and %s are free.", 6f, hl, "" + CASync.total(), "" + CASync.spent(), "" + Math.max(0, CASync.free()));
             int[] h = CASync.onHand();   // 0.3.7.2: the buttons are the core slots; no counts or explanations

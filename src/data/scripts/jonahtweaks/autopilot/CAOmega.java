@@ -212,11 +212,14 @@ public class CAOmega {
             CAData.Colony c = d.colony(m.getId());
             float[] w = CAItems.coreWeights(m, c);
             // 0.3.2.1: never at a Rogue Planets Trash King colony (he governs) or Pilgrim World (an AI core breaks its bonus)
-            if (admins != null && (m.getAdmin() == null || !m.getAdmin().isAICore()) && !CARogue.adminLocked(m) && !CARogue.noCores(m)) {
+            // 0.3.8.9: never where the Autarch AI Core governs (story mode)
+            if (admins != null && (m.getAdmin() == null || !m.getAdmin().isAICore()) && !CAAutarchAdmin.governs(m) && !CARogue.adminLocked(m) && !CARogue.noCores(m)) {
                 int pts = CAItems.aiPoints(m), lim = CAItems.coreLimit(s, m, none);
                 float v = weigh(w, adminFx(m, deficit));
+                if (CAItems.adminAt(m) != null) v -= w[0] * CAItems.adminWorth(m, m.getAdmin());   // 0.3.8.9: less what the hired administrator adds
                 if (pts + adminPoints() <= lim) {
-                    if (best == null || v > best.value) { best = new Spot(); best.m = m; best.value = v; best.why = "governs it"; }
+                    // 0.3.8.9: never where it takes the colony under the stability floor (a colony you govern loses its management bonus)
+                    if ((best == null || v > best.value) && CAStability.canLose(m, adminArrives(m), null)) { best = new Spot(); best.m = m; best.value = v; best.why = "governs it"; }
                 } else if (v > 0f && CALog.once("omega:admin:limit:" + m.getId() + ":" + lim))
                     CALog.advise(m.getName() + ": an Omega core could govern it (Astral Ascension Renewed). As an administrator it counts "
                             + adminPoints() + " inspection points (" + CAItems.limitWhy(s, m, none, lim) + "). Assign it as administrator.");   // 0.3.8.6: advice
@@ -242,6 +245,18 @@ public class CAOmega {
 
     /** An Omega core goes in only where it adds at least this much a month. */
     static final float MIN_GAIN = 5000f;
+
+    /** 0.3.8.9: AAR's Omega administrator's own stability (+3, see the header). */
+    static final float ADMIN_STABILITY = 3f;
+
+    /**
+     * 0.3.8.9: m's stability change when an Omega administrator arrives: from you, the colony limit counted (as CAItems'
+     * administrators); from a hired administrator, their own stability off.
+     */
+    static float adminArrives(MarketAPI m) {
+        if (CAItems.governedByYou(m)) return CAStability.adminArrives(ADMIN_STABILITY, CAStability.governedPenalty());
+        return ADMIN_STABILITY - CAStability.adminOwn(m.getAdmin());
+    }
 
     static int adminPoints() {
         try { return Math.round(Global.getSettings().getFloat("hegemonyPointsAdmin")); } catch (Throwable t) { return 10; }

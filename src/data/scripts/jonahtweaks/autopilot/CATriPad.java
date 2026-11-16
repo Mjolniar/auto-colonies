@@ -112,7 +112,8 @@ public class CATriPad implements InteractionDialogPlugin {
         this.text = dialog.getTextPanel();
         this.options = dialog.getOptionPanel();
         dialog.setPromptText("");
-        if (!reread && !CHIME.equals(beat) && !PULL.equals(beat)) CASync.see(beat);   // the chime is seen per core (CASync.nextBeat), the pull once it's done
+        if (!reread && !CHIME.equals(beat) && !PULL.equals(beat)) CASync.see(beat);   // the chime is seen per core (CASync.shown), the pull once it's done
+        if (!reread) CASync.shown(beat);   // 0.3.8.9: off the pending list; the chime is marked seen here, once it shows
         try { show(); }
         catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "story beat " + beat + " failed", t);
@@ -159,7 +160,8 @@ public class CATriPad implements InteractionDialogPlugin {
         if (FOUND.equals(beat)) {
             if (NOTES.equals(data)) { foundNotes(); return; }
             if (HAND.equals(data)) { handOver(); return; }
-            if (data instanceof Float) { handOver(); if (market != null && CASync.has("buildout")) CABuildout.start(market, (Float) data); return; }
+            // 0.3.8.9: no fast buildout when the hand-over was held back (managed colony limit)
+            if (data instanceof Float) { handOver(); if (market != null && CASync.has("buildout") && CASync.modeNote == null) CABuildout.start(market, (Float) data); return; }
             if (KEEP.equals(data)) { screen("CHARTER FILED: ADVISORY."); leave(); return; }
         } else if (CHIME.equals(beat)) {
             if (SLOT.equals(data) || CRADLE.equals(data)) { slot(CRADLE.equals(data)); return; }
@@ -538,8 +540,10 @@ public class CATriPad implements InteractionDialogPlugin {
         screen("AUTARCH-CLASS SUBSTRATE SIGNAL. SOURCE: " + (area != null ? area.toUpperCase() : "UNKNOWN") + ".");
         para("The TriPad has picked up another Autarch-class core" + (area != null ? " somewhere in the " + area : "")
                 + ". Your sensors officer runs the reading twice before confirming it.");
-        if (area != null) note("New objective: find the Autarch AI Core somewhere in the " + area + ".");
-        CAStoryIntel.showIn(text);   // 0.3.6.8
+        if (!reread) {   // 0.3.8.9: read again, no new objective
+            if (area != null) note("New objective: find the Autarch AI Core somewhere in the " + area + ".");
+            CAStoryIntel.showIn(text);   // 0.3.6.8
+        }
         leave();
     }
 

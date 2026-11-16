@@ -75,6 +75,7 @@ final class CAAutonomy {
     }
 
     static boolean eligible(CAData d, MarketAPI m, boolean autoOnly) {
+        if (!m.isPlayerOwned()) return false;   // 0.3.8.9: autonomous already (Nexerelin keeps it in your faction)
         CAData.Colony c = d.colony(m.getId());
         if (autoOnly ? c.mode != CAData.Mode.AUTO : c.mode == CAData.Mode.OFF) return false;
         if (c.buildout) return false;   // a fast buildout loses money on purpose until it pays
@@ -209,7 +210,7 @@ final class CAAutonomy {
 
     /** Taking one back, with Nexerelin's usual unrest (0.2.37.0: no exception for colonies an older Autopilot made autonomous). */
     static void reclaim(CAData d, MarketAPI m, String why) {
-        boolean legacy = d.autonomous().containsKey(m.getId());
+        // 0.3.8.9: the unused legacy flag is removed
         // 0.3.0.0 (WS-E fix): decided before it comes back: past the colony limit, or the colonies you govern can't take one more
         // governed colony (CAStability.oneMoreGoverned), an idle administrator governs it
         boolean needAdmin = CAItems.overLimit() + 1 > 0 || !CAStability.canGovernedLose(-CAStability.oneMoreGoverned(), null);

@@ -64,6 +64,7 @@ public class CAReset {
         if (on("assortment_of_things")) failed += run("settlement sites", () -> { CASettlement.cache = null; CASettlement.cachedAt = -999f; });
         // 0.3.6.3; 0.3.8.7: in every game (neither class uses Nexerelin; CAAuto runs CAStationAsk.daily in every game)
         failed += run("station line ask", () -> { CAStationAsk.reset(); CAStations.reset(); });
+        failed += run("threat neighbors", () -> CAThreat.reset());   // 0.3.8.9: the day's hostile-neighbor parts held the last save's colonies
         if (on("nexerelin")) {
             failed += run("defense fleet cooldowns", () -> { CADefense.lastSent.clear(); CADefense.warned.clear(); });
             failed += run("war fleet warnings", () -> { CAWar.warned.clear(); CAWar.summary = null; });   // 0.3.8.5: the relief cooldown is the saved record (CAWar.reliefRecent)

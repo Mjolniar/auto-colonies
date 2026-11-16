@@ -1,5 +1,28 @@
 # Patch notes
 
+## 0.3.8.9 - 2026-11-16
+
+- Autarch administrator: Fixed the core taking new colonies while it still governed one it could not leave.
+- Autarch administrator: Fixed the core staying over its seats when the floor held the colony it adds least to.
+- Autarch administrator: Fixed leaving a colony over the industry limit counting the limit's penalty twice.
+- Autarch administrator: Fixed the core never returning after the administrator who replaced it moved away.
+- Omega cores: Fixed an Omega administrator replacing the Autarch AI Core.
+- Omega cores: Fixed an Omega administrator taking a colony under the stability floor or replacing a hired administrator who adds more.
+- Autonomy: Fixed autonomy being offered and granted again to colonies already autonomous.
+- Autonomy: Fixed items, AI cores, Omega cores and production floors going to Nexerelin-autonomous colonies.
+- Story mode: Fixed an Autarch AI Core in an Industrial Evolution warehouse counting as lost and a second core being placed.
+- Story mode: Fixed a new game with LunaLib placing the core's station before the Story or Normal answer.
+- Story mode: Fixed bought managed colonies keeping their bandwidth after Approve mode is switched off.
+- Story mode: Fixed removing a managed colony leaving Autarch administrator seats that govern nothing.
+- Story mode: Fixed a lower bandwidth total removing packages whose mods are off.
+- Story mode: Fixed the founding scene starting a fast buildout at a colony held back by the managed colony limit.
+- Story mode: Fixed the Story tab and Story page pointing to the old station while the core is in a storage tab.
+- Story mode: Fixed the breakdown and new core scenes being lost to a save or a Story page click.
+- Story mode: Fixed reading "Another signature" again adding a new objective.
+- Story mode: Changed the Rapid construction and Autarch administrator texts to show the fee and seat cost from the config file.
+- Endgame economy: Fixed the summary counting replaced buildings older than a year.
+- Performance: Changed the threat estimate to read hostile neighbors once a day per colony.
+
 ## 0.3.8.8 - 2026-11-16
 
 - Planner: Fixed endgame and capital replacements that need approval being proposed again at every look.

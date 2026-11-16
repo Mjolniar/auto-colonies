@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 0.3.6.0 story mode: every ability the Autarch AI Core can run and its cost in processing power (PP).
+ * 0.3.6.0 story mode: every ability the Autarch AI Core can run, and the packages that hold them with their cost in processing power (PP).
  * The core gives BASE_PP; each AI core fed to it adds ALPHA_PP, BETA_PP or GAMMA_PP. The
  * player ticks abilities on the Story page up to their PP. Costs can be changed in data/config/colony_autopilot_story.json
  * without a rebuild. Mod ids are literals here, so this class never loads an optional mod's integration class.
@@ -32,15 +32,15 @@ public class CASyncCatalog {
     /** 0.3.7.8: Rapid construction's flat fee per build or upgrade, and the share of the build time it takes. */
     public static float RAPID_FEE = 100000f, RAPID_TIME = 1f / 3f;
 
-    public static final String[] GROUPS = {"Colony management", "Items and people", "Money", "Expansion", "Security and war", "Mod features", "Story perks"};
+    // 0.3.8.9: GROUPS, the ability names, texts and costs, available() and Pack.contents() are removed (nothing read them;
+    // packages carry the names, costs and descriptions)
 
     public static class Ability {
-        public final String id, name, text, mod, requires;
+        public final String id, mod, requires;
         public final int group;
-        public int cost;
 
-        Ability(String id, int group, int cost, String mod, String requires, String name, String text) {
-            this.id = id; this.group = group; this.cost = cost; this.mod = mod; this.requires = requires; this.name = name; this.text = text;
+        Ability(String id, int group, String mod, String requires) {
+            this.id = id; this.group = group; this.mod = mod; this.requires = requires;
         }
 
         /** Its mod is enabled (or it needs none). */
@@ -50,73 +50,73 @@ public class CASyncCatalog {
     static final List<Ability> ALL = new ArrayList<Ability>();
     static final Map<String, Ability> BY_ID = new LinkedHashMap<String, Ability>();
 
-    static void add(String id, int group, int cost, String mod, String requires, String name, String text) {
-        Ability a = new Ability(id, group, cost, mod, requires, name, text);
+    static void add(String id, int group, String mod, String requires) {
+        Ability a = new Ability(id, group, mod, requires);
         ALL.add(a);
         BY_ID.put(id, a);
     }
 
     static {
         // Colony management
-        add("advisor", 0, 1, null, null, "Advisor mode", "Colonies in Advisor get build advice in the build menu and the colony panel.");   // 0.3.7.2
-        add("approve", 0, 2, null, null, "Approve mode", "One colony in Approve proposes builds and waits for your answer.");   // 0.3.7.2
-        add("auto", 0, 4, null, "approve", "Auto mode", "Colonies in Auto act without asking you first.");
-        add("buildout", 0, 2, null, "auto", "Fast buildout", "It pours your savings into a new or money-losing colony until the colony earns.");
-        add("cleanup", 0, 2, null, null, "Clean up", "It takes down industries that stopped paying and frees their slots for better ones.");
-        add("stations", 0, 2, null, null, "Stations", "It builds and upgrades orbital stations.");
-        add("policies", 0, 1, null, null, "Colony policies", "It sets hazard pay, free ports and edicts where they pay.");
-        add("storyPoints", 0, 3, null, null, "Story point improvements", "It spends story points on improvements.");
-        add("capital", 0, 1, null, null, "Capital", "It picks the capital and keeps the gathering point there.");
-        add("logistics", 0, 1, null, null, "Storage logistics", "It ships ships, weapons and items to the refit and sell hubs.");
-        add("objectives", 0, 1, null, null, "Stable locations", "It builds comm relays, nav buoys and sensor arrays.");
-        add("crisis", 0, 2, null, null, "Crisis response", "It plans defenses at the colony a crisis is coming for.");
+        add("advisor", 0, null, null);   // 0.3.7.2
+        add("approve", 0, null, null);   // 0.3.7.2
+        add("auto", 0, null, "approve");
+        add("buildout", 0, null, "auto");
+        add("cleanup", 0, null, null);
+        add("stations", 0, null, null);
+        add("policies", 0, null, null);
+        add("storyPoints", 0, null, null);
+        add("capital", 0, null, null);
+        add("logistics", 0, null, null);
+        add("objectives", 0, null, null);
+        add("crisis", 0, null, null);
         // Items and people
-        add("items", 1, 2, null, null, "Colony items", "It places colony items from Autopilot Storage.");
-        add("cores", 1, 2, null, null, "AI cores", "It places AI cores from Autopilot Storage.");
-        add("admins", 1, 2, null, null, "Administrators", "It hires and places administrators.");
-        add("omega", 1, 3, "omega", "cores", "Omega and IX cores", "It places Omega cores and IX Revival's Panopticon cores.");
+        add("items", 1, null, null);
+        add("cores", 1, null, null);
+        add("admins", 1, null, null);
+        add("omega", 1, "omega", "cores");
         // Money
-        add("spending", 2, 2, null, null, "Higher spending", "It can use the Lavish spending preset.");
-        add("surplus", 2, 4, null, null, "Surplus investment", "Money over the surplus line goes into one focus world.");
-        add("floors", 2, 2, null, null, "Production floors", "It builds for ship hulls, weapons, parts, supplies and fuel before money.");
-        add("stockpiles", 2, 1, null, null, "Stockpiles", "The money ladder can buy stockpiles.");
-        add("military", 2, 3, null, null, "Military", "The money ladder can buy station tiers and military buildings.");
-        add("shipyard", 2, 3, null, null, "Shipyard", "The money ladder can order Doctrine hulls through custom production.");
-        add("endgame", 2, 5, null, null, "Endgame economy", "At high income it builds for production and defense, and the money ladder can buy the economy rung.");
-        add("halfFees", 2, 4, null, null, "Half fees", "The convenience fee can be set to Low.");
-        add("noFees", 2, 8, null, "halfFees", "No fees", "The convenience fee can be set to Off.");
+        add("spending", 2, null, null);
+        add("surplus", 2, null, null);
+        add("floors", 2, null, null);
+        add("stockpiles", 2, null, null);
+        add("military", 2, null, null);
+        add("shipyard", 2, null, null);
+        add("endgame", 2, null, null);
+        add("halfFees", 2, null, null);
+        add("noFees", 2, null, "halfFees");
         // Expansion
-        add("expansion", 3, 6, null, null, "Auto-expansion", "It founds new colonies with idle money, and the money ladder can buy the expansion rung.");
-        add("colonyFleets", 3, 2, "nexerelin", "expansion", "Colony fleets", "It sends Nexerelin colony expeditions.");
+        add("expansion", 3, null, null);
+        add("colonyFleets", 3, "nexerelin", "expansion");
         // Security and war
-        add("lowProfile", 4, 1, null, null, "Low profile", "It can use the Low profile expansion style.");
-        add("enforcers", 4, 3, null, null, "Enforcer patrols", "Colony patrols attack enforcement fleets.");
-        add("defense", 4, 3, "nexerelin", null, "Emergency defense", "It sends defense fleets to colonies under attack, at the Defend war level.");
-        add("agents", 4, 2, "nexerelin", null, "Agents: defense", "It recruits agents for security and relations.");
-        add("offense", 4, 3, "nexerelin", "agents", "Agents: offense", "Its agents sabotage the target you set.");
-        add("diplomacy", 4, 2, "nexerelin", null, "Diplomacy", "It answers ceasefire and peace offers by your stances.");
-        add("autonomy", 4, 1, "nexerelin", null, "Autonomy", "It grants autonomy to colonies that keep losing money.");
-        add("retaliate", 4, 3, "nexerelin", "defense", "War: Retaliate", "Its war fleets raid factions that attacked you.");
-        add("strike", 4, 5, "nexerelin", "retaliate", "War: Hold them down", "Its war fleets strike hostile factions.");
-        add("conquest", 4, 8, "nexerelin", "strike", "War: Conquer", "Its war fleets invade and retake colonies, and it looks after the ones you conquer.");
-        add("scorched", 4, 5, "nexerelin", "conquest", "War: Scorched", "Its war fleets bombard targets once you authorize it.");
+        add("lowProfile", 4, null, null);
+        add("enforcers", 4, null, null);
+        add("defense", 4, "nexerelin", null);
+        add("agents", 4, "nexerelin", null);
+        add("offense", 4, "nexerelin", "agents");
+        add("diplomacy", 4, "nexerelin", null);
+        add("autonomy", 4, "nexerelin", null);
+        add("retaliate", 4, "nexerelin", "defense");
+        add("strike", 4, "nexerelin", "retaliate");
+        add("conquest", 4, "nexerelin", "strike");
+        add("scorched", 4, "nexerelin", "conquest");
         // Mod features
-        add("terraform", 5, 3, "terra", null, "Terraforming", "It runs Terraforming Made Easy's plan projects, and TASC's projects and stations.");
-        add("surplusTerra", 5, 4, "terraformingmadeeasy", "terraform", "Surplus terraforming", "It remakes worlds with the surplus.");
-        add("research", 5, 3, "aotd_vok", null, "Research", "It runs research, special project supply and research items.");
-        add("surplusResearch", 5, 3, "aotd_vok", "research", "Surplus research", "It builds more Research Facilities.");
-        add("mega", 5, 4, "aotd_vok", null, "Megastructures", "It runs the Coronal Hypershunt, Pluto, Nidavelir and the Floating City.");
-        add("wonders", 5, 5, "aotd_vok", null, "Wonders and gates", "It builds the Daedalus Array and the Bifrost network, and the money ladder can buy the wonders rung.");
-        add("contracts", 5, 1, "aotd_theory_of_toolbox", null, "Trade contracts", "It takes Theory of Toolbox contracts.");
-        add("indevo", 5, 2, "IndEvo", null, "Industrial Evolution", "It runs edicts, ambassadors, VPC chips, specialties and Courier Port shipping.");
-        add("augments", 5, 2, "niko_stationAugments", null, "Station augments", "It fits Station Augments loadouts.");
-        add("settlement", 5, 2, "assortment_of_things", null, "Settlement", "It runs Random Assortment of Things' settlement.");
+        add("terraform", 5, "terra", null);
+        add("surplusTerra", 5, "terraformingmadeeasy", "terraform");
+        add("research", 5, "aotd_vok", null);
+        add("surplusResearch", 5, "aotd_vok", "research");
+        add("mega", 5, "aotd_vok", null);
+        add("wonders", 5, "aotd_vok", null);
+        add("contracts", 5, "aotd_theory_of_toolbox", null);
+        add("indevo", 5, "IndEvo", null);
+        add("augments", 5, "niko_stationAugments", null);
+        add("settlement", 5, "assortment_of_things", null);
         // Story perks
-        add("rapidBuild", 6, 20, null, null, "Rapid construction", "Builds and upgrades it starts take a third of the time, at a flat fee more each.");   // 0.3.7.8: replaces Instant and Free construction
-        add("twoBuilds", 6, 6, null, null, "Two builds at once", "Each colony can build two new buildings at once.");
-        add("threeBuilds", 6, 8, null, "twoBuilds", "Three builds at once", "Each colony can build three new buildings at once.");
-        add("autarchAdmin", 6, 10, null, null, "Autarch administrator", "It governs one managed colony per 10 bandwidth.");   // 0.3.7.9; 0.3.8.0: per colony
-        add("rapidTerra", 6, 12, "terra", null, "Rapid terraforming", "Terraforming at managed colonies takes half the time.");   // 0.3.7.9
+        add("rapidBuild", 6, null, null);   // 0.3.7.8: replaces Instant and Free construction
+        add("twoBuilds", 6, null, null);
+        add("threeBuilds", 6, null, "twoBuilds");
+        add("autarchAdmin", 6, null, null);   // 0.3.7.9; 0.3.8.0: per colony
+        add("rapidTerra", 6, "terra", null);   // 0.3.7.9
     }
 
     /** The Story perks group: past the game's rules, so they run only in story mode. */
@@ -144,17 +144,6 @@ public class CASyncCatalog {
         public boolean available() {
             for (String m : members) { Ability a = BY_ID.get(m); if (a != null && a.available()) return true; }
             return false;
-        }
-
-        /** Its abilities' names, the ones their mods allow. */
-        public String contents() {
-            StringBuilder sb = new StringBuilder();
-            for (String m : members) {
-                Ability a = BY_ID.get(m);
-                if (a == null || !a.available()) continue;
-                sb.append(sb.length() == 0 ? "" : ", ").append(a.name);
-            }
-            return sb.toString();
         }
     }
 
@@ -210,12 +199,18 @@ public class CASyncCatalog {
         desc("dominion", "Runs the endgame economy and wonders, with no fees.");
         desc("warlord", "Strikes, invades and, once authorized, bombards hostile factions.");
         desc("parallel", "Runs up to three new constructions per colony at once.");
-        desc("instant", "Completes construction in a third of the time, for 100,000 credits more per building.");
-        desc("autarch", "Governs one managed colony per 10 bandwidth, with its own skill, Autarchy.");
+        numberDescs();
         desc("terraforming", "Halves terraforming time at managed colonies.");
     }
 
     static void desc(String id, String text) { PACK_BY_ID.get(id).desc = text; }
+
+    /** 0.3.8.9: the descriptions that name a config value (rapidFee, autarchSeat), built from it: here and after load(). */
+    static void numberDescs() {
+        desc("instant", "Completes construction in a third of the time, for " + String.format(java.util.Locale.ROOT, "%,d", Math.round(RAPID_FEE))
+                + " credits more per building.");
+        desc("autarch", "Governs one managed colony per " + SEAT_PP + " bandwidth, with its own skill, Autarchy.");
+    }
 
     public static Pack pack(String id) { return PACK_BY_ID.get(id); }
 
@@ -236,12 +231,7 @@ public class CASyncCatalog {
         return out;
     }
 
-    /** The packages their mods allow, in menu order. */
-    public static List<Pack> packs() {
-        List<Pack> out = new ArrayList<Pack>();
-        for (Pack p : PACKS) if (p.available()) out.add(p);
-        return out;
-    }
+    // 0.3.8.9: packs() is removed (its one caller, CASync.keepForFeeding, is gone)
 
     /** "Approve mode (4 bandwidth)": the package an ability is bought in, for "needs" lines. */
     public static String buy(String ability) {
@@ -258,13 +248,6 @@ public class CASyncCatalog {
     public static boolean perk(String id) {
         Ability a = BY_ID.get(id);
         return a != null && a.group == PERKS;
-    }
-
-    /** Abilities whose mod is enabled, in menu order. */
-    public static List<Ability> available() {
-        List<Ability> out = new ArrayList<Ability>();
-        for (Ability a : ALL) if (a.available()) out.add(a);
-        return out;
     }
 
     static boolean modOn(String mod) {
@@ -326,5 +309,6 @@ public class CASyncCatalog {
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "story costs: " + PATH + " couldn't be read, using the built-in costs", t);
         }
+        numberDescs();   // 0.3.8.9: the file's fee and seat cost in the text
     }
 }

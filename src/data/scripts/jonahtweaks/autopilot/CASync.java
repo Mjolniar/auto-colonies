@@ -21,8 +21,9 @@ import java.util.Random;
  * 0.3.6.0: story mode. The Autarch AI Core and its processing power (PP), and every check the rest of the mod asks.
  *
  * Story mode is a global setting (LunaLib, or the intel Settings page without it). Each save records its own mode (on())
- * and switches to match on load and when LunaLib's menu is saved (setOn). Off: every ability runs except Instant and Free
- * construction, there is no limit on managed colonies, and the quest and its timers pause. On: the Autopilot is dormant
+ * and switches to match on load and when LunaLib's menu is saved (setOn). Off: every ability runs except the story perks
+ * (0.3.8.9: Rapid construction, two and three builds at once, Rapid terraforming and the Autarch administrator), there is
+ * no limit on managed colonies, and the quest and its timers pause. On: the Autopilot is dormant
  * until the core is installed, and runs the abilities bought with PP. Switching keeps the quest; PP is not refunded.
  *
  * State lives in its own persistent-data entry (KEY) as plain maps, lists, numbers and text, never as fields of CAData or
@@ -38,8 +39,7 @@ import java.util.Random;
  *   A colony held back keeps the mode you wanted, which comes back when there's room.
  */
 public class CASync {
-    public static final String MOD_ID = "jonah_tweaks";
-    public static final String PUBLIC_MOD_ID = "jonah_tweaks";
+    public static final String MOD_ID = "jonah_tweaks";   // 0.3.8.9: PUBLIC_MOD_ID, the same id, is removed (no reader)
     static final String KEY = "ac_story";
     public static final String PREFIX = "ca:sync:";
 
@@ -199,9 +199,7 @@ public class CASync {
     static void see(String beat) { if (!seen(beat)) list("seen").add(beat); }
     /** Which core this is: goes up each time a new one is placed, so finding it chimes again. */
     public static int generation() { return num("gen"); }
-    /** Keep cores in Autopilot Storage for the next ability (on unless turned off). */
-    /** 0.3.7.5: removed (feeding is manual); Autopilot never holds cores back for feeding. keepForFeeding gives none. */
-    public static boolean keepCores() { return false; }
+    // 0.3.8.9: keepCores, keepForFeeding and reserve are removed (feeding is manual since 0.3.7.5; they kept no cores)
 
     // ---------------- processing power ----------------
 
@@ -265,6 +263,7 @@ public class CASync {
     static void untick(String id) {
         if (!ticked().remove(id)) return;
         if ("autarch".equals(id)) num("seats", 0);   // 0.3.8.0: its bought colonies go with it
+        if ("oversight".equals(id)) num("colonies", 0);   // 0.3.8.9: Approve mode's bought colonies go with it (their buttons show only with it)
         CASyncCatalog.Pack p = CASyncCatalog.pack(id);
         if (p != null) CALog.quiet("Autopilot: " + p.name + " is off.");
         for (CASyncCatalog.Pack x : CASyncCatalog.PACKS) if (id.equals(x.requires)) untick(x.id);
@@ -284,6 +283,8 @@ public class CASync {
     public static String removeColony() {
         if (extraColonies() <= 0) return "There are no bought colonies to remove.";
         num("colonies", extraColonies() - 1);
+        // 0.3.8.9: the Autarch administrator's seats come down to the managed colonies (one plus each bought)
+        while (extraSeats() > extraColonies()) num("seats", extraSeats() - 1);
         afterChange();
         return null;
     }
@@ -319,7 +320,16 @@ public class CASync {
     static void fit() {
         if (!on()) return;
         List<String> t = ticked();
-        while (spent() > total() && !t.isEmpty()) untick(t.get(t.size() - 1));
+        // 0.3.8.9: the last ticked package that counts; one whose mods are all off costs nothing and stays
+        while (spent() > total()) {
+            String last = null;
+            for (int i = t.size() - 1; i >= 0 && last == null; i--) {
+                CASyncCatalog.Pack p = CASyncCatalog.pack(t.get(i));
+                if (p != null && p.available()) last = t.get(i);
+            }
+            if (last == null) break;
+            untick(last);
+        }
         while (spent() > total() && extraSeats() > 0) num("seats", extraSeats() - 1);   // 0.3.8.0
         while (spent() > total() && extraColonies() > 0) num("colonies", extraColonies() - 1);
     }
@@ -369,35 +379,8 @@ public class CASync {
         int pts = CASyncCatalog.points(g, b, a);
         num("fedPP", fedPoints() + pts);
         num("fedG", num("fedG") + g); num("fedB", num("fedB") + b); num("fedA", num("fedA") + a);
-        CALog.quiet("Autopilot: integrated " + CASyncCatalog.cores(g, b, a) + ", +" + pts + " bandwidth (" + total() + " in all).");   // 0.3.7.4: no thank-you beat; the summary covers it
+        CALog.quiet("Autopilot: integrated " + CASyncCatalog.cores(g, b, a) + ", +" + pts + " bandwidth (" + total() + " in all).");   // 0.3.7.4: no thank-you beat (0.3.8.9: the Story page shows the bandwidth)
         return null;
-    }
-
-    /**
-     * Cores Autopilot leaves in Autopilot Storage for the next ability, {alpha, beta, gamma} like CAItems.CORES: enough PP for
-     * the cheapest ability not ticked yet, beyond the PP free now, lowest cores first. None while dormant or turned off.
-     */
-    public static int[] keepForFeeding() {
-        int[] keep = new int[3];
-        if (!on() || dormant() || !keepCores()) return keep;
-        int cheapest = Integer.MAX_VALUE;
-        for (CASyncCatalog.Pack p : CASyncCatalog.packs()) if (!ticked(p.id) && p.tier <= openTier()) cheapest = Math.min(cheapest, p.cost);
-        if (extraColonies() < CASyncCatalog.MAX_COLONIES) cheapest = Math.min(cheapest, CASyncCatalog.COLONY_PP);
-        if (cheapest == Integer.MAX_VALUE) return keep;
-        int left = cheapest - Math.max(0, free());
-        if (left <= 0) return keep;
-        int[] h = inStorage();   // {gamma, beta, alpha}
-        int g = Math.min(h[0], left / Math.max(1, CASyncCatalog.GAMMA_PP)); left -= g * CASyncCatalog.GAMMA_PP;
-        int b = Math.min(h[1], (left + CASyncCatalog.BETA_PP - 1) / Math.max(1, CASyncCatalog.BETA_PP)); left -= b * CASyncCatalog.BETA_PP;
-        int a = Math.min(h[2], Math.max(0, (left + CASyncCatalog.ALPHA_PP - 1) / Math.max(1, CASyncCatalog.ALPHA_PP)));
-        keep[0] = a; keep[1] = b; keep[2] = g;
-        return keep;
-    }
-
-    /** CAItems.placeCore's cores in storage {alpha, beta, gamma}, less what's kept for feeding. */
-    public static void reserve(int[] have) {
-        int[] keep = keepForFeeding();
-        for (int k = 0; k < Math.min(have.length, keep.length); k++) have[k] = Math.max(0, have[k] - keep[k]);
     }
 
     // ---------------- what the rest of the mod asks ----------------
@@ -1018,7 +1001,7 @@ public class CASync {
         return false;
     }
 
-    static String cost(String id) { CASyncCatalog.Pack p = CASyncCatalog.packOf(id); return p == null ? "" : p.cost + " bandwidth"; }
+    // 0.3.8.9: cost(String) is removed (no caller)
 
     // ---------------- the core's life: install, cradle, pull, break down, sell, return ----------------
 
@@ -1089,13 +1072,13 @@ public class CASync {
             flag("hadCore", false);
             CALog.did("Autopilot: Engineering finished. " + CASyncCatalog.cores(0, CASyncCatalog.BREAKDOWN_BETA, CASyncCatalog.BREAKDOWN_ALPHA)
                     + " in your cargo.", true);
-            queued = new CATriPad(CATriPad.BROKEN, null, false);
+            pend(CATriPad.BROKEN);   // 0.3.8.9: kept in the save until it shows; a Story page click no longer replaces it
         } else if ("sold".equals(ph) && days >= CASyncCatalog.RETURN_DAYS) {
             if (CAAutarch.place(CAAutarch.system())) {
                 phase("");
                 flag("hadCore", false);
                 num("gen", generation() + 1);
-                queued = new CATriPad(CATriPad.RETURN, null, false);
+                pend(CATriPad.RETURN);   // 0.3.8.9: kept in the save until it shows
             }
         } else if ("broken".equals(ph) && days >= CASyncCatalog.RETURN_DAYS + num("returnExtra")) {
             phase("salvage");
@@ -1148,7 +1131,7 @@ public class CASync {
     /** The button waiting for its second click (two-step confirm), and a line for the top of the Story page. UI state only. */
     static String armed = null;
     public static String notice = null;
-    /** A story beat a button asked for, or the daily pass queued; the TriPad shows it once the screen is closed. */
+    /** A story beat a button asked for (0.3.8.9: the daily pass's beats are in the story state, pend); the TriPad shows it once the screen is closed. */
     static CATriPad queued = null;
 
     public static boolean isArmed(String id) { return id.equals(armed); }
@@ -1176,7 +1159,6 @@ public class CASync {
             else if (what.equals("all")) err = feed(h[0], h[1], h[2]);
             if (err == null) notice = total() + " bandwidth.";
         }
-        else if (rest.equals("keep")) flag("noKeep", keepCores());
         else if (rest.equals("storymode")) setOn(!on());   // the intel Settings page while LunaLib is off (CASetupUI.storyRow)
         else if (rest.equals("none")) { }   // a LOCKED row button
         else if (rest.equals("core") || rest.equals("pull") || rest.startsWith("read:")) {
@@ -1225,14 +1207,27 @@ public class CASync {
 
     /** What the TriPad should show next, if anything: a queued beat, the founding note, the chime. */
     static CATriPad nextBeat() {
-        if (!on()) return null;
+        if (!on() || askMode()) return null;   // 0.3.8.9: nothing before a new game's Story or Normal answer
         if (queued != null) { CATriPad q = queued; queued = null; return q; }
+        // 0.3.8.9: the day's beats (BROKEN, RETURN) are kept in the save until they show (CATriPad.init takes them off)
+        List<String> pend = list("pending");
+        if (!pend.isEmpty()) return new CATriPad(pend.get(0), null, false);
         MarketAPI first = CATriPad.firstColony();
         if (first != null && !seen(CATriPad.FOUND)) return new CATriPad(CATriPad.FOUND, first, false);
         String chime = CATriPad.CHIME + ":" + generation();
-        if (dormant() && CAAutarch.inCargo() > 0 && !seen(chime)) { see(chime); return new CATriPad(CATriPad.CHIME, null, false); }
-        if (!dormant()) for (String b : CATriPad.TIER_BEATS) if (!seen(b) && beatDue(b)) { see(b); return new CATriPad(b, null, false); }   // 0.3.8.3
+        // 0.3.8.9: the chime and the tier scenes are marked seen when they show (CATriPad.init), so a failed show tries again
+        if (dormant() && CAAutarch.inCargo() > 0 && !seen(chime)) return new CATriPad(CATriPad.CHIME, null, false);
+        if (!dormant()) for (String b : CATriPad.TIER_BEATS) if (!seen(b) && beatDue(b)) return new CATriPad(b, null, false);   // 0.3.8.3
         return null;
+    }
+
+    /** 0.3.8.9: a beat the daily pass found, kept in the story state until it shows. */
+    static void pend(String beat) { if (!list("pending").contains(beat)) list("pending").add(beat); }
+
+    /** 0.3.8.9: CATriPad.init: the beat shows now; the chime is seen per core. */
+    static void shown(String beat) {
+        list("pending").remove(beat);
+        if (CATriPad.CHIME.equals(beat)) see(CATriPad.CHIME + ":" + generation());
     }
 
     /** On every load: costs, placement, the holds, the story intel, the watcher and the core's listener. */

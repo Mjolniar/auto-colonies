@@ -40,13 +40,21 @@ public final class CAAutarch {
         catch (Throwable t) { return 0; }
     }
 
-    /** One in the fleet's cargo or any storage tab in the sector. */
+    /**
+     * One in the fleet's cargo or any storage tab in the sector. 0.3.8.9: every free-transfer tab counts (Industrial
+     * Evolution's warehouses, Autopilot Storage), the test takeFromMarkets skips them by.
+     */
     public static boolean anywhere() {
         if (inCargo() > 0) return true;
         try {
             for (MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) {
                 CargoAPI c = CASync.storageOf(m);
                 if (c != null && c.getQuantity(CargoAPI.CargoItemType.SPECIAL, item()) > 0f) return true;
+                for (com.fs.starfarer.api.campaign.econ.SubmarketAPI sub : m.getSubmarketsCopy()) {
+                    if (sub.getPlugin() == null || !sub.getPlugin().isFreeTransfer()) continue;
+                    CargoAPI sc = sub.getCargo();
+                    if (sc != null && sc.getQuantity(CargoAPI.CargoItemType.SPECIAL, item()) > 0f) return true;
+                }
             }
         } catch (Throwable t) { return true; }   // can't tell: not lost
         return false;
@@ -79,7 +87,7 @@ public final class CAAutarch {
         try {
             for (MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) {
                 for (com.fs.starfarer.api.campaign.econ.SubmarketAPI sub : m.getSubmarketsCopy()) {
-                    if (sub.getPlugin() != null && sub.getPlugin().isFreeTransfer()) continue;   // Storage tabs: anywhere() covers them
+                    if (sub.getPlugin() != null && sub.getPlugin().isFreeTransfer()) continue;   // Storage tabs: anywhere() covers them (0.3.8.9: every free-transfer tab)
                     CargoAPI c = sub.getCargo();
                     float n = c == null ? 0f : c.getQuantity(CargoAPI.CargoItemType.SPECIAL, item());
                     if (n > 0f) { c.removeItems(CargoAPI.CargoItemType.SPECIAL, item(), n); found = true; }
@@ -158,8 +166,7 @@ public final class CAAutarch {
         SectorEntityToken st = BaseThemeGenerator.addSalvageEntity(sys, "station_research", Factions.DERELICT);
         Random r = new Random();
         float rad = sys.getStar() == null ? 3000f : sys.getStar().getRadius() + 2500f + r.nextFloat() * 2500f;
-        if (sys.getStar() != null) st.setCircularOrbit(sys.getStar(), r.nextFloat() * 360f, rad, rad / 10f);
-        else st.getLocation().set(rad, 0f);
+        if (sys.getStar() != null) st.setCircularOrbit(sys.getStar(), r.nextFloat() * 360f, rad, rad / 10f);   // 0.3.8.9: pick() needs a star; the starless branch is removed
         st.setDiscoverable(true);
         CargoAPI loot = Global.getFactory().createCargo(true);
         loot.addSpecial(item(), 1);
@@ -176,22 +183,22 @@ public final class CAAutarch {
     static StarSystemAPI pick(Random rnd, String notIn) {
         WeightedRandomPicker<StarSystemAPI> p = new WeightedRandomPicker<StarSystemAPI>(rnd);
         for (StarSystemAPI s : Global.getSector().getStarSystems()) {
-            if (!s.isProcgen() || s.getStar() == null || s.hasTag(Tags.THEME_HIDDEN) || s.hasTag(Tags.THEME_CORE)
-                    || s.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER) || s.hasTag(Tags.THEME_SPECIAL)) continue;
-            if (notIn != null && notIn.equals(s.getBaseName())) continue;
-            if (!Misc.getMarketsInLocation(s).isEmpty()) continue;
+            if (!usable(s, notIn)) continue;
             float d = s.getLocation().length();
             if (d < MIN_DIST || d > MAX_DIST) continue;
             p.add(s, s.isInConstellation() ? 1f : 0.05f);   // 0.3.6.6: the TriPad points to a constellation
         }
         if (p.isEmpty()) {   // 0.3.6.2: no system in the fringe band (small or modded sectors): any uninhabited procgen system
-            for (StarSystemAPI s : Global.getSector().getStarSystems()) {
-                if (!s.isProcgen() || s.getStar() == null || s.hasTag(Tags.THEME_HIDDEN) || s.hasTag(Tags.THEME_CORE)
-                        || s.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER) || s.hasTag(Tags.THEME_SPECIAL)) continue;
-                if (notIn != null && notIn.equals(s.getBaseName())) continue;
-                if (Misc.getMarketsInLocation(s).isEmpty()) p.add(s, 1f);
-            }
+            for (StarSystemAPI s : Global.getSector().getStarSystems()) if (usable(s, notIn)) p.add(s, 1f);
         }
         return p.pick();
+    }
+
+    /** 0.3.8.9: one test for both of pick()'s loops: procgen, a star, no markets, not hidden, core, cut off or special, not the named one. */
+    static boolean usable(StarSystemAPI s, String notIn) {
+        if (!s.isProcgen() || s.getStar() == null || s.hasTag(Tags.THEME_HIDDEN) || s.hasTag(Tags.THEME_CORE)
+                || s.hasTag(Tags.SYSTEM_CUT_OFF_FROM_HYPER) || s.hasTag(Tags.THEME_SPECIAL)) return false;
+        if (notIn != null && notIn.equals(s.getBaseName())) return false;
+        return Misc.getMarketsInLocation(s).isEmpty();
     }
 }

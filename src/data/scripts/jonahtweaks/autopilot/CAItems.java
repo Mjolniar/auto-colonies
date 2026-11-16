@@ -118,7 +118,8 @@ public class CAItems {
 
     public static List<MarketAPI> autoMarkets() {
         List<MarketAPI> out = new ArrayList<MarketAPI>();
-        for (MarketAPI m : Misc.getPlayerMarkets(false)) if (CAData.get().colony(m.getId()).mode == CAData.Mode.AUTO && !CAEngine.isOutpost(m)) out.add(m);
+        // 0.3.8.9: yours only: a Nexerelin-autonomous colony stays in your faction and keeps its mode
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) if (m.isPlayerOwned() && CAData.get().colony(m.getId()).mode == CAData.Mode.AUTO && !CAEngine.isOutpost(m)) out.add(m);
         return out;
     }
 
@@ -1025,7 +1026,7 @@ public class CAItems {
         // cores in any colony's Autopilot Storage: one at the colony goes straight in, one elsewhere is shipped there first (0.2.37.0)
         int[] have = new int[CORES.length];
         for (int k = 0; k < CORES.length; k++) have[k] = (int) CAStores.count(CORES[k]);
-        CASync.reserve(have);   // 0.3.6.0 story mode: cores kept in storage for feeding the Autarch
+        // 0.3.8.9: CASync.reserve is removed (it kept no cores since 0.3.7.5)
         if (s.alphaMode != 2 && makeRoom(slots, points, limit, have[0] > 0, s, none)) return true;
         CoreSlot bestTo = null, bestFrom = null;
         int bestK = -1;
@@ -1314,13 +1315,15 @@ public class CAItems {
 
     /** An administrator who has arrived (past the hiring delay) and governs nothing, or null. */
     static AdminData idleAdmin(CAData d) {
-        for (AdminData a : Global.getSector().getCharacterData().getAdmins()) {
-            if (a.getMarket() != null || a.getPerson() == null || a.getPerson().isAICore()) continue;
-            Long hired = d.adminTransit().get(a.getPerson().getId());
-            if (hired != null && Global.getSector().getClock().getElapsedDaysSince(hired) < CATuning.TRAVEL_DAYS) continue;   // still travelling
-            return a;
-        }
+        for (AdminData a : Global.getSector().getCharacterData().getAdmins()) if (arrived(d, a)) return a;   // 0.3.8.9: one test with assignAdmin
         return null;
+    }
+
+    /** 0.3.8.9: a hired administrator who governs nothing and has arrived (past the hiring delay): idleAdmin and assignAdmin. */
+    static boolean arrived(CAData d, AdminData a) {
+        if (a.getMarket() != null || a.getPerson() == null || a.getPerson().isAICore()) return false;
+        Long hired = d.adminTransit().get(a.getPerson().getId());
+        return hired == null || !(Global.getSector().getClock().getElapsedDaysSince(hired) < CATuning.TRAVEL_DAYS);   // still travelling: false
     }
 
     /**
@@ -1330,9 +1333,7 @@ public class CAItems {
     static boolean assignAdmin(CAData d, List<MarketAPI> markets) {
         List<AdminData> idle = new ArrayList<AdminData>();
         for (AdminData a : Global.getSector().getCharacterData().getAdmins()) {
-            if (a.getMarket() != null || a.getPerson() == null || a.getPerson().isAICore()) continue;
-            Long hired = d.adminTransit().get(a.getPerson().getId());
-            if (hired != null && Global.getSector().getClock().getElapsedDaysSince(hired) < CATuning.TRAVEL_DAYS) continue;   // still travelling
+            if (!arrived(d, a)) continue;   // 0.3.8.9: one test with idleAdmin
             d.adminTransit().remove(a.getPerson().getId());
             idle.add(a);
         }
@@ -1457,6 +1458,36 @@ public class CAItems {
         return out;
     }
 
+    /** 0.3.8.9: an administrator on offer at a comm board: the person, the game's offer, its event and the market. Not saved. */
+    static final class Offer {
+        final PersonAPI person;
+        final com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent ev;
+        final com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent.AvailableOfficer ao;
+        final MarketAPI at;
+        Offer(PersonAPI person, com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent ev,
+              com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent.AvailableOfficer ao, MarketAPI at) {
+            this.person = person; this.ev = ev; this.ao = ao; this.at = at;
+        }
+    }
+
+    /** 0.3.8.9: every administrator on offer at a market that is not hostile to you (hireAdmin and expansionHire). */
+    static List<Offer> offers() {
+        List<Offer> out = new ArrayList<Offer>();
+        for (MarketAPI src : Global.getSector().getEconomy().getMarketsCopy()) {
+            if (src.getFaction() == null || src.getFaction().isHostileTo(Factions.PLAYER) || src.getCommDirectory() == null) continue;
+            for (com.fs.starfarer.api.campaign.CommDirectoryEntryAPI e : src.getCommDirectory().getEntriesCopy()) {
+                if (!(e.getEntryData() instanceof PersonAPI)) continue;
+                PersonAPI p = (PersonAPI) e.getEntryData();
+                Object ref = p.getMemoryWithoutUpdate().get("$ome_eventRef");
+                if (!(ref instanceof com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent)) continue;
+                com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent ev = (com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent) ref;
+                com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent.AvailableOfficer ao = ev.getAdmin(p.getId());
+                if (ao != null) out.add(new Offer(p, ev, ao, src));
+            }
+        }
+        return out;
+    }
+
     /**
      * Hires an administrator on offer at a non-hostile market, the way the vanilla hire dialog does, when an Auto colony you
      * govern yourself would gain more from them than their salary plus the hiring cost spread over three years, and no idle
@@ -1496,22 +1527,11 @@ public class CAItems {
         com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent bestEvent = null;
         MarketAPI bestAt = null, bestFor = null;
         float bestNet = -Float.MAX_VALUE, bestWorth = 0f;
-        for (MarketAPI src : Global.getSector().getEconomy().getMarketsCopy()) {
-            if (src.getFaction() == null || src.getFaction().isHostileTo(com.fs.starfarer.api.impl.campaign.ids.Factions.PLAYER)) continue;
-            if (src.getCommDirectory() == null) continue;
-            for (com.fs.starfarer.api.campaign.CommDirectoryEntryAPI e : src.getCommDirectory().getEntriesCopy()) {
-                if (!(e.getEntryData() instanceof PersonAPI)) continue;
-                PersonAPI p = (PersonAPI) e.getEntryData();
-                Object ref = p.getMemoryWithoutUpdate().get("$ome_eventRef");
-                if (!(ref instanceof com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent)) continue;
-                com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent ev = (com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent) ref;
-                com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent.AvailableOfficer ao = ev.getAdmin(p.getId());
-                if (ao == null) continue;
-                for (MarketAPI m : open) {
-                    float w = adminWorth(m, p);
-                    float net = w - ao.salary - (ao.hiringBonus + fee) / 36f;   // hiring cost spread over three years, like a build
-                    if (net > bestNet) { bestNet = net; bestWorth = w; best = ao; bestEvent = ev; bestAt = src; bestFor = m; }
-                }
+        for (Offer o : offers()) {   // 0.3.8.9: one comm board scan with expansionHire
+            for (MarketAPI m : open) {
+                float w = adminWorth(m, o.person);
+                float net = w - o.ao.salary - (o.ao.hiringBonus + fee) / 36f;   // hiring cost spread over three years, like a build
+                if (net > bestNet) { bestNet = net; bestWorth = w; best = o.ao; bestEvent = o.ev; bestAt = o.at; bestFor = m; }
             }
         }
         if (best == null) {
@@ -1562,18 +1582,6 @@ public class CAItems {
     }
 
     /**
-     * 0.2.41.2: a recruiter finds an administrator when the colony limit has needed one for RECRUIT_DAYS and the game offered
-     * none (it only rolls for one when you dock at a market: 5% a visit, plus 5% per size over 3). A basic administrator, no
-     * skills, like the game's cheaper tier, for RECRUITER_PRICE on top of that tier's hiring bonus and the usual fee; arrives
-     * in 30 days like any remote hire. Past the monthly budget if need be, never below the credit reserve. Keeps going one a
-     * day until enough are on the way. 0.3.0.9: in survival mode the wait is longer and the price higher (recruitDays,
-     * recruiterPrice); the game offers a tenth as many administrators there.
-     */
-    static boolean recruitAdmin(CAData d, CASettings s, List<MarketAPI> open, int need, float waited) {
-        return recruitAdmin0(d, s, open, need, waited);
-    }
-
-    /**
      * 0.3.0.2: the game's non-duplicate portrait pick in whichever form this game version has: (faction, gender, random)
      * since Starsector 0.98.5a, (faction, gender) before. A direct call to either form fails on the other version with
      * NoSuchMethodError. Null when neither is there: the portrait createAdmin gave stays.
@@ -1593,7 +1601,15 @@ public class CAItems {
         } catch (Throwable t) { return null; }
     }
 
-    static boolean recruitAdmin0(CAData d, CASettings s, List<MarketAPI> open, int need, float waited) {
+    /**
+     * 0.2.41.2: a recruiter finds an administrator when the colony limit has needed one for RECRUIT_DAYS and the game offered
+     * none (it only rolls for one when you dock at a market: 5% a visit, plus 5% per size over 3). A basic administrator, no
+     * skills, like the game's cheaper tier, for RECRUITER_PRICE on top of that tier's hiring bonus and the usual fee; arrives
+     * in 30 days like any remote hire. Past the monthly budget if need be, never below the credit reserve. Keeps going one a
+     * day until enough are on the way. 0.3.0.9: in survival mode the wait is longer and the price higher (recruitDays,
+     * recruiterPrice); the game offers a tenth as many administrators there. 0.3.8.9: the pass-through recruitAdmin0 is merged in.
+     */
+    static boolean recruitAdmin(CAData d, CASettings s, List<MarketAPI> open, int need, float waited) {
         int bonus = 5000;
         try { bonus = Global.getSettings().getInt("adminHireTier0"); } catch (Throwable t) { }
         float fee = CABudget.fee(s, HIRE_FEE), price = recruiterPrice() + bonus;   // 0.3.0.9: higher in survival mode (recruitScale)
@@ -1685,19 +1701,9 @@ public class CAItems {
         h.fee = CABudget.fee(s, HIRE_FEE);
         float bestCost = Float.MAX_VALUE;
         try {
-            for (MarketAPI src : Global.getSector().getEconomy().getMarketsCopy()) {
-                if (src.getFaction() == null || src.getFaction().isHostileTo(Factions.PLAYER) || src.getCommDirectory() == null) continue;
-                for (com.fs.starfarer.api.campaign.CommDirectoryEntryAPI e : src.getCommDirectory().getEntriesCopy()) {
-                    if (!(e.getEntryData() instanceof PersonAPI)) continue;
-                    PersonAPI p = (PersonAPI) e.getEntryData();
-                    Object ref = p.getMemoryWithoutUpdate().get("$ome_eventRef");
-                    if (!(ref instanceof com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent)) continue;
-                    com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent ev = (com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent) ref;
-                    com.fs.starfarer.api.impl.campaign.events.OfficerManagerEvent.AvailableOfficer ao = ev.getAdmin(p.getId());
-                    if (ao == null) continue;
-                    float c = ao.hiringBonus + 36f * ao.salary;
-                    if (c < bestCost) { bestCost = c; h.event = ev; h.offer = ao; h.at = src; }
-                }
+            for (Offer o : offers()) {   // 0.3.8.9: one comm board scan with hireAdmin
+                float c = o.ao.hiringBonus + 36f * o.ao.salary;
+                if (c < bestCost) { bestCost = c; h.event = o.ev; h.offer = o.ao; h.at = o.at; }
             }
         } catch (Throwable t) { h.offer = null; h.event = null; h.at = null; }
         if (h.offer != null) { h.price = h.offer.hiringBonus; h.salary = h.offer.salary; return h; }

@@ -7,6 +7,9 @@ import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.intel.events.HostileActivityEventIntel;
 import com.fs.starfarer.api.util.Misc;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Threat estimate per colony (0 = calm, 1+ = serious) from hostile neighbors, the Hostile Activity crisis (and being
  * the likely target of the coming one, CACrisis.targets) and raid/blockade conditions. At THRESHOLD the colony is planned with the Security profile until it drops below CLEAR
@@ -53,10 +56,20 @@ public class CAThreat {
         return 0f;
     }
 
-    public static float estimate(MarketAPI m) {
-        float t = 0f;
+    /** 0.3.8.9: the hostile-neighbor part of estimate per colony id, for one game day (nearbyDay); cleared on load (CAReset). */
+    static final Map<String, Float> nearby = new HashMap<String, Float>();
+    static int nearbyDay = Integer.MIN_VALUE;
+
+    static void reset() { nearby.clear(); nearbyDay = Integer.MIN_VALUE; }
+
+    /** 0.3.8.9: hostile markets within 8 light years, at most 0.6; read once a day per colony (no keeping without a game clock). */
+    static float neighbors(MarketAPI m) {
+        int day = CAEngine.today();
+        if (day != nearbyDay) { nearby.clear(); nearbyDay = day; }
+        Float kept = day >= 0 ? nearby.get(m.getId()) : null;
+        if (kept != null) return kept;
+        float v = 0f;
         try {
-            FactionAPI player = Global.getSector().getPlayerFaction();
             int hostile = 0, size = 0;
             for (MarketAPI o : Global.getSector().getEconomy().getMarketsCopy()) {
                 if (o.isPlayerOwned() || o.getFaction() == null || !o.getFaction().isHostileTo(Factions.PLAYER)) continue;
@@ -64,8 +77,14 @@ public class CAThreat {
                 if (Misc.getDistanceLY(m.getPrimaryEntity(), o.getPrimaryEntity()) > 8f) continue;
                 hostile++; size += o.getSize();
             }
-            t += Math.min(0.6f, 0.1f * hostile + 0.02f * size);
+            v = Math.min(0.6f, 0.1f * hostile + 0.02f * size);
         } catch (Throwable ignored) { }
+        if (day >= 0 && m.getId() != null) nearby.put(m.getId(), v);
+        return v;
+    }
+
+    public static float estimate(MarketAPI m) {
+        float t = neighbors(m);   // 0.3.8.9: kept for the day
         try {
             HostileActivityEventIntel ha = HostileActivityEventIntel.get();
             if (ha != null && ha.getMaxProgress() > 0) t += 0.4f * ha.getProgress() / (float) ha.getMaxProgress();

@@ -55,11 +55,12 @@ public class JTModPlugin extends BaseModPlugin {
         step("calibration", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CACalibrate.migrate(); } });
         // 0.3.6.0: story mode: the costs, and in story mode the core, the holds, the Story tab and the TriPad
         step("story mode", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CASync.onLoad(); } });
+        // 0.3.6.0: a new game asks Normal or Story mode once. 0.3.8.9: before the LunaLib step, so LunaLib's Story mode
+        // setting places no core station before the answer (CASync.switchOn waits while the question is open)
+        if (newGame) step("story mode pop-up", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CAStoryPrompt.ask(); } });
         // 0.3.4.0: the first save after the update seeds LunaLib's settings; later loads read them into this save (LunaLib only).
         // 0.3.6.0: the save switches to LunaLib's Story mode setting first
         step("LunaLib settings", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CALunaSync.onLoad(); } });
-        // 0.3.6.0: a new game asks Normal or Story mode once
-        if (newGame) step("story mode pop-up", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CAStoryPrompt.ask(); } });
         // 0.3.8.7: the script is added in its own step, so a throw in these resets cannot stop the daily pass
         step("daily pass caches", new Runnable() { public void run() {
             data.scripts.jonahtweaks.autopilot.CAAuto.reset();

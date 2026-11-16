@@ -554,7 +554,9 @@ public class CAEndgame {
     static String summaryText(CASettings s) {
         List<String> miss = missing();
         int n = 0;
-        for (String k : CAData.get().endgameBuilt().keySet()) if (k.contains(":-")) n++;
+        // 0.3.8.9: this year only (the keys live 400 days, CATidy.KEEP_DAYS)
+        for (Map.Entry<String, Long> e : CAData.get().endgameBuilt().entrySet())
+            if (e.getKey().contains(":-") && e.getValue() != null && Global.getSector().getClock().getElapsedDaysSince(e.getValue()) < 365f) n++;
         // 0.3.0.0 (WS-F3 fix pass 2): one status line of 40 words or fewer; what decides, and the missing goods, on hover (HOVER, missingLine).
         // 0.3.0.0 (WS-F3 fix pass 3): what turns it on (the money tier Endgame, or legacyPlanner's surplus line) is the Settings row's
         return "Endgame economy on: net income kept over " + Misc.getDGSCredits(floor(s)) + "; " + Misc.getDGSCredits(room(s))

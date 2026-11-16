@@ -832,6 +832,7 @@ public class CAFloors {
         List<Host> hs = new ArrayList<Host>();
         CAData d = CAData.get();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            if (!m.isPlayerOwned()) continue;   // 0.3.8.9: a Nexerelin-autonomous colony stays in your faction; nothing is built there
             CAData.Colony c = d.colony(m.getId());
             if ((c.mode != CAData.Mode.AUTO && c.mode != CAData.Mode.APPROVE) || CAEngine.isOutpost(m) || CAHypershunt.is(m)
                     || m.hasTag("market_no_industries_allowed")) continue;

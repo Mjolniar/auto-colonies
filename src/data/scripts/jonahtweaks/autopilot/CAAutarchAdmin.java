@@ -27,7 +27,8 @@ import java.util.List;
  * colonies than its seats, and every colony when the package is not bought, story mode is off or the core is dormant: one
  * colony a day, and never while that would take the colony, or a colony you govern, under the floor (Autarchy's industry
  * counted: a colony left over the industry limit pays the game's penalty). An administrator you place replaces it. Where you
- * govern a colony yourself in its place, it does not return until that colony leaves management.
+ * govern a colony yourself in its place, it does not return until that colony leaves management. 0.3.8.9: or until the one
+ * who took its place (you or an administrator) no longer governs the colony. A colony it governs and cannot leave keeps its seat.
  */
 public final class CAAutarchAdmin {
     private CAAutarchAdmin() { }
@@ -69,45 +70,50 @@ public final class CAAutarchAdmin {
         boolean on = CASync.has("autarchAdmin");   // false with story mode off, while dormant, or not bought
         int seats = CASync.seats();
         boolean left = false;
+        int governing = 0;   // 0.3.8.9: every colony it governs and does not leave today, managed or not (a seat it cannot leave stays taken)
         List<MarketAPI> held = new ArrayList<MarketAPI>();
         for (MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) {
             MemoryAPI mem = m.getMemoryWithoutUpdate();
             boolean seated = mem.getBoolean(SEATED), here = governs(m);
             if (!seated && !here) {
-                if (mem.contains(DECLINED) && !CASync.manages(m)) mem.unset(DECLINED);
+                // 0.3.8.9: also once the one who took its place no longer governs the colony
+                if (mem.contains(DECLINED) && (!CASync.manages(m) || replacedGone(m, mem))) mem.unset(DECLINED);
                 continue;
             }
             if (!m.isPlayerOwned()) { mem.unset(SEATED); continue; }   // captured or autonomous: the new owner seats its own
             if (seated && !here) {   // someone else governs it now: you, or an administrator you placed
                 mem.unset(SEATED);
-                mem.set(DECLINED, true);   // 0.3.8.2: either way it stays away until the colony leaves management
+                mem.set(DECLINED, governor(m));   // 0.3.8.9: who took its place; it stays away while they govern and the colony is managed
                 continue;
             }
             if (!seated) mem.set(SEATED, true);
             learn(m);
-            if (!left && (!on || !CASync.manages(m))) left = leave(m);
-            else if (on && CASync.manages(m)) held.add(m);
+            if (!left && (!on || !CASync.manages(m))) { left = leave(m); if (!left) governing++; }
+            else {
+                governing++;
+                if (on && CASync.manages(m)) held.add(m);
+            }
         }
         if (!on) return;
-        if (held.size() > seats) {   // more colonies than seats (a seat taken back): the one it adds least to goes first
+        if (governing > seats) {   // more colonies than seats (a seat taken back): the one it adds least to goes first
             if (left) return;
-            MarketAPI least = null;
-            float worst = Float.MAX_VALUE;
-            for (MarketAPI m : held) {
-                float w = CAItems.adminWorth(m, m.getAdmin());
-                if (w < worst) { worst = w; least = m; }
-            }
-            if (least != null) leave(least);
+            // 0.3.8.9: least first, until one can leave (the floor may hold the first)
+            final java.util.Map<MarketAPI, Float> adds = new java.util.HashMap<MarketAPI, Float>();
+            for (MarketAPI m : held) adds.put(m, CAItems.adminWorth(m, m.getAdmin()));
+            Collections.sort(held, new Comparator<MarketAPI>() {
+                public int compare(MarketAPI a, MarketAPI b) { return Float.compare(adds.get(a), adds.get(b)); }
+            });
+            for (MarketAPI m : held) if (leave(m)) break;
             return;
         }
-        int room = seats - held.size();
+        int room = seats - governing;
         if (room <= 0) return;
         final PersonAPI probe = person();
         List<MarketAPI> open = new ArrayList<MarketAPI>();
         final java.util.Map<MarketAPI, Float> worth = new java.util.HashMap<MarketAPI, Float>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             if (!CASync.manages(m) || CARogue.noCores(m) || CARogue.adminLocked(m) || governs(m)) continue;
-            if (m.getMemoryWithoutUpdate().getBoolean(DECLINED)) continue;
+            if (m.getMemoryWithoutUpdate().contains(DECLINED)) continue;   // 0.3.8.9: the value is who took its place
             float w = gain(m, probe);
             if (w <= 0f) continue;
             worth.put(m, w);
@@ -118,11 +124,26 @@ public final class CAAutarchAdmin {
         });
         for (MarketAPI m : open) {
             if (room <= 0) break;
-            PersonAPI p = person();
-            if (!CAStability.canLose(m, arrives(m, p), null)) continue;
-            seat(m, p);
+            if (!CAStability.canLose(m, arrives(m, probe), null)) continue;   // 0.3.8.9: the probe; a person is made only to seat
+            seat(m, person());
             room--;
         }
+    }
+
+    /** 0.3.8.9: who governs m, for DECLINED: "you" when you do, else the administrator's id. */
+    static String governor(MarketAPI m) {
+        PersonAPI p = m.getAdmin();
+        return p == null || p.isPlayer() || p.getId() == null ? "you" : p.getId();
+    }
+
+    /**
+     * 0.3.8.9: the one who took the core's place at m no longer governs it. A save from 0.3.8.2 to 0.3.8.8 stored true: it
+     * gets the one who governs now.
+     */
+    static boolean replacedGone(MarketAPI m, MemoryAPI mem) {
+        Object who = mem.get(DECLINED);
+        if (!(who instanceof String)) { mem.set(DECLINED, governor(m)); return false; }
+        return !who.equals(governor(m));
     }
 
     /**
@@ -176,7 +197,9 @@ public final class CAAutarchAdmin {
         float delta = -CAStability.adminOwn(m.getAdmin()) - (CAStability.governedPenalty() + per);
         try {
             boolean slot = m.getAdmin().getStats().getSkillLevel(CAAutarchSkill.ID) > 0f;
-            if (slot && Misc.getNumIndustries(m) > Misc.getMaxIndustries(m) - CAAutarchSkill.INDUSTRIES) delta -= Misc.OVER_MAX_INDUSTRIES_PENALTY;
+            int num = Misc.getNumIndustries(m), max = Misc.getMaxIndustries(m);
+            // 0.3.8.9: not when the colony is over the limit already: the game's one penalty is in its stability now
+            if (slot && num > max - CAAutarchSkill.INDUSTRIES && num <= max) delta -= Misc.OVER_MAX_INDUSTRIES_PENALTY;
         } catch (Throwable ignored) { }
         if (!CAStability.canLose(m, delta, null) || !CAStability.canGovernedLose(-per, null)) {
             if (CALog.once("autarchAdmin:stay:" + m.getId()))
