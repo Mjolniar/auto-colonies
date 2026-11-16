@@ -107,8 +107,7 @@ public class CATerraformSurplus {
      * remove what they hate, so the order they finish in would matter): several can then run at once.
      */
     static CATerraSim.Result plan(MarketAPI m, CAData.Colony c, CASettings s) {
-        Set<String> conds = new HashSet<String>();
-        for (MarketConditionAPI mc : m.getConditions()) conds.add(mc.getId());
+        Set<String> conds = CATerraform.conditions(m);   // 0.3.9.2 (I C4): the one helper
         Map<String, CATme.Proj> busy = busy(m);
         Set<String> key = new HashSet<String>(conds);
         for (String b : busy.keySet()) key.add("busy:" + b);
@@ -116,7 +115,6 @@ public class CATerraformSurplus {
         CATerraSim.Result cached = plans.get(m.getId());
         // a plan from before the colony's conditions changed (a project just finished) is redone at once
         if (cached != null && at != null && now() - at < 1f && key.equals(planConds.get(m.getId()))) return cached;
-        planConds.put(m.getId(), key);
         CAPlan.Plan plan = CAPlan.build(m, c.profile);
         Set<String>[] ka = CATerraform.keepAvoid(m, plan, conds);   // the same rule as the plan's own projects, so neither undoes the other
         Set<String> keep = ka[0], avoid = ka[1];
@@ -152,6 +150,7 @@ public class CATerraformSurplus {
         CATerraSim.Result r = CATerraSim.plan(start, gas, rows, keep, avoid, CATme.buildCostMult(),
                 CATme.removalCostMult(), s.surplusTerraform, colony(m, prof, base, conds, hp), rich);
         plans.put(m.getId(), r);
+        planConds.put(m.getId(), key);   // 0.3.9.2 (I L3): stored with the plan, so a plan that failed leaves no key for the old one
         planAt.put(m.getId(), now());
         return r;
     }

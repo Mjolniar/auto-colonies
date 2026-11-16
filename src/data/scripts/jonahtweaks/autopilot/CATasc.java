@@ -276,13 +276,9 @@ public class CATasc {
 
     /** The project TASC is running here and its days left, or null. */
     static String running(MarketAPI m) {
-        if (!link() || !m.hasCondition("terraforming_controller")) return null;
-        try {
-            Object ctl = controllerOf.invokeWithArguments(m);
-            Object cur = ctl == null ? null : CARefl.invoke(current, ctl);
-            if (cur == null) return null;
-            return CARefl.invoke(projName, cur) + " (" + CARefl.invoke(daysLeft, cur) + " days left)";
-        } catch (Throwable t) { return null; }
+        Object cur = currentProject(m);   // 0.3.9.2 (I C4): one lookup of the running project
+        if (cur == null) return null;
+        try { return CARefl.invoke(projName, cur) + " (" + CARefl.invoke(daysLeft, cur) + " days left)"; } catch (Throwable t) { return null; }
     }
 
     /** 0.3.7.9: TASC's running project here, or null. */
@@ -300,7 +296,8 @@ public class CATasc {
 
     /**
      * 0.3.7.9: Rapid terraforming: the project keeps `share` of its days left. TASC counts daysCompleted up to
-     * requiredDaysToCompleteProject (BoggledBaseTerraformingProject's own fields, 10.0.9). The days left after, or -1.
+     * requiredDaysToCompleteProject (BoggledBaseTerraformingProject's own fields, 10.0.9). The days left after, or -1
+     * (unreadable, or nothing cut: 0.3.9.2, I L8).
      */
     static int halve(Object p, float share) throws Exception {
         if (projCls == null) return -1;
@@ -308,8 +305,9 @@ public class CATasc {
         if (done == null || need == null) return -1;
         int d = CARefl.getInt(done, p), r = CARefl.getInt(need, p), left = Math.max(0, r - d);
         int after = CARapidTerra.daysAfter(left, share);
-        if (after < left) CARefl.set(done, p, Integer.valueOf(r - after));
-        return Math.min(after, left);
+        if (after >= left) return -1;   // 0.3.9.2 (I L8)
+        CARefl.set(done, p, Integer.valueOf(r - after));
+        return after;
     }
 
     static String startProject(MarketAPI m, Proj p, String who) {
@@ -333,12 +331,14 @@ public class CATasc {
             CAData.Colony c = d.colony(m.getId());
             if (c.mode != CAData.Mode.APPROVE && c.mode != CAData.Mode.AUTO) continue;
             try {
-                if (running(m) != null) continue;
+                String mine = "tasc:" + m.getId() + ":";   // 0.3.9.2 (I L4): this colony's TASC asks
+                if (running(m) != null) { CAApprovals.dropLive(mine, null); continue; }
                 Proj best = null;
                 for (Proj p : projects(m, c.profile)) if (p.startable && p.value >= MIN_PROJECT) { best = p; break; }
-                if (best == null) continue;
+                if (best == null) { CAApprovals.dropLive(mine, null); continue; }
                 if (c.mode == CAData.Mode.AUTO) startProject(m, best, "Auto");
                 else {
+                    CAApprovals.dropLive(mine, mine + best.name);   // 0.3.9.2 (I L4): an ask for a project that is no longer the best goes
                     if (CALog.once("tasc:" + m.getId() + ":" + best.name)) CAApprovals.say(m.getName() + ": Recommends TASC's " + best.name + ". Start it in the colony panel.", false);
                     // 0.3.3.0: a decision in the approval summary
                     final MarketAPI mm = m; final Proj pp = best;
@@ -358,6 +358,7 @@ public class CATasc {
 
     public static void renderColony(TooltipMakerAPI t, MarketAPI m, CAData.Colony c) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
+        if (!link()) { t.addPara(CATheme.NOT_SHOWN, gray, 6f); return; }   // 0.3.9.2 (I L7): TASC could not be read (starsector.log says why)
         if (!planet(m)) { t.addPara("Stations can't be terraformed.", gray, 6f); return; }
         String run = running(m);
         if (run != null) t.addPara("Running: %s", 6f, hl, run);

@@ -1,5 +1,29 @@
 # Patch notes
 
+## 0.3.9.2 - 2026-11-16
+
+- Terraforming: Fixed plan projects starting on a condition that a running project changes first.
+- Terraforming: Fixed plan projects spending while Pause on loss holds spending.
+- Terraforming: Fixed surplus-paid plan projects counting against the month's budget and the terraforming share.
+- Terraforming: Fixed condition removals on TME 2.10.0 waiting for the requirements of adding the condition.
+- Terraforming: Fixed TASC decisions staying in the approval list after the project started or a better one came up.
+- Terraforming: Fixed the TASC section saying a planet is a station when TASC could not be read.
+- Story mode: Fixed Rapid terraforming cutting a TME project twice when its name changed.
+- Story mode: Fixed Rapid terraforming logging a cut when nothing was cut.
+- TASC stations: Fixed a failed station refunding the price without the fee.
+- TASC stations: Fixed station entities staying in the system when the station was not built.
+- TASC stations: Changed the site search to once a week.
+- Approvals: Fixed rejected station augment asks coming back when the suggested loadout changed.
+- Station Augments: Fixed Autopilot removing its own augment when the augment could not be scored.
+- Station Augments: Fixed a battle on the refit crew's arrival delaying the refit by 7 days or dropping an approved refit.
+- Station Augments: Fixed an old refit booking letting a later change skip the crew delay.
+- Station Augments: Removed the pointer to a colony panel section from the suggestion line.
+- Substance.Abuse: Fixed the Brewery's input shortage being charged twice.
+- Substance.Abuse: Fixed a Recipe Book being valued with recipes it does not hold.
+- Roider Union: Fixed Dives being valued for their whole area in a save loaded without Fixes.
+- Compatibility: Fixed versions such as 2.1.7 or 11.7 counting as a tested 1.7.
+- Mod buildings: Fixed the probe colony check missing listeners and transient scripts a building leaves behind.
+
 ## 0.3.9.1 - 2026-11-16
 
 - Shipyard: Fixed free cash not counting a ship order placed the same moment.

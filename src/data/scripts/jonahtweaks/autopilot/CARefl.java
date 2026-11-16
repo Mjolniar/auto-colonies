@@ -35,9 +35,47 @@ public final class CARefl {
 
     static Exception wrap(Throwable t) { return t instanceof Exception ? (Exception) t : new RuntimeException(t); }
 
-    /** Class.getMethod. */
+    /**
+     * 0.3.9.2 (J L12): what was looked up on a class, kept for the session (a loaded class never changes): its declared
+     * fields, opened, and the methods found by name and parameter types. Keyed by the Class object, so two classes with one
+     * name in two loaders stay apart.
+     */
+    static final class Members {
+        volatile Object[] fields;
+        final java.util.Map<java.util.List<Object>, Object> methods = new java.util.concurrent.ConcurrentHashMap<java.util.List<Object>, Object>();
+    }
+
+    static final ClassValue<Members> MEMBERS = new ClassValue<Members>() {
+        @Override protected Members computeValue(Class<?> type) { return new Members(); }
+    };
+
+    /** Class.getMethod; 0.3.9.2 (J L12): a method found once is kept. */
     public static Object method(Class<?> c, String name, Class<?>... params) throws Exception {
-        try { return (Object) GET_METHOD.invoke(c, name, params); } catch (Throwable t) { throw wrap(t); }
+        java.util.Map<java.util.List<Object>, Object> known = MEMBERS.get(c).methods;
+        java.util.List<Object> key = new java.util.ArrayList<Object>();
+        key.add(name);
+        if (params != null) java.util.Collections.addAll(key, (Object[]) params);
+        Object m = known.get(key);
+        if (m != null) return m;
+        try { m = (Object) GET_METHOD.invoke(c, name, params); } catch (Throwable t) { throw wrap(t); }
+        if (m != null) known.put(key, m);
+        return m;
+    }
+
+    /** 0.3.9.2 (J L12): the fields declared on c that could be opened, read and opened once per class. */
+    static Object[] opened(Class<?> c) {
+        Members mb = MEMBERS.get(c);
+        Object[] out = mb.fields;
+        if (out != null) return out;
+        Object[] fields;
+        try { fields = (Object[]) DECLARED_FIELDS.invoke(c); } catch (Throwable t) { fields = new Object[0]; }
+        java.util.List<Object> ok = new java.util.ArrayList<Object>();
+        for (Object f : fields) {
+            try { SET_ACCESSIBLE.invoke(f, true); ok.add(f); } catch (Throwable ignored) { }
+        }
+        out = ok.toArray();
+        mb.fields = out;
+        return out;
     }
 
     /** Class.getField. */
@@ -64,12 +102,10 @@ public final class CARefl {
         try { FIELD_SET.invoke(field, target, value); } catch (Throwable t) { throw wrap(t); }
     }
 
-    /** 0.3.7.8: a field declared on c by name, opened (protected and private ones too); null when there is none. */
+    /** 0.3.7.8: a field declared on c by name, opened (protected and private ones too); null when there is none. 0.3.9.2 (J L12): from opened(). */
     public static Object declared(Class<?> c, String name) {
-        Object[] fields;
-        try { fields = (Object[]) DECLARED_FIELDS.invoke(c); } catch (Throwable t) { return null; }
-        for (Object f : fields) {
-            try { if (name.equals((String) FIELD_NAME.invoke(f))) { SET_ACCESSIBLE.invoke(f, true); return f; } } catch (Throwable ignored) { }
+        for (Object f : opened(c)) {
+            try { if (name.equals((String) FIELD_NAME.invoke(f))) return f; } catch (Throwable ignored) { }
         }
         return null;
     }
@@ -80,15 +116,13 @@ public final class CARefl {
     /**
      * The values of every field declared on the object's class and its superclasses, private ones included. For game
      * objects whose fields have obfuscated names: callers pick the value by type, not by name. Fields that can't be
-     * opened (JDK classes) are skipped.
+     * opened (JDK classes) are skipped. 0.3.9.2 (J L12): each class's fields from opened().
      */
     public static java.util.List<Object> fieldValues(Object target) {
         java.util.List<Object> out = new java.util.ArrayList<Object>();
         for (Class<?> c = target.getClass(); c != null && c != Object.class; c = c.getSuperclass()) {
-            Object[] fields;
-            try { fields = (Object[]) DECLARED_FIELDS.invoke(c); } catch (Throwable t) { continue; }
-            for (Object f : fields) {
-                try { SET_ACCESSIBLE.invoke(f, true); out.add(FIELD_GET.invoke(f, target)); } catch (Throwable ignored) { }
+            for (Object f : opened(c)) {
+                try { out.add(FIELD_GET.invoke(f, target)); } catch (Throwable ignored) { }
             }
         }
         return out;

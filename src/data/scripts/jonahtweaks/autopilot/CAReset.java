@@ -50,7 +50,7 @@ public class CAReset {
         failed += run("LunaLib settings", () -> CALunaSync.reset());   // 0.3.4.0: the last sync was the other save's; CALunaSync.onLoad syncs again
         // 0.3.6.0: story mode's screen state (the button waiting for Confirm, the page's line, a queued TriPad beat, a mode note)
         failed += run("story mode", () -> { CASync.queued = null; CASync.armed = null; CASync.notice = null; CASync.modeNote = null; });
-        if (on("niko_stationAugments")) failed += run("station augments", () -> { CAAugments.nextRun.clear(); CAAugments.lastSig.clear(); });
+        if (on("niko_stationAugments")) failed += run("station augments", () -> { CAAugments.nextRun.clear(); CAAugments.lastSig.clear(); CAAugments.drawn.clear(); });   // 0.3.9.2 (J L9): the page's plans
         // caches and cooldowns that held the other save's data (07 H6)
         failed += run("research ranking", () -> {
             CAResearch.cached = null; CAResearch.cachedAt = -99f; CAResearch.openCount = 0; CAResearch.totalCount = 0; CAResearch.rankFull = false; CAResearch.itemTechs.clear();
@@ -93,6 +93,7 @@ public class CAReset {
         failed += run("low profile", () -> { CALowProfile.ttDay = -1f; CALowProfile.tt = new LinkedHashMap<String, int[]>(); });
         failed += run("prune", () -> CAPrune.looked.clear());
         failed += run("colony policies", () -> CAPolicies.lastCap = 0f);
+        failed += run("Planetary Shield setting", () -> CAMods.psacCache = null);   // 0.3.9.2 (J L10): read again once per load
         failed += run("fast buildout offer", () -> CABuildout.checkTimer = 0f);
         failed += run("siege check", () -> { CASiege.cache.clear(); CASiege.cachedDay = -1f; });
         failed += run("TASC", () -> { CATasc.availCache.clear(); CATasc.availDay = -1; CATasc.cache.clear(); CATasc.cacheDay.clear(); });

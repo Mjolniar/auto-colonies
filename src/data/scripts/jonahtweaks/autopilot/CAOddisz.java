@@ -113,13 +113,7 @@ public class CAOddisz {
         return fx > 0f;
     }
 
-    // ---------------- Reverse Engineered Private Arsenal ----------------
-
-    /** The Reverse Engineering Hub: never built, taken down or touched by Autopilot (see CAMods.LEFT). */
-    public static boolean hub(String id) {
-        for (String h : HUB) if (h.equals(id)) return true;
-        return false;
-    }
+    // 0.3.9.2 (J L14): hub() is gone (no caller); the Reverse Engineering Hub is left alone through CAMods.LEFT
 
     // ---------------- Sol Renewed ----------------
 
@@ -175,7 +169,7 @@ public class CAOddisz {
             p.fx[0] -= c;
             p.lines.add("Sol Renewed: adds " + Misc.getRoundedValueMaxOneAfterDecimal(pts) + " a month to Sol's crisis meter for good, "
                     + "and its waves raid and bombard colonies here: about " + Misc.getDGSCredits(c) + " a month");
-        } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Sol crisis pricing failed at " + m.getName(), t); }
+        } catch (Throwable t) { CAStep.warn("Sol crisis pricing", "Sol crisis pricing failed at " + m.getName(), t); }   // 0.3.9.2 (J L3): one stack trace, then a count
     }
 
     /** The Crises page: Sol's meter, when you have a colony there. */

@@ -54,10 +54,8 @@ public class CAAugments {
 
     /** A station's loadout now and the changes Autopilot recommends. */
     public static class Plan {
-        public String station, note;
-        public CAStationKit kit;
+        public String station;   // 0.3.9.2 (J L13): note, kit, mine and yours are gone (read only by the colony section removed in 0.3.8.7)
         public float budget, used, gain;
-        public List<String> mine = new ArrayList<String>(), yours = new ArrayList<String>();
         public List<Opt> add = new ArrayList<Opt>();
         public List<String> remove = new ArrayList<String>(), removeNames = new ArrayList<String>();
 
@@ -140,7 +138,7 @@ public class CAAugments {
         return Math.max(0f, v);
     }
 
-    /** The most of a commodity any other building here makes. */
+    /** The Mining Station augment's id. */
     static final String MINING = "SA_miningStation";
 
     /** What the Mining Station augment would mine on this station, from Station Augments' own code, or null. */
@@ -156,14 +154,7 @@ public class CAAugments {
         } catch (Throwable t) { return null; }
     }
 
-    static int otherSupply(MarketAPI m, Industry station, String com) {
-        int best = 0;
-        for (Industry ind : m.getIndustries()) {
-            if (ind == station) continue;
-            best = Math.max(best, ind.getSupply(com).getQuantity().getModifiedInt());
-        }
-        return best;
-    }
+    // 0.3.9.2 (J L16, L17): the most of a commodity any other building here makes is CAMods.otherSupply
 
     /** Value of one more industry slot: the best supported industry that's waiting for one. Computed once per plan. */
     static class Slot {
@@ -195,11 +186,7 @@ public class CAAugments {
         }
     }
 
-    /** One augment's effects in the engine's units, weighted by the profile. Null when it's never worth having here. */
-    static Opt value(MarketAPI m, Industry station, stationAttachment a, CAData.Profile profile, Map<String, Integer> deficit, float upkeep, Slot slot) {
-        return value(m, station, a, profile, deficit, upkeep, slot, Ctx.of(m, station));
-    }
-
+    /** One augment's effects in the engine's units, weighted by the profile. Null when it's never worth having here. 0.3.9.2 (J L13): the overload without ctx is gone. */
     static Opt value(MarketAPI m, Industry station, stationAttachment a, CAData.Profile profile, Map<String, Integer> deficit, float upkeep, Slot slot, Ctx ctx) {
         String id = a.getId();
         CAEngine.Pick p = new CAEngine.Pick();
@@ -221,7 +208,7 @@ public class CAAugments {
         else if (id.equals("SA_efficiencyOverhaul")) { p.fx[0] += 0.3f * upkeep; p.lines.add("Station upkeep -30%: about " + Misc.getDGSCredits(0.3f * upkeep) + " per month"); }
         else if (id.equals("SA_hydroponics")) {
             // a colony's supply is its largest single source, so only output above what's already made here counts
-            int food = 2 - otherSupply(m, station, "food"), organics = 1 - otherSupply(m, station, "organics");
+            int food = 2 - CAMods.otherSupply(m, station.getId(), "food"), organics = 1 - CAMods.otherSupply(m, station.getId(), "organics");
             CAEngine.supply(p, "food", food, deficit);
             CAEngine.supply(p, "organics", organics, deficit);
             if (food <= 0 && organics <= 0) p.lines.add("Food and organics are already made here in larger amounts");
@@ -235,7 +222,7 @@ public class CAAugments {
             if (out != null) for (Map.Entry<String, Integer> e : out.entrySet()) {
                 int u = e.getValue() == null ? 0 : e.getValue();
                 if (u == 1) u = 2;   // the mod turns 1 into 2 when it applies
-                int more = u - otherSupply(m, station, e.getKey());
+                int more = u - CAMods.otherSupply(m, station.getId(), e.getKey());
                 if (more > 0) { CAEngine.supply(p, e.getKey(), more, deficit); added += more; }
             }
             if (out == null) return null;   // Station Augments couldn't say (it needs Nexerelin for this augment)
@@ -341,24 +328,22 @@ public class CAAugments {
     public static Plan plan(MarketAPI m, CAData.Colony c, CAData.Profile profile) {
         Plan pl = new Plan();
         Industry ind = Misc.getStationIndustry(m);
-        if (!(ind instanceof OrbitalStation)) { pl.note = "No orbital station."; return pl; }
-        if (ind.isHidden()) { pl.note = "Station: built in and hidden. Its augments are left to you."; return pl; }
+        if (!(ind instanceof OrbitalStation) || ind.isHidden()) return pl;   // no station, or one built in and hidden: left to you
         pl.station = ind.getCurrentName();
         pl.budget = MarketUtils.getAugmentBudget((OrbitalStation) ind);
         pl.used = MarketUtils.getUsedAugmentBudget(m);
         Set<String> managed = c.augAuto();
         Map<String, stationAttachment> installed = new LinkedHashMap<String, stationAttachment>();
         for (stationAttachment a : MarketUtils.getStationAugments(m)) installed.put(a.getId(), a);
-        for (stationAttachment a : installed.values()) (managed.contains(a.getId()) ? pl.mine : pl.yours).add(a.getName());
-        if (ind.isBuilding() && !ind.isUpgrading()) { pl.note = "The station is still being built."; return pl; }
+        if (ind.isBuilding() && !ind.isUpgrading()) return pl;   // the station is still being built
 
         Map<String, Integer> deficit = CAEngine.empireDeficits();
         float upkeep = baseUpkeep(ind);
         Slot slot = new Slot();
         Ctx ctx = Ctx.of(m, ind);
-        pl.kit = ctx.kit;
         float avail = pl.budget, currentScore = 0f;
         List<Opt> current = new ArrayList<Opt>();   // Autopilot's augments still worth keeping
+        Set<String> unknown = new HashSet<String>();   // 0.3.9.2 (J M4): Autopilot's augments that could not be scored now: kept as they are
         for (stationAttachment a : installed.values()) {
             boolean mine = managed.contains(a.getId());
             if (!mine || CONVERSION.equals(a.getId())) {
@@ -367,11 +352,14 @@ public class CAAugments {
             }
             try {
                 Opt o = value(m, ind, a, profile, deficit, upkeep, slot, ctx);
+                if (o == null && MINING.equals(a.getId())) unknown.add(a.getId());   // 0.3.9.2 (J M4): Station Augments could not say what it mines
                 if (o != null) currentScore += o.score;
                 if (o != null && o.score > 0f) current.add(o);
             } catch (Throwable t) {
-                CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment " + a.getId() + " could not be scored at " + m.getName(), t);
+                unknown.add(a.getId());   // 0.3.9.2 (J M4)
+                CAStep.warn(STEP, "station augment " + a.getId() + " could not be scored at " + m.getName(), t);   // 0.3.9.2 (J L3)
             }
+            if (unknown.contains(a.getId()) && a.getBuiltInMode() == BuiltInMode.NOT) avail -= a.getAugmentCost();   // 0.3.9.2 (J M4): its AP stays taken
         }
         List<Opt> fresh = new ArrayList<Opt>();
         Set<String> skip = c.augSkip();
@@ -387,7 +375,7 @@ public class CAAugments {
                 Opt o = value(m, ind, inst, profile, deficit, upkeep, slot, ctx);
                 if (o != null && o.score > 0f) fresh.add(o);
             } catch (Throwable t) {
-                CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment " + id + " could not be scored at " + m.getName(), t);
+                CAStep.warn(STEP, "station augment " + id + " could not be scored at " + m.getName(), t);   // 0.3.9.2 (J L3)
             }
         }
         List<Opt> pick = choose(current, fresh, avail);
@@ -397,7 +385,7 @@ public class CAAugments {
         Collections.sort(pl.add, new Comparator<Opt>() { public int compare(Opt x, Opt y) { return Float.compare(y.score, x.score); } });
         for (String id : managed) {
             stationAttachment inst = installed.get(id);
-            if (inst == null || CONVERSION.equals(id) || keep.contains(id) || !inst.canBeRemoved()) continue;
+            if (inst == null || CONVERSION.equals(id) || keep.contains(id) || unknown.contains(id) || !inst.canBeRemoved()) continue;   // 0.3.9.2 (J M4): unknown
             pl.remove.add(id);
             pl.removeNames.add(inst.getName());
         }
@@ -430,6 +418,15 @@ public class CAAugments {
 
     static final float REFIT_DAYS = 7f;
 
+    /** 0.3.9.2 (J L3): the pass step this runs under (CAAuto), for CAStep.warn's one stack trace per failure. */
+    static final String STEP = "station augment step";
+
+    /** 0.3.9.2 (J L1): the station is fighting; Station Augments adds nothing then. */
+    static boolean inBattle(MarketAPI m) {
+        com.fs.starfarer.api.campaign.CampaignFleetAPI sf = Misc.getStationFleet(m);
+        return sf != null && sf.getBattle() != null;
+    }
+
     static boolean fleetHere(MarketAPI m) {
         com.fs.starfarer.api.campaign.CampaignFleetAPI f = com.fs.starfarer.api.Global.getSector().getPlayerFleet();
         return f != null && m.getPrimaryEntity() != null && f.getContainingLocation() == m.getPrimaryEntity().getContainingLocation();
@@ -453,8 +450,7 @@ public class CAAugments {
     /** Removes, then adds, as planned. Returns null on success, or why nothing changed. */
     static String apply(MarketAPI m, CAData.Colony c, Plan pl, String who) {
         // Station Augments lets an augment come off mid-battle but not go on, so nothing changes while the station fights
-        com.fs.starfarer.api.campaign.CampaignFleetAPI sf = Misc.getStationFleet(m);
-        if (sf != null && sf.getBattle() != null) return "Station in battle. Its augments change after the battle";
+        if (inBattle(m)) return "Station in battle. Its augments change after the battle";
         Map<String, stationAttachment> installed = new HashMap<String, stationAttachment>();
         for (stationAttachment a : MarketUtils.getStationAugments(m)) installed.put(a.getId(), a);
         List<String> done = new ArrayList<String>(), failed = new ArrayList<String>();
@@ -500,9 +496,12 @@ public class CAAugments {
     public static void run(CAData d, CASettings s, float now) {
         finishRefits(d);   // 0.3.8.5: refits you approved or applied, in every augment mode
         if (s.augmentMode != 0) return;   // 1 recommend only, 2 off
+        int tried = 0, failed = 0;   // 0.3.9.2 (J L3)
+        Throwable last = null;
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             CAData.Colony c = d.colony(m.getId());
             if (c.mode != CAData.Mode.APPROVE && c.mode != CAData.Mode.AUTO) continue;
+            tried++;
             try {
                 sync(m, c);
                 if (!(hasStation(m))) continue;
@@ -515,9 +514,13 @@ public class CAAugments {
                 lastSig.put(m.getId(), sig);
                 nextRun.put(m.getId(), now + 7f);
                 Plan pl = plan(m, c, profile);
-                if (!pl.changes()) continue;
+                if (!pl.changes()) {
+                    if (CAMark.at(REFIT_OK + m.getId()) == null) d.augRefit().remove(m.getId());   // 0.3.9.2 (J L2): a crew booked for a change no longer planned is let go
+                    continue;
+                }
                 boolean defense = profile == CAData.Profile.SECURITY && c.profile != CAData.Profile.SECURITY;
                 if (c.mode == CAData.Mode.AUTO) {
+                    if (inBattle(m)) { lastSig.remove(m.getId()); continue; }   // 0.3.9.2 (J L1): the booked crew waits out the battle
                     if (!refitReady(m)) { lastSig.remove(m.getId()); continue; }   // the refit crew isn't there yet: look again tomorrow
                     String done = apply(m, c, pl, siege || defense ? "defense" : c.augDefense ? "calm" : "");
                     if (done == null) c.augDefense = defense;
@@ -525,20 +528,26 @@ public class CAAugments {
                 }
                 else {
                     if (CAMark.at(REFIT_OK + m.getId()) != null) continue;   // 0.3.8.5: approved; its refit crew is booked (finishRefits)
-                    if (CALog.once("aug:" + m.getId() + ":" + pl.summary()))
-                        CAApprovals.say(m.getName() + ": Station augments suggested: " + pl.summary() + (defense ? ", for defense" : "") + ". Apply on its panel.", false);
+                    // 0.3.9.2 (J M2): one ask key per colony; the loadout is in the title. A rejection holds 180 days
+                    String key = "aug:" + m.getId();
+                    CAApprovals.moveHold(key);
+                    if (!CAApprovals.held(key, "augments") && CALog.once("aug:" + m.getId() + ":" + pl.summary()))
+                        CAApprovals.say(m.getName() + ": Station augments suggested: " + pl.summary() + (defense ? ", for defense" : "") + ".", false);   // 0.3.9.2 (J L8): no panel to point at
                     // 0.3.3.0: a decision in the approval summary (installing augments is free and can be undone)
                     final MarketAPI mm = m;
-                    CAApprovals.offer("aug:" + m.getId() + ":" + pl.summary(), "augments", m, "Station augments: " + pl.summary(), 0f, 0f, null, () -> {
+                    CAApprovals.offer(key, "augments", m, "Station augments: " + pl.summary(), 0f, 0f, null, () -> {
                         if (!Global.getSettings().getModManager().isModEnabled(MOD)) return "Station Augments is off";
                         String r = applyNow(mm);
                         return BOOKED.equals(r) ? null : r;   // 0.3.8.5: a booked refit crew is the approval; finishRefits makes the change
                     });
                 }
             } catch (Throwable t) {
-                CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment step failed at " + m.getName(), t);
+                failed++; last = t;
+                CAStep.warn(STEP, "station augment step failed at " + m.getName(), t);   // 0.3.9.2 (J L3)
             }
         }
+        // 0.3.9.2 (J L3): every colony failed: the step fails, so CAStep's breaker can stop it
+        if (tried > 0 && failed == tried) throw new IllegalStateException("station augments failed at every colony", last);
     }
 
     // ---------------- panels ----------------
@@ -571,18 +580,33 @@ public class CAAugments {
                 MarketAPI m = CAAuto.market(id);
                 CAData.Colony c = d.colonies.get(id);
                 if (m == null || !m.isPlayerOwned() || c == null || c.mode == CAData.Mode.OFF || !hasStation(m)) { CAMark.clear(k); continue; }
+                if (inBattle(m)) continue;   // 0.3.9.2 (J L1): the crew and your approval wait out the battle
                 if (!refitReady(m)) continue;
                 CAMark.clear(k);
                 sync(m, c);
                 Plan pl = plan(m, c, profileFor(m, c));
                 if (pl.changes()) apply(m, c, pl, "you set");
             } catch (Throwable t) {
-                CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment refit failed at " + id, t);
+                CAStep.warn(STEP, "station augment refit failed at " + id, t);   // 0.3.9.2 (J L3)
             }
         }
     }
 
     // 0.3.8.7: the colony panel's section (renderColony) and its Allow again (unskip) are gone: the panel has not listed it since 0.3.7.6
+
+    /** 0.3.9.2 (J L9): the Mod features page's plans by market id: {signature and day, Plan}. Cleared on load (CAReset). */
+    static final Map<String, Object[]> drawn = new HashMap<String, Object[]>();
+
+    /** 0.3.9.2 (J L9): the plan the page draws, made again only when the station's signature or the day changes. */
+    static Plan drawnPlan(MarketAPI m, CAData.Colony c) {
+        CAData.Profile prof = profileFor(m, c);
+        String key = signature(m, prof) + "|" + CATime.today();
+        Object[] was = drawn.get(m.getId());
+        if (was != null && key.equals(was[0])) return (Plan) was[1];
+        Plan pl = plan(m, c, prof);
+        drawn.put(m.getId(), new Object[]{key, pl});
+        return pl;
+    }
 
     /** The empire panel's section: one line per colony with a station. */
     public static void renderEmpire(TooltipMakerAPI t, CAData d, CASettings s) {
@@ -595,8 +619,8 @@ public class CAAugments {
             if (c.mode == CAData.Mode.OFF || !(hasStation(m))) continue;
             shown++;
             Plan pl;
-            try { pl = plan(m, c, profileFor(m, c)); }
-            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station augment plan failed at " + m.getName(), e); continue; }
+            try { pl = drawnPlan(m, c); }   // 0.3.9.2 (J L9)
+            catch (Throwable e) { CAStep.warn(STEP, "station augment plan failed at " + m.getName(), e); continue; }   // 0.3.9.2 (J L3)
             if (!pl.changes()) { t.addPara("%s, %s: %s of %s AP, best loadout.", 6f, hl, m.getName(), pl.station, ap(pl.used), ap(pl.budget)); continue; }
             t.addPara("%s, %s: %s of %s AP. Recommends: %s (%s).", 6f, hl, m.getName(), pl.station, ap(pl.used), ap(pl.budget), pl.summary(), CAEngine.valueText(pl.gain));
             t.addButton("Apply", new String[]{"aug", "apply", m.getId()}, base, dark, Alignment.MID, CutStyle.TL_BR, 120f, 22f, 4f);

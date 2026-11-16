@@ -55,8 +55,19 @@ public class CAMods {
 
     // ---------------- Planetary Shield: Access Control ----------------
 
+    /** 0.3.9.2 (J L10): psac()'s answer, read once (mod files don't change while the game runs); CAReset clears it on load. */
+    static Boolean psacCache;
+
     /** The shield is Access Control's, not vanilla's (it swaps the plugin behind the same id). */
     public static boolean psac() {
+        Boolean b = psacCache;
+        if (b != null) return b;
+        b = psacRead();
+        psacCache = b;
+        return b;
+    }
+
+    static boolean psacRead() {
         if (!on("wyv_planetaryShieldAccessControl")) return false;
         try {
             if (!"data.scripts.wyv.PlanetaryShield".equals(Global.getSettings().getIndustrySpec("planetaryshield").getPluginClass())) return false;
@@ -145,6 +156,7 @@ public class CAMods {
     /** Whether Roider miners work their area in this game: Fixes' area refresh is running. */
     static boolean areaMined() {
         try {
+            if (!on("jonahs_fixes")) return false;   // 0.3.9.2 (J L6): the status line is saved; a save loaded without Fixes keeps its last one
             Object s = Global.getSector().getMemoryWithoutUpdate().get(FIXES_STATUS);
             return s instanceof String && ((String) s).contains("Roider Dives area: on");
         } catch (Throwable t) { return false; }
@@ -217,12 +229,13 @@ public class CAMods {
 
     static int extra(MarketAPI m) { return (charter(m) ? 1 : 0) - (m.hasCondition("US_mind") ? 1 : 0); }
 
+    /** 0.3.9.2 (J L14): offline checks only (JTNewModsCheck); the game values Roider miners in roiderApply. */
     static int output(MarketAPI m, float range, CAEngine.Pick p, Map<String, Integer> deficit, boolean add) {
         return output(m, range, p, deficit, add, 0);
     }
 
     /**
-     * cut: heavy machinery the miners are short. Roider takes the whole shortage off every mined output
+     * Offline checks only (0.3.9.2, J L14). cut: heavy machinery the miners are short. Roider takes the whole shortage off every mined output
      * (DivesSupplyInteractor.applySupplyAndDemand: applyDeficitToProduction over ore, transplutonic ore, organics and
      * volatiles), so 1 short turns 1+1+1+1 into nothing: Umuzi's Dives mined 0 of a predicted 4 (0.2.39.0).
      */

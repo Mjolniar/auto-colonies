@@ -76,11 +76,13 @@ public class CACompat {
      */
     public static boolean linked(String cmClass) { return !off(cmClass); }
 
-    /** What's missing for a CM class, or an empty list. */
-    public static List<String> brokenFor(String cmClass) {
-        List<String> l = brokenClasses.get(cmClass);
-        return l == null ? new ArrayList<String>() : l;
-    }
+    // 0.3.9.2 (J L14): brokenFor is gone (no caller)
+
+    /**
+     * 0.3.9.2 (J L11): each CM class's link scan by "class|mod id", kept for the session: the class files and the mods' jars
+     * don't change while the game runs, so a load judges the kept results again (brokenClasses is rebuilt each check()).
+     */
+    static final Map<String, CALinkScan.Result> scans = new HashMap<String, CALinkScan.Result>();
 
     static final String[] NONE = new String[0];
     static String[] a(String... s) { return s; }
@@ -176,9 +178,13 @@ public class CACompat {
             int scanned = 0, off = 0;
             if (e.scan != null) {
                 for (String cm : e.scan) {
-                    CALinkScan.Result r;
-                    try { r = CALinkScan.scan(CACompat.class.getClassLoader(), cm, e.packages); }
-                    catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "link scan of " + cm + " failed; not judged", t); continue; }
+                    String key = cm + "|" + e.mod;   // 0.3.9.2 (J L11)
+                    CALinkScan.Result r = scans.get(key);
+                    if (r == null) {
+                        try { r = CALinkScan.scan(CACompat.class.getClassLoader(), cm, e.packages); }
+                        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "link scan of " + cm + " failed; not judged", t); continue; }
+                        scans.put(key, r);
+                    }
                     if (!r.read) { CADiagnostics.LOG.info(CADiagnostics.TAG + "link scan: couldn't read " + cm + "'s class file; not judged"); continue; }
                     int j = judge(e, cm, r);
                     if (j > 0) scanned++;
@@ -228,9 +234,15 @@ public class CACompat {
         try { return c.call(); } catch (Throwable t) { return null; }
     }
 
+    /** 0.3.9.2 (J L7): equal once spaces, quotes and a leading "v" are gone; "2.1.7" or "11.7" is not "1.7". */
     static boolean sameVersion(String have, String tested) {
-        String h = have.replaceAll("[^0-9A-Za-z.]", ""), t = tested.replaceAll("[^0-9A-Za-z.]", "");
-        return h.equalsIgnoreCase(t) || h.endsWith(t);
+        return bare(have).equalsIgnoreCase(bare(tested));
+    }
+
+    /** 0.3.9.2 (J L7): a version string with only letters, digits and dots, and no leading "v" before a digit. */
+    static String bare(String v) {
+        String s = v == null ? "" : v.replaceAll("[^0-9A-Za-z.]", "");
+        return s.length() > 1 && (s.charAt(0) == 'v' || s.charAt(0) == 'V') && Character.isDigit(s.charAt(1)) ? s.substring(1) : s;
     }
 
     public static String describe(Entry e) {

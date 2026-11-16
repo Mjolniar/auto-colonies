@@ -4,10 +4,11 @@ import com.fs.starfarer.api.Global;
 
 /**
  * Another mod's LunaLib setting, read through reflection (0.2.45.0): null when LunaLib isn't there, the mod has no such
- * setting, or it can't be read. Same route as CAGrand's (the game's script loader bans java.lang.reflect, so CARefl).
+ * setting, or it can't be read. The game's script loader bans java.lang.reflect, so CARefl. 0.3.9.2 (J L15): CAGrand reads
+ * Grand.Colonies' settings here too.
  */
 public class CALuna {
-    static Object getBoolean, getFloat, getDouble;
+    static Object getBoolean, getFloat, getDouble, getInt;
     static boolean linked = false, broken = false;
 
     static boolean link() {
@@ -17,6 +18,7 @@ public class CALuna {
             getBoolean = CARefl.method(l, "getBoolean", String.class, String.class);
             getFloat = CARefl.method(l, "getFloat", String.class, String.class);
             try { getDouble = CARefl.method(l, "getDouble", String.class, String.class); } catch (Throwable ignored) { }
+            try { getInt = CARefl.method(l, "getInt", String.class, String.class); } catch (Throwable ignored) { }   // 0.3.9.2 (J L15)
             linked = true;
         } catch (Throwable t) { broken = true; }
         return linked;
@@ -36,6 +38,15 @@ public class CALuna {
             Object v = CARefl.invoke(getFloat, null, mod, key);
             if (v == null && getDouble != null) v = CARefl.invoke(getDouble, null, mod, key);
             return v instanceof Number ? ((Number) v).floatValue() : null;
+        } catch (Throwable t) { return null; }
+    }
+
+    /** 0.3.9.2 (J L15): an int setting, as b() and f(). */
+    public static Integer i(String mod, String key) {
+        try {
+            if (!link() || getInt == null) return null;
+            Object v = CARefl.invoke(getInt, null, mod, key);
+            return v instanceof Number ? ((Number) v).intValue() : null;
         } catch (Throwable t) { return null; }
     }
 }

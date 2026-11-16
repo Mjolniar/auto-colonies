@@ -14,7 +14,8 @@ import com.fs.starfarer.api.util.Misc;
  *   sets both); an AI core's cut is taken from the days left and undone on its own, so the two stack.
  * - Terraforming and Station Construction: the running project counts daysCompleted up to requiredDaysToCompleteProject
  *   (CATasc.halve).
- * The project halved is kept in the colony's memory (its name per structure), so a load or a second look leaves it alone; a
+ * The project halved is kept in the colony's memory (per structure: TME's condition and build time, 0.3.9.2; TASC's
+ * project name), so a load or a second look leaves it alone; a
  * project's conditions change when it finishes, so the same project does not run twice in a row.
  */
 public final class CARapidTerra {
@@ -47,9 +48,12 @@ public final class CARapidTerra {
             String key = KEY + ind.getId();
             CATme.Proj p = CATme.ongoing(ind) && ind.isBuilding() ? CATme.project(ind) : null;
             if (p == null) { mem.unset(key); continue; }
-            String sig = p.id + "|" + p.name;
-            if (sig.equals(mem.getString(key))) continue;
+            // 0.3.9.2 (I L2): the condition and BaseIndustry's buildTime, which stay the same while it runs (TME 2.10.0's
+            // name turns from "Add X" to "Remove X" when another project adds X first)
+            String sig = p.id + "|" + buildTime(ind), was = mem.getString(key);
+            if (sig.equals(was)) continue;
             mem.set(key, sig);
+            if (oldSig(was, p.id)) continue;   // 0.3.9.2: halved under the key form before 0.3.9.2 (condition|name)
             int days = halve(ind);
             if (days >= 0) CALog.did(m.getName() + ": Rapid terraforming cut " + p.name + " to " + days + " days.");
         }
@@ -67,7 +71,24 @@ public final class CARapidTerra {
         if (days >= 0) CALog.did(m.getName() + ": Rapid terraforming cut " + name + " to " + days + " days.");
     }
 
-    /** TME: the days left halved through BaseIndustry's own fields. The days left after, or -1 when they can't be read. */
+    /** Pure (0.3.9.2, I L2): a key saved before 0.3.9.2 for this condition ("condition|name", the name not a number). */
+    static boolean oldSig(String was, String condition) {
+        if (was == null || !was.startsWith(condition + "|")) return false;
+        try { Float.parseFloat(was.substring(condition.length() + 1)); return false; } catch (NumberFormatException e) { return true; }
+    }
+
+    /** 0.3.9.2 (I L2): BaseIndustry's buildTime (set when the project starts), or -1 when it can't be read. */
+    static float buildTime(Industry ind) {
+        try {
+            Object time = ind instanceof BaseIndustry ? CARefl.declared(BaseIndustry.class, "buildTime") : null;
+            return time == null ? -1f : CARefl.getFloat(time, ind);
+        } catch (Throwable t) { return -1f; }
+    }
+
+    /**
+     * TME: the days left halved through BaseIndustry's own fields. The days left after, or -1 when they can't be read or
+     * nothing was cut (0.3.9.2, I L8).
+     */
     static int halve(Industry ind) throws Exception {
         if (!(ind instanceof BaseIndustry)) return -1;
         Object time = CARefl.declared(BaseIndustry.class, "buildTime"), progress = CARefl.declared(BaseIndustry.class, "buildProgress");
@@ -75,6 +96,7 @@ public final class CARapidTerra {
         float total = CARefl.getFloat(time, ind), done = CARefl.getFloat(progress, ind);
         if (total <= 0f) return -1;
         float next = progressAfter(total, done, SHARE);
+        if (next <= done) return -1;   // 0.3.9.2 (I L8)
         CARefl.set(progress, ind, next);
         return (int) Math.ceil(total - next);
     }

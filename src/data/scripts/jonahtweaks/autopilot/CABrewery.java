@@ -56,10 +56,34 @@ public class CABrewery {
             if (id.startsWith("alcoholism_") && id.endsWith("_item")) out.add(id.substring("alcoholism_".length(), id.length() - "_item".length()));
             else if (BOOK.equals(id)) {
                 int n = minSize(st.getSpecialDataIfSpecial());
-                if (n > 0 && n <= size) out.addAll(INPUTS.keySet());   // a book splits the same output, so value it like its best recipe
+                if (n > 0 && n <= size) out.addAll(bookRecipes(st.getSpecialDataIfSpecial()));   // a book splits the same output, so value it like its best recipe
             }
         }
         return out;
+    }
+
+    /**
+     * 0.3.9.2 (J L5): the recipes a Recipe Book holds, as INPUTS keys. RecipeBookSpecialItemData.getBaseList holds alcohol ids
+     * ("alcoholism_stout", AlcoholRepo's keys). Empty when it can't be read.
+     */
+    static List<String> bookRecipes(SpecialItemData data) {
+        List<String> out = new ArrayList<String>();
+        try {
+            Object l = CARefl.invoke(CARefl.method(data.getClass(), "getBaseList"), data);
+            if (l instanceof List) for (Object o : (List<?>) l) {
+                String r = recipeKey(String.valueOf(o));
+                if (r != null && !out.contains(r)) out.add(r);
+            }
+        } catch (Throwable ignored) { }
+        return out;
+    }
+
+    /** Pure (0.3.9.2, J L5): "alcoholism_stout" (or its _c commodity or _item recipe id) to "stout"; null when not a known recipe. */
+    static String recipeKey(String id) {
+        String r = id.startsWith("alcoholism_") ? id.substring("alcoholism_".length()) : id;
+        if (r.endsWith("_item")) r = r.substring(0, r.length() - "_item".length());
+        else if (r.endsWith("_c")) r = r.substring(0, r.length() - 2);
+        return INPUTS.containsKey(r) ? r : null;
     }
 
     static boolean idleBrewery() {
@@ -74,18 +98,19 @@ public class CABrewery {
     public static boolean apply(MarketAPI m, CAEngine.Pick p, Map<String, Integer> deficit) {
         if (idleBrewery()) return false;
         int s = m.getSize();
-        String best = null; float bestV = 0f;
+        String best = null; float bestV = 0f, bestGross = 0f;
         for (String r : recipes(s)) {
             String[] in = INPUTS.get(r);
             if (in == null || Global.getSettings().getCommoditySpec("alcoholism_" + r + "_c") == null) continue;
-            float v = Global.getSettings().getCommoditySpec("alcoholism_" + r + "_c").getBasePrice() * CAEngine.unitValue * s * VALUE_SHARE;
-            for (String c : in) { Integer d = deficit.get(c); if (d != null && d > 0) v -= Global.getSettings().getCommoditySpec(c).getBasePrice() * 30f * s; }
-            if (best == null || v > bestV) { best = r; bestV = v; }
+            float gross = Global.getSettings().getCommoditySpec("alcoholism_" + r + "_c").getBasePrice() * CAEngine.unitValue * s * VALUE_SHARE, v = gross;
+            // the shortage only ranks the recipes here; CAEngine.demand below charges it (0.3.9.2, J L4: it was charged twice)
+            for (String c : in) { Integer d = deficit.get(c); if (d != null && d > 0) v -= Global.getSettings().getCommoditySpec(c).getBasePrice() * CATuning.SHORT_INPUT_PRICE * s; }
+            if (best == null || v > bestV) { best = r; bestV = v; bestGross = gross; }
         }
         if (best == null || bestV <= 0f) return false;
-        p.fx[0] += bestV;
+        p.fx[0] += bestGross;   // 0.3.9.2 (J L4)
         p.lines.add("Brews " + s + " " + Global.getSettings().getCommoditySpec("alcoholism_" + best + "_c").getName()
-                + " with the recipe in Autopilot Storage: about " + com.fs.starfarer.api.util.Misc.getDGSCredits(bestV) + " per month");
+                + " with the recipe in Autopilot Storage: about " + com.fs.starfarer.api.util.Misc.getDGSCredits(bestGross) + " per month");
         for (String c : INPUTS.get(best)) CAEngine.demand(p, c, s, deficit);
         return true;
     }

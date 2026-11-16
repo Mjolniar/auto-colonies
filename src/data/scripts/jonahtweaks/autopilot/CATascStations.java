@@ -238,6 +238,8 @@ public class CATascStations {
         public float x, y, paid;
         public long sent;
         public float days;
+        /** 0.3.9.2 (I L5): the fee paid with the price, refunded with it; 0 in an order saved before 0.3.9.2. */
+        public float fee;
     }
 
     /** Pays back within five years, or anything while spending freely (where a price counts a twentieth). Pure. */
@@ -265,6 +267,7 @@ public class CATascStations {
         if (auto.isEmpty() || CABudget.paused(s) || CAItems.overLimit() + d.expandOrders().size() >= 0 || !d.tascOrders().isEmpty()) return;   // one crew at a time, and room under the colony limit
         boolean mine = unlocked(MINE_ABILITY), siphon = unlocked(SIPHON_ABILITY);
         if (!mine && !siphon) return;
+        if (!CATime.due("tascStationScan", 7f)) return;   // 0.3.9.2 (I P2): the site scan runs once a week (CATime.reset clears it on load)
         boolean rich = CASurplus.rich(s);
         Map<StarSystemAPI, List<MarketAPI>> systems = new LinkedHashMap<StarSystemAPI, List<MarketAPI>>();
         for (MarketAPI m : auto) {
@@ -298,7 +301,7 @@ public class CATascStations {
         }
         CABudget.pay(s, null, best.cost, fee, 0f);
         Order o = new Order();
-        o.system = best.sys.getId(); o.kind = best.kind; o.x = best.x; o.y = best.y; o.paid = best.cost; o.what = what; o.why = best.why;
+        o.system = best.sys.getId(); o.kind = best.kind; o.x = best.x; o.y = best.y; o.paid = best.cost; o.fee = fee; o.what = what; o.why = best.why;
         o.gasGiantId = best.gasGiant == null ? null : best.gasGiant.getId();
         o.sent = Global.getSector().getClock().getTimestamp(); o.days = CREW_DAYS;
         d.tascOrders().add(o);
@@ -320,8 +323,9 @@ public class CATascStations {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "building a TASC " + o.kind + " station failed", t);
             }
             if (made == null) {
-                CABudget.refund(CAData.settings(), null, o.paid);
-                CALog.did("The " + o.what + " was not built. The site is gone, or the colony limit is reached. " + Misc.getDGSCredits(o.paid) + " refunded.");
+                float back = o.paid + Math.max(0f, o.fee);   // 0.3.9.2 (I L5): the fee comes back too
+                CABudget.refund(CAData.settings(), null, back);
+                CALog.did("The " + o.what + " was not built. The site is gone, or the colony limit is reached. " + Misc.getDGSCredits(back) + " refunded.");
                 continue;
             }
             CAData.Colony c = d.colony(made.getId());
@@ -333,11 +337,13 @@ public class CATascStations {
 
     static MarketAPI buildMining(StarSystemAPI sys, Order o) throws Throwable {
         SectorEntityToken tk = token(sys, o.x, o.y);
+        SectorEntityToken st = null, lights = null;
+        MarketAPI made = null;
         try {
             boolean belt = call(inBelt, tk), field = !belt && call(inField, tk);
             if ((!belt && !field) || call(tooClose, tk) || miningStationsIn(sys) >= setting("boggledMaxNumMiningStationsPerSystem", 1)) return null;
             com.fs.starfarer.api.campaign.CampaignClockAPI clock = Global.getSector().getClock();
-            SectorEntityToken st = sys.addCustomEntity("boggled_mining_station" + clock.getCycle() + clock.getMonth() + clock.getDay(),
+            st = sys.addCustomEntity("boggled_mining_station" + clock.getCycle() + clock.getMonth() + clock.getDay(),
                     sys.getBaseName() + " Mining Station", "boggled_mining_station_small", Factions.PLAYER);
             if (belt) {
                 SectorEntityToken focus = (SectorEntityToken) beltFocus.invoke(tk);
@@ -353,10 +359,10 @@ public class CATascStations {
                     st.setCircularOrbitWithSpin(f, Misc.getAngleInDegrees(f.getLocation(), tk.getLocation()), Misc.getDistance(tk, f), 40f, 5f, 10f);
                 }
             }
-            SectorEntityToken lights = sys.addCustomEntity("boggled_miningStationLights", "Mining Station Lights Overlay",
+            lights = sys.addCustomEntity("boggled_miningStationLights", "Mining Station Lights Overlay",
                     "boggled_mining_station_small_lights_overlay", Factions.PLAYER);
             lights.setOrbit(st.getOrbit().makeCopy());
-            MarketAPI made = (MarketAPI) createMining.invoke(st);
+            made = (MarketAPI) createMining.invoke(st);
             // as TASC does: an abandoned mining station here hands its storage over and goes
             CargoAPI store = made.getSubmarket("storage") == null ? null : made.getSubmarket("storage").getCargo();
             List<SectorEntityToken> old = new ArrayList<SectorEntityToken>();
@@ -369,7 +375,17 @@ public class CATascStations {
                 sys.removeEntity(e);
             }
             return made;
+        } catch (Throwable t) {
+            unplace(sys, made, st, lights);   // 0.3.9.2 (I L6)
+            throw t;
         } finally { sys.removeEntity(tk); }
+    }
+
+    /** 0.3.9.2 (I L6): a station TASC made no colony of leaves no station or lights entity behind. */
+    static void unplace(StarSystemAPI sys, MarketAPI made, SectorEntityToken st, SectorEntityToken lights) {
+        if (made != null) return;
+        try { if (lights != null) sys.removeEntity(lights); } catch (Throwable ignored) { }
+        try { if (st != null) sys.removeEntity(st); } catch (Throwable ignored) { }
     }
 
     static MarketAPI buildSiphon(StarSystemAPI sys, Order o) throws Throwable {
@@ -377,13 +393,21 @@ public class CATascStations {
         if (!(gg instanceof PlanetAPI)) return null;
         Object ability = siphonNew.invoke();
         if ((boolean) siphonHas.invoke(ability, gg) || siphonMoon.invoke(ability, gg) != null) return null;
-        SectorEntityToken st = sys.addCustomEntity("boggled_siphon_station", gg.getName() + " Siphon Station", "boggled_siphon_station_small", Factions.PLAYER);
-        float r = gg.getRadius() + 50f;
-        st.setCircularOrbitPointingDown(gg, (float) (Math.random() * 360.0), r, r / 10f);
-        SectorEntityToken lights = sys.addCustomEntity("boggled_siphonStationLights", "Siphon Station Lights Overlay",
-                "boggled_siphon_station_small_lights_overlay", Factions.PLAYER);
-        lights.setOrbit(st.getOrbit().makeCopy());
-        return (MarketAPI) createSiphon.invoke(st, gg);
+        SectorEntityToken st = null, lights = null;
+        try {
+            st = sys.addCustomEntity("boggled_siphon_station", gg.getName() + " Siphon Station", "boggled_siphon_station_small", Factions.PLAYER);
+            float r = gg.getRadius() + 50f;
+            st.setCircularOrbitPointingDown(gg, (float) (Math.random() * 360.0), r, r / 10f);
+            lights = sys.addCustomEntity("boggled_siphonStationLights", "Siphon Station Lights Overlay",
+                    "boggled_siphon_station_small_lights_overlay", Factions.PLAYER);
+            lights.setOrbit(st.getOrbit().makeCopy());
+            MarketAPI made = (MarketAPI) createSiphon.invoke(st, gg);
+            if (made == null) unplace(sys, null, st, lights);   // 0.3.9.2 (I L6)
+            return made;
+        } catch (Throwable t) {
+            unplace(sys, null, st, lights);   // 0.3.9.2 (I L6)
+            throw t;
+        }
     }
 
     /** Crews on their way, for the panels. */

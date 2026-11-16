@@ -104,6 +104,14 @@ public final class CAApprovals {
         if (newest != null) CAMark.set("askno:" + key, newest);
     }
 
+    /** 0.3.9.2 (I L4): drops the live asks whose key starts with prefix, except keep (null: all of them). */
+    static void dropLive(String prefix, String keep) {
+        for (Iterator<String> i = LIVE.keySet().iterator(); i.hasNext(); ) {
+            String k = i.next();
+            if (k.startsWith(prefix) && !k.equals(keep)) i.remove();
+        }
+    }
+
     public static void reset() { LIVE.clear(); }
 
     // ---------------- the list ----------------

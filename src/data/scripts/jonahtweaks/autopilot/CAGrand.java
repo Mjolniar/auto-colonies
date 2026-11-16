@@ -9,30 +9,15 @@ import com.fs.starfarer.api.campaign.econ.MarketAPI;
  * How many buildings a colony can hold. The vanilla colony screen shows 12 tiles, and a 13th building is built but
  * can't be seen or managed, so without Grand.Colonies nothing new is built past 12. Grand.Colonies (SirHartley) lifts
  * that, and by default makes every building past its threshold (12) multiply all of the colony's upkeep by 1.1,
- * compounding; that cost is added to each such build. Settings are read from LunaLib by reflection, with the mod's
- * defaults when they can't be read.
+ * compounding; that cost is added to each such build. Settings are read from LunaLib through CALuna (0.3.9.2, J L15),
+ * with the mod's defaults when they can't be read.
  */
 public class CAGrand {
     public static final String MOD = "GrandColonies";
     static final int SCREEN = 12;
-    static Object lunaBool, lunaInt, lunaFloat;
-    static boolean linked = false, broken = false;
 
-    static boolean link() {
-        if (linked || broken) return linked;
-        try {
-            Class<?> l = Class.forName("lunalib.lunaSettings.LunaSettings", true, Global.getSettings().getScriptClassLoader());
-            lunaBool = CARefl.method(l, "getBoolean", String.class, String.class);
-            lunaInt = CARefl.method(l, "getInt", String.class, String.class);
-            lunaFloat = CARefl.method(l, "getFloat", String.class, String.class);
-            linked = true;
-        } catch (Throwable t) { broken = true; }
-        return linked;
-    }
-
-    static Object luna(Object m, String key) {
-        try { return link() ? CARefl.invoke(m, null, MOD, key) : null; } catch (Throwable t) { return null; }
-    }
+    /** LunaLib can be read (CACompat's link test for Grand.Colonies). */
+    static boolean link() { return CALuna.link(); }
 
     public static boolean enabled() { return Global.getSettings().getModManager().isModEnabled(MOD); }
 
@@ -52,11 +37,12 @@ public class CAGrand {
     /** Grand.Colonies' extra upkeep for one more building here, per month, or 0. */
     public static float penalty(MarketAPI m, float newUpkeep) {
         if (!enabled()) return 0f;
-        Object on = luna(lunaBool, "GrandColonies_AddPenalty");
-        if (on instanceof Boolean && !((Boolean) on)) return 0f;
-        Object th = luna(lunaInt, "GrandColonies_PenaltyThreshold"), pp = luna(lunaFloat, "GrandColonies_UpkeepPenaltyPerBuilding");
-        int threshold = th instanceof Number ? ((Number) th).intValue() : 12;
-        float per = pp instanceof Number ? ((Number) pp).floatValue() : 1.1f;
+        Boolean on = CALuna.b(MOD, "GrandColonies_AddPenalty");
+        if (on != null && !on) return 0f;
+        Integer th = CALuna.i(MOD, "GrandColonies_PenaltyThreshold");
+        Float pp = CALuna.f(MOD, "GrandColonies_UpkeepPenaltyPerBuilding");
+        int threshold = th != null ? th : 12;
+        float per = pp != null ? pp : 1.1f;
         if (buildings(m) + 1 <= threshold || per <= 1f) return 0f;
         return (m.getIndustryUpkeep() + newUpkeep) * (per - 1f);
     }

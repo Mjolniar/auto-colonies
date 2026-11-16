@@ -2,6 +2,7 @@ package data.scripts.jonahtweaks.autopilot;
 
 import com.fs.starfarer.api.EveryFrameScript;
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.CampaignEventListener;
 import com.fs.starfarer.api.campaign.comm.IntelInfoPlugin;
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
@@ -192,6 +193,9 @@ public class CASimulator {
         scripts.addAll(Global.getSector().getScripts());
         Set<IntelInfoPlugin> intel = Collections.newSetFromMap(new IdentityHashMap<IntelInfoPlugin, Boolean>());
         intel.addAll(Global.getSector().getIntelManager().getIntel());
+        // 0.3.9.2 (J M1): transient scripts and both kinds of listener too (getListeners(Object.class) is every one, as the
+        // game's own ObjectRepository.writeReplace reads them)
+        Set<Object> transients = held(TRANSIENTS), listeners = held(LISTENERS), sectorListeners = held(SECTOR_LISTENERS);
         MarketAPI p = null;
         try {
             p = probe(colony);
@@ -225,12 +229,35 @@ public class CASimulator {
                 if (!scripts.contains(s)) { Global.getSector().removeScript(s); leaked = true; }
             for (IntelInfoPlugin i : new ArrayList<IntelInfoPlugin>(Global.getSector().getIntelManager().getIntel()))
                 if (!intel.contains(i)) { Global.getSector().getIntelManager().removeIntel(i); leaked = true; }
+            // 0.3.9.2 (J M1): a transient script or a listener it left (one added in apply() and not removed in unapply(), or
+            // left when unapply() never ran) holds the probe market, and a saved listener would be written into the save
+            for (Object s : now(TRANSIENTS)) if (!transients.contains(s)) { Global.getSector().removeTransientScript((EveryFrameScript) s); leaked = true; }
+            for (Object l : now(LISTENERS)) if (!listeners.contains(l)) { Global.getSector().getListenerManager().removeListener(l); leaked = true; }
+            for (Object l : now(SECTOR_LISTENERS)) if (!sectorListeners.contains(l)) { Global.getSector().removeListener((CampaignEventListener) l); leaked = true; }
             if (leaked) {
-                e.error = "it registers sector scripts or intel when built, so it isn't simulated";
-                CADiagnostics.LOG.warn(CADiagnostics.TAG + industryId + " registered scripts or intel on the probe colony; removed them");
+                e.error = "it registers sector scripts, listeners or intel when built, so it isn't simulated";
+                CADiagnostics.LOG.warn(CADiagnostics.TAG + industryId + " registered scripts, listeners or intel on the probe colony; removed them");
             }
         }
         return e;
+    }
+
+    // 0.3.9.2 (J M1): the sector's lists the leak check compares, each read as a copy (empty when it can't be read)
+    static final int TRANSIENTS = 0, LISTENERS = 1, SECTOR_LISTENERS = 2;
+
+    static List<Object> now(int which) {
+        try {
+            com.fs.starfarer.api.campaign.SectorAPI sec = Global.getSector();
+            Collection<?> c = which == TRANSIENTS ? sec.getTransientScripts()
+                    : which == LISTENERS ? sec.getListenerManager().getListeners(Object.class) : sec.getAllListeners();
+            return c == null ? new ArrayList<Object>() : new ArrayList<Object>(c);
+        } catch (Throwable t) { return new ArrayList<Object>(); }
+    }
+
+    static Set<Object> held(int which) {
+        Set<Object> s = Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
+        s.addAll(now(which));
+        return s;
     }
 
     /** Adds measured effects to a pick in CAEngine's units; an upgrade subtracts what the building it replaces does. */

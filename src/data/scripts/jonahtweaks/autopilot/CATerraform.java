@@ -15,9 +15,7 @@ import java.util.*;
 public class CATerraform {
     static final float STANDARD_FEE = CATuning.TERRAFORM_FEE;   // 0.3.0.0 (A3): the number lives in CATuning
 
-    /** Hazard rating change of a condition (shared with TASC's planner in CAConditions). */
-    static final Map<String, Float> HAZARD = CAConditions.HAZARD;
-    static final Map<String, CAData.Profile[]> WORLD_FITS = CAConditions.WORLD_FITS;
+    // 0.3.9.2 (I C2): the HAZARD and WORLD_FITS aliases are gone; CAConditions holds both maps
 
     static float projectCost(MarketAPI m, CATme.Proj pd) {
         float mult = m.hasCondition(pd.id) ? CATme.removalCostMult() : 1f;
@@ -88,6 +86,7 @@ public class CATerraform {
             Set<String> conds = conditions(m);
             Set<String>[] ka = keepAvoid(m, plan, conds);
             boolean gas = gasGiant(m), pollutionBack = CAConditions.pollutionReturns(m);
+            Set<String> moving = moving(m, conds, gas);   // 0.3.9.2 (I M1)
             if (pollutionBack && m.hasCondition("pollution") && CALog.once("tfpollution:" + m.getId()))
                 CALog.think(m.getName() + ": Terraforming: pollution removal waits for the nanoforge upgrade. The new building adds pollution back.");
             for (Industry raw : m.getIndustries()) {
@@ -107,6 +106,7 @@ public class CATerraform {
                     if (!ind.getId().equals(CAWorldPlanner.structureFor(st.id)) && st.kind == CAPlan.Kind.COND) continue;
                     for (CATme.Proj pd : projects) {
                         if (!pd.id.equals(st.id)) continue;
+                        if (moving.contains(pd.id)) continue;   // 0.3.9.2 (I M1): a running project changes it first
                         boolean adding = !m.hasCondition(pd.id);
                         if ((st.kind == CAPlan.Kind.COND) != adding) continue;
                         if (!adding && pd.id.equals("pollution") && pollutionBack) continue;
@@ -124,6 +124,7 @@ public class CATerraform {
                 if (pick == null) {
                     for (CATme.Proj pd : projects) {
                         try {
+                            if (moving.contains(pd.id)) continue;   // 0.3.9.2 (I M1): a running project changes it first
                             if (!CATme.canRun(ind, pd)) continue;
                             boolean adding = !m.hasCondition(pd.id);
                             if (!adding && pd.id.equals("pollution") && pollutionBack) continue;
@@ -155,9 +156,15 @@ public class CATerraform {
         for (Cand k : cands) {
             float fee = CABudget.fee(s, STANDARD_FEE);
             float terraLeft = CABudget.limit(s) * s.terraformShare - s.terraSpent;
+            boolean surplus = false;   // 0.3.9.2 (I M3)
             if (k.planned) {
                 // a plan step, the world's final project too: past the per-project cap and the monthly budget, paid from
                 // savings above the credit reserve, since it's how the colony reaches its plan
+                if (CABudget.paused(s)) {   // 0.3.9.2 (I M2): Pause on loss holds this spending too
+                    if (CALog.once("tfpaused:" + k.m.getId()))
+                        CALog.think(k.m.getName() + ": Terraforming (" + k.why + ") waits while net income is below 0.");
+                    continue;
+                }
                 if (CABuild.credits() - s.reserve < k.cost + fee) {
                     if (CALog.once("tfsave:" + k.m.getId() + ":" + k.pd.id))
                         CALog.think(k.m.getName() + ": Terraforming (" + k.why + ") waits for " + Misc.getDGSCredits(k.cost + fee)
@@ -172,6 +179,7 @@ public class CATerraform {
                         CALog.think(k.m.getName() + ": Terraforming (" + k.why + ") waits for " + Misc.getDGSCredits(k.cost + fee) + " of surplus credits.");
                     continue;
                 }
+                surplus = true;
             } else if (k.cost > CAPresets.projectCap(s)) {   // 0.3.0.0 (WS-F1 fix): the cap in effect
                 if (CALog.once("tfcap:" + k.m.getId() + ":" + k.pd.id))
                     CALog.advise(k.m.getName() + ": Terraforming (" + k.why + ") is over the per-project cap. Start it from " + k.ind.getCurrentName() + " to run it.");
@@ -194,9 +202,16 @@ public class CATerraform {
                 CATme.setProject(k.ind, k.pd);
                 k.ind.startUpgrading();
                 if (!CABreaker.check(ACTION, k.ind.isUpgrading() || CATme.ongoing(k.ind), k.m.getName())) continue;   // not charged if it didn't start
-                CABudget.pay(s, k.m.getId(), k.cost, fee, 0f);   // 0.3.0.9: booked to the colony
+                if (surplus) {
+                    // 0.3.9.2 (I M3): surplus credits, as CATerraformSurplus.paid: only the fee counts against the month, the
+                    // price is booked on the money ladder's Economy rung, and the terraforming share is left alone
+                    CABudget.take(k.cost);
+                    CATerraformSurplus.paid(s, k.m, k.cost, fee, 0f, false);
+                } else {
+                    CABudget.pay(s, k.m.getId(), k.cost, fee, 0f);   // 0.3.0.9: booked to the colony
+                    s.terraSpent += k.cost;
+                }
                 if (k.planned && k.world != null) CAPlan.commitWorld(k.m, k.world, k.pd.id, !k.m.hasCondition(k.pd.id));   // 0.3.0.0 (B5): the condition this project changes is kept for the commitment
-                s.terraSpent += k.cost;
                 CALog.forget("tf:" + k.m.getId() + ":" + k.pd.id);
                 CALog.forget("tfheld:" + k.m.getId() + ":" + k.pd.id);
                 CALog.did(k.m.getName() + ": " + k.ind.getCurrentName() + " started: " + k.why + " for " + Misc.getDGSCredits(k.cost)
@@ -213,14 +228,37 @@ public class CATerraform {
             if (!(CATme.isDevelopment(raw))) continue;
             Industry ind = raw;
             try {
-                if (CATme.ongoing(ind) && CATme.project(ind) != null && condId.equals(CATme.project(ind).id)) return true;
+                if (!CATme.ongoing(ind)) continue;
+                CATme.Proj p = CATme.project(ind);   // 0.3.9.2 (I P1): read once
+                if (p != null && condId.equals(p.id)) return true;
             } catch (Throwable ignored) { }
         }
         return false;
     }
 
-    static boolean planNeeds(CAPlan.Plan plan, String condId) {
-        for (CAPlan.Step st : plan.steps) if (st.kind == CAPlan.Kind.COND && st.id.equals(condId)) return true;
-        return false;
+    /**
+     * 0.3.9.2 (I M1): conditions a project started now could see change before it finishes: what the projects running here
+     * add, remove or hate, and every condition that differs once they finish (CATerraSim.apply, as CATerraformSurplus.plan
+     * works out its start). TME decides a project's direction when it finishes, so a project on one of these waits.
+     */
+    static Set<String> moving(MarketAPI m, Set<String> conds, boolean gas) {
+        Set<String> out = new HashSet<String>();
+        Set<String> start = conds;
+        Map<String, CAWorldPlanner.Row> all = CAWorldPlanner.rows();
+        for (CATme.Proj pd : CATerraformSurplus.busy(m).values()) {
+            if (pd == null) continue;
+            out.add(pd.id);
+            CAWorldPlanner.Row row = all.get(pd.id);
+            if (row == null) continue;
+            out.addAll(CAWorldPlanner.idsOf(row.hated));
+            CATerraSim.Move mv = new CATerraSim.Move();
+            mv.structure = row.structure; mv.condition = pd.id; mv.add = !start.contains(pd.id);
+            start = CATerraSim.apply(start, mv, row, gas);
+        }
+        for (String c : start) if (!conds.contains(c)) out.add(c);
+        for (String c : conds) if (!start.contains(c)) out.add(c);
+        return out;
     }
+
+    // 0.3.9.2 (I C1): planNeeds is gone (no caller)
 }

@@ -14,7 +14,7 @@ import java.util.List;
  * | terraforming structure | industries.BaseTerraformingIndustry | industries.TerraformingIndustry |
  * | structures with projects | industries.BaseDevelopmentIndustry | TerraformingIndustry, MegastructureIndustry |
  * | project | Utils$ProjectData (fields id, name, cost, buildTime) | loading.specs.TerraformingProjectSpec (getConditionId...) |
- * | can it run | ui.plugins.ProjectListPlugin.canBuild(industry, project) | Utils.canPerformProject(market, project) (0.3.8.5) |
+ * | can it run | ui.plugins.ProjectListPlugin.canBuild(industry, project) | Utils.canPerformProject(market, project) for an add; a removal always (0.3.9.2) |
  * | project table | data/campaign/tme_terraforming_options.csv | data/campaign/terraformingmadeeasy/terraforming_projects.csv |
  *
  * getProjects, getProject, setProject and hasOngoingProject keep their names in both. With neither version every
@@ -165,13 +165,16 @@ public final class CATme {
 
     /**
      * TME's own check that the structure can run this project now (its requirements). 0.3.8.5: on 2.10.0 the project table's
-     * `unlocked` column is not read (TME never calls isUnlocked(); a blank cell is false), as in TME's own dialog.
+     * `unlocked` column is not read (TME never calls isUnlocked(); a blank cell is false), as in TME's own dialog. 0.3.9.2
+     * (I L1, C5): on 2.10.0 a removal has no requirements (TerraformingOptionsPlugin: conditionForRemoval or
+     * canPerformProject), so a present condition can always be removed.
      */
     public static boolean canRun(Industry ind, Proj p) {
         look();
         if (canRun == null || p == null || p.raw == null) return false;
         try {
             if (v210) {
+                if (projCls != null && projCls.isInstance(p.raw) && ind.getMarket().hasCondition(p.id)) return true;   // 0.3.9.2 (I L1)
                 return Boolean.TRUE.equals(CARefl.invoke(canRun, null, ind.getMarket(), p.raw));
             }
             return Boolean.TRUE.equals(CARefl.invoke(canRun, null, ind, p.raw));

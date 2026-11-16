@@ -96,9 +96,7 @@ public class CAWorldPlanner {
         Row r = rows().get(c);
         if (r == null || r.structure.equals("tme_unification_center") && depth > 0) return false;
         if (sim.gasGiant && !r.gasGiants) return false;
-        if (r.structure.equals("tme_stellar_manufactory")) {
-            // Stellar Manufactory needs mirror/shade choices, so the player starts these projects
-        }
+        // 0.3.9.2 (I C3): the Stellar Manufactory's projects (mirror and shade choices, the player starts them) are named in the step label below
         List<Boolean> all = new ArrayList<Boolean>();
         List<String[]> gs = groups(r.liked, all);
         for (int i = 0; i < gs.size(); i++) {
@@ -165,11 +163,10 @@ public class CAWorldPlanner {
             Row r = rows().get(w);
             if (r == null) continue;
             Sim sim = new Sim();
-            sim.conds = new HashSet<String>();
-            for (MarketConditionAPI c : m.getConditions()) sim.conds.add(c.getId());
+            sim.conds = CATerraform.conditions(m);   // 0.3.9.2 (I C4): the one helper
             sim.inds = new HashSet<String>();
             for (Industry i : m.getIndustries()) sim.inds.add(i.getId());
-            sim.gasGiant = m.getPrimaryEntity() instanceof PlanetAPI && ((PlanetAPI) m.getPrimaryEntity()).isGasGiant();
+            sim.gasGiant = CATerraform.gasGiant(m);
             Set<String> blocked = idsOf(r.hated);
             boolean ok = true;
             for (String b : blocked) if (sim.conds.contains(b)) ok = false;

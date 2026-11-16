@@ -5,7 +5,7 @@ import java.util.*;
 /**
  * Terraforming Made Easy's rules on a set of planet conditions, for planning surplus terraforming (CATerraformSurplus)
  * without touching the game: what a finished project adds and removes, and the best next one or two projects.
- * Mirrors BaseTerraformingIndustry 2.9.8: adding a condition removes its "hated" ones (very hot and extreme tectonic
+ * Mirrors BaseTerraformingIndustry 2.9.8 and TerraformingIndustry 2.10.0 (0.3.9.2, I C5: the same rules): adding a condition removes its "hated" ones (very hot and extreme tectonic
  * activity both hate habitable), removing one is the same project at REMOVAL_COST_MULTIPLIER, and after every project
  * updatePlanetConditions runs: a planet left with no harsh condition becomes habitable and gains a step of farmland and
  * organics; harsh ones take farmland, organics, water and lobster pens away. Reads TME's project table
