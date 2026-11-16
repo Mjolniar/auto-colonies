@@ -93,7 +93,7 @@ public class CAExpansion {
     static final float CREW_BASE = 40000f, CREW_PER_LY = 2000f, CREW_SETUP_DAYS = 15f;
     /** Nexerelin colony fleet size: 100 points, 150 while spending freely. */
     static final float NEX_FP = 100f, NEX_FP_RICH = 150f;
-    /** Nexerelin's nex_fleetRequestOrganizeTimeMult default (the page's estimate; the launch reads Nexerelin's own). */
+    /** Nexerelin's nex_fleetRequestOrganizeTimeMult default. 0.3.9.0: only JTExpansionCheck and JTNexColonyLinkCheck read it; CAExpansionNex.days uses Nexerelin's own. */
     static final float NEX_ORGANIZE_MULT = 0.75f;
     /** Days added to Nexerelin's organizing time for the arrival estimate: assembling (3 to 6) and landing. */
     static final float NEX_ASSEMBLE_DAYS = 4.5f, NEX_LAND_DAYS = 2f;
@@ -184,7 +184,7 @@ public class CAExpansion {
             checkPending(d, s);
             if (d.expandPendingId != null) { status("Waiting for your approval: " + d.expandPendingName + ".", d.expandPendingCost); return; }
         }
-        Money money = money(s, mode);
+        Money money = money(s);
         String why = gate(d, s, auto, money);
         if (why != null) { status(why, 0f); return; }
         Prospect best = best(d, s, false);
@@ -276,7 +276,7 @@ public class CAExpansion {
         String why;
     }
 
-    static Money money(CASettings s, int mode) {
+    static Money money(CASettings s) {   // 0.3.9.0: the unused mode parameter is gone
         Money r = new Money();
         int line = lineIndex(s);
         float aboveReserve = Math.max(0f, CABuild.credits() - s.reserve);
@@ -604,10 +604,13 @@ public class CAExpansion {
         PlanetAPI p = planet(d.expandPendingId);
         String why = p == null ? "the planet is gone" : null;
         if (why == null) {
-            String b = blocked(p, s, ctx(d, s), false);
+            String b = blocked(p, s, ctx(d, s, false), false);   // 0.3.9.0: the light context, blocked() reads no more
             if (b != null) why = lower(b);
         }
-        if (why != null) clearPending(d, why);
+        if (why != null) {
+            clearPending(d, why);
+            SCAN.list = null;   // 0.3.9.0: scan again, so the dropped planet is not proposed again the same day
+        }
     }
 
     static void clearPending(CAData d, String why) {
@@ -626,12 +629,15 @@ public class CAExpansion {
     static String launch(CAData d, CASettings s, Prospect p, boolean player) {
         PlanetAPI planet = planet(p.planetId);
         if (planet == null) return "That planet is gone.";
-        String b = blocked(planet, s, ctx(d, s), false);
+        String b = blocked(planet, s, ctx(d, s, false), false);   // 0.3.9.0: the light context
         if (b != null) return b;
         ExpansionCost c = costFor(d, s, p);
         if (c.why != null) return c.why;
         Object intel = null;
         if (NEX.equals(c.method)) {
+            // 0.3.9.0: the money first, so no Nexerelin expedition is started and cancelled at once for want of credits
+            String early = moneyWhy(s, c.total, player);
+            if (early != null) return early;
             boolean ok = false;
             try { intel = Global.getSettings().getModManager().isModEnabled("nexerelin") ? CAExpansionNex.start(planet, c.from, c.fp) : null; ok = true; }
             catch (Throwable t) { CAStep.warn("expansion", "starting a Nexerelin colony fleet failed", t); }
@@ -644,12 +650,7 @@ public class CAExpansion {
                 c.total = c.price + c.fee + (c.hire == null ? 0f : c.hire.price + c.hire.fee);
             }
         }
-        String money = CABuild.credits() - c.total < s.reserve
-                ? "The expedition costs " + Misc.getDGSCredits(c.total) + ", more than you have above your credit reserve." : null;
-        if (money == null && !player) {
-            int mode = mode(s);
-            money = afford(money(s, mode), c.total, lineIndex(s) == 0);
-        }
+        String money = moneyWhy(s, c.total, player);   // 0.3.9.0: also after a crew went in place of a Nexerelin fleet
         if (money != null) {
             if (intel != null) CAExpansionNex.abort(intel);
             return money;
@@ -679,6 +680,16 @@ public class CAExpansion {
         return null;
     }
 
+    /**
+     * 0.3.9.0: null when this total may be spent on an expedition now, else why not: never below the credit reserve; Auto's
+     * own launches (player false) also within the money rules (afford).
+     */
+    static String moneyWhy(CASettings s, float total, boolean player) {
+        if (CABuild.credits() - total < s.reserve)
+            return "The expedition costs " + Misc.getDGSCredits(total) + ", more than you have above your credit reserve.";
+        return player ? null : afford(money(s), total, lineIndex(s) == 0);
+    }
+
     // ---------------- arrivals ----------------
 
     /** Daily: crews that arrived found their colony; Nexerelin orders are checked against the intel and the planet. */
@@ -700,7 +711,13 @@ public class CAExpansion {
         PlanetAPI p = planet(o.planetId);
         String why = p == null ? "the planet is gone" : null;
         if (why == null) {
-            String b = blocked(p, s, ctx(d, s), true);
+            String b = blocked(p, s, ctx(d, s, false), true);   // 0.3.9.0: the light context
+            // 0.3.9.0: hostile fleets passing through hold the crew up to ADMIN_WAIT_DAYS; it turns back only if they stay
+            if (HOSTILE.equals(b) && elapsed - o.days < ADMIN_WAIT_DAYS) {
+                if (CALog.once("expand:hostilewait:" + o.planetId))
+                    CALog.quiet(o.planetName + ": colony crew waits up to " + Math.round(ADMIN_WAIT_DAYS) + " days for hostile fleets to leave the system");
+                return false;
+            }
             if (b != null) why = lower(b);
         }
         if (why != null) { turnBack(d, s, o, why, true); return true; }
@@ -717,10 +734,19 @@ public class CAExpansion {
         MarketAPI m = null;
         try { m = found(p); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "founding a colony on " + o.planetName + " failed", t); }
+        // 0.3.9.0: a throw after the market joined the economy (another mod's colonization listener) still leaves your colony
+        if (m == null) { MarketAPI made = colonyOn(o.planetId); if (made != null && made.isInEconomy()) m = made; }
         if (m == null) { turnBack(d, s, o, "the founding failed; see starsector.log", true); return true; }
         CALog.forget("expand:adminwait:" + o.planetId);
-        afterFounding(d, s, m, o);
+        CALog.forget("expand:hostilewait:" + o.planetId);
+        founded(d, s, m, o);
         return true;
+    }
+
+    /** 0.3.9.0: afterFounding for a colony that exists: a throw is logged and the order still ends (no refund, no second try). */
+    static void founded(CAData d, CASettings s, MarketAPI m, Order o) {
+        try { afterFounding(d, s, m, o); }
+        catch (Throwable t) { CAStep.warn("expansion", "setting up the new colony at " + m.getName() + " failed", t); }
     }
 
     /** One more colony governed by you would go past the limit, or take a colony you govern under the stability floor. */
@@ -732,6 +758,8 @@ public class CAExpansion {
     static void turnBack(CAData d, CASettings s, Order o, String why, boolean skipPlanet) {
         CABudget.refund(s, null, o.paid);
         if (skipPlanet) skip(d, o.planetId, SKIP_DAYS);
+        CALog.forget("expand:hostilewait:" + o.planetId);
+        SCAN.list = null;   // 0.3.9.0: scan again without the skipped planet
         CALog.did(o.planetName + ": Colony expedition turned back: " + why + ". " + Misc.getDGSCredits(o.paid) + " refunded. Fee kept.", true);
     }
 
@@ -742,14 +770,21 @@ public class CAExpansion {
         MarketAPI m = p == null ? null : p.getMarket();
         boolean colony = m != null && !m.isPlanetConditionMarketOnly() && m.isInEconomy();
         if (!nex || !Global.getSettings().getModManager().isModEnabled("nexerelin")) {
-            if (colony && m.isPlayerOwned()) { afterFounding(d, s, m, o); return true; }
+            if (colony && m.isPlayerOwned()) { founded(d, s, m, o); return true; }   // 0.3.9.0: a throw there still ends the order
             if (elapsed < NEX_LOST_DAYS) return false;
             CALog.did(o.planetName + ": Colony expedition dropped. Nexerelin is off. No colony founded in "
                     + Math.round(NEX_LOST_DAYS) + " days. " + Misc.getDGSCredits(o.paid) + " lost.", true);
             return true;
         }
         if (colony && m.isPlayerOwned() && (CAExpansionNex.foundedByNex(m) || "success".equals(CAExpansionNex.status(o)))) {
-            afterFounding(d, s, m, o);
+            founded(d, s, m, o);   // 0.3.9.0: a throw there still ends the order
+            return true;
+        }
+        // 0.3.9.0: with AoTD Question of Loyalty past the colonies your commission allows, Nexerelin's expedition founds the
+        // colony for your commissioning faction (ColonyExpeditionIntel.createColony); its outcome is a success
+        if (colony && !m.isPlayerOwned() && m.getFaction() != null && m.getFactionId().equals(Misc.getCommissionFactionId())
+                && "success".equals(CAExpansionNex.status(o))) {
+            CALog.did(o.planetName + ": Colony expedition founded the colony for " + m.getFaction().getDisplayName() + ".", true);
             return true;
         }
         if (colony || p == null) {   // someone else got there first, or you founded it yourself
@@ -769,6 +804,7 @@ public class CAExpansion {
         }
         if ("cancelled".equals(st)) {
             skip(d, o.planetId, SKIP_DAYS);
+            SCAN.list = null;   // 0.3.9.0: scan again without the skipped planet
             CALog.did(o.planetName + ": Colony expedition cancelled by Nexerelin. Nexerelin refunds part of the "
                     + Misc.getDGSCredits(o.paid) + " by distance travelled.", true);
             return true;
@@ -778,6 +814,7 @@ public class CAExpansion {
         String sys = p != null && p.getStarSystem() != null ? p.getStarSystem().getId() : null;
         if (sys != null) skip(d, sys, SKIP_DAYS);
         skip(d, NO_NEX, SKIP_DAYS);
+        SCAN.list = null;   // 0.3.9.0: scan again without the skipped system, by crew
         CALog.did(o.planetName + ": Colony expedition failed: " + ("missing".equals(st) ? "no word from the colony fleet" : "fleet lost, short of crew, or someone else first")
                 + ". No Nexerelin refund. System blocked for " + Math.round(SKIP_DAYS) + " days. Autopilot crews only for the next "
                 + Math.round(SKIP_DAYS) + " days.", true);
@@ -826,11 +863,14 @@ public class CAExpansion {
     /** Daily: an administrator who has arrived goes to a colony Auto-expansion founded, when the limit or the stability floor needs one. */
     static void seat(CAData d, CASettings s) {
         if (d.expandFounded == null || d.expandFounded.isEmpty()) return;
+        Boolean need = null;   // 0.3.9.0: the colony limit and the floor are read once a day
         for (String pid : new ArrayList<String>(d.expandFounded)) {
             PlanetAPI p = planet(pid);
             MarketAPI m = p == null ? null : p.getMarket();
             if (m == null || !m.isPlayerOwned() || m.isPlanetConditionMarketOnly()) { d.expandFounded.remove(pid); continue; }   // lost or gone
-            if (seatAt(d, m)) return;   // one a day, like the other administrator moves
+            if (!CAItems.governedByYou(m)) continue;
+            if (need == null) need = CAItems.overLimit() > 0 || governedBelowFloor();
+            if (need && CAItems.seatForExpansion(d, m)) return;   // one a day, like the other administrator moves
         }
     }
 
@@ -909,7 +949,13 @@ public class CAExpansion {
         long now;
     }
 
-    static Ctx ctx(CAData d, CASettings s) {
+    static Ctx ctx(CAData d, CASettings s) { return ctx(d, s, true); }
+
+    /**
+     * 0.3.9.0: full false is the light context for blocked() alone (checkPending, launch, an arrival, best): no hostile
+     * markets, crisis meter, League flag or administrator cost, which only score() reads.
+     */
+    static Ctx ctx(CAData d, CASettings s, boolean full) {
         Ctx x = new Ctx();
         x.colonies.addAll(colonies());
         for (MarketAPI m : x.colonies) {
@@ -931,6 +977,7 @@ public class CAExpansion {
         x.settlement = d.settleExpeditionPlanet;
         x.skip = d.expandSkip();
         x.now = Global.getSector().getClock().getTimestamp();
+        if (!full) return x;
         for (MarketAPI o : Global.getSector().getEconomy().getMarketsCopy()) {
             try {
                 if (o.isPlayerOwned() || o.getFaction() == null || o.getPrimaryEntity() == null || o.isHidden()) continue;
@@ -965,11 +1012,7 @@ public class CAExpansion {
         return out;
     }
 
-    /** The candidates, best first, from the scan kept SCAN_DAYS (refresh: scan now). */
-    static List<Prospect> prospects(CASettings s, boolean refresh) {
-        return prospects(CAData.get(), s, refresh);
-    }
-
+    /** The candidates, best first, from the scan kept SCAN_DAYS (refresh: scan now). 0.3.9.0: the uncalled (CASettings, boolean) form is gone. */
     static List<Prospect> prospects(CAData d, CASettings s, boolean refresh) {
         String key = scope(s) + ":" + s.expandGoal + ":" + s.expandMethod + ":" + colonies().size();
         if (!refresh && SCAN.list != null && key.equals(SCAN.key) && CATime.fresh(SCAN_STAMP, SCAN_DAYS)) return SCAN.list;
@@ -984,9 +1027,17 @@ public class CAExpansion {
         return SCAN.list != null && CATime.fresh(SCAN_STAMP, SCAN_DAYS) ? SCAN.list : null;
     }
 
-    /** The best candidate that pays, or null. */
+    /**
+     * The best candidate that pays, or null. 0.3.9.0: each is checked again (blocked, light context): the scan is kept
+     * SCAN_DAYS, and a planet blocked since (a proposal just dropped) was proposed again the same day.
+     */
     static Prospect best(CAData d, CASettings s, boolean refresh) {
-        for (Prospect p : prospects(d, s, refresh)) if (p.pays && p.location > 0f) return p;
+        Ctx x = null;
+        for (Prospect p : prospects(d, s, refresh)) {
+            if (!p.pays || !(p.location > 0f)) continue;
+            if (x == null) x = ctx(d, s, false);
+            if (blocked(planet(p.planetId), s, x, false) == null) return p;
+        }
         return null;
     }
 
@@ -995,7 +1046,7 @@ public class CAExpansion {
         SCAN.blocked.clear();
         List<Prospect> out = new ArrayList<Prospect>();
         boolean rich = false;
-        try { rich = money(s, Math.max(1, mode(s))).rich; } catch (Throwable ignored) { }
+        try { rich = money(s).rich; } catch (Throwable ignored) { }
         for (StarSystemAPI sys : systemsInScope(x)) {
             for (PlanetAPI p : sys.getPlanets()) {
                 if (p.isStar()) continue;
@@ -1076,7 +1127,7 @@ public class CAExpansion {
             for (CampaignFleetAPI f : sys.getFleets()) {
                 if (f.isPlayerFleet() || f.getFaction() == null || f.getFaction().isPlayerFaction() || CASurvival.supportFleet(f)) continue;   // 0.3.0.9: support fleets too
                 if (f.isStationMode()) return "A station that isn't yours is in the system.";
-                if (f.getFaction().isHostileTo(Factions.PLAYER) && f.getFleetPoints() > 25) return "Hostile fleets in the system.";
+                if (f.getFaction().isHostileTo(Factions.PLAYER) && f.getFleetPoints() > 25) return HOSTILE;
             }
         }
         if (!yours && sys.hasTag(Tags.THEME_UNSAFE)) return "An unsafe system.";
@@ -1105,6 +1156,9 @@ public class CAExpansion {
         if (!inScope(p, x)) return "Outside the scope.";
         return null;
     }
+
+    /** 0.3.9.0: blocked()'s reason for hostile fleets in an uninhabited system; an arriving crew waits on it (crewArrives). */
+    static final String HOSTILE = "Hostile fleets in the system.";
 
     /** Pure: the game's founding rules (PlanetSurveyPanel's "Establish colony" button). Null when they allow a colony. */
     static String vanillaBlock(boolean full, boolean condOnly, boolean cutOff, boolean abyssal, boolean deep, boolean ruins) {
@@ -1390,6 +1444,12 @@ public class CAExpansion {
         return v;
     }
 
+    /** 0.3.9.0: Approve asks again when the cost rose more than this share over the proposal's. */
+    static final float PRICE_RISE = 0.1f;
+
+    /** Pure, 0.3.9.0: the expedition's cost now is more than PRICE_RISE over the cost you were shown. */
+    static boolean priceRose(float proposed, float now) { return now > proposed * (1f + PRICE_RISE) + 0.5f; }
+
     // ---------------- lists ----------------
 
     static void skip(CAData d, String id, float days) {
@@ -1406,6 +1466,24 @@ public class CAExpansion {
     static boolean skipped(Map<String, Long> skip, long now, String id) {
         Long until = skip == null ? null : skip.get(id);
         return until != null && now < until;
+    }
+
+    /** Pure, 0.3.9.0 (CATidy.weekly): drops skip entries whose time is over; the never list (Long.MAX_VALUE) stays. Returns how many went. */
+    static int tidySkip(Map<String, Long> skip, long now) {
+        if (skip == null) return 0;
+        int n = 0;
+        for (Iterator<Map.Entry<String, Long>> it = skip.entrySet().iterator(); it.hasNext(); ) {
+            Long until = it.next().getValue();
+            if (until == null || (until != Long.MAX_VALUE && now >= until)) { it.remove(); n++; }
+        }
+        return n;
+    }
+
+    /** 0.3.9.0 (CASettlement): a colony expedition of yours is headed for this planet. */
+    static boolean ordered(CAData d, String planetId) {
+        if (planetId == null || d.expandOrders == null) return false;
+        for (Order o : d.expandOrders) if (planetId.equals(o.planetId)) return true;
+        return false;
     }
 
     static PlanetAPI planet(String id) {
@@ -1548,6 +1626,14 @@ public class CAExpansion {
                 String b = blocked(planet, s, x, false);
                 if (b != null) return b;
                 p = score(planet, s, x, false);
+            }
+            if ("approve".equals(action)) {
+                // 0.3.9.0: you approved the proposal's cost; a total now over it by more than PRICE_RISE is shown before it is paid
+                ExpansionCost c = costFor(d, s, p);
+                if (c.why == null && priceRose(d.expandPendingCost, c.total)) {
+                    d.expandPendingCost = c.total;
+                    return "The cost is now " + Misc.getDGSCredits(c.total) + ". Approve again.";
+                }
             }
             String err = launch(d, s, p, true);
             if (err != null && "approve".equals(action)) CALog.quiet("Auto-expansion: approval for " + p.planetName + " not carried out: " + err);

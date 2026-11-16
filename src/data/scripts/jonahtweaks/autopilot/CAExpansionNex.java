@@ -92,7 +92,9 @@ public class CAExpansionNex {
         float time = Nex_FleetRequest.getTimeToLaunch(fp, Nex_FleetRequest.FleetType.COLONY);
         ColonyExpeditionIntel intel = new ColonyExpeditionIntel(player, from, target.getMarket(), fp, time);
         intel.setPlayerSpawned(true);
-        intel.init();
+        // 0.3.9.0: the constructor already made it a sector script (RaidIntel); an init() that throws ends it here
+        try { intel.init(); }
+        catch (Throwable t) { abort(intel); throw t; }
         if (intel.isEnded() || intel.isEnding()) return null;
         return intel;
     }
@@ -144,13 +146,6 @@ public class CAExpansionNex {
         return "failed";
     }
 
-    /** The expedition's stage (0 organizing, 1 assembling, 2 travelling, 3 at the target, 4 returning), or -1. */
-    static int stage(CAExpansion.Order o) {
-        ColonyExpeditionIntel c = find(o);
-        if (c == null) return -1;
-        try { return c.getCurrentStage(); } catch (Throwable t) { return -1; }
-    }
-
     /**
      * Cancels the expedition (the planet was taken first) with a cancelled outcome, so Nexerelin refunds by stage; a failed
      * outcome later would refund nothing. Returns the share refunded (CAExpansion.nexRefundMult), or -1 when there was no
@@ -173,11 +168,6 @@ public class CAExpansionNex {
         if (mgr == null) return out;
         for (PlanetAPI p : mgr.getExistingColonyTargets()) if (p != null) out.add(p.getId());
         return out;
-    }
-
-    /** Whether a colony expedition of any faction is headed for this planet. */
-    static boolean targetedByOthers(PlanetAPI p) {
-        return p != null && targeted().contains(p.getId());
     }
 
     /** The faction that owns the system by Nexerelin's rule (NexUtilsFaction.getSystemOwner), as an id, or null. */

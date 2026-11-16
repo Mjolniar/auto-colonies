@@ -9,7 +9,7 @@ import java.util.*;
  * - once-keys past their time (CALog.tidy; the old set was wiped whole at 2,000);
  * - timestamps nobody reads any more: entries past a year that aren't state (every reader of the year-long ones looks back
  *   at most 365 days; ":zerosince" and ":useless:" are state and stay, and CATombstone's build stamps ("@money|rich|endgame"),
- *   which CATombstone tidies itself), and worldDead past a year;
+ *   which CATombstone tidies itself), and worldDead past a year; 0.3.9.0: Auto-expansion's skips once over (CAExpansion.tidySkip);
  * - what's left of colonies that are gone for good (no market with that id in the economy, at two weekly checks in a row
  *   this session): their settings, stuck plan steps, dead worlds, endgame and over-limit stamps, surplus and enabler
  *   records, upgrade targets, and an empty Autopilot Storage. A colony that was captured still has its market, so it keeps
@@ -80,7 +80,8 @@ public final class CATidy {
         int keys = CALog.tidy();
         d.overLimitAt(); d.pruneAt(); d.swapAt();   // 0.3.0.0 (fix): an older save's endgameBuilt keys move to their own maps first
         int stamps = expire(d.endgameBuilt, now, KEEP_DAYS, true) + expire(d.overLimitAt, now, KEEP_DAYS, true)
-                + expire(d.pruneAt, now, KEEP_DAYS, true) + expire(d.swapAt, now, KEEP_DAYS, false) + expire(d.worldDead, now, KEEP_DAYS, false);
+                + expire(d.pruneAt, now, KEEP_DAYS, true) + expire(d.swapAt, now, KEEP_DAYS, false) + expire(d.worldDead, now, KEEP_DAYS, false)
+                + CAExpansion.tidySkip(d.expandSkip, now);   // 0.3.9.0: Auto-expansion skips whose time is over (the never list stays)
         Set<String> gone = new HashSet<String>();
         com.fs.starfarer.api.campaign.econ.EconomyAPI eco = Global.getSector().getEconomy();
         boolean economyUp = eco != null && !eco.getMarketsCopy().isEmpty();   // never judge "gone" against an empty economy

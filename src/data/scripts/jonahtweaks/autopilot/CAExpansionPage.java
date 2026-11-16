@@ -10,8 +10,9 @@ import java.util.List;
 /**
  * 0.3.0.0 (WS-F2, research 05 section 6.1): the Expansion page of the empire panel. A heading and one line on what
  * Auto-expansion does and where it is set, the last daily check when today's is not in yet, then CAExpansion.render
- * (mode, scope, money, colony limit, the proposal with Approve and Reject, expeditions under way with days left, the best
- * five candidates with value, cost, plan and why, Found now and Never this planet, the never list).
+ * (mode, today's status, colony limit, the proposal with Approve and Reject, expeditions under way with days left, the best
+ * five candidates with value, cost, plan and why, Found now and Never this planet, the never list). 0.3.9.0: scope and money
+ * are in Settings, Advanced.
  *
  * No Nexerelin classes; CAExpansion keeps Nexerelin's colony fleets in CAExpansionNex. Buttons are CAExpansion's
  * {"expand", action, id} (CAIntel calls CAExpansion.handle). Found now spends credits, so it asks first: the confirmation

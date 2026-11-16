@@ -136,9 +136,7 @@ public final class CAWarPage {
         CALog.endRow(t, stop);
         if (level >= CAWarPolicy.SCORCHED)
             t.addPara("Saturation bombardment: %s.", 4f, s.warScorchedOK ? Misc.getNegativeHighlightColor() : hl, s.warScorchedOK ? "authorized" : "not authorized");
-        int cm = Math.max(0, Math.min(CASettings.CONQUERED_NAMES.length - 1, s.conqueredMode));
-        int sc = Math.max(0, Math.min(CASettings.SCORCHED_TARGET_NAMES.length - 1, s.scorchedTargets));
-        t.addPara("Retake: " + onOff(s.warRetake()) + ". Auto rivals: " + onOff(s.warAutoRivals) + ".", gray, 4f);   // the rest: Settings, Advanced, War
+        t.addPara("Retake: " + onOff(s.warRetake()) + ". Auto rivals: " + onOff(s.warAutoRivals) + ".", gray, 4f);   // the rest: Settings, Advanced, War. 0.3.9.0: the unused cm and sc locals are gone
     }
 
     static String onOff(boolean on) { return on ? "On" : "Off"; }
@@ -195,7 +193,7 @@ public final class CAWarPage {
             if (f != null && !f.isPlayerFaction() && ids.add(f.getId())) out.add(f);
         }
         for (String id : d.attackers().keySet()) {
-            MarketAPI m = Global.getSector().getEconomy().getMarket(id);
+            MarketAPI m = CAWar.attacker(id);   // 0.3.9.0: the attackers key holds the faction that attacked
             FactionAPI f = m == null ? null : m.getFaction();
             if (f != null && !f.isPlayerFaction() && f.isHostileTo(Factions.PLAYER) && ids.add(f.getId())) out.add(f);
         }
@@ -305,7 +303,7 @@ public final class CAWarPage {
         if (out.size() >= MAX_PLANNED || !p.allows(CAWarPolicy.RAID, f)) return;
         List<String> hit = new ArrayList<String>();
         for (String id : p.d.attackers().keySet()) {
-            MarketAPI m = Global.getSector().getEconomy().getMarket(id);
+            MarketAPI m = CAWar.attacker(id);   // 0.3.9.0: the attackers key holds the faction that attacked
             if (m != null && m.getFaction() == f && !CAWar.underWay(exerelin.campaign.intel.raid.NexRaidIntel.class, m)) hit.add(m.getName());
         }
         if (!hit.isEmpty()) out.add("Strike back at " + CAContracts.join(hit) + ": attacked you in the last " + Math.round(CAWar.ATTACK_DAYS) + " days.");
@@ -318,7 +316,7 @@ public final class CAWarPage {
         if (d.attackers().isEmpty()) return;
         List<String> names = new ArrayList<String>();
         for (String id : d.attackers().keySet()) {
-            MarketAPI m = Global.getSector().getEconomy().getMarket(id);
+            MarketAPI m = CAWar.attacker(id);   // 0.3.9.0: the attackers key holds the faction that attacked
             if (m != null) names.add(m.getName());
         }
         if (!names.isEmpty()) t.addPara("Strikes back due (attacked within " + Math.round(CAWar.ATTACK_DAYS) + " days): "

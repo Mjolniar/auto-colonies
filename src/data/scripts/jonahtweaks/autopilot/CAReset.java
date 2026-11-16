@@ -66,8 +66,8 @@ public class CAReset {
         failed += run("station line ask", () -> { CAStationAsk.reset(); CAStations.reset(); });
         failed += run("threat neighbors", () -> CAThreat.reset());   // 0.3.8.9: the day's hostile-neighbor parts held the last save's colonies
         if (on("nexerelin")) {
-            failed += run("defense fleet cooldowns", () -> { CADefense.lastSent.clear(); CADefense.warned.clear(); });
-            failed += run("war fleet warnings", () -> { CAWar.warned.clear(); CAWar.summary = null; });   // 0.3.8.5: the relief cooldown is the saved record (CAWar.reliefRecent)
+            failed += run("defense fleet warnings", () -> CADefense.warned.clear());   // 0.3.9.0: the cooldown is the saved record (CAData.warOps)
+            failed += run("war fleet warnings", () -> { CAWar.warned.clear(); CAWar.summary = null; CAWar.opsCache = null; CAWar.opsAt = Long.MIN_VALUE; });   // 0.3.8.5: the relief cooldown is the saved record (CAWar.reliefRecent). 0.3.9.0: the kept operations list
             failed += run("agents' rival", () -> { CASpies.rivalCache = null; CASpies.rivalDay = Integer.MIN_VALUE; });   // 0.3.0.9: the day's automatic rival held the last save's
         }
         failed += run("colony crises", () -> {

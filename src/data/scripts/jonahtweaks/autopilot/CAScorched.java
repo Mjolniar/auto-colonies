@@ -177,6 +177,8 @@ public class CAScorched {
             seen.add(f);
             if (p.stance(f) < CAStance.DESTROY || !p.allows(CAWarPolicy.SATBOMB, f)) continue;
             any = true;
+            // 0.3.9.0: not authorized: no plan is worked out (each one prices an invasion too); the wait line below is all
+            if (!p.s.warScorchedOK) break;
             MarketAPI cap = capital(f);
             // 0.3.0.0 (fix, 06 section 4.7): a capital bombarded in the last BOMBED_DAYS isn't bombarded again; it's invaded
             // first while its industries are disrupted (CAConquest.targets)
@@ -190,11 +192,11 @@ public class CAScorched {
                 }
             }
         }
-        if (cands.isEmpty()) return false;
-        if (!p.s.warScorchedOK) {
+        if (!p.s.warScorchedOK) {   // 0.3.9.0: checked before the plans (none are made)
             if (any) p.waiting.add("bombardment (authorize it on the War page)");
             return false;
         }
+        if (cands.isEmpty()) return false;
         // 0.3.0.0 (fix): candidates in order, up to CAConquest.TRIES, as invasions do: a capital whose infamy waits doesn't hold
         // back a small market under limited hatred; one wait line (the first one's)
         int[] sz = CAConquest.sizes();

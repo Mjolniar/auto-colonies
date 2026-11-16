@@ -131,8 +131,17 @@ public class CAWar {
         return false;
     }
 
-    /** 0.3.0.0: every fleet operation of any faction that hasn't ended, blockades included (blockades()). */
+    /**
+     * 0.3.9.0: offensives() kept for one game timestamp (one pass reads it many times per market). record() and standDown()
+     * drop it, so a launch or a cancellation is seen at once. CAReset.onLoad clears both.
+     */
+    static List<OffensiveFleetIntel> opsCache;
+    static long opsAt = Long.MIN_VALUE;
+
+    /** 0.3.0.0: every fleet operation of any faction that hasn't ended, blockades included (blockades()). Read only. */
     static List<OffensiveFleetIntel> offensives() {
+        long now = Global.getSector().getClock().getTimestamp();
+        if (opsCache != null && opsAt == now) return opsCache;
         List<OffensiveFleetIntel> out = new ArrayList<OffensiveFleetIntel>();
         for (IntelInfoPlugin i : Global.getSector().getIntelManager().getIntel(RaidIntel.class)) {
             if (!(i instanceof OffensiveFleetIntel)) continue;
@@ -140,8 +149,13 @@ public class CAWar {
             if (!o.isEnded() && !o.isEnding()) out.add(o);
         }
         for (OffensiveFleetIntel b : blockades()) if (!out.contains(b)) out.add(b);
-        return out;
+        opsCache = Collections.unmodifiableList(out);
+        opsAt = now;
+        return opsCache;
     }
+
+    /** 0.3.9.0: the next offensives() reads the intel again. */
+    static void dropOps() { opsCache = null; opsAt = Long.MIN_VALUE; }
 
     /**
      * 0.3.0.0 (fix): blockades that haven't ended. Nexerelin adds only a blockade's NexBlockadeFGI to the intel manager, never its
@@ -262,7 +276,13 @@ public class CAWar {
         return n;
     }
 
-    /** Remembers the markets that sent raids, invasions or blockades at your colonies (CAData.attackers), and when. */
+    /**
+     * Remembers the markets that sent raids, invasions or blockades at your colonies (CAData.attackers), and when.
+     * 0.3.9.0: an operation counts when its target is your colony. Only a raid (NexRaidIntel, base strikes excluded) also counts
+     * when its target is elsewhere in a system with a colony of yours: Nexerelin's raid hits every market there hostile to it
+     * (NexRaidActionStage.getTargets). An invasion, bombardment, base strike or colony expedition at a third party does not.
+     * The key holds the faction that attacked (attackerKey).
+     */
     static void noteAttackers(CAData d) {
         Set<Object> mine = new HashSet<Object>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) if (m.getStarSystem() != null) mine.add(m.getStarSystem());
@@ -272,11 +292,32 @@ public class CAWar {
                 OffensiveFleetIntel o = (OffensiveFleetIntel) i;
                 if (o.isEnded() || o.getFaction() == null || !o.getFaction().isHostileTo(Factions.PLAYER)) continue;
                 MarketAPI t = o.getTarget();
-                if (!(t != null && t.isPlayerOwned()) && !mine.contains(o.getSystem())) continue;
+                boolean raid = o instanceof NexRaidIntel && !(o instanceof BaseStrikeIntel);
+                if (!(t != null && t.isPlayerOwned()) && !(raid && mine.contains(o.getSystem()))) continue;
                 MarketAPI from = o.getMarketFrom();
-                if (from != null && !from.isPlayerOwned()) d.attackers().put(from.getId(), Global.getSector().getClock().getTimestamp());
+                if (from != null && !from.isPlayerOwned()) d.attackers().put(attackerKey(from), Global.getSector().getClock().getTimestamp());
             }
         } catch (Throwable ignored) { }
+    }
+
+    /** Pure, 0.3.9.0: a CAData.attackers key: "marketId|factionId", the faction that attacked from there. */
+    static String attackerKey(String marketId, String factionId) { return factionId == null ? marketId : marketId + "|" + factionId; }
+
+    static String attackerKey(MarketAPI from) { return attackerKey(from.getId(), from.getFactionId()); }
+
+    /** Pure, 0.3.9.0: {market id, faction id or null} of an attackers key; a 0.3.8.x key is the market id alone. */
+    static String[] attackerParts(String key) {
+        if (key == null) return new String[]{null, null};
+        int bar = key.lastIndexOf('|');
+        return bar < 0 ? new String[]{key, null} : new String[]{key.substring(0, bar), key.substring(bar + 1)};
+    }
+
+    /** 0.3.9.0: the market of an attackers key while the faction that attacked from it still holds it, else null. */
+    static MarketAPI attacker(String key) {
+        String[] k = attackerParts(key);
+        MarketAPI m = k[0] == null ? null : Global.getSector().getEconomy().getMarket(k[0]);
+        if (m == null || (k[1] != null && !k[1].equals(m.getFactionId()))) return null;
+        return m;
     }
 
     static float stationFP(MarketAPI m) {
@@ -352,11 +393,10 @@ public class CAWar {
      */
     static String autoRival(CAData d, CASettings s) {
         if (!s.warAutoRivals) return null;
-        Map<String, Float> threat = new HashMap<String, Float>();
-        Map<String, int[]> counts = new HashMap<String, int[]>();   // {attacks, near, offensives}
+        Map<String, int[]> counts = new HashMap<String, int[]>();   // {attacks, near, offensives}; 0.3.9.0: the unread threat map is gone
         try {
             for (String id : d.attackers().keySet()) {
-                MarketAPI m = Global.getSector().getEconomy().getMarket(id);
+                MarketAPI m = attacker(id);   // 0.3.9.0: only while the faction that attacked still holds the market
                 if (m != null && m.getFaction() != null) count(counts, m.getFactionId())[0]++;
             }
             List<MarketAPI> mine = Misc.getPlayerMarkets(false);
@@ -374,7 +414,6 @@ public class CAWar {
             FactionAPI f = Global.getSector().getFaction(e.getKey());
             if (f == null || f.isPlayerFaction() || !f.isHostileTo(Factions.PLAYER) || s.stanceOf(e.getKey()) != CAStance.AUTO) continue;
             float t = CAWarPolicy.rivalThreat(e.getValue()[0], e.getValue()[1], e.getValue()[2]);
-            threat.put(e.getKey(), t);
             if (t > bestT) { bestT = t; best = e.getKey(); }
         }
         return best;
@@ -467,7 +506,10 @@ public class CAWar {
         return days < 0f ? Float.MAX_VALUE : days;   // a record from a later date (an earlier save loaded): as if none
     }
 
-    static void record(CAData d, String key) { d.warOps().put(key, Global.getSector().getClock().getTimestamp()); }
+    static void record(CAData d, String key) {
+        d.warOps().put(key, Global.getSector().getClock().getTimestamp());
+        dropOps();   // 0.3.9.0: every launch is recorded; the operation it started shows in offensives() at once
+    }
 
     /** Drops operation records older than a year (ids and timestamps; keeps the saved map small). */
     static void tidyOps(CAData d) {
@@ -532,12 +574,14 @@ public class CAWar {
      */
     static String send(CAData d, CASettings s, InvasionFleetManager mgr, String kind, String payKind, MarketAPI target, float want,
                        boolean rich, String why, String recordKey) {
-        float fp = sendFP(mgr, kind, payKind, want, rich);
-        if (fp <= 0f) return "points";
+        // 0.3.9.0: a relief fleet is sized by Nexerelin (calcFP below) and tested against the stock there; MIN_FP does not apply
+        boolean isRelief = CAWarPolicy.RELIEF.equals(kind);
+        float fp = isRelief ? 0f : sendFP(mgr, kind, payKind, want, rich);
+        if (!isRelief && fp <= 0f) return "points";
         MarketAPI from = source(target);
         if (from == null) return "no spaceport";
         ReliefFleetIntelAlt relief = null;
-        if (CAWarPolicy.RELIEF.equals(kind)) {
+        if (isRelief) {
             // 0.3.5.2: built without init() until points and credits are there. createEvent() runs init(), which posts the
             // relief intel and its message; a relief that then waited for points or credits was ended at once and tried
             // again the next day, so a colony under siege got a new relief message every day
@@ -631,13 +675,16 @@ public class CAWar {
         standingGuard(p, managed);
 
         if (p.waiting.isEmpty()) warned.clear();   // one line per wait, not one a day
-        else if (warned.add(p.waiting.get(0)))
+        else if (warned.add(waitKey(p.waiting.get(0))))   // 0.3.9.0: numbers that change daily make no new line
             CALog.thinkStatus("war:wait", "War fleets: waiting (" + p.waiting.get(0) + (p.waiting.size() > 1 ? ", +" + (p.waiting.size() - 1) : "") + ").");
         summary = "War level " + CAWarPolicy.levelName(p.level) + ". " + (p.rich ? "Rich: up to " + RICH_PER_DAY + " a day, keeping " + Math.round(RICH_RESERVE * 100f)
                 : "One a day, keeping " + Math.round(RESERVE * 100f)) + " percent of fleet request points for emergencies. Points "
                 + (int) mgr.getFleetRequestStock() + " of " + mgr.getFleetRequestCapacity() + (p.started > 0 ? "; " + p.started + " sent today" : "")
                 + (p.waiting.isEmpty() ? "." : "; waiting: " + CAContracts.join(p.waiting) + ".");
     }
+
+    /** Pure, 0.3.9.0: a wait text without its digits, the key `warned` keeps ("fleet points (412 of 625)" is one wait all along). */
+    static String waitKey(String text) { return text == null ? "" : text.replaceAll("[0-9]", ""); }
 
     /** 1. Relief for a colony under siege (Defend), an emergency. */
     static void relief(Pass p, List<MarketAPI> managed) {
@@ -697,11 +744,12 @@ public class CAWar {
     static void strikeBack(Pass p) {
         for (String id : new ArrayList<String>(p.d.attackers().keySet())) {
             if (p.left <= 0) break;
-            MarketAPI t = Global.getSector().getEconomy().getMarket(id);
+            MarketAPI t = attacker(id);   // 0.3.9.0: null once the market changed owner: that faction did not attack you
             Long at = p.d.attackers().get(id);
             if (t == null || t.isPlayerOwned() || at == null || Global.getSector().getClock().getElapsedDaysSince(at) > ATTACK_DAYS
                     || t.getFaction() == null || !t.getFaction().isHostileTo(Factions.PLAYER)) { p.d.attackers().remove(id); continue; }
-            if (!p.allows(CAWarPolicy.RAID, t.getFaction()) || underWay(NexRaidIntel.class, t)) continue;
+            // 0.3.9.0: a market no operation may go at (hidden, out of the economy, story-critical, cut off) keeps its record
+            if (!p.allows(CAWarPolicy.RAID, t.getFaction()) || !targetable(t) || underWay(NexRaidIntel.class, t)) continue;
             String w = send(p.d, p.s, p.mgr, CAWarPolicy.RAID, CAWarPolicy.RAID, t, Math.max(200f, 1.5f * CAItems.defenseFP(t)), p.rich, "it attacked you", CAWarPolicy.RAID + ":" + t.getId());
             if (w == null) p.went();
             else p.waiting.add("raid on " + t.getName() + " (" + waitText(w) + ")");
@@ -831,8 +879,7 @@ public class CAWar {
         int was = CAWarPolicy.clamp(s.warLevel);
         s.warLevel = CAWarPolicy.standDownLevel(was);
         s.warScorchedOK = false;
-        d.warAuthorized().clear();
-        d.warStandDown = Global.getSector().getClock().getTimestamp();
+        d.warAuthorized().clear();   // 0.3.9.0: warStandDown is no longer written (nothing read it); the saved field stays for old saves
         int cancelled = 0, moving = 0, landed = 0; float refund = 0f;
         List<OffensiveFleetIntel> mine = new ArrayList<OffensiveFleetIntel>();
         for (OffensiveFleetIntel o : offensives()) if (!(o instanceof DefenseFleetIntel) && cmOp(d, o)) mine.add(o);
@@ -850,6 +897,7 @@ public class CAWar {
                 catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "cancelling an operation failed", t); }
             } else if (!troops && CAWarPolicy.recallable(stage)) moving++;
         }
+        dropOps();   // 0.3.9.0: the War page drawn next (game paused) reads the cancelled operations as gone
         CALog.did("War: " + (recall ? "recalled" : "stood down") + ". Level " + CAWarPolicy.levelName(s.warLevel) + " (was " + CAWarPolicy.levelName(was)
                 + "). War confirmations and bombardment authorization cleared. " + cancelled + " operation(s) cancelled, about "
                 + Misc.getDGSCredits(refund) + " back from Nexerelin." + (moving > 0 ? " " + moving + " travelling or in action (Recall all on the War page)." : "")
@@ -961,7 +1009,7 @@ public class CAWar {
             if (!yours(o) || o.getTarget() == null || o.getTarget().getFaction() != f || o instanceof DefenseFleetIntel) continue;
             t.addPara("  %s at %s, %s points, " + stageName(stageOf(o)) + (troopsLanded(o) ? ", troops on the ground" : "")
                     + (cmOp(d, o) ? "" : " (not Auto Colonies')") + ".", 2f, Misc.getHighlightColor(),
-                    what(kindsOf(o).length > 0 ? kindsOf(o)[0] : "raid"), o.getTarget().getName(), "" + Math.round(o.getFP()));
+                    what(kindsOf(o).length > 0 ? kindsOf(o)[0] : "raid"), o.getTarget().getName(), "" + Math.round(o.getBaseFP()));   // 0.3.9.0: the points sent (getFP is 0.7 of them)
         }
     }
 

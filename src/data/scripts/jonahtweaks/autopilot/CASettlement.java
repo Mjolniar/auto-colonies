@@ -119,7 +119,8 @@ public class CASettlement {
                     Site s = evaluate(p);
                     if (s == null) continue;
                     s.distanceLY = 999f;
-                    for (MarketAPI m : mine) s.distanceLY = Math.min(s.distanceLY, Misc.getDistanceLY(p, m.getPrimaryEntity()));
+                    for (MarketAPI m : mine)   // 0.3.9.0: a colony with no primary entity no longer drops every site
+                        if (m.getPrimaryEntity() != null) s.distanceLY = Math.min(s.distanceLY, Misc.getDistanceLY(p, m.getPrimaryEntity()));
                     out.add(s);
                 } catch (Throwable t) {
                     CADiagnostics.LOG.warn(CADiagnostics.TAG + "settlement site check failed at " + p.getName(), t);
@@ -160,7 +161,7 @@ public class CASettlement {
         float paid = d.settleExpeditionCost;
         d.settleExpeditionPlanet = null;
         String err;
-        try { err = found(planetId, false, false); }
+        try { err = found(planetId, false); }
         catch (Throwable t) {   // 0.3.6.2: a throw refunds the expedition too (found() has undone what it added)
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "settlement founding failed", t);
             err = "an error, logged in starsector.log";
@@ -170,19 +171,21 @@ public class CASettlement {
         CALog.did("Settlement: the expedition could not found it: " + err + ". " + Misc.getDGSCredits(paid) + " refunded.", true);
     }
 
-    /** Founds the settlement on this planet's best site, exactly as RAT's dialog does. Returns null on success. */
-    public static String found(String planetId) { return found(planetId, true, false); }
-
-    /** pay: take the founding cost now; check: only check it can be founded, change nothing. */
-    static String found(String planetId, boolean pay, boolean check) {
+    /**
+     * Founds the settlement on this planet's best site, exactly as RAT's dialog does (paid already, at launch: execute).
+     * Returns null on success. check: only check it can be founded, change nothing. 0.3.9.0: the uncalled found(String)
+     * and its pay-now branches are gone.
+     */
+    static String found(String planetId, boolean check) {
         if (settlement() != null) return "You already have a settlement";
         SectorEntityToken e = Global.getSector().getEntityById(planetId);
         if (!(e instanceof PlanetAPI) || !eligible((PlanetAPI) e)) return "That planet can't host a settlement any more";
         PlanetAPI planet = (PlanetAPI) e;
+        // 0.3.9.0: a colony expedition of yours headed there would turn back on arrival ("Holds your Frontiers settlement")
+        if (CAExpansion.ordered(CAData.get(), planetId)) return "A colony expedition is headed for " + planet.getName();
         Site want = evaluate(planet);
         if (want == null) return "No resource site on " + planet.getName();
         float cost = foundingCost();
-        if (pay && CABuild.credits() < cost) return "Not enough credits (" + Misc.getDGSCredits(cost) + " needed)";
 
         // pick the site holding that resource (RAT puts every resource the planet has on at least one site)
         List<SiteData> sites = fu().getSiteData(planet);
@@ -203,7 +206,6 @@ public class CASettlement {
         }
         if (check) return null;
 
-        if (pay) CABudget.payPrice(cost);   // 0.3.0.0 (C12 fix): credits move only in CABudget (not booked, as before)
         // 0.3.6.2: a throw part-way through undoes what was added (RAT's active settlement, entity, manager, intel) and refunds,
         // so RAT never keeps a settlement with no manager or intel
         SectorEntityToken ent = null; SettlementData data = null; SettlementManager manager = null; SettlementIntel intel = null;
@@ -257,9 +259,8 @@ public class CASettlement {
             try { if (manager != null) { Global.getSector().removeScript(manager); Global.getSector().getListenerManager().removeListener(manager); } } catch (Throwable ignored) { }
             try { if (intel != null) Global.getSector().getIntelManager().removeIntel(intel); } catch (Throwable ignored) { }
             try { if (ent != null) ent.getContainingLocation().removeEntity(ent); } catch (Throwable ignored) { }
-            if (pay) CABudget.refund(CAData.settings(), null, cost);
             cache = null;
-            return "Founding failed (logged in starsector.log)" + (pay ? ". Refunded" : "");
+            return "Founding failed (logged in starsector.log)";   // expedition() refunds what was paid at launch
         }
         CADiagnostics.LOG.info(CADiagnostics.TAG + "founded settlement on " + planet.getName() + " (" + want.resourceName + ") for " + Misc.getDGSCredits(cost));
         return null;
@@ -320,19 +321,19 @@ public class CASettlement {
     public static void run(CAData d, CASettings s) {
         if (!active()) return;
         expedition(d);   // even with the setting off: one already paid for still arrives
+        if (s.settlementMode == 3 && d.settlePendingKind != null) clearPending(d);   // 0.3.9.0: Off drops a waiting proposal
         if (s.settlementMode == 3 || d.settleExpeditionPlanet != null) return;
         SettlementData data = settlement();
         // a proposal goes stale when you found or build it yourself first
-        if ("found".equals(d.settlePendingKind) && data != null) clearPending(d);
+        if ("found".equals(d.settlePendingKind) && (data != null || CAExpansion.ordered(d, d.settlePendingId))) clearPending(d);   // 0.3.9.0: or a colony expedition goes there
         if ("facility".equals(d.settlePendingKind)) { Facility f = data == null ? null : nextFacility(); if (f == null || !f.id.equals(d.settlePendingId)) clearPending(d); }
         boolean approve = s.settlementMode == 1, auto = s.settlementMode == 2;
         if (!approve && !auto) return;   // Advisor: the empire panel shows the recommendation and a button
         String kind, id, name; float cost;
         if (data == null) {
-            List<Site> list = sites(false);
-            if (list.isEmpty()) return;
-            Site best = list.get(0);
-            if (best.income < s.settlementMinIncome) return;
+            Site best = null;   // 0.3.9.0: the best site no colony expedition of yours is headed for
+            for (Site st : sites(false)) if (!CAExpansion.ordered(d, st.planetId)) { best = st; break; }
+            if (best == null || best.income < s.settlementMinIncome) return;
             kind = "found"; id = best.planetId; cost = foundingCost();
             name = "Found a settlement on " + best.planetName + " (" + best.resourceName + ", about " + Misc.getDGSCredits(best.income) + "/month)";
         } else {
@@ -384,9 +385,13 @@ public class CASettlement {
         float cost = "found".equals(kind) ? foundingCost() : facilityCost(id);
         float fee = CABudget.constructionFee(s, cost);
         if (CABuild.credits() < cost + fee) return "Not enough credits for it plus the " + Misc.getDGSCredits(fee) + " fee";
+        if ("You".equals(who)) {   // 0.3.9.0: your Found or Build click keeps the credit reserve, as Approve does
+            String gate = CAApprovals.reserveGate(cost + fee);
+            if (gate != null) { CALog.advise("Settlement: could not start " + name + ": " + gate); return gate; }
+        }
         String err;
         if ("found".equals(kind)) {
-            err = found(id, false, true);
+            err = found(id, true);
             if (err == null) {
                 PlanetAPI planet = (PlanetAPI) Global.getSector().getEntityById(id);
                 d.settleExpeditionPlanet = id;
@@ -478,7 +483,7 @@ public class CASettlement {
         if (list.get(0).income < s.settlementMinIncome) t.addPara("None reaches your threshold yet.", gray, 4f);
     }
 
-    /** Empire panel buttons: {"settle", action, id}. Returns a message for the log, or null. */
+    /** Empire panel buttons: {"settle", action, id}. 0.3.9.0: returns nothing; each path logs its own result. */
     public static void handle(String action, String id, CAData d, CASettings s) {
         if ("reject".equals(action)) {
             if (d.settlePendingName != null) CALog.think("Settlement: Proposal rejected: " + d.settlePendingName + ".");   // 0.3.8.6: your click; Thinking list

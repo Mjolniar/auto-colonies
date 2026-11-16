@@ -1,6 +1,6 @@
 # Source guide
 
-- Language: Java 17. Compiled against Starsector 0.98.5a-RC4's core jars. The same jar runs on 0.98a and 0.98.5a.
+- Language: Java 17. Compiled against Starsector 0.98.5a-RC7's core jars. The same jar runs on 0.98a and 0.98.5a.
 - Size: about 47,800 lines in 131 files (0.3.3.4).
 - Class comments: every class opens with a comment saying what it does and why.
 - Player docs: [Getting started](getting-started.md), the guides linked from the README, and [details.md](details.md).

@@ -329,9 +329,11 @@ public class CAConquest {
         return tryBest(p, cands);
     }
 
-    /** For CASpies.prepare: the Destroy market an invasion would go at next (InstigateRebellion there first), or null. */
-    static MarketAPI nextDestroyTarget(CAData d, CASettings s) {
-        String rival = CAWar.autoRival(d, s);
+    /**
+     * For CASpies.prepare: the Destroy market an invasion would go at next (InstigateRebellion there first), or null.
+     * 0.3.9.0: rival is the automatic rival the caller keeps for the day (CASpies.rival).
+     */
+    static MarketAPI nextDestroyTarget(CAData d, CASettings s, String rival) {
         Plan best = null;
         Set<FactionAPI> seen = new HashSet<FactionAPI>();
         for (MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) {
@@ -532,7 +534,8 @@ public class CAConquest {
         if (m == null || m.getFaction() == null || !m.getFaction().isPlayerFaction()) {
             d.conquered().remove(id);
             for (String k : CAMark.keys(PROFILE_MARK + id + "|")) CAMark.clear(k);
-            CALog.did((m != null ? m.getName() : id) + ": conquered colony lost" + (m != null && m.getFaction() != null ? " to " + m.getFaction().getDisplayName() : "") + ".", true);
+            // 0.3.9.0: starsector.log only: the game reports the capture, and Autopilot only stops looking after the colony
+            CALog.quiet((m != null ? m.getName() : id) + ": conquered colony lost" + (m != null && m.getFaction() != null ? " to " + m.getFaction().getDisplayName() : ""));
             return;
         }
         autonomy(d, m);

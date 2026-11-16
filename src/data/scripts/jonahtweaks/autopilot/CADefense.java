@@ -12,7 +12,6 @@ import com.fs.starfarer.api.util.Misc;
 import exerelin.campaign.fleets.InvasionFleetManager;
 import exerelin.campaign.intel.defensefleet.DefenseFleetIntel;
 import exerelin.utilities.NexConfig;
-import exerelin.utilities.NexUtilsMarket;
 
 import java.util.*;
 
@@ -26,8 +25,9 @@ import java.util.*;
 public class CADefense {
     static final float MIN_FP = CATuning.DEFENSE_MIN_FP;   // 0.3.0.0 (A3): in CATuning
     static final float COOLDOWN_DAYS = CATuning.DEFENSE_COOLDOWN_DAYS;
-    static final Map<String, Long> lastSent = new HashMap<String, Long>();
     static final Set<String> warned = new HashSet<String>();
+    /** 0.3.9.0: CAData.warOps key prefix of a defense fleet sent to a system ("defense:<systemId>"): the cooldown is saved. */
+    static final String SENT = CAWarPolicy.DEFENSE + ":";
 
     static float hostileFP(StarSystemAPI sys) {
         float fp = 0f;
@@ -35,16 +35,6 @@ public class CADefense {
             // 0.3.8.6: also fleets made hostile to your faction and Sindrian Diktat raiders (CAEnforcers.threat)
             if (f.isPlayerFleet() || f.getFaction() == null || !CAEnforcers.threat(f)) continue;
             if (f.isStationMode() || CASurvival.supportFleet(f)) continue;   // 0.3.0.9: never a support fleet (0.98.5a)
-            fp += f.getFleetPoints();
-        }
-        return fp;
-    }
-
-    static float friendlyFP(StarSystemAPI sys) {
-        float fp = 0f;
-        for (CampaignFleetAPI f : sys.getFleets()) {
-            if (f.isPlayerFleet() || f.getFaction() == null || !Factions.PLAYER.equals(f.getFaction().getId())) continue;
-            if (CASurvival.supportFleet(f)) continue;   // 0.3.0.9: a support fleet follows you, so it doesn't defend the colony
             fp += f.getFleetPoints();
         }
         return fp;
@@ -70,7 +60,7 @@ public class CADefense {
         StarSystemAPI sys = m == null ? null : m.getStarSystem();
         if (sys == null) return false;
         if (raidTargets(sys)) return true;
-        return hostileFP(sys) > Math.max(150f, CAItems.defenseFP(m) + friendlyFP(sys));
+        return hostileFP(sys) > Math.max(150f, CAItems.defenseFP(m) + CASiege.friendlyFP(sys));   // 0.3.9.0: CASiege's, the same test
     }
 
     /** A defense fleet of yours is on its way to or at the colony's system. 0.3.0.9: yours only (requested by you, or of your faction). */
@@ -92,11 +82,11 @@ public class CADefense {
         for (MarketAPI m : auto) {
             StarSystemAPI sys = m.getStarSystem();
             if (sys == null) continue;
-            Long last = lastSent.get(sys.getId());
-            if (last != null && Global.getSector().getClock().getElapsedDaysSince(last) < COOLDOWN_DAYS) continue;
+            // 0.3.9.0: the cooldown is the saved record (CAData.warOps), so a load does not allow the next fleet at once
+            if (CAWar.daysSince(CAData.get(), SENT + sys.getId()) < COOLDOWN_DAYS) continue;
             if (defenseUnderWay(m)) continue;
             float hostile = hostileFP(sys);
-            float ours = CAItems.defenseFP(m) + friendlyFP(sys);
+            float ours = CAItems.defenseFP(m) + CASiege.friendlyFP(sys);
             boolean raid = raidTargets(sys);
             float n = 0f; String w = null;
             if (raid) { n = Math.max(MIN_FP * 2f, hostile * 1.25f - ours); w = "a hostile raid or invasion is targeting the system"; }
@@ -116,12 +106,7 @@ public class CADefense {
             if (warned.add(target.getId() + ":credits")) CALog.quiet(target.getName() + ": needs a defense fleet costing " + Misc.getDGSCredits(cost) + " but that would go below your credit reserve");   // 0.3.0.9
             return;
         }
-        MarketAPI source = null; float bestDist = Float.MAX_VALUE;
-        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
-            if (!NexUtilsMarket.hasWorkingSpaceport(m) || m.getPrimaryEntity() == null || target.getPrimaryEntity() == null) continue;
-            float dist = Misc.getDistanceLY(m.getPrimaryEntity(), target.getPrimaryEntity());
-            if (dist < bestDist) { bestDist = dist; source = m; }
-        }
+        MarketAPI source = CAWar.source(target);   // 0.3.9.0: CAWar's, the same nearest colony with a working spaceport
         if (source == null) return;
         try {
             float time = Nex_FleetRequest.getTimeToLaunch(fp, Nex_FleetRequest.FleetType.DEFENSE);
@@ -134,7 +119,7 @@ public class CADefense {
             // 0.3.0.0 (C1): paid through CABudget.pay, the one place credits move; counted against the month as before, no fee
             CABudget.pay(s, target.getId(), cost, 0f, 0f);
             mgr.modifyFleetRequestStock(-(int) fp);
-            lastSent.put(target.getStarSystem().getId(), Global.getSector().getClock().getTimestamp());
+            CAWar.record(CAData.get(), SENT + target.getStarSystem().getId());   // 0.3.9.0: saved (was a session-only map)
             warned.remove(target.getId()); warned.remove(target.getId() + ":credits");
             CALog.did(target.getName() + ": Sent a " + (int) fp + "-point defense fleet from " + source.getName() + " for "
                     + Misc.getDGSCredits(cost) + " (" + why + ").", true);

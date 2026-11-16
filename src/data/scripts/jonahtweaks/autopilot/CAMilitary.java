@@ -62,14 +62,16 @@ public final class CAMilitary {
         float total() { return cost + CABudget.rapidFee(cost) + fee; }   // 0.3.8.5: CABuild.start adds Rapid construction's fee
     }
 
-    /** The game day of the last start (one a day), the last recommendation logged, and the proposal waiting. Session only. */
+    /**
+     * The game day of the last start (one a day) and the proposal waiting. Session only. 0.3.9.0: the recommendation logged is
+     * a saved once-key ("milrec:<marketId>:<building>"), so a load does not log it again.
+     */
     static int startedDay = Integer.MIN_VALUE;
-    static String recommended;
     static Up pending;
     /** 0.3.0.0 (C3 fix): what the rung's upgrades want this month as of the last look (CARich.militaryWant). Session only. */
     static float lastWant = 0f;
 
-    static void reset() { startedDay = Integer.MIN_VALUE; recommended = null; pending = null; lastWant = 0f; }
+    static void reset() { startedDay = Integer.MIN_VALUE; pending = null; lastWant = 0f; }
 
     // ---------------- pure rules (JTRichCheck, JTLadderCheck) ----------------
 
@@ -251,8 +253,7 @@ public final class CAMilitary {
             if (recommend) {
                 pending = u;
                 String key = u.m.getId() + ":" + u.to;
-                if (!key.equals(recommended)) {
-                    recommended = key;
+                if (CALog.once("milrec:" + key)) {   // 0.3.9.0: saved; the session-only `recommended` logged it again after every load
                     CAApprovals.say(u.m.getName() + ": Recommends upgrading to " + u.name + " (Military rung, " + Misc.getDGSCredits(u.total())
                             + " with the fee, " + Misc.getDGSCredits(u.upkeep) + " more upkeep a month). Approve on the Colonies page.", false);   // 0.3.8.6: the page's name
                 }

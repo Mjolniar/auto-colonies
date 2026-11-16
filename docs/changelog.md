@@ -1,5 +1,26 @@
 # Patch notes
 
+## 0.3.9.0 - 2026-11-16
+
+- Compatibility: Starsector 0.98.5a-RC7. The colony screen button finds RC7's dialog classes.
+- Auto-expansion: Fixed a dropped proposal's planet being proposed again the same day.
+- Auto-expansion: Fixed a blocked planet staying first in line for up to 30 days in Auto.
+- Auto-expansion: Fixed a colony founded while another mod's listener failed being refunded and left without its mode and administrator.
+- Auto-expansion: Fixed a Nexerelin colony fleet being started and cancelled at once for lack of credits.
+- Auto-expansion: Approve shows the cost again before paying when it rose since the proposal.
+- Auto-expansion: Hostile fleets passing through hold a colony crew. The crew turns back only if they stay.
+- Settlement: Found and Build clicks keep the credit reserve.
+- Settlement: Fixed a colony with no primary entity removing every site.
+- Settlement: Fixed a Frontiers site being picked where your colony expedition was headed.
+- Settlement: Off drops a waiting proposal.
+- War: Fixed strike back raiding factions that attacked other factions' markets or sent colony expeditions.
+- War: Fixed strike back targeting hidden, story-critical and cut-off markets.
+- War: Fixed the rebellion and isolation operations never running with Nexerelin's agent types.
+- War: Fixed wait lines repeating every day when only their numbers changed.
+- War: Fixed the emergency defense fleet cooldown resetting on every load.
+- Military: Fixed the military recommendation repeating after every load.
+- Performance: Changed war planning and scorched earth planning to use less CPU.
+
 ## 0.3.8.9 - 2026-11-16
 
 - Autarch administrator: Fixed the core taking new colonies while it still governed one it could not leave.

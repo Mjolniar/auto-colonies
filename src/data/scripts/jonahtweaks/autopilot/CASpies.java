@@ -55,6 +55,8 @@ import java.util.*;
  * needs the War level and stance to allow it (CAWarPolicy.sabotageOk); the offense agent also instigates a rebellion at
  * the next Destroy invasion target and lowers relations between an Enemy or Destroy faction and its best friend; any
  * agent puts counter-insurgency at a conquered colony with strong rebels first.
+ * 0.3.9.0: with Nexerelin's agent types the Saboteur can run neither of those two; the relations agent (a Negotiator) runs
+ * them when offense is on and it has no faction to raise relations with.
  */
 public class CASpies {
     public static final String MOD = "nexerelin";
@@ -92,8 +94,12 @@ public class CASpies {
             if (!rebels.isEmpty() && !SECURITY.equals(role)
                     && local(s, a, new CounterInsurgency(a, null, Global.getSector().getPlayerFaction(), null, true, null), rebels, "counterInsurgency", "counter-insurgency")) continue;
             if (SECURITY.equals(role)) defend(s, mgr, a);
-            else if (RELATIONS.equals(role)) relations(s, a);
-            else if (OFFENSE.equals(role)) {
+            else if (RELATIONS.equals(role)) {
+                // 0.3.9.0: with Nexerelin's agent types (on by default) only a Negotiator instigates a rebellion and only a
+                // Negotiator or Hybrid lowers relations; the offense agent is a Saboteur. The relations agent runs both when
+                // offense is on and it has no faction to raise relations with
+                if (!relations(s, a) && offense(s) && !prepare(d, s, mgr, a)) isolate(d, s, mgr, a, mine);
+            } else if (OFFENSE.equals(role)) {
                 // 0.3.0.0 (WS-E, 06 section 4.10): rebellion at the next Destroy invasion target, sabotage, then isolating an Enemy or Destroy faction
                 if (offense(s) && !prepare(d, s, mgr, a) && !attack(s, mgr, a, mine)) isolate(d, s, mgr, a, mine);
             }
@@ -351,7 +357,7 @@ public class CASpies {
     static boolean prepare(CAData d, CASettings s, CovertOpsManager mgr, AgentIntel a) {
         if (!canDo(a, "instigateRebellion")) return false;
         MarketAPI m;
-        try { m = CAConquest.nextDestroyTarget(d, s); } catch (Throwable t) { return false; }
+        try { m = CAConquest.nextDestroyTarget(d, s, rival(d, s)); } catch (Throwable t) { return false; }   // 0.3.9.0: the day's kept rival
         if (m == null || !atWar(d, s, m.getFaction()) || RebellionIntel.isOngoing(m)) return false;
         if (m.getStabilityValue() > InstigateRebellion.MAX_STABILITY) return false;   // Nexerelin's dialog allows it only up to stability 6
         if (working(mgr, managed(d, mgr), m.getFaction())) return false;
@@ -481,10 +487,7 @@ public class CASpies {
         Industry ind = target(mgr, s);
         if (ind == null) return false;
         MarketAPI m = ind.getMarket();
-        for (CovertActionIntel op : mgr.getOngoingCovertActionsOfType(CovertActionIntel.class)) {   // one operation per enemy faction
-            if (op.isPlayerInvolved() && !op.isEnded() && mine.contains(op.getAgent()) && op.getTargetFaction() == m.getFaction()
-                    && !(op instanceof exerelin.campaign.intel.agents.Travel)) return false;
-        }
+        if (working(mgr, mine, m.getFaction())) return false;   // one operation per enemy faction (0.3.9.0: working(), the same test)
         if (CovertOpsManager.getAlertLevel(m) > MAX_ALERT) return false;
         FactionAPI pf = Global.getSector().getPlayerFaction();
         SabotageIndustry op = new SabotageIndustry(a, m, ind, pf, m.getFaction(), true, new HashMap<String, Object>());
