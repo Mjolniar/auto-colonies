@@ -574,7 +574,7 @@ public class CAEndgame {
         if (!on(s)) return;
         if (summary == null) summary = summaryText(s);
         Color gray = Misc.getGrayColor();
-        t.addPara(CALog.esc(summary), gray, 2f);
+        t.addPara(summary, gray, 2f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
         CATheme.hover(t, HOVER, missingLine());
     }
 }

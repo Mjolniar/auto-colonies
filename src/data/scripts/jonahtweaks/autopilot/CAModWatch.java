@@ -260,7 +260,7 @@ public class CAModWatch {
                 if (ind.getSpecialItem() == null) continue;
                 String it = ind.getSpecialItem().getId();
                 if (it.equals("midas_nanoforge") && m.hasCondition("habitable") && ind instanceof com.fs.starfarer.api.impl.campaign.econ.impl.HeavyIndustry)
-                    ch.add("WARN", "a Midas Nanoforge pollutes " + m.getName() + " (habitable); Autopilot never puts one there, so it was placed by hand");
+                    ch.add("WARN", "a Midas Nanoforge pollutes " + m.getName() + " (habitable); it was placed by hand");   // 0.3.8.6: plain wording
                 if (it.equals("vulpoid_biofactory")) ch.add("INFO", "the Vulpoid Bioforge is at " + m.getName() + " (its acceptance story runs from there)");
                 if (it.equals("lobster_bioforge") && ind.getId().equals("organfarms")) ch.add("WARN", "the Lobster Bioforge in " + m.getName() + "'s Organ Farm stops its organs");
             }

@@ -194,6 +194,7 @@ public class CASetupUI {
                 "Credits: fleet points x Nexerelin's fleet request price (400 without it), paid above the credit reserve."});
         HOVER.put("enfhere", new String[]{"A marked fleet is hostile to your fleet too."});
         HOVER.put("enfint", new String[]{"Intercept: colony patrols in the system get an order to intercept the fleet."});
+        HOVER.put("enfdiktat", new String[]{"Colony patrols attack them. No cost."});   // 0.3.8.6: short for the UI word budget
     }
 
     /** The glossary at the top of the Settings page: term, then its line. */
@@ -248,7 +249,7 @@ public class CASetupUI {
         boolean isOpen = isOpen(id);
         ButtonAPI b = t.addButton((isOpen ? "[-]  " : "[+]  ") + title.toUpperCase(Locale.ROOT), PREFIX + "group:" + id,
                 isOpen ? Misc.getHighlightColor() : Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(), Alignment.LMID, CutStyle.TL_BR, 300f, 24f, 10f);
-        LabelAPI l = t.addPara(CALog.esc(summary.isEmpty() ? "" : Character.toUpperCase(summary.charAt(0)) + summary.substring(1) + "."), Misc.getGrayColor(), 0f);   // 0.3.5.0: a sentence
+        LabelAPI l = t.addPara(summary.isEmpty() ? "" : Character.toUpperCase(summary.charAt(0)) + summary.substring(1) + ".", Misc.getGrayColor(), 0f);   // 0.3.5.0: a sentence
         l.getPosition().rightOfMid(b, 12f);
         CALog.endRow(t, b);
         return isOpen;
@@ -377,7 +378,7 @@ public class CASetupUI {
         }
         t.addButton("Reset to recommended", PREFIX + "recommend:x", Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
                 Alignment.MID, CutStyle.TL_BR, 260f, 24f, 14f);
-        t.addPara(CALog.esc(RESET_NOTE), gray, 4f);
+        t.addPara(RESET_NOTE, gray, 4f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
     }
 
     /** The Faction stances row: OPEN goes to the Factions page. */
@@ -397,7 +398,7 @@ public class CASetupUI {
      */
     static void renderLuna(TooltipMakerAPI t, CASettings s) {
         marked.clear();
-        t.addPara(CALog.esc(CALunaSync.WHERE), Misc.getGrayColor(), 6f);
+        t.addPara(CALunaSync.WHERE, Misc.getGrayColor(), 6f);   // 0.3.8.6: shown as is
         if (CACapital.on(s)) row(t, "Capital", CACapital.name(s), "Autopilot picks", "capid", true);
         else row(t, "Capital", "None", "Autopilot picks", "capid", true);
         desc(t, "capid");
@@ -417,7 +418,7 @@ public class CASetupUI {
         newColonies(t, s);
         if (nex()) war(t, s);
         reserve(t, s);
-        t.addPara(CALog.esc(SETUP_REST), Misc.getGrayColor(), 10f);
+        t.addPara(SETUP_REST, Misc.getGrayColor(), 10f);   // 0.3.8.6: shown as is
     }
 
     /** The box for 30 days after a save moved to 0.3.0 (CAData.migratedAt; new 0.3.0 saves never show it). */
@@ -427,7 +428,7 @@ public class CASetupUI {
             if (at == 0L || Global.getSector().getClock().getElapsedDaysSince(at) >= WHATS_NEW_DAYS) return;
         } catch (Throwable e) { return; }
         CATheme.heading(t, "What's new in 0.3.0", 6f);
-        for (String p : WHATS_NEW) t.addPara(CALog.esc(p), Misc.getGrayColor(), 4f);
+        for (String p : WHATS_NEW) t.addPara(p, Misc.getGrayColor(), 4f);   // 0.3.8.6: shown as is
         CATheme.heading(t, "Settings", 10f);
     }
 
@@ -650,6 +651,7 @@ public class CASetupUI {
      */
     static void enforcers(TooltipMakerAPI t, CASettings s, boolean nex) {
         String on = "On", off = "Off";
+        row(t, CASettings.ENF_DIKTAT_NAME, onOff(s.enfKind(CAEnforcers.DIKTAT)), on, "enfdiktat", true);   // 0.3.8.6: works with Enforcer patrols off
         row(t, "Enforcer patrols", onOff(s.enfOn), off, "enf", true);
         if (!s.enfOn) return;
         for (int k = 0; k < CASettings.ENF_KIND_NAMES.length; k++)
@@ -720,7 +722,7 @@ public class CASetupUI {
      * Its buttons are handled by handle() ("stance_<faction id>", "stancereset").
      */
     public static void renderStances(TooltipMakerAPI t, final CASettings s) {
-        t.addPara(CALog.esc(DESC.get("stances") + " < friendlier, > more hostile."), Misc.getGrayColor(), 6f);
+        t.addPara(DESC.get("stances") + " < friendlier, > more hostile.", Misc.getGrayColor(), 6f);   // 0.3.8.6: shown as is
         java.util.List<com.fs.starfarer.api.campaign.FactionAPI> list = ambassadorFactions();
         java.util.Collections.sort(list, new java.util.Comparator<com.fs.starfarer.api.campaign.FactionAPI>() {
             public int compare(com.fs.starfarer.api.campaign.FactionAPI a, com.fs.starfarer.api.campaign.FactionAPI b) {
@@ -848,7 +850,7 @@ public class CASetupUI {
     static void desc(TooltipMakerAPI t, String key, String[] tip) {
         String d = DESC.get(key);
         if (d == null) return;
-        t.addPara(CALog.esc(d), Misc.getGrayColor(), 2f);
+        t.addPara(d, Misc.getGrayColor(), 2f);   // 0.3.8.6: shown as is
         if (tip != null) t.addTooltipToPrevious(tip(tip), TooltipMakerAPI.TooltipLocation.BELOW);
     }
 
@@ -857,7 +859,7 @@ public class CASetupUI {
             public boolean isTooltipExpandable(Object o) { return false; }
             public float getTooltipWidth(Object o) { return TIP_W; }
             public void createTooltip(TooltipMakerAPI tt, boolean expanded, Object o) {
-                for (int i = 0; i < lines.length; i++) tt.addPara(CALog.esc(lines[i]), i == 0 ? 0f : 6f);
+                for (int i = 0; i < lines.length; i++) tt.addPara(lines[i], i == 0 ? 0f : 6f);   // 0.3.8.6: shown as is
             }
         };
     }
@@ -1000,6 +1002,7 @@ public class CASetupUI {
         else if (k.equals("enflow")) s.enfLowProfileOK = !s.enfLowProfileOK;
         else if (k.equals("enfhere")) s.enfNearYouOK = !s.enfNearYouOK;
         else if (k.equals("enfint")) s.enfIntercept = !s.enfIntercept;
+        else if (k.equals("enfdiktat")) s.enfDiktatOff = !s.enfDiktatOff;   // 0.3.8.6
         else if (k.equals("ambfocus")) s.ambassadorFocus = (Math.max(0, Math.min(3, s.ambassadorFocus)) + 1) % 4;
         else if (k.equals("ambstop")) s.ambassadorStopAt = (Math.max(0, Math.min(3, s.ambassadorStopAt)) + 1) % 4;
         else if (k.startsWith("stance_")) {   // 0.3.0.0 (WS-E): the stance table (CAStance); Auto removes the entry

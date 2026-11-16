@@ -593,17 +593,17 @@ public class CAAugments {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         sync(m, c);
         Plan pl = plan(m, c, profile);
-        if (pl.station == null) { t.addPara(CALog.esc(pl.note), gray, 6f); return; }
+        if (pl.station == null) { t.addPara(pl.note, gray, 6f); return; }   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
         t.addPara("%s: %s of %s AP used.", 6f, hl, pl.station, ap(pl.used), ap(pl.budget));
-        if (pl.kit != null) t.addPara("What it fights with: " + CALog.esc(pl.kit.describe()) + ".", gray, 4f);
+        if (pl.kit != null) t.addPara("What it fights with: " + pl.kit.describe() + ".", gray, 4f);   // 0.3.8.6: shown as is
         if (!pl.mine.isEmpty()) t.addPara("Added by Autopilot: %s", 4f, hl, join(pl.mine));
         if (!pl.yours.isEmpty()) t.addPara("Yours (left alone): %s", 4f, hl, join(pl.yours));
-        if (pl.note != null) t.addPara(CALog.esc(pl.note), gray, 4f);
+        if (pl.note != null) t.addPara(pl.note, gray, 4f);   // 0.3.8.6: shown as is
         if (!pl.changes()) t.addPara("Nothing to change.", gray, 6f);
         else {
             for (Opt o : pl.add) {
                 t.addPara("Add %s (%s AP): %s", 6f, hl, o.name, ap(o.ap), CAEngine.valueText(o.score));
-                for (int j = 0; j < Math.min(3, o.lines.size()); j++) t.addPara("    " + CALog.esc(o.lines.get(j)), gray, 2f);
+                for (int j = 0; j < Math.min(3, o.lines.size()); j++) t.addPara("    " + o.lines.get(j), gray, 2f);   // 0.3.8.6: shown as is
             }
             for (String n : pl.removeNames) t.addPara("Remove %s to make room", 6f, hl, n);
             t.addPara("Value of the change: about %s", 6f, hl, CAEngine.valueText(pl.gain));
@@ -625,7 +625,7 @@ public class CAAugments {
         }
         t.addPara("You know %s station augments.",
                 6f, gray, hl, "" + known().size());
-        t.addPara("Not added (bad for an AI-run station): " + CALog.esc(join(new ArrayList<String>(CAAugmentModel.NEVER.values()), "; ")) + ".", gray, 4f);
+        t.addPara("Not added (bad for an AI-run station): " + join(new ArrayList<String>(CAAugmentModel.NEVER.values()), "; ") + ".", gray, 4f);   // 0.3.8.6: shown as is
     }
 
     /** The empire panel's section: one line per colony with a station. */

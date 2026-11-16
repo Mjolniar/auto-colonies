@@ -255,6 +255,9 @@ public final class CALunaSync {
         radio("warconq", "Conquered colonies start in", "conqueredMode", CASettings.CONQUERED_NAMES, "Needs Nexerelin.");
         radio("warscorch", "Bombardment targets", "scorchedTargets", CASettings.SCORCHED_TARGET_NAMES, "At Scorched. Needs Nexerelin.");
         bool("warcoal", "Coalition risk allowed", "warCoalitionOK", false, "Off: offensives stop before a coalition forms. Needs Nexerelin.");
+        // 0.3.8.6: Sindrian Diktat raiders, their own switch (inverted field, on by default)
+        bool("enfdiktat", CASettings.ENF_DIKTAT_NAME, "enfDiktatOff", true, "Colony patrols attack them. Works with Enforcer patrols off. "
+                + "No cost or reputation change.");
         bool("enf", "Enforcer patrols", "enfOn", false, "Your colony patrols attack the fleet types set to On. Charge: once per fleet your forces "
                 + "defeat. A battle you fight yourself gets the game's penalty.");
         String[] kindFields = {"enfInvestigators", "enfInspections", "enfLeague", "enfProtectors", "enfRaiders", "enfPolice"};
@@ -640,7 +643,7 @@ public final class CALunaSync {
         if (batch.contains("reset") && Boolean.TRUE.equals(read(j, find("reset")))) {
             CASetupUI.resetToRecommended(s);
             applied.add("reset");
-            try { CALog.did("Settings: reset to recommended (LunaLib).", true); } catch (Throwable ignored) { }
+            try { CALog.think("Settings: reset to recommended (LunaLib)."); } catch (Throwable ignored) { }   // 0.3.8.6: your tick; Thinking list
         }
         if (batch.contains("empire")) {
             Row e = find("empire");

@@ -221,7 +221,7 @@ public class CAExpansion {
         s.expandConfirmed = true;
         String nex = nexOn() && s.expandMethod == 0 ? "about " + Misc.getDGSCredits(nexCostEstimate(NEX_FP)) + " by Nexerelin colony fleet or " : "";
         CALog.did("Auto-expansion: on (" + modeName(s) + "). Expedition cost: " + nex + Misc.getDGSCredits(crewCost(0f, goods()))
-                + " and up by Autopilot crew, plus the fee. Each new colony adds Persean League crisis progress. New colonies lose money in their first months. "
+                + " and up by Autopilot crew, plus the fee. Each new colony adds Persean League crisis progress. "   // 0.3.8.6: under 40 words
                 + "Scope: " + scopeName(s) + ". Candidates and expeditions: Expansion page.", true);
     }
 
@@ -675,8 +675,7 @@ public class CAExpansion {
         SCAN.list = null;   // the planet is taken by this order: scan again next time
         CALog.did(o.planetName + ": Colony expedition sent from " + c.from.getName() + " (" + methodName(o.method)
                 + (intel != null ? ", " + o.fp + " points" : "") + "). About " + Math.round(o.days) + " days. " + Misc.getDGSCredits(c.price)
-                + (c.fee > 0f ? " + " + Misc.getDGSCredits(c.fee) + " fee" : "") + ". " + p.plan + ", goal " + goalLabel(p.goal) + "."
-                + (player ? " Ordered by you." : ""), true);
+                + (c.fee > 0f ? " + " + Misc.getDGSCredits(c.fee) + " fee" : "") + ". " + p.plan + ", goal " + goalLabel(p.goal) + ".", true);   // 0.3.8.6: no "Ordered by you."
         return null;
     }
 
@@ -1446,7 +1445,7 @@ public class CAExpansion {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         t.addPara("Auto-expansion: %s.", 6f, hl, modeName(s));   // 0.3.0.0 (WS-F3 fix pass 2): scope, money and method are in Settings, Advanced
         String st = SCAN.status != null && SCAN.statusDay == CATime.today() ? SCAN.status : mode(s) == 0 ? offReason(s) : null;
-        if (st != null) t.addPara(CALog.esc(st), gray, 4f);
+        if (st != null) t.addPara(st, gray, 4f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
         try {
             Room r = room(d, s);
             t.addPara("Colonies governed: %s of %s. Administrators: %s of %s, %s idle.", 4f, hl,
@@ -1474,7 +1473,7 @@ public class CAExpansion {
         ButtonAPI scan = t.addButton(list == null ? "Scan for candidates" : "Scan again", new String[]{"expand", "scan", ""}, base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 8f);
         CALog.endRow(t, scan);
         if (list == null) { t.addPara("Not scanned yet.", gray, 4f); }
-        else if (list.isEmpty()) { t.addPara(CALog.esc(nothingReason(s)), gray, 4f); }
+        else if (list.isEmpty()) { t.addPara(nothingReason(s), gray, 4f); }   // 0.3.8.6: shown as is
         else {
             t.addPara("Best candidates (value at size %s):", 6f, hl, String.valueOf(VALUE_SIZE));
             for (int i = 0; i < Math.min(TOP, list.size()); i++) {
@@ -1483,7 +1482,7 @@ public class CAExpansion {
                         String.valueOf(i + 1), p.planetName, p.systemName, p.plan, goalLabel(p.goal), Misc.getDGSCredits(p.value),
                         Misc.getDGSCredits(p.cost), methodName(p.method), Misc.getDGSCredits(p.fee),
                         p.payback >= 1000f ? "over 1,000" : String.valueOf(Math.max(1, Math.round(p.payback))));
-                t.addPara(CALog.esc(p.reason + (p.pays ? "" : ". Payback too long")), gray, 2f);
+                t.addPara(p.reason + (p.pays ? "" : ". Payback too long"), gray, 2f);   // 0.3.8.6: shown as is
                 ButtonAPI f = t.addButton("Found now", new String[]{"expand", "found", p.planetId}, base, dark, Alignment.MID, CutStyle.TL_BR, 120f, 20f, 2f);
                 ButtonAPI n = t.addButton("Never this planet", new String[]{"expand", "never", p.planetId}, base, dark, Alignment.MID, CutStyle.TL_BR, 160f, 20f, 0f);
                 n.getPosition().rightOfTop(f, 6f);
@@ -1515,7 +1514,7 @@ public class CAExpansion {
                 if (e.getValue() != null && e.getValue() == Long.MAX_VALUE) { it.remove(); n++; }
             }
             SCAN.list = null;
-            CALog.did("Auto-expansion: never list cleared (" + n + (n == 1 ? " planet)." : " planets)."), false);
+            CALog.think("Auto-expansion: never list cleared (" + n + (n == 1 ? " planet)." : " planets)."));   // 0.3.8.6: your click; Thinking list
             return null;
         }
         if ("reject".equals(action)) {
@@ -1524,7 +1523,7 @@ public class CAExpansion {
             skip(d, d.expandPendingId, SKIP_DAYS);
             clearPending(d, null);
             SCAN.list = null;
-            CALog.did(name + ": Colony expedition rejected. Not proposed again for " + Math.round(SKIP_DAYS) + " days.", false);
+            CALog.think(name + ": Colony expedition rejected. Not proposed again for " + Math.round(SKIP_DAYS) + " days.");   // 0.3.8.6: your click; Thinking list
             return null;
         }
         if ("never".equals(action)) {
@@ -1533,7 +1532,7 @@ public class CAExpansion {
             d.expandSkip().put(id, Long.MAX_VALUE);
             if (id.equals(d.expandPendingId)) clearPending(d, null);
             SCAN.list = null;
-            CALog.did(p.getName() + ": Colony expedition: on the never list (Expansion page).", false);
+            CALog.think(p.getName() + ": Colony expedition: on the never list (Expansion page).");   // 0.3.8.6: your click; Thinking list
             return null;
         }
         if ("approve".equals(action) || "found".equals(action)) {

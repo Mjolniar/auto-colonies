@@ -915,8 +915,8 @@ public class CARogue {
             Cond row = TABLE.get(cond);
             Fx x = effect(cond, c.f, c.have);
             String state = row.needs.length == 2 ? (x.active ? "active" : "inactive") : x.active ? "active" : null;
-            t.addPara(CALog.esc(row.name + ": " + (state == null ? "" : state + ". ") + row.does), 6f);
-            t.addPara(CALog.esc(row.handled), gray, 2f);
+            t.addPara(row.name + ": " + (state == null ? "" : state + ". ") + row.does, 6f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
+            t.addPara(row.handled, gray, 2f);   // 0.3.8.6: shown as is
         }
     }
 }

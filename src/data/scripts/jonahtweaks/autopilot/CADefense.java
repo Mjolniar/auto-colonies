@@ -32,7 +32,8 @@ public class CADefense {
     static float hostileFP(StarSystemAPI sys) {
         float fp = 0f;
         for (CampaignFleetAPI f : sys.getFleets()) {
-            if (f.isPlayerFleet() || f.getFaction() == null || !f.getFaction().isHostileTo(Factions.PLAYER)) continue;
+            // 0.3.8.6: also fleets made hostile to your faction and Sindrian Diktat raiders (CAEnforcers.threat)
+            if (f.isPlayerFleet() || f.getFaction() == null || !CAEnforcers.threat(f)) continue;
             if (f.isStationMode() || CASurvival.supportFleet(f)) continue;   // 0.3.0.9: never a support fleet (0.98.5a)
             fp += f.getFleetPoints();
         }
@@ -63,6 +64,7 @@ public class CADefense {
     /**
      * 0.3.0.0 (03 F10): a real attack on the colony's system: a hostile raid, invasion or crisis fleet targets it, or hostile
      * fleets there outweigh its defenses (this class's own test). CAWar pays proactive defense as an emergency only then.
+     * 0.3.8.6: hostile fleets include Sindrian Diktat raiders and fleets made hostile to your faction (hostileFP).
      */
     static boolean realThreat(MarketAPI m) {
         StarSystemAPI sys = m == null ? null : m.getStarSystem();

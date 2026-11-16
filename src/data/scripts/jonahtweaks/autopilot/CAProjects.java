@@ -431,7 +431,7 @@ public class CAProjects {
             t.addPara("No special project is running.", gray, 4f);
             if (last != null && !last.plans.isEmpty()) {   // spending freely: AotD's goods for wonders, gates and production
                 t.addPara("AotD goods (spending freely):", 4f);
-                for (Plan pl : last.plans) t.addPara("    " + CALog.esc(buildingName(pl.building) + " at " + pl.hostName + " for " + name(pl.good) + ": " + routeText(pl)), gray, 2f);
+                for (Plan pl : last.plans) t.addPara("    " + (buildingName(pl.building) + " at " + pl.hostName + " for " + name(pl.good) + ": " + routeText(pl)), gray, 2f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
             }
             return;
         }
@@ -444,9 +444,9 @@ public class CAProjects {
                     none ? bad : hl, name(g), "" + e.getValue(), mo != null ? "" + mo : "", "" + (y == null ? 0 : y), "" + (o == null ? 0 : o));
         }
         if (last != null) {
-            for (Plan pl : last.plans) t.addPara("    " + CALog.esc(buildingName(pl.building) + " at " + pl.hostName + " for " + name(pl.good) + ": " + routeText(pl)), gray, 2f);
-            for (String g : last.unresolved) t.addPara("    " + CALog.esc(name(g) + ": no Approve or Auto colony can host it (" + hostText(g) + ")"), bad, 2f);
+            for (Plan pl : last.plans) t.addPara("    " + (buildingName(pl.building) + " at " + pl.hostName + " for " + name(pl.good) + ": " + routeText(pl)), gray, 2f);   // 0.3.8.6: shown as is
+            for (String g : last.unresolved) t.addPara("    " + (name(g) + ": no Approve or Auto colony can host it (" + hostText(g) + ")"), bad, 2f);   // 0.3.8.6: shown as is
         }
-        if (!other.isEmpty()) t.addPara("Its stages also take " + CALog.esc(CAContracts.join(other)) + " (yours to find).", gray, 4f);
+        if (!other.isEmpty()) t.addPara("Its stages also take " + CAContracts.join(other) + ".", gray, 4f);   // 0.3.8.6: shown as is; no "yours to find"
     }
 }

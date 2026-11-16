@@ -103,6 +103,7 @@ ca_warrivals,Top hostile threat as Rival,Boolean,false,,Needs Nexerelin.,,,Advan
 ca_warconq,Conquered colonies start in,Radio,Advisor,"Auto, Approve, Advisor",Needs Nexerelin.,,,Advanced
 ca_warscorch,Bombardment targets,Radio,Capitals only,"Capitals only, Capitals and small colonies",At Scorched. Needs Nexerelin.,,,Advanced
 ca_warcoal,Coalition risk allowed,Boolean,false,,Off: offensives stop before a coalition forms. Needs Nexerelin.,,,Advanced
+ca_enfdiktat,Sindrian Diktat raiders,Boolean,true,,Colony patrols attack them. Works with Enforcer patrols off. No cost or reputation change.,,,Advanced
 ca_enf,Enforcer patrols,Boolean,false,,Your colony patrols attack the fleet types set to On. Charge: once per fleet your forces defeat. A battle you fight yourself gets the game's penalty.,,,Advanced
 ca_enfk_0,Hegemony investigators,Boolean,false,,Used with Enforcer patrols.,,,Advanced
 ca_enfk_1,Hegemony AI inspections,Boolean,false,,Used with Enforcer patrols.,,,Advanced

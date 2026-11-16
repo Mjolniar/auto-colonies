@@ -575,7 +575,7 @@ public class CASpies {
                         + ". Take it back in the Autopilot panel: Empire, Mod features, Agents.", true);
                 return;
             }
-            if (CALog.once("spy:yours")) CALog.advise("Agents: your agent " + name(a) + " (" + types(a) + ") is idle. Autopilot does not recruit while it is. "
+            if (CALog.once("spy:yours")) CALog.advise("Agents: your agent " + name(a) + " (" + types(a) + ") is idle. "   // 0.3.8.6: advice only
                     + "To hand it over: Let Autopilot use it, in the Autopilot panel: Empire, Mod features, Agents.");
             return;
         }
@@ -634,7 +634,7 @@ public class CASpies {
             }
             t.addPara("%s, level %s %s: " + CALog.esc(doing) + (a.getMarket() != null ? " (at " + CALog.esc(a.getMarket().getName()) + ")" : "")
                     + ". %s", 8f, new java.awt.Color[]{hl, hl, hl, auto ? hl : gray},
-                    CALog.esc(name(a)), "" + a.getLevel(), CALog.esc(types(a)), auto ? "Autopilot's" + (role != null ? ", " + roleName(role) : "") : "Yours");
+                    name(a), "" + a.getLevel(), types(a), auto ? "Autopilot's" + (role != null ? ", " + roleName(role) : "") : "Yours");   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
             t.addButton(auto ? "Take it back" : "Let Autopilot use it", new String[]{"agent", auto ? "back" : "use", a.getAgent().getId()},
                     base, dark, Alignment.MID, com.fs.starfarer.api.ui.CutStyle.TL_BR, 180f, 22f, 4f);
         }

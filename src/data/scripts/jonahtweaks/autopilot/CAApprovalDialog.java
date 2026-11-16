@@ -224,7 +224,7 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
         List<CAApprovals.Item> open = open();
         t.addPara("Decisions: %s. Credits %s. Reserve %s.", hl, String.valueOf(open.size()), Misc.getDGSCredits(CABuild.credits()),
                 Misc.getDGSCredits(s.reserve));
-        para(t, "Nothing changes until you choose, and Autopilot never spends below the reserve. Later keeps every decision open: this "
+        para(t, "Autopilot does not spend below the reserve. Later keeps every decision open: this "   // 0.3.8.6: plain wording
                 + "summary comes back in " + Math.max(1, s.approvalDays) + " days, and the list stays in the Autopilot panel (Empire, "
                 + "Colonies, Waiting for approval).", gray);
         int lines = 0, detailed = 0;
@@ -437,16 +437,16 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
                     String r = owner.result.get(it.key);
                     if (r != null) {
                         boolean ok = "Approved".equals(r) || "Rejected".equals(r);
-                        t.addPara(CALog.esc(line(it) + " " + r + "."), ok ? gray : bad, 4f);
+                        t.addPara(line(it) + " " + r + ".", ok ? gray : bad, 4f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
                         continue;
                     }
                     ButtonAPI y = t.addButton("Approve", new String[]{"a", it.key}, hl, dark, Alignment.MID, CutStyle.TL_BR, 90f, 20f, 4f);
                     ButtonAPI n = t.addButton("Reject", new String[]{"r", it.key}, base, dark, Alignment.MID, CutStyle.TL_BR, 90f, 20f, 0f);
                     n.getPosition().rightOfTop(y, 4f);
-                    LabelAPI l = t.addPara(CALog.esc(line(it)), 0f);
+                    LabelAPI l = t.addPara(line(it), 0f);   // 0.3.8.6: shown as is
                     l.getPosition().rightOfMid(n, 10f);
                     CALog.endRow(t, y);
-                    for (String d : it.details) t.addPara(CALog.esc(d), gray, 2f);   // 0.3.3.5: what it does, costs, why
+                    for (String d : it.details) t.addPara(d, gray, 2f);   // 0.3.3.5: what it does, costs, why
                 }
             }
             content.addUIElement(t).inTL(0f, 0f);

@@ -339,9 +339,9 @@ public class CAMegastructures {
         if (!CAHypershunt.researched(CAHypershunt.TECH_RESTORE)) t.addPara("Restoring sections needs %s researched.", 4f, hl, CAHypershunt.techName(CAHypershunt.TECH_RESTORE));
         try {
             Map<String, Integer> now = now(g), tgt = target(g, now, c);
-            if (!now.isEmpty()) t.addPara("Now: " + CALog.esc(describe(g, now)) + ".", hl, 8f);
+            if (!now.isEmpty()) t.addPara("Now: " + describe(g, now) + ".", hl, 8f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
             if (!tgt.isEmpty() && !tgt.equals(now)) {
-                t.addPara("Best: " + CALog.esc(describe(g, tgt)) + ".", hl, 4f);
+                t.addPara("Best: " + describe(g, tgt) + ".", hl, 4f);   // 0.3.8.6: shown as is
                 if (buttons) t.addButton("Apply these settings", CAColonyDialog.MEGA + "apply:x", base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
             } else if (!now.isEmpty()) t.addPara("These are the best settings.", gray, 4f);
         } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "megastructure settings failed at " + m.getName(), e); }

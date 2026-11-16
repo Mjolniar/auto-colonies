@@ -244,7 +244,7 @@ final class CAAutonomy {
                 4f, hl, Math.round(incomeMult() * 100f) + "%", "" + REVOKE_UNREST);
         tidy(d);
         Emergency e = emergency(s);
-        if (e != null) t.addPara("Money emergency: " + CALog.esc(e.why) + ".", Misc.getNegativeHighlightColor(), 6f);
+        if (e != null) t.addPara("Money emergency: " + e.why + ".", Misc.getNegativeHighlightColor(), 6f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
         List<Cand> losers = losers(d, false);
         if (losers.isEmpty()) t.addPara("No colony a year old loses money.", gray, 6f);
         int shown = 0;

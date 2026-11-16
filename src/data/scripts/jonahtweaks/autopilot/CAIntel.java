@@ -286,7 +286,7 @@ public class CAIntel extends BaseIntelPlugin {
             t.addPara("Colony net: %s a month (%s-month median). Cash flow: %s.", 4f, hl,
                     Misc.getDGSCredits(CABudget.netIncome(s)), String.valueOf(CABudget.NET_MONTHS), Misc.getDGSCredits(CABudget.cashFlow(s)));
             // 0.3.0.0 (B3): the planner's last pass, what it's saving up for and the upkeep room it keeps
-            try { for (String line : CAPlanner.status()) t.addPara(CALog.esc(line), gray, 4f); }
+            try { for (String line : CAPlanner.status()) t.addPara(line, gray, 4f); }   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "planner status line failed", e); }
             try { CASurplus.renderEmpire(t, s); }
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus line failed", e); }
@@ -357,7 +357,7 @@ public class CAIntel extends BaseIntelPlugin {
                 }
                 String flags = (c.buildout ? ", fast buildout" : "") + (c.threatHigh ? ", threatened" : "") + (CASiege.held(m) ? ", under siege" : "");
                 t.addPara("%s (size %s): %s, %s" + CALog.esc(flags), 12f, hl, m.getName(), "" + m.getSize(), c.profile.label, c.mode.label);
-                t.addPara("Next: " + CALog.esc(top), gray, 2f);
+                t.addPara("Next: " + top, gray, 2f);   // 0.3.8.6: shown as is
                 ButtonAPI b1 = t.addButton("Next goal", new String[]{"profile", m.getId()}, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 22f, 4f);
                 ButtonAPI b2 = t.addButton("Next mode", new String[]{"mode", m.getId()}, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 22f, 0f);
                 b2.getPosition().rightOfTop(b1, 6f);
@@ -405,7 +405,7 @@ public class CAIntel extends BaseIntelPlugin {
                 if (pts <= 0 && !coming) continue;
                 String why = coming ? "inspection coming" : CAItems.limitWhy(s, m, none, lim);
                 t.addPara("%s: %s inspection points, %s", 3f, coming || pts > lim ? Misc.getNegativeHighlightColor() : hl,
-                        CALog.esc(m.getName()), "" + pts, why);
+                        m.getName(), "" + pts, why);   // 0.3.8.6: shown as is
             }
             if (Global.getSettings().getModManager().isModEnabled(CAResearch.MOD) && s.researchMode != 2) {
                 t.addSpacer(16f);
@@ -452,14 +452,14 @@ public class CAIntel extends BaseIntelPlugin {
         } else if (page.equals("log")) {
             CATheme.heading(t, "Log", 0f);
             if (s.log.isEmpty()) t.addPara("Nothing yet.", gray, 6f);
-            for (int i = 0; i < Math.min(40, s.log.size()); i++) t.addPara(CALog.esc(s.log.get(i)), gray, 3f);
+            for (int i = 0; i < Math.min(40, s.log.size()); i++) t.addPara(s.log.get(i), gray, 3f);   // 0.3.8.6: shown as is
             // 0.3.1.0: Autopilot's thinking (CALog.think), collapsed until shown
             List<String> th = data.thinking();
             CATheme.heading(t, "Thinking", 12f);
             t.addButton(s.showThinking ? "Hide" : "Show (" + th.size() + ")", THINKING, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 22f, 6f);
             if (s.showThinking) {   // 0.3.2.0: a setting (Settings, Interface), copied from CAData.thinkingShown once
                 if (th.isEmpty()) t.addPara("Nothing yet.", gray, 6f);
-                for (int i = 0; i < Math.min(40, th.size()); i++) t.addPara(CALog.esc(th.get(i)), gray, 3f);
+                for (int i = 0; i < Math.min(40, th.size()); i++) t.addPara(th.get(i), gray, 3f);   // 0.3.8.6: shown as is
             }
         } else if (page.equals("diag")) {
             renderDiagnostics(t);
@@ -478,7 +478,7 @@ public class CAIntel extends BaseIntelPlugin {
             String ver = null;
             try { ver = mm.getModSpec(m[2]).getVersion(); } catch (Throwable ignored) { }
             if (ver == null) continue;   // not installed: nothing to show
-            if (!mm.isModEnabled(m[2])) { t.addPara("%s: installed, not enabled", 6f, gray, m[1]); continue; }
+            if (!mm.isModEnabled(m[2])) { t.addPara("%s: installed and disabled", 6f, gray, m[1]); continue; }   // 0.3.8.6: plain wording
             int[] c = CALogWatch.counts(m[0]);
             t.addPara("%s " + CALog.esc(ver) + ": %s warnings, %s errors this session", 6f, c[0] + c[1] > 0 ? bad : hl, m[1], "" + c[0], "" + c[1]);
             String status;
@@ -490,9 +490,9 @@ public class CAIntel extends BaseIntelPlugin {
                 try { o = Global.getSector().getMemoryWithoutUpdate().get("$jonahs_status_" + m[2]); } catch (Throwable ignored) { }
                 status = o instanceof String ? (String) o : "no status yet";
             }
-            t.addPara("    " + CALog.esc(status), gray, 2f);
+            t.addPara("    " + status, gray, 2f);   // 0.3.8.6: shown as is
             String last = CALogWatch.last(m[0]);
-            if (last != null) t.addPara("    Latest: " + CALog.esc(last), bad, 2f);
+            if (last != null) t.addPara("    Latest: " + last, bad, 2f);   // 0.3.8.6: shown as is
         }
         float promised = CASurplus.committed();
         if (promised > 0f) t.addPara("Promised to production: %s.", 6f, hl, Misc.getDGSCredits(promised));
@@ -535,7 +535,7 @@ public class CAIntel extends BaseIntelPlugin {
                 for (int i = 0; cs != null && i < cs.length(); i++) {
                     org.json.JSONObject c = cs.optJSONObject(i);
                     if (c == null || !("WARN".equals(c.optString("result")) || "FAIL".equals(c.optString("result")))) continue;
-                    t.addPara("    " + CALog.esc(c.optString("text")), gray, 2f);
+                    t.addPara("    " + c.optString("text"), gray, 2f);   // 0.3.8.6: shown as is
                 }
             }
         }
@@ -543,9 +543,9 @@ public class CAIntel extends BaseIntelPlugin {
             t.addPara("Paused: %s. No effect three times. Last: " + CALog.esc(e.getValue()) + ".", 4f, Misc.getNegativeHighlightColor(), e.getKey());
         for (Map.Entry<String, String> e : CAStep.broken().entrySet())
             t.addPara("Stopped this session: %s (" + CALog.esc(e.getValue()) + ")", 4f, Misc.getNegativeHighlightColor(), e.getKey());
-        if (!CAConst.drift.isEmpty()) t.addPara("Mod values changed (new ones used): " + CALog.esc(String.join("; ", CAConst.drift)), gray, 4f);
+        if (!CAConst.drift.isEmpty()) t.addPara("Mod values changed (new ones used): " + String.join("; ", CAConst.drift), gray, 4f);   // 0.3.8.6: shown as is
         List<String> cal = CACalibrate.notable();
-        if (!cal.isEmpty()) t.addPara("Corrected from your colonies: " + CALog.esc(String.join(", ", cal.subList(0, Math.min(12, cal.size())))), gray, 4f);
+        if (!cal.isEmpty()) t.addPara("Corrected from your colonies: " + String.join(", ", cal.subList(0, Math.min(12, cal.size()))), gray, 4f);   // 0.3.8.6: shown as is
         int shown = 0;
         for (CADiagnostics.Level lvl : new CADiagnostics.Level[]{CADiagnostics.Level.QUARANTINED, CADiagnostics.Level.MEASURED, CADiagnostics.Level.ANALYZED}) {
             for (CADiagnostics.Issue i : CADiagnostics.getIssues()) {
@@ -554,7 +554,7 @@ public class CAIntel extends BaseIntelPlugin {
                 Color lc = lvl == CADiagnostics.Level.QUARANTINED ? Misc.getNegativeHighlightColor() : hl;
                 t.addPara("%s  %s %s (%s)", 6f, lc, lvl.name(), i.kind, i.name, i.mod);
                 String d = i.detail == null ? "" : i.detail;
-                t.addPara("    " + CALog.esc(d.length() > 220 ? d.substring(0, 220) + "..." : d), gray, 2f);
+                t.addPara("    " + (d.length() > 220 ? d.substring(0, 220) + "..." : d), gray, 2f);   // 0.3.8.6: shown as is
             }
         }
         int total = CADiagnostics.getIssues().size();
@@ -579,7 +579,7 @@ public class CAIntel extends BaseIntelPlugin {
         for (CACache.Memo<?> mo : CACache.ALL) if (mo.hits + mo.misses > 0) parts.add(mo.name + " " + mo.hitPercent() + "%");
         if (CASimulator.hits + CASimulator.misses > 0)
             parts.add("probe " + Math.round(100.0 * CASimulator.hits / (CASimulator.hits + CASimulator.misses)) + "%");
-        if (!parts.isEmpty()) t.addPara("Cache hits: " + CALog.esc(String.join(", ", parts)) + ".", gray, 4f);
+        if (!parts.isEmpty()) t.addPara("Cache hits: " + String.join(", ", parts) + ".", gray, 4f);   // 0.3.8.6: shown as is
         // 0.3.0.0 (A4 fix): pages only read kept scores; a colony scored while one drew is a bug, with its caller in starsector.log
         if (CAEngine.drawnEvals > 0) t.addPara("Scored while drawing: %s (should be 0).", 4f,
                 Misc.getNegativeHighlightColor(), "" + CAEngine.drawnEvals);
@@ -655,7 +655,8 @@ public class CAIntel extends BaseIntelPlugin {
             String[] a = (String[]) buttonId;
             MarketAPI m = CAAuto.market(a[2]);
             if (m != null && Global.getSettings().getModManager().isModEnabled(CAHypershunt.MOD)) {
-                try { String msg = CAHypershunt.handle(m, a[1], a[3]); CALog.advise(m.getName() + ": " + msg); }
+                // 0.3.8.6: only a failure goes to the log; the action's own did line says what was done
+                try { String msg = CAHypershunt.handle(m, a[1], a[3]); if (!CAHypershunt.done(msg)) CALog.advise(m.getName() + ": " + msg); }
                 catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "hypershunt action failed", t); CALog.advise(m.getName() + ": Hypershunt: action failed. See starsector.log.", true); }
             }
         } else if (buttonId instanceof String[] && "aug".equals(((String[]) buttonId)[0])) {

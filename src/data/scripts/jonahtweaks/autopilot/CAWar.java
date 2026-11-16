@@ -871,10 +871,10 @@ public class CAWar {
             if (f == null) return;
             t.addPara("Declare war on %s?", 0f, bad, f.getDisplayName());
             List<String> lines = CADiplomacy.preview(f);
-            if (lines != null) for (String l : lines) t.addPara(CALog.esc(l), 4f);
+            if (lines != null) for (String l : lines) t.addPara(l, 4f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
         } else if ("scorched".equals(action)) {
             t.addPara("Authorize saturation bombardment of Destroy factions' capitals?", bad, 0f);
-            for (String l : CAScorched.preview()) t.addPara(CALog.esc(l), 4f);
+            for (String l : CAScorched.preview()) t.addPara(l, 4f);   // 0.3.8.6: shown as is
         } else if ("recall".equals(action)) {
             t.addPara("Recalls every offensive. Refunds %s travelling, %s in action.",   // 0.3.0.0 (WS-F3 fix pass 3): the button's hover said it stands down
                     0f, hl, "67 percent", "33 percent");
@@ -895,14 +895,14 @@ public class CAWar {
             if (st == CAStance.AUTO) s.factionStance().remove(fid); else s.factionStance().put(fid, st);
             CAStance.markSetByYou(fid);   // 0.3.0.0 (fix): a stance you set acts fully in diplomacy (CAStance.fromOldPriority)
             FactionAPI f = Global.getSector().getFaction(fid);
-            CALog.did("War: " + (f != null ? f.getDisplayName() : fid) + " stance " + CAStance.name(st) + ".");
+            CALog.think("War: " + (f != null ? f.getDisplayName() : fid) + " stance " + CAStance.name(st) + ".");   // 0.3.8.6: the row shows it; Thinking list
         } else if ("declare".equals(action)) {
             FactionAPI f = Global.getSector().getFaction(arg);
             String why = f == null ? "no such faction" : CADiplomacy.declareWar(f);
             if (why != null) CALog.advise("War: war not declared on " + (f != null ? f.getDisplayName() : arg) + ": " + why + ".", true);
         } else if ("scorched".equals(action)) {
             s.warScorchedOK = true;
-            CALog.did("War: saturation bombardment authorized for Destroy factions' capitals at War level Scorched.", true);
+            CALog.think("War: saturation bombardment authorized for Destroy factions' capitals at War level Scorched.");   // 0.3.8.6: your Confirm; the War page shows it
         } else if ("recall".equals(action)) {
             standDown(d, s, true);
         } else if ("standdown".equals(action)) {
@@ -955,7 +955,7 @@ public class CAWar {
         if (CAStance.wantsWar(st) && !hostile) {
             String why = CADiplomacy.declareWhy(d, s, f);
             if (why == null) t.addButton("Declare war on " + f.getDisplayName(), new String[]{"war", "declare", fid}, base, dark, Alignment.MID, CutStyle.TL_BR, 260f, 20f, 2f);
-            else t.addPara("Not at war: " + CALog.esc(why) + ". Acts as Rival.", gray, 2f);
+            else t.addPara("Not at war: " + why + ". Acts as Rival.", gray, 2f);   // 0.3.8.6: shown as is
         }
         for (OffensiveFleetIntel o : offensives()) {
             if (!yours(o) || o.getTarget() == null || o.getTarget().getFaction() != f || o instanceof DefenseFleetIntel) continue;

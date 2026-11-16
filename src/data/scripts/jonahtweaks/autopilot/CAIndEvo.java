@@ -276,7 +276,7 @@ public class CAIndEvo {
                     continue;
                 }
                 CALog.forget(key);
-                CALog.did(m.getName() + ": Enacted " + spec.getName() + ". Effects estimated. Autopilot does not remove edicts.");
+                CALog.did(m.getName() + ": Enacted " + spec.getName() + ".");   // 0.3.8.6: the action only
                 return true;
             } catch (Throwable t) {
                 if (CALog.once(key)) CADiagnostics.LOG.warn(CADiagnostics.TAG + "edict check failed for " + id + " at " + m.getName(), t);

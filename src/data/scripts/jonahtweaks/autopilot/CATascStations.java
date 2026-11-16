@@ -288,7 +288,7 @@ public class CATascStations {
             if (CALog.once("tasc:station:" + best.sys.getId() + ":" + best.kind))
                 CALog.advise("Recommends a " + what + " (" + best.why + ", about " + Misc.getDGSCredits(best.monthly) + " a month once it grows; "
                         + Misc.getDGSCredits(best.cost) + "). " + (s.stationMode == 1 ? "Set the Expansion rung to On to have a crew build it."
-                        : "Set Station construction to Auto, under Settings, to have a crew build it."));
+                        : "Set TASC stations to Auto, under Settings, to have a crew build it."));   // 0.3.8.6: the row's name
             return;
         }
         float fee = CABudget.fee(s, BASE_FEE);

@@ -53,7 +53,7 @@ public final class CATheme {
     public static void readout(TooltipMakerAPI t, float pad, String... parts) {
         StringBuilder sb = new StringBuilder();
         for (String p : parts) { if (p == null || p.isEmpty()) continue; if (sb.length() > 0) sb.append(' '); sb.append(p).append('.'); }
-        t.addPara(CALog.esc(sb.toString()), line(), pad);
+        t.addPara(sb.toString(), line(), pad);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
     }
 
     /**
@@ -86,7 +86,7 @@ public final class CATheme {
             public boolean isTooltipExpandable(Object o) { return false; }
             public float getTooltipWidth(Object o) { return HOVER_W; }
             public void createTooltip(TooltipMakerAPI tt, boolean expanded, Object o) {
-                for (int i = 0; i < l.size(); i++) tt.addPara(CALog.esc(l.get(i)), i == 0 ? 0f : 6f);
+                for (int i = 0; i < l.size(); i++) tt.addPara(l.get(i), i == 0 ? 0f : 6f);   // 0.3.8.6: shown as is
             }
         }, TooltipMakerAPI.TooltipLocation.BELOW);
     }

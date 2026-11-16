@@ -274,6 +274,12 @@ public class CASettings {
     public boolean enfIntercept = false;
     /** 0.3.1.0: credits owed for defeated fleets that could not be paid above the reserve; paid first, no new attacks until then. */
     public float enfOwed = 0f;
+    /**
+     * 0.3.8.6: colony patrols attack Sindrian Diktat raiders (CAEnforcers.DIKTAT) unless this is true. Inverted, so the
+     * default and an older save (false) have it on. It works with Enforcer patrols off.
+     */
+    public boolean enfDiktatOff = false;
+    public static final String ENF_DIKTAT_NAME = "Sindrian Diktat raiders";
     public static final String[] ENF_WHERE_NAMES = {"Systems with Auto colonies", "Systems with any colony"};
 
     /** 0.3.1.0: whether one fleet type is on (CAEnforcers kind index); false for an unknown index. */
@@ -285,6 +291,7 @@ public class CASettings {
             case 3: return enfProtectors;
             case 4: return enfRaiders;
             case 5: return enfPolice;
+            case 6: return !enfDiktatOff;   // 0.3.8.6: Sindrian Diktat raiders, on by default
             default: return false;
         }
     }
@@ -298,6 +305,7 @@ public class CASettings {
             case 3: enfProtectors = on; break;
             case 4: enfRaiders = on; break;
             case 5: enfPolice = on; break;
+            case 6: enfDiktatOff = !on; break;   // 0.3.8.6
             default: break;
         }
     }

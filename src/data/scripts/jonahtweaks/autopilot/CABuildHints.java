@@ -221,8 +221,8 @@ public class CABuildHints implements EveryFrameScript {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), bad = Misc.getNegativeHighlightColor(), pos = Misc.getPositiveHighlightColor();
         CAData.Colony c = CAData.get().colony(f.market.getId());
         t.addTitle("AUTOPILOT // " + f.market.getName().toUpperCase(Locale.ROOT));
-        String head = goal(f.market, c).label + " goal" + (k == null ? ", not scored." : k.current ? "." : ", " + Math.max(1, k.days) + " days old.");
-        t.addPara(CALog.esc(head), gray, 2f);
+        String head = goal(f.market, c).label + " goal" + (k == null ? ". Not scored." : k.current ? "." : ", " + Math.max(1, k.days) + " days old.");   // 0.3.8.6: two sentences
+        t.addPara(head, gray, 2f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
         if (k == null) { p.addUIElement(t).inTL(0f, 0f); return p; }
         List<Hint> hints = hints(k.result, f.upgrades, s, CAStability.now(f.market), CAStability.floor());
         int shown = 0;
@@ -233,8 +233,8 @@ public class CABuildHints implements EveryFrameScript {
             t.addPara("%s: " + CALog.esc(x.reason), 2f, hl, x.name);
             shown++;
         }
-        if (shown < hints.size()) t.addPara(CALog.esc((hints.size() - shown) + " more."), gray, 6f);
-        for (String line : footer(k.result, f.upgrades)) if (t.getHeightSoFar() < h - 20f) t.addPara(CALog.esc(line), gray, 4f);
+        if (shown < hints.size()) t.addPara((hints.size() - shown) + " more.", gray, 6f);   // 0.3.8.6: shown as is
+        for (String line : footer(k.result, f.upgrades)) if (t.getHeightSoFar() < h - 20f) t.addPara(line, gray, 4f);   // 0.3.8.6: shown as is
         p.addUIElement(t).inTL(0f, 0f);
         return p;
     }

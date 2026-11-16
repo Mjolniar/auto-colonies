@@ -189,7 +189,7 @@ public class CAOverLimit {
         float penalty = CAStability.overLimitPenalty(m);
         CALog.advise(m.getName() + ": Stability: 0. A colony at 0 for months decivilizes. Biggest drags: "
                 + causes(m) + (used > max ? ". " + used + " industries on " + max + " slots" + (penalty > 0f ? " (-" + Math.round(penalty) + ")" : "") : "")
-                + (auto ? ". Autopilot takes down what costs stability until it is above 0." : ". Not on Auto. Raising it is up to you."), true);
+                + (auto ? ". Autopilot takes down what costs stability until it is above 0." : ". Raise it, or switch the colony to Auto."), true);   // 0.3.8.6: advice
     }
 
     /** The colony's worst stability modifiers as the game lists them, "Maximum number of industries exceeded -5, Commerce -3". */
@@ -239,8 +239,8 @@ public class CAOverLimit {
         }
         if (worst == null) {
             // 0.3.0.9: not important (the 0-stability alert is); on screen as the decision it leaves you
-            if (CALog.once("stab:none:" + m.getId())) CALog.advise(m.getName() + ": Stability: 0. None of its buildings causes it ("
-                    + causes(m) + "). Raising it is up to you.");
+            if (CALog.once("stab:none:" + m.getId())) CALog.advise(m.getName() + ": Stability 0 from "   // 0.3.8.6: advice
+                    + causes(m) + ", none from its buildings. Raise it.");
             return;
         }
         CALog.forget("stab:none:" + m.getId());
@@ -306,7 +306,7 @@ public class CAOverLimit {
         boolean zero = atZero(m), danger = m.getStabilityValue() <= LOW;
         switch (decide(used, max, m.getStabilityValue(), s.noOverLimitFix, growsSoon, maxNext, since)) {
             case OFF:
-                if (CALog.once(key + ":off")) CALog.advise(m.getName() + ": " + over + ", " + costText(m) + ". Over-limit fix: off in Settings. Taking one down is up to you.", zero);
+                if (CALog.once(key + ":off")) CALog.advise(m.getName() + ": " + over + ", " + costText(m) + ". Take one down, or turn on Over-limit fix in Settings.", zero);   // 0.3.8.6: advice
                 return false;
             case GROWS:
                 if (CALog.once(key + ":grow")) CALog.think(m.getName() + ": " + over + " (5 stability). Waits for size " + (size + 1) + ", with room for all of them.");
@@ -324,7 +324,7 @@ public class CAOverLimit {
         if (wk == null) wk = weakest(m, col, true);
         if (wk == null) {
             if (CALog.once(key + ":none")) CALog.advise(m.getName() + ": " + over + ", " + costText(m) + ". Every industry there is locked, "
-                    + "under construction, improved or needed for stability. Taking one down is up to you.", true);
+                    + "under construction, improved or needed for stability. Take one down.", true);   // 0.3.8.6: advice
             return false;
         }
         return takeDown(d, m, wk, over, danger, zero);
@@ -492,11 +492,12 @@ public class CAOverLimit {
         d.swapAt().put(m.getId() + ":replaced", ts);   // and no make-room swap at the capital for a while
         // 0.3.0.0 (B4): a year's mark, so it isn't built back here a month later (Wind's Junkyard Forge, research 01 section 3 item 4)
         CATombstone.add(m.getId(), id, CATombstone.OVERLIMIT, b.paid);
-        CALog.did(m.getName() + ": Took down " + name + ". " + over + ", " + cost + "." + (zero ? " Stability left at 0."
+        // 0.3.8.6: "worth least" in the parenthesis; the -5 named
+        CALog.did(m.getName() + ": Took down " + name + " (worth least, " + CAEngine.valueText(wk.built != null ? wk.value : wk.keep)
+                + CATombstone.paidText(b) + "). " + over + ", " + cost + "." + (zero ? " Stability left at 0."
                 : danger && m.getStabilityValue() <= LOW ? " Stability left at " + Math.round(m.getStabilityValue()) + "."
-                : "") + " " + name
-                + " was worth least (" + CAEngine.valueText(wk.built != null ? wk.value : wk.keep) + CATombstone.paidText(b) + ")."
-                + (first ? " It added " + Math.round(own) + " stability. The 5 lifts once the colony is within its limit." : "")
+                : "")
+                + (first ? " It added " + Math.round(own) + " stability. The -5 over-limit penalty ends at the limit." : "")
                 + (core != null || item != null ? " Its " + (core != null && item != null ? "core and item" : core != null ? "core" : "item") + " to Autopilot Storage." : ""), true);
         return true;
     }

@@ -1,5 +1,15 @@
 # Patch notes
 
+## 0.3.8.6 - 2026-11-16
+
+- Enforcer patrols: Colony patrols attack Sindrian Diktat raiders. No credit charge or reputation change. Own setting, on by default.
+- Defense fleets: Emergency defense fleets count Sindrian Diktat raiders and fleets made hostile to your faction as hostiles.
+- Interface: Fixed percent signs showing as "%%" on the panels, hover text and the Log page.
+- Log: Advice lines name the step to take. Removed "up to you" and "your decision" endings.
+- Log: Lines for your own clicks (rejects, stances, story mode, setup saved) moved to the Thinking list.
+- Log: Fixed lines that named pages and settings that do not exist.
+- Enforcer patrols: Fixed credit amounts that read "¢ credits".
+
 ## 0.3.8.5 - 2026-11-16
 
 - Story mode: Fixed builds and upgrades under Rapid construction spending its fee from the credit reserve.

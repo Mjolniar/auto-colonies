@@ -115,11 +115,11 @@ public class CASync {
         if (want) switchOn(s); else switchOff(s);
         if (want) {
             try { startGame(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode start failed", t); }
-            CALog.did(dormant() ? "Story mode is on. The Colony Autopilot on your TriPad is dormant."
-                    : "Story mode is on. The Autarch AI Core runs the abilities you switched on.", true);
+            CALog.think(dormant() ? "Story mode is on. The Colony Autopilot on your TriPad is dormant."   // 0.3.8.6: your own setting; Thinking list
+                    : "Story mode is on. The Autarch AI Core runs the abilities you switched on.");
         } else {
             try { stopGame(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode stop failed", t); }
-            CALog.did("Story mode is off. Every Colony Autopilot feature works again. The Autarch AI Core's story picks up where it stopped when you switch story mode back on.", true);
+            CALog.think("Story mode is off. Every Colony Autopilot feature works again. The Autarch AI Core's story picks up where it stopped when you switch story mode back on.");   // 0.3.8.6: Thinking list
         }
     }
 
@@ -557,7 +557,9 @@ public class CASync {
             boolean down = to.ordinal() < c.mode.ordinal();
             c.mode = to;
             d.clearPending(c);
-            CALog.did(m.getName() + (down ? ": " + (to == CAData.Mode.OFF ? "Off" : to.label) + " for now. " + manageWhy(wanted) : ": back in " + to.label + "."), true);
+            // 0.3.8.6: with the core out of its cradle (said by the TriPad scene) the line only says Off
+            String why = dormant() && pulled() ? "" : " " + manageWhy(wanted);
+            CALog.did(m.getName() + (down ? ": " + (to == CAData.Mode.OFF ? "Off" : to.label) + " for now." + why : ": back in " + to.label + "."), true);
         }
     }
 
@@ -1041,7 +1043,7 @@ public class CASync {
         flag("pulled", true);
         CAAutarch.give();
         afterChange();
-        CALog.did("Autopilot: the Autarch AI Core is out of its cradle. The Autopilot is dormant.", true);
+        CALog.think("Autopilot: the Autarch AI Core is out of its cradle. The Autopilot is dormant.");   // 0.3.8.6: the TriPad scene says it; Thinking list
     }
 
     /** Engineering breaks the core in your cargo down: BREAKDOWN_DAYS later, Alpha and Beta cores. Null on success. */
@@ -1050,7 +1052,7 @@ public class CASync {
         if (!CAAutarch.take()) return "No Autarch AI Core in your cargo";
         phase("breaking");
         stamp("phaseAt", now()); num("phaseShift", 0);
-        CALog.did("Autopilot: Engineering is breaking the Autarch AI Core down. " + CASyncCatalog.BREAKDOWN_DAYS + " days.", true);
+        CALog.think("Autopilot: Engineering is breaking the Autarch AI Core down. " + CASyncCatalog.BREAKDOWN_DAYS + " days.");   // 0.3.8.6: the TriPad dialog says it; Thinking list
         return null;
     }
 

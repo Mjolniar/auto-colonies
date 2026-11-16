@@ -309,7 +309,7 @@ public class CABudget {
         if (s.upkeepCapAuto) return;
         s.upkeepCapAuto = true;
         CALog.did("New upkeep cap per month: Automatic. 10% of last month's net income, at least 20,000 (" + Misc.getDGSCredits(upkeepCap(s))
-                + " now, was a fixed " + Misc.getDGSCredits(s.newUpkeepCap) + "). Settings, Advanced, Budget can set a Fixed cap again.", true);
+                + " now, was a fixed " + Misc.getDGSCredits(s.newUpkeepCap) + "). Set it to Fixed again in Settings, Advanced, Budget.", true);   // 0.3.8.6: the upkeep row, set to Fixed
     }
 
     /**

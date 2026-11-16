@@ -609,7 +609,7 @@ public class CAContracts {
     public static void render(TooltipMakerAPI t, CAData d, CASettings s) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), bad = Misc.getNegativeHighlightColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         CATheme.mode(t, CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.contractMode))]);   // 0.3.0.0 (WS-F3 fix): the mode as a readout
-        t.addPara("Takes offers that pay more than exports, with 15%% to spare.", 4f);
+        t.addPara("Takes offers that pay more than exports, with 15% to spare.", 4f);   // 0.3.8.6: a plain addPara shows %% as is
         if (!active()) { t.addPara("No trade data yet.", gray, 6f); return; }
         try {
             int held = 0;
@@ -641,7 +641,7 @@ public class CAContracts {
                 if (shown++ >= 6) break;
                 t.addPara("%s, %s months: " + CALog.esc(join(o.lines)) + ". Pays %s per month, %s over exporting" + (o.rewards.isEmpty() ? "." : ". Rewards: " + CALog.esc(join(o.rewards)) + "."),
                         6f, o.feasible ? hl : gray, o.name, "" + o.months, Misc.getDGSCredits(o.pay), Misc.getDGSCredits(o.gain));
-                if (!o.feasible) { t.addPara("    Can't fill: " + CALog.esc(o.why), gray, 2f); continue; }
+                if (!o.feasible) { t.addPara("    Can't fill: " + o.why, gray, 2f); continue; }   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
                 if (s.contractMode == 0) {
                     ButtonAPI b = t.addButton("Accept", new String[]{"contract", "accept", o.id}, base, dark, Alignment.MID, CutStyle.TL_BR, 120f, 22f, 4f);
                     b.setEnabled(o.gain > 0f);

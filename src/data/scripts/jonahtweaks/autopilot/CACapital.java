@@ -518,13 +518,13 @@ public class CACapital {
         boolean here = cap != null && cap.getId().equals(m.getId()), mine = m.getId().equals(s.capitalId);
         if (here) {
             t.addPara("This is your capital" + (mine ? " (your pick)" : " (Autopilot's pick)") + ": deliveries"
-                    + (gathers(s) ? " and Storage gather here" : " come here") + ". " + CALog.esc(Character.toUpperCase(status(s, cap).charAt(0)) + status(s, cap).substring(1)) + ".", 6f);
+                    + (gathers(s) ? " and Storage gather here" : " come here") + ". " + (Character.toUpperCase(status(s, cap).charAt(0)) + status(s, cap).substring(1)) + ".", 6f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
             if (s.capitalMode == 0) {
                 List<String> left = stepLabels(m);
-                if (!left.isEmpty()) t.addPara("Still to build here: " + CALog.esc(CAContracts.join(left)) + ".", gray, 2f);
+                if (!left.isEmpty()) t.addPara("Still to build here: " + CAContracts.join(left) + ".", gray, 2f);   // 0.3.8.6: shown as is
                 // 0.3.0.0 (C4, research 03 F8)
                 List<String> held = waiting(m);
-                if (!held.isEmpty()) t.addPara("Waiting for the money ladder: " + CALog.esc(CAContracts.join(held)) + ".", gray, 2f);
+                if (!held.isEmpty()) t.addPara("Waiting for the money ladder: " + CAContracts.join(held) + ".", gray, 2f);   // 0.3.8.6: shown as is
             }
         } else {
             t.addPara("Your capital is %s.", 6f, hl,

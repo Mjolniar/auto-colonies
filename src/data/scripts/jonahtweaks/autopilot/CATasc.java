@@ -368,7 +368,7 @@ public class CATasc {
             if (shown++ >= 4) break;
             String why = p.startable ? "" : p.blockedBy.equals(PROCESSOR) ? ", needs an Atmosphere Processor" : ", needs a Stellar Reflector Array";
             t.addPara("%s (%s days" + why + "): %s once done", 6f, p.startable ? hl : gray, p.name, "" + Math.round(p.days), CAEngine.valueText(p.value));
-            for (int j = 0; j < Math.min(3, p.lines.size()); j++) t.addPara("    " + CALog.esc(p.lines.get(j)), gray, 2f);
+            for (int j = 0; j < Math.min(3, p.lines.size()); j++) t.addPara("    " + p.lines.get(j), gray, 2f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
             if (p.startable && run == null) t.addButton("Start", CAColonyDialog.TASC + p.name, base, dark, Alignment.MID, CutStyle.TL_BR, 120f, 22f, 4f);
         }
         t.addPara(c.mode == CAData.Mode.AUTO ? "Auto starts the best one." : "Auto colonies start them.", gray, 6f);

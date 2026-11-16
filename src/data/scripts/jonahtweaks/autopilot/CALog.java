@@ -9,7 +9,12 @@ import java.util.Map;
 
 /** Action log: kept in the save (last 100 entries), shown in the empire panel, echoed to the game log. */
 public class CALog {
-    /** Escapes % so free text is safe in the game's formatted text calls. */
+    /**
+     * Escapes % so free text is safe in the game's formatted text calls. 0.3.8.6: only for text joined into the format of an
+     * addPara with highlight values (TooltipMakerAPI addPara(text, pad, color, ...), TextPanelAPI addPara(text, color, ...)).
+     * addPara(text, pad), addPara(text, color, pad), TextPanelAPI addPara(text) and the highlight values show text as is
+     * (javap, starfarer_obf.jar), so they take raw text (check_format.ps1 -escapes).
+     */
     public static String esc(String s) { return s == null ? "" : s.replace("%", "%%"); }
 
     /** Ends a row of side-by-side buttons so the next element starts back at the left edge, under the row. */

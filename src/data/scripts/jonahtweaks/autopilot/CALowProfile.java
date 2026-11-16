@@ -166,7 +166,7 @@ public class CALowProfile {
                 float now = interest(m);
                 p.lowProfile = "Low profile: takes Pather interest here from " + Misc.getRoundedValueMaxOneAfterDecimal(now) + " to "
                         + Misc.getRoundedValueMaxOneAfterDecimal(now + add) + "; a Pather cell comes at " + (int) cellLine()
-                        + (m.getSize() < 4 ? " once the colony reaches size 4" : "") + ", so Autopilot never starts this";
+                        + (m.getSize() < 4 ? " once the colony reaches size 4" : "") + ". Autopilot does not start it";   // 0.3.8.6: plain wording
             }
         } catch (Throwable ignored) { }
         try { triTachyon(m, p); } catch (Throwable ignored) { }
@@ -319,8 +319,8 @@ public class CALowProfile {
     public static void run(CAData d, CASettings s, List<MarketAPI> auto) {
         if (!s.lowProfile) { CALog.forget("lowprofile:on"); return; }
         if (CALog.once("lowprofile:on"))
-            CALog.did(TAG + "on. Colonies keep growing. Attention counts ten times as much. Autopilot slows "
-                    + "each faction's crisis (Crises page).", true);
+            CALog.did(TAG + "on. Attention counts ten times as much. Autopilot slows "   // 0.3.8.6: the page's name
+                    + "each faction's crisis (Colony crises).", true);
         Set<MarketAPI> frozen = CAItems.inspected();   // pulling anything out once an inspection is sent disrupts every building there
         for (MarketAPI m : auto) {
             if (frozen.contains(m) || CAEngine.isOutpost(m) || CAHypershunt.is(m)) continue;
@@ -454,8 +454,8 @@ public class CALowProfile {
             EventFactor f = ha.getFactorOfClass(PerseanLeagueHostileActivityFactor.class);
             if (f == null || f.getProgress(ha) <= 0) return;
             if (CALog.once("lowprofile:league"))
-                CALog.advise(TAG + "the Persean League's crisis counts colony size only. Autopilot builds do not change it. Joining the League "
-                        + "at Kazeron ends it and the Hegemony's. Your decision.", true);
+                CALog.advise(TAG + "the Persean League's crisis counts colony size only. Joining the League "   // 0.3.8.6: advice only
+                        + "at Kazeron ends it and the Hegemony's.", true);
         } catch (Throwable ignored) { }
     }
 

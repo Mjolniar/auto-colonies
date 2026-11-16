@@ -56,28 +56,34 @@ import java.util.function.Predicate;
  *   Nexerelin), paid through CABudget on the Military rung where it applies (CAWarPolicy.payer, ENFORCER); never below the
  *   credit reserve. A charge that can't be paid is owed (CASettings.enfOwed), paid first; no new attacks until then.
  * - Records: by fleet id (marked), this session only; the fleet's memory carries the mark across a save.
+ * 0.3.8.6: Sindrian Diktat raiders ($diktatRaider, SindrianDiktatHostileActivityFactor on 0.98.5a, read by name) are marked
+ * as pirates are fought: their own setting (on by default, CASettings.enfDiktatOff), whether or not Enforcer patrols is on,
+ * no gates, no credit charge and no reputation change. The game makes them hostile to your fleet only.
  */
 public class CAEnforcers implements EveryFrameScript {
 
     // ---------------- the fleet types ----------------
 
-    public static final int INVESTIGATOR = 0, INSPECTION = 1, LEAGUE = 2, PROTECTOR = 3, RAIDER = 4, POLICE = 5, KINDS = 6;
+    /** 0.3.8.6: DIKTAT added (Sindrian Diktat raiders), after the six opt-in types. */
+    public static final int INVESTIGATOR = 0, INSPECTION = 1, LEAGUE = 2, PROTECTOR = 3, RAIDER = 4, POLICE = 5, DIKTAT = 6, KINDS = 7;
     /** 0.3.1.0: the memory flag each type is found by; the inspection task force is found through its intel's routes (null). */
-    static final String[] FLAGS = {"$hegemonyInvestigator", null, "$leagueEnforcer", "$sacredProtectors", "$triTachCommerceRaider", "$nex_HA_police"};
+    static final String[] FLAGS = {"$hegemonyInvestigator", null, "$leagueEnforcer", "$sacredProtectors", "$triTachCommerceRaider", "$nex_HA_police",
+            "$diktatRaider"};
     /** 0.3.1.0: ids kept in the fleet's memory (MEM_KIND). */
-    static final String[] KIND_IDS = {"investigator", "inspection", "league", "protector", "raider", "police"};
+    static final String[] KIND_IDS = {"investigator", "inspection", "league", "protector", "raider", "police", "diktat"};
     /** 0.3.1.0: one fleet of each type, for the log. */
     static final String[] FLEET_NAMES = {"Hegemony investigator", "Hegemony inspection", "Persean League enforcer", "Luddic sacred protector",
-            "Tri-Tachyon commerce raider", "Nexerelin police"};
+            "Tri-Tachyon commerce raider", "Nexerelin police", "Sindrian Diktat raider"};
     /**
      * 0.3.1.0: the reputation the game takes when you defeat that fleet yourself (FleetEncounterContext.adjustPlayerReputation):
      * - investigators, League enforcers, sacred protectors: low rep impact, so COMBAT_NORMAL_TOFF, -3 and not below Vengeful;
      * - inspection task force: COMBAT_NORMAL_TOFF with your transponder off, -3 and not below Vengeful (with it on, the same and
      *   at best Hostile); the -3 is used;
      * - commerce raiders and Nexerelin police: Independent fleets with no rep impact, none.
+     * - 0.3.8.6: Sindrian Diktat raiders: none (no reputation change, as pirates).
      */
     static final float[] GAME_REP = {-CoreReputationPlugin.RepRewards.MEDIUM, -CoreReputationPlugin.RepRewards.MEDIUM,
-            -CoreReputationPlugin.RepRewards.MEDIUM, -CoreReputationPlugin.RepRewards.MEDIUM, 0f, 0f};
+            -CoreReputationPlugin.RepRewards.MEDIUM, -CoreReputationPlugin.RepRewards.MEDIUM, 0f, 0f, 0f};
 
     /** 0.3.1.0: Auto Colonies' record in a marked fleet's memory: its type, fleet points when marked, the colony, charged. */
     static final String MEM_KIND = "$ac_enfKind", MEM_FP = "$ac_enfFP", MEM_MARKET = "$ac_enfMarket", MEM_CHARGED = "$ac_enfCharged";
@@ -135,31 +141,36 @@ public class CAEnforcers implements EveryFrameScript {
         CampaignFleetAPI pf = Global.getSector().getPlayerFleet();
         LocationAPI here = pf == null ? null : pf.getContainingLocation();
         if (here == null) return;
-        for (Mark m : new ArrayList<Mark>(marked.values()))
+        for (Mark m : new ArrayList<Mark>(marked.values())) {
+            // 0.3.8.6: a Sindrian Diktat raider is hostile to your fleet already; its mark stays
+            if (kindIndex(m.fleet.getMemoryWithoutUpdate().getString(MEM_KIND)) == DIKTAT) continue;
             if (m.fleet.getContainingLocation() == here) end(m.fleet, placeOf(m.fleet), "your fleet is in the system");
+        }
     }
 
     /** 0.3.1.0: one check: owed credits first, then every fleet in scope marked, renewed or let go. */
     static void check() {
         CASettings s = CAData.settings();
         settleOwed(s);
-        if (!s.enfOn && marked.isEmpty()) return;
+        // 0.3.8.6: Sindrian Diktat raiders have their own setting, so a check runs while either is on
+        boolean any = s.enfOn || s.enfKind(DIKTAT);
+        if (!any && marked.isEmpty()) return;
         Map<LocationAPI, List<MarketAPI>> scope = scope(s);
         Map<CampaignFleetAPI, Integer> found = new LinkedHashMap<CampaignFleetAPI, Integer>();
-        if (s.enfOn) find(s, scope, found);
+        if (any) find(s, scope, found);
         // ongoing marks first, so a new one never takes the credits an ongoing one counts on
         Set<CampaignFleetAPI> order = new LinkedHashSet<CampaignFleetAPI>();
         for (Mark m : new ArrayList<Mark>(marked.values())) {
             if (found.containsKey(m.fleet)) order.add(m.fleet);
-            else end(m.fleet, placeOf(m.fleet), !s.enfOn ? "enforcer patrols are off" : alive(m.fleet) ? "it left your systems" : "it is gone");
+            else end(m.fleet, placeOf(m.fleet), !any ? "enforcer patrols are off" : alive(m.fleet) ? "it left your systems" : "it is gone");
         }
         order.addAll(found.keySet());
         CampaignFleetAPI pf = Global.getSector().getPlayerFleet();
         LocationAPI here = pf == null ? null : pf.getContainingLocation();
-        int mode = mode(s);
-        float perFP = usesCredits(mode) ? perFP() : 0f, committed = 0f;
+        float perFP = usesCredits(mode(s)) ? perFP() : 0f, committed = 0f;
         for (CampaignFleetAPI f : order) {
             int kind = found.get(f);
+            int mode = mode(s, kind);   // 0.3.8.6: per type (Diktat raiders: None)
             List<MarketAPI> markets = scope.get(f.getContainingLocation());
             MarketAPI m = markets == null || markets.isEmpty() ? null : markets.get(0);
             String why = m == null ? "outside your systems" : why(s, kind, facts(f, here));
@@ -195,6 +206,9 @@ public class CAEnforcers implements EveryFrameScript {
 
     /** 0.3.1.0: why a fleet of this type is not attacked, or null when it is. Pure. */
     static String why(CASettings s, int kind, Facts x) {
+        // 0.3.8.6: Sindrian Diktat raiders: their own setting, none of the gates below (as pirates)
+        if (kind == DIKTAT) return x.yours ? "your fleet or your faction's" : !s.enfKind(kind) ? CASettings.ENF_DIKTAT_NAME + " are off"
+                : x.hostile ? "already hostile to you" : x.flagged ? "the game already made it hostile" : null;
         if (!s.enfOn) return "enforcer patrols are off";
         if (kind < 0 || kind >= KINDS) return "not an enforcement fleet";
         if (x.yours) return "your fleet or your faction's";
@@ -216,6 +230,24 @@ public class CAEnforcers implements EveryFrameScript {
     /** 0.3.1.0: the cost mode, Reputation for a value out of range. Pure. */
     static int mode(CASettings s) { return s.enfCost >= 0 && s.enfCost < CASettings.ENF_COST_NAMES.length ? s.enfCost : CASettings.ENF_REP; }
 
+    /** 0.3.8.6: the cost mode for one type: None for Sindrian Diktat raiders (no credits, no reputation), else mode(s). Pure. */
+    static int mode(CASettings s, int kind) { return kind == DIKTAT ? CASettings.ENF_NONE : mode(s); }
+
+    /**
+     * 0.3.8.6: a fleet that threatens your colonies (CADefense.hostileFP): its faction is hostile to you, it is made hostile
+     * to your faction (Misc.makeHostileToFaction, by the game or an enforcer mark), or it is a Sindrian Diktat raider. Pure.
+     */
+    static boolean threat(boolean factionHostile, Predicate<String> has) {
+        return factionHostile || has.test(HOSTILE_TO_YOU) || has.test(FLAGS[DIKTAT]);
+    }
+
+    /** 0.3.8.6: threat() for one fleet; never your fleet, your faction's or a fleet with no faction. */
+    static boolean threat(CampaignFleetAPI f) {
+        FactionAPI fac = f.getFaction();
+        if (f.isPlayerFleet() || fac == null || fac.isPlayerFaction()) return false;
+        return threat(fac.isHostileTo(Factions.PLAYER), f.getMemoryWithoutUpdate()::getBoolean);
+    }
+
     static boolean usesRep(int mode) { return mode == CASettings.ENF_REP || mode == CASettings.ENF_BOTH; }
 
     static boolean usesCredits(int mode) { return mode == CASettings.ENF_CREDITS || mode == CASettings.ENF_BOTH; }
@@ -235,11 +267,11 @@ public class CAEnforcers implements EveryFrameScript {
         return nex && nexValue > 0f ? nexValue : CATuning.ENFORCER_CREDITS_PER_FP;
     }
 
-    /** 0.3.1.0: "Hegemony relations -3 and 34,000 credits", or "no cost". Pure apart from the credit format. */
+    /** 0.3.1.0: "Hegemony relations -3 and 34,000¢", or "no cost". Pure apart from the credit format. */
     static String costText(String faction, float delta, float credits) {
         List<String> parts = new ArrayList<String>();
         if (delta < 0f) parts.add(faction + " relations " + Math.round(delta * 100f));
-        if (credits > 0f) parts.add(Misc.getDGSCredits(credits) + " credits");
+        if (credits > 0f) parts.add(Misc.getDGSCredits(credits));   // 0.3.8.6: the credit sign is in the number
         return parts.isEmpty() ? "no cost" : String.join(" and ", parts);
     }
 
@@ -271,10 +303,11 @@ public class CAEnforcers implements EveryFrameScript {
                 // 0.3.6.6: a League blockade's escorts carry the enforcers' hassle type, not their flag
                 if (k < 0 && "leagueEnforcer".equals(mem.getString(MemFlags.HASSLE_TYPE))) k = LEAGUE;
                 if (k < 0 && ours) k = kindIndex(mem.getString(MEM_KIND));
-                if (k >= 0 && (ours || s.enfKind(k))) out.put(f, k);   // a type set to Off is looked at only to end its mark
+                // a type set to Off is looked at only to end its mark; 0.3.8.6: the opt-in types only while Enforcer patrols is on
+                if (k >= 0 && (ours || s.enfKind(k) && (s.enfOn || k == DIKTAT))) out.put(f, k);
             }
         }
-        if (!s.enfInspections) return;
+        if (!s.enfOn || !s.enfInspections) return;   // 0.3.8.6: find also runs for Diktat raiders alone
         for (IntelInfoPlugin i : Global.getSector().getIntelManager().getIntel()) {
             if (!(i instanceof HegemonyInspectionIntel) || i.isEnded() || i.isEnding()) continue;
             String source = ((HegemonyInspectionIntel) i).getRouteSourceId();
@@ -361,8 +394,8 @@ public class CAEnforcers implements EveryFrameScript {
         if (s.enfIntercept) intercept(mk, markets);
         if (!fresh) return;
         String faction = f.getFaction() == null ? "" : f.getFaction().getDisplayName();
-        String text = m.getName() + ": Enforcers: patrols attack a " + FLEET_NAMES[kind] + " fleet (" + Math.round(fp) + " points; on defeat "
-                + costText(faction, repDelta(mode, kind), credits(mode, fp, perFP)) + ").";
+        String text = m.getName() + ": Enforcers: patrols attack a " + FLEET_NAMES[kind] + " fleet (" + Math.round(fp) + " points"
+                + (kind == DIKTAT ? "" : "; on defeat " + costText(faction, repDelta(mode, kind), credits(mode, fp, perFP))) + ").";   // 0.3.8.6: Diktat raiders cost nothing
         if (announced.add("attack:" + f.getId())) CALog.did(text, true);
         else CALog.thinkStatus("enf:" + f.getId(), text);
     }
@@ -443,7 +476,7 @@ public class CAEnforcers implements EveryFrameScript {
         if (payer == null) return;
         pay(s, payer, null, owed);
         s.enfOwed = 0f;
-        CALog.did("Enforcers: " + Misc.getDGSCredits(owed) + " credits owed for defeated fleets paid.", true);
+        CALog.did("Enforcers: " + Misc.getDGSCredits(owed) + " owed for defeated fleets paid.", true);   // 0.3.8.6: no "credits" after the sign
     }
 
     /** 0.3.1.0: a marked fleet lost to your faction's fleets: the cost mode's charge, once per fleet. */
@@ -453,8 +486,10 @@ public class CAEnforcers implements EveryFrameScript {
         int kind = kindIndex(mem.getString(MEM_KIND));
         if (kind < 0) return;
         mem.set(MEM_CHARGED, true, CATuning.ENFORCER_HOSTILE_DAYS);
+        // 0.3.8.6: a Sindrian Diktat raider costs nothing; starsector.log only
+        if (kind == DIKTAT) { CALog.quiet(placeOf(f) + ": Enforcers: " + FLEET_NAMES[kind] + " fleet defeated. No cost."); return; }
         CASettings s = CAData.settings();
-        int mode = mode(s);
+        int mode = mode(s, kind);
         String marketId = mem.getString(MEM_MARKET);
         FactionAPI fac = f.getFaction();
         List<String> parts = new ArrayList<String>();
@@ -471,10 +506,10 @@ public class CAEnforcers implements EveryFrameScript {
             String payer = s.enfOwed > 0f ? null : payer(s, cost);
             if (payer != null) {
                 pay(s, payer, marketId, cost);
-                parts.add(Misc.getDGSCredits(cost) + " credits paid");
+                parts.add(Misc.getDGSCredits(cost) + " paid");   // 0.3.8.6: no "credits" after the sign
             } else {
                 s.enfOwed += cost;
-                parts.add(Misc.getDGSCredits(cost) + " credits owed, paid when credits are above the reserve");
+                parts.add(Misc.getDGSCredits(cost) + " owed, paid when credits are above the reserve");
             }
         }
         if (parts.isEmpty()) parts.add(mode == CASettings.ENF_NONE ? "No cost (Cost: None)" : "No cost (the game takes none for this fleet type)");

@@ -83,7 +83,7 @@ public class CAStationAsk implements InteractionDialogPlugin {
             catch (Throwable ignored) { }
             MarketAPI m = market();
             TextPanelAPI t = dialog.getTextPanel();
-            t.addPara((m == null ? "Your colony" : m.getName()) + ": first station. Which line? Strength is against low tech.");
+            t.addPara("Pick " + (m == null ? "your colony" : m.getName()) + "'s first station line. Strength: relative to low tech.");   // 0.3.8.6: no question
             float base = CAStations.strength("orbitalstation");
             OptionPanelAPI o = dialog.getOptionPanel();
             for (int v : m == null ? new ArrayList<Integer>() : openLines(m)) {
@@ -115,7 +115,7 @@ public class CAStationAsk implements InteractionDialogPlugin {
             d.stationAsked = true;
             hold = false;
             CALunaSync.sync();
-            CALog.did("Stations: " + CASettings.STATION_NAMES[v] + ", your choice.", true);
+            CALog.think("Stations: " + CASettings.STATION_NAMES[v] + ", your choice.");   // 0.3.8.6: your pick; Thinking list
         } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station line choice failed", t); }
         dialog.dismiss();
     }

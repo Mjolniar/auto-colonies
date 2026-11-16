@@ -117,7 +117,7 @@ public final class CAFactionsPage {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         boolean nex = mod(NEX), indevo = mod(INDEVO);
         CATheme.heading(t, "Factions", 0f);
-        t.addPara(CALog.esc(CASetupUI.DESC.get("stances") + " [<] friendlier, [>] more hostile."), gray, 6f);   // 0.3.0.0 (WS-F3 fix pass 2): the Settings row's line, said once
+        t.addPara(CASetupUI.DESC.get("stances") + " [<] friendlier, [>] more hostile.", gray, 6f);   // 0.3.0.0 (WS-F3 fix pass 2): the Settings row's line, said once
         t.addTooltipToPrevious(tip(MEANINGS), TooltipMakerAPI.TooltipLocation.BELOW);
         if (!nex && !indevo) t.addPara("Stances need Nexerelin or Industrial Evolution. Neither is on.", hl, 4f);
         else if (!nex) t.addPara("Without Nexerelin, stances set ambassador priority only.", gray, 4f);
@@ -190,14 +190,14 @@ public final class CAFactionsPage {
             if (st == CAStance.AUTO) s.factionStance().remove(fid); else s.factionStance().put(fid, st);
             CAStance.markSetByYou(fid);   // a stance you set acts fully in diplomacy (CAStance.fromOldPriority)
             FactionAPI f = Global.getSector().getFaction(fid);
-            // the War page's wording (CAWar.handle), which CATheme shows as "DIPLO / Hegemony stance Enemy"
-            CALog.did("War: " + (f != null ? f.getDisplayName() : fid) + " stance " + CAStance.name(st) + ".");
+            // the War page's wording (CAWar.handle). 0.3.8.6: the row you clicked shows it; Thinking list
+            CALog.think("War: " + (f != null ? f.getDisplayName() : fid) + " stance " + CAStance.name(st) + ".");
         } else if ("reset".equals(a[1])) {
             int n = set(s);
             for (String fid : new ArrayList<String>(s.factionStance().keySet())) CAStance.markSetByYou(fid);
             s.factionStance().clear();
             CALog.quiet("Factions page: Reset all to Auto, " + n + " stances changed");
-            CALog.did("War: all factions stance Auto.");
+            CALog.think("War: all factions stance Auto.");   // 0.3.8.6: your click; Thinking list
         }
     }
 
@@ -206,7 +206,7 @@ public final class CAFactionsPage {
             public boolean isTooltipExpandable(Object o) { return false; }
             public float getTooltipWidth(Object o) { return 460f; }
             public void createTooltip(TooltipMakerAPI tt, boolean expanded, Object o) {
-                for (int i = 0; i < lines.length; i++) tt.addPara(CALog.esc(lines[i]), i == 0 ? 0f : 6f);
+                for (int i = 0; i < lines.length; i++) tt.addPara(lines[i], i == 0 ? 0f : 6f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
             }
         };
     }

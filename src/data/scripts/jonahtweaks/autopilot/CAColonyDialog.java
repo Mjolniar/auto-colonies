@@ -143,7 +143,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             // 0.3.3.0: the first setup sets the empire mode. 0.3.6.2: the mode you chose, even when story mode holds this colony back
             CAModeTable.setEmpire(d.settings, setupMode != null ? setupMode : c.mode);
             message = "Saved. Mode: " + c.mode.label;
-            CALog.did(market.getName() + ": setup saved, mode " + c.mode.label + ".", true);   // 0.3.0.0 (WS-F3): "SETUP / Place: ..." on screen
+            CALog.think(market.getName() + ": setup saved, mode " + c.mode.label + ".");   // 0.3.8.6: your own click; the Thinking list only
         }
         else if (BACK.equals(id)) { setupPage = false; message = null; }
         else if (EMPIRE.equals(id)) { CAModeTable.setEmpire(d.settings, c.mode); message = "Empire mode set to " + c.mode.label; }
@@ -332,7 +332,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
 
         float cw = W - CANav.W - CANav.GAP;
         TooltipMakerAPI t = content.createUIElement(cw, H, true);
-        if (message != null) t.addPara(CALog.esc(message), hl, 0f);
+        if (message != null) t.addPara(message, hl, 0f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
 
         // 0.3.7.1: an Empire page (the old intel tab's), with a button that asks first shown above it. 0.3.7.3: More shows
         // one of them, picked from a row of buttons
@@ -407,7 +407,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 if (CABudget.paused(s)) t.addPara(CATheme.PAUSED, Misc.getNegativeHighlightColor(), 4f);   // 0.3.0.0 (WS-F3 fix pass 3): CAIntel's text
             }
             if (!buildout && planWith != c.profile) t.addPara("Security goal until threat is under %s.", 4f,
-                    Misc.getNegativeHighlightColor(), Math.round(CAThreat.CLEAR * 100f) + "%", "" + Math.round(CAThreat.MIN_DAYS));
+                    Misc.getNegativeHighlightColor(), Math.round(CAThreat.CLEAR * 100f) + "%");   // 0.3.8.6: one value for one %s
             String siege = managed ? CASiege.why(market) : null;
             if (siege != null) {   // 0.3.0.0 (WS-F3): the trade contract detail moved to the hover
                 t.addPara(SIEGE_LINE, 4f, Misc.getNegativeHighlightColor(), siege, buildout ? "the buildout waits" : "defenses only");
@@ -426,7 +426,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 String why = coming ? "inspection coming, cores kept" : CAItems.limitWhy(s, market, none, lim);
                 t.addPara("AI cores: %s inspection points, %s.", 4f, coming || pts > lim ? Misc.getNegativeHighlightColor() : hl, "" + pts, why);
                 String crisis = CACrisis.coreLine(market);
-                if (crisis != null) t.addPara(CALog.esc(crisis), Misc.getGrayColor(), 2f);
+                if (crisis != null) t.addPara(crisis, Misc.getGrayColor(), 2f);   // 0.3.8.6: shown as is
             }
             if (Global.getSettings().getModManager().isModEnabled(CADevelopment.MOD) && !shunt) {
                 try { CADevelopment.render(t, market); }
@@ -468,7 +468,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 t.addPara("%s  " + CALog.esc(st.label + (lock != null ? " (" + (lock.startsWith("waits") ? "" : "locked: ") + lock + ")" : "")), 2f, tag.equals("Next") ? hl : base, tag);
             }
             if (!nextShown) t.addPara("All steps done.", hl, 4f);
-            if (!doneSteps.isEmpty()) t.addPara(CALog.esc("Done: " + String.join(", ", doneSteps)), gray, 4f);
+            if (!doneSteps.isEmpty()) t.addPara("Done: " + String.join(", ", doneSteps), gray, 4f);   // 0.3.8.6: shown as is
 
             if (shunt) {
                 CATheme.heading(t, "Coronal Hypershunt (AotD)", 12f);
@@ -499,7 +499,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             }
             if (lockFirst != null) CALog.endRow(t, lockFirst);
             List<String> odd = CADiagnostics.unsupportedConditions(market);
-            if (!odd.isEmpty() && !shunt) t.addPara(CALog.esc("Unmapped conditions: " + odd + ". Scores may be off."), gray, 10f);
+            if (!odd.isEmpty() && !shunt) t.addPara("Unmapped conditions: " + odd + ". Scores may be off.", gray, 10f);   // 0.3.8.6: shown as is
         }
         if (story ? (!modSections(c, s, shunt).isEmpty() && section(t, "mods", "Mod features")) : (all || page.equals("mods"))) {
             float pad = story ? 6f : all ? 16f : message != null ? 8f : 0f;
@@ -529,7 +529,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         CATheme.heading(t, CATheme.APPROVAL, 10f);
         t.addPara("%s for %s, fee %s.", 6f, hl, c.pendingName, Misc.getDGSCredits(c.pendingCost),
                 Misc.getDGSCredits(CABudget.constructionFee(s, c.pendingCost)));
-        if (c.pendingWhy != null) t.addPara(CALog.esc(c.pendingWhy), gray, 2f);   // 0.3.3.0
+        if (c.pendingWhy != null) t.addPara(c.pendingWhy, gray, 2f);   // 0.3.3.0
         ButtonAPI a = t.addButton("Approve", APPROVE, hl, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 6f);
         ButtonAPI r = t.addButton("Reject", REJECT, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 0f);
         r.getPosition().rightOfTop(a, 6f);
@@ -562,7 +562,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         CAData.Mode em = s.empire();
         if (c.mode.ordinal() > em.ordinal()) {
             ButtonAPI eb = t.addButton("Empire mode to " + c.mode.label, EMPIRE, base, dark, Alignment.MID, CutStyle.TL_BR, 220f, 22f, 6f);
-            LabelAPI el = t.addPara(CALog.esc("Empire: " + em.label + "."), gray, 0f);
+            LabelAPI el = t.addPara("Empire: " + em.label + ".", gray, 0f);   // 0.3.8.6: shown as is
             el.getPosition().rightOfMid(eb, 10f);
             CALog.endRow(t, eb);
         }
@@ -576,15 +576,15 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                            boolean buildout, boolean shunt, boolean outpost) {
         Color screen = CATriPad.SCREEN, gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         t.setParaFontOrbitron();
-        t.addPara(CALog.esc(market.getName().toUpperCase(java.util.Locale.ROOT) + ": " + c.mode.label.toUpperCase(java.util.Locale.ROOT)
-                + ". GOAL: " + c.profile.label.toUpperCase(java.util.Locale.ROOT) + "."), screen, message != null ? 8f : 0f);
-        if (outpost) t.addPara(CALog.esc(OUTPOST_LINE.toUpperCase(java.util.Locale.ROOT)), screen, 4f);
+        t.addPara(market.getName().toUpperCase(java.util.Locale.ROOT) + ": " + c.mode.label.toUpperCase(java.util.Locale.ROOT)   // 0.3.8.6: shown as is
+                + ". GOAL: " + c.profile.label.toUpperCase(java.util.Locale.ROOT) + ".", screen, message != null ? 8f : 0f);
+        if (outpost) t.addPara(OUTPOST_LINE.toUpperCase(java.util.Locale.ROOT), screen, 4f);   // 0.3.8.6: shown as is
         if (!outpost && !shunt) {
             try {
                 CAPlan.Plan plan = CAPlan.build(market, planWith);
                 for (CAPlan.Step st : plan.steps) {
                     if (st.done(market)) continue;
-                    t.addPara(CALog.esc("NEXT: " + st.label.toUpperCase(java.util.Locale.ROOT) + "."), screen, 4f);
+                    t.addPara("NEXT: " + st.label.toUpperCase(java.util.Locale.ROOT) + ".", screen, 4f);   // 0.3.8.6: shown as is
                     break;
                 }
             } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story header plan failed at " + market.getName(), e); }
@@ -620,7 +620,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         CALog.endRow(t, rb);
         if (k == null) return;
         CAEngine.Result r = k.result;
-        if (r.blocked != null) t.addPara(CALog.esc(r.blocked) + (r.picks.isEmpty() ? "." : ". Upgrades only."), hl, 8f);
+        if (r.blocked != null) t.addPara(r.blocked + (r.picks.isEmpty() ? "." : ". Upgrades only."), hl, 8f);   // 0.3.8.6: shown as is
         List<CAEngine.Pick> picks = r.picks;
         if (picks.isEmpty()) t.addPara("Nothing to build now.", 8f);
         else if (!CAEngine.worthwhile(picks.get(0))) t.addPara("Nothing pays for itself now.", hl, 8f);   // 0.3.0.0 (WS-F3 fix): shorter
@@ -637,7 +637,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             if (!CAEngine.worthwhile(p)) t.addPara("    Not worth it. Payback over %s months.", 2f,
                     Misc.getNegativeHighlightColor(), "" + months(p));
             int shown = Math.min(3, p.lines.size());
-            for (int j = 0; j < shown; j++) t.addPara("    " + CALog.esc(p.lines.get(j)), gray, 2f);
+            for (int j = 0; j < shown; j++) t.addPara("    " + p.lines.get(j), gray, 2f);   // 0.3.8.6: shown as is
             if (p.lines.size() > shown) {   // 0.3.0.0 (WS-F3): the rest on hover, here and on the pick's line
                 t.addPara("    " + (p.lines.size() - shown) + " more effects on hover.", gray, 2f);
                 CATheme.hover(t, p.lines.subList(shown, p.lines.size()).toArray(new String[0]));

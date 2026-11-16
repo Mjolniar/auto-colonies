@@ -405,7 +405,7 @@ public class CASettlement {
         CALog.forget("settle:" + kind + ":" + id);
         if (kind.equals(d.settlePendingKind) && id.equals(d.settlePendingId)) clearPending(d);
         CALog.did("Settlement: " + name + " for " + Misc.getDGSCredits(cost)
-                + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + "." + ("Auto".equals(who) ? "" : "You".equals(who) ? " Started by you." : " Approved."), true);
+                + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + "." + ("Auto".equals(who) || "You".equals(who) ? "" : " Approved."), true);   // 0.3.8.6: no "Started by you."
         return null;
     }
 
@@ -481,7 +481,7 @@ public class CASettlement {
     /** Empire panel buttons: {"settle", action, id}. Returns a message for the log, or null. */
     public static void handle(String action, String id, CAData d, CASettings s) {
         if ("reject".equals(action)) {
-            if (d.settlePendingName != null) CALog.did("Settlement: Proposal rejected: " + d.settlePendingName + ".");
+            if (d.settlePendingName != null) CALog.think("Settlement: Proposal rejected: " + d.settlePendingName + ".");   // 0.3.8.6: your click; Thinking list
             if (d.settlePendingKind != null) CAMark.set("settleno:" + d.settlePendingKind + ":" + d.settlePendingId, CAMark.now());   // held 180 days
             clearPending(d);
             return;

@@ -167,7 +167,7 @@ public class CADiplomacy {
         int eff = Math.min(CAWarPolicy.clamp(s.warLevel), CAStance.cap(st));
         out.add("Then at War level " + CAWarPolicy.levelName(s.warLevel) + " (" + CAStance.name(st) + " allows " + CAWarPolicy.levelName(eff) + "): "
                 + (eff >= CAWarPolicy.CONQUER ? "invasions, raids and blockades" : eff >= CAWarPolicy.HOLD ? "raids and blockades" : "strikes back only")
-                + ", each at Nexerelin's price plus the fee, never below your credit reserve.");
+                + ", each at Nexerelin's price plus the fee, above your credit reserve.");   // 0.3.8.6: plain wording
         int markets = 0; MarketAPI near = null; float nearLY = Float.MAX_VALUE;
         for (MarketAPI m : Misc.getFactionMarkets(f)) {
             if (!CAWar.targetable(m)) continue;

@@ -704,11 +704,11 @@ public class CARich {
         // 0.3.0.0 (C3): the month's pool, what each open rung may still spend, and each rung's note
         try {
             String ladder = ladderText();
-            if (ladder != null) t.addPara(CALog.esc(ladder), gray, 2f);
-            for (int r = 1; r < RUNGS.length; r++) if (notes[r] != null) t.addPara(CALog.esc(RUNGS[r] + ": " + notes[r]), gray, 2f);
+            if (ladder != null) t.addPara(ladder, gray, 2f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
+            for (int r = 1; r < RUNGS.length; r++) if (notes[r] != null) t.addPara(RUNGS[r] + ": " + notes[r], gray, 2f);   // 0.3.8.6: shown as is
         } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "ladder line failed", e); }
         String spent = spentText();
-        if (spent != null) t.addPara(CALog.esc(spent), gray, 2f);
+        if (spent != null) t.addPara(spent, gray, 2f);   // 0.3.8.6: shown as is
     }
 
     /**

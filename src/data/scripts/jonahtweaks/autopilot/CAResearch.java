@@ -1132,7 +1132,7 @@ public class CAResearch {
                     List<String> names = new ArrayList<String>();
                     for (Tech x : rankedNow) if (n.chain.contains(x.id)) names.add(x.name);
                     t.addPara("    %s at %s: %s techs, %s databanks, about %s days" + (n.manual ? " (needs items)" : ""), 2f, hl,
-                            CALog.esc(n.step), CALog.esc(n.colony), "" + n.chain.size(), "" + n.databanks, "" + Math.round(n.days));
+                            n.step, n.colony, "" + n.chain.size(), "" + n.databanks, "" + Math.round(n.days));   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
                 }
             }
             boolean idle = idle(mgr);
@@ -1142,7 +1142,7 @@ public class CAResearch {
                 if (shown++ >= 6) break;
                 t.addPara("%s (%s days, %s): %s a month" + (x.needsItems ? (covered(mgr, x) ? ", items in Storage" : ", items short") : "") + (!x.autoOk() ? ", items: yours" : ""),
                         8f, x.rank > 0f ? hl : gray, x.name, "" + Math.round(Math.max(1f, x.days - x.spent)), itemsText(x), CAEngine.signed(x.value));
-                for (int j = 0; j < Math.min(3, x.lines.size()); j++) t.addPara("    " + CALog.esc(x.lines.get(j)), gray, 2f);
+                for (int j = 0; j < Math.min(3, x.lines.size()); j++) t.addPara("    " + x.lines.get(j), gray, 2f);   // 0.3.8.6: shown as is
                 if (idle && s.researchMode != 2) {
                     ButtonAPI b = t.addButton("Start", new String[]{"research", "start", x.id}, base, dark, Alignment.MID, CutStyle.TL_BR, 120f, 22f, 4f);
                     b.setEnabled(fac > 0);

@@ -199,8 +199,8 @@ public class CAItems {
         if (s.adminOptimal && (assignAdmin(d, markets) || moveAdmin(markets))) return;
         if (s.adminHiring) hireAdmin(d, s, markets);
         else if (adminsUncovered(d) > 0 && CALog.once("admin:need:off:" + adminsNeeded(d)))   // 0.3.0.0 (WS-D): not for an expedition's own administrator
-            CALog.advise("Administrators: needed for " + limitText(adminsNeeded(d), expansionsComing(d)) + ". Hire administrators: off. "
-                    + "Hire one, or turn it on under Administrators and ambassadors.");
+            CALog.advise("Administrators: needed for " + limitText(adminsNeeded(d), expansionsComing(d)) + ". Administrator hiring: off. "
+                    + "Hire one, or set Administrators to Hire and place.");   // 0.3.8.6: the Settings rows' names
     }
 
     /**

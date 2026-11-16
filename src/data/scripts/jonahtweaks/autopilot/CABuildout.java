@@ -107,11 +107,11 @@ public class CABuildout {
 
     // ---------------- text (0.3.0.0, WS-F3: each paragraph 40 words or fewer, JTScreenButtonCheck) ----------------
 
-    static final String STYLE_ASK = "is your first colony. Pick an expansion style.",
+    static final String STYLE_ASK = "Pick an expansion style for",   // 0.3.8.6: + the colony's name
             STYLE_LATER = "Change it in Settings, Expansion style.";   // 0.3.0.0 fix pass 3: shorter
     /** The fast buildout offer, before "You have X now": what it does, then what follows (gray). */
     static final String[] OFFER_TEXT = {   // 0.3.0.0 (WS-F3 fix pass 2): shorter, for the mod-wide word budget
-            "Fast buildout: Auto, and credits above a floor go to the fastest payback until it earns money 30 days running.",
+            "Fast buildout sets Auto and spends credits above a floor on the fastest payback until it earns 30 days running.",   // 0.3.8.6: a sentence
             "Fees apply."};
 
     /**
@@ -148,7 +148,7 @@ public class CABuildout {
             // 0.2.43.0: first the expansion style (CALowProfile), then the buildout
             // 0.3.0.0 (WS-F3): the Settings row's text (styleText) in place of 3 paragraphs of 39, 58 and 13 words
             TextPanelAPI t = dialog.getTextPanel();
-            t.addPara("Colony Autopilot: " + m.getName() + " " + STYLE_ASK);
+            t.addPara(STYLE_ASK + " " + m.getName() + ".");   // 0.3.8.6: the prompt already reads Colony Autopilot
             for (String p : styleText()) t.addPara(p);
             t.addPara(STYLE_LATER, Misc.getGrayColor());
             OptionPanelAPI o = dialog.getOptionPanel();
@@ -187,7 +187,7 @@ public class CABuildout {
                 return;
             }
             if (data instanceof Float) start(m, (Float) data);
-            else CALog.did(m.getName() + ": Fast buildout declined. The colony panel offers it while the colony loses money.", true);
+            else CALog.did(m.getName() + ": The colony panel offers fast buildout while the colony loses money.", true);   // 0.3.8.6: advice only
             dialog.dismiss();
         }
 
@@ -206,7 +206,7 @@ public class CABuildout {
         if (first) {
             CASetupUI.applyRecommended(d.settings);
             d.settings.setupDone = true;
-            CALog.did("Settings: recommended values applied (Intel, Colony Autopilot, Settings).", true);   // 0.3.0.0 (WS-F3): SETUP on screen
+            CALog.did("Settings: recommended values applied (Autopilot panel, Settings).", true);   // 0.3.0.0 (WS-F3): SETUP on screen. 0.3.8.6: the panel's name
         }
         d.setMode(c, CAData.Mode.AUTO);
         if (first) CAModeTable.setEmpire(d.settings, CAData.Mode.AUTO);   // 0.3.3.0: the first setup sets the empire mode

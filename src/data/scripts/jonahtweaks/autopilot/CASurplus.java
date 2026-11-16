@@ -486,9 +486,9 @@ public class CASurplus {
         CAEndgame.render(t, s);
         float c = committed();
         if (c > 0f) t.addPara("Kept back: %s promised to production.", 2f, gray, hl, Misc.getDGSCredits(c));
-        if (CATerraSim.summary != null) t.addPara(CALog.esc(CATerraSim.summary), gray, 2f);
-        if (CASurplusResearch.summary != null) t.addPara(CALog.esc(CASurplusResearch.summary), gray, 2f);
-        if (CAWonders.summary != null) t.addPara(CALog.esc(CAWonders.summary), gray, 2f);
+        if (CATerraSim.summary != null) t.addPara(CATerraSim.summary, gray, 2f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
+        if (CASurplusResearch.summary != null) t.addPara(CASurplusResearch.summary, gray, 2f);   // 0.3.8.6: shown as is
+        if (CAWonders.summary != null) t.addPara(CAWonders.summary, gray, 2f);   // 0.3.8.6: shown as is
     }
 
     /** The colony panel's section: whether this is the focus world, and the buttons to pick it or hand it back. */

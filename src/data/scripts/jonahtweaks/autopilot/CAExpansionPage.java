@@ -36,7 +36,7 @@ public final class CAExpansionPage {
         String last = CAExpansion.SCAN.status;
         boolean today = last != null && CAExpansion.SCAN.statusDay == CATime.today();
         if (CAExpansion.mode(s) > 0 && !today)
-            t.addPara(last != null ? "Last daily check: " + CALog.esc(last) : "Not checked yet.", gray, 4f);
+            t.addPara(last != null ? "Last daily check: " + last : "Not checked yet.", gray, 4f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
         try { CAExpansion.render(t, d, s); }
         catch (Throwable e) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "expansion page failed", e);
@@ -70,7 +70,7 @@ public final class CAExpansionPage {
         if (c == null) {
             t.addPara("About %s plus a %s fee.", 6f, hl, Misc.getDGSCredits(p.cost), Misc.getDGSCredits(p.fee));
         } else if (c.why != null) {
-            t.addPara("It can't go now: " + CALog.esc(c.why), bad, 6f);
+            t.addPara("It can't go now: " + c.why, bad, 6f);   // 0.3.8.6: shown as is
             return;
         } else {
             t.addPara("%s from %s, about %s days. %s plus a %s fee.", 6f, hl, CAExpansion.methodName(c.method),

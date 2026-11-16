@@ -148,10 +148,10 @@ public class CAStoryIntel extends BaseIntelPlugin {
         // 0.3.6.6: before the core is installed, nothing about feeding cores or abilities (the story tells it)
         if (CASync.installed()) info.addPara("The Colonial Administration Suite on your TriPad runs on the Autarch AI Core.", 10f);
         else info.addPara("The Colonial Administration Suite on your TriPad is an old Domain program for running colonies. It needs an Autarch-class AI core to run.", 10f);
-        info.addPara(CALog.esc(status()), hl, 10f);
+        info.addPara(status(), hl, 10f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
         if (CASync.installed()) info.addPara("The core has %s bandwidth. Your abilities use %s, and %s are free.", 4f, hl, "" + CASync.total(), "" + CASync.spent(), "" + Math.max(0, CASync.free()));
         if (CAAutarchIntel.active()) clues(info, hl);
-        else if (objective() != null) info.addPara(CALog.esc(objective()), hl, 10f);
+        else if (objective() != null) info.addPara(objective(), hl, 10f);   // 0.3.8.6: shown as is
         if (CASync.dormant() && CAAutarch.inCargo() > 0)   // 0.3.7.1: the Story page's button, here too (no colony needed)
             info.addButton(CASync.pulled() ? "Reseat the core" : "Decide on the core", CASync.PREFIX + "core", Misc.getBasePlayerColor(),
                     Misc.getDarkPlayerColor(), Alignment.MID, CutStyle.TL_BR, 200f, 24f, 10f);
@@ -168,8 +168,9 @@ public class CAStoryIntel extends BaseIntelPlugin {
         if (signal) info.addPara("Your TriPad picked up the core's signal from the %s.", 10f, hl, area);
         else info.addPara("The maintenance log on your TriPad places the core at a derelict research station in the %s.", 10f, hl, area);
         String where = orbit == null ? "" : ", with the " + (signal ? "core" : "station") + " orbiting " + orbit;
-        if (signal) info.addPara("Your sensors officer reads the source as an uncolonized system around %s" + where + ".", 10f, hl, star);
-        else info.addPara("The rest of the entry is damaged. It describes an uncolonized system around %s" + where + ".", 10f, hl, star);
+        // 0.3.8.6: no sensors framing; the orbit's name is joined into a format, so it is escaped
+        if (signal) info.addPara("The source is an uncolonized system around %s" + CALog.esc(where) + ".", 10f, hl, star);
+        else info.addPara("The rest of the entry is damaged. It describes an uncolonized system around %s" + CALog.esc(where) + ".", 10f, hl, star);
     }
 
     @Override

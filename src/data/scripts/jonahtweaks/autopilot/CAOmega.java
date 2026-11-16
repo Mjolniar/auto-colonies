@@ -219,7 +219,7 @@ public class CAOmega {
                     if (best == null || v > best.value) { best = new Spot(); best.m = m; best.value = v; best.why = "governs it"; }
                 } else if (v > 0f && CALog.once("omega:admin:limit:" + m.getId() + ":" + lim))
                     CALog.advise(m.getName() + ": an Omega core could govern it (Astral Ascension Renewed). As an administrator it counts "
-                            + adminPoints() + " inspection points (" + CAItems.limitWhy(s, m, none, lim) + "). Put it in yourself to have it there.");
+                            + adminPoints() + " inspection points (" + CAItems.limitWhy(s, m, none, lim) + "). Assign it as administrator.");   // 0.3.8.6: advice
             }
             if (!effects || CARogue.noCores(m)) continue;   // 0.3.2.1: Pilgrim World
             for (Industry ind : m.getIndustries()) {
@@ -290,7 +290,7 @@ public class CAOmega {
             if (CALog.once("omega:inspect:" + m.getId() + ":" + Global.getSector().getClock().getCycle()))
                 CALog.advise(m.getName() + ": Hegemony inspection coming for its Omega core administrator. Complying, or losing a resistance, "
                         + "takes the administrator." + (ascended(m) ? " Past size 10 that starts Astral Ascension Renewed's Great Civil War (size 8, lasting stability loss)." : "")
-                        + " Inspection orders: your decision.");
+                        + " Set the inspection orders.");   // 0.3.8.6: advice
         }
     }
 }

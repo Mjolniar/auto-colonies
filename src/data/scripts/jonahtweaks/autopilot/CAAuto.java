@@ -514,7 +514,7 @@ public class CAAuto {
     public static void reject(MarketAPI m) {
         CAData d = CAData.get();
         CAData.Colony c = d.colony(m.getId());
-        if (c.pendingName != null) CALog.did(m.getName() + ": Proposal rejected: " + c.pendingName + ".");
+        if (c.pendingName != null) CALog.think(m.getName() + ": Proposal rejected: " + c.pendingName + ".");   // 0.3.8.6: your click; Thinking list
         String id = c.pendingId;
         d.clearPending(c);
         // 0.3.0.0 (A1): from today on the game clock; lastNow was 0 until the first pass after a load, so a rejection then wasn't held

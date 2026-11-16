@@ -119,7 +119,7 @@ public final class CAWarPage {
         t.addPara("Money: %s budget left, %s surplus, %s Military rung, reserve %s.", 4f, hl,
                 Misc.getDGSCredits(CABudget.available(s)), Misc.getDGSCredits(CASurplus.amount(s)), Misc.getDGSCredits(rung), Misc.getDGSCredits(s.reserve));
         t.addPara("Raids and retakes: budget. Invasions and bombardment: surplus. Fee applies.", gray, 2f);
-        if (CAWar.summary != null) t.addPara("Today: " + CALog.esc(CAWar.summary), gray, 4f);
+        if (CAWar.summary != null) t.addPara("Today: " + CAWar.summary, gray, 4f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
     }
 
     /** Stand down, Recall all, Authorize bombardment (at Scorched), then the War settings at a glance. */
@@ -155,7 +155,7 @@ public final class CAWarPage {
     static String attacks(CAData d, CASettings s, FactionAPI f, String rival) {
         int st = CAWar.stance(s, f.getId(), rival);
         String picked = st != s.stanceOf(f.getId()) ? "picked as Rival, " : "";
-        if (st <= CAStance.NEUTRAL) return "never attacked";
+        if (st <= CAStance.NEUTRAL) return "not attacked";   // 0.3.8.6: plain wording
         if (!f.isHostileTo(Factions.PLAYER)) {
             if (!CAStance.wantsWar(st)) return picked.isEmpty() ? null : picked + "not hostile";
             return d.warAuthorized().contains(f.getId()) ? "war confirmed" : "not at war: Declare war on the War page";
@@ -221,7 +221,7 @@ public final class CAWarPage {
             try { CAWar.renderFaction(t, d, s, f, rival); }
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "war page faction failed for " + f.getId(), e); continue; }
             if (p == null) continue;
-            try { for (String line : planned(p, f)) t.addPara("  " + CALog.esc(line), gray, 2f); }
+            try { for (String line : planned(p, f)) t.addPara("  " + line, gray, 2f); }   // 0.3.8.6: shown as is
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "war page plan failed for " + f.getId(), e); }
         }
         ButtonAPI open = t.addButton("OPEN", CANav.PREFIX + CAFactionsPage.PAGE, base, dark, Alignment.MID, CutStyle.TL_BR, 86f, 20f, 10f);
@@ -322,7 +322,7 @@ public final class CAWarPage {
             if (m != null) names.add(m.getName());
         }
         if (!names.isEmpty()) t.addPara("Strikes back due (attacked within " + Math.round(CAWar.ATTACK_DAYS) + " days): "
-                + CALog.esc(CAContracts.join(names)) + ".", Misc.getGrayColor(), 8f);
+                + CAContracts.join(names) + ".", Misc.getGrayColor(), 8f);   // 0.3.8.6: shown as is
     }
 
 }

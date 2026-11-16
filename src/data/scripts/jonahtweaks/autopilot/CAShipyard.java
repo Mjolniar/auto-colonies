@@ -397,7 +397,7 @@ public class CAShipyard {
             if (!p.sig().equals(loggedSig)) {
                 loggedSig = p.sig();
                 CAApprovals.say("Shipyard: recommends " + text(p.qty, p.names) + " for " + Misc.getDGSCredits(p.value) + " plus a " + Misc.getDGSCredits(p.fee)
-                        + " fee, built at month end and delivered to " + p.to + ". Approve on the Budget panel.", true);
+                        + " fee, built at month end and delivered to " + p.to + ". Approve on the Colonies page.", true);   // 0.3.8.6: the page's name
             }
             return;
         }
@@ -555,7 +555,7 @@ public class CAShipyard {
         MarketAPI gp = prod.getGatheringPoint();
         if (back > 0f) CABudget.refund(s, gp == null ? null : gp.getId(), back);
         CALog.did("Shipyard: took " + text(removed, names) + " off the production list" + (back > 0f ? ", " + Misc.getDGSCredits(back) + " fee back" : "")
-                + ". Free cash was under 0. Reserve and runway kept.", true);
+                + ". Free cash was under 0.", true);   // 0.3.8.6: the action only
     }
 
     /** One hull of an order comes off: the newest order line of that hull loses one. */

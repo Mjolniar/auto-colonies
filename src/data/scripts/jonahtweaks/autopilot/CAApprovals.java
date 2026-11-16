@@ -323,7 +323,7 @@ public final class CAApprovals {
         return r;
     }
 
-    static void note(String r) { if (r != null && !r.isEmpty()) CALog.did(r, false); }
+    static void note(String r) { if (r != null && !r.isEmpty()) CALog.think(r); }   // 0.3.8.6: a reject you clicked; Thinking list
 
     static String changed(String now) { return now == null ? "Changed: the proposal is gone" : "Changed: now " + now; }
 
@@ -399,7 +399,7 @@ public final class CAApprovals {
     public static Map<String, String> rejectAll(List<Item> items) {
         Map<String, String> out = new LinkedHashMap<String, String>();
         for (Item it : items) { String r = reject(it); if (r != null) out.put(it.key, r); }
-        if (!items.isEmpty()) CALog.did("Approvals: " + (items.size() - out.size()) + " rejected.", true);
+        if (!items.isEmpty()) CALog.think("Approvals: " + (items.size() - out.size()) + " rejected.");   // 0.3.8.6: your click; Thinking list
         return out;
     }
 

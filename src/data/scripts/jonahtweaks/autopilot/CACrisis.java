@@ -398,7 +398,7 @@ public class CACrisis {
                 List<String> names = new ArrayList<String>();
                 for (MarketAPI m : targets()) names.add(m.getName());
                 CALog.did("Colony crisis coming: " + name(r.factor) + (names.isEmpty() ? "" : ", most likely at " + CAContracts.join(names))
-                        + ". Auto colonies there plan with Security until it ends. Details: Crises page.", true);
+                        + ". Auto colonies there plan with Security until it ends. Details: Colony crises.", true);   // 0.3.8.6: the page's name
             }
         } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "crisis check failed", t); }
     }
@@ -433,12 +433,12 @@ public class CACrisis {
             if (now != was) {
                 hi.setOrders(now);
                 CALog.did(m.getName() + ": Hegemony AI inspection coming. Defenses (about " + def + " fleet points) beat the "
-                        + fp + " sent. Orders set to resist. The Hegemony turns hostile when they arrive. Beating three ends the inspections.", true);
+                        + fp + " sent. Orders set to resist.", true);   // 0.3.8.6: the rules are on the Colony crises page
             } else {
-                CALog.advise(m.getName() + ": Hegemony AI inspection coming (" + fp + " fleet points, defenses about " + def + "). "
-                        + (was == HegemonyInspectionIntel.AntiInspectionOrders.COMPLY
-                        ? "Complying hands over every core there. Resist or bribe from the inspection's intel before it arrives."
-                        : "Your orders stand."), true);
+                CALog.advise(m.getName() + ": Hegemony AI inspection coming (" + fp + " fleet points, defenses about " + def + ")."
+                        + (was == HegemonyInspectionIntel.AntiInspectionOrders.COMPLY   // 0.3.8.6: no "Your orders stand."
+                        ? " Complying hands over every core there. Resist or bribe from the inspection's intel before it arrives."
+                        : ""), true);
             }
         }
     }
@@ -508,8 +508,8 @@ public class CACrisis {
             HostileActivityFactor hf = (HostileActivityFactor) f;
             String label;
             try { label = f.getDesc(ha); } catch (Throwable e) { label = name(hf); }
-            t.addPara("%s: %s a month", 10f, p > 0 ? hl : Misc.getPositiveHighlightColor(), CALog.esc(label), (p > 0 ? "+" : "") + p);
-            t.addPara(CALog.esc(advice(hf)), gray, 2f);
+            t.addPara("%s: %s a month", 10f, p > 0 ? hl : Misc.getPositiveHighlightColor(), label, (p > 0 ? "+" : "") + p);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
+            t.addPara(advice(hf), gray, 2f);   // 0.3.8.6: shown as is
         }
         if (!any) t.addPara("Nothing is adding to it now.", gray, 6f);
 

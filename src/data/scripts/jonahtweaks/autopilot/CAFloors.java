@@ -977,11 +977,11 @@ public class CAFloors {
         CATheme.heading(t, "Production floors", 12f);
         if (!s.productionOn()) { t.addPara("Production: Off. Floors, taper and diversity are not used.", gray, 4f); return; }
         if (st == null) { t.addPara("Production: " + CASettings.PRODUCTION_NAMES[s.productionMode] + ". Measured on the next daily pass.", gray, 4f); return; }
-        for (String l : lines(st)) t.addPara(CALog.esc(l), l.endsWith("Met.") ? gray : hl, 3f);
+        for (String l : lines(st)) t.addPara(l, l.endsWith("Met.") ? gray : hl, 3f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
         for (Map.Entry<String, List<String[]>> e : st.steps.entrySet())
-            for (String[] x : e.getValue()) t.addPara(CALog.esc("Planned: " + x[0] + " at " + x[1] + " (" + x[2] + ")."), hl, 3f);
+            for (String[] x : e.getValue()) t.addPara("Planned: " + x[0] + " at " + x[1] + " (" + x[2] + ").", hl, 3f);   // 0.3.8.6: shown as is
         if (st.partsOn && st.partsLocal > 0)
-            t.addPara(CALog.esc("Parts: " + Misc0.n(st.partsLocal) + " in Local Resources at " + st.partsColonies + (st.partsColonies == 1 ? " colony." : " colonies.")),
+            t.addPara("Parts: " + Misc0.n(st.partsLocal) + " in Local Resources at " + st.partsColonies + (st.partsColonies == 1 ? " colony." : " colonies."),   // 0.3.8.6: shown as is
                     st.partsGap() > 0 ? bad : gray, 3f);
     }
 

@@ -271,7 +271,7 @@ public class CAHypershunt {
             return "Failed. See starsector.log";
         }
         CAContracts.cached = null;
-        CALog.did(m.getName() + ": " + s.name + " restoration started by " + who + ". About " + Misc.getDGSCredits(s.monthlyCredits)
+        CALog.did(m.getName() + ": " + s.name + " restoration started" + ("you".equals(who) ? "" : " by " + who) + ". About " + Misc.getDGSCredits(s.monthlyCredits)   // 0.3.8.6: no "by you"
                 + " a month for " + s.months() + " months, through a restoration contract on your exports."
                 + (s.upkeep > 0f ? " Then " + Misc.getDGSCredits(s.upkeep) + " a month upkeep." : ""));
         return null;
@@ -292,7 +292,7 @@ public class CAHypershunt {
         }
         int was = h.range;
         h.range = n;
-        CALog.did(h.m.getName() + ": Hypershunt range set from " + was * h.mult + " to " + n * h.mult + " light-years by " + who + ". "
+        CALog.did(h.m.getName() + ": Hypershunt range set from " + was * h.mult + " to " + n * h.mult + " light-years" + ("you".equals(who) ? "" : " by " + who) + ". "   // 0.3.8.6: no "by you"
                 + (n > was ? "+" : "-") + Misc.getDGSCredits(Math.abs(n - was) * STEP_UPKEEP) + " a month upkeep, "
                 + (n > was ? "+" : "-") + Math.abs(n - was) * STEP_PTM + " purified transplutonics demand.");
         return null;
@@ -303,6 +303,12 @@ public class CAHypershunt {
         return null;
     }
 
+    /** 0.3.8.6: handle()'s messages when the action went through (the panel shows them; the log has the action's own line). */
+    static final String STARTED = "Restoration started", RANGE_SET = "Range set", MANAGED = "Autopilot manages the range again";
+
+    /** 0.3.8.6: whether a handle() message says the action went through. */
+    static boolean done(String msg) { return STARTED.equals(msg) || RANGE_SET.equals(msg) || MANAGED.equals(msg); }
+
     /** A panel button: restore:sectionId, range:n, or manage (hand the range back to Autopilot). Returns a message. */
     public static String handle(MarketAPI m, String action, String arg) {
         Shunt h = find(m);
@@ -312,16 +318,16 @@ public class CAHypershunt {
             Section s = COLLECTOR.equals(arg) ? h.collector : WORMHOLE.equals(arg) ? h.wormhole : null;
             if (s == null) return "Unknown section";
             String err = start(h, s, "you");
-            return err == null ? "Restoration started" : err;
+            return err == null ? STARTED : err;
         }
         if ("range".equals(action)) {
             int n;
             try { n = Integer.parseInt(arg); } catch (Throwable t) { return "Bad range"; }
             String err = setRange(h, n, "you");
             if (err == null) { c.hsRange = h.range; c.hsManual = false; }
-            return err == null ? "Range set" : err;
+            return err == null ? RANGE_SET : err;
         }
-        if ("manage".equals(action)) { c.hsManual = false; c.hsRange = null; return "Autopilot manages the range again"; }
+        if ("manage".equals(action)) { c.hsManual = false; c.hsRange = null; return MANAGED; }
         return "Unknown action";
     }
 
@@ -503,7 +509,7 @@ public class CAHypershunt {
             Integer spare = CAContracts.spare(e.getKey());
             needs.add(Misc.getWithDGS(e.getValue()) + " " + commodityName(e.getKey()) + (spare == null ? "" : " (" + Misc.getWithDGS(Math.max(0, spare)) + " spare)"));
         }
-        if (!needs.isEmpty()) t.addPara("    Each month: " + CALog.esc(CAContracts.join(needs)), gray, 2f);
+        if (!needs.isEmpty()) t.addPara("    Each month: " + CAContracts.join(needs), gray, 2f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
         if (buttons && !s.restoring) {
             com.fs.starfarer.api.ui.ButtonAPI b = t.addButton("Start restoration", restoreId, base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
             b.setEnabled(s.canStart && researched(TECH_RESTORE));
@@ -554,7 +560,7 @@ public class CAHypershunt {
         receivers(t, h);
         String[] why = new String[1];
         Section next = nextRestore(h, why);
-        t.addPara(next != null ? "Next: restore the " + CALog.esc(next.name) + "." : "Next: nothing to restore (" + CALog.esc(why[0]) + ").", hl, 8f);
+        t.addPara(next != null ? "Next: restore the " + next.name + "." : "Next: nothing to restore (" + why[0] + ").", hl, 8f);   // 0.3.8.6: shown as is
         String when = s.hypershuntMode == 2 ? "Off in Settings."
                 : s.hypershuntMode == 1 ? "Recommend only: click to change."
                 : c.mode == CAData.Mode.AUTO ? "Auto sets the range and restores within the budget."

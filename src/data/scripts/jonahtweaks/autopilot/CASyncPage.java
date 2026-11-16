@@ -35,7 +35,7 @@ public class CASyncPage {
     public static void render(TooltipMakerAPI t, float width) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), bad = Misc.getNegativeHighlightColor();
         t.addSectionHeading("The Autarch AI Core", Alignment.MID, 0f);
-        if (CASync.notice != null) t.addPara(CALog.esc(CASync.notice), hl, 6f);
+        if (CASync.notice != null) t.addPara(CASync.notice, hl, 6f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
 
         // the core
         boolean awake = !CASync.dormant();
