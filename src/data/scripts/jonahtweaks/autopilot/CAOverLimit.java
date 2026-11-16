@@ -69,7 +69,9 @@ public class CAOverLimit {
             // capture is never counted low for the days it was held)
             try { countLow(d, m); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "low-stability day count failed at " + m.getName(), t); }
-            if (autoIds.contains(m.getId())) {
+            // 0.3.8.8: Auto by the list and still Auto now (the list was made frames earlier; you may have set it Off since)
+            boolean isAuto = autoIds.contains(m.getId()) && d.colony(m.getId()).mode == CAData.Mode.AUTO;
+            if (isAuto) {
                 int had = m.getIndustries().size();
                 try { acted = check(d, s, m); }
                 catch (Throwable t) {
@@ -79,7 +81,7 @@ public class CAOverLimit {
                 try { if (!acted && atZero(m)) shed(d, m); }   // still at 0: a building that costs stability goes
                 catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "0-stability shedding failed at " + m.getName(), t); }
             }
-            try { zeroAlert(d, m, autoIds.contains(m.getId())); }
+            try { zeroAlert(d, m, isAuto); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "0-stability alert failed at " + m.getName(), t); }
             try { remember(m); } catch (Throwable ignored) { }
         }

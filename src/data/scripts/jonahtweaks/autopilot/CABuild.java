@@ -67,7 +67,6 @@ public class CABuild {
         return n;
     }
 
-    /** 0.3.6.7: room for more new buildings here: CASync.buildsAtOnce (1, the game's rule; 2 or 3 with the story perks) less those under way. */
     /**
      * 0.3.7.8: Rapid construction: the build or upgrade just started finishes in CASyncCatalog.RAPID_TIME of its time. The
      * game counts buildProgress up to buildTime (BaseIndustry's own fields), so progress starts at the rest.
@@ -82,6 +81,7 @@ public class CABuild {
         CARefl.set(progress, ind, Math.max(done, total * (1f - CASyncCatalog.RAPID_TIME)));
     }
 
+    /** 0.3.6.7: room for more new buildings here: CASync.buildsAtOnce (1, the game's rule; 2 or 3 with the story perks) less those under way. */
     public static int buildRoom(MarketAPI m) { return Math.max(0, CASync.buildsAtOnce() - newBuilds(m)); }
 
     /** 0.3.6.7: no room for another new building here. Upgrades still run. */
@@ -90,7 +90,7 @@ public class CABuild {
     /** Returns null on success, or the reason it couldn't start. */
     public static String start(MarketAPI m, CAEngine.Pick p) {
         if (!p.upgrade && buildsFull(m)) return "A new building is already under construction here" + (CASync.buildsAtOnce() > 1 ? " (" + CASync.buildsAtOnce() + " at once)" : "") + ". Upgrades can still run";
-        float price = CASync.buildPrice(p.cost);   // 0.3.6.0 story mode: Free construction
+        float price = CASync.buildPrice(p.cost);   // 0.3.8.8: with Rapid construction's RAPID_FEE (story mode)
         if (credits() < price) return "Not enough credits (" + Misc.getDGSCredits(price) + " needed)";
         if (!CASync.mayBuild(p.id)) return "Stations need " + CASyncCatalog.buy("stations") + " on the Story page.";
         if (!CADiagnostics.usable(p.id)) return "Not supported by Colony Autopilot";
@@ -106,7 +106,7 @@ public class CABuild {
             return "No free industry slot (" + usedSlots(m) + " of " + Misc.getMaxIndustries(m) + " used, upgrades under way included)";
         String action = "building " + p.name;
         if (!CABreaker.allowed(action)) return "Paused for this session: no effect three times. See Diagnostics";
-        boolean added = false;
+        boolean added = false, paid = false;
         try {
             if (p.upgrade) {
                 Industry ex = p.existing;
@@ -141,7 +141,8 @@ public class CABuild {
                 if (targetKey != null) CAData.get().upgradeTargets().remove(targetKey);
                 return "It did not take effect. Nothing charged";
             }
-            if (price > 0f) CABudget.payPrice(price);   // 0.3.6.0 story mode: Free construction pays nothing
+            if (price > 0f) CABudget.payPrice(price);   // 0.3.8.8: the price includes Rapid construction's RAPID_FEE (story mode)
+            paid = true;
             if (now != null && CASync.rapidBuild()) {   // 0.3.7.8 story mode: Rapid construction
                 try { rapid(now); }
                 catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "rapid construction failed for " + p.id + " at " + m.getName(), t); }
@@ -161,6 +162,15 @@ public class CABuild {
             if (added) {
                 try { if (m.hasIndustry(p.id)) m.removeIndustry(p.id, MarketAPI.MarketInteractionMode.REMOTE, false); }
                 catch (Throwable ignored) { }
+            }
+            // 0.3.8.8: an upgrade that started before the throw and isn't paid is stopped, so it never runs unpaid
+            if (p.upgrade && !paid && p.existing != null) {
+                try {
+                    if (p.existing.isUpgrading()) {
+                        p.existing.cancelUpgrade();
+                        CAData.get().upgradeTargets().remove(m.getId() + "|" + p.existing.getId());
+                    }
+                } catch (Throwable ignored) { }
             }
             CADiagnostics.quarantine(p.id, "starting construction at " + m.getName(), t);
             return "Error starting construction; logged in Diagnostics";

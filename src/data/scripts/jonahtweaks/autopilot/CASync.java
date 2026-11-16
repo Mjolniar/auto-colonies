@@ -402,10 +402,9 @@ public class CASync {
 
     // ---------------- what the rest of the mod asks ----------------
 
-    /** What a build costs in credits: nothing with Free construction. */
+    /** What a build costs in credits: its price, plus RAPID_FEE with Rapid construction (0.3.8.8: Free construction is gone). */
     public static float buildPrice(float cost) { return rapidBuild() ? cost + CASyncCatalog.RAPID_FEE : cost; }   // 0.3.7.8: Rapid construction's flat fee
 
-    /** Instant construction: builds and upgrades it starts finish the same day. */
     /** 0.3.7.8: Rapid construction (story mode only): a third of the build time, at RAPID_FEE more. Instant construction is gone. */
     public static boolean rapidBuild() { return has("rapidBuild"); }
 

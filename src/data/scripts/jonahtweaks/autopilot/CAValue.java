@@ -16,6 +16,7 @@ import java.util.*;
  * 0.3.0.0 (WS-B1, research 02 sections 6, 7 and 9): one way to value anything, new or already there, so the builders and the
  * removers agree and nothing is built only to be taken down.
  *
+ * 0.3.8.8: the forms named below are add(m, pick, goal), keepDetail(m, building, goal, deficits) and deficits(day, epoch, sig).
  * - add(m, pick): what a new building or upgrade is worth a month: its effects (CAEngine.effects, valued on the 0.2.44.0
  *   market model by CAEngine.supply) at the colony's weights, the endgame's production chains on the units it really adds,
  *   confidence applied. The same number CAEngine.finish called "value".
@@ -196,10 +197,7 @@ public final class CAValue {
             for (int i = 0; i < n; i++) { demand[i] = rows.get(i)[0]; avail[i] = rows.get(i)[1]; level[i] = rows.get(i)[2]; }
         }
 
-        int indexOf(String marketId) {
-            for (int i = 0; i < ids.length; i++) if (ids[i].equals(marketId)) return i;
-            return -1;
-        }
+        int indexOf(String marketId) { return CAValue.indexOf(ids, marketId); }   // 0.3.8.8: the one loop
     }
 
     /** The day's reading of every colony (outposts and Substance.Abuse drinks left out, as 0.2.45's shortages). */
@@ -350,9 +348,7 @@ public final class CAValue {
 
     // ---------------- shortages ----------------
 
-    /** Your colonies' shortages, pending-aware (CAEngine.empireDeficits is the same map). */
-    public static Map<String, Integer> deficits() { return CAEngine.empireDeficits(); }
-
+    /** Your colonies' shortages, pending-aware (CAEngine.empireDeficits reads them here). 0.3.8.8: deficits() without arguments is gone (nothing called it). */
     static Map<String, Integer> deficits(int day, int ep, long empire) {
         if (Global.getSector() == null) return new HashMap<String, Integer>();
         Econ e = econ(day, ep, empire);
@@ -382,11 +378,21 @@ public final class CAValue {
      */
     static int reliefUnits(String com, int base, int level, int added, int lack) {
         if (added <= 0 || lack <= 0) return 0;
-        View v = null;
+        return reliefUnits(reliefView(com), base, level, added, lack);
+    }
+
+    /** 0.3.8.8: the good's view for relief (the snapshot and builds under way), null without one. */
+    static View reliefView(String com) {
         try {
             Econ e = econNow();
-            if (e != null) v = view(com, e, pendingNow(e));
+            if (e != null) return view(com, e, pendingNow(e));
         } catch (Throwable ignored) { }
+        return null;
+    }
+
+    /** 0.3.8.8: reliefUnits on a view already read (v null: the 0.2.44.0 rule). */
+    static int reliefUnits(View v, int base, int level, int added, int lack) {
+        if (added <= 0 || lack <= 0) return 0;
         if (v == null || v.raw <= 0) return Math.min(added, lack);
         return reliefAdd(v.demand, v.avail, base, level, added, lack);
     }
@@ -394,7 +400,9 @@ public final class CAValue {
     /** The relief one call of CAEngine.supply/supplyChange adds (negative for a cut), from the market model's Gain. */
     static int reliefCover(String com, CAMarket.Gain g, int lack) {
         if (lack <= 0) return 0;
-        return reliefUnits(com, g.base, g.after, g.addedAfter, lack) - reliefUnits(com, g.base, g.before, g.addedBefore, lack);
+        // 0.3.8.8: the view is read once for both sides (each side read the snapshot, the claims and the view again)
+        View v = g.addedAfter > 0 || g.addedBefore > 0 ? reliefView(com) : null;
+        return reliefUnits(v, g.base, g.after, g.addedAfter, lack) - reliefUnits(v, g.base, g.before, g.addedBefore, lack);
     }
 
     /**
@@ -500,9 +508,7 @@ public final class CAValue {
 
     // ---------------- add ----------------
 
-    /** Monthly worth of adding this pick at m at the colony's goal (threat counted), confidence applied. */
-    public static float add(MarketAPI m, CAEngine.Pick p) { return add(m, p, profileOf(m), false); }
-
+    /** Monthly worth of adding this pick at m at this goal, confidence applied. 0.3.8.8: the form without a goal is gone (nothing called it). */
     public static float add(MarketAPI m, CAEngine.Pick p, CAData.Profile profile) { return add(m, p, profile, false); }
 
     /**
@@ -584,13 +590,7 @@ public final class CAValue {
         public int lines;
     }
 
-    /** Monthly worth of keeping this building at the colony's goal (threat counted); UNKNOWN when it can't be valued. */
-    public static float keep(MarketAPI m, Industry ind) { return keep(m, ind, profileOf(m)); }
-
-    public static float keep(MarketAPI m, Industry ind, CAData.Profile profile) {
-        Kept k = keepDetail(m, ind, profile, CAEngine.empireDeficits());
-        return k == null ? UNKNOWN : k.value;
-    }
+    // 0.3.8.8: keep(m, ind) and keep(m, ind, profile) are gone: nothing called them (the removers call keepDetail; CAPrune has its own keep)
 
     /**
      * The same math as add(), backwards (research 02 section 6): each live output line counts only above the colony's other

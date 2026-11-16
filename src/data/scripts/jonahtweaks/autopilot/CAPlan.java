@@ -198,6 +198,9 @@ public class CAPlan {
         String key = m.getId() + "|" + prof.name();
         Plan p = OWN.get(key, day, sig);
         if (p == null) {
+            // 0.3.8.8: not kept from research's what-if (CAEngine.noProbe): CAMark writes nothing there, so the commitment refresh
+            // and a new commitment (stableWorld) were skipped and that plan held for the rest of the day
+            if (CAEngine.noProbe) return buildOwn(m, prof);
             long t0 = System.nanoTime();
             p = OWN.put(key, day, ep, sig, buildOwn(m, prof));
             CAPerf.record("plan worked out", System.nanoTime() - t0);
@@ -251,7 +254,7 @@ public class CAPlan {
     /** Whether the game has this step's building or condition: a step from a mod that isn't installed is dropped. */
     static boolean exists(Step s) {
         try {
-            if (s.kind == Kind.BUILD) return s.id.equals("station") || Global.getSettings().getIndustrySpec(s.id) != null;
+            if (s.kind == Kind.BUILD) return s.id.equals("station") || spec(s.id) != null;   // 0.3.8.8: the spec cache (a missing id threw on every build())
             return Global.getSettings().getMarketConditionSpec(s.id) != null;
         } catch (Throwable t) { return false; }
     }
@@ -1470,8 +1473,7 @@ public class CAPlan {
 
     public static int lockedSteps() {
         if (Global.getSector() == null || !CAAotD.enabled()) return 0;
-        com.fs.starfarer.api.campaign.CampaignClockAPI clock = Global.getSector().getClock();
-        int day = clock.getCycle() * 400 + clock.getMonth() * 32 + clock.getDay();
+        int day = CAEngine.today();   // 0.3.8.8: the one day number (it was worked out here the same way)
         if (day == lockedDay) return lockedCache;
         lockedDay = day;
         int n = 0;

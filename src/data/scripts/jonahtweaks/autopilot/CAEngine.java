@@ -90,7 +90,7 @@ public class CAEngine {
             /* WAR      */ {0.8f, 2500f, 10000f, 4000f, 10000f, 30000f, 500f},
             /* GROWTH   */ {0.6f, 3500f, 30000f, 1500f, 1000f, 1000f, 6000f},
             /* SELF     */ {1.0f, 3000f, 20000f, 3000f, 4000f, 10000f, 1500f}};
-    static final float[][] WEIGHTS_030 = WEIGHTS;
+    static final float[][] WEIGHTS_030 = WEIGHTS;   // 0.3.8.8: the same table under its 0.3.0 name; only JTValueCheck reads it (goalWeights reads WEIGHTS)
     /** 0.3.2.0 (M4): the 0.3.2 table. Balanced, Self-sufficiency and War production count fleets and ship quality more; Money, Security and Rapid growth are unchanged. */
     static final float[][] WEIGHTS_NEW = {
             //            credits stab   access  defense fleet  quality growth
@@ -387,7 +387,7 @@ public class CAEngine {
         String starter = CASettings.stationStarter(line);
         if (starter != null && !"score".equals(line)) {
             try {
-                IndustrySpecAPI ss = Global.getSettings().getIndustrySpec(starter);
+                IndustrySpecAPI ss = CAPlan.spec(starter);   // 0.3.8.8: the spec cache
                 // without a working spaceport no station can be built anyway, so only judge the line once there is one
                 if (ss == null || (m.hasSpaceport() && !ss.getNewPluginInstance(m).isAvailableToBuild())) line = "score";
             } catch (Throwable t) { line = "score"; }
@@ -480,7 +480,7 @@ public class CAEngine {
                 if (cramped > 0f) { p.fx[0] -= cramped; p.lines.add("Past Grand.Colonies' building limit: upkeep here rises about " + credits(cramped) + " per month"); }
                 CALowProfile.score(m, inst, null, p);   // Low profile: the Pather line and the attention it draws (0.2.43.0)
                 CAOddisz.score(m, inst, p);   // Sol Renewed: an industry in Sol feeds its crisis meter for good (0.2.45.0)
-                if (!finish(m, p, profile, minStability, plan)) continue;
+                if (!finish(m, p, profile, minStability, plan, deficit)) continue;   // 0.3.8.8: this evaluation's shortages
                 if (inst.isIndustry() && slotsFree <= 0) r.noSlot(p);
                 else r.picks.add(p);
             } catch (Throwable t) {
@@ -497,10 +497,11 @@ public class CAEngine {
             if (bmo && !plan.exact.contains(ind.getId())) ups.addAll(CAAotD.children(ind.getId()));
             for (String up : ups) {
                 if (!CASync.mayBuild(up)) continue;   // 0.3.6.0 story mode: stations need Stations
-                boolean upMeasured = CADiagnostics.industryLevel(up) == CADiagnostics.Level.MEASURED && CAData.settings().measuredMode != 2;
+                // 0.3.8.8: not under research's what-if (noProbe), as the build loop: probe results made there are never kept
+                boolean upMeasured = !noProbe && CADiagnostics.industryLevel(up) == CADiagnostics.Level.MEASURED && CAData.settings().measuredMode != 2;
                 if (CADiagnostics.industryLevel(up) != CADiagnostics.Level.SUPPORTED && !upMeasured) continue;
                 try {
-                    IndustrySpecAPI upSpec = Global.getSettings().getIndustrySpec(up);
+                    IndustrySpecAPI upSpec = CAPlan.spec(up);   // 0.3.8.8: the spec cache
                     if (up.equals(vanillaUp) && !ind.canUpgrade()) continue;
                     if (rog != null && CARogue.forbids(rog, up, ind) != null) continue;   // 0.3.2.1: Fragile Biosphere, the running reactor
                     // as the build menu: a Military Base needs a working spaceport (0.3.0.0, A4: asked once a day per colony)
@@ -541,7 +542,7 @@ public class CAEngine {
                     CARogue.score(rog, p);   // 0.3.2.1
                     CALowProfile.score(m, upInst, ind, p);
                     CAOddisz.score(m, upInst, p);   // an upgrade's cost adds to Sol's meter too (0.2.45.0)
-                    if (!finish(m, p, profile, minStability, plan)) continue;
+                    if (!finish(m, p, profile, minStability, plan, deficit)) continue;   // 0.3.8.8: this evaluation's shortages
                     if (needsSlot) r.noSlot(p);
                     else r.picks.add(p);
                 } catch (Throwable t) {
@@ -559,15 +560,18 @@ public class CAEngine {
      *  0.3.0.0 (B2): legacyPlanner's flat reserve, and the stand-in for a plan industry that hasn't scored yet (CAPlan.reserve). */
     static final float SLOT_RESERVE = CATuning.SLOT_RESERVE;   // 0.3.0.0 (A3): the number lives in CATuning
 
+    /** 0.3.8.8: CAPlan.industry's test, from its spec cache (a missing id threw here on every call). */
     static boolean isIndustry(String id) {
-        try {
-            com.fs.starfarer.api.loading.IndustrySpecAPI sp = Global.getSettings().getIndustrySpec(id);
-            return sp != null && sp.hasTag(com.fs.starfarer.api.impl.campaign.ids.Industries.TAG_INDUSTRY);
-        } catch (Throwable t) { return false; }
+        try { return CAPlan.industry(id); } catch (Throwable t) { return false; }
     }
 
     /** Combines effects with profile weights; false when the pick breaks a rule or isn't worth building. */
     static boolean finish(MarketAPI m, Pick p, CAData.Profile profile, float minStability, CAPlan.Plan plan) {
+        return finish(m, p, profile, minStability, plan, null);
+    }
+
+    /** 0.3.8.8: deficit: the evaluation's shortages, for the plan steps a pick leads to (null: read again, empireDeficits). */
+    static boolean finish(MarketAPI m, Pick p, CAData.Profile profile, float minStability, CAPlan.Plan plan, Map<String, Integer> deficit) {
         // 0.3.2.1: Viable Slave Labor and Supercooled Cryo-Sinks hold a colony at 6 or more (CARogue.stabilityFloor)
         if (p.fx[1] < 0 && m.getStabilityValue() + p.fx[1] < Math.max(minStability, CARogue.stabilityFloor(m))) return false;
         // the endgame economy (CAEndgame): money counts 5%, military and security at least its weights, and what the building
@@ -594,7 +598,7 @@ public class CAEngine {
         // and producers a special project needs (CAProjects): nothing else makes those goods
         // and the capital's trade buildings (0.2.42.0): what they're for is a place to trade at home, not income
         boolean enabler = CAPlan.enabler(m, p.id);   // 0.3.0.0 (B2): the same list, in CAPlan so the plan's worthless rule reads it too
-        if (!CAPlan.legacy()) return finishNpv(m, p, profile, plan, value, enabler, endgame);
+        if (!CAPlan.legacy()) return finishNpv(m, p, profile, plan, value, enabler, endgame, deficit);
         // ---------------- 0.3.0.0 (B2): the 0.2.45 score, with the hidden legacyPlanner switch on (for 0.3.0.x) ----------------
         float planBonus = (value > 0f || enabler) && !profitOnly ? CAPlan.bonusFor(m, plan, p.id) : 0f;
         if (endgame && planBonus > 0f && !CAEndgame.keepsPlanBonus(m, plan, p.id)) planBonus = 0f;   // a money plan's steps stand on their own
@@ -634,7 +638,8 @@ public class CAEngine {
      * would add, and a 5% tie-break once it pays; enablers and a special world's buildings keep the fixed bonus by rank,
      * except a calm colony's station while an open economic step is in front of it (B2 fix: CAPlan.stationWaitsFor).
      */
-    static boolean finishNpv(MarketAPI m, Pick p, CAData.Profile profile, CAPlan.Plan plan, float value, boolean enabler, boolean endgame) {
+    static boolean finishNpv(MarketAPI m, Pick p, CAData.Profile profile, CAPlan.Plan plan, float value, boolean enabler, boolean endgame,
+                             Map<String, Integer> deficit) {
         float h = CAHorizon.months();
         float fee = fee(p.cost);
         CAPlan.Match match = plan == null ? null : CAPlan.match(m, plan, p.id, true);
@@ -643,7 +648,7 @@ public class CAEngine {
         // they earn, the rest when they earn something); every other plan step is ordinary (a worthless one never is an enabler)
         boolean fixedKind = match != null && (enabler || match.step.extra || CAPlan.worldStep(plan, match.step.id) || CAPlan.worldStep(plan, p.id));
         boolean ordinary = match != null && !fixedKind;
-        float down = ordinary && !profitOnly ? downstream(m, plan, p, profile, h) : 0f;
+        float down = ordinary && !profitOnly ? downstream(m, plan, p, profile, h, deficit) : 0f;
         float gross = value + down;
         // 0.3.6.7: spare money pays for upgrades: at the Surplus money tier their price counts a quarter, from Idle money up a tenth
         float pw = profitOnly ? 1f : CASurplus.upgradePriceWeight(m, p.upgrade);
@@ -694,13 +699,24 @@ public class CAEngine {
         if (p.lowProfile != null) { p.lines.add(0, p.lowProfile); p.score = Math.min(p.score, -1f); asStep = Math.min(asStep, -1f); }   // the same for Low profile's Pather line
         // what the plan step scored, so one that pays nothing stops holding rank and an industry slot (CAPlan.worthless) and one
         // that pays again gets them back; not under research's what-if, where techs are marked researched
-        if (match != null && !noProbe && !CALog.whatIf()) {
+        // 0.3.8.8: nor from a shown evaluation (a panel's Refresh, the daily fill) at a colony the planner scores itself (Approve,
+        // Auto): those score the colony's own goal where the planner uses the threat-adjusted one, and a Refresh click moved
+        // the next pass's slot reserve. Advisor colonies keep their only record, the daily fill's
+        if (match != null && !noProbe && !CALog.whatIf() && !(forDisplay && planned(m))) {
             CAPlan.noteWorth(m, match.step.id, asStep, profitOnly);
             // 0.3.0.0 (B2 fix): and for the worthless step it also advances (a Heavy Industry pick ranked as its Orbital Works), or
             // that step's record never changed again: worthless for good, and its chain held no industry slot
             if (match.idle != null && match.idle != match.step) CAPlan.noteWorth(m, match.idle.id, asStep, profitOnly);
         }
         return true;   // every option is ranked and shown; Approve and Auto only act on a positive score (worthwhile())
+    }
+
+    /** 0.3.8.8: the planner scores this colony itself (Approve or Auto; CAEngine.toTrack's other side). False when it can't tell. */
+    static boolean planned(MarketAPI m) {
+        try {
+            CAData.Mode mode = CAData.get().colony(m.getId()).mode;
+            return mode == CAData.Mode.APPROVE || mode == CAData.Mode.AUTO;
+        } catch (Throwable t) { return false; }
     }
 
     /** 0.3.0.0 (B2): the convenience fee on a price, as the build pass charges it (CABudget.constructionFee); the standard level offline. */
@@ -719,20 +735,26 @@ public class CAEngine {
      * the same weights, its own price and fee over the horizon; only ones that would pay count. A chain step that's weak by
      * itself but leads to a strong one still gets built; one that leads nowhere worth having stands on its own.
      */
-    static float downstream(MarketAPI m, CAPlan.Plan plan, Pick p, CAData.Profile profile, float h) {
+    static float downstream(MarketAPI m, CAPlan.Plan plan, Pick p, CAData.Profile profile, float h) { return downstream(m, plan, p, profile, h, null); }
+
+    /** 0.3.8.8: deficit: the evaluation's shortages (null: read once here, as before). */
+    static float downstream(MarketAPI m, CAPlan.Plan plan, Pick p, CAData.Profile profile, float h, Map<String, Integer> deficit) {
         if (m == null || plan == null) return 0f;
         List<CAPlan.Step> next = CAPlan.unlocked(m, plan, p.id);
         if (next.isEmpty()) return 0f;
         if (downstreamSeq != CAPlan.worthSeq) { DOWNSTREAM.clear(); downstreamSeq = CAPlan.worthSeq; }
         float sum = 0f;
         List<String> names = new ArrayList<String>();
-        Map<String, Integer> deficit = null;
         for (CAPlan.Step t : next) {
-            String key = m.getId() + "|" + t.id + "|" + profile + "|" + profitOnly + "|" + Math.round(h);
+            String from = CAPlan.upgradedFrom(t.id, p.id);
+            // 0.3.8.8: a step reached by upgrading the pick itself replaces the pick's own lines, so it's valued over them (its
+            // key then names the pick). Refining after Ashes of the Domain's Smelting counted Smelting's metals line again
+            boolean over = p.id.equals(from) && m.getIndustry(from) == null;
+            String key = m.getId() + "|" + t.id + "|" + profile + "|" + profitOnly + "|" + Math.round(h) + (over ? "|over:" + p.id : "");
             Float v = DOWNSTREAM.get(key);
             if (v == null) {
                 if (deficit == null) deficit = empireDeficits();
-                v = stepWorth(m, t.id, CAPlan.upgradedFrom(t.id, p.id), profile, h, deficit);
+                v = stepWorth(m, t.id, from, profile, h, deficit, over ? p : null);
                 DOWNSTREAM.put(key, v);
             }
             if (v > 0f) { sum += v; names.add(t.label); }
@@ -746,6 +768,15 @@ public class CAEngine {
 
     /** What building this here, upgraded from `from`, would add a month over the horizon (NPV / H); 0 when it can't be valued. */
     static float stepWorth(MarketAPI m, String id, String from, CAData.Profile profile, float h, Map<String, Integer> deficit) {
+        return stepWorth(m, id, from, profile, h, deficit, null);
+    }
+
+    /**
+     * 0.3.8.8: over: the pick this step upgrades, not built yet. A step with output lines replaces the pick's whole building,
+     * so the pick's line value comes off (and its input charge goes back on), and the units the endgame's chains count are
+     * what the step adds over the pick's. A step with no lines (Orbital Works) is an increment already.
+     */
+    static float stepWorth(MarketAPI m, String id, String from, CAData.Profile profile, float h, Map<String, Integer> deficit, Pick over) {
         try {
             IndustrySpecAPI spec = CAPlan.spec(id);
             if (spec == null) return 0f;
@@ -753,6 +784,7 @@ public class CAEngine {
             // 0.3.0.0 (B1 fix, second pass): on the market model, as evaluate reads a pick (effectsOf took the flat path, un-netted)
             Pick q = effectsAt(m, id, inst, from == null ? null : m.getIndustry(from), deficit);   // vanilla formulas and Autopilot's estimates only (null for anything else)
             if (q == null) return 0f;
+            overPick(q, over);
             IndustrySpecAPI fromSpec = from == null ? null : CAPlan.spec(from);
             upkeep(m, spec, fromSpec, q);
             trust(spec, q, false);
@@ -760,6 +792,20 @@ public class CAEngine {
             float cost = inst.getBuildCost(), days = inst.getBuildTime();
             return CAHorizon.npvMonthly(worth, cost, fee(cost), days, h);
         } catch (Throwable t) { return 0f; }
+    }
+
+    /**
+     * Pure (0.3.8.8): q, a step's whole output read from scratch, valued over the pick it upgrades (over, not built yet): the
+     * pick's line value off, its input charge back on, and the units the endgame's chains count less the pick's. Nothing for
+     * a step with no output lines, or with no pick.
+     */
+    static void overPick(Pick q, Pick over) {
+        if (q == null || over == null || q.supplied.isEmpty()) return;
+        q.fx[0] -= over.suppliedValue - over.inputPenalty;
+        for (Map.Entry<String, Integer> e : over.added.entrySet()) {
+            Integer u = q.added.get(e.getKey());
+            if (u != null && e.getValue() != null) q.added.put(e.getKey(), Math.max(0, u - e.getValue()));
+        }
     }
 
     /** The engine's own upkeep prediction for a building here, before calibration (CACalibrate compares it with real upkeep). */
@@ -1091,6 +1137,8 @@ public class CAEngine {
         MarketAPI best = null; float bestAcc = -99f;
         for (MarketAPI o : Misc.getPlayerMarkets(false)) {
             if (o.hasIndustry("IndEvo_PrivatePort")) return false;
+            // 0.3.8.8: only a colony evaluate() scores can be the spot (an outpost, a hypershunt or a no-industry market never is)
+            if (isOutpost(o) || CAHypershunt.is(o) || o.hasTag("market_no_industries_allowed")) continue;
             float a = o.getAccessibilityMod().computeEffective(0f);
             if (a > bestAcc) { bestAcc = a; best = o; }
         }
@@ -1255,10 +1303,40 @@ public class CAEngine {
             else others += econSig(o);
         }
         if (!found) own = colonySig(m, d);
+        return sigOf(own, n, others, quarantined, stationLine, measuredMode);
+    }
+
+    /** 0.3.8.8: resultSig's last step, shared with resultSigs. */
+    static long sigOf(long own, int n, long others, int quarantined, String stationLine, int measuredMode) {
         long h = CACache.mix(own, CACache.mix(n, others));
         h = CACache.mix(h, quarantined);
         h = CACache.mix(h, CACache.spread(stationLine));
         return CACache.mix(h, measuredMode);
+    }
+
+    /**
+     * 0.3.8.8: resultSig for every colony from one read of each, by market id (the Colonies page and the daily fill read every
+     * other colony again for each row). Null when reading fails: callers then use resultSig per colony.
+     */
+    static Map<String, Long> resultSigs() {
+        try {
+            CASettings s = CAData.settings();
+            return resultSigs(Misc.getPlayerMarkets(false), CAData.get(), CADiagnostics.count(CADiagnostics.Level.QUARANTINED), s.stationLine, s.measuredMode);
+        } catch (Throwable t) { return null; }
+    }
+
+    /** Pure (0.3.8.8): resultSig(m, markets, ...) for each m in markets; the others' sum is the whole sum less its own (wrapping, as the sum). */
+    static Map<String, Long> resultSigs(List<MarketAPI> markets, CAData d, int quarantined, String stationLine, int measuredMode) {
+        int n = markets.size();
+        long[] econ = new long[n];
+        long all = 0L;
+        for (int i = 0; i < n; i++) { econ[i] = econSig(markets.get(i)); all += econ[i]; }
+        Map<String, Long> out = new HashMap<String, Long>();
+        for (int i = 0; i < n; i++) {
+            MarketAPI o = markets.get(i);
+            out.put(o.getId(), sigOf(colonySig(o, d), n, all - econ[i], quarantined, stationLine, measuredMode));
+        }
+        return out;
     }
 
     /**
@@ -1308,9 +1386,7 @@ public class CAEngine {
         return CACache.mix(h, inds);
     }
 
-    /** What an evaluation of this colony reads from it: econSig, its whole stability, and Autopilot's goal, mode, fast buildout and locks for it. */
-    static long colonySig(MarketAPI m) { return colonySig(m, CAData.get()); }
-
+    /** What an evaluation of this colony reads from it: econSig, its whole stability, and Autopilot's goal, mode, fast buildout and locks for it. 0.3.8.8: the one-argument form is gone (nothing called it). */
     static long colonySig(MarketAPI m, CAData d) {
         long h = CACache.mix(econSig(m), (long) Math.floor(m.getStabilityValue()));
         CAData.Colony c = d.colony(m.getId());
@@ -1358,11 +1434,15 @@ public class CAEngine {
      * null when there's none yet. Never evaluates; the daily pass fills these (fill) and the panels' Refresh buttons
      * evaluate on a click (refresh, refreshAll).
      */
-    public static Kept kept(MarketAPI m, CAData.Profile profile, float minStability, boolean forProfit) {
+    public static Kept kept(MarketAPI m, CAData.Profile profile, float minStability, boolean forProfit) { return kept(m, profile, minStability, forProfit, null); }
+
+    /** 0.3.8.8: sigs: every colony's resultSig from resultSigs, read once for a page (null, or no entry: worked out for m). */
+    public static Kept kept(MarketAPI m, CAData.Profile profile, float minStability, boolean forProfit, Map<String, Long> sigs) {
         Shown s = SHOWN.get(readKey(m, profile, minStability, forProfit));
         if (s == null) return null;
         int day = today();
-        return view(s, day, CACache.epoch(), day >= 0 ? resultSig(m) : 0L, CATime.now());
+        Long sig = sigs == null ? null : sigs.get(m.getId());
+        return view(s, day, CACache.epoch(), day >= 0 ? (sig != null ? sig : resultSig(m)) : 0L, CATime.now());
     }
 
     /**
@@ -1446,13 +1526,15 @@ public class CAEngine {
         List<MarketAPI> ms = new ArrayList<MarketAPI>();
         List<Float> at = new ArrayList<Float>();
         List<Boolean> current = new ArrayList<Boolean>();
+        Map<String, Long> sigs = resultSigs();   // 0.3.8.8: every colony read once, not once per row
         for (MarketAPI m : shown) {
             if (daily && failedRecently(m.getId(), now)) continue;   // failed lately: tried again in a week, or on Refresh
             CAData.Colony c = d.colony(m.getId());
             Shown s = SHOWN.get(readKey(m, c.profile, minStability, buildoutRanking(c)));
             ms.add(m);
             at.add(s == null ? null : s.at);
-            current.add(s != null && view(s, day, CACache.epoch(), resultSig(m), now).current);
+            Long sig = sigs == null ? null : sigs.get(m.getId());
+            current.add(s != null && view(s, day, CACache.epoch(), sig != null ? sig : resultSig(m), now).current);
         }
         int n = 0;
         for (int i : fillOrder(at, current, maxStale)) {

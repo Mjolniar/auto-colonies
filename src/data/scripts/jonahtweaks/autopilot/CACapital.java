@@ -74,6 +74,8 @@ public class CACapital {
             {"IndEvo_ScrapYard", "Salvage Yards", "ships built from scrap", ""},
             {"aotd_underworld", "Underworld", "a black market", ""},
     };
+    /** 0.3.8.8: AotD's Underworld (needs a free port). */
+    static final String UNDERWORLD = "aotd_underworld";
     static final Map<String, String> WHAT = new HashMap<String, String>();
     static final Set<String> MOD_IDS = new HashSet<String>();
     static {
@@ -193,10 +195,13 @@ public class CACapital {
             deliveries(s, cap);
             return;
         }
-        if (CALog.once("capital:" + cap.getId()))
-            CALog.did(cap.getName() + ": Capital: set" + (cap.getId().equals(s.capitalId) ? " (your pick)" : "") + ". Production deliveries come here."
+        if (CALog.once("capital:" + cap.getId())) {
+            String line = cap.getName() + ": Capital: set" + (cap.getId().equals(s.capitalId) ? " (your pick)" : "") + ". Production deliveries come here."
                     + (gathers(s) ? " Your other Storage gathers here weekly." : "")
-                    + (s.capitalMode == 0 ? " Builds into a trade hub once your colonies have ramped up." : ""));
+                    + (s.capitalMode == 0 ? " Builds into a trade hub once your colonies have ramped up." : "");
+            if (cap.getId().equals(s.capitalId)) CALog.think(line);   // 0.3.8.8: your pick; Thinking list
+            else CALog.did(line);
+        }
         deliveries(s, cap);
         cap = capital();   // the gathering point may have moved it
         if (cap == null) return;
@@ -283,6 +288,9 @@ public class CACapital {
         CALog.forget("capital:lowstab:" + m.getId());
         for (String[] w : wanted()) {
             if (waits(m, w[0])) continue;   // 0.3.0.0 (C4, F8): costs more than it earns, and the money ladder doesn't allow it yet
+            // 0.3.8.8: AotD's Underworld is built and works only with a free port (its own isAvailableToBuild and apply), and Low
+            // profile closes every free port: no plan rank or slot held for it then
+            if (UNDERWORLD.equals(w[0]) && CALowProfile.on()) continue;
             if (CAOverLimit.shedRecently(m, w[0])) continue;   // taken down at 0 stability this year: not built again yet
             // 0.3.0.0 (B4): taken down here for any reason within the year (CATombstone): no plan rank or slot held for it meanwhile
             if (CATombstone.blocked(m.getId(), w[0]) > 0f) continue;

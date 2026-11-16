@@ -181,7 +181,7 @@ public class CABuildout {
             if (STYLE_FULL.equals(data) || STYLE_LOW.equals(data)) {
                 boolean low = STYLE_LOW.equals(data);
                 CALowProfile.set(CAData.settings(), low, "your choice");
-                CALog.did(m.getName() + ": Expansion style: " + (low ? "Low profile" : "Full expansion") + " (Settings, Playstyle).", true);
+                CALog.think(m.getName() + ": Expansion style: " + (low ? "Low profile" : "Full expansion") + " (Settings, Playstyle).");   // 0.3.8.8: your click; Thinking list
                 dialog.getOptionPanel().clearOptions();
                 offerBuildout();
                 return;
@@ -255,8 +255,8 @@ public class CABuildout {
         CASettings s = d.settings;
         CAAuto.nextPass.put(m.getId(), now + 1f);
         CAEngine.Result r = CAEngine.evaluateForProfit(m, d.settings.minStability);
-        CAEngine.Pick bestUp = null, bestNew = null, bestPlanInd = null;
-        float upRatio = 0f, newRatio = 0f, planRatio = 0f;
+        CAEngine.Pick bestUp = null, bestNew = null, bestPlanInd = null, bestAsk = null;
+        float upRatio = 0f, newRatio = 0f, planRatio = 0f, askRatio = 0f;
         for (CAEngine.Pick q : r.picks) {
             if (q.score <= 0f) continue;
             // 0.3.0.0 (B4 fix): taken down here within the year (CATombstone's mark, or one on what it upgrades into): the buildout
@@ -265,6 +265,12 @@ public class CABuildout {
             if (CAEndgame.rebuildBlocked(m, q.id)) continue;
             if (CAAuto.rejectedDays(m.getId(), q.id, CATime.now()) > 0f) continue;   // 0.3.8.5: you rejected it here within 180 days: not proposed or started
             float ratio = q.score / Math.max(1f, CABudget.buildTotal(s, q.cost));   // 0.3.8.5: Rapid construction's fee included
+            // 0.3.8.8: a measured mod building under Ask first is proposed on its own; the best of the rest still starts (it held
+            // the buildout's one new building while it waited for you, and the buildout neither built nor ended)
+            if (q.measured && s.measuredMode == 1) {
+                if ((q.upgrade || !building) && (bestAsk == null || ratio > askRatio)) { bestAsk = q; askRatio = ratio; }
+                continue;
+            }
             if (q.upgrade) { if (bestUp == null || ratio > upRatio) { bestUp = q; upRatio = ratio; } }
             else if (!building && (bestNew == null || ratio > newRatio)) { bestNew = q; newRatio = ratio; }
             if (!q.upgrade && !building && q.planStep && CAEngine.isIndustry(q.id) && (bestPlanInd == null || ratio > planRatio)) { bestPlanInd = q; planRatio = ratio; }
@@ -283,11 +289,11 @@ public class CABuildout {
             return false;   // nothing that pays today: the normal pass runs
         }
         c.buildoutIdleSince = 0L;
+        if (bestAsk != null) CAAuto.propose(m, c, bestAsk, "Approval needed: mod building scored from measurements");   // 0.3.8.8: on its own
         CAEngine.Pick[] order = upRatio >= newRatio ? new CAEngine.Pick[]{bestUp, bestNew} : new CAEngine.Pick[]{bestNew, bestUp};
         float floor = Math.max(floor(c), s.reserve);   // 0.3.6.2: the credit reserve is not spent, buildout or not
         for (CAEngine.Pick p : order) {
             if (p == null) continue;
-            if (p.measured && s.measuredMode == 1) { CAAuto.propose(m, c, p, "Approval needed: mod building scored from measurements"); continue; }
             float total = CABudget.buildTotal(s, p.cost);   // 0.3.8.5: Rapid construction's fee included
             if (CABuild.credits() - total < floor) {
                 if (CALog.once(m.getId() + ":" + p.id + ":floor")) CALog.think(m.getName() + ": Fast buildout: " + p.name + " waits. "

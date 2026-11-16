@@ -38,8 +38,8 @@ import java.util.*;
  *   on, not for the rest of the month it was set in, which its step could never use.
  * - Fix: defenses at a colony under siege are emergencies, as in 0.2.45.1: never held for the earmark or the upkeep hold.
  * - Fix: a proposal you rejected isn't proposed (or started) again at that colony for 180 days (0.3.6.4), whatever wakes it.
- * - The plan's own TME projects (CATerraform) and CAItems' paid core, item and administrator moves don't offer actions yet
- *   (deferred to 0.3.0.x): they still spend in their own steps after this pass, but ask setAside first, so they never spend
+ * - The plan's own TME projects (CATerraform) and CAItems' paid core, item and administrator moves don't offer actions
+ *   (0.3.8.8: still true): they spend in their own steps after this pass, but ask setAside first, so they never spend
  *   what's saved up for the earmarked pick or take the upkeep room kept for the hold.
  * - After every start the actions that share its colony, a good, a building or a one-per-empire flag are re-scored before
  *   they can start (02 section 14: no same-pass staleness).
@@ -138,7 +138,7 @@ public class CAPlanner {
         float lapse;
         /** 0.3.2.0: saved up for a floor producer (another floor producer doesn't take it over). */
         boolean floor;
-        Earmark() { }
+        // 0.3.8.8: the no-argument constructor is gone (nothing called it)
         Earmark(String key, String name, float total, float due, float set) {
             this.key = key; this.name = name; this.total = total; this.due = due; this.set = set;
             this.lapse = lapseDay(set, due);
@@ -164,8 +164,7 @@ public class CAPlanner {
         boolean queue;
         float from;
         int month = -1;
-        Hold() { }
-        Hold(String key, String name, float net, float set) { this(key, name, net, set, set + 30f, -1); }
+        // 0.3.8.8: the no-argument and four-argument constructors are gone (nothing called them; the checks use this one)
         Hold(String key, String name, float net, float set, float from, int month) {
             this.key = key; this.name = name; this.net = net; this.set = set; this.from = from; this.month = month;
         }
@@ -653,6 +652,9 @@ public class CAPlanner {
             try { ok = h.rescore(a); } catch (Throwable t) { ok = false; }
             if (!ok) { mark(a, true, CAAction.RESCORE, "no longer offered once scored again"); return MOVED; }
             if (!a.worthwhile()) { mark(a, true, CAAction.WORTHLESS, "doesn't pay back its price once scored again"); return MOVED; }
+            // 0.3.8.8: the fresh numbers carry the removal mark and your rejection as they are now (copyNumbers), as run() reads them
+            if (a.tombstone > 0f) { mark(a, true, CAAction.TOMBSTONE, "was taken down here; not built again for " + Math.round(a.tombstone) + " more days"); return MOVED; }
+            if (a.rejected > 0f) { mark(a, true, CAAction.REJECTED, "you turned it down; not proposed again for " + Math.max(1, Math.round(a.rejected)) + " more days"); return MOVED; }
             return RESTART;
         }
         String err;
@@ -708,7 +710,7 @@ public class CAPlanner {
         res.holdSet = pool.hold;
     }
 
-    static float total(CAAction a) { return a.total(); }
+    // 0.3.8.8: total(CAAction) is gone (nothing called it; CAAction.total() is the one)
 
     /** 0.3.0.0 (B3 fix): the reason line of an action held back by the stability room a better new build at its colony needs. */
     static final String KEPT_STABILITY = "stability room is kept for ";
@@ -913,13 +915,34 @@ public class CAPlanner {
         List<CAAction> all = run.all; Set<String> managed = run.managed;
         wakes.clear();
         for (Iterator<String> it = offers.keySet().iterator(); it.hasNext(); ) if (!managed.contains(it.next())) it.remove();   // colonies lost or Off
+        // 0.3.8.8: the colonies' event and idle records too, so a lost or Off colony's last idle look no longer counts (idleShare)
+        for (Map<String, ?> seen : Arrays.<Map<String, ?>>asList(idle, sigs, slotsSeen, threatSeen))
+            for (Iterator<String> it = seen.keySet().iterator(); it.hasNext(); ) if (!managed.contains(it.next())) it.remove();
         all.addAll(modules(d, s, auto));
+        // 0.3.8.8: the looks ran frames earlier: nothing starts at a colony lost since, or set to Off or Advisor since; one set
+        // to Approve since gets proposals only
+        for (Iterator<CAAction> it = all.iterator(); it.hasNext(); ) if (!stillManaged(it.next(), d)) it.remove();
         Pool pool = live(d, s, now, all);
         Live hooks = new Live(s);
         Result r = execute(all, pool, hooks);
         earmark = pool.earmark;
         hold = pool.hold;
         afterPass(r, pool, now);
+    }
+
+    /**
+     * 0.3.8.8: an action may still go: its colony (if it has one) is still yours; a build engine pick's colony is still Auto, or
+     * Approve for a proposal (approveOnly). The looks and the actions run in different frames of the daily pass.
+     */
+    static boolean stillManaged(CAAction a, CAData d) {
+        if (a == null) return false;
+        if (a.market == null) return true;
+        try {
+            if (!a.market.isPlayerOwned()) return false;
+            if (!CAAction.SOURCE_BUILD.equals(a.source)) return true;
+            CAData.Mode mode = d.colony(a.market.getId()).mode;
+            return mode == CAData.Mode.AUTO || (mode == CAData.Mode.APPROVE && a.approveOnly);
+        } catch (Throwable t) { return true; }
     }
 
     /** Empire-wide wake-ups: the month rolled over (colonies that waited for money), the money tier or spending freely changed (all). */
@@ -961,8 +984,9 @@ public class CAPlanner {
         o.approve = c.mode == CAData.Mode.APPROVE;
         boolean building = CABuild.buildsFull(m);   // 0.3.6.7: no room for another new building (story mode may build 2 or 3 at once)
         if (c.buildout && c.mode == CAData.Mode.AUTO) {
-            if (siege) return o;   // a buildout builds no defenses, so it waits out the siege
-            try { if (CABuildout.pass(m, c, now, building)) return o; }
+            // 0.3.8.8: a colony in fast buildout isn't idle (its last idle look no longer counts for the money tiers' idleShare)
+            if (siege) { idle.put(m.getId(), false); return o; }   // a buildout builds no defenses, so it waits out the siege
+            try { if (CABuildout.pass(m, c, now, building)) { idle.put(m.getId(), false); return o; } }
             catch (Throwable t) { CAStep.warn("planner", "fast buildout pass failed at " + m.getName(), t); return o; }
         }
         CAData.Profile used;
@@ -985,8 +1009,12 @@ public class CAPlanner {
             }
             if (wk != null) {
                 CAAction k = fromPick(m, c, r.bestNoSlot, s, false, wk);
-                o.list.add(k);
-                replaced = true;
+                // 0.3.8.8: one that needs your approval isn't offered: Approve finds only slot picks (CAAuto.approve), so it was
+                // cleared as out of date and proposed again at every look
+                if (k.approval == null) {
+                    o.list.add(k);
+                    replaced = true;
+                }
             }
         }
         // 0.3.2.0 (Batch E): make room: a floor producer with no slot may replace the weakest income-only industry; Ask first proposes it
@@ -1276,7 +1304,7 @@ public class CAPlanner {
     }
 
     /**
-     * 0.3.0.0 (B3 fix; their own actions are deferred to 0.3.0.x): what spending outside the pass asks before it goes: the plan's
+     * 0.3.0.0 (B3 fix; 0.3.8.8: they still offer no actions of their own): what spending outside the pass asks before it goes: the plan's
      * own TME projects (CATerraform) and CAItems' paid core, item and administrator moves. Null when it may spend; else why
      * it waits: it would push back the savings date of the pick the planner saves up for (keepsDate), or its new upkeep
      * would take the room kept for a big waiting step (the hold). Asks nothing while the planner isn't in charge or nothing
@@ -1425,11 +1453,7 @@ public class CAPlanner {
         return n / (float) idle.size();
     }
 
-    /** What the planner is saving up for, or null: "Heavy Industry at Ming Adi (465,000)". */
-    public static String earmarkText() {
-        Earmark e = earmark;
-        return e == null ? null : e.name + " (" + credits(e.total) + ")";
-    }
+    // 0.3.8.8: earmarkText() is gone (nothing called it; status() shows the earmark)
 
     /** Short lines for the Budget panel: the last pass, the earmark and the upkeep hold. */
     public static List<String> status() {

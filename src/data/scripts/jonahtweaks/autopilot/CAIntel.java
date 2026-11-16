@@ -252,6 +252,7 @@ public class CAIntel extends BaseIntelPlugin {
                 note.getPosition().rightOfMid(rb, 10f);
                 CALog.endRow(t, rb);
             }
+            java.util.Map<String, Long> sigs = markets.isEmpty() ? null : CAEngine.resultSigs();   // 0.3.8.8: every colony read once, not once per row
             for (MarketAPI m : markets) {
                 CAData.Colony c = data.colony(m.getId());
                 String top = "nothing buildable";
@@ -261,7 +262,7 @@ public class CAIntel extends BaseIntelPlugin {
                     else if (CAHypershunt.is(m)) top = CAHypershunt.summary(m);
                     else {
                         // 0.3.0.0 (A4 fix, 07 M6): what's kept for the colony's goal (the daily pass, or Refresh picks); drawing never evaluates
-                        CAEngine.Kept k = CAEngine.kept(m, c.profile, data.settings.minStability, c.buildout && c.mode == CAData.Mode.AUTO);
+                        CAEngine.Kept k = CAEngine.kept(m, c.profile, data.settings.minStability, c.buildout && c.mode == CAData.Mode.AUTO, sigs);
                         if (k == null) top = CAEngine.scoreFailed(m) ? "not scored; see starsector.log"   // 0.3.0.0 (A4 fix)
                                 : "not scored yet";
                         else {

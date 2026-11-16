@@ -1,5 +1,24 @@
 # Patch notes
 
+## 0.3.8.8 - 2026-11-16
+
+- Planner: Fixed endgame and capital replacements that need approval being proposed again at every look.
+- Planner: Fixed a building taken down or rejected since its colony's last look starting the same day.
+- Planner: Fixed builds starting at a colony lost, or set to Off, Advisor or Approve, during the daily pass.
+- Planner: Fixed plan steps after an Ashes of the Domain starter building counting the starter's output again.
+- Planner: Fixed Refresh and the daily panel scores changing which plan steps hold rank and slots at Approve and Auto colonies.
+- Planner: Fixed the fallback build pass rebuilding buildings taken down within the year and proposing rejected ones again.
+- Money ladder: Fixed idle months counting colonies in fast buildout and colonies that are lost or Off.
+- Fast buildout: Fixed a measured mod building waiting for approval stopping the buildout's other new buildings.
+- Daily pass: Fixed pruning, Low profile, colony policies and the over-limit fix acting on a colony lost or set off Auto during the pass.
+- Approvals: Fixed Reject on a settlement or money ladder item rejecting a newer proposal.
+- Construction: Fixed an upgrade that failed while starting being left running unpaid.
+- Capital: Fixed the capital plan holding a slot for AotD's Underworld under Low profile.
+- Industrial Evolution: Fixed no colony being offered a Courier Port when an outpost or a hypershunt had the best accessibility.
+- Terraforming: Fixed a new world commitment being recorded a day late when research valued the colony first that day.
+- Log: Your expansion style, Low profile and capital pick lines moved to the Thinking list.
+- Performance: Changed the planner, research rankings, the Colonies page and special project supply to use less CPU.
+
 ## 0.3.8.7 - 2026-11-16
 
 - First-time setup: Fixed Back and Close keeping the recommended settings and the empire mode's defaults.

@@ -67,7 +67,7 @@ public class CALowProfile {
         CAAuto.nextPass.clear();
         if (!on) {
             CALog.forget("lowprofile:on");
-            CALog.did(TAG + "off (" + who + "). Full expansion: Autopilot builds what pays most.", true);
+            CALog.think(TAG + "off (" + who + "). Full expansion: Autopilot builds what pays most.");   // 0.3.8.8: your setting; Thinking list
         }
     }
 
@@ -319,11 +319,12 @@ public class CALowProfile {
     public static void run(CAData d, CASettings s, List<MarketAPI> auto) {
         if (!s.lowProfile) { CALog.forget("lowprofile:on"); return; }
         if (CALog.once("lowprofile:on"))
-            CALog.did(TAG + "on. Attention counts ten times as much. Autopilot slows "   // 0.3.8.6: the page's name
-                    + "each faction's crisis (Colony crises).", true);
+            CALog.think(TAG + "on. Attention counts ten times as much. Autopilot slows "   // 0.3.8.6: the page's name. 0.3.8.8: your setting; Thinking list
+                    + "each faction's crisis (Colony crises).");
         Set<MarketAPI> frozen = CAItems.inspected();   // pulling anything out once an inspection is sent disrupts every building there
         for (MarketAPI m : auto) {
             if (frozen.contains(m) || CAEngine.isOutpost(m) || CAHypershunt.is(m)) continue;
+            if (!m.isPlayerOwned() || d.colony(m.getId()).mode != CAData.Mode.AUTO) continue;   // 0.3.8.8: lost or set off Auto since the list was made
             try { if (pullItem(d, m) || swapAdmin(d, m)) return; }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "low profile check failed at " + m.getName(), t); }
         }

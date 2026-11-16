@@ -244,6 +244,7 @@ public final class CAApprovals {
         it.reject = new Act() { public String run() {
             if (!Global.getSettings().getModManager().isModEnabled(CASettlement.MOD)) return "Random Assortment of Things is off";
             CAData dd = CAData.get();
+            if (!key.equals("settle:" + dd.settlePendingKind + ":" + dd.settlePendingId)) return changed(dd.settlePendingName);   // 0.3.8.8: as approve
             CASettlement.handle("reject", "", dd, dd.settings);
             return null;
         } };
@@ -283,7 +284,11 @@ public final class CAApprovals {
                 if (CAShipyard.pending != p) return "Changed since the list was made";
                 return ladderResult(CAShipyard.handle(CAShipyard.APPROVE), CAShipyard.pending == null || CAShipyard.pending.empty());
             } };
-            it.reject = new Act() { public String run() { note(CAShipyard.handle(CAShipyard.REJECT)); return null; } };
+            it.reject = new Act() { public String run() {
+                if (CAShipyard.pending != p) return "Changed since the list was made";   // 0.3.8.8: as approve
+                note(CAShipyard.handle(CAShipyard.REJECT));
+                return null;
+            } };
             out.add(it);
         }
         for (int k = 0; k < CAStockpile.pending.length; k++) {
@@ -298,7 +303,11 @@ public final class CAApprovals {
                 if (CAStockpile.pending[kk] != n) return "Changed since the list was made";
                 return ladderResult(CAStockpile.handle(CAStockpile.APPROVE + kk), CAStockpile.pending[kk] == null);
             } };
-            it.reject = new Act() { public String run() { note(CAStockpile.handle(CAStockpile.REJECT + kk)); return null; } };
+            it.reject = new Act() { public String run() {
+                if (CAStockpile.pending[kk] != n) return "Changed since the list was made";   // 0.3.8.8: as approve
+                note(CAStockpile.handle(CAStockpile.REJECT + kk));
+                return null;
+            } };
             out.add(it);
         }
         final CAMilitary.Up u = CAMilitary.pending;
@@ -311,7 +320,11 @@ public final class CAApprovals {
                 if (CAMilitary.pending != u) return "Changed since the list was made";
                 return ladderResult(CAMilitary.handle(CAMilitary.APPROVE), CAMilitary.pending == null);
             } };
-            it.reject = new Act() { public String run() { note(CAMilitary.handle(CAMilitary.REJECT)); return null; } };
+            it.reject = new Act() { public String run() {
+                if (CAMilitary.pending != u) return "Changed since the list was made";   // 0.3.8.8: as approve
+                note(CAMilitary.handle(CAMilitary.REJECT));
+                return null;
+            } };
             out.add(it);
         }
     }
@@ -337,8 +350,9 @@ public final class CAApprovals {
     }
 
     /**
-     * Pure: which of a batch fit, approved in order, each paid from credits above the reserve (what Approve all does with the
-     * live balance: an item that doesn't fit stays open, the next may still fit).
+     * Pure: which of a batch fit, approved in order, each paid from credits above the reserve: an item that doesn't fit stays
+     * open, the next may still fit. 0.3.8.8: a model of approveAll for JTApprovalsCheck; approveAll itself approves one item at
+     * a time against the live credits and does not call this.
      */
     static boolean[] fits(float credits, float reserve, float[] totals) {
         boolean[] out = new boolean[totals.length];

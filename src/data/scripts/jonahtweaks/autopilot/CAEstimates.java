@@ -54,12 +54,7 @@ public class CAEstimates {
     static void note(CAEngine.Pick p, String text) { p.lines.add(text + " (estimated)"); }
 
     static boolean anyCond(MarketAPI m, String... ids) { for (String id : ids) if (m.hasCondition(id)) return true; return false; }
-
-    static int count(MarketAPI m, String prefix) {
-        int n = 0;
-        for (com.fs.starfarer.api.campaign.econ.MarketConditionAPI c : m.getConditions()) if (c.getId().startsWith(prefix)) n++;
-        return n;
-    }
+    // 0.3.8.8: count(MarketAPI, String) removed: nothing called it
 
     public static void apply(MarketAPI m, String id, CAEngine.Pick p, java.util.Map<String, Integer> deficit) {
         float gross = Math.max(0f, m.getGrossIncome());

@@ -17,7 +17,6 @@ public class CAAuto {
     static final int UPS = CATuning.PASS_UPGRADES, NEWS = CATuning.PASS_NEW;   // 0.3.0.0 (A3): in CATuning
     static final Map<String, Boolean> wasBuilding = new HashMap<String, Boolean>();
     static final Map<String, Float> nextPass = new HashMap<String, Float>();
-    static float lastNow = 0f;
 
     static class Cand {
         MarketAPI m; CAData.Colony c; CAEngine.Pick p; float total;
@@ -31,7 +30,7 @@ public class CAAuto {
      * with every other static, before this runs; the augment timers only when Station Augments is on.
      */
     public static void reset() {
-        wasBuilding.clear(); nextPass.clear(); lastTrace.clear(); lastNow = 0f;
+        wasBuilding.clear(); nextPass.clear(); lastTrace.clear();   // 0.3.8.8: lastNow is gone (nothing read it)
         rejectedId.clear(); rejectedUntil.clear();
         CAPlanner.reset();   // 0.3.0.0 (B3): the planner's offers, events, earmark and upkeep hold
         CAFloors.reset();    // 0.3.2.0: the production floors are measured again on the first pass after a load
@@ -111,7 +110,6 @@ public class CAAuto {
      * Steps that call an optional mod's integration class check isModEnabled inside their own lambda (audit_combos.ps1).
      */
     public static void runPass(final float now) {
-        lastNow = now;
         final CAData d = CAData.get();
         final CASettings s = d.settings;
         final com.fs.starfarer.api.ModManagerAPI mods = Global.getSettings().getModManager();
@@ -158,7 +156,7 @@ public class CAAuto {
         // their summaries, clean-ups and deliveries. With the hidden legacyPlanner switch, or once the planner stopped for the
         // session after three failed days, the 0.2.45 build pass and the modules' own spending take over again (inCharge).
         // 0.3.0.0 (B3 fix): the plan's own TME projects and the paid core, item and administrator moves below don't offer
-        // actions yet (0.3.0.x); they ask CAPlanner.setAside before they spend, so they keep to what the planner saves up and keeps
+        // actions (0.3.8.8: still so); they ask CAPlanner.setAside before they spend, so they keep to what the planner saves up and keeps
         CAStep.run("planner", () -> CAPlanner.run(d, s, auto));
         CAStep.run("build pass", () -> { if (!CAPlanner.inCharge()) buildPass(d, s, now); });
         CAStep.run("money tiers", () -> CARich.run(d, s));
@@ -299,6 +297,8 @@ public class CAAuto {
                 for (CAEngine.Pick q : r.picks) {
                     if (!CAEngine.worthwhile(q)) continue;   // never the least-bad option: only what pays for itself
                     if (siege && !CASiege.defensive(q)) continue;   // under siege only defenses are built
+                    // 0.3.8.8: as the planner: never what a remover took down here within the year, nor what you rejected here
+                    if (CAEndgame.rebuildBlocked(m, q.id) || rejectedDays(m.getId(), q.id, now) > 0f) continue;
                     if (q.upgrade) { if (ups.size() < (rich ? UPS + CATuning.PASS_RICH_UPGRADES : UPS)) ups.add(q); }
                     else if (!building && news.size() < NEWS) news.add(q);
                 }
@@ -352,7 +352,10 @@ public class CAAuto {
                 }
                 // 0.3.1.0: the same three rules as before, from CAPlanner.approval ("Approval needed: ..."); the focus world's cap there too
                 String needs = CAPlanner.approval(k.m, k.p, s);
-                if (needs != null) { propose(k.m, k.c, k.p, needs); continue; }
+                if (needs != null) {
+                    if (k.remove == null) propose(k.m, k.c, k.p, needs);   // 0.3.8.8: a replacement can't be approved (approve() finds slot picks only)
+                    continue;
+                }
                 String key = k.m.getId() + ":" + k.p.id;
                 float avail = Math.min(Math.max(0f, CABuild.credits() - s.reserve), CABudget.available(s) + CASurplus.extra(k.m, s));
                 if (k.total > avail) {
@@ -449,7 +452,7 @@ public class CAAuto {
     /** 0.3.3.0: quiet: your own Build click is logged to starsector.log only (the panel shows what started). */
     static String execute(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String who, boolean quiet) {
         CASettings s = CAData.settings();
-        float fee = CABudget.constructionFee(s, p.cost), price = CASync.buildPrice(p.cost);   // 0.3.6.0 story mode: Free construction
+        float fee = CABudget.constructionFee(s, p.cost), price = CASync.buildPrice(p.cost);   // 0.3.8.8: with Rapid construction's RAPID_FEE (story mode)
         if (CABuild.credits() < price + fee) return "Not enough credits: build plus " + Misc.getDGSCredits(fee) + " fee";
         String reserve = CAApprovals.reserveGate(CABudget.buildTotal(s, p.cost));   // 0.3.8.5: the last reserve check, Rapid construction's fee included
         if (reserve != null) return reserve;
@@ -517,7 +520,7 @@ public class CAAuto {
         if (c.pendingName != null) CALog.think(m.getName() + ": Proposal rejected: " + c.pendingName + ".");   // 0.3.8.6: your click; Thinking list
         String id = c.pendingId;
         d.clearPending(c);
-        // 0.3.0.0 (A1): from today on the game clock; lastNow was 0 until the first pass after a load, so a rejection then wasn't held
+        // 0.3.0.0 (A1): from today on the game clock (the pass's own clock was 0 until the first pass after a load)
         float now = CATime.now();
         nextPass.put(m.getId(), now + MAX_WAIT);
         noteRejected(m.getId(), id, now);   // the planner doesn't propose or start it there for REJECT_HOLD days (180), whatever wakes the colony

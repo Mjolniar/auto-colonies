@@ -163,6 +163,7 @@ public class CAPolicies {
         for (MarketAPI m : auto) {
             try {   // 0.3.0.0: one colony's failure never blocks the urgent free port close at the others
                 if (CAHypershunt.is(m)) continue;   // fixed at size 2 with no market to open, so neither policy helps
+                if (!m.isPlayerOwned() || d.colony(m.getId()).mode != CAData.Mode.AUTO) continue;   // 0.3.8.8: lost or set off Auto since the list was made
                 CAData.Colony c = d.colony(m.getId());
                 boolean threat = CAThreat.isHigh(m);
                 CAData.Profile prof = threat ? CAData.Profile.SECURITY : c.profile;

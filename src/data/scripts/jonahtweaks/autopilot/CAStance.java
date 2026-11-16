@@ -46,13 +46,7 @@ public class CAStance {
     /** One step friendlier (dir -1) or more hostile (dir +1), within Ally..Destroy. */
     public static int step(int stance, int dir) { return clamp(stance + dir); }
 
-    /** An old faction priority as a stance: High (2) Friendly, Ignore (0) Rival, Normal (1) or none Auto. */
-    public static int fromPriority(Integer p) {
-        if (p == null) return AUTO;
-        if (p >= 2) return FRIENDLY;
-        if (p <= 0) return RIVAL;
-        return AUTO;
-    }
+    // 0.3.8.8: fromPriority removed: only the checks called it; migration uses CAMigrate.stanceFor (Ally for High with ambassadors that never stop)
 
     /** The old ambassador priority this stance gives (CAIndEvo, CASpies): Ally and Friendly 2 High, Neutral and Auto 1 Normal, the rest 0 Ignore. */
     public static int ambassadorPriority(int stance) {

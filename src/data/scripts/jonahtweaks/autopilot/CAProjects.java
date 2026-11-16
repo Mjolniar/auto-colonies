@@ -252,11 +252,24 @@ public class CAProjects {
         try { CommodityOnMarketAPI c = m.getCommodityData(com); return c == null ? 0 : c.getMaxSupply(); } catch (Throwable t) { return 0; }
     }
 
-    /** Units a month every other market in the sector makes. */
-    static int others(String com) {
-        int n = 0;
-        for (MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) if (!m.isPlayerOwned()) n += supply(m, com);
-        return n;
+    /**
+     * 0.3.8.8: per good, {units a month your colonies make (the game's supply, as yours() without ToT), units every market
+     * that isn't yours makes}, from one pass over the sector's markets (it was one pass per good; others() is gone).
+     */
+    static Map<String, int[]> supplies(Collection<String> goods) {
+        Map<String, int[]> out = new HashMap<String, int[]>();
+        for (String g : goods) out.put(g, new int[2]);
+        com.fs.starfarer.api.campaign.FactionAPI player = Global.getSector().getFaction(com.fs.starfarer.api.impl.campaign.ids.Factions.PLAYER);
+        for (MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) {
+            boolean yoursHere = m.getFaction() == player, othersHere = !m.isPlayerOwned();   // as Misc.getPlayerMarkets(false), and the old others()
+            if (!yoursHere && !othersHere) continue;
+            for (Map.Entry<String, int[]> e : out.entrySet()) {
+                int u = supply(m, e.getKey());
+                if (yoursHere) e.getValue()[0] += u;
+                if (othersHere) e.getValue()[1] += u;
+            }
+        }
+        return out;
     }
 
     /** Reads the running project: what its unfinished stages still take, by good, and this month's share. */
@@ -356,7 +369,14 @@ public class CAProjects {
             goods.addAll(orders.keySet());
             for (Producer p : PRODUCERS) { goods.add(p.good); for (String in : p.inputs) goods.add(in); }
             Map<String, Integer> made = new HashMap<String, Integer>();
-            for (String g : goods) { int y = yours(g); yours.put(g, y); made.put(g, y); sector.put(g, others(g)); }
+            // 0.3.8.8: one read of the sector's markets for every good (yours and others read the whole list per good)
+            Map<String, int[]> supplies = supplies(goods);
+            for (String g : goods) {
+                int[] n = supplies.get(g);
+                Integer tot = CAContracts.production(g);   // ToT's figure first, as yours()
+                int y = tot != null ? tot : n[0];
+                yours.put(g, y); made.put(g, y); sector.put(g, n[1]);
+            }
             Set<String> wanted = new LinkedHashSet<String>(left.keySet());
             if (rich) wanted.addAll(Arrays.asList(AOTD_GOODS));
             wanted.addAll(orders.keySet());
