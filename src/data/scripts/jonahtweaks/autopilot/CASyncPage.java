@@ -152,6 +152,10 @@ public class CASyncPage {
         if (CATriPad.FOUND.equals(b)) return "Dormant firmware";
         if (CATriPad.INSTALL.equals(b)) return "Autarch AI Core online";
         if (CATriPad.FEED.equals(b)) return "Integrating";
+        if (CATriPad.TIER2.equals(b)) return "The partition";   // 0.3.8.3
+        if (CATriPad.TIER3.equals(b)) return "Procurement records";
+        if (CATriPad.TIER4.equals(b)) return "Transfer order";
+        if (CATriPad.RECORD.equals(b)) return "The journal";
         if (CATriPad.PULL.equals(b)) return "Pulling the core";
         if (CATriPad.BROKEN.equals(b)) return "Broken down";
         if (CATriPad.RETURN.equals(b)) return "Another signature";

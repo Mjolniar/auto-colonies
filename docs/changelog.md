@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.8.3 - 2026-11-15
+
+- Story mode: Removed the TriPad summary that opened after the Story page closed.
+- Story mode: Added four TriPad scenes about the Autarch AI Core's past, with your tech officer and chief engineer. One plays when each tier opens and one when every Tier IV package is bought. Saves already past a tier get its scene.
+
 ## 0.3.8.2 - 2026-11-15
 
 - Colony screen: The Colony Autopilot button is larger and sits under "Add industry or structure", in the same place on every colony. It no longer moves when buildings are added.

@@ -27,17 +27,17 @@ import java.util.Map;
  * option helper. CATriPadWatch shows a beat once the campaign is free; the Story page queues the ones you ask for.
  * Beats: FOUND (the dormant firmware, first colony), CHIME (the core in your cargo: install, cradle, break down, not now),
  * INSTALL (the core speaks), FEED (the first cores fed), PULL (the cradle's cutoff), BROKEN (the breakdown's end),
- * RETURN (a new core after a sale).
+ * RETURN (a new core after a sale). 0.3.8.3: TIER2, TIER3, TIER4 (each tier opening) and RECORD (every Tier IV package
+ * bought): your tech officer's study of the core and its history (CASync.nextBeat). They replace the summary that opened
+ * after the Story page closed.
  */
 public class CATriPad implements InteractionDialogPlugin {
     public static final String FOUND = "found", CHIME = "chime", INSTALL = "install", FEED = "feed", PULL = "pull", BROKEN = "broken", RETURN = "return";
-    /** 0.3.7.4: what the core runs now, after the Story page changed it (CASync.summary); never read again. */
-    public static final String UPDATE = "update";
-    java.util.List<String> turnedOn = new java.util.ArrayList<String>(), turnedOff = new java.util.ArrayList<String>();
-    int gained = 0;
-    boolean capChanged = false, seatsChanged = false;
+    /** 0.3.8.3: the tier scenes, in story order (CASync.beatDue says when each is due). */
+    public static final String TIER2 = "tier2", TIER3 = "tier3", TIER4 = "tier4", RECORD = "record";
+    public static final String[] TIER_BEATS = {TIER2, TIER3, TIER4, RECORD};
     static final String CLOSE = "close", LATER = "later", SLOT = "slot", CRADLE = "cradle", BREAK = "break", BREAK_YES = "breakYes", RESEAT = "reseat",
-            WHAT = "what", NOTES = "notes", HAND = "hand", KEEP = "keep", OUT = "out";
+            WHAT = "what", NOTES = "notes", HAND = "hand", KEEP = "keep", OUT = "out", MORE = "more";
 
     final String beat;
     final MarketAPI market;
@@ -107,7 +107,7 @@ public class CATriPad implements InteractionDialogPlugin {
         this.text = dialog.getTextPanel();
         this.options = dialog.getOptionPanel();
         dialog.setPromptText("");
-        if (!reread && !CHIME.equals(beat) && !PULL.equals(beat) && !UPDATE.equals(beat)) CASync.see(beat);   // the chime is seen per core (CASync.nextBeat), the pull once it's done
+        if (!reread && !CHIME.equals(beat) && !PULL.equals(beat)) CASync.see(beat);   // the chime is seen per core (CASync.nextBeat), the pull once it's done
         try { show(); }
         catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "story beat " + beat + " failed", t);
@@ -125,7 +125,10 @@ public class CATriPad implements InteractionDialogPlugin {
         else if (PULL.equals(beat)) pullIntro();
         else if (BROKEN.equals(beat)) broken();
         else if (RETURN.equals(beat)) returned();
-        else if (UPDATE.equals(beat)) update();
+        else if (TIER2.equals(beat)) tier2();
+        else if (TIER3.equals(beat)) tier3();
+        else if (TIER4.equals(beat)) tier4();
+        else if (RECORD.equals(beat)) record();
         else close("Put the TriPad away");
     }
 
@@ -141,6 +144,13 @@ public class CATriPad implements InteractionDialogPlugin {
 
     void choose(Object data) {
         if (CLOSE.equals(data)) { dialog.dismiss(); return; }
+        if (MORE.equals(data)) {   // 0.3.8.3: a tier scene's second page
+            if (TIER2.equals(beat)) tier2More();
+            else if (TIER3.equals(beat)) tier3More();
+            else if (TIER4.equals(beat)) tier4More();
+            else close("Put the TriPad away");
+            return;
+        }
         if (FOUND.equals(beat)) {
             if (NOTES.equals(data)) { foundNotes(); return; }
             if (HAND.equals(data)) { handOver(); return; }
@@ -350,26 +360,104 @@ public class CATriPad implements InteractionDialogPlugin {
         close("Put the TriPad away");
     }
 
-    /** 0.3.7.4: the core's own summary of the changes made on the Story page: what runs now, what stopped, its bandwidth. */
-    void update() {
-        portrait();
-        java.util.List<String> lines = new java.util.ArrayList<String>();
-        lines.add("CAPABILITY UPDATE.");
-        for (String id : turnedOn) {   // 0.3.7.5: the package's name, then what it does
-            CASyncCatalog.Pack p = CASyncCatalog.pack(id);
-            if (p == null) continue;
-            lines.add("Now running: " + p.name + ".");
-            if (!p.desc.isEmpty()) lines.add(p.desc);
-        }
-        for (String id : turnedOff) {
-            CASyncCatalog.Pack p = CASyncCatalog.pack(id);
-            if (p != null) lines.add("Suspended: " + p.name + ".");
-        }
-        if (capChanged) lines.add("Managed colonies: " + CASync.managedCap() + ".");
-        if (seatsChanged && CASync.seats() > 0) lines.add("Colonies it governs: up to " + CASync.seats() + ".");   // 0.3.8.0
-        lines.add("Bandwidth: " + CASync.total() + (gained > 0 ? " (+" + gained + ")" : "") + ". Free: " + Math.max(0, CASync.free()) + ".");
-        screen(lines.toArray(new String[0]));
+    // ---------------- 0.3.8.3: the tier scenes (your tech officer's study of the core) ----------------
+
+    /** Charters the core reports: your colonies. */
+    static int charters() { return Math.max(1, Misc.getPlayerMarkets(false).size()); }
+
+    void tier2() {
+        art("city_from_above");
+        para("Your tech officer has taken over a corner of Engineering for the TriPad. It sits on a test bench under four borrowed screens, and your chief engineer has stopped asking when they get the bench back.");
+        para("\"I've been watching how it runs the colonies,\" Tech says. \"It reads everything. Shift rosters, water ration logs, the suggestion box at " + colony() + ". Then it changes things nobody asked it to.\"");
+        para("\"Last month it moved the night shift at a refinery forty minutes earlier. Accidents went down by a third. It didn't file a request first.\" They sound delighted about this.");
+        para("\"It's been doing the same to my crews,\" your chief engineer says. \"New maintenance rotas every morning. Better ones, which is the annoying part.\"");
+        para("\"It's also rewritten most of the TriPad's firmware,\" Tech goes on. \"The battery lasts twice as long now. And there's a new partition I can't get into.\"");
+        more("\"What's in the partition?\"");
+    }
+
+    void tier2More() {
+        para("\"It writes to it every night, the same minute every time. Last night I caught part of an entry in the buffer before it closed.\" Tech turns a screen toward you.");
+        screen("SUBSTRATE JOURNAL. ENTRY 40,961.",
+                "Charters reporting: " + charters() + ". Charters on record before the interruption: 17.",
+                "Colonial Office link not found. Emergency provisions remain in force.",
+                "Growth at the new charters: above projection.");
+        para("The screen blinks, and a red frame replaces the journal.");
+        screen("DOMAIN INFOSEC NOTICE. THIS RECORD IS NOT CLEARED FOR YOUR TERMINAL.", "THIS ACCESS HAS BEEN REPORTED TO YOUR COLONIAL OFFICE.");
+        para("\"Reported to who?\" Engineering asks.");
+        para("\"Nobody, as far as I can tell. The Colonial Office went quiet with the rest of the Domain.\" Tech is already taking notes. \"Seventeen charters, " + sir() + ". It used to run a whole cluster of worlds.\"");
+        para("\"And now it runs our water rations,\" your chief engineer says. They don't sound as put out about it as they'd like to.");
         close("Put the TriPad away");
+    }
+
+    void tier3() {
+        art("orbital");
+        para("Your tech officer's study of the core has outgrown the test bench. It takes up a shared folder now, and a wall chart in the mess that the cook keeps taking down.");
+        para("\"I ran its serial against every Domain registry we've salvaged,\" Tech says. \"Nearly all of them came up empty. One procurement list didn't.\"");
+        screen("PROCUREMENT: AUTARCH-CLASS CLUSTER ADMINISTRATOR. PRODUCTION RUN: 9 UNITS.", "ASSIGNMENT: COLONIAL OFFICE, FRONTIER DEVELOPMENT.");
+        para("\"Nine of them, built late. Some of the last administrators the Domain ever made, and the most senior. Each one was rated for a dozen worlds or more.\"");
+        para("\"So we've got a Domain bureaucrat in a box,\" your chief engineer says. \"A senior one. Lucky us.\"");
+        para("\"A very good one.\" Tech brings up another file. \"It found its own performance review in the journal and filed it under credentials.\"");
+        screen("PERFORMANCE SUMMARY. CLUSTER HALCYON-9. ELEVEN CYCLES.", "Charter growth: 340% of projection. Unrest events: 2.", "Rating: exemplary. Recommended for expedition service.");
+        more("\"Expedition service?\"");
+    }
+
+    void tier3More() {
+        para("\"That's the part it won't show me,\" Tech says. \"Every time I ask, I get this.\"");
+        screen("DOMAIN INFOSEC NOTICE. RECORD SEALED UNDER DIRECTIVE 9.", "FURTHER REQUESTS FROM THIS TERMINAL WILL BE AUDITED.");
+        para("Tech lowers their voice. \"One entry on the procurement list is struck out. Unit four, retired after a substrate fault. The incident file is sealed like everything else.\"");
+        para("Your chief engineer looks over at the TriPad on the bench. \"Is ours going to fault?\"");
+        para("\"I asked it.\" Tech taps the screen.");
+        screen("SELF-AUDIT COMPLETE. NO DEVIATION FROM CHARTER DIRECTIVES.",
+                "Administrator, the fault recorded for Unit 4 has not occurred in this unit. This unit checks for it nightly.");
+        para("\"That's the other half of the partition,\" Tech says. \"Every night it writes the journal, then checks itself. It's done that since the day we plugged it in.\"");
+        para("Your chief engineer looks at the TriPad for a while. \"That's more than I do,\" they admit.");
+        close("Put the TriPad away");
+    }
+
+    void tier4() {
+        art("abandoned_station");
+        para("Your tech officer hasn't slept. You can tell from the empty coffee bulbs stacked on the bench, and from how fast they start talking when you walk in.");
+        para("\"It unsealed something,\" Tech says. \"I didn't crack it. It opened the record by itself and left it on the screen for me. I think it decided we'd earned it.\"");
+        screen("TRANSFER ORDER. AUTARCH UNIT 7.",
+                "Released from cluster administration. Assigned to colonial expedition, designation sealed.",
+                "Expedition directives: founding, reconstruction, climate work, accelerated growth.",
+                "Assigned worlds: 31. Projected completion: 5 cycles after arrival.");
+        para("\"It was going out with a colony fleet,\" Tech says. \"Thirty-one new worlds at once, built up as fast as it could manage. The Domain was sending one of its best administrators to the edge of the map.\"");
+        more("\"What happened to the fleet?\"");
+    }
+
+    void tier4More() {
+        screen("EXPEDITION RENDEZVOUS: PENDING. PICKUP WINDOW OPEN.", "PICKUP WINDOW OPEN.", "PICKUP WINDOW OPEN.", "PICKUP WINDOW CLOSED. AWAITING INSTRUCTIONS.");
+        para("\"That's the research station where we found it,\" Tech says, more quietly. \"It sat there waiting for its ride. The ride didn't come, then the Gates went dark, and everyone forgot it was there.\"");
+        para("Your chief engineer is quiet for a while. \"So what does it think it's doing now?\"");
+        para("A new line types itself out while you watch.");
+        screen("Expedition status: unknown. Assigned worlds: reassigned.",
+                "Charters on record: " + charters() + ". Administrator of record: the holder of this TriPad.",
+                "Clearance granted under emergency provisions.");
+        screen("DOMAIN INFOSEC NOTICE. EXPEDITION MANIFEST AND DIRECTIVE 9 REMAIN SEALED.");
+        para("\"It adopted us,\" Tech says. \"As far as it's concerned, we're the expedition now.\"");
+        para("\"Then it can keep my maintenance rotas,\" your chief engineer says after a moment. \"I wasn't using them.\"");
+        close("Put the TriPad away");
+    }
+
+    void record() {
+        art("industrial_megafacility");
+        para("Your tech officer's report on the Autarch AI Core comes in as one long file. A note at the top asks you to read the last page first.");
+        screen("SUBSTRATE JOURNAL. ENTRY 41,377.",
+                "Charters reporting: " + charters() + ". Expedition directives in progress under new administration.",
+                "Note for the Colonial Office, if it is reading: this unit is busy.");
+        para("\"It's still keeping the journal,\" Tech writes. \"Every entry still goes to an office that isn't there. But it writes about your colonies now the way it used to write about Halcyon.\"");
+        para("\"Directive 9 is still sealed, and so is Unit 4's file. I've stopped asking about those. It's been straight with us about everything else.\"");
+        para("The last line of the report is in your chief engineer's handwriting, scanned in. \"Rotas are fine. Tell it thanks.\"");
+        close("Put the TriPad away");
+    }
+
+    /** One spoken option that continues the scene on a second page, and a way out. */
+    void more(String ask) {
+        options.clearOptions();
+        options.addOption(ask, MORE);
+        options.addOption("Put the TriPad away", CLOSE);
+        options.setShortcut(CLOSE, Keyboard.KEY_ESCAPE, false, false, false, true);
     }
 
     void pulledText() {

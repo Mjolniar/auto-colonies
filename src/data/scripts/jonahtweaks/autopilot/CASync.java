@@ -245,7 +245,6 @@ public class CASync {
         if (p == null || !p.available()) return "That package isn't available.";
         if (!on()) return "Story mode is off.";
         if (ticked(id)) {
-            noteChange();
             untick(id);
             afterChange();
             return null;
@@ -254,10 +253,9 @@ public class CASync {
         if (p.tier > openTier()) return CASyncCatalog.TIERS[p.tier] + " isn't open yet.";   // 0.3.7.3
         if (p.requires != null && !ticked(p.requires)) return p.name + " needs " + CASyncCatalog.pack(p.requires).name + " first.";
         if (free() < p.cost) return p.name + " needs " + p.cost + " bandwidth, and " + Math.max(0, free()) + " are free.";
-        noteChange();
         ticked().add(id);
         afterChange();
-        CALog.quiet("Autopilot: " + p.name + " is on (" + p.cost + " bandwidth).");   // 0.3.7.4: the TriPad's summary says it on screen
+        CALog.quiet("Autopilot: " + p.name + " is on (" + p.cost + " bandwidth).");   // starsector.log; the Story page shows it
         return null;
     }
 
@@ -270,41 +268,10 @@ public class CASync {
         for (CASyncCatalog.Pack x : CASyncCatalog.PACKS) if (id.equals(x.requires)) untick(x.id);
     }
 
-    // ---------------- 0.3.7.4: the summary after the panel closes ----------------
-
-    /** Packages, bandwidth and managed colonies before the first change since the last summary; null when nothing changed. */
-    static List<String> beforeTicks = null;
-    static int beforeTotal = 0, beforeCap = 0, beforeSeats = 0;
-
-    /** Called before each change on the Story page: keeps the state from before the first one. */
-    static void noteChange() {
-        if (beforeTicks != null) return;
-        beforeTicks = new ArrayList<String>(ticked());
-        beforeTotal = total();
-        beforeCap = managedCap();
-        beforeSeats = seats();   // 0.3.8.0
-    }
-
-    /** The TriPad's summary of what changed since noteChange, or null when it all came back to where it was. */
-    static CATriPad summary() {
-        if (beforeTicks == null) return null;
-        List<String> on = new ArrayList<String>(), off = new ArrayList<String>();
-        for (String id : ticked()) if (!beforeTicks.contains(id)) on.add(id);
-        for (String id : beforeTicks) if (!ticked(id)) off.add(id);
-        int gained = total() - beforeTotal, cap = managedCap();
-        boolean capChanged = cap != beforeCap, seatsChanged = seats() != beforeSeats;
-        beforeTicks = null;
-        if (on.isEmpty() && off.isEmpty() && gained == 0 && !capChanged && !seatsChanged) return null;
-        CATriPad t = new CATriPad(CATriPad.UPDATE, null, false);
-        t.turnedOn = on; t.turnedOff = off; t.gained = gained; t.capChanged = capChanged; t.seatsChanged = seatsChanged;
-        return t;
-    }
-
     public static String addColony() {
         if (!on()) return "Story mode is off.";
         if (dormant()) return "The Colony Autopilot is dormant.";
         if (!has("approve")) return "Approve mode comes first.";   // 0.3.7.2
-        noteChange();   // 0.3.7.4
         if (extraColonies() >= CASyncCatalog.MAX_COLONIES) return "It can't run more colonies.";
         if (free() < CASyncCatalog.COLONY_PP) return "One more managed colony needs " + CASyncCatalog.COLONY_PP + " bandwidth, and " + Math.max(0, free()) + " are free.";
         num("colonies", extraColonies() + 1);
@@ -314,7 +281,6 @@ public class CASync {
 
     public static String removeColony() {
         if (extraColonies() <= 0) return "There are no bought colonies to remove.";
-        noteChange();   // 0.3.7.4
         num("colonies", extraColonies() - 1);
         afterChange();
         return null;
@@ -324,7 +290,6 @@ public class CASync {
     public static String addSeat() {
         if (!on()) return "Story mode is off.";
         if (!has("autarchAdmin")) return "Autarch administrator comes first.";
-        noteChange();
         if (seats() >= managedCap()) return "It governs as many colonies as you have managed ones.";
         if (free() < CASyncCatalog.SEAT_PP) return "One more colony needs " + CASyncCatalog.SEAT_PP + " bandwidth, and " + Math.max(0, free()) + " are free.";
         num("seats", extraSeats() + 1);
@@ -334,7 +299,6 @@ public class CASync {
 
     public static String removeSeat() {
         if (extraSeats() <= 0) return "There are no bought colonies to remove.";
-        noteChange();
         num("seats", extraSeats() - 1);
         afterChange();
         return null;
@@ -388,7 +352,6 @@ public class CASync {
         int[] h = onHand();
         if (h[0] < g || h[1] < b || h[2] < a) return "Not enough cores: you have " + CASyncCatalog.cores(h[0], h[1], h[2]);
         if (g + b + a <= 0) return "No cores to feed";
-        noteChange();   // 0.3.7.4: part of the summary when the panel closes
         int[] need = {g, b, a};
         for (int k = 0; k < 3; k++) {
             int left = need[k];
@@ -1265,7 +1228,7 @@ public class CASync {
         if (first != null && !seen(CATriPad.FOUND)) return new CATriPad(CATriPad.FOUND, first, false);
         String chime = CATriPad.CHIME + ":" + generation();
         if (dormant() && CAAutarch.inCargo() > 0 && !seen(chime)) { see(chime); return new CATriPad(CATriPad.CHIME, null, false); }
-        if (beforeTicks != null && !dormant()) { CATriPad u = summary(); if (u != null) return u; }   // 0.3.7.4
+        if (!dormant()) for (String b : CATriPad.TIER_BEATS) if (!seen(b) && beatDue(b)) { see(b); return new CATriPad(b, null, false); }   // 0.3.8.3
         return null;
     }
 
@@ -1275,7 +1238,7 @@ public class CASync {
         try { migratePacks(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode package migration failed", t); }
         try { migrateModes(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode ability migration failed", t); }
         try { migrateTiers(); updateTiers(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode tiers failed", t); }
-        queued = null; armed = null; notice = null; modeNote = null; beforeTicks = null;
+        queued = null; armed = null; notice = null; modeNote = null;
         if (askMode()) CAStoryPrompt.watch();   // a new game's pop-up not answered yet
         if (!on()) return;
         if (!askMode()) try { CAAutarch.ensurePlaced(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autarch AI Core placement failed", t); }
@@ -1288,8 +1251,24 @@ public class CASync {
     /** Beats that can be read again, in story order. */
     public static List<String> readable() {
         List<String> out = new ArrayList<String>();
-        for (String b : new String[]{CATriPad.FOUND, CATriPad.INSTALL, CATriPad.FEED, CATriPad.PULL, CATriPad.BROKEN, CATriPad.RETURN}) if (seen(b)) out.add(b);
+        for (String b : new String[]{CATriPad.FOUND, CATriPad.INSTALL, CATriPad.FEED, CATriPad.TIER2, CATriPad.TIER3, CATriPad.TIER4, CATriPad.RECORD,
+                CATriPad.PULL, CATriPad.BROKEN, CATriPad.RETURN}) if (seen(b)) out.add(b);
         return out;
+    }
+
+    /**
+     * 0.3.8.3: whether a tier scene is due: TIER2 to TIER4 once that tier is open (a save already past a tier gets the scene
+     * too), RECORD once every package of the last tier is bought.
+     */
+    static boolean beatDue(String b) {
+        int last = CASyncCatalog.TIERS.length - 1;
+        if (CATriPad.TIER2.equals(b)) return openTier() >= 1;
+        if (CATriPad.TIER3.equals(b)) return openTier() >= 2;
+        if (CATriPad.TIER4.equals(b)) return openTier() >= 3;
+        if (!CATriPad.RECORD.equals(b) || openTier() < last) return false;
+        List<CASyncCatalog.Pack> l = CASyncCatalog.inTier(last);
+        for (CASyncCatalog.Pack p : l) if (!ticked(p.id)) return false;
+        return !l.isEmpty();
     }
 
     /** Storage submarket cargo at any market, for the lost-core check. */
