@@ -16,9 +16,10 @@ import java.util.List;
 
 /**
  * 0.3.7.9: Autarch administrator (story mode). 0.3.8.0: Tier IV, one colony per CASyncCatalog.SEAT_PP bandwidth (CASync.seats),
- * and its own skill, Autarchy (CAAutarchSkill). The Autarch AI Core governs managed colonies (Approve or Auto) that you
- * govern yourself, up to its seats, the ones it adds most to first (CAItems.adminWorth, the colony limit counted), where the
- * colony stays at or over the stability floor (CAStability). It has an Alpha Core administrator's skills (Industrial Planning,
+ * and its own skill, Autarchy (CAAutarchSkill). The Autarch AI Core governs managed colonies (Approve or Auto) up to its
+ * seats, the ones it adds most to first (gain: CAItems.adminWorth, the colony limit counted), where the colony stays at or
+ * over the stability floor (CAStability). 0.3.8.2: colonies with a hired administrator count too (before, only colonies you
+ * governed yourself did); the administrator goes unassigned. An AI core you placed as administrator is never replaced. It has an Alpha Core administrator's skills (Industrial Planning,
  * Hypercognition) plus Autarchy, and no AI core id: the colony screen has no core to hand back, and it adds no inspection
  * points or Pather interest. One person per colony, marked in its memory.
  *
@@ -77,9 +78,9 @@ public final class CAAutarchAdmin {
                 continue;
             }
             if (!m.isPlayerOwned()) { mem.unset(SEATED); continue; }   // captured or autonomous: the new owner seats its own
-            if (seated && !here) {   // someone else governs it now
+            if (seated && !here) {   // someone else governs it now: you, or an administrator you placed
                 mem.unset(SEATED);
-                if (m.getAdmin() == null || m.getAdmin().isPlayer()) mem.set(DECLINED, true);   // you took it over yourself
+                mem.set(DECLINED, true);   // 0.3.8.2: either way it stays away until the colony leaves management
                 continue;
             }
             if (!seated) mem.set(SEATED, true);
@@ -105,9 +106,9 @@ public final class CAAutarchAdmin {
         List<MarketAPI> open = new ArrayList<MarketAPI>();
         final java.util.Map<MarketAPI, Float> worth = new java.util.HashMap<MarketAPI, Float>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
-            if (!CASync.manages(m) || !CAItems.governedByYou(m) || CARogue.noCores(m)) continue;
+            if (!CASync.manages(m) || CARogue.noCores(m) || CARogue.adminLocked(m) || governs(m)) continue;
             if (m.getMemoryWithoutUpdate().getBoolean(DECLINED)) continue;
-            float w = CAItems.adminWorth(m, probe);
+            float w = gain(m, probe);
             if (w <= 0f) continue;
             worth.put(m, w);
             open.add(m);
@@ -118,10 +119,27 @@ public final class CAAutarchAdmin {
         for (MarketAPI m : open) {
             if (room <= 0) break;
             PersonAPI p = person();
-            if (!CAStability.canLose(m, CAStability.adminArrives(CAStability.adminOwn(p), CAStability.governedPenalty()), null)) continue;
+            if (!CAStability.canLose(m, arrives(m, p), null)) continue;
             seat(m, p);
             room--;
         }
+    }
+
+    /**
+     * 0.3.8.2: what the core adds at m over whoever governs it now, in credits a month: you, or a hired administrator (who then
+     * goes unassigned). 0 where someone else governs it (an AI core you placed, another mod's person): it never replaces them.
+     */
+    static float gain(MarketAPI m, PersonAPI core) {
+        if (CAItems.governedByYou(m)) return CAItems.adminWorth(m, core);
+        PersonAPI now = m.getAdmin();
+        if (now == null || now.isAICore() || CAItems.adminAt(m) == null) return 0f;
+        return CAItems.adminWorth(m, core) - CAItems.adminWorth(m, now);
+    }
+
+    /** 0.3.8.2: m's stability change when the core arrives: from you, the colony limit counted; from a hired administrator, skills only. */
+    static float arrives(MarketAPI m, PersonAPI core) {
+        if (CAItems.governedByYou(m)) return CAStability.adminArrives(CAStability.adminOwn(core), CAStability.governedPenalty());
+        return CAStability.adminOwn(core) - CAStability.adminOwn(m.getAdmin());
     }
 
     /**
@@ -138,11 +156,14 @@ public final class CAAutarchAdmin {
     }
 
     static void seat(MarketAPI m, PersonAPI p) {
+        com.fs.starfarer.api.characters.AdminData hired = CAItems.adminAt(m);   // 0.3.8.2: a hired administrator goes unassigned
+        String was = hired != null && hired.getPerson() != null ? hired.getPerson().getNameString() : null;
         p.setId("ca_autarch_" + m.getId());
         m.setAdmin(p);
+        if (hired != null) hired.setMarket(null);
         m.getMemoryWithoutUpdate().set(SEATED, true);
         m.getMemoryWithoutUpdate().unset(DECLINED);
-        CALog.did(m.getName() + ": Autarch AI Core assigned as administrator.");
+        CALog.did(m.getName() + ": Autarch AI Core assigned as administrator" + (was != null ? " in place of " + was + "." : "."));
     }
 
     /**

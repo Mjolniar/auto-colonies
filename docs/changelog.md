@@ -1,5 +1,12 @@
 # Patch notes
 
+## 0.3.8.2 - 2026-11-15
+
+- Colony screen: The Colony Autopilot button is larger and sits under "Add industry or structure", in the same place on every colony. It no longer moves when buildings are added.
+- Colony screen: Fixed the button showing on a docked colony's storage and trade screens.
+- Story mode: The Autarch administrator also takes colonies with a hired administrator, who goes unassigned. An AI core you placed as administrator stays.
+- Story mode: An administrator you place where the Autarch AI Core governed keeps that colony.
+
 ## 0.3.8.1 - 2026-11-15
 
 - Autarch administrator: Fixed the colony screen showing the faction's administrator title before its name ("Secretary Autarch AI Core" with Nexerelin). Cores already seated lose the title on the next day.

@@ -36,6 +36,10 @@ import java.util.*;
  * 0.2), reached by name through method handles, with the grid as the listener (it ignores dismissals of dialogs it
  * didn't open). If that can't be built the log says so and the right-click option still works.
  *
+ * 0.3.8.2: the button sits under the game's "Add industry or structure" button, read from the grid's field (addButton,
+ * place), as wide as it and BIG_H tall. That button stays put when buildings are added or the grid scrolls, so this one does
+ * too, on every colony. What follows is the fallback for a grid whose button can't be read.
+ *
  * Nothing about the layout is assumed. Every visible element's rectangle is read (a panel with no opacity is hidden, so
  * nothing under it counts), and the button goes in the first candidate spot that's on the screen and overlaps none of
  * them: to the right of the button under the building grid ("Add industry or structure"), under that button, under the
@@ -51,6 +55,13 @@ import java.util.*;
  */
 public class CAScreenButton implements EveryFrameScript {
     static final float W = 190f, H = 26f, GAP = 10f, STEP = 20f;
+    /**
+     * 0.3.8.2: the big button. It sits under the game's "Add industry or structure" button (IndustryListPanel's ButtonAPI
+     * field), as wide as it and BIG_H tall, in the same place on every colony screen: it never looks for free space, so it
+     * never moves and never goes away while your colony's screen is open. The free-spot search (spot) is only used when that
+     * button can't be read.
+     */
+    static final float BIG_H = 32f, BIG_GAP = 6f, BIG_MIN_W = 300f;
     static final String OPEN = "ca:screen:open";
     static final String GRID_CLASS = "com.fs.starfarer.campaign.ui.marketinfo.IndustryListPanel";
     static final String DIALOG_CLASS = "com.fs.starfarer.ui.newui.super", PARENT_CLASS = "com.fs.starfarer.ui.interfacenew",
@@ -234,7 +245,7 @@ public class CAScreenButton implements EveryFrameScript {
     /** Every visible component under c, with its panel; a hidden one (no opacity) and everything under it is skipped, and so is the button itself. */
     void collect(UIComponentAPI c, UIComponentAPI from, Screen s, int depth) throws Exception {
         if (c == button && button != null) { s.sawButton = true; return; }
-        if (depth > 0 && c.getOpacity() <= 0f) return;
+        if (depth > 0 && (c.getOpacity() <= 0f || hidden(c))) return;
         s.all.add(c);
         if (from != null) s.up.put(c, from);
         Object m = method(c.getClass(), "getChildrenCopy");
@@ -242,6 +253,25 @@ public class CAScreenButton implements EveryFrameScript {
         boolean any = false;
         if (kids instanceof List) for (Object o : (List<?>) kids) if (o instanceof UIComponentAPI) { any = true; collect((UIComponentAPI) o, c, s, depth + 1); }
         if (!any) s.leaves.add(c);
+    }
+
+    /**
+     * 0.3.8.2: hidden without zero opacity. The game's UI draws a component only while its slide fader is in (isSlidOut false)
+     * and its fader is above 0 (ui.R.render). Docked at a colony, the colony info panel is hidden that way while the storage
+     * or trade screen shows, so the button went onto the storage screen. Components without these methods count as shown.
+     */
+    boolean hidden(UIComponentAPI c) {
+        try {
+            Object m = method(c.getClass(), "isSlidOut");
+            if (m != NONE && Boolean.TRUE.equals(CARefl.invoke(m, c))) return true;
+            m = method(c.getClass(), "getFader");
+            if (m == NONE) return false;
+            Object f = CARefl.invoke(m, c);
+            if (f == null) return false;
+            Object b = method(f.getClass(), "getBrightness");
+            Object v = b == NONE ? null : CARefl.invoke(b, f);
+            return v instanceof Float && (Float) v <= 0f;
+        } catch (Throwable t) { return false; }
     }
 
     /** The colony an object belongs to: a MarketAPI field, or an Industry field's market. Read by type, not by name. */
@@ -280,7 +310,7 @@ public class CAScreenButton implements EveryFrameScript {
         if (!CAData.settings().noScreenButton && !linked()) { broken = true; remove(); return; }   // 0.3.0.0: no dialog to open, no button
         Screen s = CAData.settings().noScreenButton ? null : read();
         if (s == null) { remove(); return; }
-        float[] at = spot(s);
+        float[] at = place(s);
         if (at == null) {
             remove();
             if (!noSpotLogged) { noSpotLogged = true; CADiagnostics.LOG.info(CADiagnostics.TAG + "no free spot for the colony screen button; the right-click option still works"); }
@@ -290,10 +320,12 @@ public class CAScreenButton implements EveryFrameScript {
         PositionAPI cp = in.getPosition();
         float rx = at[0] - cp.getX(), ry = at[1] - cp.getY();
         int waiting = waiting(s.market);   // 0.3.3.0: decisions waiting at this colony, on the button
-        if (button != null && parent == in && s.sawButton && Math.abs(rx - relX) < 1f && Math.abs(ry - relY) < 1f && waiting == shownWaiting) return;   // still in place
+        if (button != null && parent == in && s.sawButton && Math.abs(rx - relX) < 1f && Math.abs(ry - relY) < 1f && waiting == shownWaiting
+                && Math.abs(at[2] - shownW) < 1f) return;   // still in place
         remove();
         shownWaiting = waiting;
-        button = make(waiting);
+        shownW = at[2];
+        button = make(waiting, at[2], at[3]);
         in.addComponent(button).inBL(rx, ry);
         parent = in;
         relX = rx;
@@ -301,9 +333,11 @@ public class CAScreenButton implements EveryFrameScript {
         if (placements < 6) {
             placements++;
             float[] g = gridBox(s), b = anchor(s, g);
-            CADiagnostics.LOG.info(CADiagnostics.TAG + "colony screen button placed at " + Math.round(at[0]) + ", " + Math.round(at[1]) + " on "
+            ButtonAPI add = addButton(s);
+            CADiagnostics.LOG.info(CADiagnostics.TAG + "colony screen button placed at " + box(at) + " on "
                     + s.market.getName() + ", in " + in.getClass().getName() + " " + box(rect(in)) + "; buildings " + box(g)
-                    + (b != null ? ", next to the button at " + box(b) : ", no button under them") + "; searched " + s.tab.getClass().getName()
+                    + (add != null ? ", under Add industry or structure at " + box(rect(add)) : b != null ? ", next to the button at " + box(b) : ", no button under them")
+                    + "; searched " + s.tab.getClass().getName()
                     + (s.note != null ? " (" + s.note + ")" : "") + ", screen " + Math.round(screen(true)) + "x" + Math.round(screen(false)));
         }
     }
@@ -318,7 +352,18 @@ public class CAScreenButton implements EveryFrameScript {
      * when there's none (or nothing is known about the panels).
      */
     static UIPanelAPI container(Screen s, float[] at) {
-        float[] r = {at[0], at[1], W, H}, g = gridBox(s);
+        float[] r = {at[0], at[1], at.length > 2 ? at[2] : W, at.length > 3 ? at[3] : H}, g = gridBox(s);
+        // 0.3.8.2: under the Add industry button, the lowest walked panel above it that holds the button's spot
+        ButtonAPI add = addButton(s);
+        if (add != null && s.up.containsKey(add)) {
+            UIComponentAPI c = s.up.get(add);
+            for (int i = 0; c != null && i < 40; i++, c = s.up.get(c)) {
+                if (!(c instanceof UIPanelAPI) || c == s.grid || s.tiles.contains(c) || c.getClass().getName().equals(GRID_CLASS)) continue;
+                float[] cr = rect(c);
+                cr = new float[]{cr[0] - 2f, cr[1] - 2f, cr[2] + 4f, cr[3] + 4f};
+                if (inside(r, cr)) return (UIPanelAPI) c;
+            }
+        }
         if (g != null) {
             UIComponentAPI c = s.up.get(s.tiles.get(0));
             for (int i = 0; c != null && i < 40; i++, c = s.up.get(c)) {
@@ -339,6 +384,7 @@ public class CAScreenButton implements EveryFrameScript {
     }
 
     private int shownWaiting = -1;
+    private float shownW = -1f;
 
     /** 0.3.3.0: decisions waiting at this colony (its build proposal and the ladder's proposals there). */
     static int waiting(MarketAPI m) {
@@ -348,17 +394,52 @@ public class CAScreenButton implements EveryFrameScript {
         return n;
     }
 
-    CustomPanelAPI make() { return make(0); }
+    CustomPanelAPI make() { return make(0, W, H); }
 
-    CustomPanelAPI make(int waiting) {
-        CustomPanelAPI p = Global.getSettings().createCustom(W, H, new BaseCustomUIPanelPlugin() {
+    CustomPanelAPI make(int waiting, float w, float h) {
+        CustomPanelAPI p = Global.getSettings().createCustom(w, h, new BaseCustomUIPanelPlugin() {
             @Override public void buttonPressed(Object id) { if (OPEN.equals(id)) open(); }
         });
-        TooltipMakerAPI t = p.createUIElement(W, H, false);
-        ButtonAPI b = t.addButton(waiting > 0 ? "Colony Autopilot (" + waiting + ")" : "Colony Autopilot", OPEN, Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(), Alignment.MID, CutStyle.ALL, W, H, 0f);
+        TooltipMakerAPI t = p.createUIElement(w, h, false);
+        if (h >= BIG_H) { try { t.setButtonFontOrbitron20(); } catch (Throwable ignored) { } }   // 0.3.8.2: the Add industry button's font
+        ButtonAPI b = t.addButton(waiting > 0 ? "Colony Autopilot (" + waiting + ")" : "Colony Autopilot", OPEN, Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(), Alignment.MID, CutStyle.ALL, w, h, 0f);
         b.getPosition().inTL(0f, 0f);
         p.addUIElement(t).inTL(0f, 0f);
         return p;
+    }
+
+    /**
+     * 0.3.8.2: the game's "Add industry or structure" button: the building grid's ButtonAPI field (IndustryListPanel.build),
+     * the one whose text names an industry, or the only one. Null when the grid has none (or isn't the game's).
+     */
+    static ButtonAPI addButton(Screen s) {
+        if (s == null || s.grid == null) return null;
+        ButtonAPI only = null;
+        int n = 0;
+        for (Object v : CARefl.fieldValues(s.grid)) {
+            if (!(v instanceof ButtonAPI)) continue;
+            ButtonAPI b = (ButtonAPI) v;
+            String text = null;
+            try { text = b.getText(); } catch (Throwable ignored) { }
+            if (text != null && text.toLowerCase(Locale.ROOT).contains("industry")) return b;
+            only = b;
+            n++;
+        }
+        return n == 1 ? only : null;
+    }
+
+    /**
+     * 0.3.8.2: where the button goes, {x, y, width, height} in screen coordinates: under the Add industry button, as wide as
+     * it (at least BIG_MIN_W) and BIG_H tall, kept on the screen; without that button, the first free spot (spot) at W x H.
+     */
+    static float[] place(Screen s) {
+        ButtonAPI add = addButton(s);
+        if (add != null) {
+            float[] a = rect(add);
+            if (a[2] > 0f && a[3] > 0f) return new float[]{a[0], Math.max(0f, a[1] - BIG_GAP - BIG_H), Math.max(a[2], BIG_MIN_W), BIG_H};
+        }
+        float[] at = spot(s);
+        return at == null ? null : new float[]{at[0], at[1], W, H};
     }
 
     /** Opens the colony panel in the game's own custom dialog, as the right-click menu does. */
