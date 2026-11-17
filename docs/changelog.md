@@ -679,7 +679,6 @@
 - Saves from 0.2.45: Settings carry over. War fleets "Protect and strike back" becomes Retaliate, "Protect" becomes Defend, Off stays Off. Priorities become stances: High to Friendly (Ally when Stop raising relations at is Never stop), Normal to Auto, Ignore to Rival.
 - Saves from 0.2.45: Retake is off, Auto-expansion is Off, no faction is Enemy or Destroy, bombardment is not authorized. Money ladder is Balanced. Shipyard and Expansion rungs are Recommend only, the other rungs On.
 - Legacy planner: The 0.2.45 build engine is in 0.3.0.x behind a hidden switch (`legacyPlanner`). If the planner fails 3 days in a row, the old engine runs for the rest of the session.
-- Untested in a running game: saturation bombardment by a player-faction fleet; Nexerelin colony fleets for the player; conquered colonies (autonomy taken back, rebellions); an invasion while holding a commission; ceasefire offers by stance; Stand down and Recall all refunds; an Autopilot crew founding a colony.
 
 ## 0.2.45.2 - 2026-11-09
 
