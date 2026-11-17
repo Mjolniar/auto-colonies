@@ -5,6 +5,7 @@
 - Story mode: Added Rapid research, a Tier IV package for 20 bandwidth. Vaults of Knowledge research takes 2/3 of its usual time. Shown only with Vaults of Knowledge.
 - Story mode: The items a research project needs are unchanged.
 - Story mode: The change is never written into a save. It ends when the package is lost, on Prepare for removal and when the mod is removed.
+- Mod list: Added an icon for TriOS's mod list.
 
 ## 0.3.9.8 - 2026-11-17
 
