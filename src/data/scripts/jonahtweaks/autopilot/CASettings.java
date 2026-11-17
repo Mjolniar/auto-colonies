@@ -280,6 +280,12 @@ public class CASettings {
      */
     public boolean enfDiktatOff = false;
     public static final String ENF_DIKTAT_NAME = "Sindrian Diktat raiders";
+    /**
+     * 0.3.9.5: kills by Auto colony patrols and stations count toward the colony crisis and Tri-Tachyon commerce raiding
+     * (CAPatrolKills) unless this is true. Inverted, so the default and an older save (false) have it on.
+     */
+    public boolean crisisKillsOff = false;
+    public static final String CRISIS_KILLS_NAME = "Patrol kills count for crises";
     public static final String[] ENF_WHERE_NAMES = {"Systems with Auto colonies", "Systems with any colony"};
 
     /** 0.3.1.0: whether one fleet type is on (CAEnforcers kind index); false for an unknown index. */

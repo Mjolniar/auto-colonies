@@ -32,6 +32,7 @@
 | Omega core (Omega Core Everywhere / Astral Ascension Renewed) | `CAOmega` | A small fee, from Autopilot Storage. As an administrator only where your inspection limit allows its 10 points. Not moved once placed. |
 | Ships between colonies | Hires and places administrators | `CAItems` (`hireAdmin`, `assignAdmin`, `moveAdmin`) | Hiring cost and salary plus the fee; 30 days to arrive. A move that would take a colony under the floor waits. |
 | Hazard pay, free port, story point improvements, Hegemony inspection orders (Resist only, with "Resist where defended") | `CAPolicies`, `CAStory`, `CACrisis` | The game's charges. Story points off unless allowed. With the Growth rung On, hazard pay can rise to the money tier's share of colony net income. |
+| Crisis progress from patrol kills (on by default) | `CAPatrolKills` | Free. Battles without your fleet, with an Auto colony's patrol or station: the colony crisis and Tri-Tachyon commerce raiding get the game's own factors and amounts for your kills. |
 | Low profile (off by default): pulls a colony item, swaps an AI core administrator for a human | `CALowProfile` (`pullItem`, `swapAdmin`) | Free. Only at colonies at or above the floor (stability 4 for administrators). Omega core administrators are not touched. |
 | Research (Vaults of Knowledge) | `CAResearch` | VoK's cost (`payForResearch`). Needed items move into the Research Facility tab. While valuing techs it marks candidates researched for one scoring pass and restores them in `finally`. |
 | Megastructures, wonders, Bifrost gates (AotD) | `CAHypershunt`, `CAMegastructures`, `CAWonders` | AotD's contracts, paid as AotD charges. Wonders need the Wonders rung On and money tier Rich. |
@@ -106,7 +107,7 @@ Searches across `src/`:
 | `java.io`, `java.net`, `java.lang.reflect` | `java.io` once, in `CALinkScan.read`: an `InputStream` from `getResourceAsStream` reading the mod's own class files for the link check; nothing is written. `java.lang.reflect` only as class name strings in `CARefl` (`Class.forName`) and in a comment in `CALuna`. No `java.net`. |
 | `CAStores.ship` | Shipping between colonies |
 
-- Build checks (before every release; outside the repo; see the [source guide](source-guide.md#building-and-checking)): banned-class scan, bytecode verification for every mod combination, script-loader load, `%` check, and 86 offline test suites (including a scan that fails any file outside `CABudget` that changes credits).
+- Build checks (before every release; outside the repo; see the [source guide](source-guide.md#building-and-checking)): banned-class scan, bytecode verification for every mod combination, script-loader load, `%` check, and 96 offline test suites (including a scan that fails any file outside `CABudget` that changes credits).
 
 ## Removing it
 

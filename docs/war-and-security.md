@@ -6,6 +6,7 @@
 - With Nexerelin: emergency defense fleets, agents, a War level (default Retaliate) and a stance per faction (default Auto) that caps it.
 - [Low profile](low-profile.md): caps the War level at Defend.
 - [Enforcer patrols](#enforcer-patrols): colony patrols attack enforcement fleets. Off by default.
+- [Patrol kills](#colony-crises): Auto colony patrol kills count toward colony crises. On by default.
 
 ## Threat
 
@@ -18,6 +19,10 @@
 - Crisis progress: priced at about 640 credits a month per point of monthly progress.
 - Charged: AI cores (Hegemony, Pathers) and Fuel Production (Diktat). Credited: Patrol HQ, Military Base, High Command.
 - Next crisis picked (meter at 500): its target is planned as Security, a Pather target sheds AI cores, counted free ports close.
+- Patrol kills: ships destroyed by Auto colony patrols and stations, in battles without your fleet, count toward the colony crisis and Tri-Tachyon commerce raiding. The game's rules and amounts for your own kills apply: fleet points lost near your colonies, pirate and Luddic Path base stations, commerce raiders and Tri-Tachyon trade fleets.
+- Patrol kills with Nexerelin: Nexerelin's crisis rules apply. Outposts do not count as colonies, and any base station counts.
+- Patrol kills once: each lost ship counts once, across autoresolve rounds and saves. Ships the game counted in a battle you fought are not counted again.
+- Patrol kills setting: Patrol kills count for crises (Advanced, War, and LunaLib). On by default, in Story and Normal mode.
 
 ## Enforcer patrols
 
@@ -31,7 +36,7 @@
 - Gates, each On by default: your commissioner, allies and League membership, ceasefires (Nexerelin), Low profile.
 - Your fleet: Attack in your fleet's system is On by default. A marked fleet is hostile to your fleet too.
 - Patrols intercept: Off by default. On: colony patrols in the system get an intercept order.
-- Charge: once per fleet, when it loses a battle to your faction's fleets. A battle you fight yourself gets only the game's own penalty.
+- Charge: once per fleet, when it loses a battle to your faction's fleets. A fleet is charged once for its life, also when it is marked again. A battle you fight yourself gets only the game's own penalty.
 - Enforcer cost: Reputation (default), Credits, Both, None.
 - Sindrian Diktat raiders: handled like pirate raids at every colony of yours, in Story and Normal mode. Own setting, On by default, also with Enforcer patrols Off. No gates, no credit charge, no reputation change. Emergency defense fleets and sieges count them as hostiles.
 

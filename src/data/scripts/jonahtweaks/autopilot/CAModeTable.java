@@ -70,6 +70,7 @@ public final class CAModeTable {
             "enfOn", "enfInvestigators", "enfInspections", "enfLeague", "enfProtectors", "enfRaiders", "enfPolice", "enfCost",
             "enfCommissionOK", "enfAlliesOK", "enfCeasefireOK", "enfLowProfileOK", "enfNearYouOK", "enfAllColonies", "enfIntercept",
             "enfDiktatOff",   // 0.3.8.6
+            "crisisKillsOff",   // 0.3.9.5
             "productionMode", "floorHullSources", "floorCapacity", "floorOrderMonths", "floorQuality", "floorPartsReserve", "floorSupplies",
             "floorFuel", "floorMoneyGoal", "floorValHull", "floorValCapacity", "floorValQuality", "floorValPart", "floorValOrders",
             "floorValGoods", "needsFirst", "moneyTaper", "taperLow", "taperHigh", "diversityCopies", "diversityShare", "goalWeights",

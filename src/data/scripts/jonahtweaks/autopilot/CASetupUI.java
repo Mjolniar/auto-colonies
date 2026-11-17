@@ -195,6 +195,7 @@ public class CASetupUI {
         HOVER.put("enfhere", new String[]{"A marked fleet is hostile to your fleet too."});
         HOVER.put("enfint", new String[]{"Intercept: colony patrols in the system get an order to intercept the fleet."});
         HOVER.put("enfdiktat", new String[]{"Colony patrols attack them. No cost."});   // 0.3.8.6: short for the UI word budget
+        HOVER.put("crisiskills", new String[]{"Their kills count toward crises, as yours do."});   // 0.3.9.5 (CAPatrolKills)
     }
 
     /** The glossary at the top of the Settings page: term, then its line. */
@@ -643,6 +644,7 @@ public class CASetupUI {
      */
     static void enforcers(TooltipMakerAPI t, CASettings s, boolean nex) {
         String on = "On", off = "Off";
+        row(t, CASettings.CRISIS_KILLS_NAME, onOff(!s.crisisKillsOff), on, "crisiskills", true);   // 0.3.9.5 (CAPatrolKills)
         row(t, CASettings.ENF_DIKTAT_NAME, onOff(s.enfKind(CAEnforcers.DIKTAT)), on, "enfdiktat", true);   // 0.3.8.6: works with Enforcer patrols off
         row(t, "Enforcer patrols", onOff(s.enfOn), off, "enf", true);
         if (!s.enfOn) return;
@@ -934,6 +936,7 @@ public class CASetupUI {
         else if (k.equals("enfhere")) s.enfNearYouOK = !s.enfNearYouOK;
         else if (k.equals("enfint")) s.enfIntercept = !s.enfIntercept;
         else if (k.equals("enfdiktat")) s.enfDiktatOff = !s.enfDiktatOff;   // 0.3.8.6
+        else if (k.equals("crisiskills")) s.crisisKillsOff = !s.crisisKillsOff;   // 0.3.9.5
         else if (k.equals("ambfocus")) s.ambassadorFocus = (Math.max(0, Math.min(3, s.ambassadorFocus)) + 1) % 4;
         else if (k.equals("ambstop")) s.ambassadorStopAt = (Math.max(0, Math.min(3, s.ambassadorStopAt)) + 1) % 4;
         // 0.3.8.7: the old stance table's ids and the 0.2.45 station, stationplan and sp rows are gone: no button makes them

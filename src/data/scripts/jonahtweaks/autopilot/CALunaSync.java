@@ -269,6 +269,9 @@ public final class CALunaSync {
         // 0.3.8.6: Sindrian Diktat raiders, their own switch (inverted field, on by default)
         bool("enfdiktat", CASettings.ENF_DIKTAT_NAME, "enfDiktatOff", true, "Colony patrols attack them. Works with Enforcer patrols off. "
                 + "No cost or reputation change.");
+        // 0.3.9.5: patrol kills count for crises (CAPatrolKills; inverted field, on by default)
+        bool("crisiskills", CASettings.CRISIS_KILLS_NAME, "crisisKillsOff", true, "Ships your Auto colonies' patrols and stations destroy "
+                + "count toward the colony crisis and Tri-Tachyon commerce raiding, as yours do.");
         bool("enf", "Enforcer patrols", "enfOn", false, "Your colony patrols attack the fleet types set to On. Charge: once per fleet your forces "
                 + "defeat. A battle you fight yourself gets the game's penalty.");
         String[] kindFields = {"enfInvestigators", "enfInspections", "enfLeague", "enfProtectors", "enfRaiders", "enfPolice"};

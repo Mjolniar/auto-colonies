@@ -238,6 +238,7 @@ Core:
 | `CAPolicies`, `CAStory`, `CAObjectives`, `CAPrune` | Hazard pay and free port; story point improvements; stable locations; taking down industries that stopped paying |
 | `CALog`, `CALogFilter` | The action log. `did` (actions) and `advise` (advice) show on screen; `think` (what was weighed) goes to the Thinking list and `starsector.log`. `CALogFilter` sorts lines from older call sites. |
 | `CAEnforcers` | Enforcer patrols: colony patrols attack enforcement fleets in your systems. Every setting off by default. |
+| `CAPatrolKills` | Kills by Auto colony patrols and stations count toward the colony crisis and Tri-Tachyon commerce raiding, with the game's rules. Called from `CAEnforcers`' battle listener. |
 
 Planner and money:
 

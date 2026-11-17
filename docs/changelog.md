@@ -1,5 +1,15 @@
 # Patch notes
 
+## 0.3.9.5 - 2026-11-16
+
+- Colony crises: Ships destroyed by Auto colony patrols and stations count toward the colony crisis, as your own kills do. Battles without your fleet only. The game's amounts.
+- Colony crises: Pirate and Luddic Path base stations destroyed by Auto colony patrols count as the game counts them for you.
+- Commerce raiding: Tri-Tachyon commerce raiders and trade fleets destroyed by Auto colony patrols count toward Tri-Tachyon commerce raiding.
+- Nexerelin: Its colony crisis rules are followed. Outposts do not count as colonies, and any base station counts.
+- Settings: Added Patrol kills count for crises (Advanced, War, and LunaLib). On by default, in Story and Normal mode.
+- Crisis kills: Each lost ship counts once, across autoresolve rounds and saves. Ships the game counted in a battle you fought are not counted again.
+- Enforcer patrols: Fixed a fleet being charged again when it was marked again after its mark ended. A fleet is charged once for its life.
+
 ## 0.3.9.4 - 2026-11-16
 
 - Removal: Added Prepare for removal, in LunaLib (General tab) and on the Mod features page. A campaign dialog asks first.

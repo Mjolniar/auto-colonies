@@ -424,9 +424,12 @@ public final class CARemoval {
     static void fleets(Report r) {
         for (LocationAPI loc : locations()) {
             for (CampaignFleetAPI f : new ArrayList<CampaignFleetAPI>(loc.getFleets())) {
-                if (!f.getMemoryWithoutUpdate().contains(CAEnforcers.MEM_KIND)) continue;
-                CAEnforcers.end(f, loc.getName(), "Auto Colonies prepared for removal");
-                r.fleets++;
+                boolean marked = f.getMemoryWithoutUpdate().contains(CAEnforcers.MEM_KIND);
+                if (marked) {
+                    CAEnforcers.end(f, loc.getName(), "Auto Colonies prepared for removal");
+                    r.fleets++;
+                }
+                f.getMemoryWithoutUpdate().unset(CAEnforcers.MEM_CHARGED);   // 0.3.9.5: end() keeps it for the fleet's life
             }
         }
     }

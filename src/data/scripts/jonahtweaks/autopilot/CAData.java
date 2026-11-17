@@ -130,6 +130,10 @@ public class CAData {
     // station augment refit crews booked (CAAugments, 0.2.37.0): market id to when
     public Map<String, Long> augRefit;
     public Map<String, Long> augRefit() { if (augRefit == null) augRefit = new HashMap<String, Long>(); return augRefit; }
+    // 0.3.9.5, crisis kills (CAPatrolKills): ships lost in battles with Auto colony forces or your fleet that were counted
+    // toward the crises, fleet member id -> when; kept 30 days, so each lost ship counts once
+    public Map<String, Long> crisisCounted;
+    public Map<String, Long> crisisCounted() { if (crisisCounted == null) crisisCounted = new HashMap<String, Long>(); return crisisCounted; }
     public Map<String, Long> attackers() { if (attackers == null) attackers = new HashMap<String, Long>(); return attackers; }
     // endgame economy (CAEndgame), to timestamps: "marketId:industryId" built by it, "marketId:-industryId" taken down by it;
     // kept a year, so nothing it did is undone or redone sooner. 0.3.0.0: the other features' stamps live in overLimitAt, pruneAt and swapAt

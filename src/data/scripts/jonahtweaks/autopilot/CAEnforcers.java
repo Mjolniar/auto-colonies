@@ -56,6 +56,8 @@ import java.util.function.Predicate;
  *   Nexerelin), paid through CABudget on the Military rung where it applies (CAWarPolicy.payer, ENFORCER); never below the
  *   credit reserve. A charge that can't be paid is owed (CASettings.enfOwed), paid first; no new attacks until then.
  * - Records: by fleet id (marked), this session only; the fleet's memory carries the mark across a save.
+ * 0.3.9.5: the charge flag (MEM_CHARGED) lasts the fleet's life. An ended mark keeps it, so a fleet is charged once however
+ * often it is marked again. Prepare for removal clears it (CARemoval.fleets).
  * 0.3.8.6: Sindrian Diktat raiders ($diktatRaider, SindrianDiktatHostileActivityFactor on 0.98.5a, read by name) are marked
  * as pirates are fought: their own setting (on by default, CASettings.enfDiktatOff), whether or not Enforcer patrols is on,
  * no gates, no credit charge and no reputation change. The game makes them hostile to your fleet only. 0.3.9.3: at every
@@ -395,14 +397,13 @@ public class CAEnforcers implements EveryFrameScript {
         mem.set(MEM_FP, fp, days);
         if (fresh || !mem.contains(MEM_MARKET)) mem.set(MEM_MARKET, m.getId(), days);
         else mem.set(MEM_MARKET, mem.getString(MEM_MARKET), days);
-        if (mem.getBoolean(MEM_CHARGED)) mem.set(MEM_CHARGED, true, days);
         Mark mk = marked.get(f.getId());
         if (mk == null) { mk = new Mark(f); marked.put(f.getId(), mk); }
         if (s.enfIntercept) intercept(mk, markets);
         if (!fresh) return;
         String faction = f.getFaction() == null ? "" : f.getFaction().getDisplayName();
         String text = m.getName() + ": Enforcers: patrols attack a " + FLEET_NAMES[kind] + " fleet (" + Math.round(fp) + " points"
-                + (kind == DIKTAT ? "" : "; on defeat " + costText(faction, repDelta(mode, kind), credits(mode, fp, perFP))) + ").";   // 0.3.8.6: Diktat raiders cost nothing
+                + (kind == DIKTAT || mem.getBoolean(MEM_CHARGED) ? "" : "; on defeat " + costText(faction, repDelta(mode, kind), credits(mode, fp, perFP))) + ").";   // 0.3.8.6: Diktat raiders cost nothing; 0.3.9.5: nor a fleet charged before
         if (announced.add("attack:" + f.getId())) CALog.did(text, true);
         else CALog.thinkStatus("enf:" + f.getId(), text);
     }
@@ -414,7 +415,7 @@ public class CAEnforcers implements EveryFrameScript {
             CALog.quiet((m != null ? m.getName() : placeOf(f)) + ": Enforcers: " + FLEET_NAMES[kind] + " fleet left alone (" + why + ").");
     }
 
-    /** 0.3.1.0: ends a mark: the hostility flag, Auto Colonies' record and the intercept orders it gave. */
+    /** 0.3.1.0: ends a mark: the hostility flag, Auto Colonies' record and the intercept orders it gave. 0.3.9.5: the charge flag stays. */
     static void end(CampaignFleetAPI f, String place, String why) {
         MemoryAPI mem = f.getMemoryWithoutUpdate();
         if (mem.contains(MEM_KIND)) {
@@ -425,7 +426,6 @@ public class CAEnforcers implements EveryFrameScript {
         mem.unset(MEM_KIND);
         mem.unset(MEM_FP);
         mem.unset(MEM_MARKET);
-        mem.unset(MEM_CHARGED);
         Mark mk = marked.remove(f.getId());
         if (mk != null) {
             for (CampaignFleetAPI p : mk.sent) {
@@ -492,7 +492,7 @@ public class CAEnforcers implements EveryFrameScript {
         if (!mem.contains(MEM_KIND) || mem.getBoolean(MEM_CHARGED)) return;
         int kind = kindIndex(mem.getString(MEM_KIND));
         if (kind < 0) return;
-        mem.set(MEM_CHARGED, true, CATuning.ENFORCER_HOSTILE_DAYS);
+        mem.set(MEM_CHARGED, true);   // 0.3.9.5: no expiry, kept when the mark ends: one charge for the fleet's life
         // 0.3.8.6: a Sindrian Diktat raider costs nothing; starsector.log only
         if (kind == DIKTAT) { CALog.quiet(placeOf(f) + ": Enforcers: " + FLEET_NAMES[kind] + " fleet defeated. No cost."); return; }
         CASettings s = CAData.settings();
@@ -543,7 +543,7 @@ public class CAEnforcers implements EveryFrameScript {
         return false;
     }
 
-    /** 0.3.1.0: the battle listener; transient (ensure), so a save never holds it. */
+    /** 0.3.1.0: the battle listener; transient (ensure), so a save never holds it. 0.3.9.5: also counts patrol kills for crises (CAPatrolKills). */
     static final class Watch extends BaseCampaignEventListener {
         Watch() { super(false); }
 
@@ -551,6 +551,8 @@ public class CAEnforcers implements EveryFrameScript {
         public void reportBattleOccurred(CampaignFleetAPI primaryWinner, BattleAPI battle) {
             try { battle(primaryWinner, battle); }
             catch (Throwable t) { CAStep.warn("enforcer patrols", "enforcer patrols: battle report failed", t); }
+            try { CAPatrolKills.battle(primaryWinner, battle); }
+            catch (Throwable t) { CAStep.warn("crisis kills", "crisis kills: battle report failed", t); }
         }
 
         @Override
