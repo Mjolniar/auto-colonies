@@ -106,7 +106,7 @@ public class CADiagnostics {
             Level level = detail.startsWith("ERROR") ? Level.QUARANTINED : Level.ANALYZED;
             if (level == Level.ANALYZED && measurable(spec) && Global.getSector() != null) {
                 CASimulator.Effects ef = CASimulator.measure(template, spec.getId());
-                detail = detail.replace("; effects not simulated (mod code is not run)", "") + "; " + CASimulator.report(ef);
+                detail = detail.replace("; effects not simulated (mod code isn't run)", "") + "; " + CASimulator.report(ef);
                 if (ef.error == null) level = Level.MEASURED;
             }
             industries.put(spec.getId(), level);
@@ -123,7 +123,7 @@ public class CADiagnostics {
             }
             conditions.put(spec.getId(), Level.ANALYZED);
             addIssue("condition", spec.getId(), spec.getName(), src.getId(), Level.ANALYZED,
-                    "Unmapped condition. Read through the colony's live stats only");
+                    "Unmapped condition, only read through the colony's live stats");
         }
         for (SpecialItemSpecAPI spec : Global.getSettings().getAllSpecialItemSpecs()) {
             ModSpecAPI src = spec.getSourceMod();
@@ -162,7 +162,7 @@ public class CADiagnostics {
                 }
             }
             sb.append(buildable.isEmpty() ? "; buildable at none of your colonies" : "; buildable at " + buildable);
-            sb.append("; effects not simulated (mod code is not run)");
+            sb.append("; effects not simulated (mod code isn't run)");
         } catch (Throwable t) {
             LOG.warn(TAG + "probe failed for " + spec.getId(), t);
             return "ERROR during probe: " + t;
@@ -252,7 +252,7 @@ public class CADiagnostics {
         if (first) try { CACache.bump("start paused"); } catch (Throwable ignored) { }   // evaluations kept today still offered it
         if (first) LOG.warn(TAG + "vanilla building " + industryId + " failed in " + where + "; not started again this session (a reload tries again)", t);
         addIssue("building", industryId, spec == null ? industryId : spec.getName(), "vanilla", Level.QUARANTINED,
-                "Paused for this session: " + where + " failed (" + what + "). Vanilla buildings are not quarantined for planning errors. A failed start pauses one until the next load");
+                "Paused for this session: " + where + " failed (" + what + "). Vanilla buildings aren't quarantined for planning errors, but a failed start pauses one until the next load");
         reportLater();
     }
 

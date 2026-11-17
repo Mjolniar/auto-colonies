@@ -306,8 +306,8 @@ public class CAExpansion {
     static String afford(Money m, float total, boolean ladder) {
         if (m.why != null) return m.why;
         if (total <= m.available) return null;
-        return ladder ? "The Expansion rung has " + Misc.getDGSCredits(m.available) + " now; the expedition costs " + Misc.getDGSCredits(total) + "."
-                : "The expedition costs " + Misc.getDGSCredits(total) + "; it may use " + Misc.getDGSCredits(m.available) + " (10% of the credits over the surplus line).";
+        return ladder ? "The Expansion rung has " + Misc.getDGSCredits(m.available) + " but the expedition costs " + Misc.getDGSCredits(total) + "."
+                : "The expedition costs " + Misc.getDGSCredits(total) + " but only gets " + Misc.getDGSCredits(m.available) + " (10% of the credits over the surplus line).";
     }
 
     // ---------------- the gate ----------------

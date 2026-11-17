@@ -1,13 +1,13 @@
 # Source guide
 
-- Language: Java 17. Compiled against Starsector 0.98.5a-RC7's core jars. The same jar runs on 0.98a and 0.98.5a.
-- Size: about 47,800 lines in 131 files (0.3.3.4).
-- Class comments: every class opens with a comment saying what it does and why.
+- Language: It's Java 17, compiled against Starsector 0.98.5a-RC7's core jars, and the same jar runs on 0.98a and 0.98.5a.
+- Size: It's about 47,800 lines in 131 files (0.3.3.4).
+- Class comments: Every class opens with a comment on what it does and why.
 - Player docs: [Getting started](getting-started.md), the guides linked from the README, and [details.md](details.md).
-- [Auditing the mod](audit.md): every way the mod changes the game and what each one charges.
-- [Automating Starsector colonies](automation-primer.md): game API reference for colonies, buildings, items, cores and the economy, with the traps found.
+- [Auditing the mod](audit.md): Every way the mod changes the game and what each one charges.
+- [Automating Starsector colonies](automation-primer.md): A game API reference for colonies, buildings, items, cores and the economy, with the traps we ran into.
 
-> The code was written by AI coding agents (see the README's warning). It is compiled and checked offline (see [Building and checking](#building-and-checking)). Parts are confirmed in game, and not all of it.
+> AI coding agents wrote the code (see the README's warning). It's compiled and checked offline (see [Building and checking](#building-and-checking)), and parts of it are confirmed in game, but not all of it.
 
 ## Contents
 
@@ -38,37 +38,40 @@
 | `data/campaign/market_conditions.csv` | Registers the retired `jt_patronage` condition so old saves load |
 | `jars/autocolonies.jar` | The compiled code the game loads |
 
-- Package name: `jonahtweaks`, kept from the old mod id so existing saves load.
+- Package name: It's still `jonahtweaks`, kept from the old mod id so existing saves load.
 
 ## Overview
 
-- Daily pass: one pass over the colonies once a game day. Each step runs through `CAStep`, so one failure does not stop the rest. `CAPass` runs the steps over several frames, about 4 ms of each frame, and the planner looks at one colony per step.
-- Scoring: for each Approve or Auto colony, `CAEngine` lists every building and upgrade it could start and values each in credits a month, weighted by the colony's goal.
-- Planner: `CAPlanner` turns each value into a net present value over the payback horizon (36 to 120 months), queues every module's offers together, and starts the best value per construction day and per credit.
-- After the planner: money tiers and the money ladder, Auto-expansion, removers, item placement, then one step per optional mod.
-- Actions: each uses the same game call as the game's UI or the source mod's UI. It charges what that UI charges plus a convenience fee through `CABudget`, and is logged.
-- Other mods: reached by class, by name or by id. Each fails closed and is checked at load.
+- Daily pass: It does one pass over the colonies once a game day. Each step runs through `CAStep`, so one failure doesn't stop the rest.
+- Frames: `CAPass` spreads the steps over several frames (about 4 ms of each frame), and the planner looks at one colony per step.
+- Scoring: For each Approve or Auto colony, `CAEngine` lists every building and upgrade it could start and values each one in credits a month, weighted by the colony's goal.
+- Planner: `CAPlanner` turns each value into a net present value over the payback horizon (36 to 120 months). It queues every module's offers together and starts the best value per construction day and per credit.
+- After the planner: Then come money tiers and the money ladder, Auto-expansion, removers and item placement, and finally one step per optional mod.
+- Actions: Each one uses the same game call as the game's UI or the source mod's UI. It charges what that UI charges plus a convenience fee through `CABudget`, and it gets logged.
+- Other mods: It reaches them by class, by name or by id. Each one fails closed and gets checked at load.
 
 ## Where to start reading
 
-1. [JTModPlugin](../src/data/scripts/jonahtweaks/JTModPlugin.java): on every save load, clears caches, loads and migrates the saved data, adds the scripts and the colony menu option, takes out the old Colony Autopilot intel entry, and runs the diagnostics scan.
-2. [CAScript](../src/data/scripts/jonahtweaks/autopilot/CAScript.java): every frame, checks the fast buildout offer and the approval summary. Once a game day, calls `CAAuto.runPass`.
-3. [CAAuto](../src/data/scripts/jonahtweaks/autopilot/CAAuto.java): the daily pass and the order of every step.
-4. [CAEngine](../src/data/scripts/jonahtweaks/autopilot/CAEngine.java): scores every building a colony could build or upgrade to.
-5. [CAValue](../src/data/scripts/jonahtweaks/autopilot/CAValue.java) and [CAHorizon](../src/data/scripts/jonahtweaks/autopilot/CAHorizon.java): one value for building and for keeping; the payback horizon.
-6. [CAPlanner](../src/data/scripts/jonahtweaks/autopilot/CAPlanner.java): the one queue.
-7. [CAPlan](../src/data/scripts/jonahtweaks/autopilot/CAPlan.java): the target layout per colony.
-8. [CABuild](../src/data/scripts/jonahtweaks/autopilot/CABuild.java): starts a build the way the build menu does.
-9. [CARich](../src/data/scripts/jonahtweaks/autopilot/CARich.java): money tiers and the money ladder.
-10. [CAColonyDialog](../src/data/scripts/jonahtweaks/autopilot/CAColonyDialog.java) and [CAIntel](../src/data/scripts/jonahtweaks/autopilot/CAIntel.java): the colony panel; the Empire pages in it are drawn and handled by `CAIntel` (no intel entry since 0.3.7.1).
+If you're new to the code, I'd read these in order:
 
-- Integration classes: readable on their own after those.
+1. [JTModPlugin](../src/data/scripts/jonahtweaks/JTModPlugin.java): On every save load it clears caches, loads and migrates the saved data, adds the scripts and the colony menu option, takes out the old Colony Autopilot intel entry and runs the diagnostics scan.
+2. [CAScript](../src/data/scripts/jonahtweaks/autopilot/CAScript.java): Every frame it checks the fast buildout offer and the approval summary, and once a game day it calls `CAAuto.runPass`.
+3. [CAAuto](../src/data/scripts/jonahtweaks/autopilot/CAAuto.java): This is the daily pass and the order of every step.
+4. [CAEngine](../src/data/scripts/jonahtweaks/autopilot/CAEngine.java): It scores every building a colony could build or upgrade to.
+5. [CAValue](../src/data/scripts/jonahtweaks/autopilot/CAValue.java) and [CAHorizon](../src/data/scripts/jonahtweaks/autopilot/CAHorizon.java): The first gives one value for building and for keeping, and the second sets the payback horizon.
+6. [CAPlanner](../src/data/scripts/jonahtweaks/autopilot/CAPlanner.java): The one queue everything goes through.
+7. [CAPlan](../src/data/scripts/jonahtweaks/autopilot/CAPlan.java): The target layout for each colony.
+8. [CABuild](../src/data/scripts/jonahtweaks/autopilot/CABuild.java): It starts a build the way the build menu does.
+9. [CARich](../src/data/scripts/jonahtweaks/autopilot/CARich.java): Money tiers and the money ladder.
+10. [CAColonyDialog](../src/data/scripts/jonahtweaks/autopilot/CAColonyDialog.java) and [CAIntel](../src/data/scripts/jonahtweaks/autopilot/CAIntel.java): The colony panel. `CAIntel` draws and handles the Empire pages in it (there's been no intel entry since 0.3.7.1).
+
+- Integration classes: Once you've read those, each integration class reads fine on its own.
 
 ## A day in game
 
 - Scripts added on load (transient): `CAScript`, `CAScreenButton`, `CABuildHints`, `CAEnforcers`, and `CAWarListener` with Nexerelin.
-- `CAScript.advance`: calls `CAAuto.runPass(now)` once a game day on the game's clock (`CATime`). While Theory of Toolbox's threads read markets, the pass waits, at most one more day.
-- `CAStep.run`: isolates and times a step and stops it for the session after 3 failed days in a row. `CAStep.guard` isolates without the stop, for safety steps.
+- `CAScript.advance`: It calls `CAAuto.runPass(now)` once a game day on the game's clock (`CATime`). While Theory of Toolbox's threads are reading markets, the pass waits (one more day at most).
+- `CAStep.run`: It isolates and times a step, and stops it for the session after 3 failed days in a row. `CAStep.guard` isolates without the stop, for safety steps.
 
 The pass, in order:
 
@@ -84,107 +87,109 @@ The pass, in order:
 10. Panels and report: `CAEngine.fill` keeps every managed colony's scores for the panels. `CADiagnostics.flushReport` writes the report.
 
 The planner:
-- Offers: `CAAction`s from builds and upgrades (`CAEngine`), surplus terraforming, surplus research, the wonder site, stable-location crews and story points, each scored by NPV (`CAValue.npv`, `CAHorizon`).
-- Per colony: new buildings share one construction queue, ranked by NPV per construction day. Room: 1, or 2 or 3 with the story perks (`CABuild.buildRoom`, `CAPlanner.Pool.buildRoom`). Upgrades run beside it.
-- Across colonies: money goes by NPV per credit. The first pick that waits for money gets an earmark.
-- New-upkeep cap: counts only upkeep a building does not cover itself.
-- After each start: actions sharing a colony, good, building or one-per-empire flag are re-scored.
-- Fast buildout: an Auto colony in its fast buildout gets `CABuildout.pass` in place of its normal offers. It ranks by money only.
-- Approve colonies: the best pick becomes a proposal (see [Modes and approvals](#modes-and-approvals)). A rejected one waits 180 days.
-- Removal marks (`CATombstone`): a building taken down in the last year stays off that colony's list.
-- Fresh look: when something starts or finishes, a slot opens, threat or siege changes, the month rolls over or the money tier changes. Otherwise weekly (`CAAuto.wait`).
-- Fallback: with the hidden `legacyPlanner` switch, or after 3 failed planner days, the old build pass (`CAAuto.buildPass`) runs.
+- Offers: These are `CAAction`s from builds and upgrades (`CAEngine`), surplus terraforming, surplus research, the wonder site, stable-location crews and story points, each scored by NPV (`CAValue.npv`, `CAHorizon`).
+- Per colony: New buildings share one construction queue, ranked by NPV per construction day. There's room for 1, or 2 or 3 with the story perks (`CABuild.buildRoom`, `CAPlanner.Pool.buildRoom`), and upgrades run beside it.
+- Across colonies: Money goes by NPV per credit, and the first pick that's waiting for money gets an earmark.
+- New-upkeep cap: It only counts upkeep a building doesn't cover itself.
+- After each start: Actions that share a colony, good, building or one-per-empire flag get re-scored.
+- Fast buildout: An Auto colony in its fast buildout gets `CABuildout.pass` in place of its normal offers, and that only ranks by money.
+- Approve colonies: The best pick becomes a proposal (see [Modes and approvals](#modes-and-approvals)), and a rejected one waits 180 days.
+- Removal marks (`CATombstone`): A building taken down in the last year stays off that colony's list.
+- Fresh look: The planner takes a fresh look when something starts or finishes, a slot opens, threat or siege changes, the month rolls over or the money tier changes. Otherwise it looks weekly (`CAAuto.wait`).
+- Fallback: With the hidden `legacyPlanner` switch, or after 3 failed planner days, it runs the old build pass (`CAAuto.buildPass`).
 
 Rules for every step:
-- Credit reserve: nothing in the pass spends below it.
-- Budget exceptions: emergency defense, relief fleets and an administrator for a colony past the colony limit may pass the monthly budget. They keep the reserve.
-- Transfers between colonies: items, cores and research databanks go through `CAStores.ship` for a fee and travel time.
+- Credit reserve: Nothing in the pass spends below it.
+- Budget exceptions: Emergency defense, relief fleets and an administrator for a colony past the colony limit can go over the monthly budget, but they still keep the reserve.
+- Transfers between colonies: Items, cores and research databanks go through `CAStores.ship` for a fee and travel time.
 
 ## How a building is scored
 
-- `CAEngine.evaluate`: builds a list of `Pick`s, one per building the colony could start and each upgrade of a building it has.
-- Outposts: `CAEngine.isOutpost` (Nexerelin's outpost flag or tag) returns nothing.
-- Skipped: buildings the colony has or has an upgrade of (`CAPlan.hasOrBetter`), population, hidden or menu-less buildings, upgrade-only targets, a second station, anything `isAvailableToBuild()` refuses, and anything Building Menu Overhaul hides or locks (`CAAotD.allows`).
-- `Pick.fx[7]`: credits a month, stability, accessibility, defense, fleet size, ship quality, growth. `Pick.lines`: the reasons the panels show.
-- Source 1, game formulas (`CAEngine.effects`, `deposits`): vanilla buildings. Deposit industries read the tables `ResourceDepositsCondition` uses.
-- Source 2, estimates (`CAEstimates`, `CAEngine.estimate`): hand-written effects for mod buildings, marked "(estimated)".
-- Source 3, measurements (`CASimulator`): a building with no formula or estimate is built on a probe colony and the difference is read.
+- `CAEngine.evaluate`: It builds a list of `Pick`s, one per building the colony could start and one for each upgrade of a building it has.
+- Outposts: If `CAEngine.isOutpost` (Nexerelin's outpost flag or tag) says it's an outpost, it returns nothing.
+- Skipped: It skips buildings the colony has or has an upgrade of (`CAPlan.hasOrBetter`), population, hidden or menu-less buildings, upgrade-only targets, a second station, anything `isAvailableToBuild()` refuses, and anything Building Menu Overhaul hides or locks (`CAAotD.allows`).
+- `Pick.fx[7]`: Credits a month, stability, accessibility, defense, fleet size, ship quality and growth. `Pick.lines` holds the reasons the panels show.
+- Source 1, game formulas (`CAEngine.effects`, `deposits`): These cover vanilla buildings, and deposit industries read the tables `ResourceDepositsCondition` uses.
+- Source 2, estimates (`CAEstimates`, `CAEngine.estimate`): Hand-written effects for mod buildings, marked "(estimated)".
+- Source 3, measurements (`CASimulator`): A building with no formula or estimate gets built on a probe colony, then it reads the difference.
 - Source 4, adjusters: `CADevelopment.adjust`, `CASynergies.score`, `CARogue.score`, `CAMods.apply`, `CAOddisz.score`, `CAGrand.penalty`, `CABrewery.apply`.
-- Shortages: `CAEngine.empireDeficits()` adds up unmet demand plus what AotD trade contracts lack. Supplying a short good is worth more.
-- Production floors (`CAFloors`): hull source, hull capacity, order goods, production quality, weapons, Domain-grade Parts, supplies, fuel, producer inputs. An open floor adds value for the part of the gap a pick closes (`CAValue.add`). Off at the Money goal unless `floorMoneyGoal` is set.
-- Money taper (`CAMoneyCurve`): credits count in full up to a share of net income, less above it. `CAValue.add` and `keepDetail` both use it, so builders and removers agree.
-- Diversity: past 2 copies of one industry family, each further copy counts 75% (`CATuning.DIVERSITY_*`).
-- Trust (`CAEngine.trust`): 1 for game formulas, 0.9 for measurements, 0.85 for estimates (0.92 once checked against the colonies), 0.05 less for an untested mod version. Positive value is scaled by trust.
-- Upkeep (`CAEngine.upkeep`): the spec's upkeep times max(1, size - 2) times the colony's upkeep multiplier, times the `CACalibrate` factor.
-- Weights (`CAEngine.finish`): `fx` times the goal's row in `WEIGHTS` (Balanced, Money, Security, War production, Rapid growth, Self-sufficiency). The stability floor applies.
-- Pollution: an upgrade that would pollute a habitable world scores negative and is not started. `CAItems.wouldPollute` keeps polluting items out of forges. `CAItems.pullPollutingForge` takes one back while it can still be undone.
-- Plan bonus (`CAPlan.bonusFor`): the flat bonus goes only to enabler steps. Other steps count what they earn plus half of what they lead to (`CATuning.DOWNSTREAM_SHARE`).
-- Money tiers: from Idle money, a credit counts half at Approve and Auto colonies, a quarter while spending freely (`CASurplus.moneyWeight`) and 5% in the endgame.
-- Upgrade price: at Surplus an upgrade's price counts 25% in its score, from Idle money up 10% (`CASurplus.upgradePriceWeight`).
+- Shortages: `CAEngine.empireDeficits()` adds up unmet demand plus what AotD trade contracts lack, so supplying a short good is worth more.
+- Production floors (`CAFloors`): Hull source, hull capacity, order goods, production quality, weapons, Domain-grade Parts, supplies, fuel and producer inputs. They're off at the Money goal unless `floorMoneyGoal` is set.
+- Open floors: A pick gets value for the part of the gap it closes (`CAValue.add`).
+- Money taper (`CAMoneyCurve`): Credits count in full up to a share of net income and less above it. `CAValue.add` and `keepDetail` both use it, so builders and removers agree.
+- Diversity: Past 2 copies of one industry family, each further copy counts 75% (`CATuning.DIVERSITY_*`).
+- Trust (`CAEngine.trust`): It's 1 for game formulas, 0.9 for measurements, 0.85 for estimates (0.92 once checked against the colonies), and 0.05 less for an untested mod version. Positive value is scaled by trust.
+- Upkeep (`CAEngine.upkeep`): The spec's upkeep times max(1, size - 2) times the colony's upkeep multiplier, times the `CACalibrate` factor.
+- Weights (`CAEngine.finish`): `fx` times the goal's row in `WEIGHTS` (Balanced, Money, Security, War production, Rapid growth, Self-sufficiency), and then the stability floor applies.
+- Pollution: An upgrade that would pollute a habitable world scores negative and isn't started. `CAItems.wouldPollute` keeps polluting items out of forges, and `CAItems.pullPollutingForge` takes one back while it can still be undone.
+- Plan bonus (`CAPlan.bonusFor`): The flat bonus only goes to enabler steps. Other steps count what they earn plus half of what they lead to (`CATuning.DOWNSTREAM_SHARE`).
+- Money tiers: From Idle money, a credit counts half at Approve and Auto colonies, a quarter while spending freely (`CASurplus.moneyWeight`) and 5% in the endgame.
+- Upgrade price: At Surplus an upgrade's price counts 25% in its score, and from Idle money up it counts 10% (`CASurplus.upgradePriceWeight`).
 - Price: score = worth - (price + fee) / H - worth x construction days / 30 / H (`CAHorizon.npvMonthly`, `CAValue.npv`).
-- Horizon H: 36 months, rising to 120 as surplus credits reach 10,000,000. It falls only below 60% of what raised it (`CAHorizon.slide`).
-- `CAValue`: `add` values a new build and `keep` values an existing one. `keep` is what the colony loses a month without it, plus the shortage it leaves, plus the synergies it keeps. Buildings under construction count as supply.
-- `CATombstone`: adds the teardown loss (what Autopilot paid that has not paid back over H) and the one-year removal marks.
-- `Result`: sorted `picks`, `blocked` (why nothing can start), picks lacking only an industry slot, and counts of locked and unsupported options.
-- Quarantine: an exception thrown by a building's code during scoring quarantines that building (`CADiagnostics.quarantine`).
+- Horizon H: It starts at 36 months and rises to 120 as surplus credits reach 10,000,000. It only falls below 60% of what raised it (`CAHorizon.slide`).
+- `CAValue`: `add` values a new build and `keep` values an existing one. `keep` is what the colony loses a month without it, plus the shortage it leaves, plus the synergies it keeps, and buildings under construction count as supply.
+- `CATombstone`: It adds the teardown loss (what Autopilot paid that hasn't paid back over H) and the one-year removal marks.
+- `Result`: Sorted `picks`, `blocked` (why nothing can start), picks lacking only an industry slot, and counts of locked and unsupported options.
+- Quarantine: If a building's code throws an exception during scoring, that building gets quarantined (`CADiagnostics.quarantine`).
 
 ## Modes and approvals
 
-- Colony modes (`CAData.Colony.mode`): Off (left alone), Advisor (hints only, the default), Approve (decisions wait for you), Auto (acts within the budget).
-- Empire mode (`CASettings.empireMode`): picks the default for every empire-wide setting through `CAModeTable`.
-- `CAModeTable` kinds: EMPIRE (follows the empire mode), COLONY (the value Auto colonies use), SAME (one value in every mode), PICK (a player choice with no default), STATE (bookkeeping).
-- Player-set settings: a setting the player changed is listed in `CASettings.playerSet` and is never changed by a mode switch or a reset.
-- `CAApprovals`: one list of every decision waiting: colony builds and make-room swaps, the RAT settlement, colony expeditions, the money ladder's proposals, and the hypershunt, megastructure, TASC, station augment and autonomy asks.
-- Approving: checks the credit reserve, then the kind's own handler with its own checks (stability floor, slots, budget). Each pays its cost and fee.
-- `CAApprovalDialog`: one summary dialog, grouped by colony, at most once per `approvalDays` (60 by default, Off possible). Opens only at a safe moment: campaign running, no dialog, menu, screen or battle, not jumping. Options: Approve all, Choose each, Reject all, Later.
-- `CABuildHints`: Advisor hints. A read-only panel beside the game's build menu or Building Menu Overhaul's ranks the options: Best and Good with what they earn, Poor with a short reason. Scope: `CASettings.buildHints`.
-- `CAOptionProvider`: adds "Colony Autopilot..." to the Population & Infrastructure menu and one Autopilot line to build menu tooltips at hinted colonies.
+- Colony modes (`CAData.Colony.mode`): Off (left alone), Advisor (hints only, the default), Approve (decisions wait for you) and Auto (acts within the budget).
+- Empire mode (`CASettings.empireMode`): It picks the default for every empire-wide setting through `CAModeTable`.
+- `CAModeTable` kinds: EMPIRE (follows the empire mode), COLONY (the value Auto colonies use), SAME (one value in every mode), PICK (a player choice with no default) and STATE (bookkeeping).
+- Player-set settings: A setting the player changed is listed in `CASettings.playerSet`, and a mode switch or reset never changes it.
+- `CAApprovals`: It keeps one list of every decision waiting: colony builds and make-room swaps, the RAT settlement, colony expeditions, the money ladder's proposals, and the hypershunt, megastructure, TASC, station augment and autonomy asks.
+- Approving: It checks the credit reserve, then runs the kind's own handler with its own checks (stability floor, slots, budget), and each one pays its cost and fee.
+- `CAApprovalDialog`: It's one summary dialog, grouped by colony, at most once per `approvalDays` (60 by default, Off possible). It only opens at a safe moment: campaign running, no dialog, menu, screen or battle, and not jumping.
+- Dialog options: Approve all, Choose each, Reject all and Later.
+- `CABuildHints`: These are the Advisor hints. A read-only panel beside the game's build menu (or Building Menu Overhaul's) ranks the options: Best and Good with what they earn, and Poor with a short reason. Its scope is `CASettings.buildHints`.
+- `CAOptionProvider`: It adds "Colony Autopilot..." to the Population & Infrastructure menu and one Autopilot line to build menu tooltips at hinted colonies.
 
 ## Plans
 
-- `CAPlan`: a target layout per colony from its planet, hazards, resources and goal. Steps are builds, conditions to reach, or notes.
-- `bonusFor`: favours picks that advance the plan, the earliest open step most.
-- World plans: one that already paid for terraforming switches only to one worth at least twice as much. `CAMark` keeps the stamp.
-- `hasOrBetter`, `leadsTo`: follow upgrade chains and AotD's downgrade links.
-- `CAStations`: every colony plans a station from size 4 (or half a year old), and the next tier as it grows.
-- `CAWorldPlanner`: adds a Terraforming Made Easy special world (Forge, Fortress, Paradise, Hive, Death, Waste) when reachable. It reads TME's requirement CSV and simulates TME removing conflicting conditions.
-- `CAConditions`: values a condition change (hazard, deposits, habitability). Both terraforming planners use it.
+- `CAPlan`: A target layout for each colony, worked out from its planet, hazards, resources and goal. Steps are builds, conditions to reach, or notes.
+- `bonusFor`: It favours picks that advance the plan, and the earliest open step the most.
+- World plans: A plan that already paid for terraforming only switches to one worth at least twice as much, and `CAMark` keeps the stamp.
+- `hasOrBetter`, `leadsTo`: These follow upgrade chains and AotD's downgrade links.
+- `CAStations`: Every colony plans a station from size 4 (or once it's half a year old), and the next tier as it grows.
+- `CAWorldPlanner`: It adds a Terraforming Made Easy special world (Forge, Fortress, Paradise, Hive, Death, Waste) when one's reachable. It reads TME's requirement CSV and simulates TME removing conflicting conditions.
+- `CAConditions`: It values a condition change (hazard, deposits, habitability), and both terraforming planners use it.
 
 ## Mod buildings: the probe colony and diagnostics
 
-- `CASimulator`: builds the mod building on a probe market with the colony's size and vanilla conditions.
-- Copied conditions: one that fails without the intel it came with (Pather cells, pirate activity, a blockade) is left off.
-- Reads: supply and demand, and market changes (stability, accessibility, income and upkeep multipliers, ground defense, fleet size and patrols, ship quality).
-- Upgrades: measured as both buildings on the same probe.
-- Failure: if the code throws or registers sector scripts or intel, the building is "can't be measured" and what it added is removed.
-- Limits: effects over time (monthly items, spawned fleets) are not seen, so measured values lean low.
-- `CADiagnostics`: on every load, rates every building, condition and item: Supported (formula or estimate), Measured, Analyzed (not acted on), Quarantined. `CADiagnostics.usable(id)` is the engine's gate.
-- Output: the empire panel's Diagnostics page, `[ColonyAutopilot]` lines in `starsector.log`, and `saves/common/colony_autopilot_diagnostics.json.data`.
+- `CASimulator`: It builds the mod building on a probe market with the colony's size and vanilla conditions.
+- Copied conditions: A condition that fails without the intel it came with (Pather cells, pirate activity, a blockade) is left off.
+- Reads: It reads supply and demand, and market changes (stability, accessibility, income and upkeep multipliers, ground defense, fleet size and patrols, ship quality).
+- Upgrades: An upgrade is measured as both buildings on the same probe.
+- Failure: If the code throws or registers sector scripts or intel, the building is marked "can't be measured" and whatever it added gets removed.
+- Limits: It can't see effects over time (monthly items, spawned fleets), so measured values lean low.
+- `CADiagnostics`: On every load it rates every building, condition and item as Supported (formula or estimate), Measured, Analyzed (not acted on) or Quarantined. `CADiagnostics.usable(id)` is the engine's gate.
+- Output: It shows on the empire panel's Diagnostics page, as `[ColonyAutopilot]` lines in `starsector.log`, and in `saves/common/colony_autopilot_diagnostics.json.data`.
 
 ## How the optional mods stay optional
 
-- Requirement: no other mod is required, and any mix works.
+- Requirement: No other mod is required, and any mix of them works.
 
-Pattern 1, compiled against the mod, called only when it is enabled:
+Pattern 1, compiled against the mod, called only when it's enabled:
 - Classes: `CAIndEvo`, `CACourier` (Industrial Evolution); `CADefense`, `CASpies`, `CAAutonomy`, `CAWar`, `CAExpansionNex`, `CADiplomacy`, `CAConquest`, `CAScorched`, `CAWarListener`, `CAWarPage` (Nexerelin); `CASettlement` (RAT); `CAAugments` (Station Augments).
-- Guard: each is called only inside an `isModEnabled(...)` check. The JVM loads a class on first use.
-- `MOD` constants: compile-time constants, so reading `CAAugments.MOD` does not load `CAAugments`.
-- Rule: never reference these classes outside their guard. `CAWarListener` is transient, so a save loads without Nexerelin.
+- Guard: Each one's only called inside an `isModEnabled(...)` check, and the JVM loads a class on first use.
+- `MOD` constants: These are compile-time constants, so reading `CAAugments.MOD` doesn't load `CAAugments`.
+- Rule: Never reference these classes outside their guard. `CAWarListener` is transient, so a save still loads without Nexerelin.
 
 Pattern 2, by name at run time:
 - Classes: `CATme` (Terraforming Made Easy 2.9.8 and 2.10.0); `CAAotD`, `CASynergies`, `CAContracts`, `CAHypershunt`, `CAMegastructures`, `CAResearch`, `CADevelopment`, `CAWonders`, `CAProjects` (Ashes of the Domain); `CATasc` (Terraforming & Station Construction); `CAGrand`, `CALuna` (other mods' LunaLib settings); `CAScreenButton`, `CABuildHints` (the game's own UI).
-- Missing names: the class does nothing and logs the reason once.
-- `CAAotD`: if it cannot read Building Menu Overhaul's rules, nothing is built while BMO is enabled.
+- Missing names: If a name's missing, the class does nothing and logs the reason once.
+- `CAAotD`: If it can't read Building Menu Overhaul's rules, nothing gets built while BMO is enabled.
 
 `CARefl`:
-- Reason: the game's script class loader refuses any class that refers to `java.lang.reflect` or file classes. Plain reflection passes desktop tests and fails in game.
-- Method: `java.lang.invoke` method handles, with `Method` and `Field` held as plain `Object`s and a full-privilege `MethodHandles.lookup()`.
-- `fieldValues`: reads every field of a game object, private ones included, for obfuscated names. Callers pick by type.
+- Reason: The game's script class loader refuses any class that refers to `java.lang.reflect` or file classes, so plain reflection passes desktop tests but fails in game.
+- Method: It uses `java.lang.invoke` method handles, with `Method` and `Field` held as plain `Object`s and a full-privilege `MethodHandles.lookup()`.
+- `fieldValues`: It reads every field of a game object, private ones included, for obfuscated names, and callers pick by type.
 
 Pattern 3, ids only:
 - Classes: `CAMods` (VIC, Planetary Shield, Roider Union, Unknown Skies, What We Left Behind, Astral Ascension and others), `CABrewery` (Substance.Abuse), `CARogue` (Rogue Planets), `CAKadur` (Kadur Remnant), `CAIndexMods` (the Mod Index batch), `CAOddisz` (Oddisz's mods), `CAPanopticon` (Emergent Threats), `CAOmega` (Omega Core Everywhere, Astral Ascension Renewed).
-- Behavior: compare condition, industry and item ids as strings. Inert without their mods.
-- Any other mod: deposits and colony items work through the game's tables.
+- Behavior: These compare condition, industry and item ids as strings, and they do nothing without their mods.
+- Any other mod: Deposits and colony items still work through the game's tables.
 
 ## Surviving game and mod updates
 
@@ -201,21 +206,21 @@ Pattern 3, ids only:
 
 ## What's saved
 
-- `CAData`: under the persistent-data key `jt_colony_autopilot`. Plain values only.
+- `CAData`: It's saved under the persistent-data key `jt_colony_autopilot`, with plain values only.
 - `colonies`: one `Colony` per market id: goal, mode, locks, pending proposal, story points used, policy times, threat state, augments, hypershunt and megastructure settings, fast-buildout state.
 - `settings`: `CASettings` (budget, caps, fees, switches, mode defaults, floors, enforcer patrols, approval interval, the action log). A new save is filled from `colony_autopilot.json` by `CASettingsFile`.
-- `stores`, `shipments`: each colony's Autopilot Storage cargo and shipments in transit.
-- `noted`, `notedAt`: once-keys (`CALog.once`) with times. `keep:` keys are `CAMark` stamps that do not expire.
+- `stores`, `shipments`: Each colony's Autopilot Storage cargo and the shipments in transit.
+- `noted`, `notedAt`: Once-keys (`CALog.once`) with times. `keep:` keys are `CAMark` stamps that don't expire.
 - Other fields: money tier and rung spending, tombstones, orders (ships, stockpiles, expansion, objectives, TASC), war state, calibration ratios, agents. `CASettings` lists every setting with its default.
-- Story mode (`CASync`): under the persistent-data key `ac_story`. The save's mode, the core's state and timers, bandwidth, fed cores, abilities bought, colonies bought, remembered settings and colony modes, beats seen. Costs: `data/config/colony_autopilot_story.json` (`CASyncCatalog`).
+- Story mode (`CASync`): Under the persistent-data key `ac_story`. The save's mode, the core's state and timers, bandwidth, fed cores, abilities bought, colonies bought, remembered settings and colony modes, beats seen. Costs: `data/config/colony_autopilot_story.json` (`CASyncCatalog`).
 
 Rules for saves:
-- Schema: `CAMigrate.SCHEMA` is 5. `CAMigrate` moves an older save forward once, stamped first so a failure is not retried. Nothing is raised above an older version's behavior, except settings the player never changed, which follow the new mode defaults.
-- Aliases: `CAXStream` gives every saved class a fixed `JCM-` alias. A released alias is never renamed or reused.
-- New fields: load as zero, false or null in older saves, so defaults mean off. Fields that must default on use an inverted `noX` name. Collections are created on first use.
-- Removed fields: the game's save loader fails on a field the class lacks, so a retired field stays listed in `CAXStream` with `omitField`.
-- Other mods' objects: only ids, numbers and timestamps are stored.
-- Removal: a save made with the mod enabled does not load without it (saved classes and the Autopilot Storage tab).
+- Schema: `CAMigrate.SCHEMA` is 5. `CAMigrate` moves an older save forward once, stamped first so a failure isn't retried. Nothing is raised above an older version's behavior, except settings the player never changed, which follow the new mode defaults.
+- Aliases: `CAXStream` gives every saved class a fixed `JCM-` alias, and a released alias is never renamed or reused.
+- New fields: They load as zero, false or null in older saves, so defaults mean off. Fields that must default on use an inverted `noX` name, and collections are created on first use.
+- Removed fields: The game's save loader fails on a field the class lacks, so a retired field stays listed in `CAXStream` with `omitField`.
+- Other mods' objects: Only ids, numbers and timestamps are stored.
+- Removal: A save made with the mod enabled doesn't load without it (saved classes and the Autopilot Storage tab).
 
 ## Files by area
 
@@ -305,21 +310,21 @@ Foundation:
 
 ## Conventions
 
-- Fail closed: if something cannot be read, nothing is done there and the reason is logged once.
-- Player's things: locked or hidden buildings, items or augments the player installed, the research queue and agents the player hired are not touched.
-- Game's way: builds, projects, contracts, agent orders and settlements start the way the game's or the mod's UI starts them, and cost what that UI charges.
-- Steps: every daily step goes through `CAStep.run` or `CAStep.guard`.
-- Stability: anything that can cost stability asks `CAStability.canLose` first.
-- Payment: credits move only in `CABudget` (`take`, `give`). Callers use `pay`, `charge`, `payPrice`, `payFromPool` or `refund`. An offline check fails any other file that changes credits.
-- Log: new lines use `CALog.did`, `advise` or `think`.
-- Save safety: saved data holds only ids, numbers and timestamps. A new saved class needs an alias in `CAXStream`.
-- Reflection: no `java.lang.reflect` or file classes in mod code. Use `CARefl` or method handles.
-- Format strings: `addPara` treats text as a format string. A literal `%` is written `%%`, and dynamic text goes through `CALog.esc`.
-- Comments: say why, and name the version a number or rule comes from (such as "from VoK 5.0.7's code").
+- Fail closed: If something can't be read, nothing is done there and the reason gets logged once.
+- Player's things: Locked or hidden buildings, items or augments the player installed, the research queue and agents the player hired aren't touched.
+- Game's way: Builds, projects, contracts, agent orders and settlements start the way the game's or the mod's UI starts them, and they cost what that UI charges.
+- Steps: Every daily step goes through `CAStep.run` or `CAStep.guard`.
+- Stability: Anything that can cost stability asks `CAStability.canLose` first.
+- Payment: Credits only move in `CABudget` (`take`, `give`). Callers use `pay`, `charge`, `payPrice`, `payFromPool` or `refund`, and an offline check fails any other file that changes credits.
+- Log: New lines use `CALog.did`, `advise` or `think`.
+- Save safety: Saved data only holds ids, numbers and timestamps, and a new saved class needs an alias in `CAXStream`.
+- Reflection: Don't use `java.lang.reflect` or file classes in mod code. Use `CARefl` or method handles.
+- Format strings: `addPara` treats text as a format string, so a literal `%` is written `%%` and dynamic text goes through `CALog.esc`.
+- Comments: They say why, and name the version a number or rule comes from (such as "from VoK 5.0.7's code").
 
 ## Building and checking
 
-- Compiler: JDK 17, `--release 17`.
+- Compiler: JDK 17, with `--release 17`.
 - Core jars: `starfarer.api.jar`, `starfarer_obf.jar`, `fs.common_obf.jar`, `log4j-1.2.9.jar`, `json.jar`, `lwjgl.jar`, `lwjgl_util.jar`.
 - Optional mod jars: Industrial Evolution, Nexerelin, Random Assortment of Things, Station Augments, plus LazyLib's Kotlin runtime and LunaLib for the last two.
 
@@ -328,12 +333,12 @@ javac --release 17 -cp "<core jars>;<optional mod jars>" -d build <all .java fil
 jar cf jars/autocolonies.jar -C build data
 ```
 
-The author's checks run before each release. The scripts are local and are not in this repo.
+I run these checks before each release. The scripts are local and aren't in this repo.
 
-1. Format check: no stray `%` in `addPara` text.
-2. Banned-class scan: no class refers to anything the game's script loader refuses.
+1. Format check: Makes sure there's no stray `%` in `addPara` text.
+2. Banned-class scan: Makes sure no class refers to anything the game's script loader refuses.
 3. Bytecode verification under `-Xverify:all`, with and without the optional jars, on Java 17 and on the Java 28 the game runs on.
-4. Loader check: the jar loads through the game's script class loader, every class resolves, and `CARefl` is exercised.
+4. Loader check: The jar loads through the game's script class loader, every class resolves, and `CARefl` gets exercised.
 5. Combination audit: only the expected classes reference each compiled-in mod, every caller checks `isModEnabled`, and the jar links against all 16 combinations of the four mods.
 6. Name checks: reflected names are checked against the AotD, TASC, LunaLib and Nexerelin jars.
 7. Offline tests: 86 suites in 0.3.3.4, including the planner over a recorded colony state, money tiers and ladder, production floors, modes and approvals, Auto-expansion, stances and War levels, a 2-year war simulation, save migration, and the credits scan.

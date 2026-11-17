@@ -111,7 +111,7 @@ public class CABuildout {
             STYLE_LATER = "Change it in Settings, Expansion style.";   // 0.3.0.0 fix pass 3: shorter
     /** The fast buildout offer, before "You have X now": what it does, then what follows (gray). */
     static final String[] OFFER_TEXT = {   // 0.3.0.0 (WS-F3 fix pass 2): shorter, for the mod-wide word budget
-            "Fast buildout sets Auto and spends credits above a floor on the fastest payback until it earns 30 days running.",   // 0.3.8.6: a sentence
+            "Fast buildout sets Auto, then spends credits above a floor on the fastest payback until it earns 30 days straight.",   // 0.3.8.6: a sentence
             "Fees apply."};
 
     /**
@@ -131,8 +131,8 @@ public class CABuildout {
     /** The colony panel section's hover: how the ranking works and when it ends (from IDLE_DAYS and MAX_DAYS). Pure. */
     static String[] hoverText() {
         return new String[]{
-                "Ranks by money only; defenses, fleets and the goal wait.",
-                "Ends after " + Math.round(PROFIT_DAYS) + " days of earning money, " + Math.round(IDLE_DAYS)
+                "Only money counts, so defenses, fleets and the goal wait.",
+                "It ends after " + Math.round(PROFIT_DAYS) + " days of earning money, " + Math.round(IDLE_DAYS)
                         + " days with nothing worth building, or " + Math.round(MAX_DAYS) + " days in all."};
     }
 
@@ -322,7 +322,7 @@ public class CABuildout {
         // 0.3.0.0 fix pass 3: shorter lines, for the mod-wide word budget (JTScreenButtonCheck)
         if (!c.buildout && !CASync.has("buildout")) { CASyncPage.buildoutOff(t, m); return; }   // 0.3.6.0 story mode
         if (!c.buildout) {
-            t.addPara("Loses %s a month. Fast buildout spends above a floor here.", 6f,
+            t.addPara("It's losing %s a month. Fast buildout spends above a floor.", 6f,
                     Misc.getNegativeHighlightColor(), Misc.getDGSCredits(-m.getNetIncome()));
             CATheme.hover(t, hoverText());
             t.addButton("Start fast buildout, keep at least " + Misc.getDGSCredits(DEFAULT_FLOOR), PREFIX + "start",

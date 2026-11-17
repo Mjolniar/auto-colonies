@@ -301,7 +301,7 @@ public class CAIntel extends BaseIntelPlugin {
         } else if (page.equals("storage")) {
             CATheme.heading(t, "Autopilot Storage", 0f);
             // 0.3.0.0 (WS-F2, research 04 section 7): 58 words down to 33
-            t.addPara("Autopilot Storage: shipping costs a fee and days.", 6f);   // 0.3.0.0 (WS-F3 fix pass 3): shorter
+            t.addPara("Shipping costs a fee and some time.", 6f);   // 0.3.0.0 (WS-F3 fix pass 3): shorter
             boolean any = false;
             for (CAStores.Store sto : CAStores.all()) {
                 if (sto.cargo.isEmpty()) continue;
@@ -382,7 +382,7 @@ public class CAIntel extends BaseIntelPlugin {
             }
         } else if (page.equals("settings")) {
             CATheme.heading(t, "Settings", 0f);
-            if (!s.setupDone) t.addPara("Setup opens when a colony goes to Approve or Auto.", gray, 6f);
+            if (!s.setupDone) t.addPara("Setup opens once a colony's on Approve or Auto.", gray, 6f);
             CASetupUI.render(t, s, width);
         } else if (page.equals("log")) {
             CATheme.heading(t, "Log", 0f);

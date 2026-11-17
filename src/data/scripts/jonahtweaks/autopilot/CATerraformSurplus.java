@@ -189,11 +189,11 @@ public class CATerraformSurplus {
         Collections.sort(cands, new Comparator<Cand>() { public int compare(Cand a, Cand b) { return Float.compare(b.q.ratio(), a.q.ratio()); } });
         String mode = CASettings.SURPLUS_TF_NAMES[Math.max(0, Math.min(2, s.surplusTerraform))];
         if (cands.isEmpty()) CATerraSim.summary = "Surplus terraforming (" + mode + "): nothing worth doing with what's built and researched"
-                + (lockedText == null ? "." : "; " + lockedText + ".");
+                + (lockedText == null ? "." : ". " + lockedText + ".");
         else {
             Cand top = cands.get(0);
             CATerraSim.summary = "Surplus terraforming (" + mode + "): " + cands.size() + (cands.size() == 1 ? " colony has" : " colonies have")
-                    + " a project worth doing; best per credit is " + top.m.getName() + ": " + top.q.text() + ", " + CAEngine.valueText(top.q.gain)
+                    + " a project worth doing. Best per credit is " + top.m.getName() + ": " + top.q.text() + ", " + CAEngine.valueText(top.q.gain)
                     + " for " + Misc.getDGSCredits(top.q.cost) + (top.q.builds.isEmpty() ? "" : " with the structure") + ".";
         }
         // 0.3.0.0 fix (C4 review 2): the Economy buyers' one gate (CAEconomy.buyerOpen): the summary says why none starts

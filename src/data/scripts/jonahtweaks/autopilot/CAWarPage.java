@@ -47,12 +47,12 @@ public final class CAWarPage {
     /** What each War level adds, one line. */
     static String levelWhat(int level, boolean retake) {
         switch (CAWarPolicy.clamp(level)) {
-            case CAWarPolicy.OFF: return "No war fleets.";
-            case CAWarPolicy.DEFEND: return "Siege relief and defense fleets.";
-            case CAWarPolicy.RETALIATE: return "Plus raids on attackers" + (retake ? " and retakes." : ".");
-            case CAWarPolicy.HOLD: return "Plus raids and blockades on Rival and up.";
-            case CAWarPolicy.CONQUER: return "Plus invasions of Enemy and Destroy.";
-            default: return "Plus authorized bombardment of Destroy capitals.";
+            case CAWarPolicy.OFF: return "It doesn't send war fleets.";
+            case CAWarPolicy.DEFEND: return "It sends siege relief and defense fleets.";
+            case CAWarPolicy.RETALIATE: return "It also raids attackers" + (retake ? " and retakes lost colonies." : ".");
+            case CAWarPolicy.HOLD: return "It also raids and blockades Rival and up.";
+            case CAWarPolicy.CONQUER: return "It also invades Enemy and Destroy.";
+            default: return "It also bombards Destroy capitals, once authorized.";
         }
     }
 
@@ -85,7 +85,7 @@ public final class CAWarPage {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), bad = Misc.getNegativeHighlightColor();
         boolean rich = CASurplus.rich(s);
         if (CALowProfile.on() && level > CAWarPolicy.DEFEND)
-            t.addPara("Low profile: every faction capped at Defend.", bad, 4f);
+            t.addPara("Low profile caps every faction at Defend.", bad, 4f);
         FactionAPI comm = Misc.getCommissionFaction();
         if (comm != null && level > CAWarPolicy.DEFEND)
             t.addPara("Commission from %s: capped at Hold them down.",
@@ -110,7 +110,7 @@ public final class CAWarPage {
                 String.valueOf(Math.round(now)), String.valueOf(Math.round(CAWarPolicy.INFAMY_LINE)), String.valueOf(Math.round(after)));
         else t.addPara("Infamy: %s of %s (coalition line).", 4f, ic, String.valueOf(Math.round(now)), String.valueOf(Math.round(CAWarPolicy.INFAMY_LINE)));
         t.addTooltipToPrevious(CAFactionsPage.tip(new String[]{
-                "Coalition at 100 infamy, ends under 75; base infamy drops 3 a month."}),
+                "Coalition at 100 infamy, ends under 75. Base infamy drops 3 a month."}),
                 TooltipMakerAPI.TooltipLocation.BELOW);
         t.addPara(s.warCoalitionOK ? "Infamy past the line: allowed." : "Offensives stop at the line.", gray, 2f);
 
@@ -223,7 +223,7 @@ public final class CAWarPage {
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "war page plan failed for " + f.getId(), e); }
         }
         ButtonAPI open = t.addButton("OPEN", CANav.PREFIX + CAFactionsPage.PAGE, base, dark, Alignment.MID, CutStyle.TL_BR, 86f, 20f, 10f);
-        LabelAPI l = t.addPara("All stances: the Factions page.", gray, 0f);
+        LabelAPI l = t.addPara("The Factions page has every stance.", gray, 0f);
         l.getPosition().rightOfMid(open, 12f);
         CALog.endRow(t, open);
     }

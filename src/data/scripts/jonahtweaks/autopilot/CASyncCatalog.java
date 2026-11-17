@@ -182,33 +182,33 @@ public class CASyncCatalog {
         pack("instant", 3, 20, null, "Rapid construction", "rapidBuild");   // 0.3.7.8: the id stays, so saves that bought it keep it
         pack("terraforming", 3, 12, null, "Rapid terraforming", "rapidTerra");   // 0.3.7.9
         pack("autarch", 3, 10, "staff", "Autarch administrator", "autarchAdmin");   // 0.3.7.9; 0.3.8.0: Tier IV, its cost is the first colony
-        desc("advice", "Advises colony administrators on the next suitable construction.");
-        desc("oversight", "Proposes construction at one colony and waits for your approval.");
-        desc("upkeep", "Retires unprofitable industry, maintains orbital stations, sets colony policy and prepares colonies for crises.");
-        desc("supply", "Manages the capital, storage shipments, stable locations, colony items and stockpiles.");
-        desc("automation", "Builds at colonies in Auto without waiting for approval.");
-        desc("staff", "Places AI cores, hires administrators and spends story points on improvements.");
-        desc("economy", "Raises the spending limit, keeps production floors and takes trade contracts.");
-        desc("security", "Runs enforcer patrols, emergency defense, agents, diplomacy and autonomy.");
-        desc("projects", "Runs terraforming, research and other mod projects.");
-        desc("growth", "Invests savings in new colonies and the surplus, at reduced fees.");
-        desc("industry", "Funds military buildings and hulls, and places Omega-class cores.");
-        desc("frontier", "Founds new colonies with idle funds.");
-        desc("warfare", "Retaliates against attackers and directs agent sabotage.");
-        desc("megaprojects", "Funds large terraforming, research and megastructure projects.");
-        desc("dominion", "Runs the endgame economy and wonders, with no fees.");
-        desc("warlord", "Strikes, invades and, once authorized, bombards hostile factions.");
-        desc("parallel", "Runs up to three new constructions per colony at once.");
+        desc("advice", "It suggests what to build next at your colonies.");
+        desc("oversight", "It proposes builds at one colony and waits for your OK.");
+        desc("upkeep", "It cuts unprofitable industry, keeps up orbital stations, sets colony policy and preps for crises.");
+        desc("supply", "It handles the capital, storage shipments, stable locations, colony items and stockpiles.");
+        desc("automation", "It builds at colonies on Auto without asking you first.");
+        desc("staff", "It places AI cores, hires administrators and spends story points on improvements.");
+        desc("economy", "It raises the spending limit, keeps production floors up and takes trade contracts.");
+        desc("security", "It runs enforcer patrols, emergency defense, agents, diplomacy and autonomy.");
+        desc("projects", "It runs terraforming, research and other mod projects.");
+        desc("growth", "It puts savings into new colonies and the surplus, at lower fees.");
+        desc("industry", "It funds military buildings and hulls, and places Omega-class cores.");
+        desc("frontier", "It'll found new colonies with spare money.");
+        desc("warfare", "It retaliates against attackers and runs agent sabotage.");
+        desc("megaprojects", "It funds large terraforming, research and megastructure projects.");
+        desc("dominion", "It runs the endgame economy and wonders, with no fees.");
+        desc("warlord", "It strikes, invades and, once authorized, bombards hostile factions.");
+        desc("parallel", "It runs up to three builds per colony at once.");
         numberDescs();
-        desc("terraforming", "Halves terraforming time at managed colonies.");
+        desc("terraforming", "It halves terraforming time at managed colonies.");
     }
 
     static void desc(String id, String text) { PACK_BY_ID.get(id).desc = text; }
 
     /** 0.3.8.9: the descriptions that name a config value (rapidFee, autarchSeat), built from it: here and after load(). */
     static void numberDescs() {
-        desc("instant", "Completes construction in a third of the time, for " + String.format(java.util.Locale.ROOT, "%,d", Math.round(RAPID_FEE))
-                + " credits more per building.");
+        desc("instant", "Builds take a third of the time, and each one costs " + String.format(java.util.Locale.ROOT, "%,d", Math.round(RAPID_FEE))
+                + " credits more.");
         desc("autarch", "Governs one managed colony per " + SEAT_PP + " bandwidth, with its own skill, Autarchy.");
     }
 

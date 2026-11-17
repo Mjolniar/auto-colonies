@@ -1113,8 +1113,8 @@ public class CAResearch {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         // 0.3.0.0 (WS-F3 fix, research 04 section 7 #3): the mode as a readout, one short line and the rules on hover (was one 149-word paragraph)
         CATheme.mode(t, CASettings.CONTRACT_NAMES[Math.max(0, Math.min(2, s.researchMode))]);
-        t.addPara("Auto starts the best-scored tech when nothing is queued.", 4f);
-        CATheme.hover(t, "Techs that use colony items are yours.");
+        t.addPara("Auto starts whatever scores best when nothing's queued.", 4f);
+        CATheme.hover(t, "Auto skips techs that use colony items.");
         try {
             Object mgr = mgr();
             if (mgr == null) { t.addPara("Research hasn't started in this save.", gray, 6f); return; }
@@ -1123,7 +1123,7 @@ public class CAResearch {
             if (cur != null) {
                 Tech c = tech(mgr, cur);
                 t.addPara("Researching %s: %s of %s days.", 6f, hl, c.name, "" + Math.round(c.spent), "" + Math.round(c.days));
-            } else t.addPara("Nothing is being researched.", 6f);
+            } else t.addPara("Nothing's being researched.", 6f);
             if (fac <= 0) t.addPara("No working Research Facility.", Misc.getNegativeHighlightColor(), 4f);
             else t.addPara("%s facilities. Databanks: %s there, %s in Storage, %s in your fleet.", 4f, hl, "" + fac,
                     "" + (int) ((Number) CARefl.invoke(itemCount, mgr, DATABANK)).floatValue(), "" + (int) CAStores.count(DATABANK),
@@ -1154,7 +1154,7 @@ public class CAResearch {
                 }
             }
             boolean idle = idle(mgr);
-            if (!idle && s.researchMode == 1) t.addPara("Auto waits for an empty queue.", gray, 4f);
+            if (!idle && s.researchMode == 1) t.addPara("Auto waits until the queue's empty.", gray, 4f);
             int shown = 0;
             for (Tech x : rankedNow) {
                 if (shown++ >= 6) break;

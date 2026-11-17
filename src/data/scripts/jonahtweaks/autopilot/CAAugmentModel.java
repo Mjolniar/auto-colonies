@@ -62,7 +62,7 @@ public class CAAugmentModel {
             return new Gain(0.05f + 0.15f * k.shielded / Math.max(1, k.modules), "Shields become damper fields, armor +40%, hull +10% on " + k.shielded + " shielded sections");
         }
         if (id.equals("SA_fluxShunt")) return new Gain(k.midline() ? 0.2f : 0.05f, "Shields dissipate hard flux at half rate, for a midline station whose shields never drop");
-        if (id.equals("SA_axialOverclocking")) return k.midline() ? new Gain(0.2f, "Midline guns turn three times as fast, so they can track targets; the station turns four times as fast")
+        if (id.equals("SA_axialOverclocking")) return k.midline() ? new Gain(0.2f, "Midline guns turn three times as fast, so they can track targets. The station turns four times as fast")
                 : new Gain(0.03f, "The station turns four times as fast");
         if (id.equals("SA_aiFighterUplink")) {
             if (c < 0) return new Gain(-1f, "Needs an AI core in the station");
@@ -83,7 +83,7 @@ public class CAAugmentModel {
         if (id.equals("SA_navRelay")) return new Gain(0.02f, "+20 nav rating for friendly ships in battle");
         if (id.equals("SA_highExplosive")) return new Gain(0.03f, "Only matters once the station dies: a far bigger explosion");
         if (id.equals("SA_stationRepairUnit")) return new Gain(0.03f, "Disruption ends twice as fast, so the station is back sooner after a raid");
-        if (id.equals("SA_highResSensors")) return new Gain(0f, "Sight range in battle; sensor range for your fleets nearby");
+        if (id.equals("SA_highResSensors")) return new Gain(0f, "Sight range in battle, sensor range for your fleets nearby");
         if (id.equals("SA_commsCenter")) return new Gain(0f, "Command points don't matter when the station defends itself");
         if (id.equals("SA_logisticsDrones")) return new Gain(0f, "Combat readiness for your fleets near the station. The station's own is unchanged");
         if (id.equals("SA_warmindProtocols")) {

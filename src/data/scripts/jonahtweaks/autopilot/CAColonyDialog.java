@@ -226,21 +226,21 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
 
     // 0.3.0.0 (WS-F3 fix pass 2): every text on this panel shorter, for the mod-wide word budget (JTScreenButtonCheck)
     static final String[] MODE_TEXT = {
-            "Off: does nothing.",
-            "Advisor: ranks builds.",
-            "Approve: proposes. You approve.",
-            "Auto: builds and sets policies."};
+            "Off does nothing.",
+            "Advisor ranks builds.",
+            "Approve asks you first.",
+            "Auto builds and sets policies."};
 
     // ---------------- text (0.3.0.0, WS-F3: each paragraph 40 words or fewer, JTScreenButtonCheck) ----------------
 
     /** The first-time setup's line above its rows. 0.3.0.0 fix pass 3: shorter (mod-wide word budget, JTScreenButtonCheck). */
-    static final String SETUP_INTRO = "Recommended values for your income.";
+    static final String SETUP_INTRO = "We recommend these for your income.";
     /** Under siege: the line on Overview, and its hover. */
     static final String SIEGE_LINE = "Under siege (%s): %s.",
             SIEGE_HOVER = "Trade contracts skip its goods.";
     /** A Nexerelin outpost's Overview line (CAEngine.OUTPOST_TEXT in short). */
-    static final String OUTPOST_LINE = "Resupply base. Autopilot leaves it alone.";
-    static final String LOCKS_LINE = "Click to lock. Autopilot leaves locked buildings alone.";
+    static final String OUTPOST_LINE = "Resupply base, so Autopilot skips it.";
+    static final String LOCKS_LINE = "Click to lock one, and Autopilot won't touch it.";
     static final String PICKS_HOVER_NOTE = "Hover for the score.";
 
     static ButtonAPI rowButton(TooltipMakerAPI t, ButtonAPI prev, String label, Object id, boolean on, float w) {
@@ -424,7 +424,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                         CASettings.FEE_NAMES[s.feeLevel].toLowerCase());
                 if (CABudget.paused(s)) t.addPara(CATheme.PAUSED, Misc.getNegativeHighlightColor(), 4f);   // 0.3.0.0 (WS-F3 fix pass 3): CAIntel's text
             }
-            if (!buildout && planWith != c.profile) t.addPara("Security goal until threat is under %s.", 4f,
+            if (!buildout && planWith != c.profile) t.addPara("Security goal until the threat's under %s.", 4f,
                     Misc.getNegativeHighlightColor(), Math.round(CAThreat.CLEAR * 100f) + "%");   // 0.3.8.6: one value for one %s
             String siege = managed ? CASiege.why(market) : null;
             if (siege != null) {   // 0.3.0.0 (WS-F3): the trade contract detail moved to the hover

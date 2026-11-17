@@ -2,25 +2,25 @@
 
 ## Quick version
 
-- Modes: Colonies start in Advisor (a ranking beside the build menu). Approve proposes builds in an approval summary every 60 days. Auto builds within your budget.
-- Empire mode: Empire-wide settings follow it. The first-time setup sets it. A setting you change stays.
-- Setup: The first switch to Approve or Auto opens a 5-row setup.
-- Nexerelin: Emergency defense fleets act in every colony mode. Agents and war fleets follow the empire mode.
+- Colonies start in Advisor, which puts a ranking beside the build menu. Approve proposes builds in an approval summary every 60 days, and Auto builds within your budget.
+- The first-time setup sets your Empire mode. Empire-wide settings follow it, but any setting you change yourself stays.
+- The first time you switch to Approve or Auto, it opens a 5-row setup.
+- With Nexerelin, emergency defense fleets work in every colony mode, but agents and war fleets follow the empire mode.
 
 ## Install
 
-- Steps: [README](../README.md#install).
+- The install steps are in the [README](../README.md#install).
 
 ## Panels
 
-- Colony panel: Colony Autopilot button on the colony screen, or right click Population & Infrastructure.
-- Empire pages: In the colony panel, under Empire: Colonies, Autopilot Storage, Colony crises, Expansion, War, Mod features, Settings, Factions, Log, Diagnostics.
-- Log page: actions and advice. The Thinking list (Show/Hide) holds what Autopilot weighed, planned and left alone.
+- To open the colony panel, click Colony Autopilot on the colony screen, or right click Population & Infrastructure.
+- The empire pages are in the colony panel under Empire. They're Colonies, Autopilot Storage, Colony crises, Expansion, War, Mod features, Settings, Factions, Log and Diagnostics.
+- The Log page has actions and advice. What Autopilot weighed, planned and left alone goes in the Thinking list (Show/Hide).
 
 ## First colony
 
-1. Pick Full expansion or [Low profile](low-profile.md), and whether to do a [fast buildout](#fast-buildout).
-2. Pick a goal: Balanced (default), Money, Security, War production, Rapid growth or Self-sufficiency ([How it builds](how-it-builds.md)).
+1. Pick Full expansion or [Low profile](low-profile.md), and decide whether you want a [fast buildout](#fast-buildout).
+2. Pick a goal. Balanced is the default, and the others are Money, Security, War production, Rapid growth and Self-sufficiency ([How it builds](how-it-builds.md)).
 
 ## First-time setup
 
@@ -31,14 +31,14 @@
 | War (Nexerelin) | Retaliate ([War and security](war-and-security.md)) |
 | Credit reserve | A quarter of your credits, 50,000-500,000 |
 
-All rows: [Settings](settings.md).
+You'll find every row in [Settings](settings.md).
 
 ## Fast buildout
 
-- Offer: At your first colony, with a credit floor of 250,000, 100,000, 500,000 or 1,000,000.
-- Effect: The colony goes to Auto and starts the fastest payback with credits above the floor. It ends after 30 days in a row of profit.
+- You'll get the offer at your first colony, with a credit floor of 250,000, 100,000, 500,000 or 1,000,000.
+- If you take it, the colony goes to Auto and spends the credits above the floor on whatever pays back fastest. It stops after 30 days in a row of profit.
 
 ## Troubleshooting
 
-- Auto builds nothing: Check the budget line on the Colonies page. It is zero when Budget type (Settings, Advanced, Budget) is Share of net income with negative net income, Pause on loss is on, or credits are under the reserve.
-- Bug reports: [issues](https://github.com/Mjolniar/auto-colonies/issues), with the files the [README](../README.md) lists.
+- If Auto builds nothing, check the budget line on the Colonies page. It's zero if you're under the reserve, Pause on loss is on, or Budget type (Settings, Advanced, Budget) is Share of net income and net income is negative.
+- For bug reports, use [issues](https://github.com/Mjolniar/auto-colonies/issues) and attach the files the [README](../README.md) lists.

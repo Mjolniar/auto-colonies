@@ -397,8 +397,8 @@ public class CAContracts {
             } else if (!fits(spare, 0, need)) {
                 o.feasible = false;
                 o.why = "not enough spare " + CAResearch.commodityName(com) + " (" + Math.max(0, spare) + " of " + (int) Math.ceil(need * (1f + MARGIN)) + " needed"
-                        + (held > 0 ? "; " + held + " more is at colonies under siege or without accessibility, which can't deliver" : "")
-                        + (signed > 0 ? "; ToT shows " + signed + " more, but that went to contracts already signed" : "") + ")";
+                        + (held > 0 ? ", " + held + " more stuck at colonies under siege or without accessibility" : "")
+                        + (signed > 0 ? ", and the " + signed + " more ToT shows already went to signed contracts" : "") + ")";
             }
         }
         o.gain = o.pay - o.lost;

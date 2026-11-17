@@ -257,7 +257,7 @@ public final class CAMilitary {
                     CAApprovals.say(u.m.getName() + ": Recommends upgrading to " + u.name + " (Military rung, " + Misc.getDGSCredits(u.total())
                             + " with the fee, " + Misc.getDGSCredits(u.upkeep) + " more upkeep a month). Approve on the Colonies page.", false);   // 0.3.8.6: the page's name
                 }
-                CARich.note(CARich.MILITARY, "proposes " + u.name + " at " + u.m.getName() + "; Approve or Reject on this panel");
+                CARich.note(CARich.MILITARY, "proposes " + u.name + " at " + u.m.getName() + ". Approve or Reject on this panel");
                 return;
             }
             String err = start(s, u, net, added);

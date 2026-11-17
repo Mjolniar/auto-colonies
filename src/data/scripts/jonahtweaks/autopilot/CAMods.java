@@ -280,14 +280,14 @@ public class CAMods {
                 else if (u > 0) CAEngine.supply(p, com, u, deficit);
             }
             if (total <= 0) return false;
-            if (nets && counted < total) p.lines.add(counted == 0 ? "Roider miners: everything they would dig up is already made here in larger amounts. A colony's supply is its largest single source"
+            if (nets && counted < total) p.lines.add(counted == 0 ? "Roider miners: this colony already makes more of everything they'd dig up, since a colony's supply is its largest single source"
                     : "Roider miners: " + counted + " of " + total + " units are more than this colony already makes");
             if (cut > 0) p.lines.add("Heavy machinery shortage: Roider miners lose it from every output");
             CAEngine.supply(p, "crew", nets ? above(3, otherSupply(m, "roider_dives", "crew") - admin) : 3, deficit);
             CAEngine.demand(p, "heavy_machinery", 1, deficit); CAEngine.demand(p, "drugs", drugs, deficit); CAEngine.demand(p, "supplies", 2, deficit);
             String what = reachText(m, range, x);
             p.lines.add(area ? "Roider miners work deposits within " + Math.round(divesRange() + add) + " light-years: " + what
-                    : "After a save load Roider Union counts this planet's deposits only. Fixes refreshes the area: " + what);
+                    : "After a save load, Roider Union only counts this planet's deposits. Fixes refreshes the area: " + what);
             return true;
         }
         int x = extra(m), cutWas = machineryShort(deficit, 1), cutNow = machineryShort(deficit, Math.max(1, s - 2));   // the HQ needs size - 2
@@ -301,7 +301,7 @@ public class CAMods {
         p.fx[1] += 1f; p.fx[3] += 0.2f; p.fx[4] += 0.2f;
         CAEngine.demand(p, "heavy_machinery", s - 3, deficit); CAEngine.demand(p, "supplies", s - 2, deficit); CAEngine.demand(p, "fuel", s - 2, deficit);
         p.lines.add(area ? "Union HQ: mines deposits within " + Math.round(hqRange() + add) + " light-years (" + reachText(m, rangeNow, x - cutNow) + "), stability +1, patrols"
-                : "Union HQ: stability +1, patrols. Its longer mining range counts only in the session it is built (Roider Union, without Fixes' area refresh)");
+                : "Union HQ: stability +1, patrols. Its longer mining range only counts in the session it's built (Roider Union, without Fixes' area refresh)");
         return true;
     }
 
@@ -411,7 +411,7 @@ public class CAMods {
         if (added <= 0) return false;
         float mult = f != null ? 1.5f : 1f;
         CAEngine.demand(p, "metals", Math.round(s * mult), deficit); CAEngine.demand(p, "rare_metals", Math.round((s - 2) * mult), deficit);
-        p.lines.add(f != null ? "Secondary Drydocks next to " + f.getCurrentName() + ": " + out + " of each line, what it adds beyond that building counts"
+        p.lines.add(f != null ? "Secondary Drydocks next to " + f.getCurrentName() + ": " + out + " of each line. Only what it adds beyond that counts"
                 : "Secondary Drydocks: a Heavy Industry without pollution. Takes no nanoforge");
         return true;
     }

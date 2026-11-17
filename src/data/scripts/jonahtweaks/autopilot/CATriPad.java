@@ -262,7 +262,7 @@ public class CATriPad implements InteractionDialogPlugin {
         d.setMode(c, CASync.has("auto") ? CAData.Mode.AUTO : CAData.Mode.APPROVE);
         if (CASync.modeNote != null) {
             screen("MANAGED COLONY LIMIT REACHED.");
-            para(CASync.modeNote + ".");
+            para(CASync.modeNote.endsWith(".") ? CASync.modeNote : CASync.modeNote + ".");   // 0.3.9.8: the note ends with its own period
         } else {
             screen("ACKNOWLEDGED. " + colony().toUpperCase() + ": " + c.mode.label.toUpperCase() + ".");
             gained(colony() + " is in " + c.mode.label + ", with the recommended settings.");

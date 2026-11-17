@@ -165,8 +165,8 @@ public class CALowProfile {
             if (pathBlocked(m, add)) {
                 float now = interest(m);
                 p.lowProfile = "Low profile: takes Pather interest here from " + Misc.getRoundedValueMaxOneAfterDecimal(now) + " to "
-                        + Misc.getRoundedValueMaxOneAfterDecimal(now + add) + "; a Pather cell comes at " + (int) cellLine()
-                        + (m.getSize() < 4 ? " once the colony reaches size 4" : "") + ". Autopilot does not start it";   // 0.3.8.6: plain wording
+                        + Misc.getRoundedValueMaxOneAfterDecimal(now + add) + ". A Pather cell comes at " + (int) cellLine()
+                        + (m.getSize() < 4 ? " once the colony reaches size 4" : "") + ", so Autopilot won't start it";   // 0.3.8.6: plain wording
             }
         } catch (Throwable ignored) { }
         try { triTachyon(m, p); } catch (Throwable ignored) { }

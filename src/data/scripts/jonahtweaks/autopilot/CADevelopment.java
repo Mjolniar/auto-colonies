@@ -193,7 +193,7 @@ public class CADevelopment {
                 + "; farming and mining output " + signed(Math.min(3, s - 2)) + " per line, everything else " + signed(-Math.min(4, s - 2)) + "; synergy efficiency -10";
         else if ("borecity".equals(dev)) what = "Mining and Extractive Operation output x1.7";
         else if ("archeosite".equals(dev)) what = "Tech-Mining x1.7; only stations, Tech-Mining, Research Facility, Ground Defenses and Spaceport can be built";
-        else if ("floatingcity".equals(dev)) what = "every building adds 3-5 thruster fuel demand; nothing is built while fuel would run short. Altitude "
+        else if ("floatingcity".equals(dev)) what = "every building adds 3-5 thruster fuel demand, so nothing's built while fuel would run short. Altitude "
                 + Math.round(altitude(m)) + " of 1000 (" + stage(altitude(m)).toLowerCase() + ")";
         else if ("hypershunt".equals(dev)) what = "no buildings allowed";
         else what = "no effect on building choices";

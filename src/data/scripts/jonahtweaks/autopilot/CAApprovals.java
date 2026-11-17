@@ -167,7 +167,7 @@ public final class CAApprovals {
         else if (it.monthly < 0f) out.add("Upkeep rises by " + Misc.getDGSCredits(-it.monthly) + " a month.");
         if (it.why != null && !it.why.isEmpty()) out.add(sentence(it.why));
         if ("expand".equals(k)) out.add("If you reject it, that target is skipped for 180 days.");
-        else if ("build".equals(k) || LIVE.containsKey(it.key)) out.add("If you reject it, it will not be offered again for " + holdText(k) + ".");
+        else if ("build".equals(k) || LIVE.containsKey(it.key)) out.add("If you reject it, it won't be offered again for " + holdText(k) + ".");
         return out;
     }
 

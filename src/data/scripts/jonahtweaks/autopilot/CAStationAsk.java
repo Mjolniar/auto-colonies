@@ -83,7 +83,7 @@ public class CAStationAsk implements InteractionDialogPlugin {
             catch (Throwable ignored) { }
             MarketAPI m = market();
             TextPanelAPI t = dialog.getTextPanel();
-            t.addPara("Pick " + (m == null ? "your colony" : m.getName()) + "'s first station line. Strength: relative to low tech.");   // 0.3.8.6: no question
+            t.addPara("Pick " + (m == null ? "your colony" : m.getName()) + "'s first station line. Strength's measured against low tech.");   // 0.3.8.6: no question
             float base = CAStations.strength("orbitalstation");
             OptionPanelAPI o = dialog.getOptionPanel();
             for (int v : m == null ? new ArrayList<Integer>() : openLines(m)) {

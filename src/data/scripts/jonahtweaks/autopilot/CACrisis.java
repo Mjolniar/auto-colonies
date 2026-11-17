@@ -461,16 +461,16 @@ public class CACrisis {
     /** What drives a crisis, how it ends, and what Autopilot does about it. */
     static String advice(HostileActivityFactor f) {
         // 0.3.0.0 (WS-F3 fix pass 2): one line each, what drives it and how it ends (were 44-88 words); the numbers are in the guides
-        if (isPolice(f)) return "Free ports scoring 5 or more. Beating the raid ends it.";
-        if (f instanceof PirateHostileActivityFactor) return "Colony size, low stability and pirate bases nearby. Beating a major raid ends it.";
-        if (f instanceof LuddicPathHostileActivityFactor) return "Pather interest of 7+ at size 4+ colonies. Beating the attack ends it.";
-        if (f instanceof PerseanLeagueHostileActivityFactor) return "While you could join the League. Beat its Armada or join at Kazeron.";
-        if (f instanceof SindrianDiktatHostileActivityFactor) return "A size 4+ colony making 4+ fuel. Beating the attack ends it.";
-        if (f instanceof TriTachyonHostileActivityFactor) return "Goods made in competition with Tri-Tachyon. Raiding its commerce ends it.";
-        if (f instanceof LuddicChurchHostileActivityFactor) return "Luddic-majority colonies. Beat the Knights' Armada or make the Church's deal.";
-        if (f instanceof HegemonyHostileActivityFactor) return "AI cores above size 3. Three beaten inspections end it.";
-        if (f instanceof RemnantHostileActivityFactor) return "A Remnant nexus in your system. Destroying it ends it.";
-        return "Added by a mod.";
+        if (isPolice(f)) return "Free ports scoring 5+ drive it, and beating the raid ends it.";
+        if (f instanceof PirateHostileActivityFactor) return "Colony size, low stability and pirate bases nearby drive it, and beating a major raid ends it.";
+        if (f instanceof LuddicPathHostileActivityFactor) return "Pather interest of 7+ at size 4+ colonies drives it. Beating the attack ends it.";
+        if (f instanceof PerseanLeagueHostileActivityFactor) return "It lasts while you could join, so beat the League's Armada or join at Kazeron.";
+        if (f instanceof SindrianDiktatHostileActivityFactor) return "A size 4+ colony making 4+ fuel drives it. Beating the attack ends it.";
+        if (f instanceof TriTachyonHostileActivityFactor) return "Goods that compete with Tri-Tachyon drive it, and raiding its commerce ends it.";
+        if (f instanceof LuddicChurchHostileActivityFactor) return "Luddic-majority colonies drive it. Beat the Knights' Armada or make the Church's deal.";
+        if (f instanceof HegemonyHostileActivityFactor) return "AI cores above size 3 drive it. Three beaten inspections end it.";
+        if (f instanceof RemnantHostileActivityFactor) return "A Remnant nexus in your system drives it. Destroying it ends it.";
+        return "A mod adds this one.";
     }
 
     public static void render(TooltipMakerAPI t, CAData d, CASettings s) {
@@ -489,11 +489,11 @@ public class CACrisis {
         if (r != null) {
             List<String> names = new ArrayList<String>();
             for (MarketAPI m : targets()) names.add(m.getName());
-            t.addPara("Coming: %s" + (names.isEmpty() ? "." : ", most likely at %s. Auto colonies there plan with Security."), 8f, bad,
+            t.addPara("Coming: %s" + (names.isEmpty() ? "." : ", most likely at %s. Auto colonies there switch to Security."), 8f, bad,
                     name(r.factor), CAContracts.join(names));
         }
         float best = bestMilitaryMult();
-        t.addPara(best >= 1f ? "No military structure; they slow crises."
+        t.addPara(best >= 1f ? "No military structure (those slow crises)."
                 : "Crises run at x%s (best military structure).", 4f, hl, Misc.getRoundedValueMaxOneAfterDecimal(best));
         CALowProfile.render(t, s);   // 0.2.43.0
         CAOddisz.render(t);   // Sol Renewed's own crisis, when it's running (0.2.45.0)

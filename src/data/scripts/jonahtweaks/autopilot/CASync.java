@@ -363,7 +363,7 @@ public class CASync {
     public static String feed(int g, int b, int a) {
         if (dormant()) return "The Autopilot is dormant";
         int[] h = onHand();
-        if (h[0] < g || h[1] < b || h[2] < a) return "Not enough cores: you have " + CASyncCatalog.cores(h[0], h[1], h[2]);
+        if (h[0] < g || h[1] < b || h[2] < a) return "Not enough cores (you have " + CASyncCatalog.cores(h[0], h[1], h[2]) + ")";
         if (g + b + a <= 0) return "No cores to feed";
         int[] need = {g, b, a};
         for (int k = 0; k < 3; k++) {
@@ -500,7 +500,7 @@ public class CASync {
         if (mode == CAData.Mode.AUTO && !has("auto")) return "It needs " + CASyncCatalog.buy("auto") + " in the Autopilot panel.";
         if (mode == CAData.Mode.ADVISOR && !has("advisor")) return "It needs " + CASyncCatalog.buy("advisor") + " in the Autopilot panel.";
         int cap = managedCap();
-        return "All " + cap + " managed colonies are in use; one more costs " + CASyncCatalog.COLONY_PP + " bandwidth in the Autopilot panel.";
+        return "All " + cap + " managed colonies are in use. One more costs " + CASyncCatalog.COLONY_PP + " bandwidth in the Autopilot panel.";
     }
 
     /**
@@ -1149,7 +1149,7 @@ public class CASync {
         if (!(id instanceof String) || !((String) id).startsWith(PREFIX)) { armed = null; return false; }
         String rest = ((String) id).substring(PREFIX.length());
         boolean twoStep = rest.startsWith("feed:");   // cores are used up: asks twice
-        if (twoStep && !rest.equals(armed)) { armed = rest; notice = "Click Confirm to feed it. The cores are used up."; return true; }
+        if (twoStep && !rest.equals(armed)) { armed = rest; notice = "Click Confirm to feed it. The cores don't come back."; return true; }
         armed = null;
         notice = null;
         String err = null;

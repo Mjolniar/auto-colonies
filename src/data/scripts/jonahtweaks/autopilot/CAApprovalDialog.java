@@ -226,7 +226,7 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
         List<CAApprovals.Item> open = open();
         t.addPara("Decisions: %s. Credits %s. Reserve %s.", hl, String.valueOf(open.size()), Misc.getDGSCredits(CABuild.credits()),
                 Misc.getDGSCredits(s.reserve));
-        para(t, "Later keeps every decision open. The summary comes back in " + Math.max(1, s.approvalDays)   // 0.3.8.7: the list's page
+        para(t, "Later keeps every decision open, and this summary comes back in " + Math.max(1, s.approvalDays)   // 0.3.8.7: the list's page
                 + " days. The list is under More, Colonies, in the colony panel.", gray);
         int lines = 0, detailed = 0;
         for (Map.Entry<String, List<CAApprovals.Item>> g : CAApprovals.group(open).entrySet()) {
@@ -241,7 +241,7 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
                 }
             }
         }
-        if (open.size() > MAX_LINES) para(t, (open.size() - MAX_LINES) + " more under Choose each.", gray);
+        if (open.size() > MAX_LINES) para(t, (open.size() - MAX_LINES) + " more are under Choose each.", gray);
         if (open.size() > DETAILED) para(t, "Choose each shows the details of every decision.", gray);
     }
 
@@ -267,11 +267,11 @@ public class CAApprovalDialog implements InteractionDialogPlugin {
     static String approveAllPrompt(List<CAApprovals.Item> open) {
         float total = 0f;
         for (CAApprovals.Item it : open) total += it.total();
-        return "Approve all " + open.size() + " for " + Misc.getDGSCredits(total) + " with fees? One that doesn't fit the reserve stays open.";
+        return "Approve all " + open.size() + " for " + Misc.getDGSCredits(total) + " with fees? Anything that doesn't fit the reserve stays open.";
     }
 
     /** 0.3.8.7: Reject all's question, in the same three places. */
-    static String rejectAllPrompt(int n) { return "Reject all " + n + "? They come back after 180 days (autonomy a year)."; }
+    static String rejectAllPrompt(int n) { return "Reject all " + n + "? They'll come back after 180 days (autonomy a year)."; }
 
     public void optionSelected(String text, Object data) {
         try { select(data); }

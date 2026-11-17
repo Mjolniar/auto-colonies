@@ -110,7 +110,7 @@ public class CARogue {
                 "Counted in build values. The output counts toward the weapons and producer input floors.");
         put(DIAMOND, "DiamondCoreCondition", "Diamond Core", Kind.SYNERGY, g(o(MINING), o(MEGAPORT)),
                 "The hazard pay growth effect at no cost. Hazard pay is held off.",
-                "Counted in build values as growth. Autopilot does not turn hazard pay on while it runs.");
+                "Counted in build values as growth, and Autopilot won't turn hazard pay on while it runs.");
         put(RADIOLYTIC, "RadiolyticCatalystCondition", "Radiolytic Catalyst", Kind.SYNERGY, g(o(MINING), o(LI)),
                 "Drug export income x3.",
                 "Counted in build values from the colony's drug export income now.");
@@ -125,10 +125,10 @@ public class CARogue {
                 "Counted in build values as stability. Opening the free port costs no stability while it runs.");
         put(SLAVES, "ViableSlaveLaborCondition", "Viable Slave Labor Population", Kind.SYNERGY, g(o(MB, HC), o(COMMERCE)),
                 "Colony income +50%, stability -3. Three month-ends in a row at stability 5 or lower: the colony goes to pirates.",
-                "Counted in build values. Stability floor 6 at this colony. At the second month of unrest Autopilot takes down Commerce if that lifts stability above 5.");
+                "Counted in build values. Stability floor 6 at this colony. At the second month of unrest, Autopilot takes down Commerce if that lifts stability above 5.");
         put(REACTOR, "VolatileAdditiveReactorCondition", "Volatile Additive Reactor", Kind.SYNERGY, g(o(REFINING), o(FUEL)),
                 "Your fleets in the system +2 burn. If Refining or Fuel Production stops working: every building disrupted 180 days, hazard +100%.",
-                "Autopilot does not build the second of the pair. Once both are there, Autopilot does not take down, replace or upgrade either.");
+                "Autopilot won't build the second of the pair, and once both are there it won't take down, replace or upgrade either.");
         put(MAGMATIC, "MagmaticAntimatterForgeCondition", "Magmatic Antimatter Forge", Kind.SYNERGY, g(o(HI, OW), o(FUEL)),
                 "Ships your production delivers here lose their d-mods and can gain s-mods.",
                 "Counted in build values at the production gathering point (estimate). Deliveries follow the capital; move the gathering point there and the capital follows. Preferred host for floor Heavy Industry and Fuel Production.");
@@ -153,16 +153,16 @@ public class CARogue {
                 "Organs counted in the port's build value (illegal without a free port: the colony's own shortage only).");
         put(PILGRIM, "PilgrimWorldCondition", "Pilgrim World", Kind.BUILDING, NO_NEEDS,
                 "Each working industry +1 stability and +20% accessibility. Any AI core or AI administrator turns these into penalties.",
-                "Counted in build values. Autopilot puts no AI cores and no AI administrator here.");
+                "Counted in build values. Autopilot won't put AI cores or an AI administrator here.");
         put(FRAGILE, "FragileBiosphereCondition", "Fragile Biosphere", Kind.BUILDING, g(o(FARMING)),
-                "Hazard -10%. Farming is the only industry allowed; the game takes others down.",
-                "Autopilot builds no other industry here and plans none.");
+                "Hazard -10%. Farming is the only industry allowed. The game takes others down.",
+                "Autopilot won't build or plan any other industry here.");
         put(GRAVEYARD, "ShipGraveyardCondition", "Ship Graveyard", Kind.BUILDING, g(o(REFINING, HI, OW, MINING)),
                 "Wrecks from your battles in the system become hulls in storage. Refining, Heavy Industry, Orbital Works and Mining improve them.",
                 "No build value (hulls depend on battles). Preferred host for floor Heavy Industry and Orbital Works.");
         put(VAULT, "ForgottenVaultWorldCondition", "Forgotten Vault-World", Kind.STORY, g(o(TECHMINING)),
                 "With Tech-Mining: monthly vault loot for 18 or 30 months and a capital ship at the end; stability -3, accessibility -50%, hazard +50%, Tech-Mining upkeep x10.",
-                "Left to you: Autopilot does not build Tech-Mining here or take it down by value. Its upkeep is counted.");
+                "Left to you: Autopilot won't build Tech-Mining here or take it down by value, but its upkeep is counted.");
         // the colony as a whole
         put(LEYLINES, "GeothermalLeylinesCondition", "Geothermal Leylines", Kind.COLONY, NO_NEEDS,
                 "Hazard +50%, upkeep of every building x0.5.", "Counted in every upkeep here.");
@@ -189,7 +189,7 @@ public class CARogue {
                 "A food deposit at -1 for Aquaculture on Snowball worlds.", "Read from the game's deposit tables.");
         put(KING, "TrashKingCondition", "Trash King", Kind.STORY, NO_NEEDS,
                 "The king is the administrator. Deposing him costs up to 4 stability and 25% accessibility.",
-                "Left to you: Autopilot does not seat, move or replace an administrator here.");
+                "Left to you: Autopilot won't seat, move or replace an administrator here.");
         put(WATCHED, "WatchedCondition", "Watched", Kind.STORY, NO_NEEDS,
                 "Hazard +25%. Only in the Violet Dwarf system.", "Left to you: the system is marked not to be colonized, so Auto-expansion skips it.");
     }

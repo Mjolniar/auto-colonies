@@ -686,8 +686,8 @@ public class CAWar {
             CALog.thinkStatus("war:wait", "War fleets: waiting (" + p.waiting.get(0) + (p.waiting.size() > 1 ? ", +" + (p.waiting.size() - 1) : "") + ").");
         summary = "War level " + CAWarPolicy.levelName(p.level) + ". " + (p.rich ? "Rich: up to " + RICH_PER_DAY + " a day, keeping " + Math.round(RICH_RESERVE * 100f)
                 : "One a day, keeping " + Math.round(RESERVE * 100f)) + " percent of fleet request points for emergencies. Points "
-                + (int) mgr.getFleetRequestStock() + " of " + mgr.getFleetRequestCapacity() + (p.started > 0 ? "; " + p.started + " sent today" : "")
-                + (p.waiting.isEmpty() ? "." : "; waiting: " + CAContracts.join(p.waiting) + ".");
+                + (int) mgr.getFleetRequestStock() + " of " + mgr.getFleetRequestCapacity() + (p.started > 0 ? ", " + p.started + " sent today" : "")
+                + (p.waiting.isEmpty() ? "." : ". Waiting: " + CAContracts.join(p.waiting) + ".");
     }
 
     /** Pure, 0.3.9.0: a wait text without its digits, the key `warned` keeps ("fleet points (412 of 625)" is one wait all along). */
@@ -975,7 +975,7 @@ public class CAWar {
             t.addPara("Recalls every offensive. Refunds %s travelling, %s in action.",   // 0.3.0.0 (WS-F3 fix pass 3): the button's hover said it stands down
                     0f, hl, "67 percent", "33 percent");
         } else if ("standdown".equals(action)) {
-            t.addPara("Stand down: War level %s, authorizations cleared, organizing offensives cancelled.",
+            t.addPara("Sets War level %s, clears authorizations and cancels organizing offensives.",
                     0f, hl, "Defend");
         }
     }

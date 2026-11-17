@@ -1,5 +1,14 @@
 # Patch notes
 
+## 0.3.9.8 - 2026-11-17
+
+- Text: LunaLib setting descriptions, Settings page hover lines, panel and page text, decision explanations, story mode tooltips and item descriptions are reworded in the author's voice. Facts, numbers and setting names are unchanged.
+- Docs: The README and every GitHub docs page except the changelog are reworded in the same voice.
+- LunaLib: Number settings give their range as "It goes from X to Y, in steps of Z."
+- TriPad: Fixed a double period after a colony mode note.
+- Docs: Fixed a broken table row on the audit page (shipping between colonies) and a dead link in the README.
+- Docs: The research page names the Off option of Research uses colony items.
+
 ## 0.3.9.7 - 2026-11-17
 
 - Auto-expansion: When the colony limit needs an administrator who has not arrived, an Autopilot crew goes instead of a Nexerelin colony fleet. The crew waits for the administrator on arrival.

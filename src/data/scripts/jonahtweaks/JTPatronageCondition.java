@@ -38,6 +38,6 @@ public class JTPatronageCondition extends BaseMarketConditionPlugin {
 
     protected void createTooltipAfterDescription(TooltipMakerAPI tooltip, boolean expanded) {
         super.createTooltipAfterDescription(tooltip, expanded);
-        tooltip.addPara("No effect; this condition is being removed.", 10f);
+        tooltip.addPara("No effect. It's being removed.", 10f);
     }
 }

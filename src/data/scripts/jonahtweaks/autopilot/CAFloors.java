@@ -964,7 +964,7 @@ public class CAFloors {
         float h = CAHorizon.months();
         CATombstone.Built b = CATombstone.built(m, industryId, h, CATombstone.valuation(m));
         CAEndgame.Weakest wk = CAEndgame.of(ind, CAValue.keepDetail(m, ind, profile, CAEngine.empireDeficits()), b, h);
-        if (!CAEndgame.takeDown(m, wk, p, CAPlanner.PickRef.FLOOR)) return "Stability holds the swap";
+        if (!CAEndgame.takeDown(m, wk, p, CAPlanner.PickRef.FLOOR)) return "Stability blocks the swap";
         return null;
     }
 
@@ -976,7 +976,7 @@ public class CAFloors {
         Color gray = Misc.getGrayColor(), hl = Misc.getHighlightColor(), bad = Misc.getNegativeHighlightColor();
         CASettings s = CAData.settings();
         CATheme.heading(t, "Production floors", 12f);
-        if (!s.productionOn()) { t.addPara("Production: Off. Floors, taper and diversity are not used.", gray, 4f); return; }
+        if (!s.productionOn()) { t.addPara("Production: Off, so floors, taper and diversity aren't used.", gray, 4f); return; }
         if (st == null) { t.addPara("Production: " + CASettings.PRODUCTION_NAMES[s.productionMode] + ". Measured on the next daily pass.", gray, 4f); return; }
         for (String l : lines(st)) t.addPara(l, l.endsWith("Met.") ? gray : hl, 3f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
         for (Map.Entry<String, List<String[]>> e : st.steps.entrySet())

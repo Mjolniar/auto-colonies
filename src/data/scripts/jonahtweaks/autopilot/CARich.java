@@ -605,7 +605,7 @@ public class CARich {
             if (notes[ECONOMY] == null) note(ECONOMY, "surplus research, terraforming and trade buildings use surplus credits and the month's budget, outside the pool");
         }
         // 0.3.0.0 (C3 fix): wonders and the endgame's replacements start only with the Wonders rung On (wondersOpen)
-        if (open(WONDERS)) note(WONDERS, mode(WONDERS) == RECOMMEND ? "Recommend only: no wonder or endgame replacement starts; set the rung On to start them" : null);
+        if (open(WONDERS)) note(WONDERS, mode(WONDERS) == RECOMMEND ? "Recommend only: no wonder or endgame replacement starts. Set the rung On to start them" : null);
         // 0.3.0.0 (C3): the rungs bought here, in the preset's order; expansion (CAExpansion) and war fleets (CAWar) read
         // allowance() in their own steps. 0.3.0.0 (C3 fix): each buyer here spends from its rung's room; what it says it wants
         // decides what goes down

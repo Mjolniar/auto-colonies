@@ -411,8 +411,8 @@ public class CAHypershunt {
                 String err = start(mm, nn, "Approved");
                 if (err == null) CABudget.charge(CAData.settings(), nn.monthlyCredits, 0f, nn.upkeep);
                 return err;
-            }, "Restoration of the " + next.name + " at " + m.getName() + " will begin.", "It costs " + cost + ".",
-                    "If you reject it, it will not be offered again for " + CAApprovals.holdText("restore") + ".");
+            }, "It'll start restoring the " + next.name + " at " + m.getName() + ".", "It costs " + cost + ".",
+                    "If you reject it, it won't be offered again for " + CAApprovals.holdText("restore") + ".");
             return;
         }
         if (next.total() > CAPresets.projectCap(s)) {   // 0.3.0.0 (WS-F1 fix): the cap in effect
@@ -552,17 +552,17 @@ public class CAHypershunt {
             if (buttons) t.addButton("Set range to " + tgt * h.mult + " ly", CAColonyDialog.HS + "range:" + tgt, base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
         }
         if (c.hsManual) {
-            t.addPara("You set the range. Autopilot leaves it.", gray, 4f);
+            t.addPara("You set the range, so Autopilot leaves it.", gray, 4f);
             t.addButton("Let Autopilot manage it", CAColonyDialog.HS + "manage:x", base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 4f);
         }
         receivers(t, h);
         String[] why = new String[1];
         Section next = nextRestore(h, why);
         t.addPara(next != null ? "Next: restore the " + next.name + "." : "Next: nothing to restore (" + why[0] + ").", hl, 8f);   // 0.3.8.6: shown as is
-        String when = s.hypershuntMode == 2 ? "Off in Settings."
+        String when = s.hypershuntMode == 2 ? "It's off in Settings."
                 : s.hypershuntMode == 1 ? "Recommend only: click to change."
-                : c.mode == CAData.Mode.AUTO ? "Auto sets the range and restores within the budget."
-                : "Auto colonies handle this.";
+                : c.mode == CAData.Mode.AUTO ? "On Auto it sets the range and restores within the budget."
+                : "Colonies on Auto handle this.";
         t.addPara(when, gray, 4f);
     }
 
@@ -571,7 +571,7 @@ public class CAHypershunt {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         List<Shunt> shunts = all();
         CATheme.mode(t, CASettings.AUGMENT_NAMES[Math.max(0, Math.min(2, s.hypershuntMode))]);   // 0.3.0.0 (WS-F3 fix): the mode as a readout
-        t.addPara("Sets the range to reach your receivers. Restores useful sections.", 4f);
+        t.addPara("It sets the range for your receivers and restores useful sections.", 4f);
         for (Shunt h : shunts) {
             CAData.Colony c = d.colony(h.m.getId());
             String[] why = new String[1];

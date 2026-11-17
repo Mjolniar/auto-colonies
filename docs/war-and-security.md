@@ -2,43 +2,45 @@
 
 ## Quick version
 
-- Auto Colonies: tracks threat and handles sieges and colony crises.
-- With Nexerelin: emergency defense fleets, agents, a War level (default Retaliate) and a stance per faction (default Auto) that caps it.
-- [Low profile](low-profile.md): caps the War level at Defend.
-- [Enforcer patrols](#enforcer-patrols): colony patrols attack enforcement fleets. Off by default.
-- [Patrol kills](#colony-crises): Auto colony patrol kills count toward colony crises. On by default.
+- Auto Colonies keeps track of threat and handles sieges and colony crises for you.
+- With Nexerelin, you also get emergency defense fleets, agents, a War level (default Retaliate) and a stance for each faction (default Auto) that caps it.
+- [Low profile](low-profile.md) caps the War level at Defend.
+- [Enforcer patrols](#enforcer-patrols) has your colony patrols go after enforcement fleets (off by default).
+- [Patrol kills](#colony-crises) makes kills by your Auto colony patrols count toward colony crises (on by default).
 
 ## Threat
 
-- Threat: counts hostile neighbors, crises, raids and Pather cells.
-- At 70%: the colony is planned as Security. Under 65% after 60 days: it returns to its own goal.
-- Siege: blockade, hostile fleets at the planet or stronger ones in the system, or a raid, invasion or blockade on the way. Only defenses are built.
+- Threat goes up with hostile neighbors, crises, raids and Pather cells.
+- Once threat hits 70%, the colony gets planned as Security. It stays that way for at least 60 days, then goes back to its own goal once threat's under 65%.
+- A colony's under siege when it's blockaded, when hostile fleets are at the planet or stronger ones are in the system, or when a raid, invasion or blockade is on the way. Then it'll only build defenses.
 
 ## Colony crises
 
-- Crisis progress: priced at about 640 credits a month per point of monthly progress.
-- Charged: AI cores (Hegemony, Pathers) and Fuel Production (Diktat). Credited: Patrol HQ, Military Base, High Command.
-- Next crisis picked (meter at 500): its target is planned as Security, a Pather target sheds AI cores, counted free ports close.
-- Patrol kills: ships destroyed by Auto colony patrols and stations, in battles without your fleet, count toward the colony crisis and Tri-Tachyon commerce raiding. The game's rules and amounts for your own kills apply: fleet points lost near your colonies, pirate and Luddic Path base stations, commerce raiders and Tri-Tachyon trade fleets.
-- Patrol kills with Nexerelin: Nexerelin's crisis rules apply. Outposts do not count as colonies, and any base station counts.
-- Patrol kills once: each lost ship counts once, across autoresolve rounds and saves. Ships the game counted in a battle you fought are not counted again.
-- Patrol kills setting: Patrol kills count for crises (Advanced, War, and LunaLib). On by default, in Story and Normal mode.
+- Crisis progress is priced at about 640 credits a month for each point of monthly progress.
+- AI cores (Hegemony, Pathers) and Fuel Production (Diktat) get charged that price, and Patrol HQ, Military Base and High Command get credited.
+- When the next crisis gets picked (meter at 500), its target is planned as Security. If it's a Pather target, it sheds its AI cores, and any free ports the crisis counts get closed.
+- With Patrol kills, ships that Auto colony patrols and stations destroy in battles without your fleet count toward the colony crisis and Tri-Tachyon commerce raiding.
+- They use the same rules and amounts as your own kills, so that's fleet points lost near your colonies, pirate and Luddic Path base stations, commerce raiders and Tri-Tachyon trade fleets.
+- With Nexerelin, Nexerelin's crisis rules apply, so outposts don't count as colonies and any base station counts.
+- Each lost ship counts once, across autoresolve rounds and saves, and ships the game counted in a battle you fought don't get counted again.
+- The setting is Patrol kills count for crises (Advanced, War, and LunaLib), and it's on by default in Story and Normal mode.
 
 ## Enforcer patrols
 
-- Settings: Advanced, War. Enforcer patrols Off by default. Each fleet type Off by default.
-- Fleet types: Hegemony investigators, Hegemony AI inspections, Persean League enforcers, Luddic sacred protectors, Tri-Tachyon commerce raiders, Nexerelin police (with Nexerelin).
-- Finding: by the game's memory flag on the fleet. Inspection task forces: by the inspection's intel. League blockade escorts: by their hassle type.
-- Where: systems with Auto colonies (default), or systems with any colony of yours.
-- Checks: four a day. A target is hostile to your faction for one day, renewed while it stays. Colony patrols and stations engage it.
-- End: the fleet leaves the system, a gate applies, or the setting is turned off.
-- Left alone: your faction's fleets, support fleets, stations, factions already hostile to you, fleets the game already made hostile to your faction.
-- Gates, each On by default: your commissioner, allies and League membership, ceasefires (Nexerelin), Low profile.
-- Your fleet: Attack in your fleet's system is On by default. A marked fleet is hostile to your fleet too.
-- Patrols intercept: Off by default. On: colony patrols in the system get an intercept order.
-- Charge: once per fleet, when it loses a battle to your faction's fleets. A fleet is charged once for its life, also when it is marked again. A battle you fight yourself gets only the game's own penalty.
-- Enforcer cost: Reputation (default), Credits, Both, None.
-- Sindrian Diktat raiders: handled like pirate raids at every colony of yours, in Story and Normal mode. Own setting, On by default, also with Enforcer patrols Off. No gates, no credit charge, no reputation change. Emergency defense fleets and sieges count them as hostiles.
+- The settings are under Advanced, War. Enforcer patrols and each fleet type are off by default.
+- The fleet types are Hegemony investigators, Hegemony AI inspections, Persean League enforcers, Luddic sacred protectors, Tri-Tachyon commerce raiders and Nexerelin police (with Nexerelin).
+- To find them, it goes by the game's memory flag on the fleet, the inspection's intel for inspection task forces and the hassle type for League blockade escorts.
+- It works in systems with Auto colonies (default) or in systems with any colony of yours.
+- It checks four times a day. A target's made hostile to your faction for one day, and that gets renewed while it stays, so colony patrols and stations engage it.
+- That ends when the fleet leaves the system, a gate applies or you turn the setting off.
+- It leaves alone your faction's fleets, support fleets, stations, factions already hostile to you and fleets the game already made hostile to your faction.
+- The gates are your commissioner, allies and League membership, ceasefires (Nexerelin) and Low profile, and each one's on by default.
+- Attack in your fleet's system is on by default, and a marked fleet's hostile to your own fleet too.
+- Patrols intercept (off by default) gives colony patrols in the system an intercept order.
+- A fleet gets charged when it loses a battle to your faction's fleets, and only once in its life, even if it gets marked again. A battle you fight yourself only gets the game's own penalty.
+- Enforcer cost can be Reputation (default), Credits, Both or None.
+- Sindrian Diktat raiders get handled like pirate raids at all your colonies in Story and Normal mode. They have their own setting, and it's on by default even with Enforcer patrols off.
+- There's no gate, credit charge or reputation change for them, and emergency defense fleets and sieges count them as hostiles.
 
 | Fleet type | Game's penalty when you defeat it | Reputation charge |
 |---|---|---|
@@ -49,17 +51,17 @@
 | Tri-Tachyon commerce raiders | None (Independent, no rep impact) | None |
 | Nexerelin police | None (Independent, no rep impact) | None |
 
-- Credits: fleet points x Nexerelin's fleet request price per point (default 400). 400 per point without Nexerelin.
-- Paid from: the Military rung, the surplus while rich, or the month's budget. Only credits above the credit reserve.
-- Credits mode: a fleet is attacked only when its price is available above the reserve.
-- Owed: a charge that can't be paid is owed and paid first. No new attacks while credits are owed.
-- Log: each attack and each charge. Ended attacks and fleets left alone: starsector.log only.
+- On Credits, the charge is fleet points x Nexerelin's fleet request price per point (default 400), or 400 per point without Nexerelin.
+- It's paid from the Military rung, the surplus while rich or the month's budget, and only above the credit reserve.
+- In Credits mode, it only attacks a fleet it can pay for above the reserve.
+- If it can't pay a charge, the charge gets owed and paid first, and there are no new attacks until then.
+- The log shows each attack and charge. Ended attacks and ignored fleets only go to starsector.log.
 
 ## Nexerelin
 
 ### War level
 
-- Settings: War. Each level adds to the one before.
+- This is under Settings, War, and each level adds to the one before it.
 
 | Level | Adds |
 |---|---|
@@ -69,7 +71,7 @@
 | Conquer | Invasions of Enemy markets costing at most a quarter of the surplus, and of Destroy markets, capital last. |
 | Scorched | Saturation bombardment of a Destroy capital after Authorize bombardment. |
 
-- Retake: invasions of former colonies, lost capital first. A retaken colony keeps its old mode.
+- Retake means invasions of your former colonies, with a lost capital first, and a retaken colony keeps its old mode.
 
 ### Faction stances
 
@@ -80,37 +82,37 @@
 | Rival | Hold them down | Not raised | Left to you |
 | Enemy, Destroy | Conquer, Scorched | Not raised | Rejected at Retaliate+ |
 
-- Enemy and Destroy: act only on a hostile faction. Until you declare war they act as Rival.
+- Enemy and Destroy only act on a hostile faction, and until you declare war they act as Rival.
 
 ### Diplomacy
 
 
 ### Conquest
 
-- Invasion fleets: 1.25x Nexerelin's wanted fleet. One at a time, two while rich.
-- Invasion stop: infamy x (1 + dominance) reaching 75. Coalition risk allowed (default Off) lifts it.
-- Conquered colonies: autonomy taken back the same day. Mode set by Conquered colonies start in (default Auto). Goal Security until stability 5.
+- Invasion fleets go out at 1.25x Nexerelin's wanted fleet, one at a time (two while rich).
+- Invasions stop when infamy x (1 + dominance) hits 75, but turning on Coalition risk allowed (default Off) lifts that.
+- On a conquered colony, autonomy gets taken back the same day, the mode comes from Conquered colonies start in (default Auto), and the goal's Security until it reaches stability 5.
 
 ### Scorched earth
 
-- Bombardment targets: Capitals only (default), or Capitals and small colonies (size 4 or less).
+- Bombardment targets can be Capitals only (default), or Capitals and small colonies (size 4 or less).
 
 ### What it costs
 
-- Fee: fee level x 10% of Nexerelin's price.
-- Fleet request points: 40% kept for emergencies (10% while rich). One launch a day.
-- While rich: up to 3 launches, fleets 1.5x bigger, a standing defense fleet at every colony.
+- The fee is fee level x 10% of Nexerelin's price.
+- It keeps 40% of fleet request points for emergencies (10% while rich) and does one launch a day.
+- While rich, it can do up to 3 launches, fleets are 1.5x bigger and there's a standing defense fleet at every colony.
 
 ### The War page
 
-- Empire panel, War page: War level, fleet request points, infamy, money sources, conquered colonies, per-faction stance buttons and operations.
+- The War page on the empire panel shows the War level, fleet request points, infamy, money sources, conquered colonies, stance buttons for each faction and operations.
 
-- Stand down: War level to Defend, declarations and bombardment cleared, organizing offensives cancelled with full refund.
-- Recall all: also cancels travelling (67% refund) and acting (33%) offensives, except invasions with troops landed.
+- Stand down sets the War level to Defend, clears declarations and bombardment, and cancels offensives that are still organizing (full refund).
+- Recall all also cancels offensives that are travelling (67% refund) or acting (33%), except invasions that already have troops landed.
 
 ### Agents
 
-- Agents: Off, Defense (recommended), Defense and offense. Recruiting 12,000 plus the fee, 60 days.
-- Offense: sabotage, isolation of Enemy and Destroy, rebellion at the next Destroy invasion target.
+- Agents can be Off, Defense (recommended) or Defense and offense. Recruiting one costs 12,000 plus the fee and takes 60 days.
+- Offense adds sabotage, isolating Enemy and Destroy, and rebellion at the next Destroy invasion target.
 
 Next: [Research](research.md).

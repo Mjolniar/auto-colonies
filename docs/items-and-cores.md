@@ -2,15 +2,15 @@
 
 ## Autopilot Storage
 
-- Goes in: Colony items, AI cores, research databanks, Antimatter Stabilizers, VPC chips, recipes. Blueprints, access keys and campaign consumables stay out.
+- Colony items, AI cores, research databanks, Antimatter Stabilizers, VPC chips and recipes go in Autopilot Storage. Blueprints, access keys and campaign consumables stay out of it.
 
 ## Colony items
 
-- Placement: An item goes to the Auto colony where its extra output adds most. A better item of the same kind replaces a lesser one.
+- Each item goes to the Auto colony where its extra output adds the most, and a better one of the same kind will replace it.
 
 ## AI cores
 
-- Settings: Items and people. The Hegemony inspects only colonies over 7 inspection points. Cores over a colony's limit go back, one a day.
+- These settings are under Items and people. The Hegemony only inspects colonies over 7 inspection points, and cores over a colony's limit go back one a day.
 
 | AI cores | Inspection risk | Hegemony inspections |
 |---|---|---|
@@ -20,17 +20,17 @@
 | Defended | More where defended | Resist where defended |
 | No limit | No limit | Advise |
 
-- Placement: Alpha where +1 output or a structure bonus is worth most. Beta at the highest upkeep. Gamma only where an input is short.
-- Alpha cores (Settings, Advanced, AI cores and items): Only where removable (recommended), Anywhere, Never.
-- Omega cores: Stored only with Omega Core Everywhere or Astral Ascension Renewed ([Supported mods](supported-mods.md#omega-core-everywhere-and-astral-ascension-renewed)).
+- Alphas go where +1 output or a structure bonus is worth the most, Betas go where upkeep's highest and Gammas only go where an input's short.
+- Alpha cores (Settings, Advanced, AI cores and items) can be Only where removable (recommended), Anywhere or Never.
+- Omega cores only get stored if you have Omega Core Everywhere or Astral Ascension Renewed ([Supported mods](supported-mods.md#omega-core-everywhere-and-astral-ascension-renewed)).
 
 ### Storage logistics
 
-- Setting: Off by default. Set a refit hub and a sell hub (Settings, Advanced, Capital and storage).
-- Moves: Weekly, refit gear goes to the refit hub and known blueprints and specs to the sell hub, for a fee plus 1,000 a ship.
+- This is off by default. To use it, set a refit hub and a sell hub (Settings, Advanced, Capital and storage).
+- Once a week, refit gear goes to the refit hub and known blueprints and specs go to the sell hub, for a fee plus 1,000 a ship.
 
 ## Administrators
 
-- Setting (Settings, Items and people): Off, Place only, or Hire and place (recommended).
-- Effect: +1 to everything the colony's industries make. Cost: 2,500 a month (20,000 with a skill) plus hiring. Hires take 30 days.
-- Past the colony limit: Each extra colony costs all colonies 2 stability. One administrator is placed or hired right away, over budget if needed, down to the reserve.
+- The setting's under Settings, Items and people, and it can be Off, Place only, or Hire and place (recommended).
+- An administrator gives +1 to everything the colony's industries make. It costs 2,500 a month (20,000 with a skill) plus hiring, and a new hire takes 30 days.
+- Past the colony limit, each extra colony costs all your colonies 2 stability, so it places or hires one administrator right away. It'll go over budget for that if it has to, down to the reserve.

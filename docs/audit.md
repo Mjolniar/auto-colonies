@@ -1,44 +1,45 @@
 # Auditing the mod
 
-- Scope: everything the mod can change in your game, what each change costs, what it does not do, and how to check it in the code.
-- Code structure: [source guide](source-guide.md). All classes are in `src/data/scripts/jonahtweaks/autopilot/`.
+- Scope: This page covers everything the mod can change in your game, what each change costs, what it doesn't do, and how you can check it in the code.
+- Code structure: The [source guide](source-guide.md) walks through it, and all classes are in `src/data/scripts/jonahtweaks/autopilot/`.
 
 ## The short version
 
-- Cost: every action charges what that UI charges, plus a convenience fee that can be set to Off.
-- Game data: no game setting, ship, weapon, faction, market condition or other mod's numbers are changed, except three Ashes of the Domain values (see [What it does not do](#what-it-does-not-do)).
-- War (Nexerelin): 0.3.0 can raid, blockade, invade and bombard other factions' markets. Defaults: War level Retaliate (retake is off in 0.2.45 saves), every stance Auto, bombardment not authorized.
-- War (Nexerelin): War fleets act in every colony mode, Advisor included. War on a non-hostile faction starts only from the War page's Declare war confirmation.
-- Adding the mod: safe in a running save. Removing it: turn on Prepare for removal first ([Removing it](#removing-it)). Without it, a save made with Auto Colonies enabled does not load.
-- Other mods: checked only to turn integrations on. No mod is disabled, blocked or changed for being installed.
+- Cost: Every action charges what that UI charges, plus a convenience fee you can set to Off.
+- Game data: It doesn't change any game setting, ship, weapon, faction, market condition or other mod's numbers, except three Ashes of the Domain values (see [What it does not do](#what-it-does-not-do)).
+- War (Nexerelin): Since 0.3.0 it can raid, blockade, invade and bombard other factions' markets. By default the War level is Retaliate (retake is off in 0.2.45 saves), every stance is Auto and bombardment isn't authorized.
+- War (Nexerelin): War fleets act in every colony mode, Advisor included. A war on a non-hostile faction only starts from the War page's Declare war confirmation.
+- Adding the mod: It's safe to add to a running save. To remove it, turn on Prepare for removal first ([Removing it](#removing-it)), because without that a save made with Auto Colonies enabled won't load.
+- Other mods: It only checks them to turn integrations on. No mod gets disabled, blocked or changed for being installed.
 
 ## Everything it can change in your game
 
-- Fee: Standard is 5% of a build's cost, at least 5,000, or a flat fee. Off makes it zero. Refunds return only what the mod took.
-- Credits: every credit taken or given back goes through `CABudget` (`take`, `give`, called by `pay`, `charge`, `payPrice`, `payFromPool`, `refund`).
+- Fee: Standard is 5% of a build's cost (at least 5,000) or a flat fee, and Off makes it zero. Refunds only give back what the mod took.
+- Credits: Every credit it takes or gives back goes through `CABudget` (`take`, `give`, called by `pay`, `charge`, `payPrice`, `payFromPool`, `refund`).
 
 ### Colonies and buildings
 
 | What | Where in the code | What it costs |
 |---|---|---|
-| Starts a building or upgrade | `CABuild.start` (`addIndustry` + `startBuilding`, or `startUpgrading`), ranked by `CAPlanner` | Game build cost and time plus the fee. One new building at a time per colony. A build that would take the colony under the stability floor does not start (`CAStability`). |
-| Ashes of the Domain upgrade paths | `CAAotD.startUpgrade` | As above. The upgrade pointer is restored in `finally`. |
-| Takes a building down | `CAPrune`, `CAOverLimit`, `CAEndgame.takeDown`, `CACapital`, `CATerraformSurplus`, `CASurplusResearch` | Free. Targets: industries unprofitable for 30 days; an industry over the limit; the building costing the most stability after 20 days at 0; endgame and capital swaps; structures it built. Locked and improved buildings, defenses, fleets and ship production stay. The AI core and item go to Autopilot Storage. Each removal leaves a one-year mark (`CATombstone`). |
-| Installs or swaps a colony item, installs or moves an AI core | `CAItems` (`placeItem`, `swapItem`, `placeCore`) | A small fee. Only from Autopilot Storage at the colony it is stored at, else shipped first. Replaced items and cores go back to storage. A polluting nanoforge does not go on a habitable world. |
+| Starts a building or upgrade | `CABuild.start` (`addIndustry` + `startBuilding`, or `startUpgrading`), ranked by `CAPlanner` | Game build cost and time plus the fee. One new building at a time per colony. A build that would take the colony under the stability floor doesn't start (`CAStability`). |
+| Ashes of the Domain upgrade paths | `CAAotD.startUpgrade` | Same as above, and the upgrade pointer is restored in `finally`. |
+| Takes a building down | `CAPrune`, `CAOverLimit`, `CAEndgame.takeDown`, `CACapital`, `CATerraformSurplus`, `CASurplusResearch` | Free. Targets: industries unprofitable for 30 days, an industry over the limit, the building costing the most stability after 20 days at 0, endgame and capital swaps, and structures it built. Locked and improved buildings, defenses, fleets and ship production stay. The AI core and item go to Autopilot Storage. Each removal leaves a one-year mark (`CATombstone`). |
+| Installs or swaps a colony item, installs or moves an AI core | `CAItems` (`placeItem`, `swapItem`, `placeCore`) | A small fee. Only from Autopilot Storage, and shipped first if it's stored at another colony. Replaced items and cores go back to storage. A polluting nanoforge doesn't go on a habitable world. |
 | Moves the production gathering point to the capital (on by default) | `CACapital` | Free. Moving it to another colony yourself makes that colony the capital. |
-| Ships Storage to a refit or sell hub (Storage logistics, off by default; capital's weekly gathering, on by default) | `CALogistics` | Shipment cost plus 1,000 a ship, from the monthly budget. Only Storage at non-hostile markets. Colony items and cores are not shipped. |
-| Comm relay, nav buoy, sensor array, Hypershunt Receiver at a stable location; Domain-era upgrade (TME) | `CAObjectives` | Materials at base price plus a fee; 10 days (30 for a receiver). The upgrade takes a spare Beta core, a receiver a Coronal Hypershunt Tap, from Autopilot Storage; both come back if the spot is gone. |
+| Ships Storage to a refit or sell hub (Storage logistics, off by default; capital's weekly gathering, on by default) | `CALogistics` | Shipment cost plus 1,000 a ship, from the monthly budget. Only Storage at non-hostile markets. Colony items and cores aren't shipped. |
+| Comm relay, nav buoy, sensor array, Hypershunt Receiver at a stable location; Domain-era upgrade (TME) | `CAObjectives` | Materials at base price plus a fee, 10 days (30 for a receiver). The upgrade takes a spare Beta core, a receiver a Coronal Hypershunt Tap, from Autopilot Storage, and both come back if the spot's gone. |
 | Panopticon Instance or Core into a Surveillance Center (IX Revival) | `CAPanopticon` | The install fee. Shipped first. |
 | Omega core (Omega Core Everywhere / Astral Ascension Renewed) | `CAOmega` | A small fee, from Autopilot Storage. As an administrator only where your inspection limit allows its 10 points. Not moved once placed. |
-| Ships between colonies | Hires and places administrators | `CAItems` (`hireAdmin`, `assignAdmin`, `moveAdmin`) | Hiring cost and salary plus the fee; 30 days to arrive. A move that would take a colony under the floor waits. |
+| Ships items, cores and goods between colonies' Autopilot Storage | `CAStores.ship` | 2,000 plus 300 a light-year, times the fee level, and 2 days plus a day a light-year. |
+| Hires and places administrators | `CAItems` (`hireAdmin`, `assignAdmin`, `moveAdmin`) | Hiring cost and salary plus the fee, 30 days to arrive. A move that would take a colony under the floor waits. |
 | Hazard pay, free port, story point improvements, Hegemony inspection orders (Resist only, with "Resist where defended") | `CAPolicies`, `CAStory`, `CACrisis` | The game's charges. Story points off unless allowed. With the Growth rung On, hazard pay can rise to the money tier's share of colony net income. |
-| Crisis progress from patrol kills (on by default) | `CAPatrolKills` | Free. Battles without your fleet, with an Auto colony's patrol or station: the colony crisis and Tri-Tachyon commerce raiding get the game's own factors and amounts for your kills. |
-| Low profile (off by default): pulls a colony item, swaps an AI core administrator for a human | `CALowProfile` (`pullItem`, `swapAdmin`) | Free. Only at colonies at or above the floor (stability 4 for administrators). Omega core administrators are not touched. |
+| Crisis progress from patrol kills (on by default) | `CAPatrolKills` | Free. When an Auto colony's patrol or station fights without your fleet, the colony crisis and Tri-Tachyon commerce raiding get the game's own factors and amounts for your kills. |
+| Low profile (off by default): pulls a colony item, swaps an AI core administrator for a human | `CALowProfile` (`pullItem`, `swapAdmin`) | Free. Only at colonies at or above the floor (stability 4 for administrators). Omega core administrators aren't touched. |
 | Research (Vaults of Knowledge) | `CAResearch` | VoK's cost (`payForResearch`). Needed items move into the Research Facility tab. While valuing techs it marks candidates researched for one scoring pass and restores them in `finally`. |
 | Megastructures, wonders, Bifrost gates (AotD) | `CAHypershunt`, `CAMegastructures`, `CAWonders` | AotD's contracts, paid as AotD charges. Wonders need the Wonders rung On and money tier Rich. |
-| RAT Frontiers settlement | `CASettlement` | RAT's costs. From afar an expedition (10 days plus a day a light-year), refunded if it cannot found. |
-| TASC mining and siphon stations | `CATascStations` | TASC's costs plus a fee, 60 days. Refunded if the site is gone or you are at the colony limit. Recommend only by default. |
-| Station augments | `CAAugments` | Station Augments' install and removal (free there). A refit crew applies it after 7 days, at once if your fleet is in the system. |
+| RAT Frontiers settlement | `CASettlement` | RAT's costs. From afar an expedition (10 days plus a day a light-year), refunded if it can't found. |
+| TASC mining and siphon stations | `CATascStations` | TASC's costs plus a fee, 60 days. Refunded if the site's gone or you're at the colony limit. Recommend only by default. |
+| Station augments | `CAAugments` | Station Augments' install and removal (free there). A refit crew applies it after 7 days, or at once if your fleet's in the system. |
 | Industrial Evolution, TME and TASC terraforming, ToT trade contracts, Antimatter Stabilizer conversion | `CAIndEvo`, `CACourier`, `CATerraform`, `CATerraformSurplus`, `CATasc`, `CAContracts`, `CAItems.convertFuel` | Each mod's own costs, started as its UI does. IndEvo ambassadors cost a fee and 30 days (none for Rival, Enemy, Destroy). ToT: one new contract per commodity a month. Stabilizer conversion needs Allow removals on. |
 
 ### The money ladder (0.3.0)
@@ -49,14 +50,14 @@
 | Buys goods for a colony's Local Resources (Stockpiles rung; military goods) | `CAStockpile` | The selling market's price plus tariff, shipped for the storage fee and travel time. Only from non-hostile markets. |
 | Upgrades a station, Patrol HQ or Military Base (Military rung) | `CAMilitary`, through `CABuild.start` | Upgrade cost and time plus the fee. One a day. New upkeep stays within 15% of colony net income. |
 
-- Payment: from the ladder's monthly pool, a share of free cash (credits less the reserve, production still to pay and 2 months of upkeep and fleet costs).
-- Recommend only: the rung proposes and waits for your Approve.
+- Payment: It pays from the ladder's monthly pool, which is a share of free cash (credits less the reserve, production still to pay and 2 months of upkeep and fleet costs).
+- Recommend only: The rung proposes something and waits for your Approve.
 
 ### Auto-expansion (0.3.0, Off by default)
 
 | What | Where in the code | What it costs |
 |---|---|---|
-| Founds a colony with an Autopilot crew | `CAExpansion.found` (the game's founding steps, `createMarket`, `addMarket`) | Founding goods at base price (85,000) plus 40,000 and 2,000 a light-year, plus the fee, taken when the crew leaves. 15 days plus travel. Refunded (fee kept) if it cannot found. |
+| Founds a colony with an Autopilot crew | `CAExpansion.found` (the game's founding steps, `createMarket`, `addMarket`) | Founding goods at base price (85,000) plus 40,000 and 2,000 a light-year, plus the fee, taken when the crew leaves. 15 days plus travel. Refunded (fee kept) if it can't found. |
 | Sends a Nexerelin colony fleet | `CAExpansionNex` (`ColonyExpeditionIntel`) | Nexerelin's price (165,000 at 100 fleet points, 205,000 at 150), fleet request points and the fee, paid after `init()` leaves the expedition running. |
 | Hands a Nexerelin-founded colony to you | `CAExpansionNex.fixAdmin` (`ColonyManager.reassignAdminIfNeeded`) | Free. The colony then counts like one you founded. |
 | Hires an administrator for a colony past the limit | `CAItems` | The cheapest on offer, or a recruiter at 250,000 plus the hiring bonus and fee. |
@@ -71,33 +72,36 @@
 | Answers ceasefire and peace offers | `CADiplomacy` (`CeasefirePromptIntel.accept`, `reject`) | Free. Accepted from Ally, Friendly and Neutral factions. Rejected from Enemy and Destroy factions at War level Retaliate and up. |
 | Declares war | `CADiplomacy.declareWar`, only from the War page confirmation | Relations set to Hostile. Enemy and Destroy stances only, one in 30 days. Blocked while you hold a commission or use Low profile. |
 | Takes back autonomy at a conquered colony | `CAConquest` (`Nex_GrantAutonomy.revokeAutonomy`) | Nexerelin's revoke with its unrest. Waits while unrest would put a colony under the floor. |
-| Stand down, Recall all | `CAWar`, `CAWarPage` | Cancels its own operations. Nexerelin refunds by stage (100% organizing, 67% travelling, 33% in action). Fleet request points and the fee are not refunded. |
+| Stand down, Recall all | `CAWar`, `CAWarPage` | Cancels its own operations. Nexerelin refunds by stage (100% organizing, 67% travelling, 33% in action). Fleet request points and the fee aren't refunded. |
 | Nexerelin agents | `CASpies` | Recruiting 12,000 plus the fee, 60 days. Operations at Nexerelin's cost. Sabotage, rebellion and lower relations only against hostile factions. |
-| Nexerelin autonomy | `CAAutonomy` | Nexerelin's grant and revoke with its unrest. Recommend only by default. Auto is money-only and does not apply to new colonies. |
+| Nexerelin autonomy | `CAAutonomy` | Nexerelin's grant and revoke with its unrest. Recommend only by default. Auto is money-only and doesn't apply to new colonies. |
 
 ## What it does not do
 
-- Game data: change `Global.getSettings()` values, specs, conditions or other mods' data. Exceptions, Ashes of the Domain only: the hypershunt range (the setting its panel offers), research flags marked and put back within one check (`CAResearch.valueBuildings`), and the R&D council order before paying for research.
-- Creation: create goods, credits, story points, items, cores or ships.
-- Your choices: touch buildings, items or augments you locked or installed, your research queue, or agents you did not hand over.
-- Files and network: open network connections, start threads or processes, or write any file except its Diagnostics report (`saves/common/colony_autopilot_diagnostics.json.data`).
-- Attacks: attack Ally, Friendly or Neutral factions, allies, your commissioner, or a faction with a ceasefire.
-- War: start a war without the War page confirmation, bombard without Authorize bombardment, or invade while you hold a commission.
-- Settings: raise the War level, set a stance, turn on Auto-expansion or authorize bombardment by itself.
-- Colony limit: found a colony past it without an administrator, or use Nexerelin autonomy to get around it.
+- It doesn't change `Global.getSettings()` values, specs, conditions or other mods' data. The only exceptions are in Ashes of the Domain:
+  - the hypershunt range (the setting its panel offers)
+  - research flags marked and put back within one check (`CAResearch.valueBuildings`)
+  - the R&D council order before paying for research.
+- It doesn't create goods, credits, story points, items, cores or ships.
+- It doesn't touch buildings, items or augments you locked or installed, your research queue, or agents you didn't hand over.
+- It doesn't open network connections, start threads or processes, or write any file except its Diagnostics report (`saves/common/colony_autopilot_diagnostics.json.data`).
+- It doesn't attack Ally, Friendly or Neutral factions, allies, your commissioner, or a faction with a ceasefire.
+- It doesn't start a war without the War page confirmation, bombard without Authorize bombardment, or invade while you hold a commission.
+- It doesn't raise the War level, set a stance, turn on Auto-expansion or authorize bombardment by itself.
+- It doesn't found a colony past the colony limit without an administrator, or use Nexerelin autonomy to get around it.
 
 ## The test colony
 
-- `CASimulator`: measures a mod building on a throwaway market outside the economy and sector (`Global.getFactory().createMarket`), then removes it in `finally`. Nothing is saved.
+- `CASimulator`: It measures a mod building on a throwaway market outside the economy and sector (`Global.getFactory().createMarket`), then removes it in `finally`, so nothing is saved.
 
 ## What's saved
 
-- One persistent-data key, `jt_colony_autopilot`, holding plain values and ids. Other mods' data is stored as ids only. Full list: [source guide](source-guide.md#whats-saved).
-- Story mode: a second key, `ac_story`, holding plain values (`CASync`). With story mode on, one derelict research station holding the Autarch AI Core is added to an uninhabited fringe system (`CAAutarch`). It stays in the sector if story mode is switched off.
+- It saves one persistent-data key, `jt_colony_autopilot`, with plain values and ids. Other mods' data is only stored as ids, and the full list is in the [source guide](source-guide.md#whats-saved).
+- Story mode: A second key, `ac_story`, holds plain values (`CASync`). With story mode on, it adds one derelict research station holding the Autarch AI Core to an uninhabited fringe system (`CAAutarch`). The station stays if you switch story mode off.
 
 ## How to check it yourself
 
-Searches across `src/`:
+You can search across `src/` for these:
 
 | Search for | What you'll find |
 |---|---|
@@ -107,23 +111,25 @@ Searches across `src/`:
 | `java.io`, `java.net`, `java.lang.reflect` | `java.io` once, in `CALinkScan.read`: an `InputStream` from `getResourceAsStream` reading the mod's own class files for the link check; nothing is written. `java.lang.reflect` only as class name strings in `CARefl` (`Class.forName`) and in a comment in `CALuna`. No `java.net`. |
 | `CAStores.ship` | Shipping between colonies |
 
-- Build checks (before every release; outside the repo; see the [source guide](source-guide.md#building-and-checking)): banned-class scan, bytecode verification for every mod combination, script-loader load, `%` check, and 97 offline test suites (including a scan that fails any file outside `CABudget` that changes credits).
+- Build checks: I run these before every release (they're outside the repo, see the [source guide](source-guide.md#building-and-checking)). They're a banned-class scan, bytecode verification for every mod combination, a script-loader load, a `%` check, and 97 offline test suites.
+- Credits scan: The suites include a scan that fails any file outside `CABudget` that changes credits.
 
 ## Removing it
 
-- Prepare for removal: LunaLib (General tab, Removal) or the Mod features page (More, Mod features). A campaign dialog asks first (`CARemoval`, `CARemovalPrompt`).
-- Storage: Autopilot Storage goes to each colony's Storage, or to your cargo where a colony has none. Shipments, loads and stockpile buys on the way arrive there at once.
-- Refunds: construction crews and crew expeditions on the way. The expedition fee is kept, as when one turns back. Nexerelin expeditions and ship orders continue.
-- Story mode: each Autarch AI Core becomes an Alpha Core. The TriPad's becomes one in your cargo. An unfound one is taken out of its station's salvage. Its administrators are replaced by one with an Alpha Core administrator's skills and no Autarchy. Story progress and bandwidth packages end.
-- Stability: nothing changes when a colony would fall to 0 stability from losing Autarchy. The dialog names the colony.
-- Taken out of the save: the saved data and story data, intel, scripts and listeners, the Autopilot Storage tab, the retired condition, enforcer marks on fleets, and market memory keys.
-- Afterwards: the save is flagged (`$ac_removalDone`, a Boolean) and Auto Colonies does nothing in it. Save, quit and remove the mod.
-- Undo: turn the setting off. In the same session the save's data and the replaced cores and administrators come back. After a load, Auto Colonies starts fresh with every colony Off. Without LunaLib, load a save from before.
-- Stopping it without removing it:
+- Prepare for removal: You'll find it in LunaLib (General tab, Removal) or on the Mod features page (More, Mod features). A campaign dialog asks you first (`CARemoval`, `CARemovalPrompt`).
+- Storage: Autopilot Storage goes to each colony's Storage, or to your cargo where a colony doesn't have any. Shipments, loads and stockpile buys that are on the way arrive there at once.
+- Refunds: Construction crews and crew expeditions on the way get refunded, but the expedition fee is kept, the same as when one turns back. Nexerelin expeditions and ship orders keep going.
+- Story mode: Each Autarch AI Core becomes an Alpha Core, and the TriPad's becomes one in your cargo. If you haven't found it yet, it's taken out of its station's salvage. Story progress and bandwidth packages end.
+- Autarch administrators: Each one is replaced by an administrator with an Alpha Core administrator's skills and no Autarchy.
+- Stability: If a colony would fall to 0 stability from losing Autarchy, nothing changes, and the dialog names that colony.
+- Taken out of the save: It takes out the saved data and story data, intel, scripts and listeners, the Autopilot Storage tab, the retired condition, enforcer marks on fleets, and market memory keys.
+- Afterwards: The save gets flagged (`$ac_removalDone`, a Boolean) and Auto Colonies does nothing in it. Then just save, quit and remove the mod.
+- Undo: Turn the setting off. In the same session, the save's data, replaced cores and administrators come back. After a load, Auto Colonies starts fresh with every colony Off. Without LunaLib, you'll need to load a save from before.
+- To stop it without removing it:
 
-1. Set every colony to Off, and War, New colonies, Extras and every money ladder rung to Off.
-2. Set Capital to None (Settings, Items and people). A capital gets your production gathering point and weekly Storage gathering, also with Storage logistics Off.
-3. Set every faction stance to Auto (Factions page). At any War level it accepts ceasefire and peace offers from Ally, Friendly and Neutral factions.
+1. Set every colony to Off, and set War, New colonies, Extras and every money ladder rung to Off.
+2. Set Capital to None (Settings, Items and people). A capital still gets your production gathering point and weekly Storage gathering, even with Storage logistics Off.
+3. Set every faction stance to Auto (Factions page). At any War level it still accepts ceasefire and peace offers from Ally, Friendly and Neutral factions.
 4. Turn off agents, autonomy, emergency defense fleets and Storage logistics.
 
-- After the steps: storage tabs stay, shipments on the way still arrive, and nothing new starts.
+- After the steps: The storage tabs stay and shipments on the way still arrive, but nothing new starts.

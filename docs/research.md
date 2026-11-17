@@ -1,28 +1,28 @@
 # Research
 
-- Requires: Ashes of the Domain (Vaults of Knowledge).
+- This needs Ashes of the Domain (Vaults of Knowledge).
 
 ## How it picks research
 
-- Research (Settings, Advanced, Extras): On Auto (recommended; also Advisor, Off) it starts the best tech when nothing is running or queued.
-- Value: What a tech unlocks at your colonies, its own effects, and half the best tech it leads to. Plan techs first.
-- Research Facility: With none, one goes first in the focus world's plan.
-- Databanks: They go to plan techs. After 90 days, the best affordable tech paying back within a year goes anyway.
+- Research (Settings, Advanced, Extras) can be Auto (recommended), Advisor or Off. On Auto, it starts the best tech whenever nothing's running or queued.
+- A tech's value is what it unlocks at your colonies, its own effects and half of the best tech it leads to. Techs a colony plan needs go first.
+- If you don't have a Research Facility, one goes first in the focus world's plan.
+- Databanks are saved for plan techs, but once one's been waiting 90 days, the best tech you can afford that pays back within a year goes ahead anyway.
 
 ## Colony items and AI cores
 
-- Research uses colony items: Default is yours to start. From storage takes items from Autopilot Storage and Storage tabs. From storage and buildings also takes them from buildings. Locked buildings are skipped.
-- Alphas in research buildings: On First (recommended). A core cuts the building's costs: Alpha half, Beta a quarter, Gamma a tenth.
+- Research uses colony items has three options. Off leaves those techs to you, From storage takes the items from Autopilot Storage and Storage tabs, and From storage and buildings also takes them from buildings (locked buildings are skipped).
+- Alphas in research buildings is set to First (recommended). A core cuts the building's costs, by half for an Alpha, a quarter for a Beta and a tenth for a Gamma.
 
 ## Surplus research
 
-- Effect: Extra Research Facilities at Auto colonies, each past the first adds +10% research speed, up to 8.
-- Start: From the money tier Surplus up, with the Economy rung On ([Money](money.md#economy)). Below Rich, at most 3.
+- This builds extra Research Facilities at Auto colonies, and each one past the first adds +10% research speed, up to 8.
+- It starts at the Surplus money tier and up, with the Economy rung On ([Money](money.md#economy)). Below Rich, it builds 3 at most.
 
 ## Special project supply
 
-- Auto (recommended): A good that black site projects or open production orders need, and none of your colonies make, gets a producer planned at the best colony. Warn only tells you. Off does nothing.
+- On Auto (recommended), if black site projects or open production orders need a good none of your colonies make, it'll plan a producer at the best colony. Warn only just tells you, and Off does nothing.
 
 ## Wonders and gates
 
-- Builds: The Daedalus Array and Bifrost network, once your colonies make every good each needs ([Money](money.md#wonders)).
+- It builds the Daedalus Array and the Bifrost network once your colonies make every good each one needs ([Money](money.md#wonders)).

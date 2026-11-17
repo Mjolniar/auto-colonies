@@ -211,7 +211,7 @@ public class CAAugments {
             int food = 2 - CAMods.otherSupply(m, station.getId(), "food"), organics = 1 - CAMods.otherSupply(m, station.getId(), "organics");
             CAEngine.supply(p, "food", food, deficit);
             CAEngine.supply(p, "organics", organics, deficit);
-            if (food <= 0 && organics <= 0) p.lines.add("Food and organics are already made here in larger amounts");
+            if (food <= 0 && organics <= 0) p.lines.add("The colony already makes more food and organics");
         }
         else if (id.equals(MINING)) {
             // Station Augments' own formula (miningStation.getOutput): the asteroid belts and rings within reach of the

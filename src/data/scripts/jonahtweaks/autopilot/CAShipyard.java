@@ -434,7 +434,7 @@ public class CAShipyard {
             pending = p;
             CARich.want(CARich.SHIPYARD, p.total());
             CARich.note(CARich.SHIPYARD, "proposes " + text(p.qty, p.names) + " for " + Misc.getDGSCredits(p.value) + ", delivered to " + p.to
-                    + " at month end; Approve or Reject on this panel");
+                    + " at month end. Approve or Reject on this panel");
             if (!p.sig().equals(loggedSig)) {
                 loggedSig = p.sig();
                 CAApprovals.say("Shipyard: recommends " + text(p.qty, p.names) + " for " + Misc.getDGSCredits(p.value) + " plus a " + Misc.getDGSCredits(p.fee)

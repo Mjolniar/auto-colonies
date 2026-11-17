@@ -44,12 +44,12 @@ public final class CAFactionsPage {
 
     /** Hover text on the page's first line: what each stance does, one line each (DECISIONS 16, CAStance). */
     static final String[] MEANINGS = {
-            "Ally: raised first; not attacked.",
-            "Friendly: raised to your stop line; not attacked.",
-            "Neutral: raised under 0; not attacked.",
+            "Ally: raised first, not attacked.",
+            "Friendly: raised to your stop line, not attacked.",
+            "Neutral: raised under 0, not attacked.",
             "Auto: as in 0.2.45.",
             "Rival: raids and blockades.",
-            "Enemy: invasions; ceasefires rejected.",
+            "Enemy: invasions, ceasefires rejected.",
             "Destroy: invasions and bombardment."};
 
     private CAFactionsPage() { }
@@ -119,9 +119,9 @@ public final class CAFactionsPage {
         CATheme.heading(t, "Factions", 0f);
         t.addPara(CASetupUI.DESC.get("stances") + " [<] friendlier, [>] more hostile.", gray, 6f);   // 0.3.0.0 (WS-F3 fix pass 2): the Settings row's line, said once
         t.addTooltipToPrevious(tip(MEANINGS), TooltipMakerAPI.TooltipLocation.BELOW);
-        if (!nex && !indevo) t.addPara("Stances need Nexerelin or Industrial Evolution. Neither is on.", hl, 4f);
-        else if (!nex) t.addPara("Without Nexerelin, stances set ambassador priority only.", gray, 4f);
-        else if (CALowProfile.on()) t.addPara("Low profile: no raids, sabotage or declarations.", gray, 4f);
+        if (!nex && !indevo) t.addPara("Stances need Nexerelin or Industrial Evolution, and neither's on.", hl, 4f);
+        else if (!nex) t.addPara("Without Nexerelin, stances only set ambassador priority.", gray, 4f);
+        else if (CALowProfile.on()) t.addPara("Low profile stops raids, sabotage and declarations.", gray, 4f);
 
         String rival = null;
         if (nex) rival = rivalOf(d, s);

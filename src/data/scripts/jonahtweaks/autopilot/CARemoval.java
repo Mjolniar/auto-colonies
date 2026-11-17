@@ -606,7 +606,7 @@ public final class CARemoval {
 
     /** The Removal section of the Empire panel's Mod features page. */
     static void render(TooltipMakerAPI t) {
-        t.addPara("Empties Autopilot Storage and takes Auto Colonies out of this save. A dialog asks first.", 6f);
+        t.addPara("It empties Autopilot Storage and takes Auto Colonies out of this save. It'll ask first.", 6f);
         if (asked) t.addPara("Opens when you close this screen.", Misc.getHighlightColor(), 6f);
         else t.addButton("Prepare for removal", BUTTON, Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(), Alignment.MID, CutStyle.TL_BR, 200f, 24f, 6f);
     }

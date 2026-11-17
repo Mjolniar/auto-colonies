@@ -81,81 +81,86 @@ public final class CALunaSync {
         tab = GENERAL;
         // 0.3.6.0: story mode, first, under its own header. Each save follows it on load and on a save in this menu (onLoad, changed)
         header("storymode", "Story mode");
-        Row st = row(BOOL, "storymode", "Story mode", "On: the Colony Autopilot starts dormant, and a storyline unlocks it. Off: every feature "
-                + "works from the start. Each save keeps its story progress when you switch.");
+        Row st = row(BOOL, "storymode", "Story mode", "On means the Colony Autopilot starts dormant and you unlock it through the story. "
+                + "Off means everything works from the start. If you switch, each save keeps its story progress.");
         st.get = s -> CASync.on();
         st.set = (s, v, b) -> { };   // applied before the other rows (story())
-        text("presets", "Presets set several fields at once; each field is on the Advanced tab. Mode default sets the group to the empire mode's "
-                + "values, which then follow the mode. Custom shows that the fields match no option; picking it changes nothing.");
+        text("presets", "Presets set several fields at once, and you'll find all of those fields on the Advanced tab. "
+                + "Mode default puts the group back on the empire mode's values, so it follows the mode. Custom means the fields "
+                + "don't match any option, so picking it does nothing.");
         header("playstyle", "Playstyle");
-        Row r = row(RADIO, "empire", "Empire mode", "Empire-wide settings follow it. Off: nothing. Advisor: advice. Approve: asks first. Auto: acts. "
-                + "A setting you change keeps its value through mode changes.");
+        Row r = row(RADIO, "empire", "Empire mode", "Empire-wide settings follow this. Off does nothing, Advisor advises, Approve asks you "
+                + "first and Auto just does it. Anything you've set yourself stays when the mode changes.");
         final CAData.Mode[] modes = CAData.Mode.values();
         r.opts = new String[modes.length];
         for (int i = 0; i < modes.length; i++) r.opts[i] = modes[i].label;
         r.get = s -> s.empire().label;
         r.set = (s, v, b) -> { int i = idx("empire", v); if (i >= 0) CAModeTable.setEmpire(s, modes[i]); };
-        r = row(BOOL, "lowprofile", "Low profile", "Slows colony crises and earns less. No AI cores above size 3, no Pather interest, "
-                + "free ports, raids or sabotage. Off: Full expansion.");
+        r = row(BOOL, "lowprofile", "Low profile", "Colony crises come slower, but you'll earn less. It won't put AI cores in colonies "
+                + "above size 3, and it stays away from Pather interest, free ports, raids and sabotage. Off means Full expansion.");
         r.fields = new String[]{"lowProfile"};
         r.get = s -> s.lowProfile;
         r.set = (s, v, b) -> CALowProfile.set(s, (Boolean) v, "LunaLib settings");
-        preset("p_spend", "Spending", CAPresets.SPENDING, "Thrifty: 30% of net income and 5% of savings. Normal: 50% and 15%. "
-                + "Lavish: 80% and 30%. The per-project cap is half, all or twice net income.");
-        preset("p_extras", "Extras", CAPresets.EXTRAS, "Mod buildings and features: stable locations, measured mod buildings, trade contracts, "
-                + "research, special project supply, megastructures, station augments, RAT settlement, IndEvo automation, Antimatter Stabilizers.");
-        preset("p_newcol", "New colonies", CAPresets.NEW_COLONIES, "Founds colonies with idle money. Ask first: each one waits for your approval.");
-        preset("p_war", "War", CAPresets.WAR, "How far war fleets go; stances cap it. Defend: relief. Retaliate: raids on attackers, retakes "
-                + "of your lost colonies. Hold them down: raids on Rival and up. Conquer: invasions. Scorched: bombardment. Needs Nexerelin.");
+        preset("p_spend", "Spending", CAPresets.SPENDING, "Thrifty spends 30% of net income and 5% of savings, Normal 50% and 15%, "
+                + "and Lavish 80% and 30%. The per-project cap follows it too (half, all or twice your net income).");
+        preset("p_extras", "Extras", CAPresets.EXTRAS, "It covers the mod buildings and features: stable locations, measured mod buildings, "
+                + "trade contracts, research, special project supply, megastructures, station augments, RAT settlement, IndEvo automation "
+                + "and Antimatter Stabilizers.");
+        preset("p_newcol", "New colonies", CAPresets.NEW_COLONIES, "It'll found new colonies with idle money, and on Ask first you approve each one.");
+        preset("p_war", "War", CAPresets.WAR, "This is how far war fleets go (faction stances cap it). Defend sends relief, Retaliate raids "
+                + "attackers and retakes your lost colonies, and Hold them down raids anyone at Rival and up. Conquer invades and Scorched "
+                + "bombards. Needs Nexerelin.");
 
         header("money", "Money");
-        credits("reserve", "Credit reserve", "reserve", 0, 100000000, 50000, "Credits Autopilot does not spend.");
-        r = radio("surplus", "Surplus investment", "surplusLine", CASettings.SURPLUS_NAMES, "Credits over this go to one focus world.");
+        credits("reserve", "Credit reserve", "reserve", 0, 100000000, 50000, "The money Autopilot won't touch.");
+        r = radio("surplus", "Surplus investment", "surplusLine", CASettings.SURPLUS_NAMES, "Anything you've got over this goes into one focus world.");
         final Setter surplus = r.set;
         r.set = (s, v, b) -> { surplus.set(s, v, b); s.surplusChecked = true; };
-        radio("richpreset", "What to buy", "richPreset", CASettings.RICH_PRESET_NAMES, "What idle money buys first. Each rung is on the Advanced tab, "
-                + "Surplus and money ladder.");
-        radio("endgame", "Endgame", "endgameMode", CAEndgame.NAMES, "At this income, build for production and defense.");
-        preset("p_story", "Story points", CAPresets.STORY, "Story points Autopilot may spend on improvements.");
+        radio("richpreset", "What to buy", "richPreset", CASettings.RICH_PRESET_NAMES, "It's what idle money buys first. The rungs are under "
+                + "Advanced, in Surplus and money ladder.");
+        radio("endgame", "Endgame", "endgameMode", CAEndgame.NAMES, "At this income, it'll start building for production and defense.");
+        preset("p_story", "Story points", CAPresets.STORY, "It caps the story points Autopilot spends on improvements.");
 
         header("building", "Building");
-        preset("p_station", "Stations", CAPresets.STATIONS, "Stations from size 4, upgraded with growth. Battlestation from size 6, Star Fortress "
-                + "from 8, a size sooner at the capital. Imperium needs Interstellar Imperium.");
-        preset("p_takedown", "Take down buildings", CAPresets.TAKE_DOWN, "Never: nothing is taken down. Clean up: industries that stopped paying, "
-                + "room for capital trade buildings and endgame changes. Free hand: Clean up and Allow removals.");
-        preset("p_policy", "Colony policies", CAPresets.POLICIES, "Auto: hazard pay, free port and edicts where they pay. Don't touch: left as you set them.");
+        preset("p_station", "Stations", CAPresets.STATIONS, "It builds stations from size 4 and upgrades them as colonies grow "
+                + "(Battlestation at 6, Star Fortress at 8, and a size sooner at the capital). Imperium needs Interstellar Imperium.");
+        preset("p_takedown", "Take down buildings", CAPresets.TAKE_DOWN, "Never means nothing comes down. Clean up removes industries that stopped "
+                + "paying, makes room for capital trade buildings and allows endgame changes. Free hand is Clean up plus Allow removals.");
+        preset("p_policy", "Colony policies", CAPresets.POLICIES, "Auto uses hazard pay, free port and edicts where they pay, and Don't touch leaves them alone.");
 
         header("people", "Items and people");
-        preset("p_cores", "AI cores", CAPresets.AI_CORES, "AI cores from Autopilot Storage. Safe: never inspected. Defended resists inspections, "
-                + "which makes the Hegemony hostile.");
-        preset("p_admins", "Administrators", CAPresets.ADMINS, "Place only: assigns the administrators you have. Hire and place: also hires them.");
+        preset("p_cores", "AI cores", CAPresets.AI_CORES, "AI cores come from Autopilot Storage. Safe is never inspected, and Defended resists "
+                + "inspections, so the Hegemony turns hostile.");
+        preset("p_admins", "Administrators", CAPresets.ADMINS, "Place only uses the administrators you've got, and Hire and place hires more too.");
 
         header("security", "Security and diplomacy");
-        radio("spy", "Agents", "spyMode", CASettings.SPY_NAMES, "Security and relations; offense adds sabotage. Needs Nexerelin.");
-        bool("amb", "Ambassadors", "disableAmbassadors", true, "Hires and installs ambassadors, Ally and Friendly factions first. Needs Industrial Evolution.");
-        text("picks", "Faction stances and this save's picks (capital, refit hub, sell hub, offense target) are on the Settings page of the Autopilot panel.");
+        radio("spy", "Agents", "spyMode", CASettings.SPY_NAMES, "Agents handle security and relations (offense adds sabotage). Needs Nexerelin.");
+        bool("amb", "Ambassadors", "disableAmbassadors", true, "It hires and installs ambassadors (Ally and Friendly factions first). Needs Industrial Evolution.");
+        text("picks", "You'll find faction stances and this save's picks (capital, refit hub, sell hub, offense target) on the "
+                + "Autopilot panel's Settings page.");
 
         header("interface", "Interface");
-        radio("screenlog", "On-screen log", "screenLog", CALog.SCREEN_NAMES, "Short lines on screen. The Log page keeps every entry.");
+        radio("screenlog", "On-screen log", "screenLog", CALog.SCREEN_NAMES, "Short lines show on screen, and the Log page keeps every entry.");
 
         header("reset", "Reset");
-        r = row(BOOL, "reset", "Reset to recommended", "Tick and save: settings return to the empire mode's defaults. Low profile, faction "
-                + "stances and this save's picks are kept. Other changes in the same save are applied after the reset. The box unticks itself.");
+        r = row(BOOL, "reset", "Reset to recommended", "If you tick it and save, your settings go back to the empire mode's defaults. "
+                + "Low profile, faction stances and this save's picks stay. Anything else you changed in the same save applies after the "
+                + "reset, and then the box unticks itself.");
         r.get = s -> Boolean.FALSE;
         r.set = (s, v, b) -> { };
         // 0.3.9.4: Prepare for removal (CARemoval). Applied before every other row (changed); each load shows the save's state
         header("removal", "Removal");
-        r = row(BOOL, "removal", "Prepare for removal", "On: a dialog in the campaign asks first. Then Autopilot Storage goes to each "
-                + "colony's Storage, Auto Colonies takes out what it keeps in this save and stops. Save, quit and remove the mod. "
-                + "Off: Auto Colonies runs again in this save.");
+        r = row(BOOL, "removal", "Prepare for removal", "Turn it on and a dialog in the campaign asks you first, then Auto Colonies moves "
+                + "Autopilot Storage into each colony's Storage, takes out what it keeps in this save and stops. Then save, quit and "
+                + "remove the mod. Turning it off lets Auto Colonies run again in this save.");
         r.get = s -> CARemoval.off || CARemoval.asked;
         r.set = (s, v, b) -> { };
 
         // ---------------- Advanced: one header per CASetupUI.ADVANCED subgroup, same order ----------------
         tab = ADVANCED;
         header("adv_budget", "Budget");
-        r = row(RADIO, "type", "Budget type", "Automatic: a share of net income and a share of savings above the reserve. "
-                + "Share of net income: the first share only. Fixed amount: Monthly budget.");
+        r = row(RADIO, "type", "Budget type", "Automatic spends a share of net income plus a share of savings above the reserve. "
+                + "Share of net income uses just the first share, and Fixed amount uses the Monthly budget.");
         r.opts = new String[]{"Automatic", "Share of net income", "Fixed amount"};
         r.fields = new String[]{"budgetAuto", "budgetPercentMode"};
         r.get = s -> idxName("type", s.budgetAuto ? 0 : s.budgetPercentMode ? 1 : 2);
@@ -165,11 +170,11 @@ public final class CALunaSync {
             else if (i == 1) { s.budgetAuto = false; s.budgetPercentMode = true; }
             else if (i == 2) { s.budgetAuto = false; s.budgetPercentMode = false; }
         };
-        pct("budget", "From net income (percent)", "budgetPercent", 10, 100, 10, "Used by Automatic and Share of net income.");
-        r = pct("savings", "From savings (percent)", "savingsShare", 5, 50, 5, "Used by Automatic: this share of the credits above the reserve each month.");
+        pct("budget", "From net income (percent)", "budgetPercent", 10, 100, 10, "Automatic and Share of net income both use this.");
+        r = pct("savings", "From savings (percent)", "savingsShare", 5, 50, 5, "Each month, Automatic spends this share of whatever credits you've got above the reserve.");
         r.get = s -> Math.round((s.savingsShare > 0f ? s.savingsShare : 0.15f) * 100f);
-        credits("budgetfixed", "Monthly budget", "budgetFixed", 0, 100000000, 250000, "Used by Fixed amount.");
-        r = row(RADIO, "captype", "Per-project cap", "Automatic: half, all or twice net income, by Spending. Fixed: Fixed cap.");
+        credits("budgetfixed", "Monthly budget", "budgetFixed", 0, 100000000, 250000, "Fixed amount spends this monthly.");
+        r = row(RADIO, "captype", "Per-project cap", "Automatic follows Spending (half, all or twice net income), and Fixed uses Fixed cap.");
         r.opts = new String[]{"Automatic", "Fixed"};
         r.fields = new String[]{"projectCapFixed", "perProjectCap"};
         r.get = s -> idxName("captype", s.projectCapFixed ? 1 : 0);
@@ -179,10 +184,11 @@ public final class CALunaSync {
             if (b != null && i == 1 && !s.projectCapFixed) s.perProjectCap = CAPresets.projectCap(s);   // Fixed starts from the cap in effect
             s.projectCapFixed = i == 1;
         };
-        r = credits("cap", "Fixed cap", "perProjectCap", 250000, 100000000, 500000, "Most one project may cost. A changed value sets the cap to Fixed.");
+        r = credits("cap", "Fixed cap", "perProjectCap", 250000, 100000000, 500000, "This is the most one project can cost, and changing it switches the cap to Fixed.");
         final Setter cap = r.set;
         r.set = (s, v, b) -> { cap.set(s, v, b); if (b != null && !b.contains("captype")) s.projectCapFixed = true; };
-        r = row(RADIO, "upkeeptype", "New upkeep per month", "Automatic: a share of net income set by Spending, 10% on Normal. Fixed: Fixed upkeep.");
+        r = row(RADIO, "upkeeptype", "New upkeep per month", "Automatic allows a share of net income that follows Spending "
+                + "(10% on Normal), and Fixed uses Fixed upkeep.");
         r.opts = new String[]{"Automatic", "Fixed"};
         r.fields = new String[]{"upkeepCapAuto", "newUpkeepCap"};
         r.get = s -> idxName("upkeeptype", s.upkeepCapAuto ? 0 : 1);
@@ -193,23 +199,24 @@ public final class CALunaSync {
             s.upkeepCapAuto = i == 0;
             s.upkeepCapChecked = true;
         };
-        credits("upkeep", "Fixed upkeep", "newUpkeepCap", 0, 10000000, 10000, "Most new upkeep a month with Fixed.");
-        bool("pause", "Pause on loss", "pauseOnLoss", false, "No spending while net income is below 0.");
-        radio("fees", "Convenience fees", "feeLevel", CASettings.FEE_NAMES, "On remote building, shipping and orders.");
+        credits("upkeep", "Fixed upkeep", "newUpkeepCap", 0, 10000000, 10000, "Fixed allows this much new upkeep a month.");
+        bool("pause", "Pause on loss", "pauseOnLoss", false, "It stops spending while your net income is below 0.");
+        radio("fees", "Convenience fees", "feeLevel", CASettings.FEE_NAMES, "These apply to remote building, shipping and orders.");
 
         header("adv_rich", "Surplus and money ladder");
-        r = row(RADIO, "surplusrich", "Surplus over " + num(CASurplus.RICH), "Past this much over the surplus line: every Approve and Auto colony "
-                + "spends from the surplus, or the focus world only.");
+        r = row(RADIO, "surplusrich", "Surplus over " + num(CASurplus.RICH), "Once you're this much over the surplus line, every Approve and Auto "
+                + "colony spends from the surplus (or just the focus world).");
         r.opts = new String[]{"Every colony", "Focus world only"};
         flag(r, "surplusFocusOnly");
-        bool("wonders", "Wonders and gates", "noWonders", true, "The Daedalus Array and Bifrost gates once their goods are made. Needs Vaults of Knowledge.");
-        radio("surplustf", "Surplus terraforming", "surplusTerraform", CASettings.SURPLUS_TF_NAMES, "What the focus world leaves goes into "
+        bool("wonders", "Wonders and gates", "noWonders", true, "It builds the Daedalus Array and Bifrost gates once their goods are "
+                + "made. Needs Vaults of Knowledge.");
+        radio("surplustf", "Surplus terraforming", "surplusTerraform", CASettings.SURPLUS_TF_NAMES, "Whatever's left after the focus world goes into "
                 + "terraforming. Needs Terraforming Made Easy.");
-        bool("surplusres", "Surplus research", "noSurplusResearch", true, "More Research Facilities from the surplus while research is worth "
-                + "the speed. Needs Vaults of Knowledge.");
+        bool("surplusres", "Surplus research", "noSurplusResearch", true, "It builds more Research Facilities from the surplus while the speed "
+                + "is worth it. Needs Vaults of Knowledge.");
         for (int k = CARich.STOCKPILES; k < CARich.RUNGS.length; k++) {
             final int rung = k;
-            r = row(RADIO, "rung_" + k, CARich.RUNGS[k] + " rung", "Off: its share goes to the next rung.");
+            r = row(RADIO, "rung_" + k, CARich.RUNGS[k] + " rung", "If it's Off, its share goes to the next rung.");
             r.opts = labels(CASettings.RUNG_MODE_NAMES);
             r.fields = new String[]{CAModeTable.RUNG + "[" + k + "]"};
             r.get = s -> idxName("rung_" + rung, s.rungMode(rung));
@@ -220,79 +227,81 @@ public final class CALunaSync {
                 s.rungMode[rung] = i;
             };
         }
-        integer("shipyardstop", "Shipyard stops at", "shipyardStop", 1, 30, 1, "Unclaimed hulls the shipyard ordered, in the capital's Storage.");
+        integer("shipyardstop", "Shipyard stops at", "shipyardStop", 1, 30, 1, "It counts the shipyard's unclaimed hulls in the capital's Storage.");
 
         header("adv_build", "Building");
-        bool("overlimit", "Over-limit fix", "noOverLimitFix", true, "A colony over its industry limit takes down its weakest industry.");
-        bool("marketmodel", "Exports valued by market share", "noMarketModel", true, "Exports are valued by your share of each sector market.");
-        bool("prune", "Take down unpaying industries", "noPrune", true, "An industry that stopped paying for 30 days is taken down.");
-        bool("endgamerep", "Endgame replaces industries", "endgameNoReplace", true, "Weak industries make way for production chains, fleets and defense.");
-        bool("removals", "Allow removals", "allowRemovals", false, "Autopilot may remove buildings for better ones.");
-        integer("spcap", "Story points a month", "storyPointMonthlyCap", 0, 50, 1, "Used when Story points is 2 a month, 5 a month or Custom.");
+        bool("overlimit", "Over-limit fix", "noOverLimitFix", true, "If a colony's over its industry limit, it takes down its weakest industry.");
+        bool("marketmodel", "Exports valued by market share", "noMarketModel", true, "It values exports by how much of each sector market you hold.");
+        bool("prune", "Take down unpaying industries", "noPrune", true, "It takes down any industry that hasn't paid for 30 days.");
+        bool("endgamerep", "Endgame replaces industries", "endgameNoReplace", true, "It'll replace weak industries with production chains, fleets and defense.");
+        bool("removals", "Allow removals", "allowRemovals", false, "This lets Autopilot replace buildings with better ones.");
+        integer("spcap", "Story points a month", "storyPointMonthlyCap", 0, 50, 1, "This applies when Story points is on 2 a month, 5 a month or Custom.");
 
         header("adv_cores", "AI cores and items");
-        bool("cores", "Use AI cores", "useAICores", false, "AI cores from Autopilot Storage go into colony buildings.");
-        radio("alpha", "Alpha cores", "alphaMode", CASettings.ALPHA_NAMES, "Where Alpha cores may go.");
-        radio("corerisk", "Inspection risk", "coreRisk", CASettings.CORE_RISK_NAMES, "How many AI cores colonies hold against Hegemony inspections.");
-        radio("inspect", "Hegemony inspections", "inspectionMode", CASettings.INSPECTION_NAMES, "Resist where defended makes the Hegemony hostile.");
-        r = row(RADIO, "researchcores", "Alphas in research buildings", "Alpha cores halve research buildings' costs. Needs Vaults of Knowledge.");
+        bool("cores", "Use AI cores", "useAICores", false, "It puts AI cores from Autopilot Storage into colony buildings.");
+        radio("alpha", "Alpha cores", "alphaMode", CASettings.ALPHA_NAMES, "It sets where Alpha cores can go.");
+        radio("corerisk", "Inspection risk", "coreRisk", CASettings.CORE_RISK_NAMES, "It sets how many AI cores colonies hold against Hegemony inspections.");
+        radio("inspect", "Hegemony inspections", "inspectionMode", CASettings.INSPECTION_NAMES, "Resist where defended will turn the Hegemony hostile.");
+        r = row(RADIO, "researchcores", "Alphas in research buildings", "Alpha cores cut research buildings' costs in half. Needs Vaults of Knowledge.");
         r.opts = new String[]{"First", "By value"};
         flag(r, "researchCoresByValue");
-        radio("resitems", "Research uses colony items", "researchItemMode", CASettings.RESEARCH_ITEM_NAMES, "Only while credits are over the "
-                + "surplus line. Needs Vaults of Knowledge.");
+        radio("resitems", "Research uses colony items", "researchItemMode", CASettings.RESEARCH_ITEM_NAMES, "This only happens while credits are "
+                + "over the surplus line. Needs Vaults of Knowledge.");
 
         header("adv_policy", "Colony policies");
-        radio("hazard", "Hazard pay", "hazardPayMode", CASettings.POLICY_NAMES, "Auto: hazard pay where it speeds growth up enough.");
-        pct("hpcol", "Hazard pay growth threshold (percent)", "hazardPayColonyShare", 5, 100, 5, "Hazard pay where it speeds growth up by at least this much.");
-        pct("hpemp", "Hazard pay budget (percent of net income)", "hazardPayEmpireShare", 1, 100, 1, "All hazard pay stays within this share of net income.");
-        radio("freeport", "Free port", "freePortMode", CASettings.POLICY_NAMES, "Auto: a free port where it pays.");
+        radio("hazard", "Hazard pay", "hazardPayMode", CASettings.POLICY_NAMES, "Auto turns on hazard pay where it speeds growth up enough.");
+        pct("hpcol", "Hazard pay growth threshold (percent)", "hazardPayColonyShare", 5, 100, 5, "Hazard pay goes on where it speeds growth up by at least this much.");
+        pct("hpemp", "Hazard pay budget (percent of net income)", "hazardPayEmpireShare", 1, 100, 1, "All your hazard pay together stays within this share of net income.");
+        radio("freeport", "Free port", "freePortMode", CASettings.POLICY_NAMES, "Auto sets a free port where it pays.");
         bool("edicts", "Senate edicts", "disableEdicts", true, "Needs Industrial Evolution.");
 
         header("adv_people", "People and diplomacy");
-        bool("admin", "Administrator hiring", "adminHiring", false, "Hires administrators for colonies without one.");
-        bool("adminopt", "Assign administrators optimally", "adminOptimal", false, "Places each administrator where their skills pay most.");
-        radio("ambfocus", "Among equal stances, first", "ambassadorFocus", CASettings.FOCUS_NAMES, "Which factions ambassadors and agents work on "
+        bool("admin", "Administrator hiring", "adminHiring", false, "It hires administrators for colonies without one.");
+        bool("adminopt", "Assign administrators optimally", "adminOptimal", false, "It places each administrator where their skills pay the most.");
+        radio("ambfocus", "Among equal stances, first", "ambassadorFocus", CASettings.FOCUS_NAMES, "Ambassadors and agents work on these factions "
                 + "first. Needs Industrial Evolution or Nexerelin.");
         radio("ambstop", "Stop raising relations at", "ambassadorStopAt", CASettings.STOP_NAMES, "Needs Industrial Evolution or Nexerelin.");
         bool("spyhire", "Recruit agents", "spyNoHiring", true, "Needs Nexerelin.");
         radio("spykeep", "Agents to keep", "spyKeep", new String[]{"Auto", "1", "2", "3", "4"}, "Needs Nexerelin.");
-        radio("autonomy", "Autonomy", "autonomyMode", CASettings.AUTONOMY_NAMES, "Recommend: names the colony that would help in a money emergency. "
-                + "Auto also only recommends. Needs Nexerelin.");
+        radio("autonomy", "Autonomy", "autonomyMode", CASettings.AUTONOMY_NAMES, "Recommend names the colony that would help in a money emergency, "
+                + "and Auto only recommends too. Needs Nexerelin.");
 
         header("adv_war", "War");
         bool("defense", "Emergency defense fleets", "disableDefenseFleets", true, "Needs Nexerelin.");
-        bool("warretake", "Retake your lost colonies", "noWarRetake", true, "At Retaliate and up. Needs Nexerelin.");
+        bool("warretake", "Retake your lost colonies", "noWarRetake", true, "It works at Retaliate and up. Needs Nexerelin.");
         bool("warrivals", "Top hostile threat as Rival", "warAutoRivals", false, "Needs Nexerelin.");
         radio("warconq", "Conquered colonies start in", "conqueredMode", CASettings.CONQUERED_NAMES, "Needs Nexerelin.");
-        radio("warscorch", "Bombardment targets", "scorchedTargets", CASettings.SCORCHED_TARGET_NAMES, "At Scorched. Needs Nexerelin.");
-        bool("warcoal", "Coalition risk allowed", "warCoalitionOK", false, "Off: offensives stop before a coalition forms. Needs Nexerelin.");
+        radio("warscorch", "Bombardment targets", "scorchedTargets", CASettings.SCORCHED_TARGET_NAMES, "It's used at Scorched. Needs Nexerelin.");
+        bool("warcoal", "Coalition risk allowed", "warCoalitionOK", false, "When it's off, offensives stop before a coalition forms. Needs Nexerelin.");
         // 0.3.8.6: Sindrian Diktat raiders, their own switch (inverted field, on by default)
-        bool("enfdiktat", CASettings.ENF_DIKTAT_NAME, "enfDiktatOff", true, "Colony patrols attack them. Works with Enforcer patrols off. "
-                + "No cost or reputation change.");
+        bool("enfdiktat", CASettings.ENF_DIKTAT_NAME, "enfDiktatOff", true, "Colony patrols attack them even with Enforcer patrols off, "
+                + "and it doesn't cost anything or change reputation.");
         // 0.3.9.5: patrol kills count for crises (CAPatrolKills; inverted field, on by default)
-        bool("crisiskills", CASettings.CRISIS_KILLS_NAME, "crisisKillsOff", true, "Ships your Auto colonies' patrols and stations destroy "
-                + "count toward the colony crisis and Tri-Tachyon commerce raiding, as yours do.");
-        bool("enf", "Enforcer patrols", "enfOn", false, "Your colony patrols attack the fleet types set to On. Charge: once per fleet your forces "
-                + "defeat. A battle you fight yourself gets the game's penalty.");
+        bool("crisiskills", CASettings.CRISIS_KILLS_NAME, "crisisKillsOff", true, "Ships destroyed by your Auto colonies' patrols and stations "
+                + "count toward the colony crisis and Tri-Tachyon commerce raiding, the same as your own kills.");
+        bool("enf", "Enforcer patrols", "enfOn", false, "Colony patrols attack the fleet types you set to On. You're charged once for each fleet "
+                + "your forces defeat, and if you fight one yourself you get the game's penalty.");
         String[] kindFields = {"enfInvestigators", "enfInspections", "enfLeague", "enfProtectors", "enfRaiders", "enfPolice"};
         for (int k = 0; k < CASettings.ENF_KIND_NAMES.length; k++)
-            bool("enfk_" + k, CASettings.ENF_KIND_NAMES[k], kindFields[k], false, "Used with Enforcer patrols." + (k == CAEnforcers.POLICE ? " Needs Nexerelin." : ""));
-        radio("enfcost", "Enforcer cost", "enfCost", CASettings.ENF_COST_NAMES, "Reputation: the game's penalty for defeating that fleet yourself, -3. "
-                + "Commerce raiders and police: none. Credits: fleet points times Nexerelin's fleet request price (400 without it), paid above the credit reserve.");
-        r = row(RADIO, "enfwhere", "Enforcer patrols in", "Systems where colony patrols attack.");
+            bool("enfk_" + k, CASettings.ENF_KIND_NAMES[k], kindFields[k], false, "It's part of Enforcer patrols." + (k == CAEnforcers.POLICE ? " Needs Nexerelin." : ""));
+        radio("enfcost", "Enforcer cost", "enfCost", CASettings.ENF_COST_NAMES, "Reputation means the game's penalty for defeating that fleet yourself (-3), "
+                + "and commerce raiders and police don't cost any. Credits means fleet points times Nexerelin's fleet request price "
+                + "(400 without it), paid above the credit reserve.");
+        r = row(RADIO, "enfwhere", "Enforcer patrols in", "Colony patrols attack in these systems.");
         r.opts = labels(CASettings.ENF_WHERE_NAMES);
         flag(r, "enfAllColonies");
-        bool("enfcomm", "Skip your commissioner", "enfCommissionOK", true, "No attacks on the faction you hold a commission with.");
-        bool("enfally", "Skip allies and League membership", "enfAlliesOK", true, "No attacks on allies, or on the League while you are a member.");
+        bool("enfcomm", "Skip your commissioner", "enfCommissionOK", true, "Patrols leave the faction you hold a commission with alone.");
+        bool("enfally", "Skip allies and League membership", "enfAlliesOK", true, "Patrols leave allies alone, and the League too while you're a member.");
         bool("enfcease", "Skip ceasefires", "enfCeasefireOK", true, "Needs Nexerelin.");
-        bool("enflow", "Off in Low profile", "enfLowProfileOK", true, "No attacks while Low profile is on.");
+        bool("enflow", "Off in Low profile", "enfLowProfileOK", true, "Patrols don't attack while Low profile is on.");
         // 0.3.6.6: was "Off in your fleet's system" (enfnear, inverted, default on); patrols now attack while you are there by default
-        bool("enfhere", "Attack in your fleet's system", "enfNearYouOK", false, "On: patrols attack while your fleet is in the system. A marked fleet is hostile to your fleet too.");
-        bool("enfint", "Patrols intercept", "enfIntercept", false, "Colony patrols in the system get an order to intercept the fleet.");
+        bool("enfhere", "Attack in your fleet's system", "enfNearYouOK", false, "When it's on, patrols attack even while you're in "
+                + "the system, and a marked fleet turns hostile to you too.");
+        bool("enfint", "Patrols intercept", "enfIntercept", false, "Colony patrols in the system get told to intercept the fleet.");
 
         header("adv_capital", "Capital and storage");
-        r = row(RADIO, "capmode", "Capital does", "Deliveries and Storage gather at the capital. Off: no capital. The capital pick is on the "
-                + "Autopilot panel's Settings page.");
+        r = row(RADIO, "capmode", "Capital does", "Deliveries and Storage gather at the capital, and Off means no capital. You pick the "
+                + "capital on the Autopilot panel's Settings page.");
         r.opts = labels(CACapital.MODE_NAMES);
         r.fields = new String[]{"capitalMode"};
         r.get = s -> idxName("capmode", clamp(s.capitalMode, 3));
@@ -303,22 +312,24 @@ public final class CALunaSync {
             if (i == 2) { s.capitalModeBeforeNone = s.capitalMode; if (b != null) s.capitalId = null; }
             s.capitalMode = i;
         };
-        radio("capstart", "Trade hub starts at", "capitalStart", CACapital.START_NAMES, "When the capital starts its trade buildings.");
-        bool("caproom", "Make room for trade buildings", "capitalNoRoom", true, "The capital takes down an industry for its trade buildings.");
-        bool("capgather", "Gather Storage at the capital", "capitalNoGather", true, "Autopilot Storage gathers at the capital.");
-        radio("logi", "Storage logistics", "logisticsMode", new String[]{"Off", "On"}, "Moves goods to the refit hub weekly. The hubs are on the "
-                + "Autopilot panel's Settings page.");
-        bool("logiships", "Ships to the refit hub", "logisticsShips", false, "Used with Storage logistics.");
-        bool("logigoods", "Supplies, fuel, crew, marines too", "logisticsSupplies", false, "Used with Storage logistics.");
+        radio("capstart", "Trade hub starts at", "capitalStart", CACapital.START_NAMES, "The capital starts its trade buildings at this point.");
+        bool("caproom", "Make room for trade buildings", "capitalNoRoom", true, "The capital will take down an industry to fit its trade buildings.");
+        bool("capgather", "Gather Storage at the capital", "capitalNoGather", true, "It gathers Autopilot Storage at the capital.");
+        radio("logi", "Storage logistics", "logisticsMode", new String[]{"Off", "On"}, "It moves goods to the refit hub weekly, and you pick the hubs "
+                + "on the Autopilot panel's Settings page.");
+        bool("logiships", "Ships to the refit hub", "logisticsShips", false, "It's part of Storage logistics.");
+        bool("logigoods", "Supplies, fuel, crew, marines too", "logisticsSupplies", false, "It's part of Storage logistics.");
 
         header("adv_extras", "Extras");
-        radio("objectives", "Stable locations", "objectiveMode", CASettings.OBJECTIVE_NAMES, "Comm relays, nav buoys and sensor arrays at stable locations.");
-        radio("measured", "Measured mod buildings", "measuredMode", CASettings.MEASURED_NAMES, "Mod buildings scored from probe-colony measurements.");
+        radio("objectives", "Stable locations", "objectiveMode", CASettings.OBJECTIVE_NAMES, "This covers comm relays, nav buoys and "
+                + "sensor arrays at stable locations.");
+        radio("measured", "Measured mod buildings", "measuredMode", CASettings.MEASURED_NAMES, "Mod buildings get scored from probe-colony measurements.");
         radio("contract", "Trade contracts", "contractMode", CASettings.CONTRACT_NAMES, "Needs Theory of Toolbox.");
         radio("research", "Research", "researchMode", CASettings.CONTRACT_NAMES, "Needs Vaults of Knowledge.");
-        radio("projsupply", "Special project supply", "projectSupplyMode", CASettings.PROJECT_SUPPLY_NAMES, "A producer for goods a special project "
-                + "takes that no colony makes. Needs Vaults of Knowledge.");
-        radio("hs", "Megastructures", "hypershuntMode", CASettings.AUGMENT_NAMES, "Coronal Hypershunt range and restoration. Needs Vaults of Knowledge.");
+        radio("projsupply", "Special project supply", "projectSupplyMode", CASettings.PROJECT_SUPPLY_NAMES, "It builds a producer for special project "
+                + "goods that no colony makes. Needs Vaults of Knowledge.");
+        radio("hs", "Megastructures", "hypershuntMode", CASettings.AUGMENT_NAMES, "This covers Coronal Hypershunt range and "
+                + "restoration. Needs Vaults of Knowledge.");
         radio("aug", "Station augments", "augmentMode", CASettings.AUGMENT_NAMES, "Needs Station Augments.");
         radio("settle", "RAT settlement", "settlementMode", CASettings.SETTLE_NAMES, "Needs Random Assortment of Things.");
         credits("settleinc", "Found when a site earns", "settlementMinIncome", 5000, 10000000, 5000, "Needs Random Assortment of Things.");
@@ -329,66 +340,66 @@ public final class CALunaSync {
         bool("stab", "Antimatter Stabilizers", "disableStabilizers", true, "Needs Emergent Threats IX Revival.");
 
         header("adv_expand", "New colonies");
-        radio("expline", "Money for new colonies", "expandLine", CASettings.EXPAND_LINE_NAMES, "Used with New colonies on Ask first or Auto.");
-        radio("expscope", "Where", "expandScope", CASettings.EXPAND_SCOPE_NAMES, "Low profile: systems you hold only.");
+        radio("expline", "Money for new colonies", "expandLine", CASettings.EXPAND_LINE_NAMES, "New colonies uses this on Ask first or Auto.");
+        radio("expscope", "Where", "expandScope", CASettings.EXPAND_SCOPE_NAMES, "Low profile means only systems you hold.");
         CAData.Profile[] goals = CAData.Profile.values();
         String[] goalNames = new String[goals.length + 1];
         goalNames[0] = "Fits its plan";
         for (int i = 0; i < goals.length; i++) goalNames[i + 1] = goals[i].label;
-        radio("expgoal", "Goal of a new colony", "expandGoal", goalNames, "The goal a new colony starts with.");
+        radio("expgoal", "Goal of a new colony", "expandGoal", goalNames, "A new colony starts with this goal.");
         radio("expmethod", "Method", "expandMethod", CASettings.EXPAND_METHOD_NAMES, "Needs Nexerelin.");
-        radio("expmax", "Most colonies", "expandMax", CASettings.EXPAND_MAX_NAMES, "New colonies stop at this count.");
-        bool("expbuildout", "Fast buildout", "noExpandBuildout", true, "A new colony is built up at once.");
-        bool("expadmins", "Administrator past the limit", "noExpandAdmins", true, "An administrator is hired for a new colony past the limit.");
+        radio("expmax", "Most colonies", "expandMax", CASettings.EXPAND_MAX_NAMES, "It stops founding colonies at this count.");
+        bool("expbuildout", "Fast buildout", "noExpandBuildout", true, "It builds up a new colony right away.");
+        bool("expadmins", "Administrator past the limit", "noExpandAdmins", true, "It hires an administrator for a new colony past the limit.");
         radio("tascst", "TASC stations", "stationMode", CASettings.TASC_STATION_NAMES, "With New colonies on Auto, Auto stations only recommend "
                 + "while the Expansion rung asks first. Needs Terraforming and Station Construction.");
 
         header("adv_prod", "Production");
-        preset("p_prod", "Production", CAPresets.PRODUCTION, "Off: the 0.3.1.0 picks. Light and Full set the floors below.");
-        integer("fhulls", "Hull sources", "floorHullSources", 0, 3, 1, "Ship producers wanted.");
-        credits("fcap", "Hull capacity a month", "floorCapacity", 0, 1000000, 50000, "Ship production capacity wanted, in credits a month.");
-        integer("fmonths", "Order goods within (months)", "floorOrderMonths", 3, 24, 1, "Months for Ashes of the Domain order goods.");
-        dbl("fqual", "Production quality", "floorQuality", 0.5, 1.2, 0.1, "Ship production quality wanted.");
-        integer("fparts", "Parts reserve", "floorPartsReserve", 0, 1000, 50, "Domain-grade Parts kept on top of the fleet's repair need.");
-        radio("fsup", "Supplies floor", "floorSupplies", CASettings.FLOOR_GOODS_NAMES, "Supplies production wanted.");
-        radio("ffuel", "Fuel floor", "floorFuel", CASettings.FLOOR_GOODS_NAMES, "Fuel production wanted.");
+        preset("p_prod", "Production", CAPresets.PRODUCTION, "Off uses the 0.3.1.0 picks, and Light and Full set the floors below.");
+        integer("fhulls", "Hull sources", "floorHullSources", 0, 3, 1, "It wants this many ship producers.");
+        credits("fcap", "Hull capacity a month", "floorCapacity", 0, 1000000, 50000, "It wants this much ship production capacity, in credits a month.");
+        integer("fmonths", "Order goods within (months)", "floorOrderMonths", 3, 24, 1, "It spreads Ashes of the Domain order goods over this many months.");
+        dbl("fqual", "Production quality", "floorQuality", 0.5, 1.2, 0.1, "It wants this ship production quality.");
+        integer("fparts", "Parts reserve", "floorPartsReserve", 0, 1000, 50, "It keeps this many Domain-grade Parts beyond the fleet's repair need.");
+        radio("fsup", "Supplies floor", "floorSupplies", CASettings.FLOOR_GOODS_NAMES, "It wants this much supplies production.");
+        radio("ffuel", "Fuel floor", "floorFuel", CASettings.FLOOR_GOODS_NAMES, "It wants this much fuel production.");
         bool("fmoney", "Floors at Money colonies", "floorMoneyGoal", false, "Floors also apply at colonies with the Money goal.");
         bool("fneeds", "Floor builds first", "needsFirst", false, "Floor builds rank ahead of other builds.");
-        radio("froom", "Make room", "makeRoom", CASettings.MAKE_ROOM_NAMES, "A floor producer may replace the weakest income industry.");
+        radio("froom", "Make room", "makeRoom", CASettings.MAKE_ROOM_NAMES, "A floor producer can replace the weakest income industry.");
         radio("ftaper", "Money taper", "moneyTaper", CASettings.TAPER_NAMES, "Money counts for less in the planner at high income.");
-        r = credits("ftlow", "Taper from", "taperLow", 100000, 9900000, 100000, "Used by Gentle. Stays 100,000 below Taper top from.");
+        r = credits("ftlow", "Taper from", "taperLow", 100000, 9900000, 100000, "Gentle uses this, and it stays 100,000 below Taper top from.");
         final Setter low = r.set;
         r.set = (s, v, b) -> { low.set(s, v, b); if (b != null && !b.contains("fthigh")) s.taperLow = Math.min(s.taperLow, s.taperHigh - 100000f); };
-        r = credits("fthigh", "Taper top from", "taperHigh", 200000, 10000000, 100000, "Used by Gentle. Stays 100,000 above Taper from.");
+        r = credits("fthigh", "Taper top from", "taperHigh", 200000, 10000000, 100000, "Gentle uses this, and it stays 100,000 above Taper from.");
         final Setter high = r.set;
         r.set = (s, v, b) -> { high.set(s, v, b); if (b != null) s.taperHigh = Math.max(s.taperHigh, s.taperLow + 100000f); };
-        integer("fdivn", "Same building copies", "diversityCopies", 0, 6, 1, "Copies of a building family before the next counts less. 0: off.");
-        pct("fdivd", "Next copy counts (percent)", "diversityShare", 50, 100, 5, "What each copy past that count is worth.");
-        radio("fweights", "Goal weights", "goalWeights", CASettings.GOAL_WEIGHT_NAMES, "Which table weighs each colony goal.");
+        integer("fdivn", "Same building copies", "diversityCopies", 0, 6, 1, "After this many copies of a building family, the next counts less (0 is off).");
+        pct("fdivd", "Next copy counts (percent)", "diversityShare", 50, 100, 5, "Each copy past that count is worth this much.");
+        radio("fweights", "Goal weights", "goalWeights", CASettings.GOAL_WEIGHT_NAMES, "It weighs each colony goal with this table.");
         bool("fkeep", "Contracts keep floor goods", "keepProductionGoods", false, "Trade contracts leave floor goods alone while their floor is open.");
         bool("fpartscap", "Parts to the capital", "partsToCapital", false, "Storage logistics brings Domain-grade Parts to the capital's Storage weekly.");
         bool("fshipyard", "Shipyard from Surplus", "shipyardFromSurplus", false, "The Shipyard rung opens at Surplus while floors are on.");
-        credits("fvhull", "Value: hull source", "floorValHull", 0, 10000000, 10000, "Worth of one hull source a month in the planner.");
-        dbl("fvcap", "Value: capacity credit", "floorValCapacity", 0, 100, 0.1, "Worth of one credit of capacity a month.");
-        credits("fvqual", "Value: 1.0 quality", "floorValQuality", 0, 10000000, 10000, "Worth of 1.0 production quality a month.");
-        credits("fvpart", "Value: a part", "floorValPart", 0, 100000, 50, "Worth of one Domain-grade Part.");
-        dbl("fvorder", "Value: order goods (times)", "floorValOrders", 0, 100, 0.5, "Multiplier on order goods' worth.");
-        dbl("fvgoods", "Value: goods (times)", "floorValGoods", 0, 100, 0.5, "Multiplier on floor goods' worth.");
+        credits("fvhull", "Value: hull source", "floorValHull", 0, 10000000, 10000, "The planner values one hull source at this much a month.");
+        dbl("fvcap", "Value: capacity credit", "floorValCapacity", 0, 100, 0.1, "One credit of capacity is worth this a month.");
+        credits("fvqual", "Value: 1.0 quality", "floorValQuality", 0, 10000000, 10000, "1.0 production quality is worth this a month.");
+        credits("fvpart", "Value: a part", "floorValPart", 0, 100000, 50, "One Domain-grade Part is worth this.");
+        dbl("fvorder", "Value: order goods (times)", "floorValOrders", 0, 100, 0.5, "This multiplies order goods' worth.");
+        dbl("fvgoods", "Value: goods (times)", "floorValGoods", 0, 100, 0.5, "This multiplies floor goods' worth.");
 
         header("adv_ui", "Interface");
-        radio("voice", "Announcement voice", "voice", CASettings.VOICE_NAMES, "Machine or plain wording in announcements.");
-        bool("screenbtn", "Button on the colony screen", "noScreenButton", true, "The Colony Autopilot button on your colony's screen.");
-        r = row(RADIO, "thinking", "Thinking list", "The Log page's list of what Autopilot weighed.");
+        radio("voice", "Announcement voice", "voice", CASettings.VOICE_NAMES, "Announcements use machine or plain wording.");
+        bool("screenbtn", "Button on the colony screen", "noScreenButton", true, "It puts the Colony Autopilot button on your colony's screen.");
+        r = row(RADIO, "thinking", "Thinking list", "The Log page lists what Autopilot weighed.");
         r.opts = new String[]{"Hide", "Show"};
         flag(r, "showThinking");
-        r = row(RADIO, "approvaldays", "Approval summary", "One dialog with every decision waiting for approval.");
+        r = row(RADIO, "approvaldays", "Approval summary", "You get one dialog with every decision waiting for approval.");
         r.opts = new String[CAApprovalDialog.DAYS.length];
         for (int i = 0; i < CAApprovalDialog.DAYS.length; i++) r.opts[i] = CAApprovalDialog.daysName(CAApprovalDialog.DAYS[i]);
         r.fields = new String[]{"approvalDays"};
         r.get = s -> CAApprovalDialog.daysName(s.approvalDays);
         r.set = (s, v, b) -> { int i = idx("approvaldays", v); if (i >= 0) s.approvalDays = CAApprovalDialog.DAYS[i]; };
-        radio("hints", "Build menu hints", "buildHints", CASettings.HINT_NAMES, "Autopilot's ranking beside the game's build menu.");
-        bool("hintscore", "Score on open", "hintScoreOnOpen", false, "Scores an out-of-date colony once a day when its build menu opens.");
+        radio("hints", "Build menu hints", "buildHints", CASettings.HINT_NAMES, "It shows Autopilot's ranking beside the game's build menu.");
+        bool("hintscore", "Score on open", "hintScoreOnOpen", false, "It scores an out-of-date colony once a day when you open its build menu.");
     }
 
     // ---------------- table helpers ----------------
@@ -481,7 +492,7 @@ public final class CALunaSync {
     }
 
     static Row number(String type, String key, String name, String desc, double min, double max, double step) {
-        Row r = row(type, key, name, desc + " From " + plain(min) + " to " + plain(max) + (step != 1 ? ", steps of " + plain(step) : "") + ".");
+        Row r = row(type, key, name, desc + " It goes from " + plain(min) + " to " + plain(max) + (step != 1 ? ", in steps of " + plain(step) : "") + ".");   // 0.3.9.8: in the voice
         r.min = min; r.max = max; r.step = step;
         return r;
     }

@@ -166,9 +166,9 @@ public class CASetupUI {
         DESC.put("p_spend", "Normal: 50% of net income and 15% of savings.");
         DESC.put("p_extras", "Mod buildings and features.");
         DESC.put("p_newcol", "Founds colonies with idle money.");
-        DESC.put("p_war", "How far war fleets go; stances cap it.");
-        DESC.put("reserve", "Credits Autopilot does not spend.");
-        DESC.put("surplus", "Credits over this go to one focus world.");
+        DESC.put("p_war", "How far war fleets go (stances cap it).");
+        DESC.put("reserve", "Credits Autopilot won't spend.");
+        DESC.put("surplus", "Anything over this goes into one focus world.");
         DESC.put("richpreset", "What idle money buys first.");
         DESC.put("endgame", "At this income, build for production and defense.");
         DESC.put("p_story", "Story points Autopilot may spend on improvements.");
@@ -179,45 +179,45 @@ public class CASetupUI {
         DESC.put("p_admins", "Hires and places administrators.");
         DESC.put("capid", "Deliveries and Storage gather here.");
         DESC.put("empire", "Empire-wide settings follow it.");
-        DESC.put("spy", "Security and relations; offense adds sabotage.");
+        DESC.put("spy", "Security and relations (offense adds sabotage).");
         DESC.put("amb", "Ally and Friendly factions first.");
-        DESC.put("stances", "One stance per faction. Agents, ambassadors, ceasefires and war fleets follow it.");
+        DESC.put("stances", "One stance per faction, which agents, ambassadors, ceasefires and war fleets follow.");
         DESC.put("screenlog", "Short lines on screen.");
 
-        HOVER.put("empire", new String[]{"Off: nothing. Advisor: advice. Approve: asks first. Auto: acts."});
-        HOVER.put("lowprofile", new String[]{"No AI cores above size 3, no Pather interest, free ports, raids or sabotage."});
-        HOVER.put("p_spend", new String[]{"Thrifty 30% and 5%, Normal 50% and 15%, Lavish 80% and 30%. The per-project cap is half, all or twice net income. Surplus terraforming: 10-year payback on Thrifty."});
-        HOVER.put("p_war", new String[]{"Defend: relief. Retaliate: raids on attackers, retakes of your lost colonies. Hold them down: raids on Rival and up. Conquer: invasions. Scorched: bombardment."});
+        HOVER.put("empire", new String[]{"Off does nothing, Advisor suggests, Approve asks first and Auto acts."});
+        HOVER.put("lowprofile", new String[]{"It keeps AI cores out of colonies above size 3 and avoids Pather interest, free ports, raids and sabotage."});
+        HOVER.put("p_spend", new String[]{"Thrifty 30% and 5%, Normal 50% and 15%, Lavish 80% and 30%. The per-project cap is half, all or twice net income. Surplus terraforming needs a 10-year payback on Thrifty."});
+        HOVER.put("p_war", new String[]{"Defend sends relief, then Retaliate raids attackers and retakes lost colonies, Hold them down raids Rival and up, Conquer invades and Scorched bombards."});
         // Advanced
         HOVER.put("fees", new String[]{"On remote building, shipping and orders."});
-        HOVER.put("rung", new String[]{"Off: its share goes to the next rung."});
-        HOVER.put("warcoal", new String[]{"Off: offensives stop before a coalition forms."});
+        HOVER.put("rung", new String[]{"Off passes its share to the next rung."});
+        HOVER.put("warcoal", new String[]{"Off stops offensives before a coalition forms."});
         // 0.3.1.0: enforcer patrols (CAEnforcers)
-        HOVER.put("enf", new String[]{"Enforcer patrols: your colony patrols attack the fleet types set to On.",
-                "Charge: once per fleet your forces defeat. A battle you fight yourself gets the game's penalty."});
+        HOVER.put("enf", new String[]{"Your colony patrols attack the fleet types you set to On.",
+                "You're charged once per fleet your forces defeat. Fighting one yourself gets the game's penalty."});
         HOVER.put("enfcost", new String[]{"Reputation: the game's penalty for defeating that fleet yourself, -3. Commerce raiders and police: none.",
-                "Credits: fleet points x Nexerelin's fleet request price (400 without it), paid above the credit reserve."});
-        HOVER.put("enfhere", new String[]{"A marked fleet is hostile to your fleet too."});
-        HOVER.put("enfint", new String[]{"Intercept: colony patrols in the system get an order to intercept the fleet."});
-        HOVER.put("enfdiktat", new String[]{"Colony patrols attack them. No cost."});   // 0.3.8.6: short for the UI word budget
-        HOVER.put("crisiskills", new String[]{"Their kills count toward crises, as yours do."});   // 0.3.9.5 (CAPatrolKills)
+                "Credits: fleet points x Nexerelin's fleet request price (400 without it), paid above the reserve."});
+        HOVER.put("enfhere", new String[]{"A marked fleet turns hostile to you too."});
+        HOVER.put("enfint", new String[]{"Colony patrols in the system go after the fleet."});
+        HOVER.put("enfdiktat", new String[]{"Colony patrols attack them for free."});   // 0.3.8.6: short for the UI word budget
+        HOVER.put("crisiskills", new String[]{"Their kills count toward crises like yours."});   // 0.3.9.5 (CAPatrolKills)
     }
 
     /** The glossary at the top of the Settings page: term, then its line. */
     static final String[][] GLOSSARY = {
-            {"Budget", "what Autopilot may spend a month."},
-            {"Reserve", "credits Autopilot does not spend."},
-            {"Surplus", "credits over the surplus line."},
+            {"Budget", "what Autopilot can spend each month."},
+            {"Reserve", "money Autopilot won't touch."},
+            {"Surplus", "what's over the surplus line."},
             {"Endgame", "building for production and defense at high income."},
-            {"Inspection points", "from AI cores; the Hegemony inspects over the line."}};
+            {"Inspection points", "from AI cores (the Hegemony inspects over the line)."}};
     /** The box on the Settings page for 30 days after a save moves to 0.3.0 (WS-F4). */
     static final String[] WHATS_NEW = {
             "Advanced has every older setting.",
             "Nothing you set changed.",
             "New: War level, faction stances, New colonies, What to buy."};
     static final float WHATS_NEW_DAYS = 30f;
-    static final String SETUP_REST = "The rest: recommended settings.";
-    static final String RESET_NOTE = "Sets the empire mode's defaults. Keeps stances and picks.";
+    static final String SETUP_REST = "Everything else is recommended.";
+    static final String RESET_NOTE = "It sets the empire mode's defaults and keeps stances and picks.";
     /** 0.3.9.3: the Reset to recommended button's id; it asks first (CAIntel.doesButtonHaveConfirmDialog). */
     static final String RESET = PREFIX + "recommend:x";
 
@@ -678,13 +678,13 @@ public class CASetupUI {
             b.append(". Left over: ").append(rest >= 0 ? CARich.RUNGS[rest] : "stays in your account").append('.');
             out[p] = b.toString();
         }
-        out[out.length - 1] = "Each rung: Advanced, Surplus and money ladder.";
+        out[out.length - 1] = "Each rung's under Advanced, Surplus and money ladder.";
         return out;
     }
 
     static String[] stationTip(CASettings s) {
-        return new String[]{"Battlestation from size 6, Star Fortress from 8, a size sooner at the capital, where they pay.",
-                "Next tier everywhere: about " + Misc.getDGSCredits(stationLineItem(s)) + "."};
+        return new String[]{"Battlestations go up from size 6 and Star Fortresses from 8 (a size sooner at the capital), where they pay.",
+                "Next tier everywhere costs about " + Misc.getDGSCredits(stationLineItem(s)) + "."};
     }
 
     static String goalName(int goal) {

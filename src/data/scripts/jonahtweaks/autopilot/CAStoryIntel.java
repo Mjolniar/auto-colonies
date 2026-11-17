@@ -76,7 +76,7 @@ public class CAStoryIntel extends BaseIntelPlugin {
     /** The state as a sentence, for the description. */
     static String status() {
         if (CASync.installed() && !CASync.pulled()) return "The Colony Autopilot is online.";
-        if (CASync.pulled()) return "The Colony Autopilot is dormant. Its core is out of the cradle.";
+        if (CASync.pulled()) return "The core's out of its cradle, so the Colony Autopilot is dormant.";
         String ph = CASync.phase();
         if ("breaking".equals(ph)) return "Engineering is breaking the Autarch AI Core down.";
         if ("sold".equals(ph) || "broken".equals(ph) || "salvage".equals(ph)) return "You have no Autarch AI Core.";

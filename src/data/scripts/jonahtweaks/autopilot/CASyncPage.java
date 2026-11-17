@@ -40,11 +40,11 @@ public class CASyncPage {
         // the core
         boolean awake = !CASync.dormant();
         String ph = CASync.phase();
-        if (awake) t.addPara("The Autarch AI Core is online. It runs the abilities you switch on below, paid for with its bandwidth.", hl, 6f);
-        else if (CASync.pulled()) t.addPara("The Autarch AI Core is out of its cradle, so the Colony Autopilot is dormant. Every ability and all of its bandwidth come back when the core goes back in.", bad, 6f);
-        else if ("breaking".equals(ph)) t.addPara("Engineering is breaking the Autarch AI Core down. The Colony Autopilot is dormant.", hl, 6f);
-        else if (!ph.isEmpty()) t.addPara("You have no Autarch AI Core. The Colony Autopilot on your TriPad is dormant.", gray, 6f);
-        else if (CASync.seen(CATriPad.FOUND)) t.addPara("The Colony Autopilot on your TriPad is dormant. It needs an %s to run, and until then nothing at your colonies runs on its own.", 6f, hl, "Autarch-class AI core");
+        if (awake) t.addPara("The Autarch AI Core is online, and it runs the abilities you switch on below using its bandwidth.", hl, 6f);
+        else if (CASync.pulled()) t.addPara("The Autarch AI Core is out of its cradle, so the Colony Autopilot is dormant. Once the core's back in, you get every ability and all of its bandwidth again.", bad, 6f);
+        else if ("breaking".equals(ph)) t.addPara("The Colony Autopilot is dormant while Engineering breaks the Autarch AI Core down.", hl, 6f);
+        else if (!ph.isEmpty()) t.addPara("You don't have an Autarch AI Core, so your TriPad's Colony Autopilot is dormant.", gray, 6f);
+        else if (CASync.seen(CATriPad.FOUND)) t.addPara("The Colony Autopilot on your TriPad is dormant. It needs an %s to run, and until then your colonies won't run on their own.", 6f, hl, "Autarch-class AI core");
         else t.addPara("The Colony Autopilot on your TriPad is dormant.", gray, 6f);
 
         if (CASync.dormant() && CAAutarch.inCargo() > 0)
@@ -54,7 +54,7 @@ public class CASyncPage {
             t.addPara(area != null && CASync.seen(CATriPad.FOUND) ? "Your TriPad points to a derelict research station somewhere in the " + area + "."
                     : "You haven't found it yet.", gray, 4f);
         }
-        if (awake && CASync.cradle()) row(t, "Pull the core", "pull", true, 200f, "This takes the cradled core out, and the Colony Autopilot goes dormant.", gray);
+        if (awake && CASync.cradle()) row(t, "Pull the core", "pull", true, 200f, "This takes the cradled core out, so the Colony Autopilot goes dormant.", gray);
 
         // processing power
         if (CASync.installed()) {   // 0.3.8.9: the unused fed() read is removed
@@ -81,7 +81,7 @@ public class CASyncPage {
         // managed colonies (0.3.7.2: with Approve mode bought)
         if (CASync.has("approve")) {
             t.addSectionHeading("Managed colonies", Alignment.MID, 12f);
-            t.addPara("%s colonies in Approve or Auto: one, plus %s more at %s bandwidth each.", 6f, hl,
+            t.addPara("%s colonies can be on Approve or Auto (one, plus %s more at %s bandwidth each).", 6f, hl,
                     "" + CASync.managedCap(), "" + CASync.extraColonies(), "" + CASyncCatalog.COLONY_PP);
             ButtonAPI plus = button(t, "+1 colony", "col+", CASync.free() >= CASyncCatalog.COLONY_PP, 120f, 4f);
             ButtonAPI minus = button(t, "-1 colony", "col-", CASync.extraColonies() > 0, 120f, 0f);
@@ -91,7 +91,7 @@ public class CASyncPage {
         // 0.3.8.0: the Autarch administrator's colonies
         if (CASync.has("autarchAdmin")) {
             t.addSectionHeading("Autarch administrator", Alignment.MID, 12f);
-            t.addPara("Governs %s of up to %s colonies: one, plus %s more at %s bandwidth each.", 6f, hl,
+            t.addPara("It governs %s of up to %s colonies (one, plus %s more at %s bandwidth each).", 6f, hl,
                     "" + CAAutarchAdmin.count(), "" + CASync.seats(), "" + CASync.extraSeats(), "" + CASyncCatalog.SEAT_PP);
             ButtonAPI plus = button(t, "+1 colony", "seat+", CASync.free() >= CASyncCatalog.SEAT_PP && CASync.seats() < CASync.managedCap(), 120f, 4f);
             ButtonAPI minus = button(t, "-1 colony", "seat-", CASync.extraSeats() > 0, 120f, 0f);
@@ -108,7 +108,7 @@ public class CASyncPage {
             if (ti > open) {
                 int[] pr = CASync.tierProgress(open);
                 t.addSectionHeading(CASyncCatalog.TIERS[ti], Alignment.MID, 12f);
-                t.addPara("Opens with %s of the " + CASyncCatalog.TIERS[open] + " abilities. You have %s.", 6f, gray, hl, "" + pr[1], "" + pr[0]);
+                t.addPara("It opens with %s of the " + CASyncCatalog.TIERS[open] + " abilities (you have %s).", 6f, gray, hl, "" + pr[1], "" + pr[0]);
                 break;
             }
             t.addSectionHeading(CASyncCatalog.TIERS[ti], Alignment.MID, 12f);
@@ -171,12 +171,12 @@ public class CASyncPage {
         LabelAPI l = t.addPara("%s: %s.", 0f, Misc.getHighlightColor(), "Story mode", CASync.on() ? "On" : "Off");
         l.getPosition().rightOfMid(b, 12f);
         CALog.endRow(t, b);
-        t.addPara("On: the Colony Autopilot starts dormant, and a storyline unlocks it. Switching back keeps this save's story progress.", Misc.getGrayColor(), 2f);
+        t.addPara("When it's On, the Colony Autopilot starts dormant and the story unlocks it. Switching back keeps your story progress.", Misc.getGrayColor(), 2f);
     }
 
     /** The colony panel's Fast buildout section while the ability is off. */
     public static void buildoutOff(TooltipMakerAPI t, com.fs.starfarer.api.campaign.econ.MarketAPI m) {
-        t.addPara("Loses %s a month. Fast buildout needs %s on the Story page.", 6f, Misc.getNegativeHighlightColor(),
+        t.addPara("It's losing %s a month, and fast buildout needs %s on the Story page.", 6f, Misc.getNegativeHighlightColor(),
                 Misc.getDGSCredits(-m.getNetIncome()), CASyncCatalog.buy("buildout"));
     }
 

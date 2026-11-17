@@ -185,10 +185,10 @@ final class CAAutonomy {
             return null;
         },
                 reason,
-                "An autonomous colony generates only " + share + "% of its usual profit or loss, and does not count toward your colony limit.",
-                "You cannot build there while it is autonomous.",
+                "An autonomous colony only makes " + share + "% of its usual profit or loss, and it doesn't count toward your colony limit.",
+                "You can't build there while it's autonomous.",
                 "Revoking autonomy later will cause " + REVOKE_UNREST + " points of recent unrest.",
-                "If you reject it, it will not be offered again for a year.");
+                "If you reject it, it won't be offered again for a year.");
         if (it != null) it.monthly = saving;   // the summary line reads "Grant autonomy. +X a month."
     }
 

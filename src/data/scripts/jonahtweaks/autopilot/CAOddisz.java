@@ -186,7 +186,7 @@ public class CAOddisz {
             t.addPara("Discovering the Past: %s of %s, %s a month, %s a point.", 6f, hl,
                     "" + ev.getProgress(), "" + ev.getMaxProgress(), "+" + ev.getMonthlyProgress(),
                     Misc.getDGSCredits(solCost(1f, solStrength(), CALowProfile.on())));
-            CATheme.hover(t, "Waves at 200, 450, 700 and 1,000; the meter does not go down.");
+            CATheme.hover(t, "Waves at 200, 450, 700 and 1,000. The meter doesn't go down.");
         } catch (Throwable e) {
             t.addPara("Discovering the Past is running in Sol.", gray, 6f);
         }

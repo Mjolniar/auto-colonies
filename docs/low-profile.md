@@ -1,17 +1,17 @@
 # Low profile
 
-- Setting: Optional expansion style (Settings, Playstyle, Expansion style). Earns less money.
+- Low profile is an optional expansion style (Settings, Playstyle, Expansion style). It keeps colony crises slower, but you'll earn less money.
 
 ## What it changes
 
-- Crises: Crisis progress is valued at 10x. Patrol HQ, Military Base and High Command are worth 10x more.
-- Hegemony: No AI cores above size 3. Existing ones go to Storage, one a day.
-- Pathers: Nothing is added that takes a size 4+ colony to 7 Pather interest.
-- Tri-Tachyon: One competing good is free.
-- Diktat: A building making 4+ fuel is priced for the Diktat's interest.
-- Luddic Church: Buildings that prevent a Luddic majority get credit.
-- Other: Free ports off. War level capped at Defend. No agent sabotage. Omega and IX cores not used.
-- New colonies: Only in systems you hold ([New colonies](expansion.md)).
+- Crisis progress counts 10x, and Patrol HQ, Military Base and High Command are worth 10x more.
+- To keep the Hegemony quiet, it won't put AI cores in colonies above size 3, and the ones already there go to Storage, one a day.
+- For the Pathers, it won't add anything that takes a size 4+ colony to 7 Pather interest.
+- For Tri-Tachyon, one competing good is free.
+- For the Diktat, a building making 4+ fuel gets priced for the Diktat's interest.
+- For the Luddic Church, buildings that prevent a Luddic majority get credit.
+- Free ports stay off, the War level is capped at Defend, and there's no agent sabotage. Omega and IX cores aren't used either.
+- New colonies only go in systems you already hold ([New colonies](expansion.md)).
 
 ## When each rule ends
 

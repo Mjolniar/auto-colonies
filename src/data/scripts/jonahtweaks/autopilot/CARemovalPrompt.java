@@ -38,10 +38,10 @@ public class CARemovalPrompt implements InteractionDialogPlugin {
             o.setShortcut(LEAVE, Keyboard.KEY_ESCAPE, false, false, false, true);
             return;
         }
-        text.addPara("Prepare this save for removal.");
-        text.addPara("Autopilot Storage empties into Storage. Shipments arrive. Crews on the way are refunded.");
+        text.addPara("This prepares your save for removal.");
+        text.addPara("It'll empty Autopilot Storage into Storage, deliver shipments and refund crews en route.");
         if (story()) text.addPara("Autarch AI Cores become Alpha Cores. Story progress ends.");
-        text.addPara("Auto Colonies then stops.");
+        text.addPara("Then Auto Colonies stops.");
         o.addOption("Prepare for removal", CONFIRM);
         o.addOption("Cancel", CANCEL);
         o.setShortcut(CANCEL, Keyboard.KEY_ESCAPE, false, false, false, true);
@@ -78,7 +78,7 @@ public class CARemovalPrompt implements InteractionDialogPlugin {
         }
         if (report != null) {
             for (String r : report) text.addPara(r);
-            text.addPara("Save, quit and remove the mod.");
+            text.addPara("Save, quit and pull the mod.");
             text.addPara(luna() ? "To undo, turn it off in LunaLib (F3)." : "To undo, load an earlier save.", Misc.getGrayColor());
         }
         o.addOption("Leave", LEAVE);

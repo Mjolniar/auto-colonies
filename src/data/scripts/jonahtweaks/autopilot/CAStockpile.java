@@ -428,7 +428,7 @@ public class CAStockpile {
             if (n == null) {
                 pending[k] = null;
                 setWant(k, 0f);
-                CARich.note(rung, "a stockpile proposal waits for its share of the pool (" + Misc.getDGSCredits(allowance) + " now; "
+                CARich.note(rung, "a stockpile proposal waits for its share of the pool (" + Misc.getDGSCredits(allowance) + " now, "
                         + needs.get(0).name + " for " + needs.get(0).to.getName() + " costs " + Misc.getDGSCredits(needs.get(0).total()) + ")");
                 return;
             }
@@ -452,7 +452,7 @@ public class CAStockpile {
         }
         setWant(k, want);
         pending[k] = null;   // 0.3.9.6 (D2): the On look buys; a proposal from Recommend only is out of date
-        if (bought == 0 && !military && !noted) CARich.note(CARich.STOCKPILES, "waits for its share of the pool (" + Misc.getDGSCredits(allowance) + " now; "
+        if (bought == 0 && !military && !noted) CARich.note(CARich.STOCKPILES, "waits for its share of the pool (" + Misc.getDGSCredits(allowance) + " now, "
                 + needs.get(0).name + " for " + needs.get(0).to.getName() + " costs " + Misc.getDGSCredits(needs.get(0).total()) + ")");
     }
 
@@ -474,7 +474,7 @@ public class CAStockpile {
             CAApprovals.say(n.to.getName() + ": Recommends a stockpile of " + Misc.getWithDGS(n.qty) + " " + n.name + " from " + n.src.getName() + " for "
                     + Misc.getDGSCredits(n.total()) + " with shipping (" + Misc.getDGSCredits(n.lost) + " a month of output). Approve on the Colonies page.", false);   // 0.3.8.6: the page's name
         }
-        CARich.note(rung, "proposes " + Misc.getWithDGS(n.qty) + " " + n.name + " for " + n.to.getName() + "; Approve or Reject on this panel");
+        CARich.note(rung, "proposes " + Misc.getWithDGS(n.qty) + " " + n.name + " for " + n.to.getName() + ". Approve or Reject on this panel");
     }
 
     /**
