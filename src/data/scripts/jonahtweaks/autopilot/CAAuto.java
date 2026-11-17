@@ -127,7 +127,7 @@ public class CAAuto {
         CAStep.guard("station line ask", () -> CAStationAsk.daily());   // 0.3.6.3: once, before the first station
         CAStep.run("Autopilot Storage shipping", () -> CAStores.daily());   // shipments between colonies' Autopilot Storage arrive
         // 0.3.9.1 (K L3): while dormant, stockpile deliveries and the shipyard's free cash guard (CARich.run does them otherwise)
-        CAStep.run("dormant deliveries", () -> { if (CASync.dormant()) CARich.deliveries(d, s); });
+        CAStep.run("dormant deliveries", () -> { if (CASync.dormant()) { CARich.deliveries(d, s); CAObjectives.deliver(d); } });   // 0.3.9.6 (C2): crews too
         if (CASync.dormant()) return;   // 0.3.6.0 story mode: nothing else runs while the Autopilot is dormant
         CAPass.later(() -> { if (CASync.dormant()) CAPass.stop(); });   // 0.3.6.9: and when it went dormant before the queue got here
         CAStep.run("storage logistics", () -> CALogistics.daily(d, s, now));   // storage logistics: loads to the refit and sell hubs (0.2.39.0)
@@ -491,7 +491,8 @@ public class CAAuto {
         catch (Throwable t) { CAStep.warn("build pass", "market model claim failed at " + m.getName(), t); }
         CALog.forget(m.getId() + ":" + p.id);
         CALog.forget(m.getId() + ":" + p.id + ":upkeep");
-        CAData.get().clearPending(c);
+        // 0.3.9.6 (B2): another start at the colony leaves the waiting proposal; your own build replaces it
+        if (p.id.equals(c.pendingId) && p.upgrade == c.pendingUpgrade || "Started by you".equals(who)) CAData.get().clearPending(c);
         wasBuilding.put(m.getId(), true);
         String line = m.getName() + ": " + (p.upgrade ? "Upgrading to " : "Building ") + p.name + " (" + Misc.getDGSCredits(p.cost) + ")."
                 + ("Auto".equals(who) ? "" : " " + (who.endsWith(":") ? who.substring(0, who.length() - 1) : who) + ".");

@@ -85,7 +85,7 @@ public class CAReset {
         failed += run("capital", () -> CACapital.reset());
         failed += run("terraforming plans", () -> CATerraSim.reset());
         if (on("terraformingmadeeasy")) failed += run("surplus terraforming", () -> CATerraformSurplus.planConds.clear());
-        failed += run("endgame economy", () -> { CAEndgame.lastReplaceDay = -99f; CAEndgame.summary = null; CAEndgame.chains = null; });
+        failed += run("endgame economy", () -> { CAEndgame.summary = null; CAEndgame.chains = null; });
         failed += run("scoring", () -> {
             CAEngine.noProbe = false; CAEngine.profitOnly = false; CAEngine.supplier = null; CAEngine.supplierAt = null; CAEngine.unitValue = 100f;
             CAEngine.forDisplay = false; CAEngine.drawing = 0;   // 0.3.0.0 (A4 fix): the panel-score flags; SHOWN is cleared by resetCaches

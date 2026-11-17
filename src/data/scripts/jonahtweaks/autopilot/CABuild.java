@@ -96,8 +96,9 @@ public class CABuild {
         if (!CADiagnostics.usable(p.id)) return "Not supported by Colony Autopilot";
         // 0.3.0.0: the one stability rule (CAStability) as the last gate for a new building or upgrade: what it costs once built must
         // leave the colony at or above the floor. The planner already holds such picks back; this catches any path that doesn't
-        if (p.fx != null && p.fx.length > 1 && p.fx[1] < 0f && !CAStability.canLose(m, p.fx[1], null))
-            return "It would take stability from " + Math.round(CAStability.now(m)) + " to " + Math.round(CAStability.now(m) + p.fx[1])
+        // 0.3.9.6 (B3): buildings under way count with their stability cost (CAStability.pending)
+        if (p.fx != null && p.fx.length > 1 && p.fx[1] < 0f && !CAStability.canLose(m, p.fx[1] + CAStability.pending(m), null))
+            return "It would take stability from " + Math.round(CAStability.now(m)) + " to " + Math.round(CAStability.now(m) + CAStability.pending(m) + p.fx[1])
                     + ", under Autopilot's floor of " + Math.round(CAStability.floor());
         // 0.2.42.0: the build menu's industry limit. Picks are scored with the slots free when the pass began, and one pass can
         // start a new building and an upgrade, so a structure upgraded into an industry (Junkyard Forge -> Scrapyard) and a

@@ -107,7 +107,7 @@ Searches across `src/`:
 | `java.io`, `java.net`, `java.lang.reflect` | `java.io` once, in `CALinkScan.read`: an `InputStream` from `getResourceAsStream` reading the mod's own class files for the link check; nothing is written. `java.lang.reflect` only as class name strings in `CARefl` (`Class.forName`) and in a comment in `CALuna`. No `java.net`. |
 | `CAStores.ship` | Shipping between colonies |
 
-- Build checks (before every release; outside the repo; see the [source guide](source-guide.md#building-and-checking)): banned-class scan, bytecode verification for every mod combination, script-loader load, `%` check, and 96 offline test suites (including a scan that fails any file outside `CABudget` that changes credits).
+- Build checks (before every release; outside the repo; see the [source guide](source-guide.md#building-and-checking)): banned-class scan, bytecode verification for every mod combination, script-loader load, `%` check, and 97 offline test suites (including a scan that fails any file outside `CABudget` that changes credits).
 
 ## Removing it
 

@@ -881,6 +881,8 @@ public class CAPlanner {
                 CAData.Colony c = d.colony(id);
                 if (c.buildout && c.mode != CAData.Mode.AUTO) CABuildout.stop(m, c, "the colony left Auto");
                 if (c.mode != CAData.Mode.APPROVE && c.mode != CAData.Mode.AUTO) { offers.remove(id); idle.remove(id); return; }
+                // 0.3.9.6 (B6): an outpost, a Coronal Hypershunt or a no-industries colony never builds: not idle, no offers
+                if (CAEngine.isOutpost(m) || CAHypershunt.is(m) || m.hasTag("market_no_industries_allowed")) { offers.remove(id); idle.remove(id); return; }
                 managed.add(id);
                 boolean siege = CASiege.held(m);
                 String ev = colonyEvent(m, c, siege);
@@ -1266,7 +1268,7 @@ public class CAPlanner {
             if (a.market == null || !seen.add(a.marketId)) continue;
             MarketAPI m = a.market;
             try {
-                p.stability.put(a.marketId, CAStability.now(m));
+                p.stability.put(a.marketId, CAStability.now(m) + CAStability.pending(m));   // 0.3.9.6 (B3): costs under way count
                 p.slots.put(a.marketId, CABuild.freeSlots(m));
                 int room = CABuild.buildRoom(m);   // 0.3.6.7: 1 by the game's rule, 2 or 3 with the story perks
                 p.buildRoom.put(a.marketId, room);

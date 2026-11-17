@@ -305,6 +305,8 @@ public final class CAMarket {
 
     /** A pick just started: its goods count as made at that colony until it's finished. */
     static void claim(MarketAPI m, CAEngine.Pick p) {
+        // 0.3.9.6 (B3): its stability cost counts from the start (CAStability.pending), the game's only once it's finished
+        if (p.fx != null && p.fx.length > 1 && p.fx[1] < 0f) CAData.get().stabilityPending().put(key(m, p), p.fx[1]);
         if (p.marketAfter.isEmpty()) return;
         CAData d = CAData.get();
         d.marketPending().put(key(m, p), new HashMap<String, Integer>(p.marketAfter));
@@ -358,10 +360,25 @@ public final class CAMarket {
         return out;
     }
 
+    /** 0.3.9.6 (B3): the building of a claim key ("marketId|id|upgradedId") is still under way at m. */
+    static boolean underWay(MarketAPI m, String key) {
+        String[] k = key.split("\\|", -1);
+        if (k.length != 3 || m == null || !m.isPlayerOwned()) return false;
+        Industry ind = m.getIndustry(k[1]);
+        Industry old = k[2].isEmpty() ? null : m.getIndustry(k[2]);
+        return (ind != null && ind.isBuilding() && !ind.isUpgrading()) || (old != null && old.isUpgrading());
+    }
+
     /** Drops claims whose building is finished, gone, or a year old. */
     static void prune() {
         try {
             CAData d = CAData.get();
+            // 0.3.9.6 (B3): stability costs of buildings no longer under way
+            for (Iterator<String> it = d.stabilityPending().keySet().iterator(); it.hasNext(); ) {
+                String k = it.next();
+                int bar = k.indexOf('|');
+                if (bar <= 0 || !underWay(Global.getSector().getEconomy().getMarket(k.substring(0, bar)), k)) it.remove();
+            }
             float now = CADay.now();
             for (Iterator<Map.Entry<String, Map<String, Integer>>> it = d.marketPending().entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry<String, Map<String, Integer>> e = it.next();

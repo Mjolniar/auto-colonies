@@ -80,7 +80,11 @@ public final class CAAutarchAdmin {
                 if (mem.contains(DECLINED) && (!CASync.manages(m) || replacedGone(m, mem))) mem.unset(DECLINED);
                 continue;
             }
-            if (!m.isPlayerOwned()) { mem.unset(SEATED); continue; }   // captured or autonomous: the new owner seats its own
+            if (!m.isPlayerOwned()) {   // captured or autonomous: the new owner seats its own
+                mem.unset(SEATED);
+                if (is(m.getAdmin())) m.setAdmin(null);   // 0.3.9.6 (C12): the Autarch AI Core doesn't govern for them
+                continue;
+            }
             if (seated && !here) {   // someone else governs it now: you, or an administrator you placed
                 mem.unset(SEATED);
                 mem.set(DECLINED, governor(m));   // 0.3.8.9: who took its place; it stays away while they govern and the colony is managed

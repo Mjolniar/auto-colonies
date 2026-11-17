@@ -236,8 +236,17 @@ public class CALogistics {
             else if (where.equals("sell") && sell != null && sell != m) toSell.add(x);
         }
         List<FleetMemberAPI> ships = new ArrayList<FleetMemberAPI>();
+        Map<String, Integer> shipyard = new HashMap<String, Integer>();   // 0.3.9.6 (D1): hull id -> Shipyard hulls kept at the gathering point
+        try {
+            if (d.shipyardOrders != null && Global.getSector().getPlayerFaction().getProduction().getGatheringPoint() == m) shipyard = CAShipyard.ordered(d.shipyardOrders());
+        } catch (Throwable ignored) { }
         if (s.logisticsShips && refit != null && refit != m && st.getMothballedShips() != null)
-            for (FleetMemberAPI fm : st.getMothballedShips().getMembersListCopy()) if (!CARogue.storyShip(fm)) ships.add(fm);   // 0.3.2.1: the Afterlight stays (Rogue Planets' story)
+            for (FleetMemberAPI fm : st.getMothballedShips().getMembersListCopy()) {
+                if (CARogue.storyShip(fm)) continue;   // 0.3.2.1: the Afterlight stays (Rogue Planets' story)
+                Integer k = shipyard.get(fm.getHullId());
+                if (k != null && k > 0) { shipyard.put(fm.getHullId(), k - 1); continue; }   // 0.3.9.6 (D1)
+                ships.add(fm);
+            }
 
         if (!toRefit.isEmpty() || !ships.isEmpty()) {
             Load l = load(m, refit, "refit hub");

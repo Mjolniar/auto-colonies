@@ -56,6 +56,14 @@ public final class CAAutarch {
                     if (sc != null && sc.getQuantity(CargoAPI.CargoItemType.SPECIAL, item()) > 0f) return true;
                 }
             }
+            // 0.3.9.6 (C1): storage outside the economy (an abandoned station, a RAT settlement) and cargo pods in space
+            for (com.fs.starfarer.api.campaign.LocationAPI loc : CARemoval.locations())
+                for (com.fs.starfarer.api.campaign.SectorEntityToken e : loc.getAllEntities()) {
+                    CargoAPI c = null;
+                    if ("cargo_pods".equals(e.getCustomEntityType())) c = e.getCargo();
+                    else if (e.getMarket() != null && !e.getMarket().isInEconomy()) c = Misc.getStorageCargo(e.getMarket());
+                    if (c != null && c.getQuantity(CargoAPI.CargoItemType.SPECIAL, item()) > 0f) return true;
+                }
         } catch (Throwable t) { return true; }   // can't tell: not lost
         return false;
     }

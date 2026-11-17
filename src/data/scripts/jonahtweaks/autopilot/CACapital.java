@@ -195,7 +195,9 @@ public class CACapital {
             deliveries(s, cap);
             return;
         }
-        if (CALog.once("capital:" + cap.getId())) {
+        CALog.forgetAll("capital:lost:", null);   // 0.3.9.6 (D5): a later loss shows again
+        CALog.forgetAll("capital:set:", "capital:set:" + cap.getId());   // 0.3.9.6 (D5): a move back to an earlier capital shows again
+        if (CALog.once("capital:set:" + cap.getId())) {
             String line = cap.getName() + ": Capital: set" + (cap.getId().equals(s.capitalId) ? " (your pick)" : "") + ". Production deliveries come here."
                     + (gathers(s) ? " Your other Storage gathers here weekly." : "")
                     + (s.capitalMode == 0 ? " Builds into a trade hub once your colonies have ramped up." : "");

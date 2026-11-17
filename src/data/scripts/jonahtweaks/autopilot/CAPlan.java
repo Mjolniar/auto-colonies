@@ -1178,6 +1178,8 @@ public class CAPlan {
         if (BLOCKED.contains(m.getId() + ":" + s.id) || dead(m, s.id)) return false;
         // 0.3.0.0 (B4): a step whose building was taken down here within the year can't be built back yet (CATombstone): no slot held for it
         if (CATombstone.blocked(m.getId(), s.id) > 0f) return false;
+        // 0.3.9.6 (B4): a step you rejected here holds no slot for the 180-day hold (nothing else could use it)
+        if (CAAuto.rejectedDays(m.getId(), s.id, CATime.now()) > 0f) return false;
         // 0.3.0.0 (B2, research 02 sections 1 and 10): a step that's worth nothing here holds no slot; fast buildout (money only)
         // keeps one only for a plan industry that pays on money alone, as it last scored
         if (CAEngine.profitOnly ? !legacy() && !paysOnMoney(m, s) : worthless(m, plan, s)) return false;

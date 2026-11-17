@@ -1,5 +1,40 @@
 # Patch notes
 
+## 0.3.9.6 - 2026-11-16
+
+- Prepare for removal: Ships in a storage logistics load on the way are delivered with the load. They were lost.
+- Prepare for removal: A RAT settlement expedition on the way is refunded.
+- Prepare for removal: Autarch AI Cores in an abandoned station's Storage, a RAT settlement's storage and cargo pods become Alpha Cores too.
+- Prepare for removal: Fleets charged by enforcer patrols keep their one charge when Auto Colonies is turned back on in the same session.
+- Prepare for removal: Fixed a starsector.log error without Nexerelin. The Mod features page with Removal now opens while story mode is dormant.
+- War: A raid goes only when every market it would hit in that system is of a faction your War level and stances allow. Nexerelin raids hit every hostile market in the system.
+- War: No raids at pirate faction markets while Nexerelin's pirate invasions are off. Those raids found no target and the price was lost.
+- Planner: A colony over its industry limit no longer takes an industry down for a swap it can't build.
+- Planner: Another start at a colony no longer clears its waiting proposal.
+- Planner: The stability cost of buildings under construction counts in every stability check until they finish.
+- Planner: A plan step you rejected no longer holds an industry slot for the 180-day hold.
+- Planner: The engine's stability floor is at least 3, as the planner's is.
+- Planner: Outposts and colonies that allow no buildings no longer count as idle for the money ladder.
+- Planner: The endgame's one replacement a day holds across a load.
+- Fast buildout: Starts only when the colony is in Auto.
+- Measured buildings: An upgrade that drops a good the old building made is charged for it.
+- Settings: Reset to recommended also resets the enforcer, crisis kill, war option, ambassador, settlement, research item and logistics rows. Auto-expansion settings stay.
+- Settings: A recommendation no longer shows when the value already matches it.
+- Story mode: A lost Autarch AI Core that turns up again ends the wait for a new one. The search covers abandoned station storage and cargo pods.
+- Story mode: The Autarch AI Core stops governing a colony that leaves your control.
+- Stable locations: Crews on the way arrive with the setting Off and while the Autopilot is dormant.
+- Administrators: Over the colony limit, administrators come before item and core moves.
+- Research: Items are shipped only to a Research Facility at a colony Autopilot can deliver to.
+- Surplus research: A removed Research Facility's AI core goes to Autopilot Storage. Colonies under inspection are left alone.
+- Shipyard: Storage logistics leaves the Shipyard's hulls at the gathering point.
+- Stockpiles: An approved proposal is dropped when goods of that kind are already on the way.
+- Capital: The capital lines show again after a second loss or a move back.
+- Special projects: Supply planning starts again after a load when it failed once.
+- Autopilot Storage: The tab appears only at colonies Autopilot reads.
+- Patrol kills: Battles with no fleet of your faction are skipped sooner.
+- Text: Fixed the automatic upkeep floor, the Rapid construction fee in the build texts, the hazard pay setting name, a synergy line and the settings file header.
+- Save size: Old logistics, rejection and Theory of Toolbox marks are removed.
+
 ## 0.3.9.5 - 2026-11-16
 
 - Colony crises: Ships destroyed by Auto colony patrols and stations count toward the colony crisis, as your own kills do. Battles without your fleet only. The game's amounts.

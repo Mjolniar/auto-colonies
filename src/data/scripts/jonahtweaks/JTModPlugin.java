@@ -44,6 +44,7 @@ public class JTModPlugin extends BaseModPlugin {
         // 0.3.9.4: a save prepared for removal (CARemoval): nothing starts, and nothing is written into it
         step("removal state", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CARemoval.onGameLoad(); } });
         if (data.scripts.jonahtweaks.autopilot.CARemoval.off) {
+            step("reset", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CAReset.onLoad(); } });   // 0.3.9.6 (A5): the last save's statics go
             step("removal", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CARemoval.onLoadDormant(); } });
             return;
         }

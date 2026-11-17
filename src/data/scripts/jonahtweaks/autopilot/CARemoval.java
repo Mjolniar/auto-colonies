@@ -110,6 +110,8 @@ public final class CARemoval {
     static final Map<String, Map<String, Object>> rapid = new HashMap<String, Map<String, Object>>();
     static int installedAlpha;
     static SectorEntityToken site;
+    /** 0.3.9.6 (A4): fleets whose once-per-life enforcer charge flag was taken off (set back on a resume this session). */
+    static final List<CampaignFleetAPI> charged = new ArrayList<CampaignFleetAPI>();
 
     // ---------------- state ----------------
 
@@ -126,6 +128,7 @@ public final class CARemoval {
         rapid.clear();
         installedAlpha = 0;
         site = null;
+        charged.clear();
         off = flagged();
     }
 
@@ -308,7 +311,16 @@ public final class CARemoval {
         d.shipments().clear();
         for (CALogistics.Load l : d.loads()) {
             if (l.cargo == null) continue;
-            dest(l.to, r, true).addAll(l.cargo);
+            CargoAPI to = dest(l.to, r, true);
+            to.addAll(l.cargo);
+            // 0.3.9.6 (A1): addAll moves stacks only; the load's ships go to that Storage, or to your fleet with no Storage
+            if (l.cargo.getMothballedShips() != null) {
+                for (FleetMemberAPI fm : l.cargo.getMothballedShips().getMembersListCopy()) {
+                    l.cargo.getMothballedShips().removeFleetMember(fm);
+                    if (to != fleetCargo() && to.getMothballedShips() != null) to.getMothballedShips().addFleetMember(fm);
+                    else Global.getSector().getPlayerFleet().getFleetData().addFleetMember(fm);
+                }
+            }
             r.transit++;
         }
         d.loads().clear();
@@ -338,13 +350,26 @@ public final class CARemoval {
         }
         d.expandOrders().clear();
         d.expandOrders().addAll(keep);
+        // 0.3.9.6 (A2): a settlement expedition on its way (Random Assortment of Things): its price back, as when it fails
+        if (d.settleExpeditionPlanet != null) {
+            r.credits += Math.max(0f, d.settleExpeditionCost);
+            r.refunded++;
+            d.settleExpeditionPlanet = null;
+            d.settleExpeditionAt = 0L;
+            d.settleExpeditionDays = 0f;
+            d.settleExpeditionCost = 0f;
+        }
         if (r.credits > 0f) CABudget.refund(d.settings, null, r.credits);
     }
 
     /** item:autarch_core, memory:autarch_site. */
     static void cores(Report r) {
         r.cores += swap(fleetCargo());
-        for (MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) {
+        // 0.3.9.6 (A3): markets outside the economy too (an abandoned station's Storage, a RAT settlement), and cargo pods
+        for (LocationAPI loc : locations())
+            for (SectorEntityToken e : loc.getAllEntities())
+                if ("cargo_pods".equals(e.getCustomEntityType()) && e.getCargo() != null) r.cores += swap(e.getCargo());
+        for (MarketAPI m : allMarkets()) {
             for (SubmarketAPI sub : m.getSubmarketsCopy()) {
                 if (CAStoragePlugin.ID.equals(sub.getSpecId())) continue;   // emptied by storage()
                 CargoAPI c = sub.getCargo();
@@ -429,6 +454,7 @@ public final class CARemoval {
                     CAEnforcers.end(f, loc.getName(), "Auto Colonies prepared for removal");
                     r.fleets++;
                 }
+                if (f.getMemoryWithoutUpdate().getBoolean(CAEnforcers.MEM_CHARGED)) charged.add(f);   // 0.3.9.6 (A4): set back on a resume
                 f.getMemoryWithoutUpdate().unset(CAEnforcers.MEM_CHARGED);   // 0.3.9.5: end() keeps it for the fleet's life
             }
         }
@@ -446,10 +472,7 @@ public final class CARemoval {
 
     /** submarket:jt_ca_storage, condition:jt_patronage, memory:rapid_terra. Every market in the economy and on any planet or station. */
     static void markets(Report r) {
-        Set<MarketAPI> all = new LinkedHashSet<MarketAPI>(Global.getSector().getEconomy().getMarketsCopy());
-        for (LocationAPI loc : locations())
-            for (SectorEntityToken e : loc.getAllEntities()) if (e.getMarket() != null) all.add(e.getMarket());
-        for (MarketAPI m : all) {
+        for (MarketAPI m : allMarkets()) {
             if (m.hasSubmarket(CAStoragePlugin.ID)) { m.removeSubmarket(CAStoragePlugin.ID); r.tabs++; }
             if (m.hasCondition(data.scripts.jonahtweaks.JTPatronageCondition.ID)) {
                 m.removeCondition(data.scripts.jonahtweaks.JTPatronageCondition.ID);
@@ -466,6 +489,14 @@ public final class CARemoval {
         }
     }
 
+    /** Every market in the economy and on any planet or station (0.3.9.6: cores() and markets() share it). */
+    static Set<MarketAPI> allMarkets() {
+        Set<MarketAPI> all = new LinkedHashSet<MarketAPI>(Global.getSector().getEconomy().getMarketsCopy());
+        for (LocationAPI loc : locations())
+            for (SectorEntityToken e : loc.getAllEntities()) if (e.getMarket() != null) all.add(e.getMarket());
+        return all;
+    }
+
     static boolean mine(Object o) { return o != null && o.getClass().getName().startsWith(PKG); }
 
     /** scripts:mod, listeners:mod. */
@@ -476,9 +507,7 @@ public final class CARemoval {
         for (CampaignEventListener l : new ArrayList<CampaignEventListener>(sec.getAllListeners())) if (mine(l)) sec.removeListener(l);
         ListenerManagerAPI lm = sec.getListenerManager();
         for (Object l : new ArrayList<Object>(lm.getListeners(Object.class))) if (mine(l)) lm.removeListener(l);
-        lm.removeListenerOfClass(CAOptionProvider.class);
-        lm.removeListenerOfClass(CAWarListener.class);
-        lm.removeListenerOfClass(CAAutarchListener.class);
+        // 0.3.9.6 (A6): no class literals here: CAWarListener implements Nexerelin's interfaces and failed to load without it
     }
 
     /** The report as sentences for the dialog. */
@@ -546,6 +575,7 @@ public final class CARemoval {
                 MarketAPI m = sec.getEconomy().getMarket(e.getKey());
                 if (m != null) m.getMemoryWithoutUpdate().set(CAAutarchAdmin.DECLINED, e.getValue());
             }
+            for (CampaignFleetAPI f : charged) if (f.isAlive()) f.getMemoryWithoutUpdate().set(CAEnforcers.MEM_CHARGED, true);   // 0.3.9.6 (A4)
             for (Map.Entry<String, Map<String, Object>> e : rapid.entrySet()) {   // so a running project is not halved twice
                 MarketAPI m = sec.getEconomy().getMarket(e.getKey());
                 if (m == null) continue;
@@ -561,6 +591,7 @@ public final class CARemoval {
         rapid.clear();
         installedAlpha = 0;
         site = null;
+        charged.clear();
         data.scripts.jonahtweaks.JTModPlugin.start(false);
         if (!restored) step("colonies Off", () -> {
             CAData d = CAData.get();

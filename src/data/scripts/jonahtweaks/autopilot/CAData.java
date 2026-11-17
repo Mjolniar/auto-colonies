@@ -85,6 +85,10 @@ public class CAData {
     public Map<String, String> upgradeTargets() { if (upgradeTargets == null) upgradeTargets = new HashMap<String, String>(); return upgradeTargets; }
     public Map<String, Map<String, Integer>> marketPending() { if (marketPending == null) marketPending = new HashMap<String, Map<String, Integer>>(); return marketPending; }
     public Map<String, Float> marketPendingSince() { if (marketPendingSince == null) marketPendingSince = new HashMap<String, Float>(); return marketPendingSince; }
+    // 0.3.9.6 (B3): the stability cost (below 0) of each building started and still under way, by CAMarket claim key; the
+    // game applies it only when the building is finished (CAStability.pending)
+    public Map<String, Float> stabilityPending;
+    public Map<String, Float> stabilityPending() { if (stabilityPending == null) stabilityPending = new HashMap<String, Float>(); return stabilityPending; }
     /**
      * 0.3.0.0 (A3, 07 L3): retired; read CASettings.minStability. Kept so saves from before 0.3.0 load and bring theirs over
      * (CAData.get), and kept equal to the setting so anything still reading it gets the same number.

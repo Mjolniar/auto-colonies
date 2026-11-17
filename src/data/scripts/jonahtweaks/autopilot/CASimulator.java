@@ -278,6 +278,21 @@ public class CASimulator {
             if (Global.getSettings().getCommoditySpec(x.getKey()) == null) continue;
             if (x.getValue() > 0) CAEngine.demand(p, x.getKey(), x.getValue(), deficit);
         }
+        // 0.3.9.6 (F3): what the replaced building made and this one doesn't is lost; what it needed and this one doesn't is
+        // freed. Each is valued as a supply or demand line would be, and taken off or added back.
+        for (Map.Entry<String, Integer> x : sup.entrySet()) {
+            if (x.getValue() >= 0 || Global.getSettings().getCommoditySpec(x.getKey()) == null) continue;
+            CAEngine.Pick lost = new CAEngine.Pick();
+            CAEngine.supply(lost, x.getKey(), -x.getValue(), deficit);
+            p.fx[0] -= lost.fx[0];
+            p.lines.add("-" + (-x.getValue()) + " " + Global.getSettings().getCommoditySpec(x.getKey()).getName() + " the current building makes");
+        }
+        for (Map.Entry<String, Integer> x : dem.entrySet()) {
+            if (x.getValue() >= 0 || Global.getSettings().getCommoditySpec(x.getKey()) == null) continue;
+            CAEngine.Pick freed = new CAEngine.Pick();
+            CAEngine.demand(freed, x.getKey(), -x.getValue(), deficit);
+            p.fx[0] -= freed.fx[0];
+        }
         float gross = Math.max(0f, m.getGrossIncome());
         if (inc != 0f) p.fx[0] += inc * gross;
         if (upk != 0f) p.fx[0] -= upk * m.getIndustryUpkeep();

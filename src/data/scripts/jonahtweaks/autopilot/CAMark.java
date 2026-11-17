@@ -83,6 +83,17 @@ final class CAMark {
         return n;
     }
 
+    /** 0.3.9.6 (D7): drops the marks under prefix set more than days ago. Returns how many went. */
+    static int forgetOld(String prefix, float days) {
+        int n = 0;
+        long now = now();
+        for (String k : keys(prefix)) {
+            Long at = at(k);
+            if (at == null || days(at, now) > days) { clear(k); n++; }
+        }
+        return n;
+    }
+
     /** Pure: the market id of a per-colony mark under prefix p. */
     static String owner(String key, String p) {
         String rest = key.substring(p.length());

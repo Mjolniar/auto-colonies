@@ -155,6 +155,11 @@ public final class CATidy {
         if (d.enablers != null) n += dropKeys(d.enablers.keySet(), gone, ":");
         if (d.enablerAt != null) n += dropKeys(d.enablerAt.keySet(), gone, ":");
         n += CAMark.forgetMarkets(gone);   // 0.3.0.0 (B5): per-colony keep: marks (free port reopen, world commitments)
+        n += CAMark.forgetOld("logi:last:", 30f);   // 0.3.9.6 (D7): a route's last load matters for 30 days
+        n += CAMark.forgetOld("askno:", 366f);   // 0.3.9.6 (D7): the longest hold is a year (autonomy)
+        boolean tot = true;
+        try { tot = Global.getSettings().getModManager().isModEnabled(CAContracts.MOD); } catch (Throwable ignored) { }
+        if (!tot) for (String k : CAMark.keys(CAContracts.LEDGER)) { CAMark.clear(k); n++; }   // 0.3.9.6 (D7): Theory of Toolbox removed
         if (d.stores != null) {
             // 0.3.8.7: the destination store is read before the loop: CAStores.of adds its entry to d.stores when it has none,
             // which threw ConcurrentModificationException at it.remove() below

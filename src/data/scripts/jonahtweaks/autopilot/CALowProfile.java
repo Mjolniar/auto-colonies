@@ -421,6 +421,7 @@ public class CALowProfile {
         float before = CAStability.now(m);
         m.setAdmin(h.getPerson());
         h.setMarket(m);
+        CAData.get().adminTransit().remove(h.getPerson().getId());   // 0.3.9.6 (C13): seated, no longer on its way
         // 0.3.0.0 (fix): measure it (setAdmin refreshes the governing skills); under the floor, or anything throwing before the
         // core is in Storage, puts the AI core back in charge
         try {

@@ -125,6 +125,7 @@ public class CAItems {
 
     public static void ensureStorageTabs() {
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            if (!CAStores.holds(m)) continue;   // 0.3.9.6 (C8): not at outposts or autonomous colonies, which Autopilot doesn't read
             try { if (!m.hasSubmarket(CAStoragePlugin.ID)) m.addSubmarket(CAStoragePlugin.ID); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "could not add Autopilot Storage at " + m.getName(), t); }
         }
@@ -187,6 +188,11 @@ public class CAItems {
         CAData d = CAData.get();
         CASettings s = d.settings;
         if (markets.isEmpty()) return;
+        // 0.3.9.6 (C3): over the colony limit, administrators first (every governed colony loses stability meanwhile)
+        if (adminsNeededNow(d) > 0) {
+            if (s.adminOptimal && assignAdmin(d, markets)) return;
+            if (s.adminHiring && hireAdmin(d, s, markets)) return;
+        }
         boolean items = CASync.has("items");   // 0.3.6.0 story mode: Colony items
         if (items && pullLamp(d, markets)) return;
         if (items && pullPollutingForge(d, markets)) return;

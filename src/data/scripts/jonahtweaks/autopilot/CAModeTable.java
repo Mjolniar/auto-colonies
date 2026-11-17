@@ -76,6 +76,19 @@ public final class CAModeTable {
             "floorValGoods", "needsFirst", "moneyTaper", "taperLow", "taperHigh", "diversityCopies", "diversityShare", "goalWeights",
             "keepProductionGoods", "shipyardFromSurplus", "approvalDays", "buildHints", "hintScoreOnOpen", "legacyPlanner"};
 
+    /** 0.3.9.6 (F2): SAME fields (CAModeTable) with a row whose recommendation is the field's default. */
+    static final String[] RESET_DEFAULTS = {"enfOn", "enfInvestigators", "enfInspections", "enfLeague", "enfProtectors", "enfRaiders",
+            "enfPolice", "enfCost", "enfCommissionOK", "enfAlliesOK", "enfCeasefireOK", "enfLowProfileOK", "enfNearYouOK", "enfAllColonies",
+            "enfIntercept", "enfDiktatOff", "crisisKillsOff", "noWarRetake", "warAutoRivals", "warCoalitionOK", "warScorchedOK",
+            "scorchedTargets", "ambassadorFocus", "ambassadorStopAt", "settlementMinIncome", "researchItemMode", "logisticsShips",
+            "logisticsSupplies"};   // the Auto-expansion settings stay (JTPresetsCheck)
+
+    /** 0.3.9.6 (F2): sets the RESET_DEFAULTS fields to a new CASettings' values (CASetupUI.recommended). */
+    static void resetDefaults(CASettings s) {
+        CASettings fresh = new CASettings();
+        for (int i = 0; i < RESET_DEFAULTS.length; i++) set(s, RESET_DEFAULTS[i], get(fresh, RESET_DEFAULTS[i]));   // field names, not text (JTScreenButtonCheck counts for-each over constants)
+    }
+
     static final String[] PICK = {"lowProfile", "factionStance", "factionPriority", "capitalId", "focusId", "logisticsHub",
             "logisticsSellHub", "spyTarget"};
 
@@ -294,7 +307,7 @@ public final class CAModeTable {
         if (s == null || mode == null) return new ArrayList<String>();
         s.empireMode = mode;
         List<String> w = apply(s, mode);
-        try { CALog.did("Settings: empire mode " + mode.label + ". " + w.size() + (w.size() == 1 ? " setting follows it." : " settings follow it."), true); }
+        try { if (!w.isEmpty()) CALog.did("Settings: empire mode " + mode.label + ". " + w.size() + (w.size() == 1 ? " setting changed." : " settings changed."), true); }   // 0.3.9.6 (F4)
         catch (Throwable ignored) { }
         return w;
     }

@@ -204,7 +204,7 @@ public class CAIntel extends BaseIntelPlugin {
     void renderPage(TooltipMakerAPI t, CAData data, CASettings s, List<MarketAPI> markets, float width) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
 
-        if (CASync.dormant() && !page.equals("diag")) page = "story";   // 0.3.6.0 story mode
+        if (CASync.dormant() && !page.equals("diag") && !page.equals("mods")) page = "story";   // 0.3.6.0 story mode. 0.3.9.6 (F1): Mod features (Removal) too
         if (!CASync.on() && page.equals("story")) page = "colonies";
         if (page.equals("story")) { CASyncPage.render(t, width); return; }
         if (page.equals("colonies")) {
@@ -215,7 +215,7 @@ public class CAIntel extends BaseIntelPlugin {
             if (CABudget.paused(s)) t.addPara(CATheme.PAUSED, Misc.getNegativeHighlightColor(), 4f);   // 0.3.0.0 (WS-F3 fix pass 3): one text with the colony panel
             // 0.3.0.0 (WS-F2): the share is the Spending preset's (CAPresets), so the line no longer names 10%
             t.addPara("New upkeep this month: %s of %s (%s).", 4f, hl, Misc.getDGSCredits(s.upkeepAdded), Misc.getDGSCredits(CABudget.upkeepCap(s)),
-                    s.upkeepCapAuto ? "automatic, at least " + Misc.getDGSCredits(CABudget.UPKEEP_FLOOR) : "fixed");
+                    s.upkeepCapAuto ? "automatic, at least " + Misc.getDGSCredits(CABudget.autoUpkeepCap(0f, s.upkeepShare)) : "fixed");   // 0.3.9.6 (F7): the floor scales with the share
             // 0.3.0.0 (B5, research 03 F4): colony net runs the budget; cash flow (the whole report) is only for what you can afford
             t.addPara("Colony net: %s a month (%s-month median). Cash flow: %s.", 4f, hl,
                     Misc.getDGSCredits(CABudget.netIncome(s)), String.valueOf(CABudget.NET_MONTHS), Misc.getDGSCredits(CABudget.cashFlow(s)));

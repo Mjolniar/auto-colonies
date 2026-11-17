@@ -36,6 +36,20 @@ public class CAStability {
     /** Pure: the floor for a minStability setting. */
     static float floor(float minStability) { return Math.max(MIN_FLOOR, minStability); }
 
+    /**
+     * 0.3.9.6 (B3): the stability cost of buildings started here and still under way (0 or less). The game applies a new
+     * building's effects, and an upgrade's change, only when it is finished, so each check adds this to the stability now.
+     */
+    public static float pending(MarketAPI m) {
+        float sum = 0f;
+        try {
+            String pre = m.getId() + "|";
+            for (java.util.Map.Entry<String, Float> e : CAData.get().stabilityPending().entrySet())
+                if (e.getKey().startsWith(pre) && e.getValue() != null && CAMarket.underWay(m, e.getKey())) sum += Math.min(0f, e.getValue());
+        } catch (Throwable ignored) { }
+        return sum;
+    }
+
     /** The colony's stability as the game adds it up (unclamped); the shown value if that can't be read. */
     public static float now(MarketAPI m) {
         try { return m.getStability().getModifiedValue(); } catch (Throwable t) { return m.getStabilityValue(); }

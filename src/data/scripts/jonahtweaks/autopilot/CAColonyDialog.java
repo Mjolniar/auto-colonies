@@ -206,7 +206,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         else if (id instanceof CAEngine.Pick) {
             CAEngine.Pick p = (CAEngine.Pick) id;
             // 0.3.3.0: the game's price plus the construction fee, from credits above the reserve (nothing is free)
-            float fee = CABudget.constructionFee(d.settings, p.cost);
+            float fee = CABudget.buildTotal(d.settings, p.cost) - p.cost;   // 0.3.9.6 (F8): with Rapid construction's fee
             String err = CAApprovals.startByPlayer(market, p);
             message = err == null ? "Started: " + p.verb + " " + p.name + " for " + Misc.getDGSCredits(p.cost) + " plus " + Misc.getDGSCredits(fee) + " fee" : err;
         }
@@ -546,7 +546,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
         CATheme.heading(t, CATheme.APPROVAL, 10f);
         t.addPara("%s for %s, fee %s.", 6f, hl, c.pendingName, Misc.getDGSCredits(c.pendingCost),
-                Misc.getDGSCredits(CABudget.constructionFee(s, c.pendingCost)));
+                Misc.getDGSCredits(CABudget.buildTotal(s, c.pendingCost) - c.pendingCost));   // 0.3.9.6 (F8): with Rapid construction's fee
         if (c.pendingWhy != null) t.addPara(c.pendingWhy, gray, 2f);   // 0.3.3.0
         ButtonAPI a = t.addButton("Approve", APPROVE, hl, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 6f);
         ButtonAPI r = t.addButton("Reject", REJECT, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 0f);

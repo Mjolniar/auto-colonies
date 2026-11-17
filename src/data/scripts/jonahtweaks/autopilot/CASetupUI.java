@@ -136,7 +136,12 @@ public class CASetupUI {
         s.approvalDays = CAApprovalDialog.DEFAULT_DAYS;   // 0.3.3.0: the approval summary every 60 days
         s.buildHints = 0;          // 0.3.3.0: build menu hints at Advisor colonies
         s.hintScoreOnOpen = false;
+        // 0.3.9.6 (F2): the one-value settings with a row not set above go to their defaults (each row's recommendation), so
+        // Reset to recommended leaves none that differs from its recommendation without a Set by you mark
+        CAModeTable.resetDefaults(s);
     }
+
+
 
     /**
      * 0.3.0.0 (WS-F1, research 04 section 5 item 6): the Reset to recommended button. applyRecommended, except that Expansion
@@ -759,6 +764,14 @@ public class CASetupUI {
     /** Rows drawn with "set by you" this draw (render fills it). */
     static final Set<String> marked = new HashSet<String>();
 
+    /** 0.3.9.6 (F6): the value is the recommendation, alone or followed by a note ("15% (120,000 now)", "6 unclaimed hulls"). Pure. */
+    static boolean sameAsRec(String value, String rec) {
+        if (value == null || rec == null) return false;
+        if (value.equalsIgnoreCase(rec)) return true;
+        if (value.length() <= rec.length() || !value.regionMatches(true, 0, rec, 0, rec.length())) return false;
+        return !Character.isLetterOrDigit(value.charAt(rec.length()));
+    }
+
     /** The rows you set: every row you changed, and every row with a field you set (presets by their fields). */
     static Set<String> markedRows(CASettings s) {
         Set<String> out = new HashSet<String>(s.playerRows());
@@ -797,7 +810,7 @@ public class CASetupUI {
             last.getPosition().rightOfTop(first, 6f);
         }
         // 0.3.0.0 (WS-F1, research 04 section 3): the recommendation shows only when the value differs from it
-        boolean showRec = !held && rec != null && !rec.isEmpty() && !rec.equalsIgnoreCase(value);
+        boolean showRec = !held && rec != null && !rec.isEmpty() && !sameAsRec(value, rec);   // 0.3.9.6 (F6): a note after the value
         boolean mine = marked.contains(key);   // 0.3.3.0: a row you set keeps its value through empire mode changes
         LabelAPI l = t.addPara("%s: %s." + (showRec ? " Recommended: " + CALog.esc(rec) + "." : "") + (mine ? " Set by you." : "")
                 + (lock != null ? " " + CALog.esc(lock) : ""), 0f, Misc.getHighlightColor(),   // story mode: what the abilities that are off hold back

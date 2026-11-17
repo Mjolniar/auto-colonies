@@ -185,7 +185,7 @@ public class CAPolicies {
                                     // 0.3.0.0 (C3): the months rule below Rich
                                     : g.slow ? slowText(m, g)
                                     : g.cost > lastCap * (on ? 1.1f : 1f) ? "the hazard pay budget is " + pct(lastShare) + " of colony net, "
-                                            + Misc.getDGSCredits(lastCap) + ", and it costs " + Misc.getDGSCredits(g.cost) + " a month here; raise Hazard pay limit, all colonies, in Settings"
+                                            + Misc.getDGSCredits(lastCap) + ", and it costs " + Misc.getDGSCredits(g.cost) + " a month here; raise Hazard pay budget in Settings"
                                     : "the hazard pay budget (" + pct(lastShare) + " of colony net) goes to colonies it speeds up more";
                             boolean urgentOff = on && (atMax || emergency || why.startsWith("the hazard pay budget"));
                             if ((!siege && canChange(c.lastHazardPay, HAZARD_PAY_MIN_DAYS)) || urgentOff) {

@@ -451,6 +451,7 @@ public class CAStockpile {
             else want -= n.total();   // the goods are gone from that market: not wanted until the next look
         }
         setWant(k, want);
+        pending[k] = null;   // 0.3.9.6 (D2): the On look buys; a proposal from Recommend only is out of date
         if (bought == 0 && !military && !noted) CARich.note(CARich.STOCKPILES, "waits for its share of the pool (" + Misc.getDGSCredits(allowance) + " now; "
                 + needs.get(0).name + " for " + needs.get(0).to.getName() + " costs " + Misc.getDGSCredits(needs.get(0).total()) + ")");
     }
@@ -593,6 +594,11 @@ public class CAStockpile {
             if (n.total() > CARich.room(n.military ? CARich.MILITARY : CARich.STOCKPILES) + 1f) {
                 pending[k] = null;
                 return KIND_NAMES[k] + ": proposal over its share of the pool. Dropped. A new one comes at the next look";
+            }
+            // 0.3.9.6 (D2): goods of this kind already on their way to the colony (bought since the proposal)
+            if (inTransit(d, n.to.getId(), n.com) > 0) {
+                pending[k] = null;
+                return n.to.getName() + ": " + n.name + " already on its way";
             }
             String err = buy(d, d.settings, n);
             return err != null ? n.to.getName() + ": stockpile " + err : "";

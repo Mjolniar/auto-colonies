@@ -234,8 +234,9 @@ public class CAObjectives {
 
     /** Daily: delivers crews that have arrived, then sends at most one new one (Auto) or recommends it once (Recommend only). */
     public static void run(CAData d, CASettings s, List<MarketAPI> auto) {
-        if (s.objectiveMode == 2 || Global.getSector() == null) return;
-        deliver(d);
+        if (Global.getSector() == null) return;
+        deliver(d);   // 0.3.9.6 (C2): crews on their way arrive with the setting Off too
+        if (s.objectiveMode == 2) return;
         if (CABudget.paused(s) || auto.isEmpty()) return;
         if (s.objectiveMode == 0 && CAPlanner.inCharge()) return;   // 0.3.0.0 (B3): Auto sends crews from the planner's one queue (offer)
         Plan p = best(d, s, auto);

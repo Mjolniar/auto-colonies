@@ -210,6 +210,10 @@ public class CABuildout {
         }
         d.setMode(c, CAData.Mode.AUTO);
         if (first) CAModeTable.setEmpire(d.settings, CAData.Mode.AUTO);   // 0.3.3.0: the first setup sets the empire mode
+        if (c.mode != CAData.Mode.AUTO) {   // 0.3.9.6 (B7): story mode kept the colony out of Auto; fast buildout needs Auto
+            CALog.did(m.getName() + ": Fast buildout needs Auto.", true);
+            return;
+        }
         c.buildout = true;
         c.buildoutFloor = floor;
         c.buildoutProfitSince = 0L;

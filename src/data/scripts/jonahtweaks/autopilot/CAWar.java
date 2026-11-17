@@ -759,6 +759,7 @@ public class CAWar {
                     || t.getFaction() == null || !t.getFaction().isHostileTo(Factions.PLAYER)) { p.d.attackers().remove(id); continue; }
             // 0.3.9.0: a market no operation may go at (hidden, out of the economy, story-critical, cut off) keeps its record
             if (!p.allows(CAWarPolicy.RAID, t.getFaction()) || !targetable(t) || underWay(NexRaidIntel.class, t)) continue;
+            if (!raidFits(p, CAWarPolicy.RAID, t)) continue;   // 0.3.9.6 (E1, E2)
             String w = send(p.d, p.s, p.mgr, CAWarPolicy.RAID, CAWarPolicy.RAID, t, Math.max(200f, 1.5f * CAItems.defenseFP(t)), p.rich, "it attacked you", CAWarPolicy.RAID + ":" + t.getId());
             if (w == null) p.went();
             else p.waiting.add("raid on " + t.getName() + " (" + waitText(w) + ")");
@@ -779,13 +780,35 @@ public class CAWar {
                 String w = send(p.d, p.s, p.mgr, CAWarPolicy.DEFENSE, CAWarPolicy.GUARD, t, Math.max(MIN_FP * 1.5f, r.getFP()), p.rich,
                         r.getFaction().getDisplayName() + " respawn invasion", "guard:" + (t.getStarSystem() != null ? t.getStarSystem().getId() : t.getId()));
                 if (w == null) p.went();
-            } else if (from != null && targetable(from) && p.allows(CAWarPolicy.HOLD_RAID, from.getFaction()) && !oursAt(from)) {
+            } else if (from != null && targetable(from) && p.allows(CAWarPolicy.HOLD_RAID, from.getFaction()) && !oursAt(from)
+                    && raidFits(p, CAWarPolicy.HOLD_RAID, from)) {   // 0.3.9.6 (E1, E2)
                 String w = send(p.d, p.s, p.mgr, CAWarPolicy.HOLD_RAID, CAWarPolicy.HOLD_RAID, from, Math.max(200f, 1.5f * CAItems.defenseFP(from)), p.rich,
                         r.getFaction().getDisplayName() + " respawn invasion leaves from here", CAWarPolicy.HOLD_RAID + ":" + from.getId());
                 if (w == null) p.went();
                 else p.waiting.add("raid on " + from.getName() + " (" + waitText(w) + ")");
             }
         }
+    }
+
+    /**
+     * 0.3.9.6 (E1, E2): Nexerelin's raid at t hits every visible market in t's system that is hostile to you
+     * (NexRaidActionStage.getTargets), and skips pirate factions' markets unless Nexerelin allows pirate invasions. A raid goes
+     * only when t can be hit and each other market it would hit is of a faction the War level and stance allow for this kind.
+     */
+    static boolean raidFits(Pass p, String kind, MarketAPI t) {
+        if (t == null || t.getContainingLocation() == null || pirateSkipped(t.getFactionId())) return false;
+        for (MarketAPI m : Misc.getMarketsInLocation(t.getContainingLocation())) {
+            if (m == t || m.isHidden() || m.getFaction() == null || !m.getFaction().isHostileTo(Factions.PLAYER)) continue;
+            if (pirateSkipped(m.getFactionId())) continue;
+            if (!p.allows(kind, m.getFaction())) return false;
+        }
+        return true;
+    }
+
+    /** 0.3.9.6 (E2): Nexerelin's raids leave this faction's markets alone (a pirate faction, pirate invasions off). */
+    static boolean pirateSkipped(String factionId) {
+        try { return factionId != null && !exerelin.utilities.NexConfig.allowPirateInvasions && exerelin.utilities.NexUtilsFaction.isPirateFaction(factionId); }
+        catch (Throwable t) { return false; }
     }
 
     /** A military industry is there (raid it; blockade the rest). */
@@ -816,7 +839,7 @@ public class CAWar {
             for (MarketAPI t : l) {
                 // 0.3.0.0 (fix): also while a blockade Auto Colonies sent there can still be on station (the saved record)
                 if (oursAt(t) || daysSince(p.d, CAWarPolicy.BLOCKADE + ":" + t.getId()) < CAWarPolicy.BLOCKADE_DAYS) continue;
-                boolean raid = military(t);
+                boolean raid = military(t) && raidFits(p, CAWarPolicy.HOLD_RAID, t);   // 0.3.9.6 (E1, E2): else a blockade, which has one target
                 String kind = raid ? CAWarPolicy.HOLD_RAID : CAWarPolicy.BLOCKADE;
                 float want = raid ? Math.max(200f, 1.5f * CAItems.defenseFP(t)) : blockadeFP(t);
                 String w = send(p.d, p.s, p.mgr, kind, kind, t, want, p.rich, CAStance.name(p.stance(e.getKey())) + ": " + e.getKey().getDisplayName(), kind + ":" + t.getId());

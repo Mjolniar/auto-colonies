@@ -1059,6 +1059,7 @@ public class CASync {
             if (missing && flag("autarchPlaced") && (flag("hadCore") || !CAAutarch.siteExists())) {
                 boolean atMarket = CAAutarch.takeFromMarkets();
                 flag("hadCore", false);
+                flag("coreLost", !atMarket);   // 0.3.9.6 (C1): lost, not sold: it may turn up again
                 sold(atMarket);
             }
             return;
@@ -1074,8 +1075,14 @@ public class CASync {
             CALog.did("Autopilot: Engineering finished. " + CASyncCatalog.cores(0, CASyncCatalog.BREAKDOWN_BETA, CASyncCatalog.BREAKDOWN_ALPHA)
                     + " in your cargo.", true);
             pend(CATriPad.BROKEN);   // 0.3.8.9: kept in the save until it shows; a Story page click no longer replaces it
+        } else if ("sold".equals(ph) && flag("coreLost") && CAAutarch.anywhere()) {
+            // 0.3.9.6 (C1): the lost core turned up again (picked up from cargo pods, or in a storage the check missed): no second one
+            phase("");
+            flag("coreLost", false);
+            flag("hadCore", true);
         } else if ("sold".equals(ph) && days >= CASyncCatalog.RETURN_DAYS) {
             if (CAAutarch.place(CAAutarch.system())) {
+                flag("coreLost", false);
                 phase("");
                 flag("hadCore", false);
                 num("gen", generation() + 1);

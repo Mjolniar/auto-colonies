@@ -167,7 +167,7 @@ public class CAProjects {
     static Result last;
     static boolean broken = false;
 
-    public static void reset() { STEPS.clear(); computedAt = -99f; project = null; last = null; monthly.clear(); left.clear(); other.clear(); orders.clear(); }
+    public static void reset() { STEPS.clear(); computedAt = -99f; project = null; last = null; monthly.clear(); left.clear(); other.clear(); orders.clear(); broken = false; }   // 0.3.9.6 (D6): broken too
 
     /**
      * 0.2.39.0: what Ashes of the Domain's open production orders still need, by good: each order line's remaining units times

@@ -72,7 +72,8 @@ public class CAEndgame {
     static final float REPLACE_COLONY_DAYS = CATuning.ENDGAME_REPLACE_COLONY_DAYS, MEMORY_DAYS = CATuning.ENDGAME_MEMORY_DAYS;
     static final Set<String> WAR_GOODS = new HashSet<String>(Arrays.asList("ships", "hand_weapons", "supplies", "fuel", "heavy_machinery",
             "metals", "rare_metals", "marines"));
-    static float lastReplaceDay = -99f;
+    /** 0.3.9.6 (B8): CAMark key of the last endgame replacement (saved, so a load keeps the one-a-day limit). */
+    static final String LAST_REPLACE = "endgame:lastReplace";
     static String summary;
 
     // ---------------- pure rules (JTEndgameCheck) ----------------
@@ -399,6 +400,8 @@ public class CAEndgame {
         // 0.3.6.2: CABuild.start's other refusals, checked before anything comes down, so a takedown never leaves an empty slot
         if (!p.upgrade && CABuild.buildsFull(m)) return "another building is under construction";
         if (!p.upgrade && m.hasIndustry(p.id)) return "it's already built";
+        // 0.3.9.6 (B1): over the industry limit, one takedown frees no slot (CABuild.start would refuse after it)
+        if (CABuild.takesSlot(m, p) && CABuild.usedSlots(m) - 1 >= Misc.getMaxIndustries(m)) return "the colony is over its industry limit";
         if (!CASync.mayBuild(p.id)) return "Stations need " + CASyncCatalog.buy("stations") + " on the Story page";
         if (p.upgrade && (p.existing == null || p.existing.isUpgrading() || p.existing.isBuilding())) return "that building can't be upgraded right now";
         return null;
@@ -494,7 +497,8 @@ public class CAEndgame {
     /** Whether a replacement may happen today here (one a day empire-wide, one a month per colony). */
     static boolean replaceAllowed(MarketAPI m, CASettings s) {
         if (!CARich.wondersOpen(s)) return false;   // 0.3.0.0 (C3 fix): replacements are the Wonders and endgame rung's: none while it's Off or Recommend only, or under Fleet, Expansion or Save
-        if (s.endgameNoReplace || now() - lastReplaceDay < 1f && now() >= lastReplaceDay) return false;
+        Long lastAny = CAMark.at(LAST_REPLACE);
+        if (s.endgameNoReplace || lastAny != null && CAMark.days(lastAny, CAMark.now()) < 1f) return false;
         Long last = CAData.get().swapAt().get(m.getId() + ":replaced");
         return last == null || Global.getSector().getClock().getElapsedDaysSince(last) >= REPLACE_COLONY_DAYS;
     }
@@ -534,7 +538,7 @@ public class CAEndgame {
         d.endgameBuilt().put(m.getId() + ":-" + oldId, ts);
         d.swapAt().put(m.getId() + ":replaced", ts);
         CATombstone.add(m.getId(), oldId, floor ? CATombstone.FLOOR : capital ? CATombstone.CAPITAL : CATombstone.ENDGAME, b.paid);   // 0.3.0.0 (B4): not built back here for a year
-        if (!floor) lastReplaceDay = now();   // 0.3.2.0: a make-room swap doesn't use the endgame's one-a-day
+        if (!floor) CAMark.set(LAST_REPLACE, ts);   // 0.3.2.0: a make-room swap doesn't use the endgame's one-a-day. 0.3.9.6 (B8): saved
         chains = null;
         String why = floor ? "room for a production floor producer" : capital ? "room for the capital's trade" : "endgame";
         CALog.did(m.getName() + ": Took down " + oldName + " for " + p.name + " (" + why + ", worth " + CAEngine.valueText(p.score - wk.keep) + " more"

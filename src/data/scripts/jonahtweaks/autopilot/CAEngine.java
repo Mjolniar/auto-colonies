@@ -573,7 +573,8 @@ public class CAEngine {
     /** 0.3.8.8: deficit: the evaluation's shortages, for the plan steps a pick leads to (null: read again, empireDeficits). */
     static boolean finish(MarketAPI m, Pick p, CAData.Profile profile, float minStability, CAPlan.Plan plan, Map<String, Integer> deficit) {
         // 0.3.2.1: Viable Slave Labor and Supercooled Cryo-Sinks hold a colony at 6 or more (CARogue.stabilityFloor)
-        if (p.fx[1] < 0 && m.getStabilityValue() + p.fx[1] < Math.max(minStability, CARogue.stabilityFloor(m))) return false;
+        // 0.3.9.6 (B5): CAStability.floor (at least 3), as the planner and CABuild.start use
+        if (p.fx[1] < 0 && m.getStabilityValue() + CAStability.pending(m) + p.fx[1] < Math.max(CAStability.floor(minStability), CARogue.stabilityFloor(m))) return false;   // 0.3.9.6 (B3): costs under way count
         // the endgame economy (CAEndgame): money counts 5%, military and security at least its weights, and what the building
         // makes is valued as production chains
         boolean endgame = !profitOnly && CAEndgame.at(m);

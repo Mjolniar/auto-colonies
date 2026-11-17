@@ -112,14 +112,16 @@ public class CAPatrolKills {
     static void battle(CampaignFleetAPI winner, BattleAPI b) {
         if (winner == null || b == null) return;
         CampaignClockAPI clock = Global.getSector().getClock();
-        Map<String, Long> counted = CAData.get().crisisCounted();
-        prune(counted, clock::getElapsedDaysSince, KEEP_DAYS);
         // a battle you fight: the game counts the other side's lost ships as yours; they are never counted again here
-        if (b.isPlayerInvolved()) { lost(b.getNonPlayerSideSnapshot(), counted, clock.getTimestamp()); return; }
+        if (b.isPlayerInvolved()) { lost(b.getNonPlayerSideSnapshot(), counted(clock), clock.getTimestamp()); return; }
         if (CAData.settings().crisisKillsOff) return;
+        List<CampaignFleetAPI> one = b.getSnapshotSideOne(), two = b.getSnapshotSideTwo();
+        // 0.3.9.6: most reports (every AI battle round in the sector) have no fleet of your faction: nothing more to read
+        if (!CAEnforcers.yourForces(one == null ? new ArrayList<CampaignFleetAPI>() : one)
+                && !CAEnforcers.yourForces(two == null ? new ArrayList<CampaignFleetAPI>() : two)) return;
         List<MarketAPI> auto = autoColonies();
         if (auto.isEmpty()) return;
-        List<CampaignFleetAPI> one = b.getSnapshotSideOne(), two = b.getSnapshotSideTwo();
+        Map<String, Long> counted = counted(clock);
         int s = side(hasForce(one, auto), hasForce(two, auto));
         if (s == 0) return;
         List<CampaignFleetAPI> ours = s == 1 ? one : two, theirs = s == 1 ? two : one;
@@ -131,6 +133,13 @@ public class CAPatrolKills {
         for (MarketAPI m : auto) if (m.getContainingLocation() == loc) { place = m.getName(); break; }
         try { crisis(winner, won, lost, place); } catch (Throwable t) { CAStep.warn("crisis kills", "crisis kills: colony crisis failed", t); }
         try { commerceRaiding(lost, place); } catch (Throwable t) { CAStep.warn("crisis kills", "crisis kills: commerce raiding failed", t); }
+    }
+
+    /** The counted ship ids (CAData.crisisCounted), ids older than KEEP_DAYS dropped. */
+    static Map<String, Long> counted(CampaignClockAPI clock) {
+        Map<String, Long> counted = CAData.get().crisisCounted();
+        prune(counted, clock::getElapsedDaysSince, KEEP_DAYS);
+        return counted;
     }
 
     /** The side's ships lost since the battle's snapshot and not counted before, by fleet; each is recorded as counted. */

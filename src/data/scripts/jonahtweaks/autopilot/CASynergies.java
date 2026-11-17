@@ -193,8 +193,8 @@ public class CASynergies {
             p.fx[3] += 0.05f;
             p.lines.add("Disrupted buildings recover faster from stockpiled supplies and machinery");
         } else if (id.equals("tata_mono_bio_synthesis")) {
+            p.lines.add("Subsidised Farming +2 food, needs 1 drugs");   // 0.3.9.6 (F10): before demand's own line
             supply(m, p, "food", 2, deficit); CAEngine.demand(p, "drugs", 1, deficit);
-            p.lines.add("Subsidised Farming +2 food, needs 1 drugs");
         } else if (id.equals("seventhslayer_defensive_network")) {
             p.fx[3] += 0.5f; p.fx[4] += 0.2f;
             p.lines.add("Ground defense x1.5, fleet size +20%");

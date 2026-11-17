@@ -720,6 +720,7 @@ public class CAResearch {
     static SubmarketAPI facilityTab() {
         SubmarketAPI best = null; float bestHas = -1f;
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            if (!CAStores.holds(m)) continue;   // 0.3.9.6 (C4): shipments to it would go to the biggest colony instead
             SubmarketAPI sm = m.getSubmarket(SUBMARKET);
             if (sm == null || sm.getCargo() == null) continue;
             float has = sm.getCargo().getCommodityQuantity(DATABANK);
