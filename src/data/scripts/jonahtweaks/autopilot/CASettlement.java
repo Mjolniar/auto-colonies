@@ -158,8 +158,9 @@ public class CASettlement {
         if (d.settleExpeditionPlanet == null) return;
         if (Global.getSector().getClock().getElapsedDaysSince(d.settleExpeditionAt) < d.settleExpeditionDays) return;
         String planetId = d.settleExpeditionPlanet;
-        float paid = d.settleExpeditionCost;
+        float paid = d.settleExpeditionCost + Math.max(0f, d.settleExpeditionFee);   // 0.3.9.7 (G6): the fee too
         d.settleExpeditionPlanet = null;
+        d.settleExpeditionFee = 0f;
         String err;
         try { err = found(planetId, false); }
         catch (Throwable t) {   // 0.3.6.2: a throw refunds the expedition too (found() has undone what it added)
@@ -398,6 +399,7 @@ public class CASettlement {
                 d.settleExpeditionAt = Global.getSector().getClock().getTimestamp();
                 d.settleExpeditionDays = expeditionDays(planet);
                 d.settleExpeditionCost = cost;
+                d.settleExpeditionFee = fee;   // 0.3.9.7 (G6)
                 name = name + "; the expedition gets there in " + Math.round(d.settleExpeditionDays) + " days";
             }
         } else err = buildFacility(id);

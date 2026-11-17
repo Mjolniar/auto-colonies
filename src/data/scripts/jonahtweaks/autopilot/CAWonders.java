@@ -33,6 +33,10 @@ public class CAWonders {
     static final String GW = "data.kaysaar.aotd.tot.grandwonders.", TOT = "data.kaysaar.aotd.tot.";
     static final String BIFROST = "data.kaysaar.aotd.vok.campaign.econ.megastructures.impl.scripts.BifrostMegastructureManager";
     static boolean broken = false;
+    /** 0.3.9.7 (G4): CAMark key of a Grand Wonder site Autopilot built at a colony. */
+    static final String SITE_MARK = "wondersite:";
+    /** 0.3.9.7 (G5): upkeep each Bifrost gate adds (VoK BifrostControlCenter.costUpkeepForEachGate). */
+    static final float BIFROST_UPKEEP = 20000f;
     static String summary;
 
     static boolean on(CASettings s) {
@@ -86,9 +90,9 @@ public class CAWonders {
         if (!on(s)) return;
         List<String> lines = new ArrayList<String>();
         try { daedalus(s, lines, null, true); }
-        catch (Throwable t) { broken = true; CADiagnostics.LOG.warn(CADiagnostics.TAG + "can't read Ashes of the Domain's Grand Wonders; they're left to you", t); return; }
-        try { bifrost(lines); }
-        catch (Throwable t) { broken = true; CADiagnostics.LOG.warn(CADiagnostics.TAG + "can't read Ashes of the Domain's Bifrost network; it's left to you", t); return; }
+        catch (Throwable t) { fail(t, "can't read Ashes of the Domain's Grand Wonders; they're left to you"); return; }
+        try { bifrost(s, lines); }
+        catch (Throwable t) { fail(t, "can't read Ashes of the Domain's Bifrost network; it's left to you"); return; }
         summary = lines.isEmpty() ? null : "Wonders and gates: " + CAContracts.join(lines) + ".";
     }
 
@@ -123,6 +127,7 @@ public class CAWonders {
         String err = CABuild.start(m, p);
         if (err != null) { if (CALog.once("wonder:site:" + m.getId() + ":" + err)) CALog.think(m.getName() + ": Grand Wonder site not started: " + err); return err; }
         CABudget.charge(s, m.getId(), 0f, a.fee, a.upkeep);
+        CAMark.set(SITE_MARK + m.getId(), CAMark.now());   // 0.3.9.7 (G4): Autopilot's site
         CARich.spent(CARich.WONDERS, a.cost);   // 0.3.0.0 (C3 fix): the site's price counts against the Wonders rung this month
         CALog.did(m.getName() + ": Grand Wonder site started for the " + name(DAEDALUS) + " (" + Misc.getDGSCredits(a.cost) + ").", true);
         return null;
@@ -196,6 +201,7 @@ public class CAWonders {
                 String err = CABuild.start(m, p);
                 if (err != null) { if (CALog.once("wonder:site:" + m.getId() + ":" + err)) CALog.think(m.getName() + ": Grand Wonder site not started: " + err); return; }
                 CABudget.charge(s, 0f, CABudget.constructionFee(s, p.cost), p.upkeep);
+                CAMark.set(SITE_MARK + m.getId(), CAMark.now());   // 0.3.9.7 (G4): Autopilot's site
                 if (!CABudget.legacy(s)) CARich.spent(CARich.WONDERS, p.cost);   // 0.3.0.0 (C3 fix): the site's price counts against the Wonders rung this month
                 CALog.did(m.getName() + ": Grand Wonder site started for the " + name(DAEDALUS) + " (" + Misc.getDGSCredits(p.cost) + ").", true);
                 lines.add("construction site for the " + name(DAEDALUS) + " going up at " + m.getName());
@@ -203,6 +209,8 @@ public class CAWonders {
             }
             if (site.isBuilding()) { lines.add(name(DAEDALUS) + "'s construction site at " + m.getName() + " is being built"); return; }
             if (!act) return;   // 0.3.0.0 (B3): the planner's offer only looks
+            // 0.3.9.7 (G4): a site you built or locked is yours to assign (the Garden of Elysium, a Star Citadel)
+            if (CAMark.at(SITE_MARK + m.getId()) == null || CAData.get().colony(m.getId()).locks.contains(site.getId())) continue;
             CARefl.invoke(assign, site, DAEDALUS);
             CALog.did(m.getName() + ": " + name(DAEDALUS) + " construction started. Replaces the Megaport.", true);
             lines.add(name(DAEDALUS) + " started at " + m.getName());
@@ -212,8 +220,15 @@ public class CAWonders {
 
     // ---------------- Bifrost ----------------
 
+    /** 0.3.9.7 (G11): a missing class or method turns wonders off for the session; anything else is one day's warning. */
+    static void fail(Throwable t, String what) {
+        boolean lookup = t instanceof ClassNotFoundException || t instanceof NoSuchMethodException || t instanceof NoSuchFieldException || t instanceof LinkageError;
+        if (lookup) { broken = true; CADiagnostics.LOG.warn(CADiagnostics.TAG + what, t); }
+        else CAStep.warn("wonders", "wonders and gates failed today", t);
+    }
+
     @SuppressWarnings("unchecked")
-    static void bifrost(List<String> lines) throws Exception {
+    static void bifrost(CASettings s, List<String> lines) throws Exception {
         MarketAPI control = null;
         for (MarketAPI m : Misc.getPlayerMarkets(false)) { Industry b = m.getIndustry(BFC); if (b != null && b.isFunctional()) control = m; }
         if (control == null) {
@@ -237,7 +252,13 @@ public class CAWonders {
                 if (CALog.once("bifrost:wait:" + missing)) CALog.think("Bifrost gates wait for " + CAContracts.join(missing) + " production.");
                 return;
             }
+            // 0.3.9.7 (G5): each gate adds BIFROST_UPKEEP to the Control Center's upkeep: within the month's new-upkeep cap, and booked
+            if (s.upkeepAdded + BIFROST_UPKEEP > CASurplus.upkeepCap(control, s)) {
+                lines.add("Bifrost gates wait for next month's upkeep room");
+                return;
+            }
             CARefl.invoke(add, mega, sys);
+            CABudget.charge(s, control.getId(), 0f, 0f, BIFROST_UPKEEP);
             CALog.did("Bifrost gate started in " + sys.getName() + ". 90 days, then 20,000/month.", true);
             lines.add("Bifrost gate started in " + sys.getName());
             return;   // one a day

@@ -283,7 +283,7 @@ public class CATasc {
 
     /** 0.3.7.9: TASC's running project here, or null. */
     static Object currentProject(MarketAPI m) {
-        if (!link() || !m.hasCondition("terraforming_controller")) return null;
+        if (!m.hasCondition("terraforming_controller") || !link()) return null;   // 0.3.9.7 (G9): the condition first
         try {
             Object ctl = controllerOf.invokeWithArguments(m);
             return ctl == null ? null : CARefl.invoke(current, ctl);
@@ -326,6 +326,7 @@ public class CATasc {
 
     /** Auto colonies: when nothing is running, starts the best project whose requirements are met. Approve colonies log it once. */
     public static void run(List<MarketAPI> markets) {
+        if (!enabled()) return;   // 0.3.9.7 (G9): no TASC, nothing to read (link() logged a warning each session)
         CAData d = CAData.get();
         for (MarketAPI m : markets) {
             CAData.Colony c = d.colony(m.getId());
@@ -339,7 +340,7 @@ public class CATasc {
                 if (c.mode == CAData.Mode.AUTO) startProject(m, best, "Auto");
                 else {
                     CAApprovals.dropLive(mine, mine + best.name);   // 0.3.9.2 (I L4): an ask for a project that is no longer the best goes
-                    if (CALog.once("tasc:" + m.getId() + ":" + best.name)) CAApprovals.say(m.getName() + ": Recommends TASC's " + best.name + ". Start it in the colony panel.", false);
+                    if (!CAApprovals.held("tasc:" + m.getId() + ":" + best.name, "tasc") && CALog.once("tasc:" + m.getId() + ":" + best.name)) CAApprovals.say(m.getName() + ": Recommends TASC's " + best.name + ". Start it in the colony panel.", false);
                     // 0.3.3.0: a decision in the approval summary
                     final MarketAPI mm = m; final Proj pp = best;
                     CAApprovals.offer("tasc:" + m.getId() + ":" + best.name, "tasc", m, "TASC: " + best.name, 0f, 0f, null, () -> startProject(mm, pp, "you"));

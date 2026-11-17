@@ -409,7 +409,7 @@ public class CAExpansion {
         r.admins = CAItems.adminsEmployed();
         r.maxAdmins = CAItems.adminMax();
         r.idle = CAItems.idleAdmins();
-        r.pending = d.expandOrders().size() + d.tascOrders().size() + CAItems.comingBack(d);
+        r.pending = d.expandOrders().size() + d.tascOrders().size() + CAItems.comingBack(d) + invasionsComing();   // 0.3.9.7 (E3): captures under way
         if (r.governed + r.pending - r.max - r.idle > 0) {
             r.why = "Colony limit: administrators needed. Auto-expansion waits for them.";
             return r;
@@ -436,6 +436,12 @@ public class CAExpansion {
     }
 
     /** The method and the price for this candidate today, an administrator's hire included when the colony limit needs one. */
+    /** 0.3.9.7 (E3): Auto Colonies' invasions under way (each capture lands governed by you); 0 without Nexerelin. */
+    static int invasionsComing() {
+        if (!Global.getSettings().getModManager().isModEnabled("nexerelin") || !CACompat.linked("CAWar")) return 0;
+        try { return CAWar.invasionsUnderWay().size(); } catch (Throwable t) { return 0; }
+    }
+
     static ExpansionCost costFor(CAData d, CASettings s, Prospect p) {
         ExpansionCost c = new ExpansionCost();
         PlanetAPI planet = planet(p.planetId);
@@ -634,6 +640,14 @@ public class CAExpansion {
         ExpansionCost c = costFor(d, s, p);
         if (c.why != null) return c.why;
         Object intel = null;
+        // 0.3.9.7 (E3): a Nexerelin colony fleet founds its colony on arrival, also before an administrator the colony limit
+        // needs has arrived. Then an Autopilot crew goes instead: it waits on arrival for the administrator (deliver).
+        if (NEX.equals(c.method) && needsAdminNow() && CAItems.idleAdmin(d) == null) {
+            crewCost(c, planet);
+            if (c.from == null) return "No colony of yours can send an expedition.";
+            c.fee = CABudget.constructionFee(s, c.price);
+            c.total = c.price + c.fee + (c.hire == null ? 0f : c.hire.price + c.hire.fee);
+        }
         if (NEX.equals(c.method)) {
             // 0.3.9.0: the money first, so no Nexerelin expedition is started and cancelled at once for want of credits
             String early = moneyWhy(s, c.total, player);

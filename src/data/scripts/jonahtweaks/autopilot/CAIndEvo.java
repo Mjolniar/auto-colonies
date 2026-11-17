@@ -253,8 +253,11 @@ public class CAIndEvo {
                 Object o = Global.getSettings().getInstanceOfScript(spec.getScriptClass());
                 if (!(o instanceof EdictAPI)) continue;
                 EdictAPI e = (EdictAPI) o;
-                String reason = e.getUnavailableReason(m);
-                if (reason != null && !reason.isEmpty()) {
+                boolean met;   // 0.3.9.7 (G2): IndEvo's Senate menu offers an edict when isPresenceConditionMet; getUnavailableReason is its tooltip
+                try { met = e.isPresenceConditionMet(m); } catch (Throwable t) { met = false; }   // an edict that reads its own condition throws on a bare instance
+                if (!met) {
+                    String reason = null;
+                    try { reason = e.getUnavailableReason(m); } catch (Throwable ignored) { }
                     if (CALog.once(key)) CALog.quiet(m.getName() + ": " + spec.getName() + " unavailable: " + reason);   // 0.3.0.9: starsector.log only
                     continue;
                 }

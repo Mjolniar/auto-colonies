@@ -517,6 +517,13 @@ public class CAWar {
             Map.Entry<String, Long> e = it.next();
             if (e.getValue() == null || Global.getSector().getClock().getElapsedDaysSince(e.getValue()) > CAWarPolicy.OP_MEMORY_DAYS) it.remove();
         }
+        // 0.3.9.7 (E7): attackers past ATTACK_DAYS, or whose market changed owner or is no longer hostile (as strikeBack drops them)
+        for (Iterator<Map.Entry<String, Long>> it = d.attackers().entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<String, Long> e = it.next();
+            MarketAPI t = attacker(e.getKey());
+            if (t == null || t.isPlayerOwned() || e.getValue() == null || Global.getSector().getClock().getElapsedDaysSince(e.getValue()) > ATTACK_DAYS
+                    || t.getFaction() == null || !t.getFaction().isHostileTo(Factions.PLAYER)) it.remove();
+        }
     }
 
     /** The fee on an operation (CAWarPolicy.fee with the fee setting). */
@@ -811,6 +818,10 @@ public class CAWar {
         catch (Throwable t) { return false; }
     }
 
+    /** 0.3.9.7 (E9): warOps key of a market no raid or blockade could reach, and the days it is passed over. */
+    static final String NO_ROUTE = "noroute:";
+    static final float NO_ROUTE_DAYS = 30f;
+
     /** A military industry is there (raid it; blockade the rest). */
     static boolean military(MarketAPI m) {
         return m.hasIndustry(Industries.HIGHCOMMAND) || m.hasIndustry(Industries.MILITARYBASE) || m.hasIndustry(Industries.PATROLHQ);
@@ -839,11 +850,16 @@ public class CAWar {
             for (MarketAPI t : l) {
                 // 0.3.0.0 (fix): also while a blockade Auto Colonies sent there can still be on station (the saved record)
                 if (oursAt(t) || daysSince(p.d, CAWarPolicy.BLOCKADE + ":" + t.getId()) < CAWarPolicy.BLOCKADE_DAYS) continue;
+                if (daysSince(p.d, NO_ROUTE + t.getId()) < NO_ROUTE_DAYS) continue;   // 0.3.9.7 (E9)
                 boolean raid = military(t) && raidFits(p, CAWarPolicy.HOLD_RAID, t);   // 0.3.9.6 (E1, E2): else a blockade, which has one target
                 String kind = raid ? CAWarPolicy.HOLD_RAID : CAWarPolicy.BLOCKADE;
                 float want = raid ? Math.max(200f, 1.5f * CAItems.defenseFP(t)) : blockadeFP(t);
                 String w = send(p.d, p.s, p.mgr, kind, kind, t, want, p.rich, CAStance.name(p.stance(e.getKey())) + ": " + e.getKey().getDisplayName(), kind + ":" + t.getId());
                 if (w == null) p.went();
+                else if ("no route".equals(w) || "failed".equals(w)) {   // 0.3.9.7 (E9): the next market of this faction
+                    p.d.warOps().put(NO_ROUTE + t.getId(), Global.getSector().getClock().getTimestamp());
+                    continue;
+                }
                 else p.waiting.add(what(kind) + " at " + t.getName() + " (" + waitText(w) + ")");
                 break;   // one a faction a day
             }

@@ -228,9 +228,11 @@ public class CAOmega {
             for (Industry ind : m.getIndustries()) {
                 try {
                     if (!ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId()) || !ind.canInstallAICores()) continue;
+                    if (!CAItems.coreSlot(c, ind)) continue;   // 0.3.9.7 (C7): supported buildings only, as CAItems
                     String cur = ind.getAICoreId();
                     int tier = CAItems.tier(cur);
                     if (cur != null && tier < 0) continue;   // an Omega core or a mod's core is already in
+                    if (tier == 0 && s.alphaMode == 0 && !CAItems.alphaRemovable(ind)) continue;   // 0.3.9.7 (C7): an Alpha core that stays
                     String[] why = new String[1];
                     float[] fx = buildingFx(m, ind, deficit, why);
                     if (fx == null) continue;

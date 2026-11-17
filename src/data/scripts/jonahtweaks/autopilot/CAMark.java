@@ -69,7 +69,7 @@ final class CAMark {
      * 0.3.8.5: a refit crew booked for augments you approved (CAAugments, "augok:<marketId>").
      * 0.3.9.3: the day you removed an augment (CAAugments, "augskip:<marketId>|<augment id>").
      */
-    static final String[] PER_COLONY = {"fpok:", "world:", "worldcond:", "stockno:", "milno:", "milup:", "tfnew:", "buildno:", "augok:", "augskip:"};
+    static final String[] PER_COLONY = {"fpok:", "world:", "worldcond:", "stockno:", "milno:", "milup:", "tfnew:", "buildno:", "augok:", "augskip:", "conqchk:", "conqauto:", "wondersite:"};
 
     /** For CATidy.forget: drops the per-colony marks of colonies that are gone. Returns how many went. */
     static int forgetMarkets(java.util.Set<String> gone) {

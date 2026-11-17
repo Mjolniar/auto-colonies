@@ -1,5 +1,29 @@
 # Patch notes
 
+## 0.3.9.7 - 2026-11-17
+
+- Auto-expansion: When the colony limit needs an administrator who has not arrived, an Autopilot crew goes instead of a Nexerelin colony fleet. The crew waits for the administrator on arrival.
+- Auto-expansion: Invasions under way count toward the colony limit. Expeditions under way count for conquest.
+- Agents: Lower Relations is not used against your allies, your commissioner, or factions at Neutral stance or friendlier.
+- Conquest: A failed invasion no longer makes a later capture of that market count as Auto Colonies' conquest.
+- Conquest: Autonomy you grant a conquered colony stays.
+- War: Attacks older than 120 days no longer count for the automatic rival or on the War page.
+- War: Military rung upgrades count Rapid construction's fee.
+- War: A market no raid or blockade can reach is passed over for 30 days, and the faction's next market is tried.
+- Industrial Evolution: Fixed Senate edicts never being enacted.
+- TASC: Crews on the way arrive with TASC stations Off. Without TASC they are refunded.
+- TASC: A mining station is never both built and refunded. A siphon station is not founded where another faction colonized the gas giant.
+- TASC: No warning in starsector.log in games without TASC.
+- Wonders: The Daedalus Array goes only on a Grand Wonder site Autopilot built, never on a locked one.
+- Wonders: Bifrost gates wait for room under the month's new-upkeep cap, and their upkeep is booked.
+- Wonders: A one-day error no longer turns wonders off for the session.
+- Settlements: A failed settlement expedition refunds its fee too.
+- Approvals: A rejected restoration or TASC project is not recommended again during its hold.
+- Supply contracts: A colony under siege keeps its contract.
+- AI cores: A core comes out of a building only when the colony stays at or above the stability floor.
+- Omega cores: Placed only in supported buildings, never over an Alpha core that stays.
+- Items: A failed install or swap leaves each item in one place.
+
 ## 0.3.9.6 - 2026-11-16
 
 - Prepare for removal: Ships in a storage logistics load on the way are delivered with the load. They were lost.

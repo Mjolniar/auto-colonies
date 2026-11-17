@@ -115,6 +115,7 @@ public class CAData {
     public boolean stationAsked;
     public long settleExpeditionAt;
     public float settleExpeditionDays, settleExpeditionCost;
+    public float settleExpeditionFee;   // 0.3.9.7 (G6): refunded with the cost (0 in older saves)
     // Nexerelin agents Autopilot hired (person ids); only these are given orders
     public Set<String> spyAgents;
     public Set<String> spyAgents() { if (spyAgents == null) spyAgents = new HashSet<String>(); return spyAgents; }

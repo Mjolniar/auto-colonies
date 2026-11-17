@@ -345,8 +345,8 @@ public final class CAMilitary {
         String err = CABuild.start(u.m, p);   // takes the price; the stability floor and the slot count are checked there
         if (err != null) return err;
         CABudget.payFromPool(s, CARich.MILITARY, u.m.getId(), 0f, u.fee);
-        CARich.spent(CARich.MILITARY, u.cost);
-        CALog.spent(u.m.getId(), u.cost, 0f, u.upkeep);
+        CARich.spent(CARich.MILITARY, u.cost + CABudget.rapidFee(u.cost));   // 0.3.9.7 (E8): with Rapid construction's fee
+        CALog.spent(u.m.getId(), u.cost + CABudget.rapidFee(u.cost), 0f, u.upkeep);
         stamp(u.m, fromId, u.to);
         CAPlanner.wake("slot:" + u.m.getId());
         CARich.note(CARich.MILITARY, "upgrading to " + u.name + " at " + u.m.getName());

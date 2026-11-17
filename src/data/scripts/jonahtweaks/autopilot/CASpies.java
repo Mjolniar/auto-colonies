@@ -392,6 +392,8 @@ public class CASpies {
             for (FactionAPI o : Global.getSector().getAllFactions()) {
                 if (o == f || o.isPlayerFaction() || o.isNeutralFaction() || !o.isShowInIntelTab() || Misc.getFactionMarkets(o).isEmpty()) continue;
                 if (CAStance.friendly(s.stanceOf(o.getId())) || AllianceManager.areFactionsAllied(o.getId(), f.getId())) continue;
+                // 0.3.9.7 (E4): a failed operation lowers your relations with the third faction
+                if (s.stanceOf(o.getId()) <= CAStance.NEUTRAL || CAWar.allied(o) || o == Misc.getCommissionFaction()) continue;
                 float rel = f.getRelationship(o.getId());
                 if (rel > best) { best = rel; friend = o; }
             }

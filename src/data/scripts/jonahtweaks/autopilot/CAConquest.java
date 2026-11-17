@@ -221,7 +221,7 @@ public class CAConquest {
         // back with them); a capture under the limit lands governed by you, so there it covers nothing.
         // At most one capture lands under the limit at a time: a second one would cost the first 2 before the first could be
         // checked (CAWarPolicy.adminWait with captures).
-        int coming = CAWar.invasionsUnderWay().size();
+        int coming = CAWar.invasionsUnderWay().size() + p.d.expandOrders().size();   // 0.3.9.7 (E3): expeditions land governed by you too
         int over = CAItems.overLimit() + 1 + coming;
         boolean idle = over > 0 && CAItems.idleAdmin(p.d) != null;
         String room = CAWarPolicy.adminWait(1 + coming, over, idle, p.rich, governedCanTake(1 + coming - (idle ? 1 : 0)));
@@ -364,6 +364,8 @@ public class CAConquest {
 
     /** CAMark key that holds the goal a conquered colony had before Auto Colonies set Security ("conqprof:<id>|<PROFILE>"). */
     static final String PROFILE_MARK = "conqprof:";
+    /** 0.3.9.7 (E6): CAMark keys: the capture was checked for autonomy; Nexerelin made the colony autonomous at capture. */
+    static final String CHECKED_MARK = "conqchk:", AUTO_MARK = "conqauto:";
 
     /**
      * From CAWarListener: a market changed hands. A capture by you of a market Auto Colonies invaded is recorded and set up
@@ -381,6 +383,8 @@ public class CAConquest {
         String id = m.getId();
         boolean known = d.colonies.containsKey(id);   // a colony that was yours keeps its own mode
         d.conquered().put(id, Global.getSector().getClock().getTimestamp());
+        CAMark.set(CHECKED_MARK + id, CAMark.now());   // 0.3.9.7 (E6): whether Nexerelin made it autonomous at capture
+        if (!m.isPlayerOwned()) CAMark.set(AUTO_MARK + id, CAMark.now());
         CAData.Colony c = d.colony(id);
         CASettings s = d.settings;
         if (!known) {
@@ -454,6 +458,8 @@ public class CAConquest {
     static void autonomy(CAData d, MarketAPI m) {
         String id = m.getId();
         if (m.isPlayerOwned()) return;   // CAAutonomy.tidy drops it from its list
+        // 0.3.9.7 (E6): a capture checked at the time and not autonomous then: you granted it later; it stays yours to run
+        if (CAMark.at(CHECKED_MARK + id) != null && CAMark.at(AUTO_MARK + id) == null) { d.conquered().remove(id); return; }
         boolean noLoss = m.getMemoryWithoutUpdate().getBoolean(Nex_GrantAutonomy.MEMORY_KEY_NO_STAB_LOSS);
         int over = CAItems.overLimit() + 1;
         // 0.3.0.0 (fix): the colonies you govern are checked at any count, with room kept for the invasions under way (gate

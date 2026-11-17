@@ -52,7 +52,16 @@ public class CAWarListener implements InvasionListener, ColonyNPCHostileActListe
     public void reportInvasionRound(InvasionRound.InvasionRoundResult result, CampaignFleetAPI fleet, MarketAPI defender, float atkStr, float defStr) { }
 
     @Override
-    public void reportInvasionFinished(CampaignFleetAPI fleet, FactionAPI attackerFaction, MarketAPI market, float numRounds, boolean success) { }
+    public void reportInvasionFinished(CampaignFleetAPI fleet, FactionAPI attackerFaction, MarketAPI market, float numRounds, boolean success) {
+        // 0.3.9.7 (E5): an invasion by your faction that failed: the record ends, so a later capture there isn't counted as Auto Colonies'
+        try {
+            if (!success && market != null && attackerFaction != null && attackerFaction.isPlayerFaction() && !CALog.whatIf()) {
+                CAData d = CAData.get();
+                d.warOps().remove(CAWarPolicy.INVASION + ":" + market.getId());
+                d.warOps().remove(CAWarPolicy.RETAKE + ":" + market.getId());
+            }
+        } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "invasion report failed", t); }
+    }
 
     // ---------------- ColonyNPCHostileActListener ----------------
 

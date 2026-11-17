@@ -404,7 +404,7 @@ public class CAHypershunt {
         }
         String cost = "about " + Misc.getDGSCredits(next.monthlyCredits) + " a month for " + next.months() + " months";
         if (!auto) {
-            if (CALog.once(key)) CAApprovals.say(m.getName() + ": Recommends restoring the " + next.name + " (" + cost + "). Start it in the colony panel.", false);
+            if (!CAApprovals.held(key, "restore") && CALog.once(key)) CAApprovals.say(m.getName() + ": Recommends restoring the " + next.name + " (" + cost + "). Start it in the colony panel.", false);
             // 0.3.3.0: a decision in the approval summary; Approve starts it and books the first month as Auto does
             final MarketAPI mm = m; final Section nn = next;
             CAApprovals.offer(key, "restore", m, "Restore the " + next.name, next.monthlyCredits, 0f, null, () -> {

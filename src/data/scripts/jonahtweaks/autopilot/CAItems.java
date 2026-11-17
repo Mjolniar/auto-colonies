@@ -322,6 +322,7 @@ public class CAItems {
                 // the stack's own object: some mods keep state in a SpecialItemData subclass (a copy of Substance.Abuse's
                 // Recipe Book loses its recipes and crashes the colony on every update)
                 p.ind.setSpecialItem(p.data);
+                if (p.ind.getSpecialItem() == null) throw new IllegalStateException("the building did not take the item");   // 0.3.9.7 (C10)
                 CAStores.of(p.m).removeItems(CargoAPI.CargoItemType.SPECIAL, p.data, 1f);
                 p.m.reapplyIndustries();   // the item's effect otherwise waits for the next economy update
                 CABudget.charge(s, 0f, fee, 0f);
@@ -330,6 +331,9 @@ public class CAItems {
                         + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : "") + CAStores.from(p.m, p.data.getId()) + ".");
                 return true;
             } catch (Throwable t) {
+                // 0.3.9.7 (C10): the item stays in Autopilot Storage only, not in the building too
+                try { if (p.ind.getSpecialItem() != null && CAStores.of(p.m).getQuantity(CargoAPI.CargoItemType.SPECIAL, p.data) >= 1f) p.ind.setSpecialItem(null); }
+                catch (Throwable ignored) { }
                 CADiagnostics.quarantine(p.ind.getId(), "installing " + p.spec.getId(), t);
                 return false;
             }
@@ -396,6 +400,12 @@ public class CAItems {
                     + CAStores.from(bestM, data.getId()) + ". " + oldName + " moved to Autopilot Storage.");
             return true;
         } catch (Throwable t) {
+            // 0.3.9.7 (C10): the old item back in the building, the new one in Autopilot Storage, as before the swap
+            try {
+                if (st.getQuantity(CargoAPI.CargoItemType.SPECIAL, old) >= 1f) st.removeItems(CargoAPI.CargoItemType.SPECIAL, old, 1f);
+                if (st.getQuantity(CargoAPI.CargoItemType.SPECIAL, data) < 1f) st.addSpecial(data, 1f);
+                best.setSpecialItem(old);
+            } catch (Throwable ignored) { }
             CADiagnostics.quarantine(best.getId(), "swapping in " + spec.getId(), t);
             return false;
         }
@@ -819,6 +829,26 @@ public class CAItems {
     }
 
     /** An Alpha core only goes where it can be taken out cleanly: vanilla buildings, never Population & Infrastructure or mod code. */
+    /**
+     * 0.3.9.7 (C5): takes the AI core out of ind unless that leaves m under the stability floor. A core lowers its building's
+     * demand by 1, so Population and Infrastructure can lose its goods-met bonuses: the change is measured and put back.
+     */
+    static boolean pullCore(MarketAPI m, Industry ind) {
+        String was = ind.getAICoreId();
+        float before = CAStability.now(m);
+        ind.setAICoreId(null);
+        try { m.reapplyIndustries(); } catch (Throwable ignored) { }
+        float after = CAStability.now(m);
+        if (after < before && after < CAStability.floor(m)) {
+            ind.setAICoreId(was);
+            try { m.reapplyIndustries(); } catch (Throwable ignored) { }
+            if (CALog.once("cores:keep:" + m.getId() + ":" + ind.getId()))
+                CALog.quiet(m.getName() + ": the AI core stays in " + ind.getCurrentName() + "; without it stability would be " + Math.round(after));
+            return false;
+        }
+        return true;
+    }
+
     static boolean alphaRemovable(Industry ind) {
         if (research(ind)) return true;   // VoK recomputes its research costs from whatever core is in
         return ind.getSpec().getSourceMod() == null && CAEngine.isSupportedVanilla(ind.getId()) && !ind.getSpec().hasTag("population");
@@ -1021,7 +1051,7 @@ public class CAItems {
                             + "(an AI core administrator, or locked buildings), so no more cores go there");
                 continue;
             }
-            worst.ind.setAICoreId(null);
+            if (!pullCore(m, worst.ind)) continue;   // 0.3.9.7 (C5)
             CAStores.of(m).addCommodity(CORES[worst.cur], 1f);
             CALog.did(m.getName() + ": " + coreName(worst.cur) + " moved from " + worst.ind.getCurrentName() + " to Autopilot Storage. "
                     + pts + " inspection points, " + limitWhy(s, m, none, lim) + "."
@@ -1070,7 +1100,7 @@ public class CAItems {
             String why = coreName(bestK) + " for " + bestTo.ind.getCurrentName();
             if (bestFrom != null) {
                 CargoAPI there = CAStores.of(bestFrom.m);
-                bestFrom.ind.setAICoreId(null);
+                if (!pullCore(bestFrom.m, bestFrom.ind)) return false;   // 0.3.9.7 (C5)
                 there.addCommodity(coreId, 1f);
                 if (CAStores.ship(bestFrom.m, bestTo.m, coreId, null, 1, why)) return true;
                 there.removeCommodity(coreId, 1f);   // couldn't pay for the shipping: it stays where it was
@@ -1086,7 +1116,7 @@ public class CAItems {
         // what the change adds, without research buildings' place in line
         float real = bestTo.net[bestK] - (old >= 0 ? bestTo.net[old] : 0f) - (bestFrom != null ? bestFrom.net[bestK] : 0f);
         boolean first = bestK == 0 && bestTo.first && (bestFrom == null || !bestFrom.first);
-        if (bestFrom != null) bestFrom.ind.setAICoreId(null);
+        if (bestFrom != null) { if (!pullCore(bestFrom.m, bestFrom.ind)) return false; }   // 0.3.9.7 (C5)
         else here.removeCommodity(coreId, 1f);
         bestTo.ind.setAICoreId(coreId);
         if (old >= 0) here.addCommodity(CORES[old], 1f);
@@ -1135,7 +1165,7 @@ public class CAItems {
                             + "other movable cores it's over its inspection limit (" + limitWhy(s, to.m, none, limit.get(to.m)) + ")");
                 continue;
             }
-            worst.ind.setAICoreId(null);
+            if (!pullCore(worst.m, worst.ind)) continue;   // 0.3.9.7 (C5)
             CAStores.of(to.m).addCommodity(CORES[worst.cur], 1f);
             CALog.did(to.m.getName() + ": " + coreName(worst.cur) + " moved from " + worst.ind.getCurrentName() + " to Autopilot Storage. "
                     + "Inspection room for an Alpha core in " + to.ind.getCurrentName() + ".");

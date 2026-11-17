@@ -352,12 +352,13 @@ public final class CARemoval {
         d.expandOrders().addAll(keep);
         // 0.3.9.6 (A2): a settlement expedition on its way (Random Assortment of Things): its price back, as when it fails
         if (d.settleExpeditionPlanet != null) {
-            r.credits += Math.max(0f, d.settleExpeditionCost);
+            r.credits += Math.max(0f, d.settleExpeditionCost) + Math.max(0f, d.settleExpeditionFee);   // 0.3.9.7 (G6): the fee too
             r.refunded++;
             d.settleExpeditionPlanet = null;
             d.settleExpeditionAt = 0L;
             d.settleExpeditionDays = 0f;
             d.settleExpeditionCost = 0f;
+            d.settleExpeditionFee = 0f;
         }
         if (r.credits > 0f) CABudget.refund(d.settings, null, r.credits);
     }

@@ -262,8 +262,10 @@ public class CATascStations {
 
     public static void run(CAData d, CASettings s, List<MarketAPI> auto) {
         int mode = CAPresets.tascMode(s);   // 0.3.0.0 (WS-F1 fix): the mode in effect; New colonies on Auto that asks first keeps it on Recommend only
-        if (mode == 2 || !enabled() || !link() || Global.getSector() == null) return;
-        deliver(d);
+        if (Global.getSector() == null) return;
+        boolean ok = enabled() && link();
+        deliver(d, ok);   // 0.3.9.7 (G3): with the setting Off too; without TASC each order is refunded on arrival
+        if (mode == 2 || !ok) return;
         if (auto.isEmpty() || CABudget.paused(s) || CAItems.overLimit() + d.expandOrders().size() >= 0 || !d.tascOrders().isEmpty()) return;   // one crew at a time, and room under the colony limit
         boolean mine = unlocked(MINE_ABILITY), siphon = unlocked(SIPHON_ABILITY);
         if (!mine && !siphon) return;
@@ -309,7 +311,10 @@ public class CATascStations {
                 + Misc.getDGSCredits(best.cost) + " + " + Misc.getDGSCredits(fee) + " fee. It becomes a new colony on Auto with the Money goal.");
     }
 
-    static void deliver(CAData d) {
+    static void deliver(CAData d) { deliver(d, true); }
+
+    /** 0.3.9.7 (G3): ok false: TASC is off or can't be read, so an order that arrives is refunded. */
+    static void deliver(CAData d, boolean ok) {
         Iterator<Order> it = d.tascOrders().iterator();
         while (it.hasNext()) {
             Order o = it.next();
@@ -318,7 +323,7 @@ public class CATascStations {
             StarSystemAPI sys = CAObjectives.system(o.system);
             MarketAPI made = null;
             try {
-                if (sys != null && CAItems.overLimit() < 0) made = MINING.equals(o.kind) ? buildMining(sys, o) : buildSiphon(sys, o);
+                if (ok && sys != null && CAItems.overLimit() < 0) made = MINING.equals(o.kind) ? buildMining(sys, o) : buildSiphon(sys, o);
             } catch (Throwable t) {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "building a TASC " + o.kind + " station failed", t);
             }
@@ -363,17 +368,20 @@ public class CATascStations {
                     "boggled_mining_station_small_lights_overlay", Factions.PLAYER);
             lights.setOrbit(st.getOrbit().makeCopy());
             made = (MarketAPI) createMining.invoke(st);
-            // as TASC does: an abandoned mining station here hands its storage over and goes
-            CargoAPI store = made.getSubmarket("storage") == null ? null : made.getSubmarket("storage").getCargo();
-            List<SectorEntityToken> old = new ArrayList<SectorEntityToken>();
-            for (SectorEntityToken e : sys.getAllEntities()) if (e.hasTag("boggled_mining") && "neutral".equals(e.getFaction().getId())) old.add(e);
-            for (SectorEntityToken e : old) {
-                if (store != null && e.getMarket() != null && e.getMarket().getSubmarket("storage") != null) {
-                    CargoAPI c = e.getMarket().getSubmarket("storage").getCargo();
-                    if (!c.isEmpty()) store.addAll(c);
+            // as TASC does: an abandoned mining station here hands its storage over and goes. 0.3.9.7 (G10): a failure here
+            // leaves the new colony as it is (logged), so it is never refunded too
+            try {
+                CargoAPI store = made.getSubmarket("storage") == null ? null : made.getSubmarket("storage").getCargo();
+                List<SectorEntityToken> old = new ArrayList<SectorEntityToken>();
+                for (SectorEntityToken e : sys.getAllEntities()) if (e.hasTag("boggled_mining") && "neutral".equals(e.getFaction().getId())) old.add(e);
+                for (SectorEntityToken e : old) {
+                    if (store != null && e.getMarket() != null && e.getMarket().getSubmarket("storage") != null) {
+                        CargoAPI c = e.getMarket().getSubmarket("storage").getCargo();
+                        if (!c.isEmpty()) store.addAll(c);
+                    }
+                    sys.removeEntity(e);
                 }
-                sys.removeEntity(e);
-            }
+            } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "TASC mining station: the old station's clean-up failed", t); }
             return made;
         } catch (Throwable t) {
             unplace(sys, made, st, lights);   // 0.3.9.2 (I L6)
@@ -391,6 +399,9 @@ public class CATascStations {
     static MarketAPI buildSiphon(StarSystemAPI sys, Order o) throws Throwable {
         SectorEntityToken gg = o.gasGiantId == null ? null : Global.getSector().getEntityById(o.gasGiantId);
         if (!(gg instanceof PlanetAPI)) return null;
+        MarketAPI owner = gg.getMarket();   // 0.3.9.7 (G12): as siphonSite: another faction colonized it meanwhile
+        if (owner != null && owner.getFactionId() != null && !Factions.PLAYER.equals(owner.getFactionId()) && !Factions.NEUTRAL.equals(owner.getFactionId())
+                && !owner.isPlanetConditionMarketOnly()) return null;
         Object ability = siphonNew.invoke();
         if ((boolean) siphonHas.invoke(ability, gg) || siphonMoon.invoke(ability, gg) != null) return null;
         SectorEntityToken st = null, lights = null;

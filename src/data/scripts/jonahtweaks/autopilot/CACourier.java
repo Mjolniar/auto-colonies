@@ -56,6 +56,8 @@ public class CACourier {
             if (c.name == null || !c.name.startsWith(PREFIX)) continue;
             String com = c.name.substring(PREFIX.length()).split(" ")[0];
             MarketAPI to = CAAuto.market(c.toMarketId);
+            // 0.3.9.7 (G8): an Auto colony under siege is out of the pass's list for now; its contract stays as it is
+            if (to != null && CASiege.held(to) && CAData.get().colony(to.getId()).mode == CAData.Mode.AUTO) { ours.put(key(c.toMarketId, com), c); continue; }
             // 0.3.9.1 (H M2): only where stockpiles counter shortages, and the shortage read without the stockpile
             boolean managed = to != null && auto.contains(to) && to.isUseStockpilesForShortages();
             boolean stillShort = managed && rawDeficit(to.getCommodityData(com)) > 0;

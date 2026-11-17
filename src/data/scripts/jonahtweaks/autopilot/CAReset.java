@@ -98,7 +98,7 @@ public class CAReset {
         failed += run("fast buildout offer", () -> CABuildout.checkTimer = 0f);
         failed += run("siege check", () -> { CASiege.cache.clear(); CASiege.cachedDay = -1f; });
         failed += run("TASC", () -> { CATasc.availCache.clear(); CATasc.availDay = -1; CATasc.cache.clear(); CATasc.cacheDay.clear(); });
-        failed += run("wonders", () -> CAWonders.summary = null);
+        failed += run("wonders", () -> { CAWonders.summary = null; CAWonders.broken = false; });   // 0.3.9.7 (G11): broken too
         if (on("IndEvo")) failed += run("courier port", () -> CACourier.refused.clear());
         if (on("IndEvo")) failed += run("edicts held for stability", () -> CAIndEvo.edictHeld.clear());   // WS-A2: retried after a load
         failed += run("log", () -> CALog.reset());
