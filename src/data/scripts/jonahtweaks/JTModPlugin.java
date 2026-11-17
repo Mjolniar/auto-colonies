@@ -21,9 +21,18 @@ public class JTModPlugin extends BaseModPlugin {
 
     /** 0.3.4.0: LunaLib's settings get what changed in the game since the last sync. */
     public void beforeGameSave() {
+        // 0.3.9.9: Rapid research's change to Vaults of Knowledge's research speed never goes into a save (afterGameSave puts it back)
+        try { data.scripts.jonahtweaks.autopilot.CARapidResearch.remove(); }
+        catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] rapid research before save failed", t); }
         if (data.scripts.jonahtweaks.autopilot.CARemoval.off) return;   // 0.3.9.4: a save prepared for removal syncs nothing
         try { data.scripts.jonahtweaks.autopilot.CALunaSync.sync(); }
         catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] LunaLib settings write failed", t); }
+    }
+
+    /** 0.3.9.9: Rapid research back on after the save (beforeGameSave took it off). */
+    public void afterGameSave() {
+        try { data.scripts.jonahtweaks.autopilot.CARapidResearch.sync(); }
+        catch (Throwable t) { Global.getLogger(JTModPlugin.class).warn("[ColonyAutopilot] rapid research after save failed", t); }
     }
 
     /**
@@ -95,5 +104,6 @@ public class JTModPlugin extends BaseModPlugin {
         step("intel panel", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CAIntel.ensure(); } });
         step("storage tabs", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CAItems.ensureStorageTabs(); } });
         step("diagnostics scan", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CADiagnostics.runScan(); } });
+        step("rapid research", new Runnable() { public void run() { data.scripts.jonahtweaks.autopilot.CARapidResearch.sync(); } });   // 0.3.9.9: never saved, so set on every load
     }
 }

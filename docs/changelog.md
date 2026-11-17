@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.9.9 - 2026-11-17
+
+- Story mode: Added Rapid research, a Tier IV package for 20 bandwidth. Vaults of Knowledge research takes 2/3 of its usual time. Shown only with Vaults of Knowledge.
+- Story mode: The items a research project needs are unchanged.
+- Story mode: The change is never written into a save. It ends when the package is lost, on Prepare for removal and when the mod is removed.
+
 ## 0.3.9.8 - 2026-11-17
 
 - Text: LunaLib setting descriptions, Settings page hover lines, panel and page text, decision explanations, story mode tooltips and item descriptions are reworded in the author's voice. Facts, numbers and setting names are unchanged.

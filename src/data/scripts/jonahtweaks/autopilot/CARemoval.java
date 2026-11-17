@@ -257,6 +257,7 @@ public final class CARemoval {
         step("markets", () -> markets(r));
         step("persistent data", () -> { pd.remove(CAData.KEY); pd.remove(CASync.KEY); });
         step("scripts and listeners", () -> scripts());
+        step("rapid research", () -> CARapidResearch.remove());   // 0.3.9.9: Vaults of Knowledge's research speed back to normal
 
         sec.getMemoryWithoutUpdate().set(FLAG, true);
         off = true;

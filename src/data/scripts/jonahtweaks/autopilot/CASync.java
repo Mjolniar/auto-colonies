@@ -1109,6 +1109,7 @@ public class CASync {
 
     /** Daily, before the steps: the core's timers, the settings holds and the colony modes. */
     public static void daily() {
+        try { CARapidResearch.sync(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "rapid research failed", t); }   // 0.3.9.9: on or off, story mode on or not
         CAStoryIntel.ensure();   // 0.3.7.1: the story entry and its search for the core (removed while story mode is off)
         if (!on()) { autarchAdmins(); return; }   // 0.3.7.9: with story mode off the core's administrators leave
         try { lifecycle(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autarch AI Core timers failed", t); }

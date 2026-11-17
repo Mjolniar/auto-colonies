@@ -117,6 +117,7 @@ public class CASyncCatalog {
         add("threeBuilds", 6, null, "twoBuilds");
         add("autarchAdmin", 6, null, null);   // 0.3.7.9; 0.3.8.0: per colony
         add("rapidTerra", 6, "terra", null);   // 0.3.7.9
+        add("rapidResearch", 6, "aotd_vok", null);   // 0.3.9.9: Vaults of Knowledge research in 2/3 of the time (CARapidResearch)
     }
 
     /** The Story perks group: past the game's rules, so they run only in story mode. */
@@ -181,7 +182,8 @@ public class CASyncCatalog {
         pack("parallel", 3, 12, null, "Parallel construction", "twoBuilds", "threeBuilds");
         pack("instant", 3, 20, null, "Rapid construction", "rapidBuild");   // 0.3.7.8: the id stays, so saves that bought it keep it
         pack("terraforming", 3, 12, null, "Rapid terraforming", "rapidTerra");   // 0.3.7.9
-        pack("autarch", 3, 10, "staff", "Autarch administrator", "autarchAdmin");   // 0.3.7.9; 0.3.8.0: Tier IV, its cost is the first colony
+        pack("autarch", 3, 10, "staff", "Autarch administrator", "autarchAdmin");
+        pack("fastResearch", 3, 20, null, "Rapid research", "rapidResearch");   // 0.3.9.9: Tier IV, shown only with Vaults of Knowledge   // 0.3.7.9; 0.3.8.0: Tier IV, its cost is the first colony
         desc("advice", "It suggests what to build next at your colonies.");
         desc("oversight", "It proposes builds at one colony and waits for your OK.");
         desc("upkeep", "It cuts unprofitable industry, keeps up orbital stations, sets colony policy and preps for crises.");
@@ -201,6 +203,7 @@ public class CASyncCatalog {
         desc("parallel", "It runs up to three builds per colony at once.");
         numberDescs();
         desc("terraforming", "It halves terraforming time at managed colonies.");
+        desc("fastResearch", "It makes Vaults of Knowledge research take 2/3 of its usual time, so projects finish faster.");
     }
 
     static void desc(String id, String text) { PACK_BY_ID.get(id).desc = text; }

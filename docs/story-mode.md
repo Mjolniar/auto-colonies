@@ -26,7 +26,7 @@
 - Auto mode (6) needs Approve mode. A colony past what you've bought waits in the next mode down, and its mode comes back once you buy the ability.
 - If a setting's covered by an ability that's off, it's held at off and its row says which ability it needs. Your value comes back once the ability's on.
 - The story perks are all Tier IV and story mode only. Rapid construction (20 bandwidth) makes builds and upgrades take a third of the time, for 100,000 credits more each.
-- The others are two or three builds at once (Parallel construction, 12 bandwidth), Rapid terraforming (12 bandwidth) and the Autarch administrator (10 bandwidth per colony).
+- The others are two or three builds at once (Parallel construction, 12 bandwidth), Rapid terraforming (12 bandwidth), Rapid research (20 bandwidth, needs Vaults of Knowledge) and the Autarch administrator (10 bandwidth per colony).
 - The Autarch administrator package (10) covers one colony. Each extra colony costs 10 more ("autarchSeat" in the config file) on the Story page, up to however many managed colonies you have.
 - The core governs managed colonies (Approve or Auto), starting with the ones it adds the most to, as long as the colony stays at or over the stability floor.
 - If it replaces a hired administrator, that administrator goes unassigned, and an AI core you placed as administrator stays where it is.
@@ -35,6 +35,7 @@
 - It leaves one colony a day, and never when that would take a colony under the stability floor (industry limit counted).
 - If you place an administrator there or govern it yourself, that replaces it, and it stays away from that colony until the colony leaves management.
 - With Rapid terraforming, Terraforming Made Easy's terraforming structure and Terraforming and Station Construction's projects take half the time at a managed colony. That covers projects you start too, and an AI core's time cut stacks with it.
+- With Rapid research, Vaults of Knowledge research only takes 2/3 of its usual time. The items each project needs don't change, and it never goes into your save, so it's gone as soon as you lose the package or pull the mod.
 - Each tier that opens brings a TriPad scene with your technology officer and chief engineer, and so does buying every Tier IV package. A save already past a tier gets its scene, and the Story page can replay each one.
 - With Two or Three builds at once, each colony builds 2 or 3 new buildings at the same time. Without them it's one, like the base game, and upgrades always run alongside.
 
@@ -55,7 +56,7 @@
 | Tier I | Advisor mode (2): Advisor mode. Approve mode (4): Approve mode. Colony upkeep (5): Clean up, Stations, Colony policies, Crisis response, Low profile. Supply and items (5): Capital, Storage logistics, Stable locations, Colony items, Stockpiles |
 | Tier II | Auto mode (6, needs Approve mode). Cores and staff (6): AI cores, Administrators, Story point improvements. Economy (5): Higher spending, Production floors, Trade contracts. Security (6): Enforcer patrols, Emergency defense, Agents: defense, Diplomacy, Autonomy. Mod projects (6): Terraforming, Research, Industrial Evolution, Station augments, Settlement |
 | Tier III | Growth (9, needs Auto mode): Fast buildout, Surplus investment, Half fees. Industry (8): Military, Shipyard, Omega and IX cores. Expansion (8): Auto-expansion, Colony fleets. War (7, needs Security): War: Retaliate, Agents: offense. Large projects (8, needs Mod projects): Surplus terraforming, Surplus research, Megastructures |
-| Tier IV | Endgame (15, needs Growth): Endgame economy, No fees, Wonders and gates. Conquest (15, needs War): War: Hold them down, War: Conquer, War: Scorched. Parallel construction (12): Two and Three builds at once. Rapid construction (20): a third of the build time, 100,000 more per build. Rapid terraforming (12): half the terraforming time. Autarch administrator (10 per colony, needs Cores and staff): the core governs managed colonies |
+| Tier IV | Endgame (15, needs Growth): Endgame economy, No fees, Wonders and gates. Conquest (15, needs War): War: Hold them down, War: Conquer, War: Scorched. Parallel construction (12): Two and Three builds at once. Rapid construction (20): a third of the build time, 100,000 more per build. Rapid terraforming (12): half the terraforming time. Rapid research (20, needs Vaults of Knowledge): research in 2/3 of the time. Autarch administrator (10 per colony, needs Cores and staff): the core governs managed colonies |
 
-- With every supported mod, Tier I comes to 16 bandwidth, Tier II 29, Tier III 40 and Tier IV 84 with one Autarch colony.
+- With every supported mod, Tier I comes to 16 bandwidth, Tier II 29, Tier III 40 and Tier IV 104 with one Autarch colony.
 - Abilities for mods you don't have don't show up.
