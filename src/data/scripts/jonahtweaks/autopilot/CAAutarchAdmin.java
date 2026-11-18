@@ -180,6 +180,27 @@ public final class CAAutarchAdmin {
         m.setAdmin(p);
     }
 
+    /**
+     * 0.3.10.2: your click on the colony panel (Seat Autarch) after you took the core off this colony: it governs here again,
+     * with Autarchy, while it has a free seat and the colony stays at or above the stability floor. null when seated, else why not.
+     */
+    public static String seatByYou(MarketAPI m) {
+        if (m == null || !m.isPlayerOwned()) return "Not your colony.";
+        if (!CASync.has("autarchAdmin")) return "The Autarch AI Core needs its Autarch administrator package.";
+        if (governs(m)) return "It already governs here.";
+        if (!CASync.manages(m) || CARogue.noCores(m) || CARogue.adminLocked(m)) return "It can't govern this colony.";
+        if (count() >= CASync.seats()) return "It has no free seat. Each one costs " + CASyncCatalog.SEAT_PP + " bandwidth on the Story page.";
+        PersonAPI p = person();
+        if (!CAStability.canLose(m, arrives(m, p), "seating the Autarch AI Core")) return "That would put the colony under the stability floor.";
+        seat(m, p);
+        return null;
+    }
+
+    /** 0.3.10.2: the colony panel offers Seat Autarch where you took the core off and it can come back. */
+    public static boolean canOffer(MarketAPI m) {
+        return m != null && m.getMemoryWithoutUpdate().contains(DECLINED) && !governs(m) && CASync.has("autarchAdmin");
+    }
+
     static void seat(MarketAPI m, PersonAPI p) {
         com.fs.starfarer.api.characters.AdminData hired = CAItems.adminAt(m);   // 0.3.8.2: a hired administrator goes unassigned
         String was = hired != null && hired.getPerson() != null ? hired.getPerson().getNameString() : null;

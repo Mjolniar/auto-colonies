@@ -27,17 +27,22 @@ public class CALog {
         t.addSpacer(0f).getPosition().belowLeft(first, Math.max(0f, extra));
     }
 
+    /** Pure (0.3.10.2): the width a label beside the buttons wraps to: the page less the buttons, the gap and the scrollbar. */
+    static float wrapWidth(float panel, float used, float gap) { return Math.max(120f, panel - used - gap - SCROLL_ROOM); }
+
     /** 0.3.9.10: room kept at the right of a page for its scrollbar. */
     static final float SCROLL_ROOM = 20f;
 
     /**
-     * 0.3.9.10: a label to the right of a row's buttons, wrapped to the width left in the tooltip (less SCROLL_ROOM), so long
+     * 0.3.9.10: a label to the right of a row's buttons, wrapped to the width left on the page (less SCROLL_ROOM), so long
      * text never runs past the panel's right edge. One line sits level with the buttons, more lines start at their top.
-     * used: the buttons' width and gaps before the label. Returns how much taller than the buttons it is, for endRow.
+     * used: the buttons' width and gaps before the label. panel: the page's width as the page was given it (0.3.10.2: the
+     * tooltip's own size reads near 0 while it is built, which wrapped the text in a column about 170 px wide).
+     * Returns how much taller than the buttons it is, for endRow.
      */
     public static float beside(com.fs.starfarer.api.ui.TooltipMakerAPI t, com.fs.starfarer.api.ui.UIComponentAPI last,
-                               com.fs.starfarer.api.ui.LabelAPI l, float gap, float used) {
-        float w = Math.max(120f, t.getPosition().getWidth() - used - gap - SCROLL_ROOM);
+                               com.fs.starfarer.api.ui.LabelAPI l, float gap, float used, float panel) {
+        float w = wrapWidth(panel > 0f ? panel : t.getPosition().getWidth(), used, gap);
         l.autoSizeToWidth(w);
         float bh = last.getPosition().getHeight(), lh = l.getPosition().getHeight();
         if (lh > bh + 1f) l.getPosition().rightOfTop(last, gap);

@@ -203,7 +203,7 @@ public class CASyncCatalog {
         desc("parallel", "It runs up to three builds per colony at once.");
         numberDescs();
         desc("terraforming", "It halves terraforming time at managed colonies.");
-        desc("fastResearch", "It makes Vaults of Knowledge research take 2/3 of its usual time, so projects finish faster.");
+        desc("fastResearch", "It makes Vaults of Knowledge research take half as long, and each project needs about 2/3 of its databanks (at least one). AI cores and colony items cost the same.");
     }
 
     static void desc(String id, String text) { PACK_BY_ID.get(id).desc = text; }

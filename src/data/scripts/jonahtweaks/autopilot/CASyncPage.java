@@ -26,12 +26,16 @@ public class CASyncPage {
     static void row(TooltipMakerAPI t, String label, String id, boolean on, float w, String text, Color tc, String... hl) {
         ButtonAPI b = button(t, label, id, on, w, 4f);
         LabelAPI l = t.addPara(CALog.esc(text), 0f, tc, Misc.getHighlightColor(), hl);
-        CALog.endRow(t, b, CALog.beside(t, b, l, 12f, w));
+        CALog.endRow(t, b, CALog.beside(t, b, l, 12f, w, pageWidth));
     }
 
     static String feedLabel(String id, String label, int pts) { return CASync.isArmed("feed:" + id) ? "Confirm: +" + pts + " bandwidth" : label; }
 
+    /** 0.3.10.2: the page's width, set by render, for row's wrap (CAReset clears it). */
+    static float pageWidth = 0f;
+
     public static void render(TooltipMakerAPI t, float width) {
+        pageWidth = width;
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), bad = Misc.getNegativeHighlightColor();
         t.addSectionHeading("The Autarch AI Core", Alignment.MID, 0f);
         if (CASync.notice != null) t.addPara(CASync.notice, hl, 6f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is

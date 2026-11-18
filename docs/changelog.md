@@ -1,5 +1,14 @@
 # Patch notes
 
+## 0.3.10.2 - 2026-11-17
+
+- Rapid research: Vaults of Knowledge research takes half its usual time (was 2/3).
+- Rapid research: Each project needs 2/3 of its databanks, rounded, at least 1. AI cores and colony items cost the same.
+- Autarch administrator: Added Seat the Autarch AI Core on the colony panel. It puts the Autarch AI Core back as administrator where you took it off, with Autarchy, while it has a free seat and the colony stays at or above the stability floor.
+- Story page: Fixed package descriptions wrapping in a narrow column. They use the page's full width again.
+- Settings page: Same fix.
+- Colony panel: Two notes are shorter.
+
 ## 0.3.10.1 - 2026-11-17
 
 - Story page: Fixed long package descriptions running past the panel's right edge and over the next row. Each row is now as tall as its text.

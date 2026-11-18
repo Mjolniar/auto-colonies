@@ -57,6 +57,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     /** 0.3.7.6: story mode's Colony page: the sections opened (numbers, money, plan, locks, mods); all closed when the panel opens. */
     final java.util.Set<String> openSec = new java.util.HashSet<String>();
     static final String SEC = "ca:sec:";
+    static final String AUTARCH = "ca:autarch";   // 0.3.10.2: Seat Autarch (CAAutarchAdmin.seatByYou)
 
     /** Scroll position of the previous build, kept across rebuilds of the same page. */
     float savedScroll() {
@@ -172,6 +173,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         }
         else if (EMPIRE.equals(id)) { CAModeTable.setEmpire(d.settings, c.mode); message = "Empire mode set to " + c.mode.label; }
         else if (LOWPROF.equals(id)) CALowProfile.set(d.settings, !d.settings.lowProfile, "Colony panel");   // 0.3.7.8
+        else if (AUTARCH.equals(id)) { String err = CAAutarchAdmin.seatByYou(market); message = err; }   // 0.3.10.2
         else if (REFRESH.equals(id)) {   // 0.3.0.0 (A4 fix, 07 M6): scored on a click, never while the panel draws; no plan tracking
             CAEngine.refresh(market, planWith(c), d.settings.minStability, buildoutRanking(c));
             message = null;
@@ -239,9 +241,9 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     static final String SIEGE_LINE = "Under siege (%s): %s.",
             SIEGE_HOVER = "Trade contracts skip its goods.";
     /** A Nexerelin outpost's Overview line (CAEngine.OUTPOST_TEXT in short). */
-    static final String OUTPOST_LINE = "Resupply base, so Autopilot skips it.";
+    static final String OUTPOST_LINE = "Autopilot skips resupply bases.";
     static final String LOCKS_LINE = "Click to lock one, and Autopilot won't touch it.";
-    static final String PICKS_HOVER_NOTE = "Hover for the score.";
+    static final String PICKS_HOVER_NOTE = "Hover for scores.";
 
     static ButtonAPI rowButton(TooltipMakerAPI t, ButtonAPI prev, String label, Object id, boolean on, float w) {
         Color hl = Misc.getHighlightColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
@@ -431,10 +433,12 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 t.addPara(SIEGE_LINE, 4f, Misc.getNegativeHighlightColor(), siege, buildout ? "the buildout waits" : "defenses only");
                 CATheme.hover(t, SIEGE_HOVER);
             }
+            if (CAAutarchAdmin.canOffer(market))   // 0.3.10.2: you took the Autarch AI Core off here; it can come back
+                t.addButton("Seat the Autarch AI Core", AUTARCH, hl, Misc.getDarkPlayerColor(), Alignment.MID, CutStyle.TL_BR, 140f, 22f, 4f);
             com.fs.starfarer.api.characters.AdminData ad = CAItems.adminAt(market);
             if (ad != null && ad.getPerson() != null && !ad.getPerson().isAICore()) {
                 float salary = Misc.getAdminSalary(ad.getPerson()), worth = CAItems.adminWorth(market, ad.getPerson());
-                t.addPara("Administrator %s: salary %s, adds %s a month.", 4f, worth < salary ? Misc.getNegativeHighlightColor() : hl,
+                t.addPara("Administrator %s: salary %s, adds %s monthly.", 4f, worth < salary ? Misc.getNegativeHighlightColor() : hl,
                         ad.getPerson().getNameString(), Misc.getDGSCredits(salary), Misc.getDGSCredits(worth));
             }
             if (c.mode == CAData.Mode.AUTO && s.useAICores && !CAEngine.isOutpost(market)) {
@@ -652,7 +656,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                     "" + (int) p.days, CAEngine.signed(p.score));
             // 0.3.0.0 (WS-F3, research 04 section 2): the score's make-up (30 words under each of three picks in 0.2.45) is hover text
             CATheme.hover(t, rankLines(p, goal));
-            if (!CAEngine.worthwhile(p)) t.addPara("    Not worth it. Payback over %s months.", 2f,
+            if (!CAEngine.worthwhile(p)) t.addPara("    Not worth it: %s-month payback.", 2f,
                     Misc.getNegativeHighlightColor(), "" + months(p));
             int shown = Math.min(3, p.lines.size());
             for (int j = 0; j < shown; j++) t.addPara("    " + p.lines.get(j), gray, 2f);   // 0.3.8.6: shown as is

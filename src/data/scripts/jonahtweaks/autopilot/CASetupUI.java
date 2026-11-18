@@ -305,7 +305,11 @@ public class CASetupUI {
 
     // ---------------- the Settings page ----------------
 
+    /** 0.3.10.2: the page's width, set by render and renderFirstTime, for row's wrap (CAReset clears it). */
+    static float pageWidth = 0f;
+
     public static void render(TooltipMakerAPI t, CASettings s, float width) {
+        pageWidth = width;
         if (CALunaSync.active()) { renderLuna(t, s); return; }   // 0.3.4.0: the settings are in LunaLib's menu
         Color gray = Misc.getGrayColor(), hl = Misc.getHighlightColor();
         marked.clear();
@@ -411,6 +415,7 @@ public class CASetupUI {
      * reserve, then one line that everything else is recommended. Expansion style was asked when the first colony was founded.
      */
     public static void renderFirstTime(TooltipMakerAPI t, CASettings s, float width) {
+        pageWidth = width;
         preset(t, s, "Spending", "p_spend");
         preset(t, s, "Extras", "p_extras");
         newColonies(t, s);
@@ -815,7 +820,7 @@ public class CASetupUI {
         LabelAPI l = t.addPara("%s: %s." + (showRec ? " Recommended: " + CALog.esc(rec) + "." : "") + (mine ? " Set by you." : "")
                 + (lock != null ? " " + CALog.esc(lock) : ""), 0f, Misc.getHighlightColor(),   // story mode: what the abilities that are off hold back
                 label, value);
-        float extra = CALog.beside(t, last, l, 12f, 86f);   // 0.3.9.10: wraps inside the page (the buttons take 86 either way)
+        float extra = CALog.beside(t, last, l, 12f, 86f, pageWidth);   // 0.3.9.10: wraps inside the page (the buttons take 86 either way)
         if (tip != null) t.addTooltipToPrevious(tip(tip), TooltipMakerAPI.TooltipLocation.BELOW);
         CALog.endRow(t, first, extra);
         return first;
