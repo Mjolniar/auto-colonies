@@ -20,6 +20,8 @@ import java.util.*;
  * defense, fleet size and patrols, ship quality). A building whose code fails here, or that registers sector scripts
  * or intel while being built, is reported as "can't be measured" and what it added is removed. Effects that only
  * happen over time (monthly items, spawned fleets) aren't seen, so measured values lean low, never high.
+ * 0.3.10.0: a copied condition that throws while a building is measured is left off for the session and the building is
+ * measured again (failingCondition names it from the error's stack); one that can't be named gets a try on a bare probe.
  */
 public class CASimulator {
 
@@ -29,6 +31,8 @@ public class CASimulator {
         public Map<String, Integer> supply = new LinkedHashMap<String, Integer>(), demand = new LinkedHashMap<String, Integer>();
         public float stability, access, ground, fleet, quality, incomeMult, upkeepMult;
         public String error;
+        /** 0.3.10.0: measured without the colony's conditions, since one of them failed on the probe and couldn't be named. */
+        public boolean bare;
         public String summary() {
             StringBuilder sb = new StringBuilder();
             for (Map.Entry<String, Integer> e : supply.entrySet()) add(sb, "+" + e.getValue() + " " + e.getKey());
@@ -63,6 +67,7 @@ public class CASimulator {
      *  which depend on what's measured and supported (0.3.0.0, A4). */
     public static void reset() {
         cache.clear(); measuredAt.clear(); hits = 0; misses = 0;
+        BAD.clear();
         CAEngine.resetCaches();
     }
 
@@ -86,6 +91,11 @@ public class CASimulator {
         if (!CAEngine.noProbe) {
             cache.put(key, e);
             if (clock) measuredAt.put(key, Global.getSector().getClock().getTimestamp());
+            // 0.3.10.0: a condition left off during the run (BAD) changes what's copied, so the result goes under that key too
+            if (colony != null) try {
+                String now = key(industryId, colony.getSize(), copied(colony));
+                if (!now.equals(key)) { cache.put(now, e); if (clock) measuredAt.put(now, Global.getSector().getClock().getTimestamp()); }
+            } catch (Throwable ignored) { }
         }
         return e;
     }
@@ -109,7 +119,43 @@ public class CASimulator {
             MarketConditionSpecAPI spec = Global.getSettings().getMarketConditionSpec(c.getId());
             if (spec == null || spec.getSourceMod() != null) continue;
             if (intelBound(c.getId(), spec)) continue;
+            if (BAD.contains(c.getId())) continue;   // 0.3.10.0: failed a measurement this session
             out.add(c.getId());
+        }
+        return out;
+    }
+
+    /**
+     * 0.3.10.0: conditions that failed a measurement this session (their code threw once a building was on the probe), never
+     * copied again until the next load or rescan. A Pather cells condition copied without its intel threw this way
+     * (LuddicPathCells.apply reads intel.isSleeper()) while the building was measured, after addCondition had passed.
+     */
+    static final Set<String> BAD = new HashSet<String>();
+
+    /**
+     * Which copied condition an error came from: the first whose plugin class (or one of its inner classes) is in the error's
+     * stack, the error's causes included. ids: condition id -> its plugin class. Null when none is. Pure.
+     */
+    static String failingCondition(Map<String, String> ids, Throwable t) {
+        if (t == null || ids == null) return null;
+        Set<String> frames = new HashSet<String>();
+        Throwable x = t;
+        for (int i = 0; i < 10 && x != null; i++, x = x.getCause() == x ? null : x.getCause())
+            for (StackTraceElement f : x.getStackTrace()) if (f.getClassName() != null) frames.add(f.getClassName());
+        for (Map.Entry<String, String> e : ids.entrySet()) {
+            String cls = e.getValue();
+            if (cls == null || cls.isEmpty()) continue;
+            for (String f : frames) if (f.equals(cls) || f.startsWith(cls + "$")) return e.getKey();
+        }
+        return null;
+    }
+
+    /** The colony's copied conditions with their plugin classes, for failingCondition. */
+    static Map<String, String> copiedClasses(MarketAPI colony) {
+        Map<String, String> out = new LinkedHashMap<String, String>();
+        for (String id : copied(colony)) {
+            MarketConditionSpecAPI spec = Global.getSettings().getMarketConditionSpec(id);
+            out.put(id, spec == null ? null : spec.getScriptClass());
         }
         return out;
     }
@@ -129,10 +175,13 @@ public class CASimulator {
         return cls != null && cls.contains(".campaign.intel.");
     }
 
-    static MarketAPI probe(MarketAPI colony) {
+    static MarketAPI probe(MarketAPI colony) { return probe(colony, false); }
+
+    /** bare: the colony's size with none of its conditions (0.3.10.0, the last try when a condition fails and can't be named). */
+    static MarketAPI probe(MarketAPI colony, boolean bare) {
         MarketAPI p = Global.getFactory().createMarket("jt_ca_sim", "Autopilot Simulation", colony == null ? 6 : colony.getSize());
         p.setFactionId(Factions.PLAYER);
-        if (colony != null) {
+        if (colony != null && !bare) {
             // vanilla deposits and hazards only (mod conditions may touch the sector), never one run by intel (copied())
             for (String id : copied(colony)) {
                 // any other condition that fails here is taken back off. addCondition applies it right away, so when that's
@@ -196,9 +245,55 @@ public class CASimulator {
         // 0.3.9.2 (J M1): transient scripts and both kinds of listener too (getListeners(Object.class) is every one, as the
         // game's own ObjectRepository.writeReplace reads them)
         Set<Object> transients = held(TRANSIENTS), listeners = held(LISTENERS), sectorListeners = held(SECTOR_LISTENERS);
+        try {
+            Throwable[] err = new Throwable[1];
+            e = attempt(colony, industryId, false, err);
+            // 0.3.10.0: a copied condition whose code throws once the building is on (in reapply, after addCondition passed)
+            // failed every mod building's measurement at that colony. The condition named in the error is left off for the
+            // session and the building measured again; one that can't be named means a try on the colony's size alone.
+            for (int i = 0; i < 3 && err[0] != null && colony != null; i++) {
+                String bad = failingCondition(copiedClasses(colony), err[0]);
+                if (bad == null) break;
+                if (BAD.add(bad)) CADiagnostics.LOG.warn(CADiagnostics.TAG + "condition " + bad + " failed while " + industryId
+                        + " was measured on the probe colony; probes leave it off this session", err[0]);
+                e = attempt(colony, industryId, false, err);
+            }
+            if (err[0] != null && colony != null && !copied(colony).isEmpty()) {
+                Throwable first = err[0];
+                Effects b = attempt(colony, industryId, true, err);
+                if (err[0] == null && b.error == null) { e = b; e.bare = true; }
+                else err[0] = first;
+            }
+            if (err[0] != null) e.error = "its code failed on a probe colony: " + err[0];
+        } finally {
+            boolean leaked = false;
+            for (EveryFrameScript s : new ArrayList<EveryFrameScript>(Global.getSector().getScripts()))
+                if (!scripts.contains(s)) { Global.getSector().removeScript(s); leaked = true; }
+            for (IntelInfoPlugin i : new ArrayList<IntelInfoPlugin>(Global.getSector().getIntelManager().getIntel()))
+                if (!intel.contains(i)) { Global.getSector().getIntelManager().removeIntel(i); leaked = true; }
+            // 0.3.9.2 (J M1): a transient script or a listener it left (one added in apply() and not removed in unapply(), or
+            // left when unapply() never ran) holds the probe market, and a saved listener would be written into the save
+            for (Object s : now(TRANSIENTS)) if (!transients.contains(s)) { Global.getSector().removeTransientScript((EveryFrameScript) s); leaked = true; }
+            for (Object l : now(LISTENERS)) if (!listeners.contains(l)) { Global.getSector().getListenerManager().removeListener(l); leaked = true; }
+            for (Object l : now(SECTOR_LISTENERS)) if (!sectorListeners.contains(l)) { Global.getSector().removeListener((CampaignEventListener) l); leaked = true; }
+            if (leaked) {
+                e.error = "it registers sector scripts, listeners or intel when built, so it isn't simulated";
+                CADiagnostics.LOG.warn(CADiagnostics.TAG + industryId + " registered scripts, listeners or intel on the probe colony; removed them");
+            }
+        }
+        return e;
+    }
+
+    /**
+     * One measurement on a fresh probe (bare: no conditions copied). Fills a new Effects; a throw is handed back in err[0]
+     * (null when it worked), and the building is taken off the probe whatever happened.
+     */
+    static Effects attempt(MarketAPI colony, String industryId, boolean bare, Throwable[] err) {
+        Effects e = new Effects();
+        err[0] = null;
         MarketAPI p = null;
         try {
-            p = probe(colony);
+            p = probe(colony, bare);
             float[] before = snapshot(p);
             p.addIndustry(industryId);
             Industry ind = p.getIndustry(industryId);
@@ -221,23 +316,9 @@ public class CASimulator {
             // colony's upkeep (0.2.37.0). A building's own upkeep is predicted separately (CAEngine.upkeep).
             e.upkeepMult = 0f;
         } catch (Throwable t) {
-            e.error = "its code failed on a probe colony: " + t;
+            err[0] = t;
         } finally {
             if (p != null) try { p.removeIndustry(industryId, null, false); } catch (Throwable ignored) { }   // even when it threw
-            boolean leaked = false;
-            for (EveryFrameScript s : new ArrayList<EveryFrameScript>(Global.getSector().getScripts()))
-                if (!scripts.contains(s)) { Global.getSector().removeScript(s); leaked = true; }
-            for (IntelInfoPlugin i : new ArrayList<IntelInfoPlugin>(Global.getSector().getIntelManager().getIntel()))
-                if (!intel.contains(i)) { Global.getSector().getIntelManager().removeIntel(i); leaked = true; }
-            // 0.3.9.2 (J M1): a transient script or a listener it left (one added in apply() and not removed in unapply(), or
-            // left when unapply() never ran) holds the probe market, and a saved listener would be written into the save
-            for (Object s : now(TRANSIENTS)) if (!transients.contains(s)) { Global.getSector().removeTransientScript((EveryFrameScript) s); leaked = true; }
-            for (Object l : now(LISTENERS)) if (!listeners.contains(l)) { Global.getSector().getListenerManager().removeListener(l); leaked = true; }
-            for (Object l : now(SECTOR_LISTENERS)) if (!sectorListeners.contains(l)) { Global.getSector().removeListener((CampaignEventListener) l); leaked = true; }
-            if (leaked) {
-                e.error = "it registers sector scripts, listeners or intel when built, so it isn't simulated";
-                CADiagnostics.LOG.warn(CADiagnostics.TAG + industryId + " registered scripts, listeners or intel on the probe colony; removed them");
-            }
         }
         return e;
     }
@@ -302,6 +383,7 @@ public class CASimulator {
 
     /** One-line report for Diagnostics. */
     public static String report(Effects e) {
-        return e.error != null ? "can't be measured: " + e.error : "measured on a probe colony: " + e.summary();
+        return e.error != null ? "can't be measured: " + e.error
+                : "measured on a probe colony" + (e.bare ? " without this colony's conditions (one of them failed there)" : "") + ": " + e.summary();
     }
 }

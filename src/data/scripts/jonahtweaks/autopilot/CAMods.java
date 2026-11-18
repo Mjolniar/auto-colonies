@@ -19,6 +19,7 @@ import java.util.*;
  * - Roider Union: Dives and Union HQ mine deposits within 1 or 6 light-years, which a probe colony can't see.
  * - Unknown Skies and What We Left Behind conditions that add output straight to Mining.
  * - Astral Ascension: a colony without a planet crashes past size 10, so its growth isn't pushed there.
+ * - Random Assortment of Things' Expedition Hub: valued from the planets its fleets can reach (CARatHub, 0.3.10.0).
  */
 public class CAMods {
 
@@ -440,10 +441,11 @@ public class CAMods {
 
     // ---------------- engine hooks ----------------
 
-    public static boolean has(String id) { return vicHas(id) || roiderHas(id) || yunruHas(id) || CAOddisz.has(id); }
+    public static boolean has(String id) { return vicHas(id) || roiderHas(id) || yunruHas(id) || CAOddisz.has(id) || CARatHub.has(id); }
 
     /** Effects of a building handled here; false when it isn't worth building at this colony. */
     public static boolean apply(MarketAPI m, String id, CAEngine.Pick p, Map<String, Integer> deficit) {
+        if (CARatHub.has(id)) return CARatHub.apply(m, p, deficit);   // Random Assortment's Expedition Hub (0.3.10.0)
         if (CAOddisz.has(id)) return CAOddisz.apply(m, id, p, deficit);   // Cloning (0.2.45.0)
         if (vicHas(id)) return vicApply(m, id, p);
         if (roiderHas(id)) return roiderApply(m, id, p, deficit);

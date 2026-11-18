@@ -58,6 +58,7 @@ public class CACalibrate {
                     float act = ind.getUpkeep().getModifiedValue();
                     if (pred > 100f && act > 0f) sample(d.calUp(), d.calUpN(), id, act / pred);
                     if (!CAEngine.estimated(id)) continue;
+                    if (CARatHub.has(id)) continue;   // 0.3.10.0: its live output follows expeditions coming and going; the model is the steady state
                     CAEngine.Pick p = new CAEngine.Pick();
                     p.id = id; p.name = id; p.recording = true;
                     if (!CAEngine.estimate(m, id, p, deficit)) continue;

@@ -21,6 +21,7 @@
 | No limit | No limit | Advise |
 
 - Alphas go where +1 output or a structure bonus is worth the most, Betas go where upkeep's highest and Gammas only go where an input's short.
+- Random Assortment's Expedition Hub is the exception: any core gives its fleets 10 more light-years of reach, and an Alpha or Beta also gives them +2 burn. It only gets one when the planets that adds bring back more than the core's inspection risk costs, and far, empty planets can make it worse, so it won't always take one.
 - Alpha cores (Settings, Advanced, AI cores and items) can be Only where removable (recommended), Anywhere or Never.
 - Omega cores only get stored if you have Omega Core Everywhere or Astral Ascension Renewed ([Supported mods](supported-mods.md#omega-core-everywhere-and-astral-ascension-renewed)).
 

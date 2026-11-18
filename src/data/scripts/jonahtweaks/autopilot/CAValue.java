@@ -747,6 +747,13 @@ public final class CAValue {
      */
     static Map<String, Integer> keepLines(MarketAPI m, Industry ind, CAEngine.Pick p, boolean disrupted) {
         Map<String, Integer> out = new LinkedHashMap<String, Integer>();
+        // 0.3.10.0: Random Assortment's Expedition Hub is read at its model's steady state (CARatHub), the lines it was built
+        // for: its live lines start at nothing and rise and fall as expeditions come home and their 90 days run out
+        if (CARatHub.is(ind)) {
+            for (Map.Entry<String, Integer> e : p.supplied.entrySet())
+                if (e.getValue() != null && e.getValue() > 0) out.put(e.getKey(), e.getValue());
+            return out;
+        }
         if (!disrupted) {
             for (MutableCommodityQuantity q : ind.getAllSupply()) {
                 int own = Math.max(0, q.getQuantity().getModifiedInt());

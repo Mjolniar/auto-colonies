@@ -1,5 +1,16 @@
 # Patch notes
 
+## 0.3.10.0 - 2026-11-17
+
+- Random Assortment of Things: Added support for the Expedition Hub. It is valued by the uninhabited planets its fleets reach within 15 light-years.
+- Expedition Hub: Each return counts for 90 days, up to RAT's cap of size + 2 per good. Tech-mining finds from ruins count at half value.
+- Expedition Hub: Auto builds it when it beats the other picks. With fewer BPs than colonies that could use one, the BP goes to the colony where the Hub brings back the most.
+- Expedition Hub: Gets an AI core when 10 more light-years of reach (+2 burn with an Alpha or Beta) are worth more than the core's inspection risk.
+- Expedition Hub: Counts as making nothing while its colony is short of ships or fuel.
+- Diagnostics: The Expedition Hub has its own line with each colony's planets in reach. Forge-Assisted buildings buildable nowhere say they need a Forge-Assisted Industry BP and where it comes from.
+- Probe colony: A copied condition that throws while a mod building is measured is left off for the session and the building is measured again.
+- Docs: Removed a line on the Supported mods page that said parts of Nexerelin support were not tested in game.
+
 ## 0.3.9.9 - 2026-11-17
 
 - Story mode: Added Rapid research, a Tier IV package for 20 bandwidth. Vaults of Knowledge research takes 2/3 of its usual time. Shown only with Vaults of Knowledge.

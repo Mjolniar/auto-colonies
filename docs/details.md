@@ -324,6 +324,9 @@
 - Roider Union (0.2.38.0, checked against 2.3.1): Dives and Union HQ mine deposits within 1 or 6 light-years. Output is Roider's flat table.
 - Roider Union (0.2.38.0, checked against 2.3.1): The Union HQ adds size - 3 crew, size - 3 heavy machinery, size - 2 supplies and size - 2 fuel over the Dives. Both need 3 drugs (none on Unknown Skies' Psychoactive or Shrooms worlds).
 - Roider Union (0.2.38.0, checked against 2.3.1): Psychoactive takes 1 off each output.
+- Expedition Hub (Random Assortment of Things, 0.3.10.0, `CARatHub`, checked against 3.4.1): It's valued by the uninhabited planets its fleets can reach within 15 light-years (25 with any AI core). Each return counts for 90 days, RAT's cap of size + 2 per good applies, and fleets fly at burn 7 (9 with an Alpha or Beta core). Tech-mining finds from ruins count at half their value, and the rare finds aren't counted.
+- Expedition Hub: It needs a Forge-Assisted Industry BP in your cargo, the colony's Storage or Autopilot Storage (the Hub's comes from a Damaged Cryosleeper). While you have fewer BPs than colonies that could use one, it goes where it brings back the most. It counts as making nothing while the colony's short of ships or fuel, since RAT sends no fleets then.
+- Expedition Hub: It gets an AI core when the reach the core adds is worth more than the core's inspection risk. Far, empty planets can lower its output, so a core isn't always a gain.
 - TASC stations (0.2.40.1, `CATascStations`): Setting Station construction has Recommend only (also older saves), Auto and Off. Needs Terraforming & Station Construction.
 - TASC stations (0.2.40.1, `CATascStations`): Mining stations (belt or field) and siphon stations (gas giant) are founded as new colonies by a crew, through `boggledTools.createMiningStationMarket` / `createSiphonStationMarket`.
 - TASC stations: Sites pass TASC's own checks. Only in systems with Auto colonies that are calm or protected, with the research done and room under the colony limit, one crew at a time.
@@ -360,6 +363,7 @@
 - Hidden buildings: A building the game hides (megastructure defenses, the hypershunt's port) is not upgraded, improved or given an item or AI core, and is not listed under Locks. A hidden station's augments are left to you.
 - Mod buildings: A building with no formula or estimate is built on a throwaway probe colony (your colony's size and vanilla deposits, no planet, every commodity on hand, outside the economy) and the difference is read: commodities, stability, accessibility, income and upkeep multipliers, ground defense, fleet size, ship quality. Upgrades measure both buildings.
 - Mod buildings: Effects over time (monthly items, spawned fleets) are not seen.
+- Mod buildings (0.3.10.0): A copied condition that throws while a building's measured is left off for the session and the building's measured again.
 - Settlement (Random Assortment of Things, Frontiers on): One per save. Modes: Advisor (before setup), Approve, Auto (recommended), Off. Founds on the best surveyed site once it makes at least the threshold (default 20,000 per month). Only unclaimed planets and your own colonies are used.
 - Settlement (0.2.37.0): Founding from afar sends an expedition. RAT's cost is paid at once and refunded if the site cannot take it on arrival (10 days plus a day a light-year from your nearest colony).
 - Settlement (0.2.37.0): Builds Refining and Trading Post when they pay back within 2 years. Founding and facilities use the same budget, per-project cap and fees as colonies.

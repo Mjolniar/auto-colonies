@@ -851,6 +851,7 @@ public class CAItems {
 
     static boolean alphaRemovable(Industry ind) {
         if (research(ind)) return true;   // VoK recomputes its research costs from whatever core is in
+        if (CARatHub.is(ind)) return true;   // 0.3.10.0: the Expedition Hub reads its core only when a fleet leaves
         return ind.getSpec().getSourceMod() == null && CAEngine.isSupportedVanilla(ind.getId()) && !ind.getSpec().hasTag("population");
     }
 
@@ -945,9 +946,13 @@ public class CAItems {
             if (tier(ind.getAICoreId()) == 0 || tier(ind.getAICoreId()) == 1) up /= BaseIndustry.UPKEEP_MULT;
             fx[0] += up * (1f - BaseIndustry.UPKEEP_MULT);
         }
+        // 0.3.10.0: Random Assortment's Expedition Hub never runs the game's supply and demand modifiers, so a core changes
+        // neither; it adds reach (any core) and burn (Alpha, Beta) to its expeditions (CARatHub.coreGain, can be below 0)
+        boolean hub = CARatHub.is(ind);
+        if (hub) fx[0] += CARatHub.coreGain(m, ind, k, deficit);
         // -1 demand matters where an input is short; a core already in there has taken its unit off.
         // 0.3.0.4: on 0.98.5a a Waystation's cores raise stockpiles and cut no demand (CASurvival).
-        boolean cutsDemand = !(ind.getId().equals("waystation") && CASurvival.waystationStockpileCores());
+        boolean cutsDemand = !hub && !(ind.getId().equals("waystation") && CASurvival.waystationStockpileCores());
         int back = ind.getAICoreId() != null && cutsDemand ? BaseIndustry.DEMAND_REDUCTION : 0;
         boolean shortInput = false;
         if (cutsDemand) for (MutableCommodityQuantity q : ind.getAllDemand()) {
@@ -959,7 +964,7 @@ public class CAItems {
         }
         // output: a short input cuts it unit for unit, and an Alpha adds +1 outside structures
         String st = structure(ind);
-        int more = (shortInput ? 1 : 0) + (k == 0 && st == null ? BaseIndustry.SUPPLY_BONUS : 0);
+        int more = hub ? 0 : (shortInput ? 1 : 0) + (k == 0 && st == null ? BaseIndustry.SUPPLY_BONUS : 0);
         if (more > 0) {
             for (MutableCommodityQuantity q : ind.getAllSupply()) {
                 CommoditySpecAPI spec = Global.getSettings().getCommoditySpec(q.getCommodityId());

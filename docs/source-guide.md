@@ -159,6 +159,7 @@ Rules for every step:
 
 - `CASimulator`: It builds the mod building on a probe market with the colony's size and vanilla conditions.
 - Copied conditions: A condition that fails without the intel it came with (Pather cells, pirate activity, a blockade) is left off.
+- Failed conditions (0.3.10.0): If a copied condition throws while a building's being measured, it's named from the error's stack, left off for the rest of the session, and the building's measured again. If it can't be named, the building gets one more try on a probe with no conditions.
 - Reads: It reads supply and demand, and market changes (stability, accessibility, income and upkeep multipliers, ground defense, fleet size and patrols, ship quality).
 - Upgrades: An upgrade is measured as both buildings on the same probe.
 - Failure: If the code throws or registers sector scripts or intel, the building is marked "can't be measured" and whatever it added gets removed.
@@ -285,7 +286,7 @@ Integrations:
 | `CAIndEvo`, `CACourier` | Industrial Evolution | Ambassadors, edicts, VPC chips, specialties; Courier Port shipping |
 | `CAAotD`, `CASynergies`, `CADevelopment`, `CAResearch`, `CAHypershunt`, `CAMegastructures`, `CAWonders`, `CAProjects`, `CASurplusResearch` | Ashes of the Domain | BMO locks and upgrade paths; synergies; management styles; research; Coronal Hypershunt; Pluto and Nidavelir; wonders and gates; special project supply; surplus Research Facilities |
 | `CAContracts` | AotD: Theory of Toolbox | Trade contracts |
-| `CASettlement` | Random Assortment of Things | Frontiers settlement |
+| `CASettlement`, `CARatForge`, `CARatHub` | Random Assortment of Things | Frontiers settlement; Forge-Assisted Industry BPs; the Expedition Hub, valued by the planets its fleets can reach |
 | `CAAugments`, `CAAugmentModel`, `CAStationKit` | Station Augments | Augment loadouts within the station's points; what each augment does |
 | `CATasc`, `CATascStations` | Terraforming & Station Construction | Projects; mining and siphon stations founded by a crew |
 | `CAGrand` | Grand.Colonies | 12-building limit; extra upkeep |

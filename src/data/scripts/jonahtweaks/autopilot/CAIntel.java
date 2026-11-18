@@ -482,7 +482,8 @@ public class CAIntel extends BaseIntelPlugin {
         List<String> cal = CACalibrate.notable();
         if (!cal.isEmpty()) t.addPara("Corrected from your colonies: " + String.join(", ", cal.subList(0, Math.min(12, cal.size()))), gray, 4f);   // 0.3.8.6: shown as is
         int shown = 0;
-        for (CADiagnostics.Level lvl : new CADiagnostics.Level[]{CADiagnostics.Level.QUARANTINED, CADiagnostics.Level.MEASURED, CADiagnostics.Level.ANALYZED}) {
+        // 0.3.10.0: and the few supported mod buildings with a line of their own (Random Assortment's Expedition Hub)
+        for (CADiagnostics.Level lvl : new CADiagnostics.Level[]{CADiagnostics.Level.QUARANTINED, CADiagnostics.Level.MEASURED, CADiagnostics.Level.ANALYZED, CADiagnostics.Level.SUPPORTED}) {
             for (CADiagnostics.Issue i : CADiagnostics.getIssues()) {
                 if (i.level != lvl || shown >= 60) continue;
                 shown++;

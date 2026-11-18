@@ -95,6 +95,7 @@ public class CAReset {
         failed += run("prune", () -> CAPrune.looked.clear());
         failed += run("colony policies", () -> CAPolicies.lastCap = 0f);
         failed += run("Planetary Shield setting", () -> CAMods.psacCache = null);   // 0.3.9.2 (J L10): read again once per load
+        failed += run("Expedition Hub", () -> CARatHub.ratHub = null);   // 0.3.10.0: whether RAT's hub is there, read again once per load
         failed += run("fast buildout offer", () -> CABuildout.checkTimer = 0f);
         failed += run("siege check", () -> { CASiege.cache.clear(); CASiege.cachedDay = -1f; });
         failed += run("TASC", () -> { CATasc.availCache.clear(); CATasc.availDay = -1; CATasc.cache.clear(); CATasc.cacheDay.clear(); });

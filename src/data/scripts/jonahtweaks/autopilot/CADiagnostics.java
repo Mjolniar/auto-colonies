@@ -88,6 +88,11 @@ public class CADiagnostics {
             String mod = modOf(spec.getSourceMod());
             if (CAEngine.isSupported(spec.getId())) {
                 industries.put(spec.getId(), Level.SUPPORTED);
+                // 0.3.10.0: Random Assortment's Expedition Hub gets a line: how it's valued, and why it's buildable nowhere
+                if (CARatHub.has(spec.getId())) {
+                    try { addIssue("building", spec.getId(), spec.getName(), mod, Level.SUPPORTED, CARatHub.diagnostic(spec)); }
+                    catch (Throwable t) { LOG.warn(TAG + "Expedition Hub diagnostics failed", t); }
+                }
                 continue;
             }
             if (spec.hasTag("parent_item")) { industries.put(spec.getId(), Level.ANALYZED); continue; }
@@ -158,10 +163,13 @@ public class CADiagnostics {
             if (Global.getSector() != null) {
                 for (MarketAPI m : Misc.getPlayerMarkets(false)) {
                     Industry ind = spec.getNewPluginInstance(m);
-                    if (ind.isAvailableToBuild() && CAAotD.allows(spec.getId(), m)) buildable.add(m.getName());
+                    // 0.3.10.0: a Forge-Assisted BP held in Autopilot Storage counts, as the engine counts it (CARatForge)
+                    if (CARatForge.available(m, ind, spec) && CAAotD.allows(spec.getId(), m)) buildable.add(m.getName());
                 }
             }
-            sb.append(buildable.isEmpty() ? "; buildable at none of your colonies" : "; buildable at " + buildable);
+            // 0.3.10.0: Random Assortment's Forge-Assisted buildings say why: the menu only offers them with their BP on hand
+            boolean bp = spec.hasTag(CARatForge.ITEM);
+            sb.append(buildable.isEmpty() ? "; buildable at none of your colonies" + (bp ? ": " + CARatHub.bpReason(spec.getId()) : "") : "; buildable at " + buildable);
             sb.append("; effects not simulated (mod code isn't run)");
         } catch (Throwable t) {
             LOG.warn(TAG + "probe failed for " + spec.getId(), t);
