@@ -361,6 +361,8 @@ public final class CAValue {
             more = pendingAdded(e, pend);
         }
         if (Global.getSettings().getModManager().isModEnabled(CAContracts.MOD)) withContracts(out, CAContracts.shortfalls(), more);
+        // 0.3.10.6: what your Coronal Hypershunts are short of counts as a shortage too, until it's supplied
+        if (Global.getSettings().getModManager().isModEnabled(CAHypershunt.MOD) && CAProjects.on()) withContracts(out, CAHypershunt.shortfalls(), more);
         return out;
     }
 

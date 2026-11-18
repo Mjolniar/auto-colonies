@@ -238,6 +238,66 @@ public class CAHypershunt {
         return s;
     }
 
+    // ---------------- 0.3.10.6: supplying it ----------------
+
+    /** Enriched Transplutonics, which the Coronal Wormhole's range takes (STEP_PTM a month for each step past the first). */
+    static final String PTM = "purified_rare_metal";
+
+    /**
+     * What your Coronal Hypershunts take each month, by good: the section being restored, the section Autopilot restores next
+     * (it waits until every good it takes is spare, so its producers come first), and the wormhole's range. Empty without one.
+     */
+    public static Map<String, Integer> needs() {
+        Map<String, Integer> out = new LinkedHashMap<String, Integer>();
+        if (!Global.getSettings().getModManager().isModEnabled(MOD)) return out;
+        for (Shunt h : all()) {
+            for (Section s : new Section[]{h.collector, h.wormhole}) if (s != null && s.restoring && !s.restored) add(out, s.monthly);
+            Section next = nextRestore(h, new String[1]);
+            if (next != null) add(out, next.monthly);
+            if (h.wormhole != null && h.wormhole.restored && h.range > 1) add(out, Collections.singletonMap(PTM, (h.range - 1) * STEP_PTM));
+        }
+        return out;
+    }
+
+    static void add(Map<String, Integer> out, Map<String, Integer> more) {
+        for (Map.Entry<String, Integer> e : more.entrySet()) {
+            if (e.getValue() == null || e.getValue() <= 0) continue;
+            Integer cur = out.get(e.getKey());
+            out.put(e.getKey(), (cur == null ? 0 : cur) + e.getValue());
+        }
+    }
+
+    /**
+     * Pure: how short a good is: the need less what your colonies can spare by Theory of Toolbox's figures; without them
+     * (spare null), all of it while your colonies make none, else nothing (the game's supply isn't in the same units).
+     */
+    static int gap(int need, Integer spare, int made) {
+        if (need <= 0) return 0;
+        if (spare != null) return Math.max(0, need - Math.max(0, spare));
+        return made > 0 ? 0 : need;
+    }
+
+    static Map<String, Integer> shortCache;
+    static float shortAt = -99f;
+
+    /**
+     * The goods your hypershunts are short of, worked out once a day. CAValue.deficits counts each as a shortage, so producers
+     * of it score higher until it's supplied, and Special project supply (CAProjects) plans a producer where none is made.
+     */
+    public static Map<String, Integer> shortfalls() {
+        float now = CADay.now();
+        if (shortCache != null && CATime.fresh(shortAt, now, 1f)) return shortCache;
+        Map<String, Integer> out = new LinkedHashMap<String, Integer>();
+        try {
+            for (Map.Entry<String, Integer> e : needs().entrySet()) {
+                int g = gap(e.getValue(), CAContracts.spare(e.getKey()), CAProjects.yours(e.getKey()));
+                if (g > 0) out.put(e.getKey(), g);
+            }
+        } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "hypershunt supply check failed", t); }
+        shortCache = out; shortAt = now;
+        return out;
+    }
+
     /** Commodities a restoration needs that your colonies have none of to spare, by ToT's figures; null when ToT can't say. */
     static List<String> unsupplied(Section s) {
         List<String> out = new ArrayList<String>();

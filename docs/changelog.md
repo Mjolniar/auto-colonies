@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.10.6 - 2026-11-18
+
+- Coronal Hypershunt: Goods it is short of count as shortages, so buildings that make them score higher until it is supplied. This covers the section being restored, the section restored next and the wormhole's Enriched Transplutonics.
+- Coronal Hypershunt: Special project supply plans a producer for any of those goods your colonies make none of. Special project supply set to Off turns both off.
+
 ## 0.3.10.5 - 2026-11-17
 
 - Defense fleets: Raid groups aimed at your colonies get a Nexerelin defense fleet once their fleets are out, sized a quarter over the group's fleet points less your defenses there. This covers Remnant Retribution's strike, Adversary's bombardment campaign, vanilla crisis raids and Nexerelin blockades.

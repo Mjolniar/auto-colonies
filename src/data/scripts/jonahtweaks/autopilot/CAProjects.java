@@ -167,7 +167,7 @@ public class CAProjects {
     static Result last;
     static boolean broken = false;
 
-    public static void reset() { STEPS.clear(); computedAt = -99f; project = null; last = null; monthly.clear(); left.clear(); other.clear(); orders.clear(); broken = false; }   // 0.3.9.6 (D6): broken too
+    public static void reset() { STEPS.clear(); computedAt = -99f; project = null; last = null; monthly.clear(); left.clear(); other.clear(); orders.clear(); shunt = new LinkedHashMap<String, Integer>(); broken = false; }   // 0.3.9.6 (D6): broken too
 
     /**
      * 0.2.39.0: what Ashes of the Domain's open production orders still need, by good: each order line's remaining units times
@@ -175,6 +175,9 @@ public class CAProjects {
      * your colonies' output, so a big order (Auto Outfitting's weapons for a fleet) crawls when nobody makes one.
      */
     static Map<String, Integer> orders = new LinkedHashMap<String, Integer>();
+
+    /** 0.3.10.6: the goods your Coronal Hypershunts are short of (CAHypershunt.shortfalls), as of the last update. */
+    static Map<String, Integer> shunt = new LinkedHashMap<String, Integer>();
 
     @SuppressWarnings("unchecked")
     static void readOrders() {
@@ -362,11 +365,13 @@ public class CAProjects {
             // megastructure restoration, Bifrost gates and AotD production all take them from your colonies' exports
             boolean rich = CASurplus.rich(CAData.settings());
             readOrders();   // and the goods open production orders still need (0.2.39.0)
-            if (!running && !rich && orders.isEmpty()) return;
+            shunt = CAHypershunt.shortfalls();   // 0.3.10.6: and what your Coronal Hypershunts are short of
+            if (!running && !rich && orders.isEmpty() && shunt.isEmpty()) return;
             yours.clear(); sector.clear();
             Set<String> goods = new LinkedHashSet<String>(left.keySet());
             goods.addAll(monthly.keySet());
             goods.addAll(orders.keySet());
+            goods.addAll(shunt.keySet());
             for (Producer p : PRODUCERS) { goods.add(p.good); for (String in : p.inputs) goods.add(in); }
             Map<String, Integer> made = new HashMap<String, Integer>();
             // 0.3.8.8: one read of the sector's markets for every good (yours and others read the whole list per good)
@@ -380,6 +385,7 @@ public class CAProjects {
             Set<String> wanted = new LinkedHashSet<String>(left.keySet());
             if (rich) wanted.addAll(Arrays.asList(AOTD_GOODS));
             wanted.addAll(orders.keySet());
+            wanted.addAll(shunt.keySet());
             List<String> missing = new ArrayList<String>();
             for (String g : wanted) if (!madeAny(made, g)) missing.add(g);
             int ships = Math.max(0, yours.get("ships") == null ? 0 : yours.get("ships"));
@@ -422,6 +428,7 @@ public class CAProjects {
     static String forWhat(String good) {
         if (project != null && left.containsKey(good)) return project;
         if (orders.containsKey(good)) return "production orders";
+        if (shunt.containsKey(good)) return "the Coronal Hypershunt";   // 0.3.10.6
         return "AotD wonders and gates";
     }
 

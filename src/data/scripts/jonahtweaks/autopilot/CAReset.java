@@ -81,6 +81,7 @@ public class CAReset {
         failed += run("special projects", () -> {
             CAProjects.reset(); CAProjects.yours.clear(); CAProjects.sector.clear(); CAProjects.computing = false;
         });
+        failed += run("hypershunt supply", () -> { CAHypershunt.shortCache = null; CAHypershunt.shortAt = -99f; });   // 0.3.10.6
         failed += run("idle items", () -> { CAItems.idle = null; CAItems.idleAt = -99f; });
         failed += run("surplus research", () -> { CASurplusResearch.summary = null; });
         failed += run("capital", () -> CACapital.reset());
