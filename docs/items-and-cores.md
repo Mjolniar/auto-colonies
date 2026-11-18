@@ -2,7 +2,7 @@
 
 ## Autopilot Storage
 
-- Colony items, AI cores, research databanks, Antimatter Stabilizers, VPC chips and recipes go in Autopilot Storage, and each colony item goes to the Auto colony where its extra output adds the most.
+- Colony items (any item that lists a building it installs in, from any mod), AI cores, research databanks, Antimatter Stabilizers, VPC chips and recipes go in Autopilot Storage, and each colony item goes to the Auto colony where its extra output adds the most.
 
 ## AI cores
 

@@ -85,9 +85,31 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
             com.fs.starfarer.api.campaign.SpecialItemData data = stack.getSpecialDataIfSpecial();
             if (data == null) return false;
             if (CARatForge.ITEM.equals(data.getId())) return true;   // 0.3.7.7: Autopilot builds with Forge-Assisted Industry BPs
-            boolean installable = com.fs.starfarer.api.impl.campaign.econ.impl.ItemEffectsRepo.ITEM_EFFECTS.containsKey(data.getId());
+            // 0.3.10.9: or one whose item lists a building it installs in (its plugin params, as the game's install menu reads
+            // them): Industrial Evolution's, UAF's and AotD's colony items aren't all in the effects table, and the daily evict
+            // moved them to normal Storage after Autopilot took them out of a building, out of rotation
+            boolean installable = com.fs.starfarer.api.impl.campaign.econ.impl.ItemEffectsRepo.ITEM_EFFECTS.containsKey(data.getId())
+                    || installsIn(stack.getSpecialItemSpecIfSpecial());
             return usable(data.getId(), installable) && !consumable(stack);
         } catch (Throwable t) { return false; }
+    }
+
+    /** 0.3.10.9: the item's plugin params name a building the game has (where it can be installed). */
+    static boolean installsIn(com.fs.starfarer.api.campaign.SpecialItemSpecAPI spec) {
+        if (spec == null) return false;
+        return installsIn(spec.getParams(), id -> {
+            try { return com.fs.starfarer.api.Global.getSettings().getIndustrySpec(id) != null; } catch (Throwable t) { return false; }
+        });
+    }
+
+    /** Pure (0.3.10.9): any comma-separated id in params that isIndustry accepts. */
+    static boolean installsIn(String params, java.util.function.Predicate<String> isIndustry) {
+        if (params == null) return false;
+        for (String p : params.split(",")) {
+            String id = p.trim();
+            if (!id.isEmpty() && isIndustry.test(id)) return true;
+        }
+        return false;
     }
 
     // ---------------- campaign consumables (0.2.36.1) ----------------
@@ -118,7 +140,7 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
             com.fs.starfarer.api.campaign.SpecialItemSpecAPI spec = stack.getSpecialItemSpecIfSpecial();
             if (data == null || spec == null) return false;
             boolean colonyItem = com.fs.starfarer.api.impl.campaign.econ.impl.ItemEffectsRepo.ITEM_EFFECTS.containsKey(data.getId())
-                    || CAItems.ITEM_VALUE.containsKey(data.getId()) || data.getId().startsWith("IndEvo_vpc_");
+                    || CAItems.ITEM_VALUE.containsKey(data.getId()) || data.getId().startsWith("IndEvo_vpc_") || installsIn(spec);   // 0.3.10.9
             boolean usedUp = false;
             com.fs.starfarer.api.campaign.SpecialItemPlugin plugin = stack.getPlugin();
             if (plugin != null) {

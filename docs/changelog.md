@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.10.9 - 2026-11-18
+
+- Autopilot Storage: Fixed colony items that Autopilot took out of buildings being moved to normal Storage the next day, out of rotation. Any item that lists a building it installs in now stays in Autopilot Storage. This covers Industrial Evolution's, UAF's and AotD's colony items that aren't in the game's item effects table.
+- Research Facility: When Autopilot takes one down, the AI cores, databanks and colony items in its research tab go to Autopilot Storage, no longer to normal Storage.
+- Autopilot Storage: Blueprints, key cards and other items no building installs still go to normal Storage.
+
 ## 0.3.10.8 - 2026-11-18
 
 - Reverse Engineered Private Arsenal: The Reverse Engineering Hub is built at the capital as a trade building, then upgraded to II and III. It waits for the money rules of trade buildings that don't earn: the Surplus tier, the Economy rung On and upkeep within 5% of colony net. Capital does set to Deliveries and commerce (the default).

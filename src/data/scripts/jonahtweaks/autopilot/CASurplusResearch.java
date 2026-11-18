@@ -416,6 +416,7 @@ public class CASurplusResearch {
             if (CAItems.inspected().contains(m)) continue;   // 0.3.9.6 (C9): an inspection counts the colony's AI cores
             float up = ind.getUpkeep().getModifiedValue();
             CAStores.emptyInto(m, ind);   // 0.3.9.6 (C9): its AI core and item to Autopilot Storage, not Storage
+            CAStores.rescue(m, m.getSubmarket(CAResearch.SUBMARKET));   // 0.3.10.9: and what its research tab holds that Autopilot uses
             m.removeIndustry(FACILITY, MarketAPI.MarketInteractionMode.REMOTE, false);   // with a mode, VoK moves its tab's cargo to Storage
             CATombstone.add(m.getId(), FACILITY, CATombstone.RESEARCH, CATombstone.sunk(m.getId(), FACILITY));   // 0.3.0.0 (B4): every removal leaves a year's mark
             d.surplusResearch().remove(id);

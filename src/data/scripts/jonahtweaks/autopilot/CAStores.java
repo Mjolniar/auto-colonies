@@ -349,6 +349,32 @@ public class CAStores {
     }
 
     /** Takes an industry's AI core and item out into its own colony's Autopilot Storage (before it's removed). */
+    /**
+     * 0.3.10.9: a building with a tab of its own that Autopilot takes down (Vaults of Knowledge's Research Facility moves its
+     * research tab to Storage when it's removed): what Autopilot Storage takes (AI cores, databanks, colony items it can
+     * install) goes to this colony's Autopilot Storage first; the rest is left for the building's own removal. Returns how many.
+     */
+    public static int rescue(MarketAPI m, com.fs.starfarer.api.campaign.econ.SubmarketAPI tab) {
+        if (m == null || tab == null || tab.getCargo() == null) return 0;
+        CargoAPI from = tab.getCargo(), to = of(m);
+        int n = 0;
+        for (com.fs.starfarer.api.campaign.CargoStackAPI st : from.getStacksCopy()) {
+            float q = st.getSize();
+            if (q <= 0f) continue;
+            if (st.isCommodityStack() && CAStoragePlugin.allowedCommodity(st.getCommodityId())) {
+                from.removeCommodity(st.getCommodityId(), q);
+                to.addCommodity(st.getCommodityId(), q);
+                n += Math.round(q);
+            } else if (st.isSpecialStack() && CAStoragePlugin.usable(st)) {
+                SpecialItemData data = st.getSpecialDataIfSpecial();
+                from.removeItems(CargoAPI.CargoItemType.SPECIAL, data, q);
+                to.addSpecial(data, q);
+                n += Math.round(q);
+            }
+        }
+        return n;
+    }
+
     public static void emptyInto(MarketAPI m, Industry ind) {
         CargoAPI st = of(m);
         String core = ind.getAICoreId();
