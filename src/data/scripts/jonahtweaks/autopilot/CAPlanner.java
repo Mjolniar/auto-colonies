@@ -1242,6 +1242,9 @@ public class CAPlanner {
             if (mods.isModEnabled(CAResearch.MOD)) {
                 try { out.addAll(CASurplusResearch.offer(auto)); } catch (Throwable t) { CAStep.warn("planner", "surplus research offer failed", t); }
             }
+            if (mods.isModEnabled(CARuins.MOD)) {   // 0.3.10.7: United Aurora Federation's ruin restoration
+                try { out.addAll(CARuins.offer(auto)); } catch (Throwable t) { CAStep.warn("planner", "ruin restoration offer failed", t); }
+            }
         }
         if (mods.isModEnabled(CAResearch.MOD)) {
             try { out.addAll(CAWonders.offer()); } catch (Throwable t) { CAStep.warn("planner", "wonders offer failed", t); }

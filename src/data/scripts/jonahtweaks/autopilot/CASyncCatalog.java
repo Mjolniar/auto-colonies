@@ -130,6 +130,7 @@ public class CASyncCatalog {
         add("indevo", 5, "IndEvo", null);
         add("augments", 5, "niko_stationAugments", null);
         add("settlement", 5, "assortment_of_things", null);
+        add("ruins", 5, "uaf", null);   // 0.3.10.7: United Aurora Federation's ruin restoration (CARuins)
         // Story perks
         add("rapidBuild", 6, null, null);   // 0.3.7.8: replaces Instant and Free construction
         add("twoBuilds", 6, null, null);
@@ -137,6 +138,8 @@ public class CASyncCatalog {
         add("autarchAdmin", 6, null, null);   // 0.3.7.9; 0.3.8.0: per colony
         add("rapidTerra", 6, "terra", null);   // 0.3.7.9
         add("rapidResearch", 6, "aotd_vok", null);   // 0.3.9.9: Vaults of Knowledge research in 2/3 of the time (CARapidResearch)
+        add("uafHistorian", 6, "uaf", null);   // 0.3.10.7: hires UAF's Sophia (CARuins.hire)
+        add("historianCore", 6, "uaf", "autarchAdmin");   // 0.3.10.7: the Historian core (CAHistorian)
     }
 
     /** The Story perks group: past the game's rules, so they run only in story mode. */
@@ -190,7 +193,7 @@ public class CASyncCatalog {
         pack("staff", 1, 6, null, "Cores and staff", "cores", "admins", "storyPoints");
         pack("economy", 1, 5, null, "Economy", "spending", "floors", "contracts");
         pack("security", 1, 6, null, "Security", "enforcers", "defense", "agents", "diplomacy", "autonomy");
-        pack("projects", 1, 6, null, "Mod projects", "terraform", "research", "indevo", "augments", "settlement");
+        pack("projects", 1, 6, null, "Mod projects", "terraform", "research", "indevo", "augments", "settlement", "ruins");
         pack("growth", 2, 9, "automation", "Growth", "buildout", "surplus", "halfFees");
         pack("industry", 2, 8, null, "Industry", "military", "shipyard", "omega");
         pack("frontier", 2, 8, null, "Expansion", "expansion", "colonyFleets");
@@ -202,6 +205,8 @@ public class CASyncCatalog {
         pack("instant", 3, 20, null, "Rapid construction", "rapidBuild");   // 0.3.7.8: the id stays, so saves that bought it keep it
         pack("terraforming", 3, 12, null, "Rapid terraforming", "rapidTerra");   // 0.3.7.9
         pack("autarch", 3, 10, "staff", "Autarch administrator", "autarchAdmin");
+        pack("uafHire", 2, 10, "staff", "Historian hire", "uafHistorian");   // 0.3.10.7: Tier III, shown only with United Aurora Federation
+        pack("historian", 3, 20, "autarch", "Historian core", "historianCore");   // 0.3.10.7: Tier IV, United Aurora Federation
         pack("fastResearch", 3, 20, null, "Rapid research", "rapidResearch");   // 0.3.9.9: Tier IV, shown only with Vaults of Knowledge   // 0.3.7.9; 0.3.8.0: Tier IV, its cost is the first colony
         desc("advice", "It suggests what to build next at your colonies.");
         desc("oversight", "It proposes builds at one colony and waits for your OK.");
@@ -222,6 +227,8 @@ public class CASyncCatalog {
         desc("parallel", "It runs up to three builds per colony at once.");
         numberDescs();
         desc("terraforming", "It halves terraforming time at managed colonies.");
+        desc("uafHire", "It hires Sophia, the United Aurora Federation's administrator with Galactic Historian, once you're Friendly with the UAF and an Auto colony has ruins to restore. She costs what any administrator costs to hire, plus the fee.");
+        desc("historian", "A variant of the Autarch AI Core with Autarchy and the UAF's Galactic Historian governs one Auto colony with ruins, so they can be restored. You get one.");
         desc("fastResearch", "It makes Vaults of Knowledge research take half as long, and each project needs about 2/3 of its databanks (at least one). AI cores and colony items cost the same.");
     }
 

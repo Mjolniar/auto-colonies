@@ -1351,6 +1351,7 @@ public class CAItems {
         // stabilities as they'd be with m governed by you, then the change an administrator makes
         v += stabilityWorth(m, m.getStability().getModifiedValue() - (youNow ? 0f : per * over), per * over);
         for (MarketAPI o : yours) v += stabilityWorth(o, o.getStability().getModifiedValue() - (youNow ? 0f : per), per);
+        v += CARuins.historianWorth(m, admin);   // 0.3.10.7: a Galactic Historian where ruins can be restored, or a restoration runs
         return v;
     }
 
@@ -1442,6 +1443,7 @@ public class CAItems {
         for (MarketAPI from : markets) {
             AdminData a = adminAt(from);
             if (a == null || a.getPerson() == null || a.getPerson().isAICore()) continue;
+            if (CARuins.restoring(from) && CARuins.historian(a.getPerson())) continue;   // 0.3.10.7: a restoration halts without them
             float own = CAStability.adminOwn(a.getPerson());
             if (!CAStability.canLose(from, CAStability.adminLeaves(own, penalty), null)) continue;
             float here = adminWorth(from, a.getPerson());

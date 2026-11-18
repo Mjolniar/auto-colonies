@@ -1,5 +1,14 @@
 # Patch notes
 
+## 0.3.10.7 - 2026-11-18
+
+- United Aurora Federation: Auto colonies restore their ruins (Restore ruins) where an administrator with Galactic Historian governs. It has the same price (200,000, 500,000 or 1,000,000), the same 150 to 180 days and the same rules as the option. Part of Mod projects.
+- Ruin restoration: Valued as the average of the results for the ruins size, as they are with Fixes, less the Tech-Mining it removes. Ranked with every other build.
+- Administrators: An administrator with Galactic Historian adds the restoration's worth where they could start one, and isn't moved while one runs.
+- Story mode: Added Historian hire (Tier III, 10 bandwidth, United Aurora Federation). It hires Sophia once you're Friendly with the UAF and an Auto colony has ruins, for an administrator's hiring cost plus the fee. She arrives in 30 days.
+- Story mode: Added Historian core (Tier IV, 20 bandwidth, needs Autarch administrator and United Aurora Federation). One Autarch AI Core variant with Autarchy and Galactic Historian governs the Auto colony with ruins where a restoration is worth the most, and stays until it finishes.
+- Prepare for removal: The Historian core is swapped for a plain administrator like the Autarch AI Core.
+
 ## 0.3.10.6 - 2026-11-18
 
 - Coronal Hypershunt: Goods it is short of count as shortages, so buildings that make them score higher until it is supplied. This covers the section being restored, the section restored next and the wormhole's Enriched Transplutonics.

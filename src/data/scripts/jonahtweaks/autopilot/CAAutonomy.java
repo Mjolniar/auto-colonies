@@ -82,7 +82,7 @@ final class CAAutonomy {
         if (d.conquered().containsKey(m.getId())) return false;   // 0.3.6.2: the conquered step takes capture autonomy back, so it would loop
         if (m.getDaysInExistence() < NEW_DAYS) return false;   // a new colony needs its stability, and taking it back costs 2
         if (CAEngine.isOutpost(m) || CAHypershunt.is(m) || CAMegastructures.has(m)) return false;
-        return m.getAdmin() == null || !(m.getAdmin().isAICore() || CAAutarchAdmin.is(m.getAdmin()));   // an AI core you put there would stay behind
+        return m.getAdmin() == null || !(m.getAdmin().isAICore() || CAAutarchAdmin.is(m.getAdmin()) || CAHistorian.is(m.getAdmin()));   // an AI core you put there would stay behind
     }
 
     /** Colonies autonomy would save money at, biggest saving first: losing money now, a year old or more. */

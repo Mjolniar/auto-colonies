@@ -198,7 +198,7 @@ public final class CARemoval {
     static List<String> blockers() {
         List<String> out = new ArrayList<String>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
-            if (!CAAutarchAdmin.governs(m)) continue;
+            if (!CAAutarchAdmin.governs(m) && !CAHistorian.governs(m)) continue;   // 0.3.10.7: the Historian core has Autarchy too
             float l = loss(m);
             if (keeps(m.getStability().getModifiedValue(), l)) continue;
             int num = Misc.getNumIndustries(m), max = Misc.getMaxIndustries(m);
@@ -418,7 +418,7 @@ public final class CARemoval {
             if (mem.contains(CAAutarchAdmin.DECLINED)) { declined.put(m.getId(), mem.get(CAAutarchAdmin.DECLINED)); mem.unset(CAAutarchAdmin.DECLINED); }
             if (mem.getBoolean(CAAutarchAdmin.SEATED)) { seated.add(m.getId()); mem.unset(CAAutarchAdmin.SEATED); }
             PersonAPI p = m.getAdmin();
-            if (!CAAutarchAdmin.is(p)) continue;
+            if (!CAAutarchAdmin.is(p) && !CAHistorian.is(p)) continue;   // 0.3.10.7: the Historian core too
             PersonAPI s = standIn();
             m.setAdmin(s);
             if (m.getPeopleCopy().contains(p)) { m.removePerson(p); m.addPerson(s); }

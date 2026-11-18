@@ -1269,6 +1269,7 @@ public class CASync {
     /** 0.3.7.9: the Autarch administrator package (CAAutarchAdmin); never throws. */
     static void autarchAdmins() {
         try { CAAutarchAdmin.daily(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autarch administrator failed", t); }
+        try { CAHistorian.daily(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Historian core failed", t); }   // 0.3.10.7
     }
 
     /** Fast buildout turned off (or dormant): every running buildout stops; the colony keeps its mode. */

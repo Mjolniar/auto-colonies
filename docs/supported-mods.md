@@ -25,7 +25,7 @@
 - [Junk Yard Dogs](https://fractalsoftworks.com/forum/index.php?topic=22826.0) and [Carter's Freetraders](https://fractalsoftworks.com/forum/index.php?topic=24433.0): Forges and the Biolab are built normally.
 - [Vulpoids](https://fractalsoftworks.com/forum/index.php?topic=29929.0): Organ Farms and Biotech are upgraded when they pay.
 - [Yunru Industries, Slightly Better Tech-Mining, Yunru's Worlds](https://fractalsoftworks.com/forum/index.php?topic=21968.0): The Bazaar only goes at your [capital](how-it-builds.md#your-capital).
-- [United Aurora Federation](https://fractalsoftworks.com/forum/index.php?topic=12709.0): The Dimensional Nanoforge, Servosync Pump, Modular Purifier and Garrison Transmitter are placed by effect.
+- [United Aurora Federation](https://fractalsoftworks.com/forum/index.php?topic=12709.0): The Dimensional Nanoforge, Servosync Pump, Modular Purifier and Garrison Transmitter are placed by effect. Where an administrator with Galactic Historian governs an Auto colony (Sophia, or the Historian core in story mode), it restores the ruins when the average result pays for the price, the time and the Tech-Mining it removes.
 - [Auto Outfitting](https://github.com/Mjolniar/auto-outfitting): Big weapon orders go through AotD production orders.
 - [Kadur Remnant](https://fractalsoftworks.com/forum/index.php?topic=35145.0): Kadur Majority Faith and Virus Bombed count in build values.
 - [JaydeePiracy](https://fractalsoftworks.com/forum/index.php?topic=36201.0): The Planetkiller Launch Site and item are left to you.

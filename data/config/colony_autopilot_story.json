@@ -21,6 +21,6 @@
 		"advice":2, "oversight":4, "upkeep":5, "supply":5,
 		"automation":6, "staff":6, "economy":5, "security":6, "projects":6,
 		"growth":9, "industry":8, "frontier":8, "warfare":7, "megaprojects":8,
-		"dominion":15, "warlord":15, "parallel":12, "instant":20, "terraforming":12, "autarch":10, "fastResearch":20
+		"dominion":15, "warlord":15, "parallel":12, "instant":20, "terraforming":12, "autarch":10, "fastResearch":20, "uafHire":10, "historian":20
 	}
 }

@@ -227,6 +227,7 @@ public class CAAuto {
         if (mods.isModEnabled(CAContracts.MOD)) {
             CAStep.run("trade contract step", () -> CAContracts.run(d, s));
         }
+        if (mods.isModEnabled(CARuins.MOD)) CAStep.run("ruin restoration step", () -> CARuins.daily(d, s));   // 0.3.10.7: Sophia's hire
         if (mods.isModEnabled(CAHypershunt.MOD)) {
             CAStep.run("hypershunt step", () -> CAHypershunt.run(d, s));
             CAStep.run("megastructure step", () -> CAMegastructures.run(d, s));
