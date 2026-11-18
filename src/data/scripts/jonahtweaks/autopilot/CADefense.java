@@ -7,6 +7,7 @@ import com.fs.starfarer.api.campaign.comm.IntelInfoPlugin;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.ids.Factions;
 import com.fs.starfarer.api.impl.campaign.intel.raid.RaidIntel;
+import com.fs.starfarer.api.impl.campaign.intel.group.GenericRaidFGI;
 import com.fs.starfarer.api.impl.campaign.rulecmd.Nex_FleetRequest;
 import com.fs.starfarer.api.util.Misc;
 import exerelin.campaign.fleets.InvasionFleetManager;
@@ -40,7 +41,39 @@ public class CADefense {
         return fp;
     }
 
-    static boolean raidTargets(StarSystemAPI sys) {
+    /**
+     * 0.3.10.5: a raid group aimed at your colonies in this system (GenericRaidFGI: vanilla crisis raids, Nexerelin blockades,
+     * Remnant Retribution's strike, Adversary's bombardment campaign), still on its way or there, or null. CASiege's test.
+     */
+    static GenericRaidFGI raidGroup(StarSystemAPI sys) {
+        try {
+            for (IntelInfoPlugin i : Global.getSector().getIntelManager().getIntel()) {
+                if (!(i instanceof GenericRaidFGI) || i.isEnded() || i.isEnding()) continue;
+                GenericRaidFGI g = (GenericRaidFGI) i;
+                if (!g.isPlayerTargeted() || g.isAborted() || g.isFailed() || g.isSucceeded()) continue;
+                if (g.getRaidAction() != null && g.getRaidAction().getWhere() == sys) return g;
+            }
+        } catch (Throwable ignored) { }
+        return null;
+    }
+
+    /** 0.3.10.5: the raid group's fleet points once its fleets are out (0 before: it is sized when they exist). */
+    static float groupFP(GenericRaidFGI g) {
+        float fp = 0f;
+        try {
+            for (CampaignFleetAPI f : g.getFleets()) if (f != null && f.isAlive()) fp += f.getFleetPoints();
+        } catch (Throwable ignored) { }
+        return fp;
+    }
+
+    /** Pure (0.3.10.5): the defense a raid group needs: a quarter more than its fleets, less what's there, at least twice MIN_FP. */
+    static float groupNeed(float groupFP, float ours, float min) { return Math.max(min * 2f, groupFP * 1.25f - ours); }
+
+    /** A raid group or a hostile raid or invasion aimed at the system (realThreat). 0.3.10.5: raid groups too. */
+    static boolean raidTargets(StarSystemAPI sys) { return raidGroup(sys) != null || raidIntel(sys); }
+
+    /** A hostile raid or invasion (RaidIntel) targeting the system. */
+    static boolean raidIntel(StarSystemAPI sys) {
         try {
             for (IntelInfoPlugin i : Global.getSector().getIntelManager().getIntel(RaidIntel.class)) {
                 RaidIntel r = (RaidIntel) i;
@@ -87,9 +120,12 @@ public class CADefense {
             if (defenseUnderWay(m)) continue;
             float hostile = hostileFP(sys);
             float ours = CAItems.defenseFP(m) + CASiege.friendlyFP(sys);
-            boolean raid = raidTargets(sys);
+            GenericRaidFGI group = raidGroup(sys);   // 0.3.10.5: sized to its fleets once they're out
+            float groupFP = group == null ? 0f : groupFP(group);
+            boolean raid = raidIntel(sys);   // a group whose fleets aren't out yet waits for them
             float n = 0f; String w = null;
-            if (raid) { n = Math.max(MIN_FP * 2f, hostile * 1.25f - ours); w = "a hostile raid or invasion is targeting the system"; }
+            if (groupFP > 0f) { n = groupNeed(Math.max(groupFP, hostile), ours, MIN_FP); w = "a " + (int) groupFP + "-point raid group is coming for the system"; }
+            else if (raid) { n = Math.max(MIN_FP * 2f, hostile * 1.25f - ours); w = "a hostile raid or invasion is targeting the system"; }
             else if (hostile > Math.max(150f, ours)) { n = hostile * 1.25f - ours; w = (int) hostile + " fleet points of hostiles in the system against about " + (int) ours + " of defense"; }
             if (n > need) { need = n; target = m; why = w; }
         }

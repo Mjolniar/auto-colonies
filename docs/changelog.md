@@ -1,5 +1,13 @@
 # Patch notes
 
+## 0.3.10.5 - 2026-11-17
+
+- Defense fleets: Raid groups aimed at your colonies get a Nexerelin defense fleet once their fleets are out, sized a quarter over the group's fleet points less your defenses there. This covers Remnant Retribution's strike, Adversary's bombardment campaign, vanilla crisis raids and Nexerelin blockades.
+- Remnant Retribution: Added its crisis name and advice on the Colony crises page.
+- Adversary: Added its crisis name and advice on the Colony crises page. Mutual Tenacity is no longer listed as an unmapped condition.
+- Toolbox Economy Curves: New farms, Light Industries and (with that setting) Heavy Industries count the curve's extra upkeep. Income Guard is no longer listed as an unmapped condition. Supported version 1.1.1.
+- Reverse Engineered Private Arsenal: Supported version 1.5.0.
+
 ## 0.3.10.4 - 2026-11-17
 
 - Story mode: Each core-heavy mod that is on makes packages, managed colonies and Autarch seats cost 10% more, up to 50% more. The mods are Treasure Hunt, Seeker, Random Assortment of Things, Secrets of the Frontier, Knights of Ludd, Slightly Better Tech-Mining and Omega Core Everywhere ("coreMods" in the config file).

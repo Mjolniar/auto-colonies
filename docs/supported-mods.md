@@ -35,7 +35,9 @@
 - [Blue](https://fractalsoftworks.com/forum/index.php?topic=14041.0) and [Oculian Armada](https://fractalsoftworks.com/forum/index.php?topic=9035.0): Lanestate Battleyards and the Orbital Matrix count as ship producers.
 - [Cloning](https://fractalsoftworks.com/forum/index.php?topic=35130.0) and [Coalesced Little Mods](https://github.com/andrzejsokolowski/starsector-coalesced-little-mods): Their cloning buildings and the Megafactory are built when they're worth it.
 - [Reverse Engineered Private Arsenal](https://fractalsoftworks.com/forum/index.php?topic=35627.0): Everything from it is left to you.
-- [Toolbox Economy Curves](https://fractalsoftworks.com/forum/index.php?topic=36178.0): Plans use the curve you picked.
+- [Toolbox Economy Curves](https://fractalsoftworks.com/forum/index.php?topic=36178.0): New farms and Light Industries count the curve's extra upkeep.
+- [Remnant Retribution](https://fractalsoftworks.com/forum/index.php?topic=35940.0): Its crisis shows on the Colony crises page, and when its strike heads for one of your colonies, a Nexerelin defense fleet goes out sized to the strike.
+- [Adversary](https://fractalsoftworks.com/forum/index.php?topic=25821.0): Its bombardment campaign shows on the Colony crises page and gets a defense fleet the same way.
 - [Sol Renewed](https://fractalsoftworks.com/forum/index.php?topic=35983.0): Industries are priced for Sol's crisis.
 - [Secrets of the Frontier](https://fractalsoftworks.com/forum/index.php?topic=15820.0): Its habitat objective is left to you, and Warmind Refit is skipped while the Dustkeepers are hostile.
 

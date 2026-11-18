@@ -45,6 +45,12 @@ public class CADiagnostics {
     public static final String REPORT = "colony_autopilot_diagnostics.json";
 
     /** Mods whose colony conditions are mapped in the design doc; their conditions are read through live stats. */
+    /**
+     * 0.3.10.5: mod conditions that need nothing beyond the colony's live stats, so they aren't listed as unmapped:
+     * Toolbox Economy Curves' hidden Income Guard (on every market) and Adversary's Mutual Tenacity (stability).
+     */
+    static final Set<String> KNOWN_CONDITIONS = new HashSet<String>(Arrays.asList("tec_income_guard", "adversary_mutual_tenacity"));
+
     static final Set<String> MAPPED_MODS = new HashSet<String>(Arrays.asList(
             "IndEvo", "terraformingmadeeasy", "GrandColonies", "nexerelin", "jonah_tweaks", "Imperium",
             "knights_of_ludd", "assortment_of_things", "EmergentThreats_IX_Revival", "EmergentThreats_Vice", "armaa", "secretsofthefrontier", "underworld"));
@@ -119,7 +125,7 @@ public class CADiagnostics {
         }
         for (MarketConditionSpecAPI spec : Global.getSettings().getAllMarketConditionSpecs()) {
             ModSpecAPI src = spec.getSourceMod();
-            if (src == null || MAPPED_MODS.contains(src.getId())) { conditions.put(spec.getId(), Level.SUPPORTED); continue; }
+            if (src == null || MAPPED_MODS.contains(src.getId()) || KNOWN_CONDITIONS.contains(spec.getId())) { conditions.put(spec.getId(), Level.SUPPORTED); continue; }
             // a deposit registered in the game's own tables is scored like a vanilla one (CAEngine.deposits)
             if (com.fs.starfarer.api.impl.campaign.econ.ResourceDepositsCondition.COMMODITY.containsKey(spec.getId())
                     && com.fs.starfarer.api.impl.campaign.econ.ResourceDepositsCondition.MODIFIER.containsKey(spec.getId())) {

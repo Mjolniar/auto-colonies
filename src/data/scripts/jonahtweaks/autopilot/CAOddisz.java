@@ -34,6 +34,26 @@ public class CAOddisz {
 
     // ---------------- Cloning ----------------
 
+    /**
+     * 0.3.10.5: Toolbox Economy Curves' upkeep on a new farm (tag farming), domestic goods producer (lightindustry) or heavy
+     * machinery producer (heavyindustry) at this colony's size: its own Curve.upkeep(size, Settings.upkeepPower()), only for
+     * the producers its settings scale. 1 without the mod or when it can't be read.
+     */
+    public static float curveUpkeep(com.fs.starfarer.api.campaign.econ.MarketAPI m, com.fs.starfarer.api.loading.IndustrySpecAPI spec) {
+        if (m == null || spec == null || !on(CURVES_MOD)) return 1f;
+        boolean farm = spec.hasTag("farming"), goods = spec.hasTag("lightindustry"), machinery = spec.hasTag("heavyindustry");
+        if (!farm && !goods && !machinery) return 1f;
+        try {
+            Class<?> st = Class.forName("toolboxeconomycurves.Settings", true, Global.getSettings().getScriptClassLoader());
+            if (!farm && goods && !Boolean.TRUE.equals(CARefl.invoke(CARefl.method(st, "scaleGoodsProducers"), null))) return 1f;
+            if (!farm && !goods && !Boolean.TRUE.equals(CARefl.invoke(CARefl.method(st, "scaleMachineryProducers"), null))) return 1f;
+            Object curve = CARefl.invoke(CARefl.method(st, "curve"), null);
+            double power = ((Number) CARefl.invoke(CARefl.method(st, "upkeepPower"), null)).doubleValue();
+            double f = ((Number) CARefl.invoke(CARefl.method(curve.getClass(), "upkeep", int.class, double.class), curve, m.getSize(), power)).doubleValue();
+            return f > 0 && f < 100 ? (float) f : 1f;
+        } catch (Throwable t) { return 1f; }
+    }
+
     static boolean on(String mod) {
         try { return Global.getSettings().getModManager().isModEnabled(mod); } catch (Throwable t) { return false; }
     }

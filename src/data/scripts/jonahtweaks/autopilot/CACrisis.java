@@ -371,6 +371,11 @@ public class CACrisis {
         return r != null && isPolice(r.factor);
     }
 
+    /** 0.3.10.5: Remnant Retribution's and Adversary's crises, by class name (no import, so neither mod is needed). */
+    static boolean isRemRet(Object factor) { return factor != null && factor.getClass().getName().endsWith("RemRetHostileActivityFactor"); }
+
+    static boolean isAdversary(Object factor) { return factor != null && factor.getClass().getName().endsWith("AdversaryHostileActivityFactor"); }
+
     static boolean isPolice(Object factor) { return factor != null && factor.getClass().getName().endsWith("PoliceHostileActivityFactor"); }
 
     /** A free port's score for Nexerelin's police (PoliceHostileActivityFactor.getFreePortScore): size + drugs + weapons - 2, counted from 5. */
@@ -455,6 +460,8 @@ public class CACrisis {
         if (f instanceof LuddicChurchHostileActivityFactor) return "a Knights of Ludd takeover";
         if (f instanceof HegemonyHostileActivityFactor) return "a Hegemony AI inspection";
         if (f instanceof RemnantHostileActivityFactor) return "a Remnant attack";
+        if (isRemRet(f)) return "a Remnant retaliation strike";   // 0.3.10.5: Remnant Retribution
+        if (isAdversary(f)) return "an Adversary bombardment campaign";   // 0.3.10.5: Adversary
         try { return f.getNameForThreatList(true); } catch (Throwable t) { return f.getClass().getSimpleName(); }
     }
 
@@ -470,6 +477,8 @@ public class CACrisis {
         if (f instanceof LuddicChurchHostileActivityFactor) return "Luddic-majority colonies drive it. Beat the Knights' Armada or make the Church's deal.";
         if (f instanceof HegemonyHostileActivityFactor) return "AI cores above size 3 drive it. Three beaten inspections end it.";
         if (f instanceof RemnantHostileActivityFactor) return "A Remnant nexus in your system drives it. Destroying it ends it.";
+        if (isRemRet(f)) return "Remnant ships your fleet kills drive it. Destroy the Nexus it marks before the strike launches, or beat the strike.";
+        if (isAdversary(f)) return "Being Hostile with the Adversary drives it, and beating the campaign ends it for good.";
         return "A mod adds this one.";
     }
 

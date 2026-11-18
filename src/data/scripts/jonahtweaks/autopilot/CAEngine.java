@@ -814,7 +814,8 @@ public class CAEngine {
         // as BaseIndustry.applyIncomeAndUpkeep: the spec's upkeep (already in credits: the game multiplies the CSV value by 500
         // when it loads) times max(1, size - 2) times the colony's upkeep multiplier
         float sizeMult = (CATasc.fixedUpkeep(spec.getId()) ? 1 : Math.max(1, m.getSize() - 2)) * m.getUpkeepMult().getModifiedValue();
-        return spec.getUpkeep() * sizeMult * CADevelopment.upkeepMult(m, spec) * CARogue.upkeepMult(m, spec.getId());   // 0.3.2.1: Rogue Planets' upkeep conditions
+        return spec.getUpkeep() * sizeMult * CADevelopment.upkeepMult(m, spec) * CARogue.upkeepMult(m, spec.getId())   // 0.3.2.1: Rogue Planets' upkeep conditions
+                * CAOddisz.curveUpkeep(m, spec);   // 0.3.10.5: Toolbox Economy Curves' upkeep growth
     }
 
     static void upkeep(MarketAPI m, IndustrySpecAPI spec, IndustrySpecAPI replaced, Pick p) {
