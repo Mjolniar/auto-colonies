@@ -1,5 +1,13 @@
 # Patch notes
 
+## 0.3.10.4 - 2026-11-17
+
+- Story mode: Each core-heavy mod that is on makes packages, managed colonies and Autarch seats cost 10% more, up to 50% more. The mods are Treasure Hunt, Seeker, Random Assortment of Things, Secrets of the Frontier, Knights of Ludd, Slightly Better Tech-Mining and Omega Core Everywhere ("coreMods" in the config file).
+- Story mode: Packages already bought keep the price paid. A package turned off and on again costs today's price.
+- Story mode: Fed cores give 75% of their bandwidth once 100 bandwidth is fed, and 50% from 250. Bandwidth already fed stays.
+- Story mode: Rapid construction costs 110,000 more per build (was 100,000). The convenience fee is 10% higher in story mode.
+- Story page: Shows how much more new purchases cost and the share fed cores give now. The feed buttons show the bandwidth each core gives now.
+
 ## 0.3.10.3 - 2026-11-17
 
 - Surplus research: Upgrades one Research Facility to a Black Site once Vaults of Knowledge opens it and none is built. It needs an Auto colony at stability 10 or more and pays from surplus credits. One only.

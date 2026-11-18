@@ -36,7 +36,20 @@ public class CASyncCatalog {
     public static int RETURN_RANDOM_DAYS = 365;
     public static float SALVAGE_CHANCE = 0.2f;
     /** 0.3.7.8: Rapid construction's flat fee per build or upgrade, and the share of the build time it takes. */
-    public static float RAPID_FEE = 100000f, RAPID_TIME = 1f / 3f;
+    public static float RAPID_FEE = 110000f, RAPID_TIME = 1f / 3f;   // 0.3.10.4: 110,000 (was 100,000)
+
+    /**
+     * 0.3.10.4: mods that hand out a lot of AI cores ("coreMods"). Each one on makes packages, colonies and seats cost
+     * CORE_MOD_SHARE more, at most CORE_MOD_MAX more (CASync.costMult).
+     */
+    public static String[] CORE_MODS = {"spinloki_treasurehunt", "SEEKER", "assortment_of_things", "secretsofthefrontier",
+            "knights_of_ludd", "SBTM", "omega_core_everywhere"};
+    public static float CORE_MOD_SHARE = 0.1f, CORE_MOD_MAX = 0.5f;
+    /** 0.3.10.4: a fed core gives FALLOFF_SHARE[i] of its bandwidth once FALLOFF_AT[i] bandwidth is fed ("falloff"). */
+    public static int[] FALLOFF_AT = {100, 250};
+    public static float[] FALLOFF_SHARE = {0.75f, 0.5f};
+    /** 0.3.10.4: the convenience fee in story mode ("feeMult"). */
+    public static float STORY_FEE_MULT = 1.1f;
 
     // 0.3.8.9: GROUPS, the ability names, texts and costs, available() and Pack.contents() are removed (nothing read them;
     // packages carry the names, costs and descriptions)
@@ -246,7 +259,7 @@ public class CASyncCatalog {
     /** "Approve mode (4 bandwidth)": the package an ability is bought in, for "needs" lines. */
     public static String buy(String ability) {
         Pack p = PACK_OF.get(ability);
-        return p == null ? "" : p.name + " (" + p.cost + " bandwidth)";
+        return p == null ? "" : p.name + " (" + CASync.price(p) + " bandwidth)";   // 0.3.10.4: with the core-heavy mods
     }
 
     /** Pure: abilities to own in a tier of `count` to open the next one. */
@@ -317,6 +330,26 @@ public class CASyncCatalog {
             }
             TIER_SHARE = (float) Math.max(0.0, Math.min(1.0, j.optDouble("tierShare", TIER_SHARE)));   // 0.3.7.3
             RAPID_FEE = (float) Math.max(0.0, j.optDouble("rapidFee", RAPID_FEE));   // 0.3.7.8
+            STORY_FEE_MULT = (float) Math.max(0.0, j.optDouble("feeMult", STORY_FEE_MULT));   // 0.3.10.4
+            org.json.JSONArray mods = j.optJSONArray("coreMods");
+            if (mods != null) {
+                String[] m = new String[mods.length()];
+                for (int i = 0; i < m.length; i++) m[i] = mods.optString(i, "");
+                CORE_MODS = m;
+            }
+            CORE_MOD_SHARE = (float) Math.max(0.0, j.optDouble("coreModShare", CORE_MOD_SHARE));
+            CORE_MOD_MAX = (float) Math.max(0.0, j.optDouble("coreModMax", CORE_MOD_MAX));
+            JSONObject fo = j.optJSONObject("falloff");
+            if (fo != null) {
+                org.json.JSONArray at = fo.optJSONArray("at"), sh = fo.optJSONArray("share");
+                if (at != null && sh != null && at.length() == sh.length()) {
+                    int[] a2 = new int[at.length()];
+                    float[] s2 = new float[sh.length()];
+                    for (int i = 0; i < a2.length; i++) { a2[i] = Math.max(0, at.optInt(i, 0)); s2[i] = (float) Math.max(0.0, Math.min(1.0, sh.optDouble(i, 1.0))); }
+                    FALLOFF_AT = a2;
+                    FALLOFF_SHARE = s2;
+                }
+            }
             JSONObject costs = j.optJSONObject("packs");   // 0.3.7.4: packages are what costs bandwidth
             if (costs != null) for (Pack p : PACKS) p.cost = Math.max(0, costs.optInt(p.id, p.cost));
         } catch (Throwable t) {

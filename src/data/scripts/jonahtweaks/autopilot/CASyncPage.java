@@ -63,14 +63,18 @@ public class CASyncPage {
         if (CASync.installed()) {   // 0.3.8.9: the unused fed() read is removed
             t.addSectionHeading("Bandwidth", Alignment.MID, 12f);
             t.addPara("The core has %s bandwidth. Your abilities use %s, and %s are free.", 6f, hl, "" + CASync.total(), "" + CASync.spent(), "" + Math.max(0, CASync.free()));
+            float mult = CASync.costMult(), share = CASync.falloffNow();   // 0.3.10.4
+            if (mult > 1f) t.addPara("Your mods hand out a lot of AI cores, so new purchases cost %s more.", 3f, hl, Math.round((mult - 1f) * 100f) + "%");
+            if (share < 1f) t.addPara("Cores you feed now give %s of their bandwidth.", 3f, hl, Math.round(share * 100f) + "%");
             int[] h = CASync.onHand();   // 0.3.7.2: the buttons are the core slots; no counts or explanations
             if (awake) {
-                ButtonAPI a = button(t, feedLabel("a1", "1 Alpha (+" + CASyncCatalog.ALPHA_PP + ")", CASyncCatalog.ALPHA_PP), "feed:a1", h[2] > 0, 150f, 6f);
-                ButtonAPI b = button(t, feedLabel("b1", "1 Beta (+" + CASyncCatalog.BETA_PP + ")", CASyncCatalog.BETA_PP), "feed:b1", h[1] > 0, 150f, 0f);
+                int pa = CASync.gainNow(0, 0, 1), pb = CASync.gainNow(0, 1, 0), pg = CASync.gainNow(1, 0, 0);   // 0.3.10.4: falloff
+                ButtonAPI a = button(t, feedLabel("a1", "1 Alpha (+" + pa + ")", pa), "feed:a1", h[2] > 0, 150f, 6f);
+                ButtonAPI b = button(t, feedLabel("b1", "1 Beta (+" + pb + ")", pb), "feed:b1", h[1] > 0, 150f, 0f);
                 b.getPosition().rightOfTop(a, 6f);
-                ButtonAPI g = button(t, feedLabel("g1", "1 Gamma (+" + CASyncCatalog.GAMMA_PP + ")", CASyncCatalog.GAMMA_PP), "feed:g1", h[0] > 0, 150f, 0f);
+                ButtonAPI g = button(t, feedLabel("g1", "1 Gamma (+" + pg + ")", pg), "feed:g1", h[0] > 0, 150f, 0f);
                 g.getPosition().rightOfTop(b, 6f);
-                int all = CASyncCatalog.points(h[0], h[1], h[2]);
+                int all = CASync.gainNow(h[0], h[1], h[2]);
                 ButtonAPI x = button(t, feedLabel("all", "All of them (+" + all + ")", all), "feed:all", all > 0, 180f, 0f);
                 x.getPosition().rightOfTop(g, 6f);
                 CALog.endRow(t, a);
@@ -120,8 +124,9 @@ public class CASyncPage {
             for (CASyncCatalog.Pack p : list) {   // 0.3.7.4: packages
                 boolean on = CASync.ticked(p.id);
                 boolean needs = p.requires != null && !CASync.ticked(p.requires);
-                boolean afford = CASync.free() >= p.cost;
-                String desc = p.name + " (" + p.cost + " bandwidth). " + p.desc   // 0.3.7.5: what it does
+                int cost = on ? CASync.paidFor(p) : CASync.price(p);   // 0.3.10.4: what you paid, or the price now
+                boolean afford = CASync.free() >= cost;
+                String desc = p.name + " (" + cost + " bandwidth). " + p.desc   // 0.3.7.5: what it does
                         + (needs ? " It needs " + CASyncCatalog.pack(p.requires).name + " first." : "");
                 row(t, on ? "On" : "Off", "tick:" + p.id, on || (!needs && afford), 60f, desc, on ? Misc.getTextColor() : gray, p.name);
             }

@@ -325,7 +325,8 @@ public class CABudget {
     }
 
     public static float constructionFee(CASettings s, float cost) {
-        return Math.max(CATuning.FEE_FLOOR, CATuning.FEE_SHARE * cost) * CASettings.FEE_MULT[Math.max(0, Math.min(3, s.feeLevel))];
+        return Math.max(CATuning.FEE_FLOOR, CATuning.FEE_SHARE * cost) * CASettings.FEE_MULT[Math.max(0, Math.min(3, s.feeLevel))]
+                * CASync.feeMult();   // 0.3.10.4: 10% more in story mode
     }
 
     /** 0.3.8.5: Rapid construction's fee on a build or upgrade (CASync.buildPrice less the game's price); 0 without it. */

@@ -1,6 +1,6 @@
 # Auditing the mod
 
-- Every action costs what the game or the [other mod](supported-mods.md) charges, plus a convenience fee. On Standard it's 5% of a build's cost (at least 5,000) or a flat fee, and Off makes it zero. Refunds only give back what the mod took.
+- Every action costs what the game or the [other mod](supported-mods.md) charges, plus a convenience fee. On Standard it's 5% of a build's cost (at least 5,000) or a flat fee, 10% more in story mode, and Off makes it zero. Refunds only give back what the mod took.
 - It's safe to add to a running save. A save made with it won't load without it, so use Prepare for removal before you take it out ([Removing it](#removing-it)).
 - It only checks other mods to turn its integrations on, and it doesn't disable, block or change any mod for being installed.
 - The source code is in the [repo](https://github.com/Mjolniar/auto-colonies).

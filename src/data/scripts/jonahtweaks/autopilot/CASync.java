@@ -214,14 +214,101 @@ public class CASync {
     /** 0.3.8.0: colonies the Autarch administrator may govern: one with the package, plus each bought; 0 without it. */
     public static int seats() { return has("autarchAdmin") ? 1 + extraSeats() : 0; }
 
+    // ---------------- 0.3.10.4: core-heavy mods and fed core falloff ----------------
+
+    /** Pure: how much more things cost with n core-heavy mods on: share each, at most max. */
+    static float costMult(int n, float share, float max) { return 1f + Math.min(max, share * Math.max(0, n)); }
+
+    /** The core-heavy mods that are on (CASyncCatalog.CORE_MODS); 0 without a game. */
+    public static int coreMods() {
+        int n = 0;
+        try {
+            com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
+            for (String id : CASyncCatalog.CORE_MODS) if (id != null && !id.isEmpty() && mm.isModEnabled(id)) n++;
+        } catch (Throwable ignored) { }
+        return n;
+    }
+
+    /** Packages, colonies and seats cost this much more with the core-heavy mods on. */
+    public static float costMult() { return costMult(coreMods(), CASyncCatalog.CORE_MOD_SHARE, CASyncCatalog.CORE_MOD_MAX); }
+
+    /** Pure: a price with the mods' share on top, rounded. */
+    static int scaled(int base, float mult) { return Math.round(base * mult); }
+
+    /** A package's price now. */
+    public static int price(CASyncCatalog.Pack p) { return p == null ? 0 : scaled(p.cost, costMult()); }
+
+    /**
+     * What each owned package was bought for. A save from before 0.3.10.4 records its packages at the base price the first
+     * time it's read, so nothing it owns costs more.
+     */
+    @SuppressWarnings("unchecked")
+    static Map<String, Integer> packPaid() {
+        Object o = state().get("packPaid");
+        if (!(o instanceof Map)) { o = new HashMap<String, Integer>(); state().put("packPaid", o); }
+        Map<String, Integer> m = (Map<String, Integer>) o;
+        if (!flag("packPaidSet")) {
+            for (String id : ticked()) {
+                CASyncCatalog.Pack p = CASyncCatalog.pack(id);
+                if (p != null && !m.containsKey(id)) m.put(id, p.cost);
+            }
+            flag("packPaidSet", true);
+        }
+        return m;
+    }
+
+    /** The bandwidth an owned package uses: what it was bought for. */
+    static int paidFor(CASyncCatalog.Pack p) {
+        Integer v = packPaid().get(p.id);
+        return v != null ? v : price(p);
+    }
+
+    /** Pure: the share of its bandwidth a core gives once `fed` bandwidth is fed. */
+    static float falloff(int fed, int[] at, float[] share) {
+        float f = 1f;
+        for (int i = 0; i < at.length && i < share.length; i++) if (fed >= at[i]) f = share[i];
+        return f;
+    }
+
+    /**
+     * Pure: feeding a Alphas, b Betas and g Gammas (Alphas first) after `fed` bandwidth and `rem` hundredths: {whole
+     * bandwidth gained, hundredths left over}. Each core gives its value times the falloff share at the time it's fed.
+     */
+    static int[] gain(int fed, int rem, int g, int b, int a, int[] at, float[] share) {
+        int[] counts = {a, b, g};
+        int[] vals = {CASyncCatalog.ALPHA_PP, CASyncCatalog.BETA_PP, CASyncCatalog.GAMMA_PP};
+        int total = fed, r = Math.max(0, rem), got = 0;
+        for (int k = 0; k < 3; k++) {
+            for (int n = 0; n < counts[k]; n++) {
+                r += Math.round(vals[k] * 100f * falloff(total, at, share));
+                int whole = r / 100;
+                r %= 100;
+                total += whole;
+                got += whole;
+            }
+        }
+        return new int[]{got, r};
+    }
+
+    /** The bandwidth these cores would give now. */
+    public static int gainNow(int g, int b, int a) {
+        return gain(fedPoints(), num("fedRem"), g, b, a, CASyncCatalog.FALLOFF_AT, CASyncCatalog.FALLOFF_SHARE)[0];
+    }
+
+    /** The share of its bandwidth the next core fed gives. */
+    public static float falloffNow() { return falloff(fedPoints(), CASyncCatalog.FALLOFF_AT, CASyncCatalog.FALLOFF_SHARE); }
+
+    /** The convenience fee's multiplier: STORY_FEE_MULT in story mode, 1 otherwise. */
+    public static float feeMult() { return on() ? CASyncCatalog.STORY_FEE_MULT : 1f; }
+
     /** Pure (0.3.10.3): the price of the next one when `bought` are bought: the first at base, each after it step more. */
     static int stepCost(int base, int step, int bought) { return base + step * Math.max(0, bought); }
 
     /** 0.3.10.3: the next managed colony's bandwidth. */
-    public static int colonyCost() { return stepCost(CASyncCatalog.COLONY_PP, CASyncCatalog.COLONY_STEP, extraColonies()); }
+    public static int colonyCost() { return scaled(stepCost(CASyncCatalog.COLONY_PP, CASyncCatalog.COLONY_STEP, extraColonies()), costMult()); }   // 0.3.10.4: with the mods
 
     /** 0.3.10.3: the next Autarch seat's bandwidth. */
-    public static int seatCost() { return stepCost(CASyncCatalog.SEAT_PP, CASyncCatalog.SEAT_STEP, extraSeats()); }
+    public static int seatCost() { return scaled(stepCost(CASyncCatalog.SEAT_PP, CASyncCatalog.SEAT_STEP, extraSeats()), costMult()); }   // 0.3.10.4: with the mods
 
     /**
      * 0.3.10.3: the bandwidth the bought colonies and seats use, as paid. A save from before 0.3.10.3 keeps the flat price it
@@ -269,7 +356,7 @@ public class CASync {
         int n = colonyPaid() + seatPaid();   // 0.3.8.0: Autarch seats; 0.3.10.3: as paid, each costs more than the last
         for (String id : ticked()) {
             CASyncCatalog.Pack p = CASyncCatalog.pack(id);
-            if (p != null && p.available()) n += p.cost;
+            if (p != null && p.available()) n += paidFor(p);   // 0.3.10.4: what it was bought for
         }
         return n;
     }
@@ -299,16 +386,19 @@ public class CASync {
         if (dormant()) return "The Colony Autopilot is dormant.";
         if (p.tier > openTier()) return CASyncCatalog.TIERS[p.tier] + " isn't open yet.";   // 0.3.7.3
         if (p.requires != null && !ticked(p.requires)) return p.name + " needs " + CASyncCatalog.pack(p.requires).name + " first.";
-        if (free() < p.cost) return p.name + " needs " + p.cost + " bandwidth, and " + Math.max(0, free()) + " are free.";
+        int cost = price(p);   // 0.3.10.4: with the core-heavy mods
+        if (free() < cost) return p.name + " needs " + cost + " bandwidth, and " + Math.max(0, free()) + " are free.";
+        packPaid().put(id, cost);
         ticked().add(id);
         afterChange();
-        CALog.quiet("Autopilot: " + p.name + " is on (" + p.cost + " bandwidth).");   // starsector.log; the Story page shows it
+        CALog.quiet("Autopilot: " + p.name + " is on (" + cost + " bandwidth).");   // starsector.log; the Story page shows it
         return null;
     }
 
     /** Unticks a package and every package that needs it. */
     static void untick(String id) {
         if (!ticked().remove(id)) return;
+        packPaid().remove(id);   // 0.3.10.4: bought again at the price then
         if ("autarch".equals(id)) { num("seats", 0); num("seatPaid", 0); }   // 0.3.8.0: its bought colonies go with it
         if ("oversight".equals(id)) { num("colonies", 0); num("colPaid", 0); }   // 0.3.8.9: Approve mode's bought colonies go with it (their buttons show only with it)
         CASyncCatalog.Pack p = CASyncCatalog.pack(id);
@@ -429,8 +519,10 @@ public class CASync {
                 if (s > 0) { st.cargo.removeCommodity(CORES[k], s); left -= s; }
             }
         }
-        int pts = CASyncCatalog.points(g, b, a);
+        int[] gr = gain(fedPoints(), num("fedRem"), g, b, a, CASyncCatalog.FALLOFF_AT, CASyncCatalog.FALLOFF_SHARE);   // 0.3.10.4: falloff
+        int pts = gr[0];
         num("fedPP", fedPoints() + pts);
+        num("fedRem", gr[1]);
         num("fedG", num("fedG") + g); num("fedB", num("fedB") + b); num("fedA", num("fedA") + a);
         CALog.quiet("Autopilot: integrated " + CASyncCatalog.cores(g, b, a) + ", +" + pts + " bandwidth (" + total() + " in all).");   // 0.3.7.4: no thank-you beat (0.3.8.9: the Story page shows the bandwidth)
         return null;
@@ -439,7 +531,7 @@ public class CASync {
     // ---------------- what the rest of the mod asks ----------------
 
     /** What a build costs in credits: its price, plus RAPID_FEE with Rapid construction (0.3.8.8: Free construction is gone). */
-    public static float buildPrice(float cost) { return rapidBuild() ? cost + CASyncCatalog.RAPID_FEE : cost; }   // 0.3.7.8: Rapid construction's flat fee
+    public static float buildPrice(float cost) { return rapidBuild() ? cost + CASyncCatalog.RAPID_FEE : cost; }   // 0.3.7.8: Rapid construction's flat fee (110,000 since 0.3.10.4)
 
     /** 0.3.7.8: Rapid construction (story mode only): a third of the build time, at RAPID_FEE more. Instant construction is gone. */
     public static boolean rapidBuild() { return has("rapidBuild"); }

@@ -8,7 +8,14 @@
 	# Share of a tier's packages (the ones their mods allow) you must own to open the next tier.
 	"tierShare":0.666,
 	# Rapid construction's flat fee per build or upgrade, in credits.
-	"rapidFee":100000,
+	"rapidFee":110000,
+	# The convenience fee in story mode, times this.
+	"feeMult":1.1,
+	# Mods that hand out a lot of AI cores. Each one on makes packages, colonies and seats cost coreModShare more, at most coreModMax more.
+	"coreMods":["spinloki_treasurehunt", "SEEKER", "assortment_of_things", "secretsofthefrontier", "knights_of_ludd", "SBTM", "omega_core_everywhere"],
+	"coreModShare":0.1, "coreModMax":0.5,
+	# A fed core gives this share of its bandwidth once this much bandwidth is fed.
+	"falloff":{"at":[100, 250], "share":[0.75, 0.5]},
 	# Package costs in bandwidth (CASyncCatalog lists what each package holds and its tier).
 	"packs":{
 		"advice":2, "oversight":4, "upkeep":5, "supply":5,
