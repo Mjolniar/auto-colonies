@@ -921,6 +921,7 @@ public class CAItems {
     /** A building Autopilot may put a core in or take one out of: working, unlocked, supported and taking cores, with no core or a vanilla one. */
     static boolean coreSlot(CAData.Colony c, Industry ind) {
         if (!ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId())) return false;
+        if (CAMods.leftToYou(ind.getId()) != null) return false;   // 0.3.10.8: left to you (the capital's Bazaar and Reverse Engineering Hub): its core stays as you set it
         if (CADiagnostics.industryLevel(ind.getId()) != CADiagnostics.Level.SUPPORTED && !ind.getSpec().hasTag("population") && !research(ind)) return false;
         if (ind.getAICoreId() != null && tier(ind.getAICoreId()) < 0) return false;
         try { return ind.canInstallAICores(); } catch (Throwable t) { return false; }

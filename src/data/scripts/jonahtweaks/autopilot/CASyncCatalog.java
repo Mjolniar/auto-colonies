@@ -227,8 +227,8 @@ public class CASyncCatalog {
         desc("parallel", "It runs up to three builds per colony at once.");
         numberDescs();
         desc("terraforming", "It halves terraforming time at managed colonies.");
-        desc("uafHire", "It hires Sophia, the United Aurora Federation's administrator with Galactic Historian, once you're Friendly with the UAF and an Auto colony has ruins to restore. She costs what any administrator costs to hire, plus the fee.");
-        desc("historian", "A variant of the Autarch AI Core with Autarchy and the UAF's Galactic Historian governs one Auto colony with ruins, so they can be restored. You get one.");
+        desc("uafHire", "It hires the UAF's Sophia, who has Galactic Historian, once you're Friendly with the UAF and have ruins to restore. She costs the usual hiring price.");
+        desc("historian", "One Autarch AI Core variant with Galactic Historian governs an Auto colony with ruins, so they get restored.");
         desc("fastResearch", "It makes Vaults of Knowledge research take half as long, and each project needs about 2/3 of its databanks (at least one). AI cores and colony items cost the same.");
     }
 

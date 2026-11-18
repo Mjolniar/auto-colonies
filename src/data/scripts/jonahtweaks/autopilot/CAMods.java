@@ -474,7 +474,7 @@ public class CAMods {
         LEFT.put(BAZAAR, "a market for you to trade at. No colony effect. Built only at your capital");
         // Reverse Engineered Private Arsenal (0.2.45.0): it only works on gear you put in it, and taking it down deletes both of
         // its markets with everything in them, so it's never built or taken down, and its core and item stay where you put them
-        for (String h : CAOddisz.HUB) LEFT.put(h, "it reverse-engineers gear you feed it. Taking it down deletes its markets and their goods. Its core and item stay as you set them");
+        for (String h : CAOddisz.HUB) LEFT.put(h, "it reverse-engineers gear you feed it. Built only at your capital, and never taken down: that deletes its markets and their goods. Its core and item stay as you set them");   // 0.3.10.8
         // 0.3.3.2: Mod Index batch 1 (CAIndexMods): JaydeePiracy, Scy Nation, CJY's Toy Box, AI-Retrofits
         LEFT.putAll(CAIndexMods.left());
     }

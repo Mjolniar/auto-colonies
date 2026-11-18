@@ -52,4 +52,5 @@ Every option is scored by what it earns a month minus its costs, and Approve and
 
 - Once net income is over the Trade hub starts at setting (100,000 a month, or 50,000, 250,000 or Right away) and no fast buildout is running, it builds trade buildings, starting with the Spaceport.
 - The costly ones need the Surplus tier, the [Economy rung](money.md#economy) On and upkeep within 5% of colony net.
+- With Reverse Engineered Private Arsenal, the Reverse Engineering Hub is one of them, and it goes up at the capital only, one tier at a time.
 - From Idle money with its slots full, the capital replaces its weakest ordinary industry when the swap pays, once per 90 days at most.

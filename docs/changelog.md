@@ -1,5 +1,12 @@
 # Patch notes
 
+## 0.3.10.8 - 2026-11-18
+
+- Reverse Engineered Private Arsenal: The Reverse Engineering Hub is built at the capital as a trade building, then upgraded to II and III. It waits for the money rules of trade buildings that don't earn: the Surplus tier, the Economy rung On and upkeep within 5% of colony net. Capital does set to Deliveries and commerce (the default).
+- Reverse Engineered Private Arsenal: Still never built anywhere else and never taken down. Its AI core and item stay as you set them.
+- AI cores: No core is placed in a building left to you, which covers the hub and Yunru's Bazaar.
+- Story page: The Historian hire and Historian core descriptions are shorter.
+
 ## 0.3.10.7 - 2026-11-18
 
 - United Aurora Federation: Auto colonies restore their ruins (Restore ruins) where an administrator with Galactic Historian governs. It has the same price (200,000, 500,000 or 1,000,000), the same 150 to 180 days and the same rules as the option. Part of Mod projects.

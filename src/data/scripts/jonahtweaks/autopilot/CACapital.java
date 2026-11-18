@@ -80,6 +80,7 @@ public class CACapital {
     static final Set<String> MOD_IDS = new HashSet<String>();
     static {
         for (String[] c : COMMERCE) { WHAT.put(c[0], c[2]); if ("only".equals(c[3])) MOD_IDS.add(c[0]); }
+        for (int i = 0; i < CAOddisz.HUB.length; i++) MOD_IDS.add(CAOddisz.HUB[i]);   // 0.3.10.8: the Reverse Engineering Hub (wanted)
     }
 
     static String pickedId;
@@ -274,9 +275,16 @@ public class CACapital {
         out.add(new String[]{"spaceport", "Spaceport", "traders can dock"});
         out.add(new String[]{"megaport", "Megaport", "+30% accessibility"});
         out.addAll(Arrays.asList(COMMERCE));
+        // 0.3.10.8: Reverse Engineered Private Arsenal's hub, I to III, at the capital only (your refit and home port). It earns
+        // nothing, so like any trade building at a loss it waits for the money ladder (Surplus tier, Economy rung On, upkeep
+        // within 5% of colony net). Its name is the game's (label).
+        for (int i = 0; i < CAOddisz.HUB.length; i++) out.add(new String[]{CAOddisz.HUB[i], null, null, "only"});
         out.add(new String[]{"waystation", "Waystation", "fuel and supplies stockpiled at home"});
         return out;
     }
+
+    /** 0.3.10.8: a step's name: its own, or the game's name for the building. */
+    static String label(String[] w) { return w[1] != null ? w[1] : CAWorldPlanner.industryName(w[0]); }
 
     /** The capital's commerce steps, put in front of its own plan (CAPlan.build) while the build-up runs. */
     public static List<CAPlan.Step> stepsFor(MarketAPI m) {
@@ -296,14 +304,14 @@ public class CACapital {
             if (CAOverLimit.shedRecently(m, w[0])) continue;   // taken down at 0 stability this year: not built again yet
             // 0.3.0.0 (B4): taken down here for any reason within the year (CATombstone): no plan rank or slot held for it meanwhile
             if (CATombstone.blocked(m.getId(), w[0]) > 0f) continue;
-            out.add(new CAPlan.Step(CAPlan.Kind.BUILD, w[0], w[1] + " (capital)"));
+            out.add(new CAPlan.Step(CAPlan.Kind.BUILD, w[0], label(w) + " (capital)"));
         }
         return out;
     }
 
     static List<String> stepLabels(MarketAPI m) {
         List<String> out = new ArrayList<String>();
-        for (String[] w : wanted()) if (CAPlan.spec(w[0]) != null && !CAPlan.hasOrBetter(m, w[0])) out.add(w[1]);
+        for (String[] w : wanted()) if (CAPlan.spec(w[0]) != null && !CAPlan.hasOrBetter(m, w[0])) out.add(label(w));
         return out;
     }
 
@@ -446,7 +454,7 @@ public class CACapital {
         List<String> out = new ArrayList<String>();
         CASettings s = CAData.settings();
         if (CABudget.legacy(s)) return out;
-        for (String[] w : wanted()) if (waitsForLoss(m, w[0], s)) out.add(w[1]);   // 0.3.0.0 fix (C4 review 2): not the ones still to be valued
+        for (String[] w : wanted()) if (waitsForLoss(m, w[0], s)) out.add(label(w));   // 0.3.0.0 fix (C4 review 2): not the ones still to be valued
         return out;
     }
 
