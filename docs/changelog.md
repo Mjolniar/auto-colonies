@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.10.1 - 2026-11-17
+
+- Story page: Fixed long package descriptions running past the panel's right edge and over the next row. Each row is now as tall as its text.
+- Settings page: Rows wrap inside the panel the same way.
+
 ## 0.3.10.0 - 2026-11-17
 
 - Random Assortment of Things: Added support for the Expedition Hub. It is valued by the uninhabited planets its fleets reach within 15 light-years.

@@ -22,6 +22,29 @@ public class CALog {
         t.addSpacer(0f).getPosition().belowLeft(first, 0f);
     }
 
+    /** 0.3.9.10: as endRow, extra pixels lower (a wrapped label beside the buttons is taller than they are). */
+    public static void endRow(com.fs.starfarer.api.ui.TooltipMakerAPI t, com.fs.starfarer.api.ui.UIComponentAPI first, float extra) {
+        t.addSpacer(0f).getPosition().belowLeft(first, Math.max(0f, extra));
+    }
+
+    /** 0.3.9.10: room kept at the right of a page for its scrollbar. */
+    static final float SCROLL_ROOM = 20f;
+
+    /**
+     * 0.3.9.10: a label to the right of a row's buttons, wrapped to the width left in the tooltip (less SCROLL_ROOM), so long
+     * text never runs past the panel's right edge. One line sits level with the buttons, more lines start at their top.
+     * used: the buttons' width and gaps before the label. Returns how much taller than the buttons it is, for endRow.
+     */
+    public static float beside(com.fs.starfarer.api.ui.TooltipMakerAPI t, com.fs.starfarer.api.ui.UIComponentAPI last,
+                               com.fs.starfarer.api.ui.LabelAPI l, float gap, float used) {
+        float w = Math.max(120f, t.getPosition().getWidth() - used - gap - SCROLL_ROOM);
+        l.autoSizeToWidth(w);
+        float bh = last.getPosition().getHeight(), lh = l.getPosition().getHeight();
+        if (lh > bh + 1f) l.getPosition().rightOfTop(last, gap);
+        else l.getPosition().rightOfMid(last, gap);
+        return Math.max(0f, lh - bh);
+    }
+
     // ---------------- once: messages logged once, kept in the save with when (0.3.0.0) ----------------
     // 0.3.0.0 (research 07 M1): the old `noted` set was wiped all at once at 2,000 keys, which logged every once-message again
     // in one burst and gave a running inspection Autopilot's orders back. Keys now live in CAData.notedAt with the time they

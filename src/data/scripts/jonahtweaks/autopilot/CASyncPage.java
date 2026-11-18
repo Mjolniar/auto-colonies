@@ -22,12 +22,11 @@ public class CASyncPage {
         return t.addButton(label, CASync.PREFIX + id, c, Misc.getDarkPlayerColor(), Alignment.MID, CutStyle.ALL, w, 22f, pad);
     }
 
-    /** A button with a line of text to its right. */
+    /** A button with its text to the right. 0.3.9.10: the text wraps inside the page and the next row starts under it. */
     static void row(TooltipMakerAPI t, String label, String id, boolean on, float w, String text, Color tc, String... hl) {
         ButtonAPI b = button(t, label, id, on, w, 4f);
         LabelAPI l = t.addPara(CALog.esc(text), 0f, tc, Misc.getHighlightColor(), hl);
-        l.getPosition().rightOfMid(b, 12f);
-        CALog.endRow(t, b);
+        CALog.endRow(t, b, CALog.beside(t, b, l, 12f, w));
     }
 
     static String feedLabel(String id, String label, int pts) { return CASync.isArmed("feed:" + id) ? "Confirm: +" + pts + " bandwidth" : label; }

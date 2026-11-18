@@ -815,9 +815,9 @@ public class CASetupUI {
         LabelAPI l = t.addPara("%s: %s." + (showRec ? " Recommended: " + CALog.esc(rec) + "." : "") + (mine ? " Set by you." : "")
                 + (lock != null ? " " + CALog.esc(lock) : ""), 0f, Misc.getHighlightColor(),   // story mode: what the abilities that are off hold back
                 label, value);
-        l.getPosition().rightOfMid(last, 12f);
+        float extra = CALog.beside(t, last, l, 12f, 86f);   // 0.3.9.10: wraps inside the page (the buttons take 86 either way)
         if (tip != null) t.addTooltipToPrevious(tip(tip), TooltipMakerAPI.TooltipLocation.BELOW);
-        CALog.endRow(t, first);
+        CALog.endRow(t, first, extra);
         return first;
     }
 
