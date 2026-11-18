@@ -20,10 +20,16 @@ public class CASyncCatalog {
     public static final String PATH = "data/config/colony_autopilot_story.json";
 
     public static int BASE_PP = 10, ALPHA_PP = 10, BETA_PP = 3, GAMMA_PP = 1;   // 0.3.7.4: the core's own 10, down from 20
-    /** One more managed colony (Approve or Auto) past the first; at most MAX_COLONIES bought. */
-    public static int COLONY_PP = 2, MAX_COLONIES = 30;
-    /** 0.3.8.0: one more colony the Autarch administrator governs, past the one its package gives ("autarchSeat" in "pp"). */
-    public static int SEAT_PP = 10;
+    /**
+     * One more managed colony (Approve or Auto) past the first; at most MAX_COLONIES bought (30 in all with the first).
+     * 0.3.10.3: each one bought costs COLONY_STEP more than the one before it ("colonyStep").
+     */
+    public static int COLONY_PP = 2, COLONY_STEP = 3, MAX_COLONIES = 29;
+    /**
+     * 0.3.8.0: one more colony the Autarch administrator governs, past the one its package gives ("autarchSeat" in "pp").
+     * 0.3.10.3: each one bought costs SEAT_STEP more than the one before it, at most MAX_SEATS bought (30 in all).
+     */
+    public static int SEAT_PP = 10, SEAT_STEP = 5, MAX_SEATS = 29;
     /** Breakdown: days it takes, and what it gives. Sale: days until a new core is placed. */
     public static int BREAKDOWN_DAYS = 365, BREAKDOWN_ALPHA = 3, BREAKDOWN_BETA = 2, RETURN_DAYS = 365;
     /** After a breakdown: at least RETURN_DAYS, then up to this many more, before salvage can hold one; then this chance per site. */
@@ -212,7 +218,8 @@ public class CASyncCatalog {
     static void numberDescs() {
         desc("instant", "Builds take a third of the time, and each one costs " + String.format(java.util.Locale.ROOT, "%,d", Math.round(RAPID_FEE))
                 + " credits more.");
-        desc("autarch", "Governs one managed colony per " + SEAT_PP + " bandwidth, with its own skill, Autarchy.");
+        desc("autarch", "Governs one managed colony with its own skill, Autarchy. Each colony you add costs " + SEAT_PP + " bandwidth, plus "
+                + SEAT_STEP + " for each one before it.");
     }
 
     public static Pack pack(String id) { return PACK_BY_ID.get(id); }
@@ -295,6 +302,9 @@ public class CASyncCatalog {
                 COLONY_PP = Math.max(0, pp.optInt("colony", COLONY_PP));
                 MAX_COLONIES = Math.max(0, pp.optInt("maxColonies", MAX_COLONIES));
                 SEAT_PP = Math.max(0, pp.optInt("autarchSeat", SEAT_PP));   // 0.3.8.0
+                COLONY_STEP = Math.max(0, pp.optInt("colonyStep", COLONY_STEP));   // 0.3.10.3
+                SEAT_STEP = Math.max(0, pp.optInt("autarchSeatStep", SEAT_STEP));
+                MAX_SEATS = Math.max(0, pp.optInt("maxSeats", MAX_SEATS));
             }
             JSONObject core = j.optJSONObject("core");
             if (core != null) {

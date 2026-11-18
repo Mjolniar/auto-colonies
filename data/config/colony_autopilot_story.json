@@ -1,8 +1,8 @@
 {
 	# Story mode numbers (docs/story-mode.md). Changes apply the next time the game starts.
 	# Bandwidth: what the Autarch AI Core gives, what each fed core adds, one more managed colony, the most colonies that can be bought,
-	# and one more colony for the Autarch administrator.
-	"pp":{"base":10, "alpha":10, "beta":3, "gamma":1, "colony":2, "maxColonies":30, "autarchSeat":10},
+	# and one more colony for the Autarch administrator. Each colony or seat bought costs its step more than the one before it.
+	"pp":{"base":10, "alpha":10, "beta":3, "gamma":1, "colony":2, "colonyStep":3, "maxColonies":29, "autarchSeat":10, "autarchSeatStep":5, "maxSeats":29},
 	# The core: breakdown days and what it gives; days until a sold core returns; after a breakdown, extra random days and the chance per salvaged habitat or cryosleeper.
 	"core":{"breakdownDays":365, "breakdownAlpha":3, "breakdownBeta":2, "returnDays":365, "returnRandomDays":365, "salvageChance":0.2},
 	# Share of a tier's packages (the ones their mods allow) you must own to open the next tier.

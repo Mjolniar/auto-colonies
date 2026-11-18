@@ -18,6 +18,7 @@
 
 - This builds extra Research Facilities at Auto colonies, and each one past the first adds +10% research speed, up to 8.
 - It starts at the Surplus money tier and up, with the Economy rung On ([Money](money.md#economy)). Below Rich, it builds 3 at most.
+- Once Vaults of Knowledge opens the Black Site and you don't have one, it upgrades one Research Facility to a Black Site, since special projects only run while you have one. It picks an Auto colony at stability 10 or more, where there's no cover-up cost, pays from surplus credits under the same money rules, and only ever does it once.
 
 ## Special project supply
 

@@ -18,6 +18,8 @@
 - On Money ladder (the default), it needs Idle money and pays from the [Expansion rung](money.md#the-money-ladder).
 - With a fixed line (over 5,000,000, 25,000,000 or 50,000,000), an expedition can use 10% of whatever's over the surplus line.
 - It sends one expedition at a time (two at Endgame), 120 days apart at Idle money and 60 at Rich. The last colony has to finish its fast buildout or be 120 days old first.
+- In story mode it goes faster while you have managed colonies free. It waits half as long between expeditions and can have one more under way for every two free (two more at most). With two or more free it doesn't wait for the last colony's fast buildout.
+- The Autarch administrator's free seats count as administrators for a new colony, so it doesn't need to hire one.
 - It won't start one during a siege, before a colony crisis or with a Nexerelin invasion coming.
 - Most colonies caps the count at Colony limit and administrators (default), or 5, 10, 15 or 20.
 - An Autopilot crew costs 85,000 of founding goods at base price, plus 40,000 and 2,000 a light-year, and takes 15 days plus travel.

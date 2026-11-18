@@ -189,7 +189,7 @@ public final class CAAutarchAdmin {
         if (!CASync.has("autarchAdmin")) return "The Autarch AI Core needs its Autarch administrator package.";
         if (governs(m)) return "It already governs here.";
         if (!CASync.manages(m) || CARogue.noCores(m) || CARogue.adminLocked(m)) return "It can't govern this colony.";
-        if (count() >= CASync.seats()) return "It has no free seat. Each one costs " + CASyncCatalog.SEAT_PP + " bandwidth on the Story page.";
+        if (count() >= CASync.seats()) return "It has no free seat. The next costs " + CASync.seatCost() + " bandwidth on the Story page.";
         PersonAPI p = person();
         if (!CAStability.canLose(m, arrives(m, p), "seating the Autarch AI Core")) return "That would put the colony under the stability floor.";
         seat(m, p);

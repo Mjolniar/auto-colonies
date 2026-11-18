@@ -214,13 +214,59 @@ public class CASync {
     /** 0.3.8.0: colonies the Autarch administrator may govern: one with the package, plus each bought; 0 without it. */
     public static int seats() { return has("autarchAdmin") ? 1 + extraSeats() : 0; }
 
+    /** Pure (0.3.10.3): the price of the next one when `bought` are bought: the first at base, each after it step more. */
+    static int stepCost(int base, int step, int bought) { return base + step * Math.max(0, bought); }
+
+    /** 0.3.10.3: the next managed colony's bandwidth. */
+    public static int colonyCost() { return stepCost(CASyncCatalog.COLONY_PP, CASyncCatalog.COLONY_STEP, extraColonies()); }
+
+    /** 0.3.10.3: the next Autarch seat's bandwidth. */
+    public static int seatCost() { return stepCost(CASyncCatalog.SEAT_PP, CASyncCatalog.SEAT_STEP, extraSeats()); }
+
+    /**
+     * 0.3.10.3: the bandwidth the bought colonies and seats use, as paid. A save from before 0.3.10.3 keeps the flat price it
+     * paid (the count times the price then), written the first time it's read.
+     */
+    static int paid(String k, int bought, int flat) {
+        if (bought <= 0) return 0;
+        if (!state().containsKey(k)) num(k, bought * flat);
+        return num(k);
+    }
+
+    static int colonyPaid() { return paid("colPaid", extraColonies(), CASyncCatalog.COLONY_PP); }
+
+    static int seatPaid() { return paid("seatPaid", extraSeats(), CASyncCatalog.SEAT_PP); }
+
+    /** Pure (0.3.10.3): what is left paid after the last of `bought` goes: less what it costs now, never under 0, 0 with none left. */
+    static int afterDrop(int paid, int bought, int base, int step) {
+        return bought - 1 <= 0 ? 0 : Math.max(0, paid - stepCost(base, step, bought - 1));
+    }
+
+    /** 0.3.10.3: one bought colony less, with its bandwidth back. */
+    static void dropColony() {
+        int n = extraColonies();
+        if (n <= 0) return;
+        int p = colonyPaid();
+        num("colonies", n - 1);
+        num("colPaid", afterDrop(p, n, CASyncCatalog.COLONY_PP, CASyncCatalog.COLONY_STEP));
+    }
+
+    /** 0.3.10.3: one bought Autarch seat less, with its bandwidth back. */
+    static void dropSeat() {
+        int n = extraSeats();
+        if (n <= 0) return;
+        int p = seatPaid();
+        num("seats", n - 1);
+        num("seatPaid", afterDrop(p, n, CASyncCatalog.SEAT_PP, CASyncCatalog.SEAT_STEP));
+    }
+
     public static List<String> ticked() { return list("ticks"); }
 
     public static boolean ticked(String id) { return ticked().contains(id); }
 
     /** Bandwidth the bought packages and colonies use (a package none of whose mods is on doesn't count). 0.3.7.4: packages. */
     public static int spent() {
-        int n = extraColonies() * CASyncCatalog.COLONY_PP + extraSeats() * CASyncCatalog.SEAT_PP;   // 0.3.8.0: Autarch seats
+        int n = colonyPaid() + seatPaid();   // 0.3.8.0: Autarch seats; 0.3.10.3: as paid, each costs more than the last
         for (String id : ticked()) {
             CASyncCatalog.Pack p = CASyncCatalog.pack(id);
             if (p != null && p.available()) n += p.cost;
@@ -263,8 +309,8 @@ public class CASync {
     /** Unticks a package and every package that needs it. */
     static void untick(String id) {
         if (!ticked().remove(id)) return;
-        if ("autarch".equals(id)) num("seats", 0);   // 0.3.8.0: its bought colonies go with it
-        if ("oversight".equals(id)) num("colonies", 0);   // 0.3.8.9: Approve mode's bought colonies go with it (their buttons show only with it)
+        if ("autarch".equals(id)) { num("seats", 0); num("seatPaid", 0); }   // 0.3.8.0: its bought colonies go with it
+        if ("oversight".equals(id)) { num("colonies", 0); num("colPaid", 0); }   // 0.3.8.9: Approve mode's bought colonies go with it (their buttons show only with it)
         CASyncCatalog.Pack p = CASyncCatalog.pack(id);
         if (p != null) CALog.quiet("Autopilot: " + p.name + " is off.");
         for (CASyncCatalog.Pack x : CASyncCatalog.PACKS) if (id.equals(x.requires)) untick(x.id);
@@ -275,17 +321,19 @@ public class CASync {
         if (dormant()) return "The Colony Autopilot is dormant.";
         if (!has("approve")) return "Approve mode comes first.";   // 0.3.7.2
         if (extraColonies() >= CASyncCatalog.MAX_COLONIES) return "It can't run more colonies.";
-        if (free() < CASyncCatalog.COLONY_PP) return "One more managed colony needs " + CASyncCatalog.COLONY_PP + " bandwidth, and " + Math.max(0, free()) + " are free.";
+        int cost = colonyCost(), paid = colonyPaid();
+        if (free() < cost) return "One more managed colony needs " + cost + " bandwidth, and " + Math.max(0, free()) + " are free.";
         num("colonies", extraColonies() + 1);
+        num("colPaid", paid + cost);   // 0.3.10.3
         afterChange();
         return null;
     }
 
     public static String removeColony() {
         if (extraColonies() <= 0) return "There are no bought colonies to remove.";
-        num("colonies", extraColonies() - 1);
+        dropColony();   // 0.3.10.3: its bandwidth back
         // 0.3.8.9: the Autarch administrator's seats come down to the managed colonies (one plus each bought)
-        while (extraSeats() > extraColonies()) num("seats", extraSeats() - 1);
+        while (extraSeats() > extraColonies()) dropSeat();
         afterChange();
         return null;
     }
@@ -295,15 +343,18 @@ public class CASync {
         if (!on()) return "Story mode is off.";
         if (!has("autarchAdmin")) return "Autarch administrator comes first.";
         if (seats() >= managedCap()) return "It governs as many colonies as you have managed ones.";
-        if (free() < CASyncCatalog.SEAT_PP) return "One more colony needs " + CASyncCatalog.SEAT_PP + " bandwidth, and " + Math.max(0, free()) + " are free.";
+        if (extraSeats() >= CASyncCatalog.MAX_SEATS) return "It can't govern more colonies.";   // 0.3.10.3
+        int cost = seatCost(), paid = seatPaid();
+        if (free() < cost) return "One more colony needs " + cost + " bandwidth, and " + Math.max(0, free()) + " are free.";
         num("seats", extraSeats() + 1);
+        num("seatPaid", paid + cost);   // 0.3.10.3
         afterChange();
         return null;
     }
 
     public static String removeSeat() {
         if (extraSeats() <= 0) return "There are no bought colonies to remove.";
-        num("seats", extraSeats() - 1);
+        dropSeat();   // 0.3.10.3: its bandwidth back
         afterChange();
         return null;
     }
@@ -314,6 +365,7 @@ public class CASync {
         updateTiers();   // 0.3.7.3
         enforce(CAData.settings());
         enforceModes();
+        try { CAStoryLimit.sync(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story colony limit failed", t); }   // 0.3.10.3
         CAAuto.nextPass.clear();
     }
 
@@ -331,8 +383,8 @@ public class CASync {
             if (last == null) break;
             untick(last);
         }
-        while (spent() > total() && extraSeats() > 0) num("seats", extraSeats() - 1);   // 0.3.8.0
-        while (spent() > total() && extraColonies() > 0) num("colonies", extraColonies() - 1);
+        while (spent() > total() && extraSeats() > 0) dropSeat();   // 0.3.8.0
+        while (spent() > total() && extraColonies() > 0) dropColony();
     }
 
     // ---------------- cores on hand and feeding ----------------
@@ -500,7 +552,7 @@ public class CASync {
         if (mode == CAData.Mode.AUTO && !has("auto")) return "It needs " + CASyncCatalog.buy("auto") + " in the Autopilot panel.";
         if (mode == CAData.Mode.ADVISOR && !has("advisor")) return "It needs " + CASyncCatalog.buy("advisor") + " in the Autopilot panel.";
         int cap = managedCap();
-        return "All " + cap + " managed colonies are in use. One more costs " + CASyncCatalog.COLONY_PP + " bandwidth in the Autopilot panel.";
+        return "All " + cap + " managed colonies are in use. One more costs " + colonyCost() + " bandwidth in the Autopilot panel.";
     }
 
     /**
@@ -1110,6 +1162,7 @@ public class CASync {
     /** Daily, before the steps: the core's timers, the settings holds and the colony modes. */
     public static void daily() {
         try { CARapidResearch.sync(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "rapid research failed", t); }   // 0.3.9.9: on or off, story mode on or not
+        try { CAStoryLimit.sync(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story colony limit failed", t); }   // 0.3.10.3
         CAStoryIntel.ensure();   // 0.3.7.1: the story entry and its search for the core (removed while story mode is off)
         if (!on()) { autarchAdmins(); return; }   // 0.3.7.9: with story mode off the core's administrators leave
         try { lifecycle(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autarch AI Core timers failed", t); }

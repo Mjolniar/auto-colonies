@@ -258,6 +258,7 @@ public final class CARemoval {
         step("persistent data", () -> { pd.remove(CAData.KEY); pd.remove(CASync.KEY); });
         step("scripts and listeners", () -> scripts());
         step("rapid research", () -> CARapidResearch.remove());   // 0.3.9.9: Vaults of Knowledge's research speed back to normal
+        step("story colony limit", () -> CAStoryLimit.remove());   // 0.3.10.3: the colony limit back to the game's
 
         sec.getMemoryWithoutUpdate().set(FLAG, true);
         off = true;

@@ -1,5 +1,14 @@
 # Patch notes
 
+## 0.3.10.3 - 2026-11-17
+
+- Surplus research: Upgrades one Research Facility to a Black Site once Vaults of Knowledge opens it and none is built. It needs an Auto colony at stability 10 or more and pays from surplus credits. One only.
+- Story mode: Managed colonies past your colony limit plus your administrators raise your colony limit by one each.
+- Story mode: Each managed colony bought costs 3 bandwidth more than the last (2, 5, 8 and so on). Each Autarch seat costs 5 more than the last (10, 15, 20 and so on). Colonies and seats already bought keep the price paid.
+- Story mode: At most 30 managed colonies and 30 Autarch seats.
+- Auto-expansion: In story mode with managed colonies free, the wait between expeditions is halved and one more expedition can be under way for every two free (two more at most). With two or more free, the last colony's fast buildout no longer holds the next one.
+- Auto-expansion: Free Autarch seats count as administrators for a new colony.
+
 ## 0.3.10.2 - 2026-11-17
 
 - Rapid research: Vaults of Knowledge research takes half its usual time (was 2/3).

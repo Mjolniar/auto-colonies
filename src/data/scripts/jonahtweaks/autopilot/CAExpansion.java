@@ -61,6 +61,9 @@ import java.util.*;
  * Failures refund what came back (crew: goods and transport; Nexerelin: its own refund by stage), skip the planet or
  * system for 180 days, and after a lost Nexerelin fleet the next 180 days use crews.
  * Saved state: CAData.expandOrders (ids and numbers only), expandSkip, expandFounded, expandLast, expandPending*.
+ * 0.3.10.3: story mode with managed colonies free (freeManaged: not in use, less the expeditions under way) goes faster: half
+ * the wait between expeditions, one more under way for each two free (two more at most), and from two free the newest colony's
+ * fast buildout doesn't hold the next one back. The Autarch administrator's free seats count as idle administrators for room.
  */
 public class CAExpansion {
     // ---------------- numbers ----------------
@@ -327,12 +330,14 @@ public class CAExpansion {
         if (max > 0 && colonies().size() + d.expandOrders().size() >= max) return "At the colony maximum (" + max + ").";
         int under = d.expandOrders().size();
         float since = sinceLast(d);
-        if (!paced(since, PACE_DAYS, under, money.rich, money.veryRich)) {
-            if (under >= underWayLimit(money.veryRich)) return under == 1 ? "An expedition is under way." : under + " expeditions are under way.";
-            return "Next expedition in " + Math.max(1, Math.round(pace(PACE_DAYS, money.rich) - since)) + " days (one per "
-                    + Math.round(PACE_DAYS) + " days, " + Math.round(PACE_DAYS / 2f) + " at the Rich tier).";
+        int free = freeManaged(d), extra = storyUnderWay(free);   // 0.3.10.3: story mode with managed colonies free
+        float days = storyPace(PACE_DAYS, free);
+        if (!paced(since, days, under, money.rich, money.veryRich, extra)) {
+            if (under >= underWayLimit(money.veryRich) + extra) return under == 1 ? "An expedition is under way." : under + " expeditions are under way.";
+            return "Next expedition in " + Math.max(1, Math.round(pace(days, money.rich) - since)) + " days (one per "
+                    + Math.round(days) + " days, " + Math.round(days / 2f) + " at the Rich tier).";
         }
-        String busy = newestBusy(d);
+        String busy = free >= 2 ? null : newestBusy(d);
         if (busy != null) return busy;
         Room r = room(d, s);
         return r.why;
@@ -345,6 +350,32 @@ public class CAExpansion {
     }
 
     static int underWayLimit(boolean veryRich) { return veryRich ? 2 : 1; }
+
+    /** Pure (0.3.10.3): as paced, with `extra` more expeditions allowed under way. */
+    static boolean paced(float sinceLast, float pace, int underWay, boolean rich, boolean veryRich, int extra) {
+        if (underWay >= underWayLimit(veryRich) + Math.max(0, extra)) return false;
+        return sinceLast >= pace(pace, rich);
+    }
+
+    /** Pure (0.3.10.3): more expeditions under way with free managed colonies: one more for each two free, two more at most. */
+    static int storyUnderWay(int free) { return Math.min(2, Math.max(0, free) / 2); }
+
+    /** Pure (0.3.10.3): the wait between expeditions: half while any managed colony is free. */
+    static float storyPace(float pace, int free) { return free > 0 ? pace / 2f : pace; }
+
+    /** 0.3.10.3: story mode's managed colonies not in use, less the expeditions under way (each lands on Auto); 0 off story mode. */
+    static int freeManaged(CAData d) {
+        if (!CASync.on()) return 0;
+        int n = 0;
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) if (CASync.manages(m)) n++;
+        return Math.max(0, CASync.managedCap() - n - d.expandOrders().size());
+    }
+
+    /** 0.3.10.3: the Autarch administrator's seats it doesn't fill yet, up to the free managed colonies: it governs new ones. */
+    static int freeSeats(int free) {
+        if (free <= 0 || !CASync.has("autarchAdmin")) return 0;
+        return Math.max(0, Math.min(free, CASync.seats() - CAAutarchAdmin.count()));
+    }
 
     static float pace(float pace, boolean rich) { return rich ? pace / 2f : pace; }
 
@@ -408,7 +439,7 @@ public class CAExpansion {
         r.governed = CAItems.overLimit() + r.max;
         r.admins = CAItems.adminsEmployed();
         r.maxAdmins = CAItems.adminMax();
-        r.idle = CAItems.idleAdmins();
+        r.idle = CAItems.idleAdmins() + freeSeats(freeManaged(d));   // 0.3.10.3: the Autarch administrator's free seats
         r.pending = d.expandOrders().size() + d.tascOrders().size() + CAItems.comingBack(d) + invasionsComing();   // 0.3.9.7 (E3): captures under way
         if (r.governed + r.pending - r.max - r.idle > 0) {
             r.why = "Colony limit: administrators needed. Auto-expansion waits for them.";

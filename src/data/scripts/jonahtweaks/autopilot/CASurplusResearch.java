@@ -30,6 +30,10 @@ import java.util.*;
  * facility's price. It starts one only from the money tier Surplus up with the Economy rung On (CAEconomy.buyerOpen), in
  * the planner's offer and in run()'s own start (the planner stopped for the session). With the rung on Recommend only the
  * summary names the next facility and none starts.
+ * 0.3.10.3: the first Black Site (blackSiteOffer). Vaults of Knowledge runs its special projects only while you have one, and
+ * the planner's probe colony sees no effect from it, so it scored 0 and never went up. Once VoK opens it and none is built or
+ * on the way, one Research Facility at an Auto colony at stability 10 or more (no cover-up cost there) goes up to a Black Site
+ * by rule, from surplus credits, under the same Economy gate as the facilities. One only.
  */
 public class CASurplusResearch {
     static final String FACILITY = "aotd_research_facility", BLACK_SITE = "aotd_blacksite";
@@ -75,6 +79,14 @@ public class CASurplusResearch {
         CASettings s = d.settings;
         summary = null;
         if (s.noSurplusResearch || CASurplus.line(s) <= 0f) return;
+        if (!CAPlanner.inCharge()) {   // 0.3.10.3: without the planner, the first Black Site starts here
+            try {
+                for (CAAction a : blackSiteOffer(auto, d, s)) {
+                    if (CABudget.buildTotal(s, a.cost) > CASurplus.amount(s)) break;
+                    if (startBlackSite(a) == null) break;
+                }
+            } catch (Throwable t) { CAStep.warn("surplus research", "Black Site start failed", t); }
+        }
         List<CAResearch.Tech> ranked;
         try {
             if (CAResearch.mgr() == null) return;   // VoK hasn't made its research manager yet
@@ -222,6 +234,7 @@ public class CASurplusResearch {
         CAData d = CAData.get();
         CASettings s = d.settings;
         if (s.noSurplusResearch || CASurplus.line(s) <= 0f) return out;
+        try { out.addAll(blackSiteOffer(auto, d, s)); } catch (Throwable t) { CAStep.warn("planner", "Black Site offer failed", t); }   // 0.3.10.3
         List<CAResearch.Tech> ranked;
         try {
             if (CAResearch.mgr() == null) return out;
@@ -284,6 +297,111 @@ public class CASurplusResearch {
         CAEconomy.spent(a.cost);   // 0.3.0.0 (C4): the price came from surplus credits: the money ladder's Economy rung this month
         CAData.get().surplusResearch().add(m.getId());
         CALog.did(m.getName() + ": Research Facility started (+10% research speed). " + Misc.getDGSCredits(a.cost) + ", " + Misc.getDGSCredits(a.upkeep) + "/month.");
+        return null;
+    }
+
+    // ---------------- 0.3.10.3: the first Black Site ----------------
+
+    /** VoK's flag for an open Black Site: a special project can start (BlackSiteProjectManager.canEngageInBlackSite). */
+    static final String BLACK_SITE_FLAG = "$aotd_black_site";
+    /** VoK's Black Site cover-up: 20,000 a month for each point of stability under this (BlackSite.apply). */
+    static final float COVER_UP_STABILITY = 10f;
+
+    static boolean blackSiteOpen() {
+        try { return Global.getSector().getPlayerMemoryWithoutUpdate().getBoolean(BLACK_SITE_FLAG); } catch (Throwable t) { return false; }
+    }
+
+    /** A Black Site of yours, built or on the way (a Research Facility upgrading: its only upgrade is the Black Site). */
+    static boolean blackSiteAny() {
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            if (m.hasIndustry(BLACK_SITE)) return true;
+            Industry f = m.getIndustry(FACILITY);
+            if (f != null && f.isUpgrading()) return true;
+        }
+        return false;
+    }
+
+    /** Pure: whether a colony may host the first Black Site: a working Research Facility, nothing locked, stability 10 or more. */
+    static boolean blackSiteHost(boolean working, boolean busy, boolean locked, float stability) {
+        return working && !busy && !locked && stability >= COVER_UP_STABILITY;
+    }
+
+    /** Auto colonies that could upgrade their Research Facility to a Black Site now, the steadiest first, then the biggest. */
+    static List<MarketAPI> blackSiteHosts(List<MarketAPI> auto, CAData d, IndustrySpecAPI sp) {
+        List<MarketAPI> out = new ArrayList<MarketAPI>();
+        for (MarketAPI m : auto) {
+            Industry f = m.getIndustry(FACILITY);
+            if (f == null) continue;
+            CAData.Colony c = d.colony(m.getId());
+            boolean locked = c.locks.contains(FACILITY) || c.locks.contains(BLACK_SITE);
+            if (!blackSiteHost(f.isFunctional() && !f.isDisrupted(), f.isBuilding() || f.isUpgrading(), locked, m.getStabilityValue())) continue;
+            try {
+                if (CAAotD.enabled() && !CAAotD.allows(BLACK_SITE, m)) continue;
+                Industry probe = sp.getNewPluginInstance(m);
+                if (probe == null || !probe.isAvailableToBuild()) continue;
+            } catch (Throwable t) { continue; }
+            out.add(m);
+        }
+        Collections.sort(out, new Comparator<MarketAPI>() {
+            public int compare(MarketAPI a, MarketAPI b) {
+                int s = Float.compare(b.getStabilityValue(), a.getStabilityValue());
+                return s != 0 ? s : b.getSize() - a.getSize();
+            }
+        });
+        return out;
+    }
+
+    /**
+     * The first Black Site as the planner's action at each host colony: an upgrade of its Research Facility, started by rule
+     * (its worth is VoK's special projects, which no probe measures), ranked after everything that pays, from surplus credits.
+     */
+    static List<CAAction> blackSiteOffer(List<MarketAPI> auto, CAData d, CASettings s) {
+        List<CAAction> out = new ArrayList<CAAction>();
+        if (!blackSiteOpen() || blackSiteAny() || !CAEconomy.buyerOpen(s)) return out;
+        IndustrySpecAPI sp;
+        try { sp = Global.getSettings().getIndustrySpec(BLACK_SITE); } catch (Throwable t) { return out; }
+        if (sp == null) return out;
+        float h = CAHorizon.months();
+        for (MarketAPI m : blackSiteHosts(auto, d, sp)) {
+            float cost, days;
+            try { Industry inst = sp.getNewPluginInstance(m); cost = inst.getBuildCost(); days = inst.getBuildTime(); }
+            catch (Throwable t) { cost = sp.getCost(); days = sp.getBuildTime(); }
+            CAAction a = new CAAction();
+            a.kind = CAAction.Kind.UPGRADE; a.source = SOURCE; a.market = m; a.marketId = m.getId();
+            a.id = BLACK_SITE; a.name = sp.getName(); a.why = "Black Site projects";
+            a.cost = cost; a.fee = CABudget.constructionFee(s, cost); a.days = days; a.upkeep = 0f;
+            a.rapid = CABudget.rapidFee(cost);
+            a.worth = 0f;
+            a.npv = CAValue.npv(0f, h, days, cost, a.fee);
+            a.byRule = true;
+            a.usesQueue = false;
+            a.building = FACILITY;
+            a.once = CAPlanner.ONCE_RESEARCH;
+            a.tombstone = CAPlanner.tombstoneDays(m.getId(), BLACK_SITE);
+            a.fromBudget = false; a.fromSurplus = true; a.chargeAll = false;
+            a.upkeepCap = CASurplus.upkeepCap(m, s);
+            a.starter = (x) -> startBlackSite(x);
+            out.add(a);
+        }
+        return out;
+    }
+
+    /** Starts the upgrade: paid from the surplus (CABuild.start takes the price), the fee against the month's budget. */
+    static String startBlackSite(CAAction a) {
+        MarketAPI m = a.market;
+        if (blackSiteAny()) return "A Black Site is built or on the way";
+        Industry f = m.getIndustry(FACILITY);
+        if (f == null) return "No Research Facility here";
+        CAEngine.Pick p = new CAEngine.Pick();
+        p.id = BLACK_SITE; p.name = a.name; p.verb = "Upgrade to"; p.upgrade = true; p.existing = f; p.cost = a.cost; p.upkeep = 0f;
+        String err = CABuild.start(m, p);
+        if (err != null) {
+            if (CALog.once("srs:bs:" + m.getId() + ":" + err)) CALog.think(m.getName() + ": Black Site not started: " + err);
+            return err;
+        }
+        CABudget.charge(CAData.settings(), m.getId(), 0f, a.fee, 0f);
+        CAEconomy.spent(a.cost);
+        CALog.did(m.getName() + ": Research Facility is going up to a Black Site, for Vaults of Knowledge's special projects. " + Misc.getDGSCredits(a.cost) + ".");
         return null;
     }
 
