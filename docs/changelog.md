@@ -784,7 +784,7 @@
 
 ## 0.2.42.0 - 2026-11-06
 
-- Capital: Added one home colony. The manager picks the colony where your things are (production gathering point first), or you pick it on a colony's panel, in Settings, or by moving your gathering point. See [Your capital](capital.md).
+- Capital: Added one home colony. The manager picks the colony where your things are (production gathering point first), or you pick it on a colony's panel, in Settings, or by moving your gathering point. See [Your capital](how-it-builds.md#your-capital).
 - Capital: Custom production is delivered there. Weekly, ships, weapons, wings, blueprints, supplies, fuel and crew in other Storage tabs ship there (storage logistics fee, travel time). Colony items and AI cores go where they do the most good.
 - Capital: After the fast buildout, with net income over 100,000 a month (changeable), its plan puts trade buildings first: Spaceport and Megaport, Commerce, mod trade buildings (Trade Outpost, Underworld, Yunru's Bazaar, Requisitions Centre, Salvage Yards, Union HQ), then a Waystation. They are built even when they do not pay for themselves.
 - Capital: With every slot taken, it takes down its weakest ordinary industry for one, at most every 90 days. It waits if net income goes negative. Yunru's Bazaar is built at the capital only.
