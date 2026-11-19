@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.11.6 - 2026-11-18
+
+- Station Augments: Axial Overclocking is picked only for the stations whose guns it turns faster (midline stations, read from Station Augments). It is never picked for high-tech, low-tech or tier 4 stations.
+- Station Augments: An Axial Overclocking that Autopilot added to one of those stations is swapped for the next best augment. One you added yourself stays.
+
 ## 0.3.11.5 - 2026-11-18
 
 - Reverse Engineered Private Arsenal: Once a week, one copy of each weapon in your colonies' Storage that the hub hasn't reverse-engineered goes into its Reverse Engineering Storage for research. Fighter wings go too at a Tier 2 or 3 hub.

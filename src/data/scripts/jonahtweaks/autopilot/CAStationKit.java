@@ -35,6 +35,15 @@ public class CAStationKit {
     /** Midline stations: shields always up, guns that can't track without help (Station Augments' own notes). */
     public boolean midline() { return industryId != null && industryId.endsWith("_mid"); }
 
+    /**
+     * 0.3.11.6: the stations whose guns Axial Overclocking turns faster (Station Augments'
+     * axialOverclocking.stationTypesToGetExtraWeaponTurnrate; CAAugments refreshes it from the mod). On any other station it
+     * spins the hull four times as fast while the guns turn at their normal speed, so beams get dragged off their targets.
+     */
+    static final java.util.Set<String> AXIAL_GUNS = new java.util.HashSet<String>(java.util.Arrays.asList("orbitalstation_mid", "battlestation_mid", "starfortress_mid"));
+
+    public boolean axialGuns() { return industryId != null && AXIAL_GUNS.contains(industryId); }
+
     public String describe() {
         if (!read) return "station loadout not readable; counted by its tier";
         return modules + " sections, " + wings + " fighter wings, " + large + " large / " + medium + " medium / " + small + " small guns, "

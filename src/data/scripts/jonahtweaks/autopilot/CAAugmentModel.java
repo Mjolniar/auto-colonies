@@ -62,8 +62,9 @@ public class CAAugmentModel {
             return new Gain(0.05f + 0.15f * k.shielded / Math.max(1, k.modules), "Shields become damper fields, armor +40%, hull +10% on " + k.shielded + " shielded sections");
         }
         if (id.equals("SA_fluxShunt")) return new Gain(k.midline() ? 0.2f : 0.05f, "Shields dissipate hard flux at half rate, for a midline station whose shields never drop");
-        if (id.equals("SA_axialOverclocking")) return k.midline() ? new Gain(0.3f,"Midline guns turn three times as fast, so they can track targets. The station turns four times as fast")
-                : new Gain(0.03f, "The station turns four times as fast");
+        // 0.3.11.6: only where its guns turn faster too; elsewhere the hull outruns the guns and beams lose their targets
+        if (id.equals("SA_axialOverclocking")) return k.axialGuns() ? new Gain(0.3f,"Midline guns turn three times as fast, so they can track targets. The station turns four times as fast")
+                : new Gain(-1f, "The station would spin four times as fast while its guns don't, so they'd lose their targets");
         if (id.equals("SA_aiFighterUplink")) {
             if (c < 0) return new Gain(-1f, "Needs an AI core in the station");
             if (k.wings == 0 && !k.drones) return new Gain(-1f, "No fighters or drones to captain");

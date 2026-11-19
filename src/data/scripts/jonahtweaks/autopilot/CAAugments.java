@@ -177,6 +177,10 @@ public class CAAugments {
         static Ctx of(MarketAPI m, Industry station) {
             Ctx x = new Ctx();
             x.kit = CAStationKit.of(m);
+            try {   // 0.3.11.6: the stations Axial Overclocking speeds the guns of, from Station Augments itself
+                Set<String> axial = niko_SA.augments.axialOverclocking.Companion.getStationTypesToGetExtraWeaponTurnrate();
+                if (axial != null && !axial.isEmpty() && !axial.equals(CAStationKit.AXIAL_GUNS)) { CAStationKit.AXIAL_GUNS.clear(); CAStationKit.AXIAL_GUNS.addAll(axial); }
+            } catch (Throwable ignored) { }
             x.core = station.getAICoreId();
             x.patrols = m.hasIndustry("patrolhq") || m.hasIndustry("militarybase") || m.hasIndustry("highcommand");
             try {
