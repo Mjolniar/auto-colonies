@@ -66,11 +66,12 @@ public class CAScreenButton implements EveryFrameScript {
     static final String GRID_CLASS = "com.fs.starfarer.campaign.ui.marketinfo.IndustryListPanel";
     static final String DIALOG_CLASS = "com.fs.starfarer.ui.newui.super", PARENT_CLASS = "com.fs.starfarer.ui.interfacenew",
             LISTENER_CLASS = "com.fs.starfarer.ui.oo0O$o";
-    /** {dialog, parent, listener} per game version, tried in order: 0.98a-RC8, 0.98.5a-RC4 (0.3.0.2), then 0.98.5a-RC7 (0.3.9.0). */
+    /** {dialog, parent, listener} per game version, tried in order: 0.98a-RC8, 0.98.5a-RC4 (0.3.0.2), then 0.98.5a-RC7 (0.3.9.0) and 0.98.5a-RC8 (0.3.12.2). */
     static final String[][] DIALOG_SETS = {
             {DIALOG_CLASS, PARENT_CLASS, LISTENER_CLASS},
             {"com.fs.starfarer.ui.newui.O0oo", "com.fs.starfarer.ui.z", "com.fs.starfarer.ui.oo0O$o"},
-            {"com.fs.starfarer.ui.newui.O0oo", "com.fs.starfarer.ui.o000", "com.fs.starfarer.ui.public$o"}};
+            {"com.fs.starfarer.ui.newui.O0oo", "com.fs.starfarer.ui.o000", "com.fs.starfarer.ui.public$o"},
+            {"com.fs.starfarer.ui.newui.O0oo", "com.fs.starfarer.ui.interfacenew", "com.fs.starfarer.ui.oo0O$o"}};   // 0.3.12.2: 0.98.5a-RC8
     static final Object NONE = new Object();
     static boolean noSpotLogged = false;
 

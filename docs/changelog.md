@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.12.2 - 2026-11-19
+
+- Compatibility: Updated for Starsector 0.98.5a-RC8.
+- Colony screen button: Fixed on 0.98.5a-RC8. It opens the colony panel again.
+
 ## 0.3.12.1 - 2026-11-19
 
 - Colony panel: Build buttons stay on when the score is out of date. The click checks slots, stability and the building again.
