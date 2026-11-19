@@ -82,6 +82,7 @@ public class CAAugmentModel {
         if (id.equals("SA_ecmPackage")) return new Gain(0.05f, "+15 ECM in battle: enemy weapons reach less far");
         if (id.equals("SA_navRelay")) return new Gain(0.02f, "+20 nav rating for friendly ships in battle");
         if (id.equals("SA_highExplosive")) return new Gain(0.03f, "Only matters once the station dies: a far bigger explosion");
+        if (id.equals("SA_efficiencyOverhaul")) return new Gain(0.03f, "The station repairs 50% faster between fights");   // 0.3.11.2: hull counts in auto-resolve
         if (id.equals("SA_stationRepairUnit")) return new Gain(0.03f, "Disruption ends twice as fast, so the station is back sooner after a raid");
         if (id.equals("SA_highResSensors")) return new Gain(0f, "Sight range in battle, sensor range for your fleets nearby");
         if (id.equals("SA_commsCenter")) return new Gain(0f, "Command points don't matter when the station defends itself");

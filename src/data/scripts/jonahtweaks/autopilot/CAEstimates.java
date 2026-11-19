@@ -61,7 +61,7 @@ public class CAEstimates {
         int s = m.getSize();
         if (id.startsWith("aotd_")) { aotd(m, id, p, deficit, gross, s); return; }
         if (id.equals("commerce")) {
-            p.fx[0] += 0.25f * gross; p.fx[1] -= 2f;
+            p.fx[0] += 0.25f * gross; p.fx[1] -= 3f;   // 0.3.11.2: the game's Commerce costs 3 stability
             note(p, "Income about +25% (" + CAEngine.credits(0.25f * gross) + "), some stability lost");
         } else if (id.equals("ii_orbitalstation")) {
             p.fx[3] += 0.5f; p.fx[4] += 0.3f; note(p, "Imperium station: ground defense x1.5 and a station fleet");

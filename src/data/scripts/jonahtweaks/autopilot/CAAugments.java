@@ -41,7 +41,7 @@ public class CAAugments {
     public static final String MOD = "niko_stationAugments";
     static final String CONVERSION = "SA_economyConversion";
     static final float COMBAT = 0.004f;                        // fleet effect per point of the mod's own combat rating
-    static final float THREAT_COMBAT = 10f;                    // ...times this while the colony plans with Security
+    static final float THREAT_COMBAT = CAAugmentModel.THREAT;  // ...times this while the colony plans with Security (0.3.11.2: x4 as the model, was x10)
     static final float SWAP_MARGIN = 1.1f, SWAP_MIN = 300f;    // replacing installed augments must gain this much
 
     /** One augment's worth on one colony. */
@@ -232,7 +232,9 @@ public class CAAugments {
         else if (id.equals("SA_navRelay")) p.lines.add("+1 burn for friendly fleets near the station");
         else if (id.equals("SA_sanctifiedStation")) {
             if (!LuddicMajority.matchesBonusConditions(m)) return null;   // without an active Luddic majority it's only a drawback
-            p.fx[0] += 0.4f * upkeep; p.fx[4] += 0.1f;
+            // 0.3.11.2: up to four Sacred Protector fleets (50-60 FP each), deleted when it's removed: valued like a Patrol HQ's
+            // patrols and weighted as combat under threat, so the station keeps it then (it counted 0.1 and was swapped out)
+            p.fx[0] += 0.4f * upkeep; p.fx[4] += 0.3f * (threatened ? THREAT_COMBAT : 1f);
             p.lines.add("Luddic majority: station upkeep -40% (about " + Misc.getDGSCredits(0.4f * upkeep) + " per month), defense flotillas");
         }
         else if (id.equals(CONVERSION)) {
@@ -248,7 +250,7 @@ public class CAAugments {
         if (combat != 0) {
             p.fx[4] += combat * COMBAT * (threatened && combat > 0 ? THREAT_COMBAT : 1f);
             p.lines.add(combat > 0 ? "Stronger station in combat (Station Augments rates it " + combat + ")"
-                    + (threatened ? ". Counts x10 while the colony is threatened" : "") : "Weaker station in combat");
+                    + (threatened ? ". Counts x4 while the colony is threatened" : "") : "Weaker station in combat");
         }
         float[] w = CAEngine.goalWeights(profile);
         float v = extra;

@@ -1,5 +1,15 @@
 # Patch notes
 
+## 0.3.11.2 - 2026-11-18
+
+- Station Augments: Sanctified Station's Sacred Protector fleets count like a Patrol HQ's patrols and as combat under threat, so the station keeps it then. It counted for little and was swapped out.
+- Station Augments: Combat augments the model doesn't know count x4 under threat, the same as the rest (was x10).
+- Station Augments: Efficiency Overhaul counts its faster station repairs between fights.
+- Upkeep: Orbital stations, battlestations and star fortresses (every line), the Planetary Shield, the Cryosanctum and Tech-Mining are charged at the game's fixed size, so their upkeep estimates match the game. Stored upkeep corrections are cleared once.
+- Stability: Ground Defenses, the Patrol HQ and each station tier count their +1 stability.
+- Commerce: Counts -3 stability, as the game does (was -2).
+- Cryosanctum: Makes 6 organs at any size and needs 3 supplies and 3 organics, as the game does.
+
 ## 0.3.11.1 - 2026-11-18
 
 - Story mode: Added Rapid repairs (Tier IV, 30 bandwidth). Disrupted buildings at your colonies recover in half the time, from raids, bombardment or anything else. Other factions' colonies are not affected.

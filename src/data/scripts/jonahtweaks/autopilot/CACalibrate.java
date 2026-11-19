@@ -35,10 +35,10 @@ public class CACalibrate {
      */
     public static void migrate() {
         CAData d = CAData.get();
-        if (d.calVersion >= 1) return;
+        if (d.calVersion >= 2) return;   // 0.3.11.2: 2, so the factors measured against the old fixed-size upkeep go
         d.calUp().clear();
         d.calUpN().clear();
-        d.calVersion = 1;
+        d.calVersion = 2;
     }
 
     /** Weekly: reads every clean building at every colony. */

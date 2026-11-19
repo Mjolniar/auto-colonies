@@ -813,9 +813,29 @@ public class CAEngine {
     static float baseUpkeep(MarketAPI m, IndustrySpecAPI spec) {
         // as BaseIndustry.applyIncomeAndUpkeep: the spec's upkeep (already in credits: the game multiplies the CSV value by 500
         // when it loads) times max(1, size - 2) times the colony's upkeep multiplier
-        float sizeMult = (CATasc.fixedUpkeep(spec.getId()) ? 1 : Math.max(1, m.getSize() - 2)) * m.getUpkeepMult().getModifiedValue();
+        float sizeMult = (CATasc.fixedUpkeep(spec.getId()) ? 1 : Math.max(1, upkeepSize(spec.getId(), m.getSize(), ruinsTier(m)) - 2)) * m.getUpkeepMult().getModifiedValue();
         return spec.getUpkeep() * sizeMult * CADevelopment.upkeepMult(m, spec) * CARogue.upkeepMult(m, spec.getId())   // 0.3.2.1: Rogue Planets' upkeep conditions
                 * CAOddisz.curveUpkeep(m, spec);   // 0.3.10.5: Toolbox Economy Curves' upkeep growth
+    }
+
+    /**
+     * Pure (0.3.11.2): the colony size the game charges a building's upkeep at. Most use the colony's size; these use a fixed
+     * one (their own apply): orbital stations 3, battlestations 5, star fortresses 7 (every line), Planetary
+     * Shield 5, Cryosanctum 6, and Tech-Mining the smaller of the colony's size and the ruins' tier.
+     */
+    static int upkeepSize(String id, int size, int ruins) {
+        if (id == null) return size;
+        if (id.startsWith("orbitalstation")) return 3;
+        if (id.startsWith("battlestation") || id.equals("planetaryshield")) return 5;
+        if (id.startsWith("starfortress")) return 7;
+        if (id.equals("cryosanctum")) return 6;
+        if (id.equals("techmining")) return Math.min(size, Math.max(1, ruins));
+        return size;
+    }
+
+    /** The ruins' tier: 1 scattered, 2 widespread, 3 extensive, 4 vast. */
+    static int ruinsTier(MarketAPI m) {
+        return m.hasCondition("ruins_vast") ? 4 : m.hasCondition("ruins_extensive") ? 3 : m.hasCondition("ruins_widespread") ? 2 : 1;
     }
 
     static void upkeep(MarketAPI m, IndustrySpecAPI spec, IndustrySpecAPI replaced, Pick p) {
@@ -1019,26 +1039,28 @@ public class CAEngine {
         } else if (id.equals("waystation")) {
             p.fx[2] += 0.1f; p.fx[6] += 0.5f; p.lines.add("+10% accessibility; stockpiles fuel and supplies");
         } else if (id.equals("patrolhq")) {
-            p.fx[3] += 0.1f; p.fx[4] += 0.3f; p.lines.add("Patrol fleets; +10% ground defense"); CACrisis.military(id, p);
+            p.fx[1] += 1f; p.fx[3] += 0.1f; p.fx[4] += 0.3f; p.lines.add("Patrol fleets; +10% ground defense; +1 stability"); CACrisis.military(id, p);
         } else if (id.equals("militarybase")) {
             p.fx[3] += 0.1f; p.fx[4] += 0.4f; p.lines.add("Larger patrols, marines and crew; ground defense +20%"); CACrisis.military(id, p);
         } else if (id.equals("highcommand")) {
             p.fx[3] += 0.1f; p.fx[4] += 0.5f; p.lines.add("Strongest patrols; ground defense +30%"); CACrisis.military(id, p);
         } else if (id.equals("grounddefenses")) {
-            p.fx[3] += 1f; p.lines.add("Ground defense x2");
+            p.fx[1] += 1f; p.fx[3] += 1f; p.lines.add("Ground defense x2; +1 stability");
         } else if (id.equals("heavybatteries")) {
             p.fx[3] += 1f; p.lines.add("Ground defense x3 (from x2)");
         } else if (id.equals("planetaryshield")) {
             if (CAMods.psac()) CAMods.shield(m, p);   // Planetary Shield: Access Control's version
             else { p.fx[3] += 2f; p.lines.add("Ground defense x3; blocks meteor impacts"); }
         } else if (id.startsWith("orbitalstation")) {
-            p.fx[3] += 0.5f; p.fx[4] += 0.3f; p.lines.add("Station fleet; ground defense x1.5");
+            p.fx[1] += 1f; p.fx[3] += 0.5f; p.fx[4] += 0.3f; p.lines.add("Station fleet; ground defense x1.5; +1 stability");
         } else if (id.startsWith("battlestation")) {
-            p.fx[3] += 0.5f; p.fx[4] += 0.3f; p.lines.add("Stronger station; ground defense x2");
+            p.fx[1] += 1f; p.fx[3] += 0.5f; p.fx[4] += 0.3f; p.lines.add("Stronger station; ground defense x2; +1 stability");
         } else if (id.startsWith("starfortress")) {
-            p.fx[3] += 1f; p.fx[4] += 0.5f; p.lines.add("Strongest station; ground defense x3");
+            p.fx[1] += 1f; p.fx[3] += 1f; p.fx[4] += 0.5f; p.lines.add("Strongest station; ground defense x3; +1 stability");
         } else if (id.equals("cryosanctum")) {
-            supply(p, "organs", s, deficit);
+            supply(p, "organs", 6, deficit);   // 0.3.11.2: 6 at any size, as the game; 3 supplies and 3 organics in
+            demand(p, "supplies", 3, deficit);
+            demand(p, "organics", 3, deficit);
         } else if (id.equals("cryorevival")) {
             p.fx[6] += 4f; p.lines.add("Large growth bonus from the in-system cryosleeper");
         } else if (CAEstimates.has(id)) {
