@@ -447,12 +447,24 @@ public final class CAApprovals {
     public static String startByPlayer(MarketAPI m, CAEngine.Pick p) {
         if (m == null || p == null) return "Not available";
         CASettings s = CAData.settings();
-        String gate = reserveGate(CABudget.buildTotal(s, p.cost));   // 0.3.8.5: Rapid construction's fee included
-        if (gate != null) return gate;
+        // 0.3.12.1: your own click spends the credits you have: the credit reserve is Autopilot's rule for its own spending, so
+        // it no longer stops you. A new building while one is under way goes into the game's construction queue
+        if (!p.upgrade && CABuild.buildsFull(m)) return queueByPlayer(m, p, s);
         CAData.Colony c = CAData.get().colony(m.getId());
         String keepId = c.pendingId;
-        String err = CAAuto.execute(m, c, p, "Started by you", true);
+        String err = CAAuto.execute(m, c, p, "Started by you", true, false);
         if (err == null && keepId != null && !keepId.equals(p.id)) CALog.quiet(m.getName() + ": your build replaced the waiting proposal");
         return err;
+    }
+
+    /** 0.3.12.1: your Build click queued: the game's price now (CABuild.queue) and the construction fee, as a start pays. */
+    static String queueByPlayer(MarketAPI m, CAEngine.Pick p, CASettings s) {
+        float fee = CABudget.constructionFee(s, p.cost), price = CASync.buildPrice(p.cost);
+        if (CABuild.credits() < price + fee) return "Not enough credits: build plus " + Misc.getDGSCredits(fee) + " fee";
+        String err = CABuild.queue(m, p);
+        if (err != null) return err;
+        CABudget.charge(s, m.getId(), price, fee, p.upkeep);
+        CALog.quiet(m.getName() + ": Queued " + p.name + " (" + Misc.getDGSCredits(p.cost) + "). Started by you.");
+        return null;
     }
 }

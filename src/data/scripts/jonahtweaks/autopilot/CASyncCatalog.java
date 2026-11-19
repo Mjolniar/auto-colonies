@@ -187,16 +187,16 @@ public class CASyncCatalog {
     }
 
     static {
-        pack("advice", 0, 2, null, "Advisor mode", "advisor");
-        pack("oversight", 0, 4, null, "Approve mode", "approve");
-        pack("upkeep", 0, 5, null, "Colony upkeep", "cleanup", "stations", "policies", "crisis", "lowProfile");
-        pack("supply", 0, 5, null, "Supply and items", "capital", "logistics", "objectives", "items", "stockpiles");
-        pack("automation", 1, 6, "oversight", "Auto mode", "auto");
+        // 0.3.12.1: Advisor, Approve and Auto mode are one package, Modes (it was 2, 4 and 6), and Colony upkeep and Supply and
+        // items need it: Auto is what runs them. Saves that bought any of the three get Modes (CASync.migrateModesPack)
+        pack("modes", 0, 12, null, "Modes", "advisor", "approve", "auto");
+        pack("upkeep", 0, 5, "modes", "Colony upkeep", "cleanup", "stations", "policies", "crisis", "lowProfile");
+        pack("supply", 0, 5, "modes", "Supply and items", "capital", "logistics", "objectives", "items", "stockpiles");
         pack("staff", 1, 6, null, "Cores and staff", "cores", "admins", "storyPoints");
         pack("economy", 1, 5, null, "Economy", "spending", "floors", "contracts");
         pack("security", 1, 6, null, "Security", "enforcers", "defense", "agents", "diplomacy", "autonomy");
         pack("projects", 1, 6, null, "Mod projects", "terraform", "research", "indevo", "augments", "settlement", "ruins");
-        pack("growth", 2, 9, "automation", "Growth", "buildout", "surplus", "halfFees");
+        pack("growth", 2, 9, "modes", "Growth", "buildout", "surplus", "halfFees");
         pack("industry", 2, 8, null, "Industry", "military", "shipyard", "omega");
         pack("frontier", 2, 8, null, "Expansion", "expansion", "colonyFleets");
         pack("warfare", 2, 7, "security", "War", "retaliate", "offense");
@@ -212,11 +212,9 @@ public class CASyncCatalog {
         pack("fastResearch", 3, 20, null, "Rapid research", "rapidResearch");
         pack("outfitting", 3, 25, null, "Station outfitting", "stationFit");   // 0.3.11.7: Tier IV, shown only with Auto Outfitting
         pack("repairs", 3, 30, null, "Rapid repairs", "rapidRepair");   // 0.3.11.1: Tier IV   // 0.3.9.9: Tier IV, shown only with Vaults of Knowledge   // 0.3.7.9; 0.3.8.0: Tier IV, its cost is the first colony
-        desc("advice", "It suggests what to build next at your colonies.");
-        desc("oversight", "It proposes builds at one colony and waits for your OK.");
+        desc("modes", "Advisor suggests what to build next, Approve proposes builds and waits for your OK, and Auto builds without asking you first.");
         desc("upkeep", "It cuts unprofitable industry, keeps up orbital stations, sets colony policy and preps for crises.");
         desc("supply", "It handles the capital, storage shipments, stable locations, colony items and stockpiles.");
-        desc("automation", "It builds at colonies on Auto without asking you first.");
         desc("staff", "It places AI cores, hires administrators and spends story points on improvements.");
         desc("economy", "It raises the spending limit, keeps production floors up and takes trade contracts.");
         desc("security", "It runs enforcer patrols, emergency defense, agents, diplomacy and autonomy.");

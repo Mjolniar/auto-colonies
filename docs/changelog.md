@@ -1,5 +1,14 @@
 # Patch notes
 
+## 0.3.12.1 - 2026-11-19
+
+- Colony panel: Build buttons stay on when the score is out of date. The click checks slots, stability and the building again.
+- Colony panel: With a building already under construction, a new building shows Queue and goes into the game's construction queue, paid when queued. Slots count the queue.
+- Colony panel: Every option under More has a button when you can pay for it, worth it or not.
+- Colony panel: Your own Build click spends the credits you have. The credit reserve only holds back Autopilot's own builds.
+- Story mode: Advisor, Approve and Auto mode are one Tier I package, Modes (12 bandwidth). Colony upkeep and Supply and items need it. Saves that bought any of the three have Modes, paid what they cost.
+- Planner: Never starts a building that's in the game's construction queue.
+
 ## 0.3.12.0 - 2026-11-18
 
 - Stable locations: With Vaults of Knowledge's Janus Device analysis researched, a system with your colonies and no free stable location gets a new one when the comm relay, nav buoy or sensor array it makes room for would pay for both.

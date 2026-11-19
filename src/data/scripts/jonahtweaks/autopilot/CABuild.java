@@ -87,8 +87,53 @@ public class CABuild {
     /** 0.3.6.7: no room for another new building here. Upgrades still run. */
     public static boolean buildsFull(MarketAPI m) { return buildRoom(m) <= 0; }
 
+    // ---------------- 0.3.12.1: the game's construction queue ----------------
+
+    /** Whether the game's construction queue here holds this building. */
+    public static boolean queued(MarketAPI m, String id) {
+        try { return m.getConstructionQueue() != null && m.getConstructionQueue().hasItem(id); } catch (Throwable t) { return false; }
+    }
+
+    /** Industries waiting in the game's construction queue here: each takes a slot once it starts. */
+    static int queuedSlots(MarketAPI m) {
+        int n = 0;
+        try {
+            for (com.fs.starfarer.api.impl.campaign.econ.impl.ConstructionQueue.ConstructionQueueItem q : m.getConstructionQueue().getItems()) {
+                com.fs.starfarer.api.loading.IndustrySpecAPI sp = Global.getSettings().getIndustrySpec(q.id);
+                if (sp != null && sp.getNewPluginInstance(m).isIndustry()) n++;
+            }
+        } catch (Throwable ignored) { }
+        return n;
+    }
+
+    /**
+     * 0.3.12.1: your Build click on a new building while one is already under way: it goes into the game's construction queue,
+     * paid now as the game's own queue is (the price is kept on the item, so taking it out of the queue gives it back), and the
+     * game starts it when the current one is done. The same checks as start(), with the queue's industries counted for slots.
+     */
+    public static String queue(MarketAPI m, CAEngine.Pick p) {
+        if (p.upgrade) return "Upgrades don't queue";
+        if (m.hasIndustry(p.id)) return "Already built";
+        if (queued(m, p.id)) return "Already queued";
+        float price = CASync.buildPrice(p.cost);
+        if (credits() < price) return "Not enough credits (" + Misc.getDGSCredits(price) + " needed)";
+        if (!CASync.mayBuild(p.id)) return "Stations need " + CASyncCatalog.buy("stations") + " on the Story page.";
+        if (!CADiagnostics.usable(p.id)) return "Not supported by Colony Autopilot";
+        if (p.fx != null && p.fx.length > 1 && p.fx[1] < 0f && !CAStability.canLose(m, p.fx[1] + CAStability.pending(m), null))
+            return "It would take stability under Autopilot's floor of " + Math.round(CAStability.floor());
+        if (takesSlot(m, p) && usedSlots(m) + queuedSlots(m) >= Misc.getMaxIndustries(m))
+            return "No free industry slot (" + (usedSlots(m) + queuedSlots(m)) + " of " + Misc.getMaxIndustries(m) + " used, the queue included)";
+        if (CAAotD.enabled() && !CAAotD.allows(p.id, m)) return "Locked in the build menu: " + CAAotD.lockReason(p.id, m);
+        m.getConstructionQueue().addToEnd(p.id, Math.round(price));
+        if (price > 0f) CABudget.payPrice(price);
+        try { CACache.bump("queue"); } catch (Throwable ignored) { }
+        CADiagnostics.LOG.info(CADiagnostics.TAG + "queued " + p.id + " at " + m.getName() + " for " + Misc.getDGSCredits(p.cost));
+        return null;
+    }
+
     /** Returns null on success, or the reason it couldn't start. */
     public static String start(MarketAPI m, CAEngine.Pick p) {
+        if (!p.upgrade && queued(m, p.id)) return "Already in the construction queue";   // 0.3.12.1: the game starts it
         if (!p.upgrade && buildsFull(m)) return "A new building is already under construction here" + (CASync.buildsAtOnce() > 1 ? " (" + CASync.buildsAtOnce() + " at once)" : "") + ". Upgrades can still run";
         float price = CASync.buildPrice(p.cost);   // 0.3.8.8: with Rapid construction's RAPID_FEE (story mode)
         if (credits() < price) return "Not enough credits (" + Misc.getDGSCredits(price) + " needed)";
@@ -103,8 +148,8 @@ public class CABuild {
         // 0.2.42.0: the build menu's industry limit. Picks are scored with the slots free when the pass began, and one pass can
         // start a new building and an upgrade, so a structure upgraded into an industry (Junkyard Forge -> Scrapyard) and a
         // new industry both took Wind's one free slot: 3 of 2, -5 stability, its income cut to nothing
-        if (takesSlot(m, p) && usedSlots(m) >= Misc.getMaxIndustries(m))
-            return "No free industry slot (" + usedSlots(m) + " of " + Misc.getMaxIndustries(m) + " used, upgrades under way included)";
+        if (takesSlot(m, p) && usedSlots(m) + queuedSlots(m) >= Misc.getMaxIndustries(m))   // 0.3.12.1: the queue's industries too
+            return "No free industry slot (" + (usedSlots(m) + queuedSlots(m)) + " of " + Misc.getMaxIndustries(m) + " used, upgrades under way included)";
         String action = "building " + p.name;
         if (!CABreaker.allowed(action)) return "Paused for this session: no effect three times. See Diagnostics";
         boolean added = false, paid = false;

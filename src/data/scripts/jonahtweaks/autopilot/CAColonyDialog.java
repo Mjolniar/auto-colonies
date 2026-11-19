@@ -209,8 +209,9 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             CAEngine.Pick p = (CAEngine.Pick) id;
             // 0.3.3.0: the game's price plus the construction fee, from credits above the reserve (nothing is free)
             float fee = CABudget.buildTotal(d.settings, p.cost) - p.cost;   // 0.3.9.6 (F8): with Rapid construction's fee
+            boolean queues = !p.upgrade && CABuild.buildsFull(market);   // 0.3.12.1: into the game's construction queue
             String err = CAApprovals.startByPlayer(market, p);
-            message = err == null ? "Started: " + p.verb + " " + p.name + " for " + Misc.getDGSCredits(p.cost) + " plus " + Misc.getDGSCredits(fee) + " fee" : err;
+            message = err == null ? (queues ? "Queued: " : "Started: ") + p.verb + " " + p.name + " for " + Misc.getDGSCredits(p.cost) + " plus " + Misc.getDGSCredits(fee) + " fee" : err;
         }
         dirty = true;
     }
@@ -664,12 +665,15 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 t.addPara("    " + (p.lines.size() - shown) + " more effects on hover.", gray, 2f);
                 CATheme.hover(t, p.lines.subList(shown, p.lines.size()).toArray(new String[0]));
             }
-            boolean waits = !p.upgrade && r.blocked != null, poor = CABuild.credits() < p.cost, old = !k.current;
-            ButtonAPI b = t.addButton(p.verb + " (" + Misc.getDGSCredits(p.cost) + ")", p, base, dark,
+            // 0.3.12.1: your click builds in every mode while you have the credits: an out-of-date score no longer turns the button
+            // off (the click checks slots, stability and the building itself again), and with construction under way a new
+            // building goes into the game's construction queue
+            boolean poor = CABuild.credits() < p.cost;
+            ButtonAPI b = t.addButton(buildLabel(p, r) + " (" + Misc.getDGSCredits(p.cost) + ")", p, base, dark,
                     Alignment.MID, CutStyle.TL_BR, 240f, 24f, 6f);
-            b.setEnabled(!waits && !poor && !old);
-            if (waits || poor || old) {
-                LabelAPI why = t.addPara(old ? "Out of date: Refresh" : waits ? "Waits for construction" : "Not enough credits", gray, 0f);
+            b.setEnabled(!poor);
+            if (poor) {
+                LabelAPI why = t.addPara("Not enough credits", gray, 0f);
                 why.getPosition().rightOfMid(b, 10f);
                 CALog.endRow(t, b);
             }
@@ -681,9 +685,9 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             for (int i = 3; i < picks.size(); i++) {
                 CAEngine.Pick p = picks.get(i);
                 String[] tg = CABuildHints.tag(p, i + 1, data.settings, stab, floor);
-                boolean ok = CAEngine.worthwhile(p) && !(!p.upgrade && r.blocked != null) && k.current;
+                boolean ok = CABuild.credits() >= p.cost;   // 0.3.12.1: every option you can pay for, worth it or not (your call)
                 if (ok) {
-                    ButtonAPI b = t.addButton(p.verb + " (" + Misc.getDGSCredits(p.cost) + ")", p, base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 20f, 4f);
+                    ButtonAPI b = t.addButton(buildLabel(p, r) + " (" + Misc.getDGSCredits(p.cost) + ")", p, base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 20f, 4f);
                     LabelAPI l = t.addPara("%s: %s. " + CALog.esc(tg[1]) + ".", 0f, hl, tg[0], p.name);
                     l.getPosition().rightOfMid(b, 10f);
                     CALog.endRow(t, b);
@@ -693,6 +697,11 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         if (r.noSlot > 0) t.addPara(r.noSlot + " more need an industry slot.", gray, 10f);
         if (r.locked > 0) t.addPara(r.locked + " more need research (AotD).", gray, 6f);
         if (r.unsupportedBuildable > 0) t.addPara(r.unsupportedBuildable + " mod buildings not supported (Diagnostics).", gray, 6f);
+    }
+
+    /** 0.3.12.1: a pick's button word: Queue for a new building while construction is under way here, else its own verb. */
+    String buildLabel(CAEngine.Pick p, CAEngine.Result r) {
+        return !p.upgrade && (r.blocked != null && CABuild.buildsFull(market)) ? "Queue" : p.verb;
     }
 
     /** Months a pick's price is spread over: its payback horizon (CAHorizon, 0.3.0.0 B2), or the 36 of the legacy planner. Pure. */

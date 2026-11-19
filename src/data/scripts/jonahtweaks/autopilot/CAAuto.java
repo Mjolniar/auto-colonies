@@ -475,11 +475,14 @@ public class CAAuto {
     static String execute(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String who) { return execute(m, c, p, who, false); }
 
     /** 0.3.3.0: quiet: your own Build click is logged to starsector.log only (the panel shows what started). */
-    static String execute(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String who, boolean quiet) {
+    static String execute(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String who, boolean quiet) { return execute(m, c, p, who, quiet, true); }
+
+    /** 0.3.12.1: keepReserve false for your own Build click (the reserve is Autopilot's rule for its own spending). */
+    static String execute(MarketAPI m, CAData.Colony c, CAEngine.Pick p, String who, boolean quiet, boolean keepReserve) {
         CASettings s = CAData.settings();
         float fee = CABudget.constructionFee(s, p.cost), price = CASync.buildPrice(p.cost);   // 0.3.8.8: with Rapid construction's RAPID_FEE (story mode)
         if (CABuild.credits() < price + fee) return "Not enough credits: build plus " + Misc.getDGSCredits(fee) + " fee";
-        String reserve = CAApprovals.reserveGate(CABudget.buildTotal(s, p.cost));   // 0.3.8.5: the last reserve check, Rapid construction's fee included
+        String reserve = keepReserve ? CAApprovals.reserveGate(CABudget.buildTotal(s, p.cost)) : null;   // 0.3.8.5: the last reserve check, Rapid construction's fee included
         if (reserve != null) return reserve;
         String err = CABuild.start(m, p);
         if (err != null) {

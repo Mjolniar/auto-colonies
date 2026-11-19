@@ -10,6 +10,7 @@ import com.fs.starfarer.api.loading.IndustrySpecAPI;
 import com.fs.starfarer.api.util.Misc;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -400,7 +401,7 @@ public class CASync {
         if (!ticked().remove(id)) return;
         packPaid().remove(id);   // 0.3.10.4: bought again at the price then
         if ("autarch".equals(id)) { num("seats", 0); num("seatPaid", 0); }   // 0.3.8.0: its bought colonies go with it
-        if ("oversight".equals(id)) { num("colonies", 0); num("colPaid", 0); }   // 0.3.8.9: Approve mode's bought colonies go with it (their buttons show only with it)
+        if (MODES.equals(id)) { num("colonies", 0); num("colPaid", 0); }   // 0.3.8.9: Approve mode's bought colonies go with it (their buttons show only with it); 0.3.12.1: Modes
         CASyncCatalog.Pack p = CASyncCatalog.pack(id);
         if (p != null) CALog.quiet("Autopilot: " + p.name + " is off.");
         for (CASyncCatalog.Pack x : CASyncCatalog.PACKS) if (id.equals(x.requires)) untick(x.id);
@@ -409,7 +410,7 @@ public class CASync {
     public static String addColony() {
         if (!on()) return "Story mode is off.";
         if (dormant()) return "The Colony Autopilot is dormant.";
-        if (!has("approve")) return "Approve mode comes first.";   // 0.3.7.2
+        if (!has("approve")) return "Modes comes first.";   // 0.3.7.2; 0.3.12.1: the package's name
         if (extraColonies() >= CASyncCatalog.MAX_COLONIES) return "It can't run more colonies.";
         int cost = colonyCost(), paid = colonyPaid();
         if (free() < cost) return "One more managed colony needs " + cost + " bandwidth, and " + Math.max(0, free()) + " are free.";
@@ -699,9 +700,34 @@ public class CASync {
         flag("modesBought", true);
         List<String> t = ticked();
         if (t.isEmpty()) return;
-        if (!t.contains("oversight")) t.add(0, "oversight");   // 0.3.7.4: as packages
-        if (!t.contains("advice")) t.add(0, "advice");
+        if (!t.contains(MODES)) t.add(0, MODES);   // 0.3.7.4: as packages; 0.3.12.1: the three modes are one package
         fit();
+    }
+
+    /** 0.3.12.1: the package Advisor, Approve and Auto mode are in. */
+    static final String MODES = "modes";
+    /** 0.3.12.1: the three packages it replaced (Advisor, Approve and Auto mode). */
+    static final List<String> OLD_MODE_PACKS = Arrays.asList("advice", "oversight", "automation");
+
+    /**
+     * 0.3.12.1, once per save, before the other migrations: a save that bought Advisor, Approve or Auto mode has Modes in the
+     * place of the first one, paid what those cost together.
+     */
+    static void migrateModesPack() {
+        if (flag("modesPack")) return;
+        flag("modesPack", true);
+        List<String> t = ticked();
+        int at = -1, paid = 0;
+        for (int i = t.size() - 1; i >= 0; i--) {
+            if (!OLD_MODE_PACKS.contains(t.get(i))) continue;
+            Integer p = packPaid().remove(t.get(i));
+            if (p != null) paid += p;
+            t.remove(i);
+            at = i;
+        }
+        if (at < 0) return;
+        if (!t.contains(MODES)) t.add(Math.min(at, t.size()), MODES);
+        if (paid > 0) packPaid().put(MODES, paid);
     }
 
     /** 0.3.7.4, once per save: abilities bought one by one before packages are swapped for the packages that hold them. */
@@ -1390,6 +1416,7 @@ public class CASync {
     /** On every load: costs, placement, the holds, the story intel, the watcher and the core's listener. */
     public static void onLoad() {
         CASyncCatalog.load();
+        try { migrateModesPack(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode Modes migration failed", t); }   // 0.3.12.1: first, so migratePacks keeps it
         try { migratePacks(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode package migration failed", t); }
         try { migrateModes(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode ability migration failed", t); }
         try { migrateTiers(); updateTiers(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode tiers failed", t); }
