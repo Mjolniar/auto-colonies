@@ -111,10 +111,13 @@ public class CATerraformSurplus {
         Map<String, CATme.Proj> busy = busy(m);
         Set<String> key = new HashSet<String>(conds);
         for (String b : busy.keySet()) key.add("busy:" + b);
+        key.add("rich:" + CASurplus.rich(s));   // 0.3.11.8: what the plan was made under, so a change redoes it
+        key.add("mode:" + s.surplusTerraform);
         Float at = planAt.get(m.getId());
         CATerraSim.Result cached = plans.get(m.getId());
-        // a plan from before the colony's conditions changed (a project just finished) is redone at once
-        if (cached != null && at != null && now() - at < 1f && key.equals(planConds.get(m.getId()))) return cached;
+        // a plan from before the colony's conditions changed (a project just finished) is redone at once; 0.3.11.8: else kept
+        // PLAN_DAYS (it was redone daily, 1% of the game thread in a profile)
+        if (cached != null && at != null && now() >= at && now() - at < PLAN_DAYS && key.equals(planConds.get(m.getId()))) return cached;
         CAPlan.Plan plan = CAPlan.build(m, c.profile);
         Set<String>[] ka = CATerraform.keepAvoid(m, plan, conds);   // the same rule as the plan's own projects, so neither undoes the other
         Set<String> keep = ka[0], avoid = ka[1];
@@ -154,6 +157,9 @@ public class CATerraformSurplus {
         planAt.put(m.getId(), now());
         return r;
     }
+
+    /** 0.3.11.8: days a colony's surplus terraforming plan is kept while what it was made from stays the same. */
+    static final float PLAN_DAYS = 7f;
 
     /** While spending freely (CASurplus.rich), up to this many surplus projects start at a colony a day, on different structures. */
     static final int PARALLEL = 3;

@@ -45,7 +45,8 @@ public class CAReset {
         failed += run("reverse engineering feed", () -> CARepa.lastRun = Float.NaN);   // 0.3.11.5
         failed += run("station outfitting", () -> CAStationFit.FITS.clear());   // 0.3.11.7
         failed += run("survival corruption share", () -> { CASurvival.shareReport = null; CASurvival.share = 1f; });   // 0.3.0.4
-        failed += run("market model", () -> { CAMarket.invalidate(); CAMarket.cacheDay = -99f; CAMarket.lastWeek = Float.NaN; });
+        failed += run("market model", () -> { CAMarket.invalidate(); CAMarket.cacheDay = -99f; CAMarket.lastWeek = Float.NaN;
+            CAMarket.SUPPLY.clear(); CAMarket.supplyAt = Long.MIN_VALUE; CAMarket.supplyEpoch = Integer.MIN_VALUE; });   // 0.3.11.8
         failed += run("mod watch", () -> CAModWatch.reset());
         failed += run("Rogue Planets", () -> { CARogue.on = null; CARogue.testIndustries = null; });   // 0.3.2.1: asked again; the test list is offline only
         failed += run("Corrupt.Officials", () -> CAIndexMods.reset());   // 0.3.3.2: its settings and each colony's kept share read again
@@ -57,7 +58,8 @@ public class CAReset {
         if (on("niko_stationAugments")) failed += run("station augments", () -> { CAAugments.nextRun.clear(); CAAugments.lastSig.clear(); CAAugments.drawn.clear(); });   // 0.3.9.2 (J L9): the page's plans
         // caches and cooldowns that held the other save's data (07 H6)
         failed += run("research ranking", () -> {
-            CAResearch.cached = null; CAResearch.cachedAt = -99f; CAResearch.openCount = 0; CAResearch.totalCount = 0; CAResearch.rankFull = false; CAResearch.itemTechs.clear();
+            CAResearch.BUILD_VALUES.clear(); CAResearch.buildValuedAt = -99f; CAResearch.buildValuedFor = null;   // 0.3.11.8
+        CAResearch.cached = null; CAResearch.cachedAt = -99f; CAResearch.openCount = 0; CAResearch.totalCount = 0; CAResearch.rankFull = false; CAResearch.itemTechs.clear();
             CAResearch.needs = new ArrayList<CAResearch.Need>(); CAResearch.topUpPending = false; CAResearch.spendItems = false; CAResearch.itemMode = 0;
         });
         failed += run("blocked plan steps", () -> { CAPlan.BLOCKED.clear(); CAPlan.lockedCache = 0; CAPlan.lockedDay = -1; });

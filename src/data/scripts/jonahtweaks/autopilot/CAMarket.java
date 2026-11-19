@@ -178,12 +178,40 @@ public final class CAMarket {
         int base, before;
     }
 
-    /** One building's own supply of a good. */
+    /**
+     * One building's own supply of a good. 0.3.11.8: each building's supply is read once a frame (the game time and CACache's
+     * epoch), since scoring one colony asks for the same buildings' lines hundreds of times (1% of the game thread in a profile).
+     */
     static int own(Industry ind, String com) {
         if (ind == null) return 0;
-        for (MutableCommodityQuantity q : ind.getAllSupply())
-            if (com.equals(q.getCommodityId())) return Math.max(0, q.getQuantity().getModifiedInt());
-        return 0;
+        Map<String, Integer> s = supplyOf(ind);
+        if (s == null) {   // no clock (offline checks): read directly
+            for (MutableCommodityQuantity q : ind.getAllSupply())
+                if (com.equals(q.getCommodityId())) return Math.max(0, q.getQuantity().getModifiedInt());
+            return 0;
+        }
+        Integer v = s.get(com);
+        return v == null ? 0 : v;
+    }
+
+    /** 0.3.11.8: supply by building for this frame (cleared when the game time or the epoch moves). */
+    static final Map<Industry, Map<String, Integer>> SUPPLY = new IdentityHashMap<Industry, Map<String, Integer>>();
+    static long supplyAt = Long.MIN_VALUE;
+    static int supplyEpoch = Integer.MIN_VALUE;
+
+    static Map<String, Integer> supplyOf(Industry ind) {
+        long t;
+        try { t = Global.getSector().getClock().getTimestamp(); } catch (Throwable e) { return null; }
+        int ep = CACache.epoch();
+        if (t != supplyAt || ep != supplyEpoch) { SUPPLY.clear(); supplyAt = t; supplyEpoch = ep; }
+        Map<String, Integer> s = SUPPLY.get(ind);
+        if (s == null) {
+            s = new HashMap<String, Integer>();
+            for (MutableCommodityQuantity q : ind.getAllSupply())
+                if (!s.containsKey(q.getCommodityId())) s.put(q.getCommodityId(), Math.max(0, q.getQuantity().getModifiedInt()));
+            SUPPLY.put(ind, s);
+        }
+        return s;
     }
 
     /**

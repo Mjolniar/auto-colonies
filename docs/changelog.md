@@ -1,5 +1,12 @@
 # Patch notes
 
+## 0.3.11.8 - 2026-11-18
+
+- Performance: Each building's supply is read once a frame while a colony is scored. It was read again for every good and every pick.
+- Performance: Research building values (every colony scored under a what-if) are kept 7 days while the same techs are open. Refresh on the Research page redoes them.
+- Performance: Surplus terraforming plans are kept 7 days while the colony's conditions, busy structures, money state and setting stay the same.
+- Log: Numbered copies of one mod building or condition (like `_1` to `_12`) get one line per scan. Diagnostics still lists each.
+
 ## 0.3.11.7 - 2026-11-18
 
 - Story mode: Added Station outfitting (Tier IV, 25 bandwidth, needs Auto Outfitting 0.5.71 or later). Auto Outfitting's optimizer fits your star fortresses and tier 4 stations, core and every module, with the weapons, fighter wings and hullmods you know. No built-in hullmods, no story points.

@@ -439,7 +439,13 @@ public class CAResearch {
         // 0.3.9.1 (H P1): with no working Research Facility nothing can start, so only Refresh runs the what-if valuation
         boolean value = rankFull;
         if (!value) try { value = ((Number) CARefl.invoke(facilities, mgr)).intValue() > 0; } catch (Throwable e) { value = true; }
-        if (value) valueBuildings(scored);
+        if (value) {
+            // 0.3.11.8: the what-if valuation scores every colony; it's kept BUILD_VALUE_DAYS while the same techs are valued
+            // (a tech finishing or opening changes the set), and Refresh always redoes it
+            String set = techSet(scored);
+            if (!rankFull && set.equals(buildValuedFor) && now() >= buildValuedAt && now() - buildValuedAt < BUILD_VALUE_DAYS) applyBuildValues(scored);
+            else { valueBuildings(scored); buildValuedFor = set; buildValuedAt = now(); }
+        }
         for (Tech t : scored) t.own += effects(t);
         for (Tech t : cands) if (t.plan > 0f) {
             t.own += t.plan;
@@ -521,9 +527,31 @@ public class CAResearch {
                 }
             }
         }
-        for (Map.Entry<Tech, Float> e : total.entrySet()) {
-            e.getKey().own += e.getValue();
-            e.getKey().lines.add("Unlocks buildings worth " + CAEngine.valueText(e.getValue()) + ", best " + where.get(e.getKey()));
+        BUILD_VALUES.clear();
+        for (Map.Entry<Tech, Float> e : total.entrySet()) BUILD_VALUES.put(e.getKey().id, new Object[]{e.getValue(), where.get(e.getKey())});
+        applyBuildValues(techs);
+    }
+
+    /** 0.3.11.8: the last what-if valuation by tech id: {value, where}; kept BUILD_VALUE_DAYS (ranked). */
+    static final Map<String, Object[]> BUILD_VALUES = new HashMap<String, Object[]>();
+    static final float BUILD_VALUE_DAYS = 7f;
+    static float buildValuedAt = -99f;
+    static String buildValuedFor = null;
+
+    /** Pure: the valued techs' ids in order, which the kept valuation must match. */
+    static String techSet(List<Tech> techs) {
+        StringBuilder sb = new StringBuilder();
+        for (Tech t : techs) sb.append(t.id).append(',');
+        return sb.toString();
+    }
+
+    static void applyBuildValues(List<Tech> techs) {
+        for (Tech t : techs) {
+            Object[] v = BUILD_VALUES.get(t.id);
+            if (v == null) continue;
+            float val = (Float) v[0];
+            t.own += val;
+            t.lines.add("Unlocks buildings worth " + CAEngine.valueText(val) + ", best " + v[1]);
         }
     }
 

@@ -77,7 +77,7 @@ public class CADiagnostics {
     static String modOf(ModSpecAPI mod) { return mod == null ? "vanilla" : mod.getId(); }
 
     public static void runScan() {
-        industries.clear(); conditions.clear(); items.clear(); issues.clear(); issueKeys.clear();
+        industries.clear(); conditions.clear(); items.clear(); issues.clear(); issueKeys.clear(); loggedBases.clear();
         CASimulator.reset();
         CAConst.reset();
         CABreaker.reset();   // a reload tries paused actions again
@@ -193,8 +193,15 @@ public class CADiagnostics {
         issueKeys.add(key);
         issues.add(new Issue(kind, id, name, mod, level, detail));
         if (level == Level.QUARANTINED) LOG.warn(TAG + "QUARANTINED " + kind + " " + id + " (" + mod + "): " + detail);
-        else LOG.info(TAG + level + " " + kind + " " + id + " (" + mod + "): " + detail);
+        else if (loggedBases.add(kind + ":" + level + ":" + numberedBase(id))) LOG.info(TAG + level + " " + kind + " " + id + " (" + mod + "): " + detail);
+        // 0.3.11.8: numbered copies of one id (a mod's niko_MPC_..._1 to _12) are logged once a scan; Diagnostics lists each
     }
+
+    /** 0.3.11.8: the id and level of what a scan already logged, by its numbered base (runScan clears it). */
+    static final Set<String> loggedBases = new HashSet<String>();
+
+    /** Pure: an id without a trailing "_<number>". */
+    static String numberedBase(String id) { return id == null ? "" : id.replaceFirst("_\\d+$", "_#"); }
 
     /**
      * Runtime guard: an error from a mod building's own code (or the game's code running it) during planning quarantines
@@ -345,7 +352,7 @@ public class CADiagnostics {
     public static void flushReport() { if (dirty) writeReport(); }
 
     /** 0.3.0.0 (07 H6): the session's error memory, cleared on load (CAReset.onLoad); the scan results are replaced by runScan. */
-    public static void reset() { cmErrors.clear(); cmSeen.clear(); pausedStarts.clear(); dirty = false; }
+    public static void reset() { cmErrors.clear(); cmSeen.clear(); pausedStarts.clear(); loggedBases.clear(); dirty = false; }
 
     public static List<String> unsupportedConditions(MarketAPI market) {
         List<String> out = new ArrayList<String>();
