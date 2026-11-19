@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.11.3 - 2026-11-18
+
+- Endgame economy: Builds a tier 4 station at one Auto colony at a time once its tier 3 station works, only while its system is calm: no siege, no raid on its way, not the coming crisis's target, threat not high, no hostile fleets there. Paid from surplus credits with the fee, never below the credit reserve.
+- Tier 4 stations: An AotD Star Citadel goes up beside the old station and takes its place when done. Interstellar Imperium's Stella Castellum is an upgrade of the tier 3 station from any line. The old station keeps working until the new one is done.
+
 ## 0.3.11.2 - 2026-11-18
 
 - Station Augments: Sanctified Station's Sacred Protector fleets count like a Patrol HQ's patrols and as combat under threat, so the station keeps it then. It counted for little and was swapped out.

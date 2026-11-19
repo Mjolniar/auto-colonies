@@ -43,6 +43,8 @@ Free cash is your credits minus the reserve, unpaid custom production and 2 mont
 
 ## The endgame economy
 
+- At one calm Auto colony at a time, it puts up the best tier 4 station you can build (an AotD Star Citadel, or the Imperium's Stella Castellum), and the old station keeps working until it's done.
+
 - From the Endgame tier, an Auto colony with full slots swaps its weakest industry for one worth 10,000 a month more, up to once a month.
 
 ## Autonomy (Nexerelin)
