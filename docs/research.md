@@ -18,4 +18,5 @@ This needs Ashes of the Domain (Vaults of Knowledge).
 
 - If black site projects, production orders or your Coronal Hypershunt need a good none of your colonies make, it plans a producer at the best colony.
 - Goods your Coronal Hypershunt is short of (for its restoration or its wormhole's range) count as shortages, so buildings that make them score higher until it's supplied.
+- If your colonies make a good the running black site project takes but use all of it themselves, the project's monthly need counts as a shortage, so producers, AI cores and improvements for it score higher. It also plans one more producer at a colony that doesn't have one, and the good shows red on the special projects page.
 - It builds the Daedalus Array and the Bifrost network once your colonies make every good each one needs ([Money](money.md#wonders)).

@@ -107,8 +107,18 @@ public class CAProjects {
      * Pure, so it can be checked offline.
      */
     static Result plan(Collection<String> missing, List<Host> hosts, Set<String> builtAnywhere, Map<String, Integer> made, int empireShips) {
+        return plan(missing, Collections.<String>emptySet(), hosts, builtAnywhere, made, empireShips);
+    }
+
+    /**
+     * 0.3.11.9: short goods (made, but none left for the project) get one more producer at a colony that doesn't have one,
+     * even where one is built elsewhere. They go first, so their host is claimed before the goods nobody makes.
+     */
+    static Result plan(Collection<String> missing, Collection<String> shortGoods, List<Host> hosts, Set<String> builtAnywhere, Map<String, Integer> made, int empireShips) {
         Result r = new Result();
-        Deque<String> queue = new ArrayDeque<String>(missing);
+        Set<String> extra = new HashSet<String>(shortGoods);
+        Deque<String> queue = new ArrayDeque<String>(shortGoods);
+        queue.addAll(missing);
         Set<String> seen = new HashSet<String>();
         Map<String, Set<String>> claimed = new HashMap<String, Set<String>>();
         while (!queue.isEmpty()) {
@@ -116,8 +126,9 @@ public class CAProjects {
             if (!seen.add(good)) continue;
             List<Producer> ps = producersOf(good);
             if (ps.isEmpty()) { r.unresolved.add(good); continue; }
+            boolean more = extra.contains(good);
             Producer built = null;
-            for (Producer p : ps) if (builtAnywhere.contains(p.id) && built == null) built = p;
+            if (!more) for (Producer p : ps) if (builtAnywhere.contains(p.id) && built == null) built = p;
             if (built != null) {   // built but not making it: its own inputs are what's missing
                 r.covered.add(good);
                 for (String in : built.inputs) if (!madeAny(made, in)) queue.add(in);
@@ -127,7 +138,7 @@ public class CAProjects {
             for (int i = 0; i < ps.size(); i++) {
                 Producer p = ps.get(i);
                 for (Host h : hosts) {
-                    if (h.size < p.minSize) continue;
+                    if (h.size < p.minSize || (more && h.has.contains(p.id))) continue;   // 0.3.11.9: one more, at a colony without one
                     Set<String> cl = claimed.get(h.id);
                     if (cl != null && (cl.contains(p.base) || (p.root != null && cl.contains(p.root)))) continue;
                     int rt = route(h, p);
@@ -167,7 +178,31 @@ public class CAProjects {
     static Result last;
     static boolean broken = false;
 
-    public static void reset() { STEPS.clear(); computedAt = -99f; project = null; last = null; monthly.clear(); left.clear(); other.clear(); orders.clear(); shunt = new LinkedHashMap<String, Integer>(); broken = false; }   // 0.3.9.6 (D6): broken too
+    public static void reset() { STEPS.clear(); computedAt = -99f; project = null; last = null; monthly.clear(); left.clear(); other.clear(); orders.clear(); shunt = new LinkedHashMap<String, Integer>(); shortBy.clear(); broken = false; }   // 0.3.9.6 (D6): broken too
+
+    /**
+     * 0.3.11.9: goods the running project takes this month that your colonies make but have none left over for (Theory of
+     * Toolbox's production less every demand and contract, which pays the project last), and by how much (at most its need).
+     * CAValue.deficits counts them as a shortage of that size, so producers, AI cores and improvements that add the good rank
+     * for it; update() plans one more producer for each.
+     */
+    static final Map<String, Integer> shortBy = new LinkedHashMap<String, Integer>();
+
+    public static Map<String, Integer> shortBy() { return shortBy; }
+
+    /** 0.3.11.9: a producer of the good being built or upgraded to at one of your colonies (one more is on its way). */
+    static boolean underWay(String good) {
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) for (Industry ind : m.getIndustries()) {
+            try {
+                String to = ind.isUpgrading() ? ind.getSpec().getUpgrade() : ind.isBuilding() ? ind.getId() : null;
+                if (to != null) for (Producer p : producersOf(good)) if (p.id.equals(to)) return true;
+            } catch (Throwable ignored) { }
+        }
+        return false;
+    }
+
+    /** Pure: how much of a month's need goes unmet, from Theory of Toolbox's spare (production less demand, the contract included). */
+    static int shortfall(int need, Integer spare) { return spare == null || spare >= 0 || need <= 0 ? 0 : Math.min(need, -spare); }
 
     /**
      * 0.2.39.0: what Ashes of the Domain's open production orders still need, by good: each order line's remaining units times
@@ -352,7 +387,7 @@ public class CAProjects {
 
     /** Daily: reads the running project and plans producers for the goods your colonies don't make. */
     public static void update() {
-        if (!on()) { STEPS.clear(); project = null; return; }
+        if (!on()) { STEPS.clear(); project = null; shortBy.clear(); return; }
         float now = CADay.now();
         if (CATime.fresh(computedAt, now, 1f)) return;   // 0.3.0.0 (A1 fix): the game's day is negative, so now - (-99) < 1 held every day and this never ran
         computedAt = now;
@@ -361,6 +396,14 @@ public class CAProjects {
         computing = true;
         try {
             boolean running = read();
+            shortBy.clear();
+            if (running) for (Map.Entry<String, Integer> e : monthly.entrySet()) {
+                int gap = shortfall(e.getValue() == null ? 0 : e.getValue(), CAContracts.spare(e.getKey()));
+                if (gap <= 0) continue;
+                shortBy.put(e.getKey(), gap);
+                if (CALog.once("projshort:" + project + ":" + e.getKey()))
+                    CALog.think(project + ": " + name(e.getKey()) + " is " + gap + " a month short. Your colonies use what they make, so none is left for the project.");
+            }
             // spending freely (CASurplus.rich): AotD's own goods get producers even with no project running, since Grand Wonders,
             // megastructure restoration, Bifrost gates and AotD production all take them from your colonies' exports
             boolean rich = CASurplus.rich(CAData.settings());
@@ -388,10 +431,12 @@ public class CAProjects {
             wanted.addAll(shunt.keySet());
             List<String> missing = new ArrayList<String>();
             for (String g : wanted) if (!madeAny(made, g)) missing.add(g);
+            List<String> shortGoods = new ArrayList<String>();
+            for (String g : shortBy.keySet()) if (madeAny(made, g) && !underWay(g)) shortGoods.add(g);   // 0.3.11.9: made, none left over, none on the way
             int ships = Math.max(0, yours.get("ships") == null ? 0 : yours.get("ships"));
             Set<String> built = new HashSet<String>();
             for (MarketAPI m : Misc.getPlayerMarkets(false)) for (Industry ind : m.getIndustries()) built.add(ind.getId());
-            last = plan(missing, hosts(), built, made, ships);
+            last = plan(missing, shortGoods, hosts(), built, made, ships);
             CASettings s = CAData.settings();
             for (Plan pl : last.plans) {
                 String forWhat = forWhat(pl.good);
@@ -466,7 +511,7 @@ public class CAProjects {
         for (Map.Entry<String, Integer> e : left.entrySet()) {
             String g = e.getKey();
             Integer y = yours.get(g), o = sector.get(g), mo = monthly.get(g);
-            boolean none = y == null || y <= 0;
+            boolean none = y == null || y <= 0 || shortBy.containsKey(g);   // 0.3.11.9: short (none left for the project) shows red too
             t.addPara("%s: %s to deliver" + (mo != null ? ", %s this month" : "%s") + ". You make %s a month, others %s", 3f,
                     none ? bad : hl, name(g), "" + e.getValue(), mo != null ? "" + mo : "", "" + (y == null ? 0 : y), "" + (o == null ? 0 : o));
         }

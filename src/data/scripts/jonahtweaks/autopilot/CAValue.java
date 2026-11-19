@@ -363,7 +363,22 @@ public final class CAValue {
         if (Global.getSettings().getModManager().isModEnabled(CAContracts.MOD)) withContracts(out, CAContracts.shortfalls(), more);
         // 0.3.10.6: what your Coronal Hypershunts are short of counts as a shortage too, until it's supplied
         if (Global.getSettings().getModManager().isModEnabled(CAHypershunt.MOD) && CAProjects.on()) withContracts(out, CAHypershunt.shortfalls(), more);
+        // 0.3.11.9: a running special project's shortfall counts at its size (up to the month's need), so producers, AI cores and
+        // improvements that add the good rank for it (a contract shortfall above counts as 1)
+        if (CAProjects.on()) withShortfall(out, CAProjects.shortBy(), more);
         return out;
+    }
+
+    /** Pure (0.3.11.9): each gap, less what builds under way add, as a shortage of at least that many units. */
+    static void withShortfall(Map<String, Integer> out, Map<String, Integer> gaps, Map<String, Integer> pendingAdded) {
+        if (gaps == null) return;
+        for (Map.Entry<String, Integer> e : gaps.entrySet()) {
+            Integer more = pendingAdded == null ? null : pendingAdded.get(e.getKey());
+            int need = (e.getValue() == null ? 0 : e.getValue()) - (more == null ? 0 : more);
+            if (need <= 0) continue;
+            Integer cur = out.get(e.getKey());
+            out.put(e.getKey(), Math.max(cur == null ? 0 : cur, need));
+        }
     }
 
     /** A good's shortage in a deficit map, 0 for none. */

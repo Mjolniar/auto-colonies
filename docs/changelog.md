@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.11.9 - 2026-11-18
+
+- Special project supply: A good the running black site project takes, which your colonies make but use up themselves, counts as a shortage of the project's monthly need (it counted as 1). Producers, AI cores and improvements that add it rank higher.
+- Special project supply: Such a good gets one more producer, planned at a colony that doesn't have one (another Enrichment Facility for Purified Rare Metal). It waits while one is being built.
+- Special project supply: The shortfall is logged once and the good shows red on the special projects page. Your own buildings are never taken down to free supply.
+
 ## 0.3.11.8 - 2026-11-18
 
 - Performance: Each building's supply is read once a frame while a colony is scored. It was read again for every good and every pick.
