@@ -338,6 +338,8 @@ public final class CALunaSync {
         bool("forge", "Forge may use up chips", "disableForgeVPC", true, "Needs Industrial Evolution.");
         bool("ship", "Courier shipping", "disableShipping", true, "Needs Industrial Evolution.");
         bool("stab", "Antimatter Stabilizers", "disableStabilizers", true, "Needs Emergent Threats IX Revival.");
+        bool("repa", "Reverse engineering", "disableRepa", true, "It sends weapons and fighters from your Storage to the hub's research. "
+                + "Needs Reverse Engineered Private Arsenal.");
 
         header("adv_expand", "New colonies");
         radio("expline", "Money for new colonies", "expandLine", CASettings.EXPAND_LINE_NAMES, "New colonies uses this on Ask first or Auto.");

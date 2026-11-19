@@ -148,6 +148,7 @@ ca_vpc,VPC chips,Boolean,true,,Needs Industrial Evolution.,,,Advanced
 ca_forge,Forge may use up chips,Boolean,true,,Needs Industrial Evolution.,,,Advanced
 ca_ship,Courier shipping,Boolean,true,,Needs Industrial Evolution.,,,Advanced
 ca_stab,Antimatter Stabilizers,Boolean,true,,Needs Emergent Threats IX Revival.,,,Advanced
+ca_repa,Reverse engineering,Boolean,true,,It sends weapons and fighters from your Storage to the hub's research. Needs Reverse Engineered Private Arsenal.,,,Advanced
 ,,,,,,,,
 ca_h_adv_expand,New colonies,Header,New colonies,,,,,Advanced
 ca_expline,Money for new colonies,Radio,Money ladder (Idle money and up),"Money ladder (Idle money and up), Over 5M, Over 25M, Over 50M",New colonies uses this on Ask first or Auto.,,,Advanced

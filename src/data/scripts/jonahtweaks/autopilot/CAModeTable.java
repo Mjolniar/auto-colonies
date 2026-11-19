@@ -57,7 +57,7 @@ public final class CAModeTable {
     static final String[] COLONY = {"useAICores", "coreRisk", "alphaMode", "researchCoresByValue", "adminHiring", "adminOptimal",
             "hazardPayMode", "freePortMode", "noStationPlan", "noPrune", "endgameNoReplace", "capitalNoRoom", "surplusTerraform",
             "noSurplusResearch", "measuredMode", "augmentMode", "hypershuntMode", "disableAmbassadors", "disableVPC", "disableForgeVPC",
-            "disableEdicts", "disableShipping", "disableSpecialties", "disableStabilizers", "disableDefenseFleets"};
+            "disableEdicts", "disableShipping", "disableSpecialties", "disableStabilizers", "disableDefenseFleets", "disableRepa"};
 
     static final String[] SAME = {"budgetAuto", "budgetPercentMode", "budgetPercent", "savingsShare", "budgetFixed", "projectCapFixed",
             "perProjectCap", "upkeepCapAuto", "upkeepShare", "newUpkeepCap", "reserve", "terraformShare", "minStability", "pauseOnLoss",

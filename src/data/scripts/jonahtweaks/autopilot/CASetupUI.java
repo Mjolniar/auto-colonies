@@ -109,6 +109,7 @@ public class CASetupUI {
         s.disableVPC = false;
         s.disableForgeVPC = false;
         s.disableShipping = false;
+        s.disableRepa = false;
         s.settlementMode = 2;   // Auto: founds RAT's settlement only once a site clears the income threshold
         s.objectiveMode = 0;    // Auto: comm relays, nav buoys and sensor arrays at stable locations (0.2.40.0)
         s.augmentMode = 0;
@@ -584,6 +585,7 @@ public class CASetupUI {
                 row(t, "Courier shipping", onOff(!s.disableShipping), on, "ship", true);
             }
             if (mod(CAPresets.IX)) row(t, "Antimatter Stabilizers", onOff(!s.disableStabilizers), on, "stab", true);
+            if (mod(CAOddisz.ARSENAL_MOD)) row(t, "Reverse engineering", onOff(!s.disableRepa), on, "repa", true);   // 0.3.11.5
         } else if ("adv_expand".equals(id)) {
             row(t, "Money for new colonies", CASettings.EXPAND_LINE_NAMES[clamp(s.expandLine, CASettings.EXPAND_LINE_NAMES.length)],
                     CASettings.EXPAND_LINE_NAMES[0], "expline", true);
@@ -931,6 +933,7 @@ public class CASetupUI {
         else if (k.equals("ship")) s.disableShipping = !s.disableShipping;
         else if (k.equals("spec")) s.disableSpecialties = !s.disableSpecialties;
         else if (k.equals("stab")) s.disableStabilizers = !s.disableStabilizers;
+        else if (k.equals("repa")) s.disableRepa = !s.disableRepa;
         else if (k.equals("defense")) s.disableDefenseFleets = !s.disableDefenseFleets;
         else if (k.equals("war")) s.warLevel = (CAWarPolicy.clamp(s.warLevel) + 1) % CAWarPolicy.LEVEL_NAMES.length;   // 0.3.0.0 (WS-E): War level
         else if (k.equals("warretake")) s.noWarRetake = !s.noWarRetake;

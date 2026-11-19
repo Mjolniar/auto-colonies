@@ -131,6 +131,7 @@ public class CAAuto {
         if (CASync.dormant()) return;   // 0.3.6.0 story mode: nothing else runs while the Autopilot is dormant
         CAPass.later(() -> { if (CASync.dormant()) CAPass.stop(); });   // 0.3.6.9: and when it went dormant before the queue got here
         CAStep.run("storage logistics", () -> CALogistics.daily(d, s, now));   // storage logistics: loads to the refit and sell hubs (0.2.39.0)
+        CAStep.run("reverse engineering feed", () -> CARepa.daily(d, s, now));   // 0.3.11.5: RePA research from your Storage, weekly
         CAStep.run("colony crisis step", () -> CACrisis.daily(d, s));   // inspection orders, and a log line when a colony crisis is picked
         CAStep.run("surplus investment step", () -> CASurplus.daily(s));   // the focus world for credits over the surplus line
         CAStep.run("capital step", () -> CACapital.daily(d, s));   // the capital: deliveries there, and its commerce build-up once colonies ramp up (0.2.42.0)

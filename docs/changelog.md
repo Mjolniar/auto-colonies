@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.11.5 - 2026-11-18
+
+- Reverse Engineered Private Arsenal: Once a week, one copy of each weapon in your colonies' Storage that the hub hasn't reverse-engineered goes into its Reverse Engineering Storage for research. Fighter wings go too at a Tier 2 or 3 hub.
+- Reverse Engineered Private Arsenal: Items at the hub's own colony move at once. Items at other colonies travel as a Storage logistics load with its fee and travel time. Your fleet's cargo is never touched.
+- Settings: Added Reverse engineering (Advanced, Extras), on by default.
+
 ## 0.3.11.4 - 2026-11-18
 
 - Nexerelin police raid: When the raid is the coming crisis and your best defended Auto colony can beat it, that colony keeps its free port and the other free ports close, so the raid goes there. A beaten raid ends the police crisis for good.

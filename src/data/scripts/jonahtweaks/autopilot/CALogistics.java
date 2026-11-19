@@ -30,6 +30,8 @@ import java.util.*;
 public class CALogistics {
     public static class Load {
         public String from, fromName, to, toName, why;
+        /** 0.3.11.5: the submarket it's delivered into (CARepa: RePA's Reverse Engineering Storage); null for Storage. */
+        public String sub;
         public CargoAPI cargo;
         public long sent;
         public float days;
@@ -347,6 +349,12 @@ public class CALogistics {
                 if (to == null) continue;   // no Storage anywhere yet: it waits in transit
                 CargoAPI st = Misc.getStorageCargo(to);
                 String what = describe(l);
+                // 0.3.11.5: a load for RePA research goes into the hub's Reverse Engineering Storage (what it can still research)
+                if (l.sub != null && to.getId().equals(l.to) && CARepa.deliver(to, l)) {
+                    it.remove();
+                    CALog.did("Storage logistics: " + what + " delivered to " + to.getName() + "'s Reverse Engineering Storage.");
+                    continue;
+                }
                 if (st.getMothballedShips() == null) st.initMothballedShips(Factions.PLAYER);
                 // 0.3.9.1 (K L8): each ship leaves the load as it arrives, so a failure later can't deliver it twice
                 for (FleetMemberAPI fm : l.cargo.getMothballedShips().getMembersListCopy()) {

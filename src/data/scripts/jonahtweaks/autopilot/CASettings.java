@@ -99,6 +99,8 @@ public class CASettings {
     public static final String[] POLICY_NAMES = {"Auto", "Don't touch"};
     // Industrial Evolution automation (stored inverted so older saves default to on)
     public boolean disableAmbassadors = false, disableVPC = false, disableForgeVPC = false, disableEdicts = false, disableShipping = false, disableSpecialties = false, disableStabilizers = false, disableDefenseFleets = false;
+    /** 0.3.11.5: off stops feeding RePA's Reverse Engineering Storage from your Storage (CARepa). */
+    public boolean disableRepa = false;
     // Random Assortment of Things settlement: 0 Advisor (so older saves load as Advisor), 1 Approve, 2 Auto, 3 Off
     public int settlementMode = 0;
     public float settlementMinIncome = 20000f;
