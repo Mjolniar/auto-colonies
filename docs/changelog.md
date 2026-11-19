@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.11.7 - 2026-11-18
+
+- Story mode: Added Station outfitting (Tier IV, 25 bandwidth, needs Auto Outfitting 0.5.71 or later). Auto Outfitting's optimizer fits your star fortresses and tier 4 stations, core and every module, with the weapons, fighter wings and hullmods you know. No built-in hullmods, no story points.
+- Station outfitting: The fit is put back each time the game fits the station again, after loads, rebuilds and upgrades. It's planned again when the station changes or you learn new weapons, wings or hullmods, one station a day at most.
+- Station outfitting: Each refit pays the base price of the weapons and wings it adds (the first one over the station's own fit, later ones over the last fit), plus the usual fee, never below the credit reserve.
+
 ## 0.3.11.6 - 2026-11-18
 
 - Station Augments: Axial Overclocking is picked only for the stations whose guns it turns faster (midline stations, read from Station Augments). It is never picked for high-tech, low-tech or tier 4 stations.

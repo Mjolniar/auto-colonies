@@ -165,6 +165,12 @@ public class CAData {
     public Set<String> surplusBuilt() { if (surplusBuilt == null) surplusBuilt = new HashSet<String>(); return surplusBuilt; }
     // an enabler hazard surplus terraforming added on the way to a deposit that needs it ("marketId:condition" -> the deposit),
     // and when: the plan doesn't clean it up until the deposit is in (or 540 days pass)
+    /** 0.3.11.7: market id -> the station fit last paid for there (CAStationFit.code: "w:id=n,f:id=n"). */
+    public Map<String, String> stationFits;
+    public Map<String, String> stationFits() { if (stationFits == null) stationFits = new HashMap<String, String>(); return stationFits; }
+    /** 0.3.11.7: market id -> the planned station fit, slot by slot ("key\nlayout", CAStationFit.layout), so a load rebuilds it without planning again. */
+    public Map<String, String> stationLayouts;
+    public Map<String, String> stationLayouts() { if (stationLayouts == null) stationLayouts = new HashMap<String, String>(); return stationLayouts; }
     public Map<String, String> enablers;
     public Map<String, Long> enablerAt;
     public Map<String, String> enablers() { if (enablers == null) enablers = new HashMap<String, String>(); return enablers; }

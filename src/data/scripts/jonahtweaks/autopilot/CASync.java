@@ -1264,6 +1264,7 @@ public class CASync {
         autarchAdmins();
         try { CARapidTerra.daily(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "rapid terraforming failed", t); }
         try { CARapidRepair.daily(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "rapid repairs failed", t); }   // 0.3.11.1
+        try { CAStationFit.daily(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station outfitting failed", t); }   // 0.3.11.7
         if (!has("buildout")) stopBuildouts();
     }
 

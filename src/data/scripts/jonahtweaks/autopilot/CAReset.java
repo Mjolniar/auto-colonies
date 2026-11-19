@@ -43,6 +43,7 @@ public class CAReset {
         failed += run("calibration", () -> CACalibrate.last = Float.NaN);
         failed += run("storage logistics", () -> { CALogistics.lastRun = Float.NaN; CALogistics.partsRun = Float.NaN; });   // 0.3.2.0: the weekly parts move too
         failed += run("reverse engineering feed", () -> CARepa.lastRun = Float.NaN);   // 0.3.11.5
+        failed += run("station outfitting", () -> CAStationFit.FITS.clear());   // 0.3.11.7
         failed += run("survival corruption share", () -> { CASurvival.shareReport = null; CASurvival.share = 1f; });   // 0.3.0.4
         failed += run("market model", () -> { CAMarket.invalidate(); CAMarket.cacheDay = -99f; CAMarket.lastWeek = Float.NaN; });
         failed += run("mod watch", () -> CAModWatch.reset());

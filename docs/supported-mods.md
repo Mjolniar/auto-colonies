@@ -26,7 +26,7 @@
 - [Vulpoids](https://fractalsoftworks.com/forum/index.php?topic=29929.0): Organ Farms and Biotech are upgraded when they pay.
 - [Yunru Industries, Slightly Better Tech-Mining, Yunru's Worlds](https://fractalsoftworks.com/forum/index.php?topic=21968.0): The Bazaar only goes at your [capital](how-it-builds.md#your-capital).
 - [United Aurora Federation](https://fractalsoftworks.com/forum/index.php?topic=12709.0): The Dimensional Nanoforge, Servosync Pump, Modular Purifier and Garrison Transmitter are placed by effect. Where an administrator with Galactic Historian governs an Auto colony (Sophia, or the Historian core in story mode), it restores the ruins when the average result pays for the price, the time and the Tech-Mining it removes.
-- [Auto Outfitting](https://github.com/Mjolniar/auto-outfitting): Big weapon orders go through AotD production orders.
+- [Auto Outfitting](https://github.com/Mjolniar/auto-outfitting): Big weapon orders go through AotD production orders. With the Station outfitting story package (Auto Outfitting 0.5.71 or later), it fits your star fortresses and tier 4 stations with the weapons you know, and you pay for the weapons it adds.
 - [Kadur Remnant](https://fractalsoftworks.com/forum/index.php?topic=35145.0): Kadur Majority Faith and Virus Bombed count in build values.
 - [JaydeePiracy](https://fractalsoftworks.com/forum/index.php?topic=36201.0): The Planetkiller Launch Site and item are left to you.
 - [Corrupt.Officials](https://fractalsoftworks.com/forum/index.php?topic=35125.0): Extra income above the cutoff counts at the share the colony keeps.
