@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.12.0 - 2026-11-18
+
+- Stable locations: With Vaults of Knowledge's Janus Device analysis researched, a system with your colonies and no free stable location gets a new one when the comm relay, nav buoy or sensor array it makes room for would pay for both.
+- Stable locations: Same rules as VoK's "Create a stable location": once per system, only while it has 3 or fewer. 500 fuel, 100 Electronic Components and 150 Domain-grade Machinery at base price, plus the fee and a 10-day crew from the system's biggest colony. One crew a day.
+- Stable locations: Follows the Stable locations setting (Auto, Recommend only, Off). Each one is logged, and the objective is built on it the usual way.
+
 ## 0.3.11.9 - 2026-11-18
 
 - Special project supply: A good the running black site project takes, which your colonies make but use up themselves, counts as a shortage of the project's monthly need (it counted as 1). Producers, AI cores and improvements that add it rank higher.

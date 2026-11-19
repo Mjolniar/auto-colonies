@@ -41,6 +41,7 @@ Every option is scored by what it earns a month minus its costs, and Approve and
 ## Stable locations
 
 - A crew builds one Comm relay (+1 stability), Nav buoy (+2 burn) and Sensor array (+400 sensor range) in each system with your Auto colonies. Stable locations (Settings, Advanced, Extras) can also be Recommend only or Off.
+- With Vaults of Knowledge's Janus Device analysis researched, a system with no free spot gets a new stable location when the objective it makes room for would pay. It's the same as the colony dialog's "Create a stable location": once per system, while it has 3 or fewer, for 500 fuel, 100 Electronic Components and 150 Domain-grade Machinery bought at base price, plus the fee and a 10-day crew.
 
 ## Your capital
 

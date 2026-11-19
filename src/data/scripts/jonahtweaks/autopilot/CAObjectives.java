@@ -49,6 +49,29 @@ public class CAObjectives {
     static final int[] UPGRADE_QTY = {50, 1000, 200};
     static final String[] RECEIVER_RES = {"refined_metal", "domain_heavy_machinery"};
     static final int[] RECEIVER_QTY = {1000, 100};
+    /**
+     * 0.3.12.0: a new stable location, Vaults of Knowledge's "Create a stable location" (AoTDAddStablePointScript): once
+     * aotd_tech_janus_device_analysis is researched, once per system ever ($aotd_stable_point_janus), while the system has 3
+     * or fewer, for 500 fuel, 100 Electronic Components and 150 Domain-grade Machinery (bought at base price here, as every
+     * crew's materials), made by the game's StarSystemGenerator.addStableLocations(system, 1) when the crew arrives.
+     */
+    static final String NEW_STABLE = "new_stable_location", JANUS_TECH = "aotd_tech_janus_device_analysis", JANUS_MEM = "$aotd_stable_point_janus";
+    static final String[] STABLE_RES = {"fuel", "advanced_components", "domain_heavy_machinery"};
+    static final int[] STABLE_QTY = {500, 100, 150};
+
+    /** Pure (0.3.12.0): VoK lets a system get one more stable location: not done there before, and 3 or fewer now. */
+    static boolean roomForStable(boolean doneBefore, int stableNow) { return !doneBefore && stableNow <= 3; }
+
+    static boolean janusReady() {
+        try { return Global.getSettings().getModManager().isModEnabled(CAHypershunt.MOD) && CAHypershunt.researched(JANUS_TECH); }
+        catch (Throwable t) { return false; }
+    }
+
+    static boolean canAddStable(StarSystemAPI sys) {
+        try { return roomForStable(sys.getMemoryWithoutUpdate().is(JANUS_MEM, true), sys.getEntitiesWithTag(STABLE).size()); }
+        catch (Throwable t) { return false; }
+    }
+
     /** A receiver's +2 industry slots, per colony: what Autopilot counts an extra industry slot at elsewhere (CAOmega). */
     static final float RECEIVER_PER_COLONY = 40000f;
 
@@ -191,6 +214,8 @@ public class CAObjectives {
         boolean tme = Global.getSettings().getModManager().isModEnabled(TME), beta = spareBeta(s);
         float makeshiftCost = materials(MAKESHIFT_RES, MAKESHIFT_QTY), upgradeCost = materials(UPGRADE_RES, UPGRADE_QTY) + 7500f;   // a Beta core at what research counts it
         float receiverCost = materials(RECEIVER_RES, RECEIVER_QTY);
+        boolean janus = janusReady();   // 0.3.12.0
+        float stableCost = janus ? materials(STABLE_RES, STABLE_QTY) : 0f;
         Plan best = null;
         for (StarSystemAPI sys : systems) {
             Sys x = read(sys, d);
@@ -220,6 +245,21 @@ public class CAObjectives {
                     if (pays(p.monthly, p.cost + 7500f) && (best == null || p.monthly > best.monthly)) best = p;
                 }
             }
+            // 0.3.12.0: no free spot left, and an objective you don't have there would pay: a new stable location for it first
+            // (its worth is that objective's; it pays back the location and the objective's materials together)
+            if (janus && open <= 0 && !x.pending.contains(NEW_STABLE) && canAddStable(sys)) {
+                String k0 = null;
+                float v = 0f;
+                for (String k : KINDS) {
+                    if (x.mine.containsKey(k) || x.pending.contains(k)) continue;
+                    float w = worth(perColony(k, false), x.weights);
+                    if (w > v) { v = w; k0 = k; }
+                }
+                if (k0 != null) {
+                    Plan p = plan(x, null, NEW_STABLE, "stable location", "room for a " + label(k0, false) + ": " + effect(k0, false), v, stableCost, CREW_DAYS);
+                    if (pays(p.monthly, p.cost + makeshiftCost) && (best == null || p.monthly > best.monthly)) best = p;
+                }
+            }
         }
         return best;
     }
@@ -244,7 +284,8 @@ public class CAObjectives {
         String where = p.at.sys.getBaseName();
         if (s.objectiveMode == 1) {
             if (CALog.once("objective:" + p.at.sys.getId() + ":" + p.type))
-                CALog.advise(where + ": Recommends a " + p.what + " at a stable location (" + p.why + "; " + Misc.getDGSCredits(p.cost) + " in materials). Set Stable locations to Auto, under Settings, to build it.");
+                CALog.advise(where + ": Recommends a " + (NEW_STABLE.equals(p.type) ? "new stable location" : p.what + " at a stable location") + " (" + p.why + "; "
+                        + Misc.getDGSCredits(p.cost) + " in materials). Set Stable locations to Auto, under Settings, to build it.");
             return;
         }
         float fee = CABudget.fee(s, BASE_FEE);
@@ -298,7 +339,7 @@ public class CAObjectives {
         }
         CABudget.pay(s, null, p.cost, fee, 0f);
         Order o = new Order();
-        o.system = p.at.sys.getId(); o.entityId = p.spot.getId(); o.type = p.type; o.what = p.what; o.why = p.why;
+        o.system = p.at.sys.getId(); o.entityId = p.spot == null ? null : p.spot.getId(); o.type = p.type; o.what = p.what; o.why = p.why;   // 0.3.12.0: no spot for a new stable location
         o.paid = p.cost; o.core = p.core; o.coreFrom = from;
         o.sent = Global.getSector().getClock().getTimestamp(); o.days = p.days;
         d.objectiveOrders().add(o);
@@ -357,9 +398,10 @@ public class CAObjectives {
             Order o = it.next();
             if (Global.getSector().getClock().getElapsedDaysSince(o.sent) < o.days) continue;
             it.remove();
-            SectorEntityToken e = Global.getSector().getEntityById(o.entityId);
             StarSystemAPI sys = system(o.system);
             String where = sys != null ? sys.getBaseName() : "A system";
+            if (NEW_STABLE.equals(o.type)) { newStable(o, sys, where); continue; }   // 0.3.12.0
+            SectorEntityToken e = Global.getSector().getEntityById(o.entityId);
             boolean upgrade = !o.type.endsWith("_makeshift") && !RECEIVER.equals(o.type);
             boolean ok = usable(e) && (upgrade ? e.hasTag(MAKESHIFT) && Factions.PLAYER.equals(e.getFaction().getId()) : e.hasTag(STABLE));
             if (!ok) {
@@ -375,6 +417,27 @@ public class CAObjectives {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "building " + o.type + " failed", t);
                 CALog.did(where + ": The " + o.what + " could not be built. Materials returned.");
             }
+        }
+    }
+
+    /**
+     * 0.3.12.0: a crew for a new stable location arrived: the game adds one (as VoK's dialog does) and the system is marked done
+     * the way VoK marks it. If VoK no longer allows it there, the materials are returned.
+     */
+    static void newStable(Order o, StarSystemAPI sys, String where) {
+        if (sys == null || !canAddStable(sys)) {
+            giveBack(o);
+            CALog.did(where + ": The stable location was not made. The system has no room for one now. Materials returned.");
+            return;
+        }
+        try {
+            com.fs.starfarer.api.impl.campaign.procgen.StarSystemGenerator.addStableLocations(sys, 1);
+            sys.getMemoryWithoutUpdate().set(JANUS_MEM, true);
+            CALog.did(where + ": Made a new stable location (" + o.why + ").");
+        } catch (Throwable t) {
+            giveBack(o);
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "making a stable location failed", t);
+            CALog.did(where + ": The stable location could not be made. Materials returned.");
         }
     }
 
