@@ -140,6 +140,7 @@ public class CASyncCatalog {
         add("rapidResearch", 6, "aotd_vok", null);   // 0.3.9.9: Vaults of Knowledge research in 2/3 of the time (CARapidResearch)
         add("uafHistorian", 6, "uaf", null);   // 0.3.10.7: hires UAF's Sophia (CARuins.hire)
         add("historianCore", 6, "uaf", "autarchAdmin");   // 0.3.10.7: the Historian core (CAHistorian)
+        add("rapidRepair", 6, null, null);   // 0.3.11.1: disruption runs down twice as fast (CARapidRepair)
     }
 
     /** The Story perks group: past the game's rules, so they run only in story mode. */
@@ -207,7 +208,8 @@ public class CASyncCatalog {
         pack("autarch", 3, 10, "staff", "Autarch administrator", "autarchAdmin");
         pack("uafHire", 2, 10, "staff", "Historian hire", "uafHistorian");   // 0.3.10.7: Tier III, shown only with United Aurora Federation
         pack("historian", 3, 20, "autarch", "Historian core", "historianCore");   // 0.3.10.7: Tier IV, United Aurora Federation
-        pack("fastResearch", 3, 20, null, "Rapid research", "rapidResearch");   // 0.3.9.9: Tier IV, shown only with Vaults of Knowledge   // 0.3.7.9; 0.3.8.0: Tier IV, its cost is the first colony
+        pack("fastResearch", 3, 20, null, "Rapid research", "rapidResearch");
+        pack("repairs", 3, 30, null, "Rapid repairs", "rapidRepair");   // 0.3.11.1: Tier IV   // 0.3.9.9: Tier IV, shown only with Vaults of Knowledge   // 0.3.7.9; 0.3.8.0: Tier IV, its cost is the first colony
         desc("advice", "It suggests what to build next at your colonies.");
         desc("oversight", "It proposes builds at one colony and waits for your OK.");
         desc("upkeep", "It cuts unprofitable industry, keeps up orbital stations, sets colony policy and preps for crises.");
@@ -227,6 +229,7 @@ public class CASyncCatalog {
         desc("parallel", "It runs up to three builds per colony at once.");
         numberDescs();
         desc("terraforming", "It halves terraforming time at managed colonies.");
+        desc("repairs", "Disrupted buildings at your colonies recover in half the time.");
         desc("uafHire", "It hires the UAF's Sophia, who has Galactic Historian, once you're Friendly with the UAF and have ruins to restore. She costs the usual hiring price.");
         desc("historian", "One Autarch AI Core variant with Galactic Historian governs an Auto colony with ruins, so they get restored.");
         desc("fastResearch", "It makes Vaults of Knowledge research take half as long, and each project needs about 2/3 of its databanks (at least one). AI cores and colony items cost the same.");

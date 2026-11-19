@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.11.1 - 2026-11-18
+
+- Story mode: Added Rapid repairs (Tier IV, 30 bandwidth). Disrupted buildings at your colonies recover in half the time, from raids, bombardment or anything else. Other factions' colonies are not affected.
+
 ## 0.3.11.0 - 2026-11-18
 
 - What We Left Behind: The Aegis Missile System is a defense structure in the build ranking once you know its blueprint, at planet and station colonies alike. It counts ground defense x2, missile strikes on hostile fleets in the system valued like a Patrol HQ, and its supplies, hand weapons and marines.

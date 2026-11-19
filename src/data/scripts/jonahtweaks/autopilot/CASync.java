@@ -1263,6 +1263,7 @@ public class CASync {
         enforceModes();
         autarchAdmins();
         try { CARapidTerra.daily(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "rapid terraforming failed", t); }
+        try { CARapidRepair.daily(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "rapid repairs failed", t); }   // 0.3.11.1
         if (!has("buildout")) stopBuildouts();
     }
 
