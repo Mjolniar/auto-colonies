@@ -13,6 +13,7 @@
 
 - Crisis progress is priced at about 640 credits a month per point of monthly progress, charged to AI cores (Hegemony, Pathers) and Fuel Production (Diktat) and credited to Patrol HQ, Military Base and High Command.
 - When the next crisis is picked (meter at 500), its target is planned as Security, a Pather target sheds its AI cores and free ports the crisis counts are closed.
+- For Nexerelin's police raid, if your best defended Auto colony can beat it, that colony keeps its free port and the others close, so the raid goes there. Beating the raid ends the police crisis for good.
 - With Patrol kills count for crises (Advanced, War, on by default), kills by Auto colony patrols and stations in battles without your fleet count toward the colony crisis and Tri-Tachyon commerce raiding like yours.
 
 ## Enforcer patrols

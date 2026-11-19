@@ -50,6 +50,8 @@ public class CAPolicies {
     static final float FREE_PORT_REOPEN_DAYS = CATuning.FREE_PORT_REOPEN_DAYS;
     /** 0.3.0.0 (B5): CAMark key for when a closed port's reasons to open began holding, by market id. */
     static final String PORT_OK = "fpok:";
+    /** 0.3.11.4: CALog.once key prefix for the police raid target line, by market id. */
+    static final String BAIT = "policebait:";
     /** The hazard pay budget from the last hazardPlan, for the log's reasons. */
     static float lastCap = 0f;
     /** 0.3.0.0 (C3): the share of colony net that budget was (the setting, or the money tier's when the Growth rung raises it). */
@@ -160,6 +162,11 @@ public class CAPolicies {
             if (s.hazardPayMode == 0) hpWant = hazardPlan(auto, s, emergency, growth);
             hpPlanned = true;
         } catch (Throwable t) { CAStep.warn("colony policy step", "hazard pay plan failed", t); }   // 0.3.0.0: a failed plan never skips the free-port checks
+        // 0.3.11.4: a coming Nexerelin police raid: the best defended colony that can beat it keeps its free port, the rest close
+        MarketAPI bait = null;
+        try { if (s.freePortMode == 0 && !CALowProfile.on()) bait = CACrisis.policeBait(auto); }
+        catch (Throwable t) { CAStep.warn("colony policy step", "police target pick failed", t); }
+        CALog.forgetAll(BAIT, bait == null ? null : BAIT + bait.getId());   // said once per raid and target
         for (MarketAPI m : auto) {
             try {   // 0.3.0.0: one colony's failure never blocks the urgent free port close at the others
                 if (CAHypershunt.is(m)) continue;   // fixed at size 2 with no market to open, so neither policy helps
@@ -201,6 +208,10 @@ public class CAPolicies {
                 if (s.freePortMode == 0) {
                     boolean on = m.isFreePort();
                     boolean luddic = m.hasCondition("luddic_majority");
+                    // 0.3.11.4: the police raid's chosen target: the raid and the threat it brings are why its port stays open, so
+                    // neither closes it (its profile is the colony's own); every other rule still can
+                    boolean isBait = m == bait;
+                    if (isBait) { threat = false; prof = c.profile; }
                     // AotD's Underworld only works on a free port (it still costs upkeep without one), so it keeps the port open
                     boolean profileFits = m.hasIndustry("aotd_underworld") || prof == CAData.Profile.INCOME || prof == CAData.Profile.GROWTH || prof == CAData.Profile.BALANCED || prof == CAData.Profile.SELF;
                     // free port costs up to 3 stability (FreeMarket's penalty grows to that over a year); 0.3.0.0: opening one also asks
@@ -210,7 +221,7 @@ public class CAPolicies {
                     float floorHere = Math.max(d.settings.minStability, CARogue.stabilityFloor(m));
                     boolean stableEnough = stab - margin >= floorHere + CATuning.FREE_PORT_STABILITY_MARGIN && (on || CAStability.canLose(m, -margin, null));
                     boolean shield = CAMods.shieldWantsClosedPort(m);   // Planetary Shield: Access Control keeps Pathers out only with the port closed
-                    boolean police = CACrisis.policeComing() && CACrisis.policeScore(m) > 0;   // Nexerelin's police crisis is next: a closed port isn't a target
+                    boolean police = !isBait && CACrisis.policeComing() && CACrisis.policeScore(m) > 0;   // Nexerelin's police crisis is next: a closed port isn't a target
                     boolean low = CALowProfile.on();   // Low profile: a free port draws Nexerelin's police (0.2.43.0)
                     boolean want = profileFits && stableEnough && !luddic && !threat && !punitive && !emergency && !shield && !police && !low;
                     String why = low ? "low profile" : police ? "Nexerelin's police raid on free ports is the next colony crisis" : punitive ? "punitive expedition under way" : threat ? "threat is high" : luddic ? "Luddic majority" : !stableEnough ? "stability too low" : emergency ? "net income is negative" : shield ? "the planetary shield keeps Pather cells out only while the port is closed" : !profileFits ? "profile is " + prof.label : "";
@@ -223,6 +234,10 @@ public class CAPolicies {
                         else ready = held(CAMark.since(k, now), now, FREE_PORT_REOPEN_DAYS);
                     }
                     float sinceChange = c.lastFreePort == 0L ? Float.MAX_VALUE : Global.getSector().getClock().getElapsedDaysSince(c.lastFreePort);   // 0 is never
+                    if (isBait && on && want && CALog.once(BAIT + m.getId()))
+                        CALog.did(m.getName() + ": Free port kept open, so Nexerelin's police raid comes here. Its defenses (about "
+                                + Math.round(CAItems.defenseFP(m)) + " fleet points) can beat it, and a beaten raid ends that crisis for good. "
+                                + "The other free ports close until it's over.", true);
                     if (portChanges(on, want, urgentOff, ready, sinceChange, siege)) {
                         if (want) CAMark.clear(PORT_OK + m.getId());
                         m.setFreePort(want);

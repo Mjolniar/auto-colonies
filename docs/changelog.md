@@ -1,5 +1,17 @@
 # Patch notes
 
+## 0.3.11.4 - 2026-11-18
+
+- Nexerelin police raid: When the raid is the coming crisis and your best defended Auto colony can beat it, that colony keeps its free port and the other free ports close, so the raid goes there. A beaten raid ends the police crisis for good.
+- Station Augments: Combat counts x4 under threat at the capital and x2 at other colonies. Augments only change fights you are in.
+- Station Augments: Station Repair Unit and Axial Overclocking on midline stations count for more.
+- Upkeep: The Patrol HQ is charged at size 3, as the game does. Its stored upkeep correction is cleared once.
+- Military Base: Counts its +1 stability, crew and marines. High Command counts its crew and marines, and the Patrol HQ its crew.
+- Orbital Works: Counts +20% ship quality only while no other colony of yours has one, and no extra ship output.
+- Spaceport: Counts its crew, and the Megaport's.
+- Cryorevival: Its growth bonus falls with the distance to the nearest cryosleeper and halves while organics are short. It needs 10 organics.
+- Heavy machinery: Aquaculture needs the colony's size in heavy machinery, and Refining and Fuel Production need size - 2.
+
 ## 0.3.11.3 - 2026-11-18
 
 - Endgame economy: Builds a tier 4 station at one Auto colony at a time once its tier 3 station works, only while its system is calm: no siege, no raid on its way, not the coming crisis's target, threat not high, no hostile fleets there. Paid from surplus credits with the fee, never below the credit reserve.

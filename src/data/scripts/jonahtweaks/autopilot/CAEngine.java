@@ -6,6 +6,7 @@ import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.econ.MarketConditionAPI;
 import com.fs.starfarer.api.impl.campaign.econ.ResourceDepositsCondition;
+import com.fs.starfarer.api.impl.campaign.econ.impl.Cryorevival;
 import com.fs.starfarer.api.loading.IndustrySpecAPI;
 import com.fs.starfarer.api.util.Misc;
 
@@ -822,10 +823,11 @@ public class CAEngine {
      * Pure (0.3.11.2): the colony size the game charges a building's upkeep at. Most use the colony's size; these use a fixed
      * one (their own apply): orbital stations 3, battlestations 5, star fortresses 7 (every line), Planetary
      * Shield 5, Cryosanctum 6, and Tech-Mining the smaller of the colony's size and the ruins' tier.
+     * 0.3.11.4: Patrol HQ 3 (MilitaryBase.apply); Military Base and High Command use the colony's size.
      */
     static int upkeepSize(String id, int size, int ruins) {
         if (id == null) return size;
-        if (id.startsWith("orbitalstation")) return 3;
+        if (id.startsWith("orbitalstation") || id.equals("patrolhq")) return 3;
         if (id.startsWith("battlestation") || id.equals("planetaryshield")) return 5;
         if (id.startsWith("starfortress")) return 7;
         if (id.equals("cryosanctum")) return 6;
@@ -994,7 +996,8 @@ public class CAEngine {
         boolean habitable = m.hasCondition("habitable");
         if (id.equals("farming") || id.equals("aquaculture")) {
             int food = deposits(m, "farming", p, deficit);
-            demand(p, "heavy_machinery", s - 3 + CAIndexMods.eutrophicMachinery(m), deficit);   // 0.3.3.2: JaydeePiracy's Eutrophicated Biosphere +3
+            // 0.3.11.4: Aquaculture's heavy machinery is the colony's size, Farming's size - 3 (Farming.apply)
+            demand(p, "heavy_machinery", (id.equals("aquaculture") ? s : s - 3) + CAIndexMods.eutrophicMachinery(m), deficit);   // 0.3.3.2: JaydeePiracy's Eutrophicated Biosphere +3
             CAIndexMods.eutrophicFarm(m, food, p, deficit);   // 0.3.3.2: and its organics, half the food
         } else if (id.equals("mining")) {
             deposits(m, "mining", p, deficit);
@@ -1011,6 +1014,7 @@ public class CAEngine {
             p.lines.add("Salvage from the ruins: about " + Misc.getDGSCredits(v) + " per month in value");
         } else if (id.equals("refining")) {
             supply(p, "metals", s, deficit); supply(p, "rare_metals", s - 2, deficit);
+            demand(p, "heavy_machinery", s - 2, deficit);   // 0.3.11.4: as Refining.apply
             if (CAIndexMods.quarryLakes(m)) CAIndexMods.quarryRefining(p, deficit);   // 0.3.3.2: JaydeePiracy's Quarry Lakes: no ore needed
             else { demand(p, "ore", s + 2, deficit); demand(p, "rare_ore", s, deficit); }
         } else if (id.equals("lightindustry")) {
@@ -1024,26 +1028,36 @@ public class CAEngine {
             // a Heavy Industry pollutes only with a polluting item in it, and Autopilot never puts one in on a habitable
             // world (CAItems.wouldPollute, 0.2.36.2), so building one here doesn't pollute
         } else if (id.equals("orbitalworks")) {
-            p.fx[5] += 0.2f; p.fx[4] += 0.2f; p.lines.add("+20% ship quality and more ship output");
+            // 0.3.11.4: no more ships than Heavy Industry (HeavyIndustry.apply), and the faction's ship quality comes from one
+            // source, so a second Orbital Works adds none (counted only while no other colony of yours has or builds one)
+            if (otherOrbitalWorks(m)) p.lines.add("Ship quality: another of your colonies has an Orbital Works");
+            else { p.fx[5] += 0.2f; p.lines.add("+20% ship quality"); }
             parts(m, p, s - 2, ORBITAL_WORKS_QUALITY);   // 0.3.0.9: more Domain-grade Parts from the better production quality (0.98.5a)
         } else if (id.equals("fuelprod")) {
             // 0.3.3.2: JaydeePiracy's Domain-era Meshugatron: +3 fuel, +3 volatiles demand
             int mesh = CAIndexMods.meshugatronFuel(m);
             supply(p, "fuel", s - 2 + mesh, deficit); demand(p, "volatiles", s + CAIndexMods.meshugatronVolatiles(m), deficit);
+            demand(p, "heavy_machinery", s - 2, deficit);   // 0.3.11.4: as FuelProduction.apply
             if (mesh > 0) p.lines.add("Domain-era Meshugatron: fuel +" + mesh + ". Volatiles demand +" + CAIndexMods.meshugatronVolatiles(m));
             CACrisis.diktat(m, s - 2 + mesh, p);   // the Sindrian Diktat counts fuel output from 4
         } else if (id.equals("spaceport")) {
             p.fx[2] += 1.5f; p.fx[6] += 3f; p.lines.add("Removes the -100% no-spaceport penalty and adds +50% accessibility");
+            supply(p, "crew", s - 1, deficit);   // 0.3.11.4: as Spaceport.apply
         } else if (id.equals("megaport")) {
             p.fx[2] += 0.3f; p.fx[6] += 1f; p.lines.add("+30% accessibility over a Spaceport");
+            supply(p, "crew", s + 1, deficit);   // 0.3.11.4: a Megaport's crew is size + 1 (Spaceport.apply)
         } else if (id.equals("waystation")) {
             p.fx[2] += 0.1f; p.fx[6] += 0.5f; p.lines.add("+10% accessibility; stockpiles fuel and supplies");
         } else if (id.equals("patrolhq")) {
             p.fx[1] += 1f; p.fx[3] += 0.1f; p.fx[4] += 0.3f; p.lines.add("Patrol fleets; +10% ground defense; +1 stability"); CACrisis.military(id, p);
+            supply(p, "crew", s, deficit);   // 0.3.11.4: crew at the colony's size from all three (MilitaryBase.apply)
         } else if (id.equals("militarybase")) {
-            p.fx[3] += 0.1f; p.fx[4] += 0.4f; p.lines.add("Larger patrols, marines and crew; ground defense +20%"); CACrisis.military(id, p);
+            // 0.3.11.4: +1 stability over the Patrol HQ (2 in all), and marines at the colony's size
+            p.fx[1] += 1f; p.fx[3] += 0.1f; p.fx[4] += 0.4f; p.lines.add("Larger patrols; ground defense +20%; +1 stability"); CACrisis.military(id, p);
+            supply(p, "crew", s, deficit); supply(p, "marines", s, deficit);
         } else if (id.equals("highcommand")) {
             p.fx[3] += 0.1f; p.fx[4] += 0.5f; p.lines.add("Strongest patrols; ground defense +30%"); CACrisis.military(id, p);
+            supply(p, "crew", s, deficit); supply(p, "marines", s, deficit);
         } else if (id.equals("grounddefenses")) {
             p.fx[1] += 1f; p.fx[3] += 1f; p.lines.add("Ground defense x2; +1 stability");
         } else if (id.equals("heavybatteries")) {
@@ -1062,7 +1076,15 @@ public class CAEngine {
             demand(p, "supplies", 3, deficit);
             demand(p, "organics", 3, deficit);
         } else if (id.equals("cryorevival")) {
-            p.fx[6] += 4f; p.lines.add("Large growth bonus from the in-system cryosleeper");
+            // 0.3.11.4: the game's bonus falls with the distance to the nearest cryosleeper (1 - light-years / 10, at least
+            // 0.1) and is halved while its 10 organics are short (Cryorevival)
+            float near = 1f;
+            try { near = Cryorevival.getDistancePopulationMult(m.getLocationInHyperspace()); } catch (Throwable ignored) { }
+            Integer lack = deficit.get("organics");
+            boolean shortOrganics = lack != null && lack > 0;
+            p.fx[6] += cryoGrowth(near, shortOrganics);
+            demand(p, "organics", 10, deficit);
+            p.lines.add("Growth bonus from the nearest cryosleeper: " + Math.round(near * 100f) + "% at this distance" + (shortOrganics ? ", halved while organics are short" : ""));
         } else if (CAEstimates.has(id)) {
             float was = p.fx[0];
             CAEstimates.apply(m, id, p, deficit);
@@ -1082,6 +1104,22 @@ public class CAEngine {
                 p.outputEstimate += est;
             }
         }
+    }
+
+    /** Pure (0.3.11.4): Cryorevival's growth in the engine's units: 4 next to the cryosleeper, times its distance share, halved while organics are short. */
+    static float cryoGrowth(float near, boolean shortOrganics) { return 4f * Math.max(0f, Math.min(1f, near)) * (shortOrganics ? 0.5f : 1f); }
+
+    /** 0.3.11.4: another colony of yours has an Orbital Works, or one building or upgrading to it (ship quality comes from one source). */
+    static boolean otherOrbitalWorks(MarketAPI m) {
+        try {
+            for (MarketAPI o : Misc.getPlayerMarkets(false)) {
+                if (o == m || o.getId().equals(m.getId())) continue;
+                if (o.hasIndustry("orbitalworks")) return true;
+                Industry hi = o.getIndustry("heavyindustry");
+                if (hi != null && hi.isUpgrading() && hi.getSpec().getUpgrade() != null && "orbitalworks".equals(hi.getSpec().getUpgrade())) return true;
+            }
+        } catch (Throwable ignored) { }
+        return false;
     }
 
     /** 0.3.0.9: Orbital Works' production quality over Heavy Industry (HeavyIndustry.ORBITAL_WORKS_QUALITY_BONUS). */

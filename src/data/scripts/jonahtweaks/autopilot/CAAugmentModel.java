@@ -62,7 +62,7 @@ public class CAAugmentModel {
             return new Gain(0.05f + 0.15f * k.shielded / Math.max(1, k.modules), "Shields become damper fields, armor +40%, hull +10% on " + k.shielded + " shielded sections");
         }
         if (id.equals("SA_fluxShunt")) return new Gain(k.midline() ? 0.2f : 0.05f, "Shields dissipate hard flux at half rate, for a midline station whose shields never drop");
-        if (id.equals("SA_axialOverclocking")) return k.midline() ? new Gain(0.2f, "Midline guns turn three times as fast, so they can track targets. The station turns four times as fast")
+        if (id.equals("SA_axialOverclocking")) return k.midline() ? new Gain(0.3f,"Midline guns turn three times as fast, so they can track targets. The station turns four times as fast")
                 : new Gain(0.03f, "The station turns four times as fast");
         if (id.equals("SA_aiFighterUplink")) {
             if (c < 0) return new Gain(-1f, "Needs an AI core in the station");
@@ -83,7 +83,7 @@ public class CAAugmentModel {
         if (id.equals("SA_navRelay")) return new Gain(0.02f, "+20 nav rating for friendly ships in battle");
         if (id.equals("SA_highExplosive")) return new Gain(0.03f, "Only matters once the station dies: a far bigger explosion");
         if (id.equals("SA_efficiencyOverhaul")) return new Gain(0.03f, "The station repairs 50% faster between fights");   // 0.3.11.2: hull counts in auto-resolve
-        if (id.equals("SA_stationRepairUnit")) return new Gain(0.03f, "Disruption ends twice as fast, so the station is back sooner after a raid");
+        if (id.equals("SA_stationRepairUnit")) return new Gain(0.08f,"Disruption ends twice as fast, so the station is back sooner after a raid");
         if (id.equals("SA_highResSensors")) return new Gain(0f, "Sight range in battle, sensor range for your fleets nearby");
         if (id.equals("SA_commsCenter")) return new Gain(0f, "Command points don't matter when the station defends itself");
         if (id.equals("SA_logisticsDrones")) return new Gain(0f, "Combat readiness for your fleets near the station. The station's own is unchanged");
@@ -97,10 +97,22 @@ public class CAAugmentModel {
 
     static String coreName(int c) { return c == 0 ? "Alpha" : c == 1 ? "Beta" : "Gamma"; }
 
+    /**
+     * 0.3.11.4: away from the capital combat counts this many times while threatened. Station Augments adds its fight bonus
+     * after the game totals each side's strength, so augments only decide fights you are in, which are mostly at the capital.
+     */
+    static final float THREAT_AWAY = 2f;
+
+    /** Pure (0.3.11.4): how many times combat counts: 1 when calm, THREAT at the capital, THREAT_AWAY elsewhere. */
+    public static float threatMult(boolean threatened, boolean capital) { return !threatened ? 1f : capital ? THREAT : THREAT_AWAY; }
+
     /** The engine's fleet effect of a gain on a station of this tier, times THREAT while threatened. */
-    public static float fleetEffect(Gain g, int tier, boolean threatened) {
+    public static float fleetEffect(Gain g, int tier, boolean threatened) { return fleetEffect(g, tier, threatened ? THREAT : 1f); }
+
+    /** 0.3.11.4: the fleet effect times mult (threatMult). */
+    public static float fleetEffect(Gain g, int tier, float mult) {
         float fx = g.fx + Math.max(0f, g.share) * STATION_FX[Math.max(0, Math.min(4, tier))];
-        return threatened ? fx * THREAT : fx;
+        return fx * mult;
     }
 
     /** What an AI core in a fighter-carrying station adds through AI Fighter Uplink, as a fleet effect (for CAItems). */

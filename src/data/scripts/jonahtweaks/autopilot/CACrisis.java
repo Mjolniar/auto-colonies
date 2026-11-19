@@ -47,7 +47,7 @@ import java.util.*;
  * colony the coming crisis is likely to hit plans with Security (CAThreat), since an expedition that meets in-system
  * defenses about 1.34 times its strength while you're away aborts, which ends most crises for good; a coming Pather
  * attack also pulls cores from its target until its cell can dissolve, and a coming Nexerelin police raid closes free
- * ports. Deals, fights and memberships stay yours; the Crises page says what each one takes. Nothing here skips the
+ * ports (0.3.11.4: all but the best defended one when it can beat the raid, so the raid goes there; policeBait). Deals, fights and memberships stay yours; the Crises page says what each one takes. Nothing here skips the
  * game's own rules (no avert helpers or flags).
  */
 public class CACrisis {
@@ -354,6 +354,10 @@ public class CACrisis {
             if (r == null) return targets;
             MarketAPI m = marketOf(r.custom);
             if (m != null) { if (m.isPlayerOwned()) targets.add(m); return targets; }
+            if (isPolice(r.factor)) {   // 0.3.11.4: the colony that keeps its free port is the only one the raid can pick
+                MarketAPI bait = policeBait(CAItems.autoMarkets());
+                if (bait != null) { targets.add(bait); return targets; }
+            }
             StarSystemAPI best = null;
             float top = 0f;
             for (StarSystemAPI sys : Misc.getPlayerSystems(false)) {
@@ -369,6 +373,33 @@ public class CACrisis {
     public static boolean policeComing() {
         HostileActivityEventIntel.HAERandomEventData r = pending();
         return r != null && isPolice(r.factor);
+    }
+
+    /** 0.3.11.4: Nexerelin's police raid group in fleet points, estimated: one size-8 fleet and pickets of 5, 4, 3 and 3, quality ships. */
+    static final float POLICE_FP = 400f;
+
+    /** Pure (0.3.11.4): defenses that beat the police raid by the inspection margin (fixed, so the target's rising threat doesn't drop it). */
+    static boolean baitable(float defenseFP) { return defenseFP >= CAItems.DEFENSE_MARGIN * POLICE_FP; }
+
+    /**
+     * 0.3.11.4: while Nexerelin's police raid is the coming crisis, the one Auto colony that keeps its free port so the raid
+     * comes to it: the best defended one whose port is open and draws the police (policeScore), with defenses that beat
+     * the raid (baitable). The raid picks only among open ports (PoliceHostileActivityFactor.pickTargetMarket), and a beaten
+     * raid ends the police crisis for good. Null when none can take it: then every port the police would pick closes, as before.
+     */
+    public static MarketAPI policeBait(List<MarketAPI> auto) {
+        if (auto == null || !policeComing()) return null;
+        MarketAPI best = null;
+        float top = 0f;
+        for (MarketAPI m : auto) {
+            try {
+                if (!m.isPlayerOwned() || !m.isFreePort() || m.getStarSystem() == null || CAHypershunt.is(m)) continue;
+                if (CAData.get().colony(m.getId()).mode != CAData.Mode.AUTO || policeScore(m) <= 0) continue;
+                float fp = CAItems.defenseFP(m);
+                if (baitable(fp) && fp > top) { best = m; top = fp; }
+            } catch (Throwable ignored) { }
+        }
+        return best;
     }
 
     /** 0.3.10.5: Remnant Retribution's and Adversary's crises, by class name (no import, so neither mod is needed). */

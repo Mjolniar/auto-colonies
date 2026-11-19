@@ -32,7 +32,8 @@ import java.util.*;
  * (CAStationKit): fighter augments by its share of fighters, the shield augments by its shields, AI Fighter Uplink and
  * Warmind Refit by its AI core; ones that work against an AI-run station (Macro Thrusters, Backline Deployment, Safety
  * Shunt, Support Outfit) are never picked. While a colony plans with Security (its threat is high, or that's its goal),
- * or a raid or blockade is on its way (CASiege), combat counts CAAugmentModel.THREAT times as much, so the combat loadout
+ * or a raid or blockade is on its way (CASiege), combat counts CAAugmentModel.THREAT times as much at the capital and
+ * THREAT_AWAY times elsewhere (0.3.11.4: augments only decide fights you are in), so the combat loadout
  * takes the AP from output augments before the station is engaged; when the threat drops, the output ones come back.
  * Nothing changes while the station is in a battle. A change of plan profile re-plans at once.
  * Only called when Station Augments is enabled (check CAAugments.MOD first; the constant is inlined, so it doesn't load this class).
@@ -193,14 +194,19 @@ public class CAAugments {
         float extra = 0f;
         int combat = rating(a, "combatgood") - rating(a, "combatbad");
         boolean threatened = profile == CAData.Profile.SECURITY;
+        // 0.3.11.4: x4 at the capital, x2 elsewhere (CAAugmentModel.threatMult)
+        boolean capital = false;
+        try { capital = CACapital.is(m); } catch (Throwable ignored) { }
+        float tm = CAAugmentModel.threatMult(threatened, capital);
+        String counts = ". Combat counts x" + Math.round(tm) + " while the colony is threatened";
         // combat from what the augment really does on this station (CAAugmentModel); the mod's own rating only for augments it doesn't know
         CAAugmentModel.Gain g = OWN_LOGIC.contains(id) ? null : CAAugmentModel.gain(id, ctx.kit, ctx.core, ctx.patrols, ctx.dustkeepersHostile);
         if (g != null) {
             if (g.share < 0f) return null;
             combat = 0;
-            float fx = CAAugmentModel.fleetEffect(g, ctx.kit.tier, threatened);
+            float fx = CAAugmentModel.fleetEffect(g, ctx.kit.tier, tm);
             p.fx[4] += fx;
-            p.lines.add(g.line + (fx > 0f && threatened ? ". Combat counts x4 while the colony is threatened" : ""));
+            p.lines.add(g.line + (fx > 0f && threatened ? counts : ""));
         }
         if (id.equals("SA_commsCenter")) { p.fx[2] += 0.1f; p.lines.add("+10% accessibility"); }
         else if (id.equals("SA_logisticsDrones")) { p.fx[2] += 0.1f; p.lines.add("+10% accessibility. Up to +15% combat readiness for your fleets near the station"); }
@@ -234,7 +240,7 @@ public class CAAugments {
             if (!LuddicMajority.matchesBonusConditions(m)) return null;   // without an active Luddic majority it's only a drawback
             // 0.3.11.2: up to four Sacred Protector fleets (50-60 FP each), deleted when it's removed: valued like a Patrol HQ's
             // patrols and weighted as combat under threat, so the station keeps it then (it counted 0.1 and was swapped out)
-            p.fx[0] += 0.4f * upkeep; p.fx[4] += 0.3f * (threatened ? THREAT_COMBAT : 1f);
+            p.fx[0] += 0.4f * upkeep; p.fx[4] += 0.3f * tm;
             p.lines.add("Luddic majority: station upkeep -40% (about " + Misc.getDGSCredits(0.4f * upkeep) + " per month), defense flotillas");
         }
         else if (id.equals(CONVERSION)) {
@@ -248,9 +254,9 @@ public class CAAugments {
             p.lines.add("Station hull -30%, flux capacity -30%, dissipation -20%");
         }
         if (combat != 0) {
-            p.fx[4] += combat * COMBAT * (threatened && combat > 0 ? THREAT_COMBAT : 1f);
+            p.fx[4] += combat * COMBAT * (combat > 0 ? tm : 1f);
             p.lines.add(combat > 0 ? "Stronger station in combat (Station Augments rates it " + combat + ")"
-                    + (threatened ? ". Counts x4 while the colony is threatened" : "") : "Weaker station in combat");
+                    + (threatened ? counts : "") : "Weaker station in combat");
         }
         float[] w = CAEngine.goalWeights(profile);
         float v = extra;

@@ -35,10 +35,16 @@ public class CACalibrate {
      */
     public static void migrate() {
         CAData d = CAData.get();
-        if (d.calVersion >= 2) return;   // 0.3.11.2: 2, so the factors measured against the old fixed-size upkeep go
-        d.calUp().clear();
-        d.calUpN().clear();
-        d.calVersion = 2;
+        if (d.calVersion < 2) {   // 0.3.11.2: 2, so the factors measured against the old fixed-size upkeep go
+            d.calUp().clear();
+            d.calUpN().clear();
+            d.calVersion = 2;
+        }
+        if (d.calVersion < 3) {   // 0.3.11.4: 3, the Patrol HQ's upkeep is now predicted at size 3, so its old factor goes
+            d.calUp().remove("patrolhq");
+            d.calUpN().remove("patrolhq");
+            d.calVersion = 3;
+        }
     }
 
     /** Weekly: reads every clean building at every colony. */
