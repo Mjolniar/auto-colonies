@@ -441,7 +441,29 @@ public class CAMods {
 
     // ---------------- engine hooks ----------------
 
-    public static boolean has(String id) { return vicHas(id) || roiderHas(id) || yunruHas(id) || CAOddisz.has(id) || CARatHub.has(id); }
+    public static boolean has(String id) { return vicHas(id) || roiderHas(id) || yunruHas(id) || CAOddisz.has(id) || CARatHub.has(id) || aegisHas(id); }
+
+    // ---------------- 0.3.11.0: What We Left Behind's Aegis Missile System ----------------
+
+    static final String WWLB = "niko_morePlanetaryConditions", AEGIS = "niko_MPC_aegisMissileSystem";
+
+    static boolean aegisHas(String id) { return AEGIS.equals(id) && on(WWLB); }
+
+    /**
+     * A defense structure (MPC_aegisRocketPods): ground defense +100% like Ground Defenses, and cruise missiles that hit
+     * hostile fleets anywhere in the system, valued like a Patrol HQ's patrols. It needs supplies, hand weapons and marines.
+     * It's in the build menu only once you know its blueprint (its own isAvailableToBuild), at planets and stations alike.
+     */
+    static boolean aegisApply(MarketAPI m, CAEngine.Pick p, Map<String, Integer> deficit) {
+        int s = m.getSize();
+        p.fx[3] += 1f;
+        p.fx[4] += 0.3f;
+        CAEngine.demand(p, "supplies", s, deficit);
+        CAEngine.demand(p, "hand_weapons", s, deficit);
+        CAEngine.demand(p, "marines", s, deficit);
+        p.lines.add("Missiles hit hostile fleets in the system; ground defense x2");
+        return true;
+    }
 
     /** Effects of a building handled here; false when it isn't worth building at this colony. */
     public static boolean apply(MarketAPI m, String id, CAEngine.Pick p, Map<String, Integer> deficit) {
@@ -450,6 +472,7 @@ public class CAMods {
         if (vicHas(id)) return vicApply(m, id, p);
         if (roiderHas(id)) return roiderApply(m, id, p, deficit);
         if (id.equals(DRYDOCK)) return drydockApply(m, p, deficit);
+        if (aegisHas(id)) return aegisApply(m, p, deficit);   // 0.3.11.0
         return false;
     }
 

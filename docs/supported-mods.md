@@ -20,7 +20,7 @@
 - [Volkov Industrial Conglomerate](https://fractalsoftworks.com/forum/index.php?topic=19603.0): Viral contamination treatment comes first.
 - [Roider Union](https://fractalsoftworks.com/forum/index.php?topic=9547.0): Dives and Union HQ are valued by deposits.
 - [Planetary Shield: Access Control](https://fractalsoftworks.com/forum/index.php?topic=14990.0): It's valued as ground defense plus lower Pather interest.
-- [Unknown Skies](https://fractalsoftworks.com/forum/index.php?topic=29876.0), [What We Left Behind](https://fractalsoftworks.com/forum/index.php?topic=25205.0) and [Astral Ascension](https://fractalsoftworks.com/forum/index.php?topic=28273.0): Mining conditions and water worlds count.
+- [Unknown Skies](https://fractalsoftworks.com/forum/index.php?topic=29876.0), [What We Left Behind](https://fractalsoftworks.com/forum/index.php?topic=25205.0) and [Astral Ascension](https://fractalsoftworks.com/forum/index.php?topic=28273.0): Mining conditions and water worlds count. What We Left Behind's Aegis Missile System is built as a defense once you know its blueprint, at planet and station colonies alike.
 - [Niko's Scavengable Industries](https://fractalsoftworks.com/forum/index.php?topic=36195.0): Learned blueprints are built when they pay.
 - [Junk Yard Dogs](https://fractalsoftworks.com/forum/index.php?topic=22826.0) and [Carter's Freetraders](https://fractalsoftworks.com/forum/index.php?topic=24433.0): Forges and the Biolab are built normally.
 - [Vulpoids](https://fractalsoftworks.com/forum/index.php?topic=29929.0): Organ Farms and Biotech are upgraded when they pay.

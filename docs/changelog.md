@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.11.0 - 2026-11-18
+
+- What We Left Behind: The Aegis Missile System is a defense structure in the build ranking once you know its blueprint, at planet and station colonies alike. It counts ground defense x2, missile strikes on hostile fleets in the system valued like a Patrol HQ, and its supplies, hand weapons and marines.
+
 ## 0.3.10.9 - 2026-11-18
 
 - Autopilot Storage: Fixed colony items that Autopilot took out of buildings being moved to normal Storage the next day, out of rotation. Any item that lists a building it installs in now stays in Autopilot Storage. This covers Industrial Evolution's, UAF's and AotD's colony items that aren't in the game's item effects table.
