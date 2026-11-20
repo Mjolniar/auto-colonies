@@ -109,7 +109,7 @@ public final class CALunaSync {
         preset("p_newcol", "New colonies", CAPresets.NEW_COLONIES, "It'll found new colonies with idle money, and on Ask first you approve each one.");
         preset("p_war", "War", CAPresets.WAR, "This is how far war fleets go (faction stances cap it). Defend sends relief, Retaliate raids "
                 + "attackers and retakes your lost colonies, and Hold them down raids anyone at Rival and up. Conquer invades and Scorched "
-                + "bombards. Needs Nexerelin.");
+                + "bombards. Without Nexerelin, Defend sends Auto Colonies' own defense fleets, and the levels past it need Nexerelin.");
 
         header("money", "Money");
         credits("reserve", "Credit reserve", "reserve", 0, 100000000, 50000, "The money Autopilot won't touch.");
@@ -267,7 +267,8 @@ public final class CALunaSync {
                 + "and Auto only recommends too. Needs Nexerelin.");
 
         header("adv_war", "War");
-        bool("defense", "Emergency defense fleets", "disableDefenseFleets", true, "Needs Nexerelin.");
+        bool("defense", "Emergency defense fleets", "disableDefenseFleets", true, "When a raid is coming or hostiles outweigh a colony's defenses, "
+                + "it sends a defense fleet, paid from credits above the reserve. Without Nexerelin, Auto Colonies raises the fleet itself.");
         bool("warretake", "Retake your lost colonies", "noWarRetake", true, "It works at Retaliate and up. Needs Nexerelin.");
         bool("warrivals", "Top hostile threat as Rival", "warAutoRivals", false, "Needs Nexerelin.");
         radio("warconq", "Conquered colonies start in", "conqueredMode", CASettings.CONQUERED_NAMES, "Needs Nexerelin.");

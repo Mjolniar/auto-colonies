@@ -1,10 +1,16 @@
 package data.scripts.jonahtweaks.autopilot;
 
+import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.BaseCustomUIPanelPlugin;
+import com.fs.starfarer.api.graphics.SpriteAPI;
 import com.fs.starfarer.api.ui.Alignment;
 import com.fs.starfarer.api.ui.ButtonAPI;
+import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.CutStyle;
 import com.fs.starfarer.api.ui.LabelAPI;
+import com.fs.starfarer.api.ui.PositionAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
+import com.fs.starfarer.api.ui.UIComponentAPI;
 import com.fs.starfarer.api.util.Misc;
 
 import java.awt.Color;
@@ -121,6 +127,7 @@ public class CASyncPage {
                 break;
             }
             t.addSectionHeading(CASyncCatalog.TIERS[ti], Alignment.MID, 12f);
+            if (tiles()) { tileGrid(t, list); continue; }   // picture tiles (local preview, not released)
             for (CASyncCatalog.Pack p : list) {   // 0.3.7.4: packages
                 boolean on = CASync.ticked(p.id);
                 boolean needs = p.requires != null && !CASync.ticked(p.requires);
@@ -134,6 +141,126 @@ public class CASyncPage {
 
         story(t);
         devTools(t);
+    }
+
+    // ---------------- picture tiles (local preview: on only with saves/common/ca_story_tiles, not released) ----------------
+
+    /** The tiles show only where the preview file is in the game's saves/common folder (never shipped). */
+    static boolean tiles() {
+        try { return Global.getSettings().fileExistsInCommon("ca_story_tiles"); } catch (Throwable t) { return false; }
+    }
+
+    static final float TILE_PAD = 8f, TILE_GAP = 8f, IMG_W = 96f, IMG_H = 48f, TILE_BTN_W = 70f, TILE_BTN_H = 22f;
+
+    /** A picture for each package: i: an industry's image, c: a commodity's icon, s: a special item's icon (the game's own art). */
+    static final String[][] ART = {
+            {"modes", "i:population"}, {"upkeep", "i:orbitalstation"}, {"supply", "i:waystation"}, {"staff", "c:beta_core"},
+            {"economy", "i:commerce"}, {"security", "i:patrolhq"}, {"projects", "i:lightindustry"}, {"growth", "i:farming"},
+            {"industry", "i:heavyindustry"}, {"frontier", "i:spaceport"}, {"warfare", "i:militarybase"}, {"megaprojects", "i:orbitalworks"},
+            {"dominion", "i:megaport"}, {"warlord", "i:highcommand"}, {"parallel", "i:refining"}, {"instant", "s:pristine_nanoforge"},
+            {"terraforming", "s:soil_nanites"}, {"autarch", "c:alpha_core"}, {"uafHire", "i:cryosanctum"}, {"historian", "i:techmining"},
+            {"fastResearch", "s:synchrotron"}, {"repairs", "s:fullerene_spool"}, {"outfitting", "i:starfortress"}};
+
+    /** Pure: the art key for a package, or null. */
+    static String artOf(String packId) {
+        for (String[] a : ART) if (a[0].equals(packId)) return a[1];
+        return null;
+    }
+
+    /** The sprite path for an art key, read from the game's specs (so art mods change it too), or null. */
+    static String sprite(String key) {
+        if (key == null || key.length() < 3) return null;
+        String id = key.substring(2);
+        try {
+            if (key.startsWith("i:")) return Global.getSettings().getIndustrySpec(id).getImageName();
+            if (key.startsWith("c:")) return Global.getSettings().getCommoditySpec(id).getIconName();
+            if (key.startsWith("s:")) return Global.getSettings().getSpecialItemSpec(id).getIconName();
+        } catch (Throwable ignored) { }
+        return null;
+    }
+
+    /** Pure: tiles to a row on a page this wide: three from 760 px, else two. */
+    static int columns(float width) { return width >= 760f ? 3 : 2; }
+
+    /** One tier's packages as picture tiles, in rows of columns(pageWidth). */
+    static void tileGrid(TooltipMakerAPI t, List<CASyncCatalog.Pack> list) {
+        float width = Math.max(400f, (pageWidth > 0f ? pageWidth : 790f) - CALog.SCROLL_ROOM);
+        int cols = columns(width);
+        float tileW = (width - TILE_GAP * (cols - 1)) / cols;
+        for (int start = 0; start < list.size(); start += cols) {
+            List<CASyncCatalog.Pack> row = list.subList(start, Math.min(list.size(), start + cols));
+            List<CustomPanelAPI> panels = new java.util.ArrayList<CustomPanelAPI>();
+            UIComponentAPI first = null, prev = null;
+            float rowH = 0f;
+            for (CASyncCatalog.Pack p : row) {
+                boolean on = CASync.ticked(p.id), needs = p.requires != null && !CASync.ticked(p.requires);
+                int cost = on ? CASync.paidFor(p) : CASync.price(p);
+                boolean afford = CASync.free() >= cost, can = on || (!needs && afford);
+                CustomPanelAPI panel = Global.getSettings().createCustom(tileW, 100f, new Tile(sprite(artOf(p.id)), on, !can));
+                UIComponentAPI c = t.addCustom(panel, first == null ? 8f : 0f);
+                if (prev != null) c.getPosition().rightOfTop(prev, TILE_GAP);
+                if (first == null) first = c;
+                prev = c;
+                panels.add(panel);
+                float inner = tileW - TILE_PAD;   // from the tile's left edge to the text's right edge, less the pad
+                // name and cost beside the picture
+                LabelAPI name = t.addPara(p.name, on ? Misc.getHighlightColor() : can ? Misc.getTextColor() : Misc.getGrayColor(), 0f);
+                name.autoSizeToWidth(inner - IMG_W - 2f * TILE_PAD);
+                name.getPosition().rightOfTop(c, -(tileW - IMG_W - 2f * TILE_PAD)).setYAlignOffset(-TILE_PAD);
+                String state = needs && !on ? "Needs " + CASyncCatalog.pack(p.requires).name : cost + " bandwidth" + (!on && !afford ? ", " + Math.max(0, CASync.free()) + " free" : "");
+                LabelAPI cl = t.addPara(state, on ? Misc.getTextColor() : Misc.getGrayColor(), 0f);
+                cl.autoSizeToWidth(inner - IMG_W - 2f * TILE_PAD);
+                cl.getPosition().rightOfTop(c, -(tileW - IMG_W - 2f * TILE_PAD)).setYAlignOffset(-(TILE_PAD + name.getPosition().getHeight() + 2f));
+                // what it does, under the picture
+                LabelAPI desc = t.addPara(p.desc, on ? Misc.getTextColor() : Misc.getGrayColor(), 0f);
+                desc.autoSizeToWidth(inner - TILE_PAD);
+                float descTop = TILE_PAD + Math.max(IMG_H, name.getPosition().getHeight() + 2f + cl.getPosition().getHeight()) + 6f;
+                desc.getPosition().rightOfTop(c, -(tileW - TILE_PAD)).setYAlignOffset(-descTop);
+                float btnTop = descTop + desc.getPosition().getHeight() + 6f;
+                ButtonAPI b = button(t, on ? "On" : "Off", "tick:" + p.id, can, TILE_BTN_W, 0f);
+                b.getPosition().rightOfTop(c, -(tileW - TILE_PAD)).setYAlignOffset(-btnTop);
+                rowH = Math.max(rowH, btnTop + TILE_BTN_H + TILE_PAD);
+            }
+            for (CustomPanelAPI panel : panels) panel.getPosition().setSize(tileW, rowH);
+            CALog.endRow(t, first, TILE_GAP);
+        }
+    }
+
+    /** A tile's background, border and picture: lit when the package is on, dim and gray when it's off, darker when it can't be had now. */
+    static final class Tile extends BaseCustomUIPanelPlugin {
+        final String sprite; final boolean on, locked;
+        PositionAPI pos;
+
+        Tile(String sprite, boolean on, boolean locked) { this.sprite = sprite; this.on = on; this.locked = locked; }
+
+        @Override public void positionChanged(PositionAPI position) { pos = position; }
+
+        @Override public void renderBelow(float alpha) {
+            if (pos == null) return;
+            float x = pos.getX(), y = pos.getY(), w = pos.getWidth(), h = pos.getHeight();
+            Misc.renderQuadAlpha(x, y, w, h, on ? Misc.getDarkPlayerColor() : new Color(18, 18, 18), alpha * (on ? 0.6f : 0.85f));
+            Color edge = on ? Misc.getBasePlayerColor() : locked ? new Color(55, 55, 55) : Misc.getGrayColor();
+            float e = on ? 2f : 1f;
+            Misc.renderQuadAlpha(x, y, w, e, edge, alpha);
+            Misc.renderQuadAlpha(x, y + h - e, w, e, edge, alpha);
+            Misc.renderQuadAlpha(x, y, e, h, edge, alpha);
+            Misc.renderQuadAlpha(x + w - e, y, e, h, edge, alpha);
+        }
+
+        @Override public void render(float alpha) {
+            if (pos == null || sprite == null) return;
+            try {
+                SpriteAPI s = Global.getSettings().getSprite(sprite);
+                float sw = s.getWidth(), sh = s.getHeight();
+                if (sw <= 0f || sh <= 0f) return;
+                float k = Math.min(IMG_W / sw, IMG_H / sh), dw = sw * k, dh = sh * k;
+                float bx = pos.getX() + TILE_PAD, by = pos.getY() + pos.getHeight() - TILE_PAD - IMG_H;
+                s.setSize(dw, dh);
+                s.setColor(on ? Color.WHITE : locked ? new Color(70, 70, 70) : new Color(125, 125, 125));
+                s.setAlphaMult(alpha * (on ? 1f : 0.75f));
+                s.render(bx + (IMG_W - dw) / 2f, by + (IMG_H - dh) / 2f);
+            } catch (Throwable ignored) { }
+        }
     }
 
     static void story(TooltipMakerAPI t) {

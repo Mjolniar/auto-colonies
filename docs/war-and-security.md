@@ -3,6 +3,7 @@
 ## Quick version
 
 - With Nexerelin, Auto Colonies runs emergency defense fleets, agents, a War level (default Retaliate) and a stance for each faction (default Auto) that caps it. [Low profile](low-profile.md) caps the War level at Defend.
+- Without Nexerelin, it raises its own defense fleets ([Own defense fleets](#own-defense-fleets)).
 
 ## Threat
 
@@ -25,6 +26,13 @@
 - Enforcer cost can be Reputation (default, -3, none for commerce raiders and Nexerelin police), Credits, Both or None. A fleet is charged once, when it loses to your faction's fleets.
 - On Credits, the charge is fleet points x Nexerelin's fleet request price per point (default 400), or 400 without Nexerelin, and it only attacks fleets it can pay for above the credit reserve.
 - Sindrian Diktat raiders are handled like pirate raids at all your colonies, with their own setting (on by default, even with Enforcer patrols off) and no gate, charge or reputation change.
+
+## Own defense fleets
+
+- Without Nexerelin, Auto Colonies builds defense fleets for your faction with the game's fleet rules, so they use your doctrine, the hulls you know and the source colony's ship quality. Each one costs 400 credits a fleet point and comes from your nearest colony with a working spaceport.
+- Emergency defense fleets (on by default) go when a raid is coming or hostiles outweigh a colony's defenses, once per system every 30 days, paid from anything above the credit reserve.
+- At War level Defend and up, a colony under siege gets one (once every 60 days), and so does a colony with high threat or a crisis coming (once per system every 45 days, paid from the Military rung or the budget). While spending freely, every colony gets a standing guard.
+- A fleet defends for 60 days and then goes home. Your colonies can field 100 fleet points at once, plus 50 for each Patrol HQ, 150 for each Military Base and 250 for each High Command, and fleets that aren't emergencies leave 40% of that free.
 
 ## Nexerelin
 

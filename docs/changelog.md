@@ -1,5 +1,14 @@
 # Patch notes
 
+## 0.3.13.0 - 2026-11-19
+
+- Defense fleets: Without Nexerelin, Auto Colonies raises its own defense fleets for your faction, at 400 credits a fleet point.
+- Defense fleets: Emergency defense works without Nexerelin. War level Defend adds relief for colonies under siege, defense before a crisis or at high threat, and standing guards while spending freely.
+- Defense fleets: Your colonies can field 100 fleet points at once, plus 50 per Patrol HQ, 150 per Military Base and 250 per High Command. A fleet defends for 60 days.
+- Settings: Emergency defense fleets and the War row show without Nexerelin. War levels past Defend still need Nexerelin.
+- Story mode: Emergency defense no longer needs Nexerelin.
+- Story mode: Station outfitting no longer needs Auto Outfitting. Without it, the game's own autofit fits the stations with the best weapons you know.
+
 ## 0.3.12.2 - 2026-11-19
 
 - Compatibility: Updated for Starsector 0.98.5a-RC8.

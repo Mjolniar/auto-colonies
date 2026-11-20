@@ -232,6 +232,13 @@ public final class CATuning {
     public static final float WAR_ATTACK_DAYS = 120f, WAR_RELIEF_DAYS = 60f;
     /** CADefense's emergency fleets: smallest, in fleet points, and days between two at a colony. */
     public static final float DEFENSE_MIN_FP = 100f, DEFENSE_COOLDOWN_DAYS = 30f;
+    /**
+     * 0.3.13.0: Auto Colonies' own defense fleets without Nexerelin (CAOwnWar): the price per fleet point (Nexerelin's default
+     * fleet request price), days a fleet defends before it goes home, and the fleet points your colonies can field at once
+     * (a base plus each Patrol HQ, Military Base and High Command).
+     */
+    public static final float OWN_FLEET_COST_PER_FP = 400f, OWN_FLEET_DUTY_DAYS = 60f;
+    public static final float OWN_CAP_BASE = 100f, OWN_CAP_PATROL = 50f, OWN_CAP_MILITARY = 150f, OWN_CAP_HIGH = 250f;
 
     // ---------------- 0.3.1.0: enforcer patrols (CAEnforcers) ----------------
 

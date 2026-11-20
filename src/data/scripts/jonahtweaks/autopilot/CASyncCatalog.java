@@ -110,7 +110,7 @@ public class CASyncCatalog {
         // Security and war
         add("lowProfile", 4, null, null);
         add("enforcers", 4, null, null);
-        add("defense", 4, "nexerelin", null);
+        add("defense", 4, null, null);   // 0.3.13.0: own defense fleets without Nexerelin (CAOwnWar)
         add("agents", 4, "nexerelin", null);
         add("offense", 4, "nexerelin", "agents");
         add("diplomacy", 4, "nexerelin", null);
@@ -141,7 +141,7 @@ public class CASyncCatalog {
         add("uafHistorian", 6, "uaf", null);   // 0.3.10.7: hires UAF's Sophia (CARuins.hire)
         add("historianCore", 6, "uaf", "autarchAdmin");   // 0.3.10.7: the Historian core (CAHistorian)
         add("rapidRepair", 6, null, null);   // 0.3.11.1: disruption runs down twice as fast (CARapidRepair)
-        add("stationFit", 6, "jonahs_auto_outfitting", null);   // 0.3.11.7: Auto Outfitting fits star fortresses and up (CAStationFit)
+        add("stationFit", 6, null, null);   // 0.3.11.7: star fortresses and up (CAStationFit). 0.3.13.0: Auto Outfitting optional
     }
 
     /** The Story perks group: past the game's rules, so they run only in story mode. */
@@ -210,7 +210,7 @@ public class CASyncCatalog {
         pack("uafHire", 2, 10, "staff", "Historian hire", "uafHistorian");   // 0.3.10.7: Tier III, shown only with United Aurora Federation
         pack("historian", 3, 20, "autarch", "Historian core", "historianCore");   // 0.3.10.7: Tier IV, United Aurora Federation
         pack("fastResearch", 3, 20, null, "Rapid research", "rapidResearch");
-        pack("outfitting", 3, 25, null, "Station outfitting", "stationFit");   // 0.3.11.7: Tier IV, shown only with Auto Outfitting
+        pack("outfitting", 3, 25, null, "Station outfitting", "stationFit");   // 0.3.11.7: Tier IV. 0.3.13.0: shown without Auto Outfitting too
         pack("repairs", 3, 30, null, "Rapid repairs", "rapidRepair");   // 0.3.11.1: Tier IV   // 0.3.9.9: Tier IV, shown only with Vaults of Knowledge   // 0.3.7.9; 0.3.8.0: Tier IV, its cost is the first colony
         desc("modes", "Advisor suggests what to build next, Approve proposes builds and waits for your OK, and Auto builds without asking you first.");
         desc("upkeep", "It cuts unprofitable industry, keeps up orbital stations, sets colony policy and preps for crises.");
@@ -230,7 +230,8 @@ public class CASyncCatalog {
         numberDescs();
         desc("terraforming", "It halves terraforming time at managed colonies.");
         desc("repairs", "Disrupted buildings at your colonies recover in half the time.");
-        desc("outfitting", "Auto Outfitting fits your star fortresses and tier 4 stations with the weapons you know. You pay for the weapons it adds.");
+        desc("outfitting", "Your star fortresses and tier 4 stations get the best weapons you know, fitted by Auto Outfitting if you have it "
+                + "and by the game's own autofit if you don't. You pay for the weapons it adds.");
         desc("uafHire", "It hires the UAF's Sophia, who has Galactic Historian, once you're Friendly with the UAF and have ruins to restore. She costs the usual hiring price.");
         desc("historian", "One Autarch AI Core variant with Galactic Historian governs an Auto colony with ruins, so they get restored.");
         desc("fastResearch", "It makes Vaults of Knowledge research take half as long, and each project needs about 2/3 of its databanks (at least one). AI cores and colony items cost the same.");

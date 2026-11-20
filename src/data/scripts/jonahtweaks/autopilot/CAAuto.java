@@ -210,6 +210,12 @@ public class CAAuto {
                 CABreaker.check("nexerelin:conquered", ok, "Nexerelin conquered colonies");
             } });
             CAStep.guard("emergency autonomy step", () -> { if (mods.isModEnabled("nexerelin") && CACompat.linked("CAAutonomy")) CAAutonomy.run(d, s); });
+        } else {
+            // 0.3.13.0: without Nexerelin, Auto Colonies raises its own defense fleets (CAOwnWar, vanilla only)
+            CAPass.later(() -> { if (CABreaker.allowed("own:defense")) {
+                boolean ok = CAStep.guard("own defense fleet step", () -> CAOwnWar.run(managed));
+                CABreaker.check("own:defense", ok, "defense fleets");
+            } });
         }
         // holds changes under siege itself, but still switches off in an emergency. 0.3.0.0 (A0 fix): guarded, never stopped for
         // the session: it closes free ports below the stability floor and stops hazard pay in a cash emergency

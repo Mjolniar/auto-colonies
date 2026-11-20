@@ -9,7 +9,7 @@ ca_lowprofile,Low profile,Boolean,false,,"Colony crises come slower, but you'll 
 ca_p_spend,Spending,Radio,Normal,"Thrifty, Normal, Lavish, Mode default, Custom","Thrifty spends 30%% of net income and 5%% of savings, Normal 50%% and 15%%, and Lavish 80%% and 30%%. The per-project cap follows it too (half, all or twice your net income).",,,
 ca_p_extras,Extras,Radio,Mode default,"Auto, Recommend only, Off, Mode default, Custom","It covers the mod buildings and features: stable locations, measured mod buildings, trade contracts, research, special project supply, megastructures, station augments, RAT settlement, IndEvo automation and Antimatter Stabilizers.",,,
 ca_p_newcol,New colonies,Radio,Off,"Off, Ask first, Auto, Mode default, Custom","It'll found new colonies with idle money, and on Ask first you approve each one.",,,
-ca_p_war,War,Radio,Off,"Off, Defend, Retaliate, Hold them down, Conquer, Scorched, Mode default, Custom","This is how far war fleets go (faction stances cap it). Defend sends relief, Retaliate raids attackers and retakes your lost colonies, and Hold them down raids anyone at Rival and up. Conquer invades and Scorched bombards. Needs Nexerelin.",,,
+ca_p_war,War,Radio,Off,"Off, Defend, Retaliate, Hold them down, Conquer, Scorched, Mode default, Custom","This is how far war fleets go (faction stances cap it). Defend sends relief, Retaliate raids attackers and retakes your lost colonies, and Hold them down raids anyone at Rival and up. Conquer invades and Scorched bombards. Without Nexerelin, Defend sends Auto Colonies' own defense fleets, and the levels past it need Nexerelin.",,,
 ,,,,,,,,
 ca_h_money,Money,Header,Money,,,,,
 ca_reserve,Credit reserve,Int,50000,,"The money Autopilot won't touch. It goes from 0 to 100,000,000, in steps of 50,000.",0,100000000,
@@ -100,7 +100,7 @@ ca_spykeep,Agents to keep,Radio,Auto,"Auto, 1, 2, 3, 4",Needs Nexerelin.,,,Advan
 ca_autonomy,Autonomy,Radio,Recommend,"Off, Recommend, Auto","Recommend names the colony that would help in a money emergency, and Auto only recommends too. Needs Nexerelin.",,,Advanced
 ,,,,,,,,
 ca_h_adv_war,War,Header,War,,,,,Advanced
-ca_defense,Emergency defense fleets,Boolean,true,,Needs Nexerelin.,,,Advanced
+ca_defense,Emergency defense fleets,Boolean,true,,"When a raid is coming or hostiles outweigh a colony's defenses, it sends a defense fleet, paid from credits above the reserve. Without Nexerelin, Auto Colonies raises the fleet itself.",,,Advanced
 ca_warretake,Retake your lost colonies,Boolean,true,,It works at Retaliate and up. Needs Nexerelin.,,,Advanced
 ca_warrivals,Top hostile threat as Rival,Boolean,false,,Needs Nexerelin.,,,Advanced
 ca_warconq,Conquered colonies start in,Radio,Advisor,"Auto, Approve, Advisor",Needs Nexerelin.,,,Advanced

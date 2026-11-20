@@ -35,7 +35,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | Spending | Thrifty, Normal, Lavish | Normal | Thrifty spends 30% of net income and 5% of savings, Normal 50% and 15%, and Lavish 80% and 30%. The per-project cap is half, all or twice your net income, and new upkeep is capped at 5%, 10% or 20% of net income. |
 | Extras | Auto, Recommend only, Off | Auto | It covers stable locations, measured mod buildings, trade contracts, research, special project supply, megastructures, station augments, RAT settlement, IndEvo automation and Antimatter Stabilizers. |
 | New colonies | Off, Ask first, Auto | Empire mode | It founds new colonies with idle money, and on Ask first you approve each one ([New colonies](expansion.md)). |
-| War | Off, Defend, Retaliate, Hold them down, Conquer, Scorched | Empire mode | This is how far war fleets go, and faction stances cap it. Defend sends relief, Retaliate raids attackers and retakes your lost colonies, and Hold them down raids anyone at Rival and up. Conquer invades and Scorched bombards. Needs Nexerelin ([War page](war-and-security.md#the-war-page)). |
+| War | Off, Defend, Retaliate, Hold them down, Conquer, Scorched | Empire mode | This is how far war fleets go, and faction stances cap it. Defend sends relief, Retaliate raids attackers and retakes your lost colonies, and Hold them down raids anyone at Rival and up. Conquer invades and Scorched bombards ([War page](war-and-security.md#the-war-page)). Without Nexerelin, Defend sends Auto Colonies' own defense fleets, and the levels past it need Nexerelin. |
 
 ### Money
 
@@ -153,7 +153,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 
 | Setting | Options | Default | What it does |
 |---|---|---|---|
-| Emergency defense fleets | On, Off | On | Auto colonies send emergency defense fleets. Needs Nexerelin. |
+| Emergency defense fleets | On, Off | On | When a raid is coming or hostiles outweigh a colony's defenses, it sends a defense fleet, paid from credits above the reserve. Without Nexerelin, Auto Colonies raises the fleet itself. |
 | Retake your lost colonies | On, Off | On | It works at Retaliate and up. Needs Nexerelin. |
 | Top hostile threat as Rival | On, Off | Off | The hostile faction on Auto stance with the highest threat counts as Rival. Needs Nexerelin. |
 | Conquered colonies start in | Auto, Approve, Advisor | Empire mode | A conquered colony starts in this mode. Needs Nexerelin. |

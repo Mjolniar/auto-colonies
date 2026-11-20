@@ -329,7 +329,7 @@ public class CASetupUI {
             preset(t, s, "Spending", "p_spend");
             preset(t, s, "Extras", "p_extras");
             newColonies(t, s);
-            if (nex) war(t, s);
+            war(t, s);   // 0.3.13.0: Defend works without Nexerelin (CAOwnWar)
         }
         if (group(t, "money", "Money", "reserve " + Misc.getDGSCredits(s.reserve) + ", surplus " + lower(CASurplus.lineName(s)))) {
             reserve(t, s);
@@ -420,7 +420,7 @@ public class CASetupUI {
         preset(t, s, "Spending", "p_spend");
         preset(t, s, "Extras", "p_extras");
         newColonies(t, s);
-        if (nex()) war(t, s);
+        war(t, s);   // 0.3.13.0: Defend works without Nexerelin (CAOwnWar)
         reserve(t, s);
         t.addPara(SETUP_REST, Misc.getGrayColor(), 10f);   // 0.3.8.6: shown as is
     }
@@ -539,8 +539,8 @@ public class CASetupUI {
                 row(t, "Autonomy", CASettings.AUTONOMY_NAMES[clamp(s.autonomyMode, 3)], modeName("autonomyMode", CASettings.AUTONOMY_NAMES), "autonomy", true);
             }
         } else if ("adv_war".equals(id)) {
+            row(t, "Emergency defense fleets", onOff(!s.disableDefenseFleets), on, "defense", true);   // 0.3.13.0: own fleets without Nexerelin
             if (nex) {
-                row(t, "Emergency defense fleets", onOff(!s.disableDefenseFleets), on, "defense", true);
                 row(t, "Retake your lost colonies", onOff(!s.noWarRetake), on, "warretake", true);
                 row(t, "Top hostile threat as Rival", onOff(s.warAutoRivals), off, "warrivals", true);
                 row(t, "Conquered colonies start in", CASettings.CONQUERED_NAMES[clamp(s.conqueredMode, CASettings.CONQUERED_NAMES.length)],

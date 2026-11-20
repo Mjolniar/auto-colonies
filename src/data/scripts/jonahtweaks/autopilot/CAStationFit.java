@@ -15,6 +15,7 @@ import com.fs.starfarer.api.loading.HullModSpecAPI;
 import com.fs.starfarer.api.loading.VariantSource;
 import com.fs.starfarer.api.loading.WeaponSlotAPI;
 import com.fs.starfarer.api.loading.WeaponSpecAPI;
+import com.fs.starfarer.api.characters.PersonAPI;
 import com.fs.starfarer.api.plugins.AutofitPlugin;
 import com.fs.starfarer.api.plugins.impl.CoreAutofitPlugin;
 import com.fs.starfarer.api.util.Misc;
@@ -24,7 +25,8 @@ import java.util.*;
 /**
  * 0.3.11.7: the Station outfitting package (story mode, Tier IV): Auto Outfitting's optimizer fits the stations of your
  * colonies at star fortress tier and up (CAPlan.stationTier 3 or more, the tier 4 stations too), core and every module, with
- * the weapons, fighter wings and hullmods your faction knows. Needs Auto Outfitting; without it the game's own fit stays.
+ * the weapons, fighter wings and hullmods your faction knows. 0.3.13.0: without Auto Outfitting, the game's own autofit fits
+ * them (CoreAutofitPlugin with Upgrade on and no randomness), so the package needs no other mod.
  * - No class of Auto Outfitting is used: its autofit plugin is made by name through the game (getInstanceOfScript), its
  *   "optimal fit for every goal" option is ticked by id, and doFit runs with a delegate that offers what you know at no cost (DefaultFleetInflater's
  *   own weapon and wing entries). Its s-mod option stays off and maxSMods is 0: no built-in hullmods, no story points.
@@ -47,7 +49,7 @@ public final class CAStationFit {
     static final Map<String, Fit> FITS = new HashMap<String, Fit>();
 
     static boolean on() {
-        try { return CASync.has(ABILITY) && Global.getSettings().getModManager().isModEnabled(AO_MOD); } catch (Throwable t) { return false; }
+        try { return CASync.has(ABILITY); } catch (Throwable t) { return false; }   // 0.3.13.0: Auto Outfitting is optional (plan)
     }
 
     /** The colony's station at star fortress tier or above (working or not), or null. */
@@ -247,11 +249,21 @@ public final class CAStationFit {
      * autofit plugin, so it's made by name (SettingsAPI.getInstanceOfScript: Auto Outfitting's no-argument constructor).
      */
     static ShipVariantAPI plan(MarketAPI m, FleetMemberAPI fm, FactionAPI f) {
-        Object o;
-        try { o = Global.getSettings().getInstanceOfScript(PLUGIN); } catch (Throwable t) { return null; }
-        if (!(o instanceof AutofitPlugin)) return null;
-        AutofitPlugin p = (AutofitPlugin) o;
-        if (p instanceof CoreAutofitPlugin) ((CoreAutofitPlugin) p).setChecked(OPTION, true);
+        AutofitPlugin p = null;
+        if (Global.getSettings().getModManager().isModEnabled(AO_MOD)) {
+            Object o = null;
+            try { o = Global.getSettings().getInstanceOfScript(PLUGIN); } catch (Throwable ignored) { }
+            if (o instanceof AutofitPlugin) p = (AutofitPlugin) o;
+            if (p instanceof CoreAutofitPlugin) ((CoreAutofitPlugin) p).setChecked(OPTION, true);
+        }
+        if (p == null) {
+            // 0.3.13.0: the game's own autofit, the best you know in each slot (Upgrade on) and no random picks
+            PersonAPI cmd = fm.getCaptain() != null ? fm.getCaptain() : Global.getSector().getPlayerPerson();
+            CoreAutofitPlugin c = new CoreAutofitPlugin(cmd);
+            c.setChecked(CoreAutofitPlugin.UPGRADE, true);
+            c.setChecked(CoreAutofitPlugin.RANDOMIZE, false);
+            p = c;
+        }
         p.setRandom(new Random(m.getId().hashCode()));
         ShipVariantAPI v = fm.getVariant().clone();
         refit(v);
