@@ -13,7 +13,9 @@
 - It gives 10 bandwidth, and each AI core you feed it on the Story page adds more (Alpha 10, Beta 3, Gamma 1). Fed cores are used up.
 - Once you've fed 100 bandwidth, each core gives 75% of that, and from 250 it gives 50%. What you already fed stays.
 - Mods that hand out a lot of AI cores (Treasure Hunt, Seeker, Random Assortment of Things, Secrets of the Frontier, Knights of Ludd, Slightly Better Tech-Mining and Omega Core Everywhere) make packages, colonies and seats cost 10% more each, up to 50% more. Packages you already own keep the price you paid.
-- Each tier opens once you own 2/3 of the packages in the tier before it, not counting packages for mods you don't have, and an open tier stays open.
+- Each tier opens once you own 2/3 of the packages in the tier before it, not counting packages for mods you don't have.
+- A tier only runs while every tier below it still has 2/3 of its packages on. If you switch lower packages off, the packages above pause until you're back to 2/3, and they keep their bandwidth.
+- The Story page shows each package as a picture tile, lit when it's on.
 - Each new tier, and buying every Tier IV package, brings a TriPad scene that the Story page can replay.
 
 ## Colony modes

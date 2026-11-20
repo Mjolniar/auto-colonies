@@ -116,7 +116,7 @@ public class CASyncPage {
 
         // abilities
         // 0.3.7.3: by tier. Open tiers list their abilities; the next tier shows what opens it; later tiers don't show
-        int open = CASync.openTier();
+        int open = CASync.openTier(), running = CASync.runningTier();   // 0.3.13.1: tiers above running are paused
         for (int ti = 0; ti < CASyncCatalog.TIERS.length; ti++) {
             List<CASyncCatalog.Pack> list = CASyncCatalog.inTier(ti);
             if (list.isEmpty()) continue;
@@ -127,28 +127,19 @@ public class CASyncPage {
                 break;
             }
             t.addSectionHeading(CASyncCatalog.TIERS[ti], Alignment.MID, 12f);
-            if (tiles()) { tileGrid(t, list); continue; }   // picture tiles (local preview, not released)
-            for (CASyncCatalog.Pack p : list) {   // 0.3.7.4: packages
-                boolean on = CASync.ticked(p.id);
-                boolean needs = p.requires != null && !CASync.ticked(p.requires);
-                int cost = on ? CASync.paidFor(p) : CASync.price(p);   // 0.3.10.4: what you paid, or the price now
-                boolean afford = CASync.free() >= cost;
-                String desc = p.name + " (" + cost + " bandwidth). " + p.desc   // 0.3.7.5: what it does
-                        + (needs ? " It needs " + CASyncCatalog.pack(p.requires).name + " first." : "");
-                row(t, on ? "On" : "Off", "tick:" + p.id, on || (!needs && afford), 60f, desc, on ? Misc.getTextColor() : gray, p.name);
+            boolean paused = ti > running;
+            if (paused) {
+                int[] pr = CASync.tierProgress(running);
+                t.addPara("Paused until " + CASyncCatalog.TIERS[running] + " has %s packages on (it has %s).", 6f, gray, hl, "" + pr[1], "" + pr[0]);
             }
+            tileGrid(t, list, paused);   // 0.3.13.1: picture tiles for everyone
         }
 
         story(t);
         devTools(t);
     }
 
-    // ---------------- picture tiles (local preview: on only with saves/common/ca_story_tiles, not released) ----------------
-
-    /** The tiles show only where the preview file is in the game's saves/common folder (never shipped). */
-    static boolean tiles() {
-        try { return Global.getSettings().fileExistsInCommon("ca_story_tiles"); } catch (Throwable t) { return false; }
-    }
+    // ---------------- picture tiles (0.3.13.1: for everyone) ----------------
 
     static final float TILE_PAD = 8f, TILE_GAP = 8f, IMG_W = 96f, IMG_H = 48f, TILE_BTN_W = 70f, TILE_BTN_H = 22f;
 
@@ -183,7 +174,7 @@ public class CASyncPage {
     static int columns(float width) { return width >= 760f ? 3 : 2; }
 
     /** One tier's packages as picture tiles, in rows of columns(pageWidth). */
-    static void tileGrid(TooltipMakerAPI t, List<CASyncCatalog.Pack> list) {
+    static void tileGrid(TooltipMakerAPI t, List<CASyncCatalog.Pack> list, boolean paused) {
         float width = Math.max(400f, (pageWidth > 0f ? pageWidth : 790f) - CALog.SCROLL_ROOM);
         int cols = columns(width);
         float tileW = (width - TILE_GAP * (cols - 1)) / cols;
@@ -193,10 +184,11 @@ public class CASyncPage {
             UIComponentAPI first = null, prev = null;
             float rowH = 0f;
             for (CASyncCatalog.Pack p : row) {
-                boolean on = CASync.ticked(p.id), needs = p.requires != null && !CASync.ticked(p.requires);
-                int cost = on ? CASync.paidFor(p) : CASync.price(p);
-                boolean afford = CASync.free() >= cost, can = on || (!needs && afford);
-                CustomPanelAPI panel = Global.getSettings().createCustom(tileW, 100f, new Tile(sprite(artOf(p.id)), on, !can));
+                boolean ticked = CASync.ticked(p.id), needs = p.requires != null && !CASync.ticked(p.requires);
+                boolean on = ticked && !paused;   // 0.3.13.1: a paused tier's packages stay bought but don't run
+                int cost = ticked ? CASync.paidFor(p) : CASync.price(p);
+                boolean afford = CASync.free() >= cost, can = ticked || (!needs && afford && !paused);
+                CustomPanelAPI panel = Global.getSettings().createCustom(tileW, 100f, new Tile(sprite(artOf(p.id)), on, !can || paused));
                 UIComponentAPI c = t.addCustom(panel, first == null ? 8f : 0f);
                 if (prev != null) c.getPosition().rightOfTop(prev, TILE_GAP);
                 if (first == null) first = c;
@@ -207,7 +199,8 @@ public class CASyncPage {
                 LabelAPI name = t.addPara(p.name, on ? Misc.getHighlightColor() : can ? Misc.getTextColor() : Misc.getGrayColor(), 0f);
                 name.autoSizeToWidth(inner - IMG_W - 2f * TILE_PAD);
                 name.getPosition().rightOfTop(c, -(tileW - IMG_W - 2f * TILE_PAD)).setYAlignOffset(-TILE_PAD);
-                String state = needs && !on ? "Needs " + CASyncCatalog.pack(p.requires).name : cost + " bandwidth" + (!on && !afford ? ", " + Math.max(0, CASync.free()) + " free" : "");
+                String state = paused && ticked ? "Paused, " + cost + " bandwidth"
+                        : needs && !ticked ? "Needs " + CASyncCatalog.pack(p.requires).name : cost + " bandwidth" + (!ticked && !afford ? ", " + Math.max(0, CASync.free()) + " free" : "");
                 LabelAPI cl = t.addPara(state, on ? Misc.getTextColor() : Misc.getGrayColor(), 0f);
                 cl.autoSizeToWidth(inner - IMG_W - 2f * TILE_PAD);
                 cl.getPosition().rightOfTop(c, -(tileW - IMG_W - 2f * TILE_PAD)).setYAlignOffset(-(TILE_PAD + name.getPosition().getHeight() + 2f));
@@ -217,7 +210,7 @@ public class CASyncPage {
                 float descTop = TILE_PAD + Math.max(IMG_H, name.getPosition().getHeight() + 2f + cl.getPosition().getHeight()) + 6f;
                 desc.getPosition().rightOfTop(c, -(tileW - TILE_PAD)).setYAlignOffset(-descTop);
                 float btnTop = descTop + desc.getPosition().getHeight() + 6f;
-                ButtonAPI b = button(t, on ? "On" : "Off", "tick:" + p.id, can, TILE_BTN_W, 0f);
+                ButtonAPI b = button(t, ticked ? "On" : "Off", "tick:" + p.id, can, TILE_BTN_W, 0f);
                 b.getPosition().rightOfTop(c, -(tileW - TILE_PAD)).setYAlignOffset(-btnTop);
                 rowH = Math.max(rowH, btnTop + TILE_BTN_H + TILE_PAD);
             }

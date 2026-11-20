@@ -49,6 +49,8 @@ public class CASync {
     /** JTStoryModeCheck: the state and the clock without a game (null in the game). */
     static Map<String, Object> testState = null;
     static float testDay = -1f;
+    /** 0.3.13.1, offline checks only: every tier runs (JTStoryModeCheck tests holds, JTTierLockCheck tests the lock). */
+    static boolean testNoTierLock = false;
     static final long DAY_MS = 86400000L;
 
     @SuppressWarnings("unchecked")
@@ -371,6 +373,7 @@ public class CASync {
         CASyncCatalog.Ability a = CASyncCatalog.get(id);
         CASyncCatalog.Pack p = CASyncCatalog.packOf(id);   // 0.3.7.4: an ability runs when its package is bought
         if (a == null || p == null || !a.available() || !ticked(p.id)) return false;
+        if (p.tier > runningTier()) return false;   // 0.3.13.1: a tier runs only while the tiers below it have their share on
         return a.requires == null || has(a.requires);
     }
 
@@ -386,6 +389,7 @@ public class CASync {
         }
         if (dormant()) return "The Colony Autopilot is dormant.";
         if (p.tier > openTier()) return CASyncCatalog.TIERS[p.tier] + " isn't open yet.";   // 0.3.7.3
+        if (p.tier > runningTier()) return CASyncCatalog.TIERS[p.tier] + " is paused until the tiers below it have enough packages on.";   // 0.3.13.1
         if (p.requires != null && !ticked(p.requires)) return p.name + " needs " + CASyncCatalog.pack(p.requires).name + " first.";
         int cost = price(p);   // 0.3.10.4: with the core-heavy mods
         if (free() < cost) return p.name + " needs " + cost + " bandwidth, and " + Math.max(0, free()) + " are free.";
@@ -766,9 +770,33 @@ public class CASync {
             for (CASyncCatalog.Pack p : l) if (ticked(p.id)) owned[t]++;
         }
         int was = openTier(), now = tierAfter(was, owned, count, CASyncCatalog.TIER_SHARE);
-        if (now == was) return;
-        num("tier", now);
-        CALog.did("Autopilot: " + CASyncCatalog.TIERS[now] + " is open.", true);
+        if (now != was) {
+            num("tier", now);
+            CALog.did("Autopilot: " + CASyncCatalog.TIERS[now] + " is open.", true);
+        }
+        // 0.3.13.1: the tiers that run now; a drop pauses the packages above, a rise lets them run again
+        int ran = num("running") - 1, runs = tierAfter(0, owned, count, CASyncCatalog.TIER_SHARE);
+        if (ran < 0) ran = runs;   // first look in this save: nothing to report
+        num("running", runs + 1);
+        if (runs < ran) CALog.did("Autopilot: " + CASyncCatalog.TIERS[runs + 1] + " and up are paused until " + CASyncCatalog.TIERS[runs]
+                + " has " + CASyncCatalog.needed(count[runs], CASyncCatalog.TIER_SHARE) + " packages on.", true);
+        else if (runs > ran) CALog.did("Autopilot: " + CASyncCatalog.TIERS[runs] + " runs again.", true);
+    }
+
+    /**
+     * 0.3.13.1: the highest tier whose packages run: every tier below it has its share of packages on right now (a tier that
+     * opened stays open for display, but its packages pause while a tier below it falls short).
+     */
+    public static int runningTier() {
+        int last = CASyncCatalog.TIERS.length - 1;
+        if (testNoTierLock) return last;
+        int[] owned = new int[last + 1], count = new int[last + 1];
+        for (int t = 0; t <= last; t++) {
+            List<CASyncCatalog.Pack> l = CASyncCatalog.inTier(t);
+            count[t] = l.size();
+            for (CASyncCatalog.Pack p : l) if (ticked(p.id)) owned[t]++;
+        }
+        return tierAfter(0, owned, count, CASyncCatalog.TIER_SHARE);
     }
 
     /** Pure: the open tier after opening every tier whose tier before it has `share` of its abilities owned. Never lower. */

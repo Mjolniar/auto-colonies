@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.13.1 - 2026-11-19
+
+- Story mode: A tier runs only while every tier below it has 2/3 of its packages on. Switching lower packages off pauses the packages above, and they keep their bandwidth.
+- Story mode: Packages in a paused tier can't be bought until the tiers below have enough packages on again.
+- Story page: Packages show as picture tiles, two or three columns by tier, lit when on.
+
 ## 0.3.13.0 - 2026-11-19
 
 - Defense fleets: Without Nexerelin, Auto Colonies raises its own defense fleets for your faction, at 400 credits a fleet point.
