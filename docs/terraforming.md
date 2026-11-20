@@ -13,4 +13,4 @@ It can be Max output (recommended), Pays back in 10 years or Off, and it starts 
 
 ## Terraforming & Station Construction (Boggled)
 
-Its projects are valued by the conditions they leave, and the colony panel lists the best four with Start buttons ([Supported mods](supported-mods.md#terraforming--station-construction-boggled)).
+Its projects are valued by the conditions they leave, and the colony panel lists the best four with Start buttons ([Supported mods](supported-mods.md)).

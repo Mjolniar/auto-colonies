@@ -2,7 +2,7 @@
 
 ## The budget
 
-- You set the budget with Spending and in Settings, Advanced, Budget ([preset values](settings.md#main-rows)). Automatic (recommended) spends a share of colony net income and of credits above the reserve, and unspent budget carries over for six months.
+- You set the budget with Spending and in Settings, Advanced, Budget ([preset values](settings.md#playstyle)). Automatic (recommended) spends a share of colony net income and of credits above the reserve, and unspent budget carries over for six months.
 
 ## Money tiers
 

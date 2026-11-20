@@ -827,11 +827,11 @@
 - Retake (Retaliate and up): Added invasions of colonies that were yours, lost capital first, with the fee. On for new games and saves without Auto Colonies, off for saves from 0.2.45. A retaken colony keeps its earlier mode.
 - Stand down: Added on the War page. Sets War level to Defend, clears declarations and bombardment authorization, and cancels operations still organizing with Nexerelin's full refund.
 - War fees: Retakes, raids, blockades, invasions and bombardments pay the fee level times 10% of Nexerelin's price. Relief, defense fleets, base strikes and strikes back pay no fee.
-- Spending freely: Changed (also for 0.2.45 saves). Starts at money tier Rich with credits over the 3,000,000 surplus line of at least half the line. Ends when the tier drops under Rich or credits over the line fall under a fifth of the line. (was 10,000,000 to start, under 7,000,000 to end)
-- Endgame economy: Changed. Starts at money tier Endgame while spending freely. Ends when spending freely ends or colony net goes below 0. (was credits over the line under 5,000,000)
+- Spending freely: Changed (also for 0.2.45 saves). Starts at money tier Rich with credits over the 3,000,000 surplus line of at least half the line. Ends when the tier drops under Rich or credits over the line fall under a fifth of the line. (was 10,000,000 to start, under 7,000,000 to end).
+- Endgame economy: Changed. Starts at money tier Endgame while spending freely. Ends when spending freely ends or colony net goes below 0. (was credits over the line under 5,000,000).
 - Hazard pay: Changed. Below Rich, a colony gets it only if it reaches its next size within 24 months with it (36 when that size adds an industry slot) and keeps it up to 25% past that.
 - Hazard pay: With the Growth rung On, the budget rises to the tier's share of colony net (Surplus 40%, Idle money 60%, Rich and Endgame no cap).
-- Capital trade buildings: Changed. A trade building that costs more than it earns is built only from Surplus up, with the Economy rung On, while their upkeep at the capital stays within 5% of colony net. The make-room swap runs only from Idle money up.
+- Capital trade buildings: Changed. A trade building that costs more than it earns is built only from Surplus up, with the Economy rung On, while its upkeep at the capital stays within 5% of colony net. The make-room swap runs only from Idle money up.
 - Surplus research and terraforming: Changed. They start something only from Surplus up with the Economy rung On. Another Research Facility must be worth more than its full upkeep below Idle money (was a quarter) and more than half of it above. Below Rich, at most 3 of its own.
 - Terraforming: Fixed Ming Adi paying 1.525M to add Toxic Atmosphere and then planning to remove it. A world plan that already paid for terraforming switches only to a plan worth at least twice as much.
 - Trade contracts: Fixed 16 missed deliveries on 11 contracts. Own contracts count against spare goods until Theory of Toolbox catches up. One new contract per commodity a month.
@@ -947,7 +947,7 @@
 ## 0.2.39.3 - 2026-11-06
 
 - Panopticon cores (Emergent Threats: IX Revival): Fixed the Panopticon Instance and Panopticon Core not fitting in Autopilot Storage. Once a day one goes into an Auto colony's Surveillance Center without a better one.
-- Panopticon cores (Emergent Threats: A replaced regular core goes to storage. The Hegemony does not count either for inspections.
+- Panopticon cores (Emergent Threats: IX Revival): A replaced regular core goes to storage. The Hegemony does not count either for inspections.
 
 ## 0.2.39.2 - 2026-11-06
 

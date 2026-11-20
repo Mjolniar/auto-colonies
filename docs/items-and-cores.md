@@ -17,7 +17,7 @@ These settings are under Items and people.
 | No limit | No limit | Advise |
 
 - Alpha cores (Settings, Advanced, AI cores and items) can be Only where removable (recommended), Anywhere or Never.
-- Omega cores are only stored with [Omega Core Everywhere or Astral Ascension Renewed](supported-mods.md#omega-core-everywhere-and-astral-ascension-renewed).
+- Omega cores are only stored with [Omega Core Everywhere or Astral Ascension Renewed](supported-mods.md).
 
 ### Storage logistics
 

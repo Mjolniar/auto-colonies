@@ -8,7 +8,7 @@ Every option is scored by what it earns a month minus its costs, and Approve and
 - Advisor (default) ranks options as Best, Good or Poor beside the build menu, and you do the building.
 - Approve proposes one build at a time, and a rejected build is held for 180 days.
 - Auto builds within your budget. Only Auto colonies use items, cores, administrators, policies and terraforming.
-- Empire-wide settings use the Empire mode ([Settings](settings.md#mode-defaults)).
+- Empire-wide settings use the Empire mode ([Settings](settings.md#empire-mode-defaults)).
 - Approvals pay the price plus a convenience fee from credits above the reserve. Convenience fees (Settings, Advanced, Budget) can be Off, Low, Standard (5%, at least 5,000) or High.
 - The colony panel's Build buttons work in Advisor, Approve and Auto, on every option you can pay for, worth it or not. They spend the credits you have (the reserve is only for Autopilot's own builds), and with something already under construction a new building goes into the game's construction queue, paid when you queue it.
 - Waiting decisions come up in one summary every 60 days (15 to 180 days or Off in Settings, Advanced, Interface), and they also wait in the colony panel.
