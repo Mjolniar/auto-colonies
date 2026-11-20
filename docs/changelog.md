@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.13.2 - 2026-11-19
+
+- Story mode: The TriPad and crew scenes are rewritten.
+- Settings: Every setting description in LunaLib and on the Settings page is rewritten in the Autopilot's own voice.
+
 ## 0.3.13.1 - 2026-11-19
 
 - Story mode: A tier runs only while every tier below it has 2/3 of its packages on. Switching lower packages off pauses the packages above, and they keep their bandwidth.
