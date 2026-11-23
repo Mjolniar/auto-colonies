@@ -40,7 +40,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 
 | Setting | Options | Default | What it does |
 |---|---|---|---|
-| Credit reserve | 0 to 100,000,000 | A quarter of your credits, 50,000 to 500,000 | It's the money Autopilot won't touch. |
+| Credit reserve | 0 to 3,000,000 | A quarter of your credits, 50,000 to 500,000 | It's the money Autopilot won't touch. |
 
 ### Interface, reset and removal
 

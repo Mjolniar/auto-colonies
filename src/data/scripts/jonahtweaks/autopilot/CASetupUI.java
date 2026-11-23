@@ -909,7 +909,7 @@ public class CASetupUI {
             if (!s.projectCapFixed) s.perProjectCap = CAPresets.projectCap(s);
             s.projectCapFixed = !s.projectCapFixed;
         }
-        else if (k.equals("reserve")) s.reserve = Math.max(0f, s.reserve + 50000f * dir);
+        else if (k.equals("reserve")) s.reserve = Math.max(0f, Math.min(CATuning.RESERVE_MAX, s.reserve + 50000f * dir));   // 0.3.15.4: at most 3,000,000
         else if (k.equals("upkeep")) s.newUpkeepCap = Math.max(0f, s.newUpkeepCap + 10000f * dir);
         else if (k.equals("upkeeptype")) {   // Automatic <-> Fixed; Fixed starts from today's automatic amount, not a stale one
             if (s.upkeepCapAuto) s.newUpkeepCap = round(CABudget.upkeepCap(s), 10000f);

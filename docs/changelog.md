@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.15.4 - 2026-11-23
+
+- Credit reserve: Capped at 3,000,000. A save or LunaLib value above it reads as 3,000,000.
+
 ## 0.3.15.3 - 2026-11-23
 
 - Colony screen: The building grid's first empty slot shows the Autopilot's next build. Advisor and Approve read Suggested with a Build button, and Auto reads Next to build.

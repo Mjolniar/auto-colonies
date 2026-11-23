@@ -457,6 +457,7 @@ public class CASettings {
         if (hazardPayColonyShare <= 0f) hazardPayColonyShare = CATuning.HAZARD_COLONY_SHARE;   // older saves load these as 0
         if (hazardPayEmpireShare <= 0f) hazardPayEmpireShare = CATuning.HAZARD_EMPIRE_SHARE;
         if (settlementMinIncome <= 0f) settlementMinIncome = 20000f;
+        if (reserve > CATuning.RESERVE_MAX) reserve = CATuning.RESERVE_MAX;   // 0.3.15.4: the cap, also for older saves
         // 0.3.0.0 (A3, 07 L3): the floor is never 0 (as CAData's was: 0 meant the default), and terraforming never gets more than
         // the whole budget or less than none (a broken json value can only make it spend less, never more)
         if (!(minStability > 0f)) minStability = CATuning.MIN_STABILITY;

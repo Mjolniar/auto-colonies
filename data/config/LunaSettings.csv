@@ -20,7 +20,7 @@ ca_p_newcol,New colonies,Radio,Off,"Off, Ask first, Auto, Mode default, Custom",
 ca_p_war,War,Radio,Off,"Off, Defend, Retaliate, Hold them down, Conquer, Scorched, Mode default, Custom","War fleet authority is set here and capped by faction stances. Defend sends relief, Retaliate raids attackers and retakes lost colonies, Hold them down raids anything at Rival and up, Conquer invades and Scorched bombards. Without Nexerelin, Defend dispatches the autopilot's own defense fleets, and higher levels require Nexerelin.",,,
 ,,,,,,,,
 ca_h_money,Money,Header,Money,,,,,
-ca_reserve,Credit reserve,Int,50000,,"Self-explanatory. Anything above this is able to be spent. Anything below is retained by the autopilot function. Accepted range is 0 to 100,000,000, in steps of 50,000.",0,100000000,
+ca_reserve,Credit reserve,Int,50000,,"Self-explanatory. Anything above this is able to be spent. Anything below is retained by the autopilot function. Accepted range is 0 to 3,000,000, in steps of 50,000.",0,3000000,
 ,,,,,,,,
 ca_surplus,Surplus investment,Radio,Off,"Off, Over 1M, Over 3M, Over 5M, Over 10M",Credits above this line are directed into a single focus world.,,,Advanced
 ca_richpreset,What to buy,Radio,Balanced,"Balanced, Fleet, Expansion, Economy, Save","Idle capital is spent in this order of priority. Rung controls are found under Advanced, in Surplus and money ladder.",,,Advanced

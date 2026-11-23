@@ -135,8 +135,10 @@ public final class CALunaSync {
                 + "Nexerelin.");
 
         header("money", "Money");
-        credits("reserve", "Credit reserve", "reserve", 0, 100000000, 50000, "Self-explanatory. Anything above this is able to be spent. Anything below is retained by the autopilot "
+        Row rr = credits("reserve", "Credit reserve", "reserve", 0, (int) CATuning.RESERVE_MAX, 50000, "Self-explanatory. Anything above this is able to be spent. Anything below is retained by the autopilot "
                 + "function.");
+        final Setter rs = rr.set;   // 0.3.15.4: a stored value over the cap (5,000,000 from before it) reads as 3,000,000
+        rr.set = (s2, v, b2) -> { rs.set(s2, v, b2); if (s2.reserve > CATuning.RESERVE_MAX) s2.reserve = CATuning.RESERVE_MAX; };
         tab = ADVANCED;
         r = radio("surplus", "Surplus investment", "surplusLine", CASettings.SURPLUS_NAMES, "Credits above this line are directed into a single focus world.");
         final Setter surplus = r.set;

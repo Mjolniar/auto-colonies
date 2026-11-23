@@ -232,6 +232,8 @@ public final class CATuning {
     public static final float WAR_ATTACK_DAYS = 120f, WAR_RELIEF_DAYS = 60f;
     /** CADefense's emergency fleets: smallest, in fleet points, and days between two at a colony. */
     public static final float DEFENSE_MIN_FP = 100f, DEFENSE_COOLDOWN_DAYS = 30f;
+    /** 0.3.15.4: the most the Credit reserve can be (a 5,000,000 reserve over a player's credits stopped every build). */
+    public static final float RESERVE_MAX = 3000000f;
     /**
      * 0.3.13.0: Auto Colonies' own defense fleets without Nexerelin (CAOwnWar): the price per fleet point (Nexerelin's default
      * fleet request price), days a fleet defends before it goes home, and the fleet points your colonies can field at once
