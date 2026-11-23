@@ -85,6 +85,12 @@ public class CASyncPage {
                 x.getPosition().rightOfTop(g, 6f);
                 CALog.endRow(t, a);
                 t.addPara("On hand: %s Alpha, %s Beta, %s Gamma.", 4f, gray, hl, "" + h[2], "" + h[1], "" + h[0]);   // 0.3.7.5: cargo and Autopilot Storage
+                int[] f = CASync.fed();   // 0.3.14.0: the refund gives back exactly these
+                if (f[0] + f[1] + f[2] > 0) {
+                    t.addPara("It holds %s Alpha, %s Beta and %s Gamma you fed it.", 4f, gray, hl, "" + f[2], "" + f[1], "" + f[0]);
+                    ButtonAPI back = button(t, CASync.isArmed("refund") ? "Click again to take them back" : "Give back fed cores", "refund", true, 240f, 4f);
+                    CALog.endRow(t, back);
+                }
             }
         }
 

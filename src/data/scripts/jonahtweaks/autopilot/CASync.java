@@ -233,7 +233,10 @@ public class CASync {
     }
 
     /** Packages, colonies and seats cost this much more with the core-heavy mods on. */
-    public static float costMult() { return costMult(coreMods(), CASyncCatalog.CORE_MOD_SHARE, CASyncCatalog.CORE_MOD_MAX); }
+    public static float costMult() {   // 0.3.14.0: Balance lowers the prices and the surcharge (CABalance)
+        float sur = CABalance.surcharge();
+        return costMult(coreMods(), CASyncCatalog.CORE_MOD_SHARE * sur, CASyncCatalog.CORE_MOD_MAX * sur) * CABalance.price();
+    }
 
     /** Pure: a price with the mods' share on top, rounded. */
     static int scaled(int base, float mult) { return Math.round(base * mult); }
@@ -295,7 +298,7 @@ public class CASync {
 
     /** The bandwidth these cores would give now. */
     public static int gainNow(int g, int b, int a) {
-        return gain(fedPoints(), num("fedRem"), g, b, a, CASyncCatalog.FALLOFF_AT, CASyncCatalog.FALLOFF_SHARE)[0];
+        return Math.round(gain(fedPoints(), num("fedRem"), g, b, a, CASyncCatalog.FALLOFF_AT, CASyncCatalog.FALLOFF_SHARE)[0] * CABalance.feed());   // 0.3.14.0: Balance
     }
 
     /** The share of its bandwidth the next core fed gives. */
@@ -507,6 +510,22 @@ public class CASync {
     }
 
     /** Feeds cores {gamma, beta, alpha}: from your cargo first, then Autopilot Storage. Null on success. */
+    /**
+     * 0.3.14.0: gives back every AI core fed to the core, the same kinds and counts, into your cargo. The bandwidth they gave
+     * goes with them (the falloff starts over), and packages, colonies and seats that no longer fit come off (fit).
+     */
+    public static String refundCores() {
+        if (!on()) return "Story mode is off.";
+        int g = num("fedG"), b = num("fedB"), a = num("fedA");
+        if (g + b + a <= 0) return "No fed cores to give back.";
+        int[] n = {g, b, a};
+        for (int k = 0; k < 3; k++) if (n[k] > 0) cargo().addCommodity(CORES[k], n[k]);
+        num("fedPP", 0); num("fedRem", 0); num("fedG", 0); num("fedB", 0); num("fedA", 0);
+        afterChange();
+        CALog.did("Autopilot: gave back " + CASyncCatalog.cores(g, b, a) + ". " + total() + " bandwidth left.", true);
+        return null;
+    }
+
     public static String feed(int g, int b, int a) {
         if (dormant()) return "The Autopilot is dormant";
         int[] h = onHand();
@@ -525,7 +544,7 @@ public class CASync {
             }
         }
         int[] gr = gain(fedPoints(), num("fedRem"), g, b, a, CASyncCatalog.FALLOFF_AT, CASyncCatalog.FALLOFF_SHARE);   // 0.3.10.4: falloff
-        int pts = gr[0];
+        int pts = Math.round(gr[0] * CABalance.feed());   // 0.3.14.0: Balance
         num("fedPP", fedPoints() + pts);
         num("fedRem", gr[1]);
         num("fedG", num("fedG") + g); num("fedB", num("fedB") + b); num("fedA", num("fedA") + a);
@@ -1351,8 +1370,13 @@ public class CASync {
     public static boolean handle(Object id) {
         if (!(id instanceof String) || !((String) id).startsWith(PREFIX)) { armed = null; return false; }
         String rest = ((String) id).substring(PREFIX.length());
-        boolean twoStep = rest.startsWith("feed:");   // cores are used up: asks twice
-        if (twoStep && !rest.equals(armed)) { armed = rest; notice = "Click Confirm to feed it. The cores don't come back."; return true; }
+        boolean twoStep = rest.startsWith("feed:") || rest.equals("refund");   // asks twice
+        if (twoStep && !rest.equals(armed)) {
+            armed = rest;
+            notice = rest.equals("refund") ? "Click again to take every fed core back. Packages that no longer fit come off."
+                    : "Click Confirm to feed it. Give back fed cores returns them later.";
+            return true;
+        }
         armed = null;
         notice = null;
         String err = null;
@@ -1370,6 +1394,7 @@ public class CASync {
             else if (what.equals("all")) err = feed(h[0], h[1], h[2]);
             if (err == null) notice = total() + " bandwidth.";
         }
+        else if (rest.equals("refund")) { err = refundCores(); if (err == null) notice = total() + " bandwidth."; }   // 0.3.14.0
         else if (rest.equals("storymode")) setOn(!on());   // the intel Settings page while LunaLib is off (CASetupUI.storyRow)
         else if (rest.equals("none")) { }   // a LOCKED row button
         else if (rest.equals("core") || rest.equals("pull") || rest.startsWith("read:")) {

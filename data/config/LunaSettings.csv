@@ -1,36 +1,45 @@
 fieldID,fieldName,fieldType,defaultValue,secondaryValue,fieldDescription,minValue,maxValue,tab
 ca_h_storymode,Story mode,Header,Story mode,,,,,
 ca_storymode,Story mode,Boolean,false,,"In Story mode the Colony Autopilot starts dormant and is unlocked through the story. Off makes every function available from the start, and each save keeps its story progress through any switch.",,,
-ca_t_presets,,Text,"Each preset sets several Advanced tab fields at once. Mode default returns the group to the empire mode's values, and Custom indicates fields that match no preset, so selecting it changes nothing.",,,,,
+,,,,,,,,
+ca_h_colony,Colony behavior,Header,Colony behavior,,,,,Advanced
+ca_t_presets,,Text,"Each preset sets several Advanced tab fields at once. Mode default returns the group to the empire mode's values, and Custom indicates fields that match no preset, so selecting it changes nothing.",,,,,Advanced
 ,,,,,,,,
 ca_h_playstyle,Playstyle,Header,Playstyle,,,,,
+ca_balance,Balance,Radio,Hard,"Easy, Normal, Hard","Sets how expensive the autopilot is. Hard keeps every price as balanced, while Normal lowers story bandwidth prices to three quarters and Easy to half, with fed AI cores worth more and convenience fees low on both.",,,
+ca_profile,Profile,Radio,Custom,"Low profile, Normal, High profile, Custom","Sets how the empire grows. Low profile avoids attention and founds no colonies, Normal expands into held systems and defends what it builds, and High profile expands as fast and wide as it can with every AI core available.",,,
 ca_empire,Empire mode,Radio,Advisor,"Off, Advisor, Approve, Auto","Empire-wide directives follow this setting. In Off the autopilot takes no action, in Advisor it only recommends, in Approve it waits for administrator consent, and in Auto it executes immediately. Values set by the administrator are retained when the mode changes.",,,
-ca_lowprofile,Low profile,Boolean,false,,"Colony crises advance slower in exchange for lower earnings. AI cores are kept out of colonies above size 3, and Pather interest, free ports, raids and sabotage are avoided. Off means Full expansion.",,,
+,,,,,,,,
+ca_lowprofile,Low profile,Boolean,false,,"Colony crises advance slower in exchange for lower earnings. AI cores are kept out of colonies above size 3, and Pather interest, free ports, raids and sabotage are avoided. Off means Full expansion.",,,Advanced
+,,,,,,,,
 ca_p_spend,Spending,Radio,Normal,"Thrifty, Normal, Lavish, Mode default, Custom","Monthly expenditure is allocated from net income and savings. Thrifty allocates 30%% and 5%%, Normal 50%% and 15%%, and Lavish 80%% and 30%%, with the per-project ceiling scaled to half, all or twice net income.",,,
-ca_p_extras,Extras,Radio,Mode default,"Auto, Recommend only, Off, Mode default, Custom","Mod buildings and features are governed here, including stable locations, measured mod buildings, trade contracts, research, special project supply, megastructures, station augments, RAT settlement, IndEvo automation and Antimatter Stabilizers.",,,
-ca_p_newcol,New colonies,Radio,Off,"Off, Ask first, Auto, Mode default, Custom","Idle capital is converted into new charters. Under Ask first, each founding is held for administrator approval.",,,
+,,,,,,,,
+ca_p_extras,Extras,Radio,Mode default,"Auto, Recommend only, Off, Mode default, Custom","Mod buildings and features are governed here, including stable locations, measured mod buildings, trade contracts, research, special project supply, megastructures, station augments, RAT settlement, IndEvo automation and Antimatter Stabilizers.",,,Advanced
+ca_p_newcol,New colonies,Radio,Off,"Off, Ask first, Auto, Mode default, Custom","Idle capital is converted into new charters. Under Ask first, each founding is held for administrator approval.",,,Advanced
+,,,,,,,,
 ca_p_war,War,Radio,Off,"Off, Defend, Retaliate, Hold them down, Conquer, Scorched, Mode default, Custom","War fleet authority is set here and capped by faction stances. Defend sends relief, Retaliate raids attackers and retakes lost colonies, Hold them down raids anything at Rival and up, Conquer invades and Scorched bombards. Without Nexerelin, Defend dispatches the autopilot's own defense fleets, and higher levels require Nexerelin.",,,
 ,,,,,,,,
 ca_h_money,Money,Header,Money,,,,,
 ca_reserve,Credit reserve,Int,50000,,"Self-explanatory. Anything above this is able to be spent. Anything below is retained by the autopilot function. Accepted range is 0 to 100,000,000, in steps of 50,000.",0,100000000,
-ca_surplus,Surplus investment,Radio,Off,"Off, Over 1M, Over 3M, Over 5M, Over 10M",Credits above this line are directed into a single focus world.,,,
-ca_richpreset,What to buy,Radio,Balanced,"Balanced, Fleet, Expansion, Economy, Save","Idle capital is spent in this order of priority. Rung controls are found under Advanced, in Surplus and money ladder.",,,
-ca_endgame,Endgame,Radio,Off,"From 1M/month, From 2M/month, From 500k/month, Off","Endgame directives begin at this income, prioritizing production and defense.",,,
-ca_p_story,Story points,Radio,Yours only,"Yours only, One per colony, 2 a month, 5 a month, Mode default, Custom",Story point expenditure on improvements is capped by this setting.,,,
 ,,,,,,,,
-ca_h_building,Building,Header,Building,,,,,
-ca_p_station,Stations,Radio,Pick by score,"Pick by score, Low tech, Midline, High tech, Imperium, Diable Avionics, Roider Union, Only where they pay, Mode default, Custom","Stations are constructed from size 4 and upgraded as colonies grow, with a Battlestation at 6, a Star Fortress at 8 and the capital one size sooner. Imperium requires Interstellar Imperium.",,,
-ca_p_takedown,Take down buildings,Radio,Clean up,"Never, Clean up, Free hand, Mode default, Custom","Automatic destruction of inefficient industries maintains standard, replaces constructions with optimized standards. Colony standards ensured through repetitive and rigorous optimization.",,,
-ca_p_policy,Colony policies,Radio,Auto,"Auto, Don't touch, Mode default, Custom","Under Auto, hazard pay, free ports and edicts are applied wherever they are profitable. Under Don't touch, colony policies are left unchanged.",,,
+ca_surplus,Surplus investment,Radio,Off,"Off, Over 1M, Over 3M, Over 5M, Over 10M",Credits above this line are directed into a single focus world.,,,Advanced
+ca_richpreset,What to buy,Radio,Balanced,"Balanced, Fleet, Expansion, Economy, Save","Idle capital is spent in this order of priority. Rung controls are found under Advanced, in Surplus and money ladder.",,,Advanced
+ca_endgame,Endgame,Radio,Off,"From 1M/month, From 2M/month, From 500k/month, Off","Endgame directives begin at this income, prioritizing production and defense.",,,Advanced
+ca_p_story,Story points,Radio,Yours only,"Yours only, One per colony, 2 a month, 5 a month, Mode default, Custom",Story point expenditure on improvements is capped by this setting.,,,Advanced
 ,,,,,,,,
-ca_h_people,Items and people,Header,Items and people,,,,,
-ca_p_cores,AI cores,Radio,Safe,"Off, Safe, Small colonies only, Defended, No limit, Mode default, Custom","AI cores are drawn from Autopilot Storage only. Safe keeps placement below inspection thresholds, while Defended resists inspections and Hegemony hostility should be expected.",,,
-ca_p_admins,Administrators,Radio,Hire and place,"Off, Place only, Hire and place, Mode default, Custom",Place only assigns the administrators already on hand. Hire and place recruits additional administrators as well.,,,
+ca_h_building,Building,Header,Building,,,,,Advanced
+ca_p_station,Stations,Radio,Pick by score,"Pick by score, Low tech, Midline, High tech, Imperium, Diable Avionics, Roider Union, Only where they pay, Mode default, Custom","Stations are constructed from size 4 and upgraded as colonies grow, with a Battlestation at 6, a Star Fortress at 8 and the capital one size sooner. Imperium requires Interstellar Imperium.",,,Advanced
+ca_p_takedown,Take down buildings,Radio,Clean up,"Never, Clean up, Free hand, Mode default, Custom","Automatic destruction of inefficient industries maintains standard, replaces constructions with optimized standards. Colony standards ensured through repetitive and rigorous optimization.",,,Advanced
+ca_p_policy,Colony policies,Radio,Auto,"Auto, Don't touch, Mode default, Custom","Under Auto, hazard pay, free ports and edicts are applied wherever they are profitable. Under Don't touch, colony policies are left unchanged.",,,Advanced
 ,,,,,,,,
-ca_h_security,Security and diplomacy,Header,Security and diplomacy,,,,,
-ca_spy,Agents,Radio,Off,"Off, Defense, Defense and offense","Agents are assigned to security and relations, and offense adds sabotage. Requires Nexerelin.",,,
-ca_amb,Ambassadors,Boolean,true,,"Ambassadors are hired and installed, with Ally and Friendly factions served first. Requires Industrial Evolution.",,,
-ca_t_picks,,Text,"Faction stances and this save's picks, the capital, refit hub, sell hub and offense target, are set on the Autopilot panel's Settings page.",,,,,
+ca_h_people,Items and people,Header,Items and people,,,,,Advanced
+ca_p_cores,AI cores,Radio,Safe,"Off, Safe, Small colonies only, Defended, No limit, Mode default, Custom","AI cores are drawn from Autopilot Storage only. Safe keeps placement below inspection thresholds, while Defended resists inspections and Hegemony hostility should be expected.",,,Advanced
+ca_p_admins,Administrators,Radio,Hire and place,"Off, Place only, Hire and place, Mode default, Custom",Place only assigns the administrators already on hand. Hire and place recruits additional administrators as well.,,,Advanced
+,,,,,,,,
+ca_h_security,Security and diplomacy,Header,Security and diplomacy,,,,,Advanced
+ca_spy,Agents,Radio,Off,"Off, Defense, Defense and offense","Agents are assigned to security and relations, and offense adds sabotage. Requires Nexerelin.",,,Advanced
+ca_amb,Ambassadors,Boolean,true,,"Ambassadors are hired and installed, with Ally and Friendly factions served first. Requires Industrial Evolution.",,,Advanced
+ca_t_picks,,Text,"Faction stances and this save's picks, the capital, refit hub, sell hub and offense target, are set on the Autopilot panel's Settings page.",,,,,Advanced
 ,,,,,,,,
 ca_h_interface,Interface,Header,Interface,,,,,
 ca_screenlog,On-screen log,Radio,Every entry,"Every entry, Important only, Off","Short-form notices are displayed on screen, and the complete record is retained on the Log page.",,,

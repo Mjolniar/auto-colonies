@@ -4,13 +4,13 @@
 
 - Story mode is off by default. The Colony Autopilot is dormant until you find the Autarch AI Core, and then it runs the abilities you buy with its bandwidth.
 - The setting is the first row of Auto Colonies in LunaLib (F3) or the Autopilot panel's Settings page, and every save follows it. A new game asks once whether you want Story or Normal, with Story picked by default.
-- You can switch at any time, and each save keeps its story progress. With story mode off, everything works like it was never on, and the quest and the core's timers pause. Spent bandwidth and fed cores aren't refunded.
+- You can switch at any time, and each save keeps its story progress. With story mode off, everything works like it was never on, and the quest and the core's timers pause. Spent bandwidth isn't refunded.
 
 ## The core
 
 - There's one per save, in a derelict research station in an uninhabited fringe system. After your first colony, your TriPad names the constellation, and the Colony Autopilot intel entry names the star and where the station orbits.
 - You can install it, install it in an isolation cradle (1 story point, removable later), have Engineering break it down (365 days, for 3 Alpha and 2 Beta cores), sell it (base price 1,000,000) or decide later.
-- It gives 10 bandwidth, and each AI core you feed it on the Story page adds more (Alpha 10, Beta 3, Gamma 1). Fed cores are used up.
+- It gives 10 bandwidth, and each AI core you feed it on the Story page adds more (Alpha 10, Beta 3, Gamma 1). Give back fed cores on the Story page returns every core you fed it, the same kinds and counts, and the bandwidth they gave goes with them, so packages that no longer fit come off.
 - Once you've fed 100 bandwidth, each core gives 75% of that, and from 250 it gives 50%. What you already fed stays.
 - Mods that hand out a lot of AI cores (Treasure Hunt, Seeker, Random Assortment of Things, Secrets of the Frontier, Knights of Ludd, Slightly Better Tech-Mining and Omega Core Everywhere) make packages, colonies and seats cost 10% more each, up to 50% more. Packages you already own keep the price you paid.
 - Each tier opens once you own 2/3 of the packages in the tier before it, not counting packages for mods you don't have.

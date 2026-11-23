@@ -1,15 +1,15 @@
 # Settings
 
-With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. The main ones are on the General tab and the rest are on the Advanced tab. Without LunaLib, they're on the colony panel under Empire, then Settings. This page goes through them in the same order as LunaLib's menu.
+With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. The General tab has the few settings most people change, and everything else is on the Advanced tab. Without LunaLib, they're on the colony panel under Empire, then Settings. This page goes through them in the same order as LunaLib's menu.
 
 ## How defaults work
 
 - "Empire mode" in the Default column means the setting follows the empire mode, and its values are in [Empire mode defaults](#empire-mode-defaults).
 - Anything you change shows "set by you" and keeps its value when the empire mode changes.
 - Some main settings are presets that set several Advanced settings at once. Mode default puts the group back on the empire mode's values, and Custom means the Advanced settings don't match any option.
-- Reset to recommended puts everything back to the defaults. Low profile, faction stances and this save's picks stay.
+- Reset to recommended puts everything back to the defaults. Balance, Low profile, faction stances and this save's picks stay.
 - Settings for mods you don't have are hidden, or show "Needs" and the mod's name in LunaLib.
-- There are no cheat or balance settings. Cheats are in Easy Sector.
+- There are no cheat settings. Cheats are in Easy Sector.
 
 ## LunaLib
 
@@ -30,11 +30,10 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 
 | Setting | Options | Default | What it does |
 |---|---|---|---|
+| Balance | Easy, Normal, Hard | Hard | How expensive the Autopilot is. Hard is every price as the mod was balanced. Normal makes story bandwidth prices three quarters, halves the core-heavy mod surcharge and makes fed AI cores worth a quarter more, and Easy makes prices half, drops the surcharge and makes fed cores worth half again as much. Both set convenience fees to Low. |
+| Profile | Low profile, Normal, High profile | Picked in the new-game pop-up | How your empire grows, setting Low profile, New colonies, AI cores, War and where new colonies go at once. Low profile founds no colonies, keeps AI cores Safe and stays at Defend. Normal founds colonies in systems you hold, uses Defended AI cores and Retaliates. High profile founds colonies within 15 ly of the capital without asking first, uses every AI core you have and Retaliates. It shows Custom when you've changed one of those settings by hand. |
 | Empire mode | Off, Advisor, Approve, Auto | Advisor | Empire-wide settings follow this. Off does nothing, Advisor advises, Approve asks you first and Auto just does it. |
-| Low profile | On, Off | Off | Colony crises come slower, but you'll earn less. It won't put AI cores in colonies above size 3, and it stays away from Pather interest, free ports, raids and sabotage ([Low profile](low-profile.md)). The Settings page calls it Expansion style. |
 | Spending | Thrifty, Normal, Lavish | Normal | Thrifty spends 30% of net income and 5% of savings, Normal 50% and 15%, and Lavish 80% and 30%. The per-project cap is half, all or twice your net income, and new upkeep is capped at 5%, 10% or 20% of net income. |
-| Extras | Auto, Recommend only, Off | Auto | It covers stable locations, measured mod buildings, trade contracts, research, special project supply, megastructures, station augments, RAT settlement, IndEvo automation and Antimatter Stabilizers. |
-| New colonies | Off, Ask first, Auto | Empire mode | It founds new colonies with idle money, and on Ask first you approve each one ([New colonies](expansion.md)). |
 | War | Off, Defend, Retaliate, Hold them down, Conquer, Scorched | Empire mode | This is how far war fleets go, and faction stances cap it. Defend sends relief, Retaliate raids attackers and retakes your lost colonies, and Hold them down raids anyone at Rival and up. Conquer invades and Scorched bombards ([War page](war-and-security.md#the-war-page)). Without Nexerelin, Defend sends Auto Colonies' own defense fleets, and the levels past it need Nexerelin. |
 
 ### Money
@@ -42,6 +41,24 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | Setting | Options | Default | What it does |
 |---|---|---|---|
 | Credit reserve | 0 to 100,000,000 | A quarter of your credits, 50,000 to 500,000 | It's the money Autopilot won't touch. |
+
+### Interface, reset and removal
+
+| Setting | Options | Default | What it does |
+|---|---|---|---|
+| On-screen log | Every entry, Important only, Off | Every entry | Short lines show on screen, and the Log page keeps every entry. |
+| Reset to recommended | Tick and save | | Your settings go back to the empire mode's defaults, then the box unticks itself. |
+| Prepare for removal | On, Off | Off | A dialog asks you first, then it moves Autopilot Storage into each colony's Storage, takes out what it keeps in this save and stops. Then save, quit and remove the mod. Turning it off lets it run again in this save. |
+
+## Advanced tab
+
+### Colony behavior
+
+| Setting | Options | Default | What it does |
+|---|---|---|---|
+| Low profile | On, Off | Off | Colony crises come slower, but you'll earn less. It won't put AI cores in colonies above size 3, and it stays away from Pather interest, free ports, raids and sabotage ([Low profile](low-profile.md)). Profile sets it too. |
+| Extras | Auto, Recommend only, Off | Auto | It covers stable locations, measured mod buildings, trade contracts, research, special project supply, megastructures, station augments, RAT settlement, IndEvo automation and Antimatter Stabilizers. |
+| New colonies | Off, Ask first, Auto | Empire mode | It founds new colonies with idle money, and on Ask first you approve each one ([New colonies](expansion.md)). |
 | Surplus investment | Off, Over 1M, Over 3M, Over 5M, Over 10M | Empire mode | Anything you've got over this goes into one focus world ([Money](money.md)). |
 | What to buy | Balanced, Fleet, Expansion, Economy, Save | Balanced | It's what idle money buys first ([Money ladder](money.md#the-money-ladder)). |
 | Endgame | From 1M/month, From 2M/month, From 500k/month, Off | Empire mode | At this income, it starts building for production and defense. |
@@ -68,16 +85,6 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 |---|---|---|---|
 | Agents | Off, Defense, Defense and offense | Empire mode | Agents handle security and relations, and offense adds sabotage. Needs Nexerelin. |
 | Ambassadors | On, Off | On | It hires and installs ambassadors, Ally and Friendly factions first. Needs Industrial Evolution. |
-
-### Interface, reset and removal
-
-| Setting | Options | Default | What it does |
-|---|---|---|---|
-| On-screen log | Every entry, Important only, Off | Every entry | Short lines show on screen, and the Log page keeps every entry. |
-| Reset to recommended | Tick and save | | Your settings go back to the empire mode's defaults, then the box unticks itself. |
-| Prepare for removal | On, Off | Off | A dialog asks you first, then it moves Autopilot Storage into each colony's Storage, takes out what it keeps in this save and stops. Then save, quit and remove the mod. Turning it off lets it run again in this save. |
-
-## Advanced tab
 
 ### Budget
 

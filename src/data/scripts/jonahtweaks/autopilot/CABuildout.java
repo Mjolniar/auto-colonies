@@ -107,8 +107,8 @@ public class CABuildout {
 
     // ---------------- text (0.3.0.0, WS-F3: each paragraph 40 words or fewer, JTScreenButtonCheck) ----------------
 
-    static final String STYLE_ASK = "Pick an expansion style for",   // 0.3.8.6: + the colony's name
-            STYLE_LATER = "Change it in Settings, Expansion style.";   // 0.3.0.0 fix pass 3: shorter
+    static final String STYLE_ASK = "Pick how your empire grows.",   // 0.3.14.0: Profile (CAProfile)
+            STYLE_LATER = "Change it in Settings, Profile.";
     /** The fast buildout offer, before "You have X now": what it does, then what follows (gray). */
     static final String[] OFFER_TEXT = {   // 0.3.0.0 (WS-F3 fix pass 2): shorter, for the mod-wide word budget
             "Fast buildout sets Auto, then spends credits above a floor on the fastest payback until it earns 30 days straight.",   // 0.3.8.6: a sentence
@@ -118,15 +118,8 @@ public class CABuildout {
      * The expansion style choice: the Settings row's line and its hover text (CASetupUI, Expansion style), so the two say
      * the same thing once (research 04 section 7, item 5). A missing entry is left out.
      */
-    static String[] styleText() {
-        List<String> out = new java.util.ArrayList<String>();
-        String desc = CASetupUI.DESC.get("lowprofile");
-        String[] hover = CASetupUI.HOVER.get("lowprofile");
-        if (desc != null) out.add(desc);
-        if (hover != null && hover.length > 0 && hover[0] != null && !hover[0].isEmpty())
-            out.add("Low profile: " + Character.toLowerCase(hover[0].charAt(0)) + hover[0].substring(1));
-        return out.toArray(new String[0]);
-    }
+    /** 0.3.14.0: the three profiles' sentences (CAProfile.DESC), the same as the new-game pop-up's. */
+    static String[] styleText() { return CAProfile.DESC.clone(); }
 
     /** The colony panel section's hover: how the ranking works and when it ends (from IDLE_DAYS and MAX_DAYS). Pure. */
     static String[] hoverText() {
@@ -148,15 +141,17 @@ public class CABuildout {
             // 0.2.43.0: first the expansion style (CALowProfile), then the buildout
             // 0.3.0.0 (WS-F3): the Settings row's text (styleText) in place of 3 paragraphs of 39, 58 and 13 words
             TextPanelAPI t = dialog.getTextPanel();
-            t.addPara(STYLE_ASK + " " + m.getName() + ".");   // 0.3.8.6: the prompt already reads Colony Autopilot
+            int picked = 0;
+            try { picked = CASync.num("profilePick"); } catch (Throwable ignored) { }
+            if (picked > 0) { offerBuildout(); return; }   // 0.3.14.0: the new-game pop-up already set the Profile
+            t.addPara(STYLE_ASK);
             for (String p : styleText()) t.addPara(p);
             t.addPara(STYLE_LATER, Misc.getGrayColor());
             OptionPanelAPI o = dialog.getOptionPanel();
-            o.addOption("Full expansion", STYLE_FULL);
-            o.addOption("Low profile", STYLE_LOW);
+            for (int i = 0; i < CAProfile.NAMES.length; i++) o.addOption(CAProfile.NAMES[i], STYLE + i);
         }
 
-        static final String STYLE_FULL = "style:full", STYLE_LOW = "style:low";
+        static final String STYLE = "style:";
 
         void offerBuildout() {
             TextPanelAPI t = dialog.getTextPanel();
@@ -178,10 +173,16 @@ public class CABuildout {
         }
 
         void select(Object data) {
-            if (STYLE_FULL.equals(data) || STYLE_LOW.equals(data)) {
-                boolean low = STYLE_LOW.equals(data);
-                CALowProfile.set(CAData.settings(), low, "your choice");
-                CALog.think(m.getName() + ": Expansion style: " + (low ? "Low profile" : "Full expansion") + " (Settings, Playstyle).");   // 0.3.8.8: your click; Thinking list
+            if (String.valueOf(data).startsWith(STYLE)) {   // 0.3.14.0: Profile, kept by the first setup as the pop-up's is
+                int i = -1;
+                try { i = Integer.parseInt(String.valueOf(data).substring(STYLE.length())); } catch (Throwable ignored) { }
+                if (i >= 0 && i < CAProfile.NAMES.length) {
+                    CASettings s = CAData.settings();
+                    CAProfile.apply(s, i);
+                    CAProfile.markSet(s, i);
+                    CASync.num("profilePick", i + 1);
+                    CALog.think(m.getName() + ": Profile: " + CAProfile.NAMES[i] + " (Settings, Playstyle).");
+                }
                 dialog.getOptionPanel().clearOptions();
                 offerBuildout();
                 return;

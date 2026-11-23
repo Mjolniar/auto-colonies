@@ -8,6 +8,7 @@
 
 ## First-time setup
 
+- A new game asks three things: Story or Normal mode, Balance (Easy, Normal or Hard) and Profile (Low profile, Normal or High profile), with one sentence on each ([Settings](settings.md#playstyle)).
 - Pick Full expansion or [Low profile](low-profile.md), and a goal ([How it builds](how-it-builds.md)). Balanced is the default.
 - Spending: Normal (50% of net income and 15% of savings a month) is recommended.
 - New colonies: Off is recommended ([New colonies](expansion.md)).

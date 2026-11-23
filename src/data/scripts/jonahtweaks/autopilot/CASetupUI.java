@@ -80,7 +80,7 @@ public class CASetupUI {
         s.rungMode = CASettings.defaultRungs();
         s.shipyardStop = 6;
         s.monthCredits = credits;
-        s.feeLevel = 2;
+        s.feeLevel = CABalance.FEE[CABalance.of(s)];   // 0.3.14.0: Standard on Hard, Low on Normal and Easy
         s.stationLine = "score";
         s.measuredMode = 0;
         s.allowRemovals = false;   // removing buildings is the player's call
@@ -140,6 +140,12 @@ public class CASetupUI {
         // 0.3.9.6 (F2): the one-value settings with a row not set above go to their defaults (each row's recommendation), so
         // Reset to recommended leaves none that differs from its recommendation without a Set by you mark
         CAModeTable.resetDefaults(s);
+        // 0.3.14.0: the first setup keeps the Profile picked in the new-game pop-up (CAStoryPrompt); Reset to recommended doesn't
+        if (!s.setupDone) {
+            int pick = -1;
+            try { pick = CASync.num("profilePick") - 1; } catch (Throwable ignored) { }   // no game (offline checks): none
+            if (pick >= 0) CAProfile.apply(s, pick);
+        }
     }
 
 
@@ -163,7 +169,8 @@ public class CASetupUI {
     /** Hover text by row key: on the row's label and its gray line. */
     static final Map<String, String[]> HOVER = new LinkedHashMap<String, String[]>();
     static {
-        DESC.put("lowprofile", "Colony crises slowed in exchange for lower earnings.");
+        DESC.put("balance", "How expensive the autopilot is.");
+        DESC.put("profile", "How the empire grows.");
         DESC.put("p_spend", "Normal allocates 50% of net income and 15% of savings.");
         DESC.put("p_extras", "Governs mod buildings and features.");
         DESC.put("p_newcol", "Idle capital converted into new charters.");
@@ -186,7 +193,7 @@ public class CASetupUI {
         DESC.put("screenlog", "Short-form notices displayed on screen.");
 
         HOVER.put("empire", new String[]{"Off takes no action, Advisor recommends, Approve awaits consent and Auto executes."});
-        HOVER.put("lowprofile", new String[]{"AI cores kept out of colonies above size 3. Pather interest, free ports, raids and sabotage avoided."});
+        HOVER.put("profile", new String[]{"Low profile founds no colonies, Normal expands into held systems and High profile expands everywhere it can."});
         HOVER.put("p_spend", new String[]{"Thrifty allocates 30% and 5%, Normal 50% and 15%, Lavish 80% and 30%. The per-project cap is half, all or twice net income. Surplus terraforming requires a 10-year payback on Thrifty."});
         HOVER.put("p_war", new String[]{"Defend sends relief, Retaliate raids attackers and retakes lost colonies, Hold them down raids Rival and up, Conquer invades and Scorched bombards."});
         // Advanced
@@ -228,7 +235,7 @@ public class CASetupUI {
     }
 
     /** The main rows' keys, in menu order (20 with every supported mod; JTMenuTextCheck). */
-    static final String[] MAIN_KEYS = {"empire", "lowprofile", "p_spend", "p_extras", "p_newcol", "p_war", "reserve", "surplus", "richpreset", "endgame",
+    static final String[] MAIN_KEYS = {"empire", "balance", "profile", "p_spend", "p_extras", "p_newcol", "p_war", "reserve", "surplus", "richpreset", "endgame",
             "p_story", "p_station", "p_takedown", "p_policy", "p_cores", "p_admins", "capid", "spy", "amb", "screenlog"};
     /** Preset row keys to their CAPresets row. */
     static final Map<String, String> PRESET_KEYS = new LinkedHashMap<String, String>();
@@ -324,8 +331,10 @@ public class CASetupUI {
                 + lower(CAPresets.name(s, CAPresets.SPENDING)) + " spending")) {
             row(t, "Empire mode", s.empire().label, null, "empire", true);
             desc(t, "empire");
-            row(t, "Expansion style", s.lowProfile ? "Low profile" : "Full expansion", null, "lowprofile", true);
-            desc(t, "lowprofile");
+            row(t, "Balance", CABalance.name(s), null, "balance", true);   // 0.3.14.0
+            desc(t, "balance");
+            row(t, "Profile", CAProfile.name(s), null, "profile", true);
+            desc(t, "profile");
             preset(t, s, "Spending", "p_spend");
             preset(t, s, "Extras", "p_extras");
             newColonies(t, s);
@@ -1011,6 +1020,8 @@ public class CASetupUI {
         else if (k.equals("overlimit")) s.noOverLimitFix = !s.noOverLimitFix;
         else if (k.equals("prune")) s.noPrune = !s.noPrune;
         else if (k.equals("lowprofile")) CALowProfile.set(s, !s.lowProfile, "Settings");
+        else if (k.equals("balance")) CABalance.cycle(s);   // 0.3.14.0
+        else if (k.equals("profile")) CAProfile.cycle(s);
         else if (k.equals("capgather")) s.capitalNoGather = !s.capitalNoGather;
         else if (k.equals("settleinc")) s.settlementMinIncome = Math.max(5000f, s.settlementMinIncome + 5000f * dir);
         // 0.3.0.0 (WS-F1): the 0.3.0 settings that had no row yet (money ladder, Auto-expansion)

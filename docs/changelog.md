@@ -1,5 +1,14 @@
 # Patch notes
 
+## 0.3.14.0 - 2026-11-23
+
+- New game: The pop-up asks Story or Normal mode, then Balance, then Profile, with one sentence for each option.
+- Balance: Added Easy, Normal and Hard. Hard is the current prices. Normal and Easy lower story bandwidth prices to 75% and 50%, cut the core-heavy mod surcharge by half and all, raise fed core bandwidth by 25% and 50%, and set convenience fees to Low.
+- Profile: Added Low profile, Normal and High profile. Each sets Low profile, New colonies, AI cores, War and where new colonies go at once.
+- Settings: The LunaLib General tab holds Story mode, Balance, Profile, Empire mode, Spending, War, Credit reserve, On-screen log, Reset and Removal. The other main settings moved to the Advanced tab under Colony behavior.
+- Story mode: Added Give back fed cores. It returns every fed AI core, the same kinds and counts, and the bandwidth they gave goes with them.
+- Fast buildout: The first-colony offer asks for a Profile, and skips the question when the new-game pop-up already set one.
+
 ## 0.3.13.2 - 2026-11-19
 
 - Story mode: The TriPad and crew scenes are rewritten.

@@ -89,7 +89,7 @@ public final class CAModeTable {
         for (int i = 0; i < RESET_DEFAULTS.length; i++) set(s, RESET_DEFAULTS[i], get(fresh, RESET_DEFAULTS[i]));   // field names, not text (JTScreenButtonCheck counts for-each over constants)
     }
 
-    static final String[] PICK = {"lowProfile", "factionStance", "factionPriority", "capitalId", "focusId", "logisticsHub",
+    static final String[] PICK = {"balance", "lowProfile", "factionStance", "factionPriority", "capitalId", "focusId", "logisticsHub",
             "logisticsSellHub", "spyTarget"};
 
     static final String[] STATE = {"setupDone", "monthCredits", "month", "spent", "fees", "upkeepAdded", "terraSpent", "budgetCarry",

@@ -85,10 +85,27 @@ public final class CALunaSync {
                 + "available from the start, and each save keeps its story progress through any switch.");
         st.get = s -> CASync.on();
         st.set = (s, v, b) -> { };   // applied before the other rows (story())
+        // 0.3.14.0: a compact General tab. The detail rows open the Advanced tab under Colony behavior (tab switches below)
+        tab = ADVANCED;
+        header("colony", "Colony behavior");
         text("presets", "Each preset sets several Advanced tab fields at once. Mode default returns the group to the empire mode's "
                 + "values, and Custom indicates fields that match no preset, so selecting it changes nothing.");
+        tab = GENERAL;
         header("playstyle", "Playstyle");
-        Row r = row(RADIO, "empire", "Empire mode", "Empire-wide directives follow this setting. In Off the autopilot takes no action, in Advisor it only "
+        // 0.3.14.0: Balance (CABalance) and Profile (CAProfile)
+        Row r = row(RADIO, "balance", "Balance", "Sets how expensive the autopilot is. Hard keeps every price as balanced, while Normal lowers story bandwidth "
+                + "prices to three quarters and Easy to half, with fed AI cores worth more and convenience fees low on both.");
+        r.opts = CABalance.NAMES.clone();
+        r.fields = new String[]{"balance", "feeLevel"};
+        r.get = s -> CABalance.name(s);
+        r.set = (s, v, b) -> CABalance.set(s, CABalance.index(String.valueOf(v)));
+        r = row(RADIO, "profile", "Profile", "Sets how the empire grows. Low profile avoids attention and founds no colonies, Normal expands into held "
+                + "systems and defends what it builds, and High profile expands as fast and wide as it can with every AI core available.");
+        r.opts = new String[]{CAProfile.NAMES[0], CAProfile.NAMES[1], CAProfile.NAMES[2], CAProfile.CUSTOM};
+        r.fields = CAProfile.fields();
+        r.get = s -> CAProfile.name(s);
+        r.set = (s, v, b) -> { int i = CAProfile.index(String.valueOf(v)); if (i >= 0) CAProfile.apply(s, i); };
+        r = row(RADIO, "empire", "Empire mode", "Empire-wide directives follow this setting. In Off the autopilot takes no action, in Advisor it only "
                 + "recommends, in Approve it waits for administrator consent, and in Auto it executes immediately. Values set by "
                 + "the administrator are retained when the mode changes.");
         final CAData.Mode[] modes = CAData.Mode.values();
@@ -96,18 +113,22 @@ public final class CALunaSync {
         for (int i = 0; i < modes.length; i++) r.opts[i] = modes[i].label;
         r.get = s -> s.empire().label;
         r.set = (s, v, b) -> { int i = idx("empire", v); if (i >= 0) CAModeTable.setEmpire(s, modes[i]); };
+        tab = ADVANCED;
         r = row(BOOL, "lowprofile", "Low profile", "Colony crises advance slower in exchange for lower earnings. AI cores are kept out of colonies above size 3, "
                 + "and Pather interest, free ports, raids and sabotage are avoided. Off means Full expansion.");
         r.fields = new String[]{"lowProfile"};
         r.get = s -> s.lowProfile;
         r.set = (s, v, b) -> CALowProfile.set(s, (Boolean) v, "LunaLib settings");
+        tab = GENERAL;
         preset("p_spend", "Spending", CAPresets.SPENDING, "Monthly expenditure is allocated from net income and savings. Thrifty allocates 30% and 5%, Normal 50% and "
                 + "15%, and Lavish 80% and 30%, with the per-project ceiling scaled to half, all or twice net income.");
+        tab = ADVANCED;
         preset("p_extras", "Extras", CAPresets.EXTRAS, "Mod buildings and features are governed here, including stable locations, measured mod buildings, trade "
                 + "contracts, research, special project supply, megastructures, station augments, RAT settlement, IndEvo "
                 + "automation and Antimatter Stabilizers.");
         preset("p_newcol", "New colonies", CAPresets.NEW_COLONIES, "Idle capital is converted into new charters. Under Ask first, each founding is held for administrator "
                 + "approval.");
+        tab = GENERAL;
         preset("p_war", "War", CAPresets.WAR, "War fleet authority is set here and capped by faction stances. Defend sends relief, Retaliate raids attackers "
                 + "and retakes lost colonies, Hold them down raids anything at Rival and up, Conquer invades and Scorched "
                 + "bombards. Without Nexerelin, Defend dispatches the autopilot's own defense fleets, and higher levels require "
@@ -116,6 +137,7 @@ public final class CALunaSync {
         header("money", "Money");
         credits("reserve", "Credit reserve", "reserve", 0, 100000000, 50000, "Self-explanatory. Anything above this is able to be spent. Anything below is retained by the autopilot "
                 + "function.");
+        tab = ADVANCED;
         r = radio("surplus", "Surplus investment", "surplusLine", CASettings.SURPLUS_NAMES, "Credits above this line are directed into a single focus world.");
         final Setter surplus = r.set;
         r.set = (s, v, b) -> { surplus.set(s, v, b); s.surplusChecked = true; };
@@ -145,6 +167,7 @@ public final class CALunaSync {
         text("picks", "Faction stances and this save's picks, the capital, refit hub, sell hub and offense target, are set on the "
                 + "Autopilot panel's Settings page.");
 
+        tab = GENERAL;
         header("interface", "Interface");
         radio("screenlog", "On-screen log", "screenLog", CALog.SCREEN_NAMES, "Short-form notices are displayed on screen, and the complete record is retained on the Log page.");
 
