@@ -3,30 +3,35 @@
 > [!WARNING]
 > It's AI-written, so expect bugs. Report them in [issues](https://github.com/Mjolniar/auto-colonies/issues) with `starsector-core/starsector.log`, `saves/common/colony_autopilot_diagnostics.json.data` and your modlist.
 
-Auto Colonies is colony management for Starsector 0.98a and 0.98.5a. Set a colony to Auto and it'll build, place items and AI cores and handle policies within your budget. It supports 45+ mods, and none are required.
+Auto Colonies runs your colonies for you. You set a colony to Auto and it builds, places your items and AI cores, hires administrators and sets policies, all within a budget you pick. It works on its own and doesn't need any other mod, and it supports a lot of them if you have them.
 
 ## Install
 
-- Extract the [latest release](https://github.com/Mjolniar/auto-colonies/releases/latest) into `Starsector/mods/`. When you update, delete the old folder first, and your saves will keep working.
-- To take it out of a save, see [Removing it](docs/audit.md#removing-it).
+Extract the [latest release](https://github.com/Mjolniar/auto-colonies/releases/latest) into `Starsector/mods/`. When you update, delete the old folder first, and your saves will keep working.
 
-## Quick start
+## Opening it
 
-Open a colony, click Colony Autopilot, pick a goal, set the mode to Auto and save the setup. Then put your items and AI cores into Autopilot Storage.
+Open one of your colonies and click the Colony Autopilot button, or right-click Population & Infrastructure. A new game asks you three things first: Story or Normal mode, how expensive it should be, and how fast your empire should grow.
+
+## Modes
+
+Every colony has its own mode. Off leaves it alone. Advisor shows you its best picks beside the build menu, and you do the building. Approve asks before each build. Auto just builds within your budget without asking.
+
+## Settings that matter
+
+With LunaLib, the settings are in its menu (F3) under Auto Colonies, and without it they're on the colony panel under Settings. Balance sets how expensive everything is, from Easy to Hard. Profile sets how your empire grows, from Low profile to High profile. Spending sets how much of your income it uses, and Credit reserve is money it'll never touch. Everything else is on the Advanced tab, and [Settings](docs/settings.md) lists all of it.
+
+## Story mode
+
+In Story mode the Autopilot starts dormant. You find its core out in the sector, then feed it AI cores for bandwidth and spend that bandwidth on what it can do, tier by tier. You can take every fed core back on the Story page whenever you want, and you can switch story mode off any time without losing your progress.
+
+## Removing it
+
+Turn on Prepare for removal in LunaLib (General tab), confirm the dialog in your campaign, then save, quit and remove the mod. Your items and cores go back into each colony's normal storage first. [What it changes](docs/audit.md) has the details.
 
 ## Guides
 
-- [Getting started](docs/getting-started.md)
-- [How it builds](docs/how-it-builds.md)
-- [Low profile](docs/low-profile.md)
-- [Money](docs/money.md)
-- [New colonies](docs/expansion.md)
-- [Items and AI cores](docs/items-and-cores.md)
-- [War and security](docs/war-and-security.md)
-- [Research](docs/research.md)
-- [Terraforming](docs/terraforming.md)
 - [Settings](docs/settings.md)
-- [Story mode](docs/story-mode.md)
 - [Supported mods](docs/supported-mods.md)
 - [What it changes](docs/audit.md)
 - [Patch notes](docs/changelog.md)

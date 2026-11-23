@@ -22,7 +22,7 @@
 
 ## The money ladder
 
-- The ladder pays from a monthly share of free cash ([Money](money.md#the-money-ladder)), and a rung on Recommend only waits for your Approve.
+- The ladder pays from a monthly share of free cash (Money), and a rung on Recommend only waits for your Approve.
 - Shipyard (Recommend only by default) orders known hulls from your Doctrine priority list as custom production, at the game's price plus a 2% fee, and it stops at 6 unclaimed hulls. While free cash is under 0, its hulls come off the list and the fee is refunded.
 - Stockpiles buys military goods for a colony's Local Resources from non-hostile markets, at their price plus tariff and the storage fee.
 - Military upgrades stations, Patrol HQs and Military Bases for the upgrade cost and time plus the fee, one a day, and new upkeep stays within 15% of colony net income.

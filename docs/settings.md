@@ -24,7 +24,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 
 | Setting | Options | Default | What it does |
 |---|---|---|---|
-| Story mode | On, Off | Off | On means the Colony Autopilot starts dormant and you unlock it through the story ([Story mode](story-mode.md)). Each save keeps its story progress if you switch. |
+| Story mode | On, Off | Off | On means the Colony Autopilot starts dormant and you unlock it through the story (Story mode). Each save keeps its story progress if you switch. |
 
 ### Playstyle
 
@@ -34,7 +34,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | Profile | Low profile, Normal, High profile | Picked in the new-game pop-up | How your empire grows, setting Low profile, New colonies, AI cores, War and where new colonies go at once. Low profile founds no colonies, keeps AI cores Safe and stays at Defend. Normal founds colonies in systems you hold, uses Defended AI cores and Retaliates. High profile founds colonies within 15 ly of the capital without asking first, uses every AI core you have and Retaliates. It shows Custom when you've changed one of those settings by hand. |
 | Empire mode | Off, Advisor, Approve, Auto | Advisor | Empire-wide settings follow this. Off does nothing, Advisor advises, Approve asks you first and Auto just does it. |
 | Spending | Thrifty, Normal, Lavish | Normal | Thrifty spends 30% of net income and 5% of savings, Normal 50% and 15%, and Lavish 80% and 30%. The per-project cap is half, all or twice your net income, and new upkeep is capped at 5%, 10% or 20% of net income. |
-| War | Off, Defend, Retaliate, Hold them down, Conquer, Scorched | Empire mode | This is how far war fleets go, and faction stances cap it. Defend sends relief, Retaliate raids attackers and retakes your lost colonies, and Hold them down raids anyone at Rival and up. Conquer invades and Scorched bombards ([War page](war-and-security.md#the-war-page)). Without Nexerelin, Defend sends Auto Colonies' own defense fleets, and the levels past it need Nexerelin. |
+| War | Off, Defend, Retaliate, Hold them down, Conquer, Scorched | Empire mode | This is how far war fleets go, and faction stances cap it. Defend sends relief, Retaliate raids attackers and retakes your lost colonies, and Hold them down raids anyone at Rival and up. Conquer invades and Scorched bombards (War page). Without Nexerelin, Defend sends Auto Colonies' own defense fleets, and the levels past it need Nexerelin. |
 
 ### Money
 
@@ -58,9 +58,9 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 |---|---|---|---|
 | Low profile | On, Off | Off | Colony crises come slower, but you'll earn less. It won't put AI cores in colonies above size 3, and it stays away from Pather interest, free ports, raids and sabotage ([Low profile](low-profile.md)). Profile sets it too. |
 | Extras | Auto, Recommend only, Off | Auto | It covers stable locations, measured mod buildings, trade contracts, research, special project supply, megastructures, station augments, RAT settlement, IndEvo automation and Antimatter Stabilizers. |
-| New colonies | Off, Ask first, Auto | Empire mode | It founds new colonies with idle money, and on Ask first you approve each one ([New colonies](expansion.md)). |
-| Surplus investment | Off, Over 1M, Over 3M, Over 5M, Over 10M | Empire mode | Anything you've got over this goes into one focus world ([Money](money.md)). |
-| What to buy | Balanced, Fleet, Expansion, Economy, Save | Balanced | It's what idle money buys first ([Money ladder](money.md#the-money-ladder)). |
+| New colonies | Off, Ask first, Auto | Empire mode | It founds new colonies with idle money, and on Ask first you approve each one (New colonies). |
+| Surplus investment | Off, Over 1M, Over 3M, Over 5M, Over 10M | Empire mode | Anything you've got over this goes into one focus world (Money). |
+| What to buy | Balanced, Fleet, Expansion, Economy, Save | Balanced | It's what idle money buys first (Money ladder). |
 | Endgame | From 1M/month, From 2M/month, From 500k/month, Off | Empire mode | At this income, it starts building for production and defense. |
 | Story points | Yours only, One per colony, 2 a month, 5 a month | Yours only | It caps the story points Autopilot spends on improvements. |
 
@@ -68,7 +68,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 
 | Setting | Options | Default | What it does |
 |---|---|---|---|
-| Stations | Pick by score, Low tech, Midline, High tech, Imperium, Diable Avionics, Roider Union, Only where they pay | Pick by score | It builds stations from size 4 and upgrades them as colonies grow (Battlestation at 6, Star Fortress at 8, and a size sooner at the capital). It asks once before the first station ([How it builds](how-it-builds.md)). Imperium needs Interstellar Imperium. |
+| Stations | Pick by score, Low tech, Midline, High tech, Imperium, Diable Avionics, Roider Union, Only where they pay | Pick by score | It builds stations from size 4 and upgrades them as colonies grow (Battlestation at 6, Star Fortress at 8, and a size sooner at the capital). It asks once before the first station (How it builds). Imperium needs Interstellar Imperium. |
 | Take down buildings | Never, Clean up, Free hand | Clean up | Never means nothing comes down. Clean up removes industries that stopped paying, makes room for capital trade buildings and allows endgame changes. Free hand is Clean up plus Allow removals. |
 | Colony policies | Auto, Don't touch | Auto | Auto uses hazard pay, free port and edicts where they pay, and Don't touch leaves them alone. |
 
@@ -76,7 +76,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 
 | Setting | Options | Default | What it does |
 |---|---|---|---|
-| AI cores | Off, Safe, Small colonies only, Defended, No limit | Safe | AI cores come from Autopilot Storage. Safe is never inspected, and Defended resists inspections, so the Hegemony turns hostile ([AI cores](items-and-cores.md#ai-cores)). |
+| AI cores | Off, Safe, Small colonies only, Defended, No limit | Safe | AI cores come from Autopilot Storage. Safe is never inspected, and Defended resists inspections, so the Hegemony turns hostile (AI cores). |
 | Administrators | Off, Place only, Hire and place | Hire and place | Place only uses the administrators you've got, and Hire and place hires more too. |
 
 ### Security and diplomacy
@@ -107,9 +107,9 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 |---|---|---|---|
 | Surplus over 10,000,000 | Every colony, Focus world only | Every colony | Once you're this much over the surplus line, every Approve and Auto colony spends from the surplus, or just the focus world. |
 | Wonders and gates | On, Off | On | It builds the Daedalus Array and Bifrost gates once their goods are made. Needs Vaults of Knowledge. |
-| Surplus terraforming | Max output, Pays back in 10 years, Off | Max output | Whatever's left after the focus world goes into terraforming ([Terraforming](terraforming.md)). Needs Terraforming Made Easy. |
+| Surplus terraforming | Max output, Pays back in 10 years, Off | Max output | Whatever's left after the focus world goes into terraforming (Terraforming). Needs Terraforming Made Easy. |
 | Surplus research | On, Off | On | It builds more Research Facilities from the surplus while the speed is worth it. Needs Vaults of Knowledge. |
-| Stockpiles, Growth, Military, Shipyard, Expansion, Economy and Wonders rungs | Off, On, Recommend only | Empire mode | Each rung is one step of the [money ladder](money.md#the-money-ladder). If a rung is Off, its share goes to the next rung. |
+| Stockpiles, Growth, Military, Shipyard, Expansion, Economy and Wonders rungs | Off, On, Recommend only | Empire mode | Each rung is one step of the money ladder. If a rung is Off, its share goes to the next rung. |
 | Shipyard stops at | 1 to 30 | 6 | The Shipyard rung counts the shipyard's unclaimed hulls in the capital's Storage and stops at this many. |
 
 ### Building
@@ -167,8 +167,8 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | Bombardment targets | Capitals only, Capitals and small colonies | Capitals only | It's used at Scorched. Needs Nexerelin. |
 | Coalition risk allowed | On, Off | Off | When it's off, offensives stop before a coalition forms. Needs Nexerelin. |
 | Sindrian Diktat raiders | On, Off | On | Colony patrols attack them even with Enforcer patrols off, and it doesn't cost anything or change reputation. |
-| Patrol kills count for crises | On, Off | On | Ships destroyed by your Auto colonies' patrols and stations count toward the colony crisis and Tri-Tachyon commerce raiding, the same as your own kills ([Colony crises](war-and-security.md#colony-crises)). |
-| Enforcer patrols | On, Off | Off | Colony patrols attack the fleet types you set to On. You're charged once for each fleet your forces defeat, and if you fight one yourself you get the game's penalty ([Enforcer patrols](war-and-security.md#enforcer-patrols)). |
+| Patrol kills count for crises | On, Off | On | Ships destroyed by your Auto colonies' patrols and stations count toward the colony crisis and Tri-Tachyon commerce raiding, the same as your own kills (Colony crises). |
+| Enforcer patrols | On, Off | Off | Colony patrols attack the fleet types you set to On. You're charged once for each fleet your forces defeat, and if you fight one yourself you get the game's penalty (Enforcer patrols). |
 | Hegemony investigators, Hegemony AI inspections, Persean League enforcers, Luddic sacred protectors, Tri-Tachyon commerce raiders, Nexerelin police | On, Off | Off | These are the fleet types Enforcer patrols attack. Nexerelin police needs Nexerelin. |
 | Enforcer cost | Reputation, Credits, Both, None | Reputation | Reputation is the game's penalty for defeating that fleet yourself (-3), and commerce raiders and police don't cost any. Credits is fleet points times Nexerelin's fleet request price (400 without it), paid above the credit reserve. |
 | Enforcer patrols in | Systems with Auto colonies, Systems with any colony | Systems with Auto colonies | Colony patrols attack in these systems. |
@@ -183,11 +183,11 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 
 | Setting | Options | Default | What it does |
 |---|---|---|---|
-| Capital does | Deliveries and commerce, Deliveries only, Off | Empire mode | Deliveries and Storage gather at the capital, and Off means no capital ([Your capital](how-it-builds.md#your-capital)). |
+| Capital does | Deliveries and commerce, Deliveries only, Off | Empire mode | Deliveries and Storage gather at the capital, and Off means no capital (Your capital). |
 | Trade hub starts at | Net income over 100k, over 50k, over 250k, Right away | Net income over 100k | The capital starts its trade buildings at this point. |
 | Make room for trade buildings | On, Off | On | The capital takes down an industry to fit its trade buildings. |
 | Gather Storage at the capital | On, Off | On | It gathers Autopilot Storage at the capital. |
-| Storage logistics | Off, On | Empire mode | It moves goods to the refit hub weekly ([Storage logistics](items-and-cores.md#storage-logistics)). |
+| Storage logistics | Off, On | Empire mode | It moves goods to the refit hub weekly (Storage logistics). |
 | Ships to the refit hub | On, Off | On | It's part of Storage logistics. |
 | Supplies, fuel, crew, marines too | On, Off | On | It's part of Storage logistics. |
 
@@ -198,7 +198,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | Stable locations | Auto, Recommend only, Off | Empire mode | It builds comm relays, nav buoys and sensor arrays at stable locations. |
 | Measured mod buildings | Build when best, Recommend only, Ignore | Build when best | Mod buildings get scored from probe-colony measurements. |
 | Trade contracts | Advisor, Auto, Off | Empire mode | Needs Theory of Toolbox. |
-| Research | Advisor, Auto, Off | Empire mode | On Auto, it starts the best tech whenever nothing is running ([Research](research.md)). Needs Vaults of Knowledge. |
+| Research | Advisor, Auto, Off | Empire mode | On Auto, it starts the best tech whenever nothing is running (Research). Needs Vaults of Knowledge. |
 | Special project supply | Auto, Warn only, Off | Empire mode | It builds a producer for special project goods that no colony makes. Needs Vaults of Knowledge. |
 | Megastructures | Follow colony mode, Recommend only, Off | Follow colony mode | It covers Coronal Hypershunt range and restoration. Needs Vaults of Knowledge. |
 | Station augments | Follow colony mode, Recommend only, Off | Follow colony mode | Needs Station Augments. |

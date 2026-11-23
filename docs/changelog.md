@@ -615,7 +615,7 @@
 
 ## 0.3.6.0 - 2026-11-14
 
-- Story mode: Added. Off by default. The Colony Autopilot stays dormant until you find the Autarch AI Core, then runs the abilities you buy with processing power from the AI cores you feed it. [Story mode](story-mode.md).
+- Story mode: Added. Off by default. The Colony Autopilot stays dormant until you find the Autarch AI Core, then runs the abilities you buy with processing power from the AI cores you feed it. Story mode.
 - Story mode: 48 abilities with PP costs, a managed-colony limit, the Autarch AI Core item, TriPad dialogs, a Story page and a Story tab entry.
 - Story mode: Instant construction and Free construction exist only in story mode.
 - Settings: Story mode is the first row in LunaLib's menu (F3) and on the intel Settings page. Each save follows the setting when loaded and when LunaLib's menu is saved.
@@ -839,17 +839,17 @@
 - Settings menu: See [Settings](settings.md).
 - First-time setup: Added 5 rows: Spending, Extras, New colonies, War (Nexerelin), Credit reserve.
 - Spending presets: Added Thrifty (30% of net income, 5% of savings, new upkeep up to 5% of net income), Normal (50%, 15%, 10%) and Lavish (80%, 30%, 20%). The per-project cap is Automatic: half, all or twice net income by preset.
-- Build planner: Added one ranked queue for all colonies: builds, upgrades, surplus terraforming, extra Research Facilities, wonder sites, stable-location crews and story point improvements. See [How it builds](how-it-builds.md).
+- Build planner: Added one ranked queue for all colonies: builds, upgrades, surplus terraforming, extra Research Facilities, wonder sites, stable-location crews and story point improvements. See How it builds.
 - Build planner: A build must pay back within 36 months (price, fee, build time). The limit rises to 120 months as surplus credits reach 10,000,000.
 - Build planner: A colony's construction slot goes to the build that earns the most per day of construction. Money goes to the best return per credit. A large build waiting for money is saved for.
 - Build planner: A building Autopilot takes down is not built again at that colony for a year. What Autopilot paid for a building counts against taking it down.
-- Money tiers: Added Tight, Surplus, Idle money, Rich and Endgame, from free cash (credits less the reserve, production still to pay and 2 months of upkeep and fleet costs), colony net income and idle months. See [Money](money.md).
+- Money tiers: Added Tight, Surplus, Idle money, Rich and Endgame, from free cash (credits less the reserve, production still to pay and 2 months of upkeep and fleet costs), colony net income and idle months. See Money.
 - Money ladder: Added. From Surplus up, a share of free cash each month (20%, 35%, 60% or 80% by tier) goes to rungs in order: Stockpiles, Growth, Military, Shipyard, Expansion, Economy, Wonders. Presets: Balanced, Fleet, Expansion, Economy, Save. Each rung is On, Recommend only or Off.
 - Shipyard: Added. From Idle money, orders ships from your Doctrine priority list through custom production at the game's prices plus a 2% fee. One order a month, up to 6 unclaimed hulls. Default: Recommend only.
 - Stockpiles: Added. Buys goods for a colony's Local Resources when a shortage cuts industry output or patrols and the lost output is worth more than price, tariff and shipping. Up to 3 months of cover.
 - Military rung: Added. From Idle money, upgrades stations, Patrol HQ and Military Base at Auto colonies and buys military goods. New upkeep from it stays within 15% of colony net income.
-- Auto-expansion: Added as the New colonies row: Off (default), Ask first or Auto. Founds colonies by Nexerelin colony fleet or an Autopilot crew at cost plus the fee, with an administrator when the colony limit needs one. See [New colonies](expansion.md).
-- War level (Nexerelin): Added Off, Defend, Retaliate (default), Hold them down, Conquer and Scorched. Replaces the War fleets setting. War fleets act whatever the colony modes are. See [War and security](war-and-security.md).
+- Auto-expansion: Added as the New colonies row: Off (default), Ask first or Auto. Founds colonies by Nexerelin colony fleet or an Autopilot crew at cost plus the fee, with an administrator when the colony limit needs one. See New colonies.
+- War level (Nexerelin): Added Off, Defend, Retaliate (default), Hold them down, Conquer and Scorched. Replaces the War fleets setting. War fleets act whatever the colony modes are. See War and security.
 - Faction stances: Added Ally, Friendly, Neutral, Auto (default), Rival, Enemy and Destroy on the Factions page. A stance caps the War level used on that faction and sets how agents, IndEvo ambassadors and ceasefire offers treat it.
 - Conquest (Conquer): Added invasions of Enemy and Destroy markets through Nexerelin's invasion fleets, one at a time. Conquered colonies get autonomy taken back and the Security goal until stable, take the mode from Conquered colonies start in (default Auto) and are kept above 0 stability only on Auto.
 - Scorched: Added saturation bombardment of a Destroy faction's capital after you authorize it on the War page, with the reputation penalties of a bombardment in person.
@@ -901,7 +901,7 @@
 
 ## 0.2.44.0 - 2026-11-06
 
-- Export value: Changed. A building is valued by what it adds to your share of each market. A colony's exports earn its share of that good's market across the sector: what it can ship times its accessibility, out of everyone's total. See [How it builds](how-it-builds.md#how-it-picks).
+- Export value: Changed. A building is valued by what it adds to your share of each market. A colony's exports earn its share of that good's market across the sector: what it can ship times its accessibility, out of everyone's total. See How it builds.
 - Export value: A building counts only what it makes above the colony's biggest source of that good, only what can ship off-world, and a building under construction counts as made. Covering your own colonies' shortage counts extra.
 - Export value: On by default. Settings, Building and planning, Exports valued by market share turns it off for the flat rate.
 
@@ -941,7 +941,7 @@
 
 ## 0.2.42.0 - 2026-11-06
 
-- Capital: Added one home colony. The manager picks the colony where your things are (production gathering point first), or you pick it on a colony's panel, in Settings, or by moving your gathering point. See [Your capital](how-it-builds.md#your-capital).
+- Capital: Added one home colony. The manager picks the colony where your things are (production gathering point first), or you pick it on a colony's panel, in Settings, or by moving your gathering point. See Your capital.
 - Capital: Custom production is delivered there. Weekly, ships, weapons, wings, blueprints, supplies, fuel and crew in other Storage tabs ship there (storage logistics fee, travel time). Colony items and AI cores go where they do the most good.
 - Capital: After the fast buildout, with net income over 100,000 a month (changeable), its plan puts trade buildings first: Spaceport and Megaport, Commerce, mod trade buildings (Trade Outpost, Underworld, Yunru's Bazaar, Requisitions Centre, Salvage Yards, Union HQ), then a Waystation. They are built even when they do not pay for themselves.
 - Capital: With every slot taken, it takes down its weakest ordinary industry for one, at most every 90 days. It waits if net income goes negative. Yunru's Bazaar is built at the capital only.
