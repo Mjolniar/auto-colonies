@@ -609,6 +609,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             CALog.endRow(t, rfirst, 2f);
             t.setHeightSoFar(rh0 + 6f + h + 2f);   // 0.3.15.2
             t.addPara(MODE_TEXT[s.empire().ordinal()], Misc.getGrayColor(), 2f);
+            reserveRow(t, s, cw);   // 0.3.15.7
             // 0.3.15.3: a reserve above your credits stops every build; say so where it's seen
             if (CABuild.credits() < s.reserve) t.addPara("Nothing is built while your credits are under the %s credit reserve.", 4f,
                     Misc.getNegativeHighlightColor(), Misc.getDGSCredits(s.reserve));
@@ -617,6 +618,23 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             try { CAIntel.renderEmpire(t, "story", cw); }
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story page failed", e); t.addPara(CATheme.NOT_SHOWN, Misc.getGrayColor(), 6f); }
         }
+    }
+
+    /** 0.3.15.7: the credit reserve on the main page, 50,000 or 500,000 a click (CASetupUI's reserve row and click). */
+    static void reserveRow(TooltipMakerAPI t, CASettings s, float cw) {
+        String[][] b = {{"-500k", "--"}, {"-50k", "-"}, {"+50k", "+"}, {"+500k", "++"}};
+        float bw = 56f, gap = 6f;
+        ButtonAPI first = null, last = null;
+        for (String[] e : b) {
+            ButtonAPI x = t.addButton(e[0], CASetupUI.PREFIX + "reserve:" + e[1], Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
+                    Alignment.MID, CutStyle.TL_BR, bw, 20f, first == null ? 6f : 0f);
+            if (last != null) x.getPosition().rightOfTop(last, gap);
+            if (first == null) first = x;
+            last = x;
+        }
+        LabelAPI l = t.addPara("Credit reserve: %s. Anything below this is retained.", 0f, Misc.getHighlightColor(), Misc.getDGSCredits(s.reserve));
+        float extra = CALog.beside(t, last, l, 12f, 4f * bw + 3f * gap, cw);
+        CALog.endRow(t, first, extra);
     }
 
     /** An empire run tile: the empire mode and every colony's mode, with the recommended settings the first time. */

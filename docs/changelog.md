@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.15.7 - 2026-11-23
+
+- Panel: The main page has the credit reserve with buttons for 50,000 and 500,000 up or down.
+
 ## 0.3.15.6 - 2026-11-23
 
 - Budget: Saved up is capped at your credits above the credit reserve. With credits under the reserve, nothing is saved up.

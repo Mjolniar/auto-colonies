@@ -763,6 +763,12 @@ public class CASetupUI {
     }
 
     /** The settings row key a button id names, or null (groups and Reset aren't rows). */
+    /** 0.3.15.7: a reserve click's change: "-" and "+" move 50,000, "--" and "++" (the main page) 500,000. Pure. */
+    static float reserveStep(String op) {
+        float step = "--".equals(op) || "++".equals(op) ? 500000f : 50000f;
+        return op != null && op.startsWith("-") ? -step : step;
+    }
+
     static String rowKey(Object id) {
         if (!(id instanceof String) || !((String) id).startsWith(PREFIX)) return null;
         String k = ((String) id).substring(PREFIX.length()).split(":")[0];
@@ -909,7 +915,7 @@ public class CASetupUI {
             if (!s.projectCapFixed) s.perProjectCap = CAPresets.projectCap(s);
             s.projectCapFixed = !s.projectCapFixed;
         }
-        else if (k.equals("reserve")) s.reserve = Math.max(0f, Math.min(CATuning.RESERVE_MAX, s.reserve + 50000f * dir));   // 0.3.15.4: at most 3,000,000
+        else if (k.equals("reserve")) s.reserve = Math.max(0f, Math.min(CATuning.RESERVE_MAX, s.reserve + reserveStep(op)));   // 0.3.15.4: at most 3,000,000
         else if (k.equals("upkeep")) s.newUpkeepCap = Math.max(0f, s.newUpkeepCap + 10000f * dir);
         else if (k.equals("upkeeptype")) {   // Automatic <-> Fixed; Fixed starts from today's automatic amount, not a stale one
             if (s.upkeepCapAuto) s.newUpkeepCap = round(CABudget.upkeepCap(s), 10000f);
