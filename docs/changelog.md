@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.14.1 - 2026-11-23
+
+- Colony tab: Redesigned. The top shows the planet's picture with its name, size, mode and goal, the mode and goal as picture tiles, four numbers (Stability, Net income, Threat, Budget left) and the next build as one card with its button.
+- Colony tab: Details, Money and capital, Plan and builds, Locks and Mod features open on a click, in both modes.
+- Colony tab: Removed the Low profile button. Profile in Settings sets it.
+
 ## 0.3.14.0 - 2026-11-23
 
 - New game: The pop-up asks Story or Normal mode, then Balance, then Profile, with one sentence for each option.

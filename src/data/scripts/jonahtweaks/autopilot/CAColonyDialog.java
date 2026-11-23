@@ -12,6 +12,9 @@ import com.fs.starfarer.api.ui.CustomPanelAPI;
 import com.fs.starfarer.api.ui.CutStyle;
 import com.fs.starfarer.api.ui.LabelAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
+import com.fs.starfarer.api.ui.UIComponentAPI;
+import com.fs.starfarer.api.ui.Fonts;
+import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.util.Misc;
 
 import java.awt.Color;
@@ -405,9 +408,9 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         boolean all = page.equals("colony");   // 0.3.7.3: the four colony sections on one page
         // 0.3.7.6: story mode: the core's status, the approval, the next step, the top build and the mode up top; the rest in
         // sections that open on a click
-        boolean story = all && CASync.on();
-        if (story) renderStoryHeader(t, data, c, s, cw, planWith, buildout, shunt, outpost);
-        if (story ? section(t, "numbers", "Colony numbers") : (all || page.equals("overview"))) {
+        boolean story = all;   // 0.3.14.0: both modes use the cards (renderCards) and the sections that open on a click
+        if (story) renderCards(t, data, c, s, cw, planWith, buildout, shunt, outpost);
+        if (story ? section(t, "numbers", "Details") : (all || page.equals("overview"))) {
             float threat = CAThreat.estimate(market);
             boolean threatened = threat >= CAThreat.THRESHOLD || c.threatHigh;
             float cell = (cw - 30f) / 4f;
@@ -577,56 +580,160 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         for (CAData.Mode mo : CAData.Mode.values()) { prev = rowButton(t, prev, mo.label, mo, mo == c.mode, (cw - 18f) / 4f); if (first == null) first = prev; }
         CALog.endRow(t, first);
         if (labels) t.addPara(MODE_TEXT[c.mode.ordinal()], gray, 6f);
-        // 0.3.7.8: Low profile here too (an empire setting); in story mode only once its package allows it
-        if (!CASync.on() || CASync.rowLock("lowprofile", s) == null)
-            t.addButton("Low profile: " + (s.lowProfile ? "On" : "Off"), LOWPROF, s.lowProfile ? Misc.getHighlightColor() : base, dark,
-                    Alignment.MID, CutStyle.TL_BR, 200f, 22f, 6f);
-        // 0.3.3.0: a colony above the empire mode: one line and a button, no pop-up
-        CAData.Mode em = s.empire();
-        if (c.mode.ordinal() > em.ordinal()) {
-            ButtonAPI eb = t.addButton("Empire mode to " + c.mode.label, EMPIRE, base, dark, Alignment.MID, CutStyle.TL_BR, 220f, 22f, 6f);
-            LabelAPI el = t.addPara("Empire: " + em.label + ".", gray, 0f);   // 0.3.8.6: shown as is
-            el.getPosition().rightOfMid(eb, 10f);
-            CALog.endRow(t, eb);
-        }
+        // 0.3.14.0: the Low profile button is gone; Profile in Settings sets it
+        empireLine(t, c, s);   // 0.3.3.0: a colony above the empire mode: one line and a button, no pop-up
+    }
+
+    // ---------------- 0.3.14.0: the Colony tab's cards, in both modes ----------------
+
+    /** The art key of each mode's tile (Off has none): the AI core that matches how much it does. */
+    static final String[] MODE_ART = {null, "c:gamma_core", "c:beta_core", "c:alpha_core"};
+
+    /** The art key of a goal's tile: an industry that stands for it. */
+    static String goalArt(CAData.Profile p) {
+        String l = p == null ? "" : p.label;
+        if (l.startsWith("Money")) return "i:commerce";
+        if (l.startsWith("Security")) return "i:militarybase";
+        if (l.startsWith("War")) return "i:orbitalworks";
+        if (l.startsWith("Rapid")) return "i:farming";
+        if (l.startsWith("Self")) return "i:lightindustry";
+        return "i:population";
     }
 
     /**
-     * 0.3.7.6: story mode's Colony page top: the core's status for this colony in its terminal style, the approval, the next
-     * plan step, the top build with its button, then the Goal and Mode rows.
+     * The top of the Colony tab: the planet's picture with its name, size, mode and goal; the waiting approval; the mode and
+     * goal as picture tiles; four numbers; the next build as one card with its button; the empire mode line. The rest of
+     * the old page is in the sections below (Details, Money and capital, Plan and builds, Locks, Mod features).
      */
-    void renderStoryHeader(TooltipMakerAPI t, CAData data, CAData.Colony c, CASettings s, float cw, CAData.Profile planWith,
-                           boolean buildout, boolean shunt, boolean outpost) {
-        Color screen = CATriPad.SCREEN, gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
-        t.setParaFontOrbitron();
-        t.addPara(market.getName().toUpperCase(java.util.Locale.ROOT) + ": " + c.mode.label.toUpperCase(java.util.Locale.ROOT)   // 0.3.8.6: shown as is
-                + ". GOAL: " + c.profile.label.toUpperCase(java.util.Locale.ROOT) + ".", screen, message != null ? 8f : 0f);
-        if (outpost) t.addPara(OUTPOST_LINE.toUpperCase(java.util.Locale.ROOT), screen, 4f);   // 0.3.8.6: shown as is
-        if (!outpost && !shunt) {
-            try {
-                CAPlan.Plan plan = CAPlan.build(market, planWith);
-                for (CAPlan.Step st : plan.steps) {
-                    if (st.done(market)) continue;
-                    t.addPara("NEXT: " + st.label.toUpperCase(java.util.Locale.ROOT) + ".", screen, 4f);   // 0.3.8.6: shown as is
-                    break;
-                }
-            } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story header plan failed at " + market.getName(), e); }
-        }
+    void renderCards(TooltipMakerAPI t, CAData data, CAData.Colony c, CASettings s, float cw, CAData.Profile planWith,
+                     boolean buildout, boolean shunt, boolean outpost) {
+        Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
+        float pad = CASyncPage.TILE_PAD, imgW = CASyncPage.IMG_W, imgH = CASyncPage.IMG_H;
+        // the header card
+        String icon = null;
+        try { if (market.getPrimaryEntity() instanceof PlanetAPI) icon = ((PlanetAPI) market.getPrimaryEntity()).getSpec().getIconTexture(); }
+        catch (Throwable ignored) { }
+        if (icon != null) try { Global.getSettings().loadTexture(icon); } catch (Throwable ignored) { icon = null; }
+        CustomPanelAPI hp = Global.getSettings().createCustom(cw, imgH + 2f * pad, new CASyncPage.Tile(icon, true, false));
+        UIComponentAPI hc = t.addCustom(hp, message != null ? 8f : 0f);
+        t.setParaFont(Fonts.INSIGNIA_LARGE);
+        LabelAPI nm = t.addPara(market.getName(), hl, 0f);
         t.setParaFontDefault();
+        nm.getPosition().rightOfTop(hc, -(cw - imgW - 2f * pad)).setYAlignOffset(-pad);
+        LabelAPI sub = t.addPara("Size " + market.getSize() + ", " + c.mode.label + ", " + c.profile.label
+                + ".", gray, 0f);
+        sub.getPosition().rightOfTop(hc, -(cw - imgW - 2f * pad)).setYAlignOffset(-(pad + nm.getPosition().getHeight() + 2f));
+        CALog.endRow(t, hc, 4f);
         renderApproval(t, c, s);
-        if (!outpost && !shunt && c.mode != CAData.Mode.OFF) {
+        // mode and goal tiles
+        CAData.Mode[] modes = CAData.Mode.values();
+        String[] ml = new String[modes.length];
+        for (int i = 0; i < modes.length; i++) ml[i] = modes[i].label;
+        tiles(t, cw, ml, MODE_ART, modes, c.mode.ordinal());
+        CAData.Profile[] goals = CAData.Profile.values();
+        String[] gl = new String[goals.length], ga = new String[goals.length];
+        for (int i = 0; i < goals.length; i++) { gl[i] = goals[i].label; ga[i] = goalArt(goals[i]); }
+        tiles(t, cw, gl, ga, goals, c.profile.ordinal());
+        // four numbers
+        float threat = CAThreat.estimate(market);
+        boolean managed = c.mode == CAData.Mode.APPROVE || c.mode == CAData.Mode.AUTO;
+        String[] sl = {"Stability", "Net income", "Threat", "Budget left"};
+        String[] sv = {"" + (int) market.getStabilityValue(), Misc.getDGSCredits(market.getNetIncome()), Math.round(threat * 100f) + "%",
+                managed ? Misc.getDGSCredits(CABudget.available(s)) : "None"};
+        Color neg = Misc.getNegativeHighlightColor();
+        Color[] sc = {market.getStabilityValue() < data.settings.minStability ? neg : hl, market.getNetIncome() < 0f ? neg : hl,
+                threat >= CAThreat.THRESHOLD || c.threatHigh ? neg : hl, hl};
+        float gap = CASyncPage.TILE_GAP, sw = (cw - gap * 3f) / 4f;
+        UIComponentAPI first = null, prev = null;
+        for (int i = 0; i < 4; i++) {
+            CustomPanelAPI p = Global.getSettings().createCustom(sw, 54f, new CASyncPage.Tile(null, false, false));
+            UIComponentAPI comp = t.addCustom(p, first == null ? 8f : 0f);
+            if (prev != null) comp.getPosition().rightOfTop(prev, gap);
+            if (first == null) first = comp;
+            prev = comp;
+            LabelAPI l = t.addPara(sl[i], gray, 0f);
+            l.getPosition().rightOfTop(comp, -(sw - pad)).setYAlignOffset(-pad + 2f);
+            t.setParaFont(Fonts.INSIGNIA_LARGE);
+            LabelAPI v = t.addPara(sv[i], sc[i], 0f);
+            t.setParaFontDefault();
+            v.getPosition().rightOfTop(comp, -(sw - pad)).setYAlignOffset(-(pad + l.getPosition().getHeight()));
+        }
+        CALog.endRow(t, first, 4f);
+        // the next build
+        if (!outpost && !shunt && c.mode != CAData.Mode.OFF) nextCard(t, data, c, cw, planWith, buildout);
+        empireLine(t, c, s);
+        t.addSpacer(4f);
+    }
+
+    /** A row of picture tiles, each with its button; the selected one is lit. */
+    void tiles(TooltipMakerAPI t, float cw, String[] labels, String[] art, Object[] ids, int sel) {
+        int n = labels.length;
+        float gap = CASyncPage.TILE_GAP, pad = CASyncPage.TILE_PAD, imgH = CASyncPage.IMG_H, btnH = 22f;
+        float w = (cw - gap * (n - 1)) / n, h = pad + imgH + 4f + btnH + pad;
+        UIComponentAPI first = null, prev = null;
+        for (int i = 0; i < n; i++) {
+            CustomPanelAPI p = Global.getSettings().createCustom(w, h, new CASyncPage.Tile(CASyncPage.sprite(art[i]), i == sel, false));
+            UIComponentAPI comp = t.addCustom(p, first == null ? 8f : 0f);
+            if (prev != null) comp.getPosition().rightOfTop(prev, gap);
+            if (first == null) first = comp;
+            prev = comp;
+            ButtonAPI b = t.addButton(labels[i], ids[i], i == sel ? Misc.getHighlightColor() : Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
+                    Alignment.MID, CutStyle.TL_BR, w - 2f * pad, btnH, 0f);
+            b.getPosition().rightOfTop(comp, -(w - pad)).setYAlignOffset(-(pad + imgH + 4f));
+        }
+        CALog.endRow(t, first, 4f);
+    }
+
+    /** The next build as one card: its picture, what it is and costs, the plan's next step, and its button. */
+    void nextCard(TooltipMakerAPI t, CAData data, CAData.Colony c, float cw, CAData.Profile planWith, boolean buildout) {
+        Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
+        float pad = CASyncPage.TILE_PAD, imgW = CASyncPage.IMG_W, imgH = CASyncPage.IMG_H, bw = 140f;
+        CAEngine.Pick p = null;
+        boolean enabled = false;
+        try {
             CAEngine.Kept k = CAEngine.kept(market, planWith, data.settings.minStability, buildout);
             if (k != null && !k.result.picks.isEmpty() && CAEngine.worthwhile(k.result.picks.get(0))) {
-                CAEngine.Pick p = k.result.picks.get(0);
+                p = k.result.picks.get(0);
                 boolean waits = !p.upgrade && k.result.blocked != null, poor = CABuild.credits() < p.cost, old = !k.current;
-                ButtonAPI b = t.addButton(p.verb + " " + p.name + " (" + Misc.getDGSCredits(p.cost) + ")", p, base, dark,
-                        Alignment.MID, CutStyle.TL_BR, 360f, 24f, 8f);
-                b.setEnabled(!waits && !poor && !old);
-                CATheme.hover(t, rankLines(p, buildout ? "fast buildout (money only)" : "the " + planWith.label + " goal"));
+                enabled = !waits && !poor && !old;
             }
+        } catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "next build card failed at " + market.getName(), e); }
+        String step = null;
+        try {
+            CAPlan.Plan plan = CAPlan.build(market, planWith);
+            for (CAPlan.Step st : plan.steps) if (!st.done(market)) { step = st.label; break; }
+        } catch (Throwable ignored) { }
+        if (p == null && step == null) return;
+        CustomPanelAPI panel = Global.getSettings().createCustom(cw, imgH + 2f * pad, new CASyncPage.Tile(p != null ? CASyncPage.sprite("i:" + p.id) : null, p != null, false));
+        UIComponentAPI card = t.addCustom(panel, 8f);
+        float textW = cw - imgW - 3f * pad - bw - pad;
+        LabelAPI l1 = t.addPara(p != null ? p.verb + " " + p.name + " for " + Misc.getDGSCredits(p.cost) + "." : "Nothing to build now.",
+                p != null ? hl : gray, 0f);
+        l1.autoSizeToWidth(textW);
+        l1.getPosition().rightOfTop(card, -(cw - imgW - 2f * pad)).setYAlignOffset(-pad);
+        if (step != null) {
+            LabelAPI l2 = t.addPara(step, gray, 0f);   // the plan's next step
+            l2.autoSizeToWidth(textW);
+            l2.getPosition().rightOfTop(card, -(cw - imgW - 2f * pad)).setYAlignOffset(-(pad + l1.getPosition().getHeight() + 2f));
         }
-        renderGoalMode(t, c, s, cw, false);
-        t.addSpacer(4f);
+        if (p != null) {
+            ButtonAPI b = t.addButton(p.verb, p, base, dark, Alignment.MID, CutStyle.TL_BR, bw, 24f, 0f);
+            b.getPosition().rightOfTop(card, -(bw + pad)).setYAlignOffset(-(pad + (imgH - 24f) / 2f));
+            b.setEnabled(enabled);
+            CATheme.hover(t, rankLines(p, buildout ? "fast buildout (money only)" : "the " + planWith.label + " goal"));
+        }
+        CALog.endRow(t, card, 4f);
+    }
+
+    /** A colony above the empire mode: one button that raises the empire mode, with the empire mode beside it. */
+    void empireLine(TooltipMakerAPI t, CAData.Colony c, CASettings s) {
+        CAData.Mode em = s.empire();
+        if (c.mode.ordinal() <= em.ordinal()) return;
+        ButtonAPI eb = t.addButton("Empire mode to " + c.mode.label, EMPIRE, Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
+                Alignment.MID, CutStyle.TL_BR, 220f, 22f, 6f);
+        LabelAPI el = t.addPara("Empire: " + em.label + ".", Misc.getGrayColor(), 0f);
+        el.getPosition().rightOfMid(eb, 10f);
+        CALog.endRow(t, eb);
     }
 
     /** The Recommended builds list: the top three options with what they're worth and a button each. */
