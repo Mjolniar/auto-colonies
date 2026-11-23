@@ -53,7 +53,7 @@ public class CAOptionProvider extends BaseIndustryOptionProvider {
         if (opt.id != OPEN) return;
         try {
             CAColonyDialog d = new CAColonyDialog(opt.ind.getMarket());
-            ui.showDialog(CAColonyDialog.W, CAColonyDialog.H, d);
+            ui.showDialog(CAColonyDialog.w(), CAColonyDialog.h(), d);   // 0.3.15.1: sized to the screen
         } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "opening the colony panel failed", t); }
     }
 }

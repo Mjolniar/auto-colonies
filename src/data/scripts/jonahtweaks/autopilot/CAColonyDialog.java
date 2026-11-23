@@ -29,7 +29,12 @@ import java.util.List;
  * setup shows the 5 rows of DECISIONS 17 (CASetupUI.renderFirstTime) in place of the whole settings screen.
  */
 public class CAColonyDialog extends BaseCustomDialogDelegate {
-    public static final float W = 980f, H = 640f;   // 0.3.7.1: wider for the Empire pages (the intel tab's)
+    /** 0.3.15.1: sized to the screen, up to 1380 x 900 and never under 980 x 640 (callers read w() and h()). */
+    final float W = w(), H = h();
+    public static float w() { try { return Math.max(980f, Math.min(1380f, Global.getSettings().getScreenWidth() - 120f)); } catch (Throwable t) { return 980f; } }
+    public static float h() { try { return Math.max(640f, Math.min(900f, Global.getSettings().getScreenHeight() - 160f)); } catch (Throwable t) { return 640f; } }
+    /** 0.3.15.1: the empire run tiles (Advisor, Approve, Auto): every colony and the empire mode at once. */
+    static final String RUN = "ca:run:";
     static final String APPROVE = "ca:approve", REJECT = "ca:reject", SAVE_SETUP = "ca:savesetup", BACK = "ca:back";
     /** 0.3.3.0: sets the empire mode to this colony's mode. */
     static final String EMPIRE = "ca:empire";
@@ -54,7 +59,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     TooltipMakerAPI lastTooltip;
     boolean lastSetupPage;
     /** The page shown; Overview each time the panel opens. */
-    String page = "colony", lastPage;
+    String page = "main", lastPage;   // 0.3.15.1: one page; the rest open from its buttons
     /** 0.3.7.3: the More page's sub-page (an old intel tab page id); the first one when null. */
     String morePage = null;
     /** 0.3.7.6: story mode's Colony page: the sections opened (numbers, money, plan, locks, mods); all closed when the panel opens. */
@@ -139,12 +144,17 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             return;
         }
         if (CANav.page(id) != null) pending = null;
+        if (id instanceof String && ((String) id).startsWith(RUN)) {   // 0.3.15.1
+            try { runEmpire(CAData.Mode.valueOf(((String) id).substring(RUN.length()))); } catch (IllegalArgumentException ignored) { }
+            dirty = true;
+            return;
+        }
         if (CASync.handle(id)) { dirty = true; return; }   // 0.3.6.0 story mode
         if (CASetupUI.handle(id, d.settings)) { dirty = true; return; }
         if (CANav.page(id) != null) {
             page = CANav.page(id);
             // 0.3.8.7: a link to a page the list does not show (Faction stances' OPEN) opens it under More
-            if (!listed(pages(c, d.settings, CAHypershunt.is(market), CAEngine.isOutpost(market)), page)) { morePage = page; page = "more"; }
+            if (!listed(pages(c, d.settings, CAHypershunt.is(market), CAEngine.isOutpost(market)), page)) page = EMP + page;   // 0.3.15.1: an Empire page
             message = null; dirty = true; return;
         }
         if (id instanceof CAData.Profile) { c.profile = (CAData.Profile) id; message = "Goal set to " + c.profile.label; }
@@ -263,13 +273,14 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     List<String[]> pages(CAData.Colony c, CASettings s, boolean shunt, boolean outpost) {
         // 0.3.7.3: four pages. Story first in story mode (the panel opens on it); Colony is Overview, Plan and builds, Locks
         // and Mod features on one page; More holds the rest of the old intel tab's pages behind one row of buttons
+        // 0.3.15.1: one page (main) with no list on the left; the Empire pages open from its buttons with Back. The old Colony
+        // page stays listed (never shown as a button) so the offline checks can still draw it.
         List<String[]> p = new ArrayList<String[]>();
-        if (CASync.on()) p.add(new String[]{EMP + "story", CASyncPage.navLabel()});
-        if (!CASync.dormant()) {
-            p.add(new String[]{"colony", c.pendingId != null ? "Colony (approval)" : "Colony"});
-            if (!CASync.on()) p.add(new String[]{EMP + "settings", "Settings"});   // 0.3.7.6: story mode keeps it under More
-        }
-        p.add(new String[]{"more", "More"});
+        p.add(new String[]{"main", "Autopilot"});
+        p.add(new String[]{"colony", "Colony"});
+        List<String[]> emp;
+        try { emp = CAIntel.empirePages(); } catch (Throwable e) { emp = new ArrayList<String[]>(); }
+        for (String[] e : emp) if (e[0] != null) p.add(new String[]{EMP + e[0], e[1]});
         return p;
     }
 
@@ -347,16 +358,21 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         boolean shunt = CAHypershunt.is(market), outpost = CAEngine.isOutpost(market);
         List<String[]> pages = pages(c, s, shunt, outpost);
         page = CANav.valid(pages, page);
-        plugin.navW = CANav.W;
-        TooltipMakerAPI nav = content.createUIElement(CANav.W, H, false);
-        nav.addTitle(market.getName().toUpperCase(java.util.Locale.ROOT));
-        CATheme.readout(nav, 2f, "Mode: " + (c.mode == null ? CAData.Mode.ADVISOR.label : c.mode.label), c.profile == null ? null : "Goal: " + c.profile.label);
-        CANav.render(nav, pages, page);
-        content.addUIElement(nav).inTL(0f, 0f);
-
-        float cw = W - CANav.W - CANav.GAP;
+        plugin.navW = 0f;   // 0.3.15.1: no list on the left
+        float cw = W - 2f * CANav.GAP;
         TooltipMakerAPI t = content.createUIElement(cw, H, true);
         if (message != null) t.addPara(message, hl, 0f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
+        if (page.equals("main")) {
+            renderMain(t, s, cw);
+            content.addUIElement(t).inTL(CANav.GAP, 0f);
+            root.addComponent(content).inTL(0f, 0f);
+            restoreScroll(t, scrollY);
+            return;
+        }
+        if (page.startsWith(EMP)) {
+            ButtonAPI back = t.addButton("Back", CANav.PREFIX + "main", base, dark, Alignment.MID, CutStyle.TL_BR, 120f, 24f, message != null ? 6f : 0f);
+            CALog.endRow(t, back, 8f);
+        }
 
         // 0.3.7.1: an Empire page (the old intel tab's), with a button that asks first shown above it. 0.3.7.3: More shows
         // one of them, picked from a row of buttons
@@ -395,7 +411,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "empire page " + page + " failed", e);
                 t.addPara(CATheme.NOT_SHOWN, gray, 6f);
             }
-            content.addUIElement(t).inTL(CANav.W + CANav.GAP, 0f);
+            content.addUIElement(t).inTL(CANav.GAP, 0f);
             root.addComponent(content).inTL(0f, 0f);
             restoreScroll(t, scrollY);
             return;
@@ -461,10 +477,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             Industry imp = CAStory.bestImprovement(market, c);
             if (imp != null) t.addPara("Best story point use: %s" + (s.storyPointRule == 0 ? " (yours)" : ""), 4f, hl, imp.getCurrentName());
         }
-        if (!story && (all || page.equals("overview"))) {
-            renderApproval(t, c, s);
-            renderGoalMode(t, c, s, cw, true);
-        }
+        if (!story && (all || page.equals("overview"))) renderApproval(t, c, s);
         if (story ? section(t, "money", "Money and capital") : (all || page.equals("overview"))) {
             CABuildout.render(t, market, c);
             if (c.mode == CAData.Mode.AUTO && !outpost && !shunt) {
@@ -535,9 +548,73 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             }
         }
 
-        content.addUIElement(t).inTL(CANav.W + CANav.GAP, 0f);
+        content.addUIElement(t).inTL(CANav.GAP, 0f);
         root.addComponent(content).inTL(0f, 0f);
         restoreScroll(t, scrollY);
+    }
+
+    // ---------------- 0.3.15.1: the one page ----------------
+
+    /** The empire run tiles, the Story page in story mode, then buttons for the rest. */
+    void renderMain(TooltipMakerAPI t, CASettings s, float cw) {
+        boolean dormant = CASync.on() && CASync.dormant();
+        if (!dormant) {
+            t.addSectionHeading("How do you want your empire run?", Alignment.MID, message != null ? 8f : 0f);
+            CAData.Mode[] run = {CAData.Mode.ADVISOR, CAData.Mode.APPROVE, CAData.Mode.AUTO};
+            String[] labels = new String[3], art = new String[3];
+            Object[] ids = new Object[3];
+            int sel = -1;
+            for (int i = 0; i < 3; i++) {
+                labels[i] = run[i].label; art[i] = MODE_ART[run[i].ordinal()]; ids[i] = RUN + run[i].name();
+                if (run[i] == s.empire()) sel = i;
+            }
+            tiles(t, cw, labels, art, ids, sel);
+            t.addPara(MODE_TEXT[s.empire().ordinal()], Misc.getGrayColor(), 4f);
+        }
+        if (CASync.on()) {
+            try { CAIntel.renderEmpire(t, "story", cw); }
+            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story page failed", e); t.addPara(CATheme.NOT_SHOWN, Misc.getGrayColor(), 6f); }
+        }
+        t.addSpacer(10f);
+        List<String[]> b = new ArrayList<String[]>();
+        b.add(new String[]{"settings", "Settings"});
+        if (!dormant) {
+            int pending = 0;
+            try { pending = CAApprovals.collect().size(); } catch (Throwable ignored) { }
+            b.add(new String[]{"colonies", pending > 0 ? "Colonies (" + pending + ")" : "Colonies"});
+            b.add(new String[]{"log", "Log"});
+            if (Global.getSettings().getModManager().isModEnabled(CAWar.MOD)) {
+                b.add(new String[]{"war", "War"});
+                b.add(new String[]{CAFactionsPage.PAGE, "Factions"});
+            }
+        }
+        float bw = (cw - 6f * (b.size() - 1)) / b.size();
+        ButtonAPI prev = null, first = null;
+        for (String[] e : b) {
+            prev = rowButton(t, prev, e[1], CANav.PREFIX + EMP + e[0], false, bw);
+            if (first == null) first = prev;
+        }
+        CALog.endRow(t, first, 8f);
+    }
+
+    /** An empire run tile: the empire mode and every colony's mode, with the recommended settings the first time. */
+    void runEmpire(CAData.Mode mo) {
+        CAData d = CAData.get();
+        CASettings s = d.settings;
+        if (!s.setupDone && mo != CAData.Mode.ADVISOR) {
+            if (!CALunaSync.keepsSetup()) CASetupUI.applyRecommended(s);
+            s.setupDone = true;
+        }
+        CAModeTable.setEmpire(s, mo);
+        int n = 0;
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            if (CAEngine.isOutpost(m)) continue;
+            d.setMode(d.colony(m.getId()), mo);
+            n++;
+        }
+        CASync.enforce(s);
+        CALunaSync.sync();
+        message = CASync.modeNote != null ? CASync.modeNote : n + (n == 1 ? " colony is" : " colonies are") + " on " + mo.label + ".";
     }
 
     /** 0.3.7.6: a story-mode section's toggle row; true when it's open. */
@@ -560,28 +637,6 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         ButtonAPI r = t.addButton("Reject", REJECT, base, dark, Alignment.MID, CutStyle.TL_BR, 140f, 24f, 0f);
         r.getPosition().rightOfTop(a, 6f);
         CALog.endRow(t, a);
-    }
-
-    /** The Goal and Mode buttons; with headings and the mode's line in normal mode, bare rows in story mode. */
-    void renderGoalMode(TooltipMakerAPI t, CAData.Colony c, CASettings s, float cw, boolean labels) {
-        Color gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
-        if (labels) CATheme.heading(t, "Goal", 12f);
-        CAData.Profile[] goals = CAData.Profile.values();
-        float goalW = (cw - 12f) / 3f;
-        ButtonAPI prev = null, first = null;
-        for (int i = 0; i < goals.length; i++) {
-            if (i == 3) { CALog.endRow(t, first); prev = null; first = null; }   // two rows of three
-            prev = rowButton(t, prev, goals[i].label, goals[i], goals[i] == c.profile, goalW);
-            if (first == null) first = prev;
-        }
-        CALog.endRow(t, first);
-        if (labels) CATheme.heading(t, "Mode", 12f);
-        prev = null; first = null;
-        for (CAData.Mode mo : CAData.Mode.values()) { prev = rowButton(t, prev, mo.label, mo, mo == c.mode, (cw - 18f) / 4f); if (first == null) first = prev; }
-        CALog.endRow(t, first);
-        if (labels) t.addPara(MODE_TEXT[c.mode.ordinal()], gray, 6f);
-        // 0.3.14.0: the Low profile button is gone; Profile in Settings sets it
-        empireLine(t, c, s);   // 0.3.3.0: a colony above the empire mode: one line and a button, no pop-up
     }
 
     // ---------------- 0.3.14.0: the Colony tab's cards, in both modes ----------------
@@ -707,11 +762,10 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         CustomPanelAPI panel = Global.getSettings().createCustom(cw, imgH + 2f * pad, new CASyncPage.Tile(p != null ? CASyncPage.sprite("i:" + p.id) : null, p != null, false));
         UIComponentAPI card = t.addCustom(panel, 8f);
         float textW = cw - imgW - 3f * pad - bw - pad;
-        LabelAPI l1 = t.addPara(p != null ? p.verb + " " + p.name + " for " + Misc.getDGSCredits(p.cost) + "." : "Nothing to build now.",
-                p != null ? hl : gray, 0f);
+        LabelAPI l1 = t.addPara(p != null ? p.verb + " " + p.name + " for " + Misc.getDGSCredits(p.cost) + "." : step, p != null ? hl : gray, 0f);
         l1.autoSizeToWidth(textW);
         l1.getPosition().rightOfTop(card, -(cw - imgW - 2f * pad)).setYAlignOffset(-pad);
-        if (step != null) {
+        if (step != null && p != null) {
             LabelAPI l2 = t.addPara(step, gray, 0f);   // the plan's next step
             l2.autoSizeToWidth(textW);
             l2.getPosition().rightOfTop(card, -(cw - imgW - 2f * pad)).setYAlignOffset(-(pad + l1.getPosition().getHeight() + 2f));

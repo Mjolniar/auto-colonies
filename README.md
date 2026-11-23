@@ -11,11 +11,11 @@ Extract the [latest release](https://github.com/Mjolniar/auto-colonies/releases/
 
 ## Opening it
 
-Open one of your colonies and click the Colony Autopilot button, or right-click Population & Infrastructure. A new game asks you three things first: Story or Normal mode, how expensive it should be, and how fast your empire should grow.
+Open one of your colonies and click the Colony Autopilot button, or right-click Population & Infrastructure. A new game asks you three things first: Story or Normal mode, how expensive it should be, and how fast your empire should grow. The panel is one page, and Settings, Colonies and Log are buttons at the bottom.
 
 ## Modes
 
-Every colony has its own mode. Off leaves it alone. Advisor shows you its best picks beside the build menu, and you do the building. Approve asks before each build. Auto just builds within your budget without asking.
+The top of the panel asks how you want your empire run, and every colony follows what you pick, new ones too. Advisor shows you its best picks beside the build menu, and you do the building. Approve asks before each build. Auto just builds within your budget without asking, and it's where a new game starts.
 
 ## Settings that matter
 

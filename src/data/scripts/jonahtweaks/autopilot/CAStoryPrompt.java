@@ -96,6 +96,9 @@ public class CAStoryPrompt implements InteractionDialogPlugin {
             CAProfile.apply(s, profile);
             CAProfile.markSet(s, profile);
             CASync.num("profilePick", profile + 1);   // the first setup keeps it (CASetupUI.recommended)
+            // 0.3.15.1: a new game runs on Auto from the start (the panel's empire run tiles change it)
+            if (!s.setupDone) { if (!CALunaSync.keepsSetup()) CASetupUI.applyRecommended(s); s.setupDone = true; }
+            CAModeTable.setEmpire(s, CAData.Mode.AUTO);
             CALunaSync.sync();   // LunaLib's Story mode, Balance and Profile follow the choices
         } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "new-game choices failed", t); }
         dialog.dismiss();

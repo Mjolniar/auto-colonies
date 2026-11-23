@@ -317,7 +317,7 @@ public class CAData {
         Colony c = colonies.get(marketId);
         if (c == null) { c = new Colony(); colonies.put(marketId, c); }
         if (c.profile == null) c.profile = Profile.BALANCED;
-        if (c.mode == null) c.mode = Mode.ADVISOR;
+        if (c.mode == null) c.mode = settings != null && settings.setupDone ? settings.empire() : Mode.ADVISOR;   // 0.3.15.1: new colonies follow the empire run choice
         if (c.locks == null) c.locks = new HashSet<String>();
         return c;
     }

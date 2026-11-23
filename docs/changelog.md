@@ -1,5 +1,13 @@
 # Patch notes
 
+## 0.3.15.1 - 2026-11-23
+
+- Panel: One page with no list on the left. It opens on "How do you want your empire run?" with Advisor, Approve and Auto as picture tiles, then the Story page in story mode, then buttons for Settings, Colonies, Log, and War and Factions with Nexerelin.
+- Panel: Picking Advisor, Approve or Auto sets the empire mode and every colony's mode at once, and new colonies follow it.
+- Panel: Sized to the screen, up to 1380 by 900.
+- New game: Starts on Auto with the recommended settings and the picked Profile.
+- Panel: Removed the Colony and More pages. Their screens open from the buttons with Back at the top.
+
 ## 0.3.15.0 - 2026-11-23
 
 - Story mode: Added Tier V. It shows in red once every Tier I to IV package is bought and running.

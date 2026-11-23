@@ -491,7 +491,7 @@ public class CAScreenButton implements EveryFrameScript {
             if (s == null || !linked()) return;
             // 0.3.0.0: the handles looked up once a session (linked); invoking the constructor initializes the dialog class
             Object dialogParent = CARefl.call(s.core, "getDialogParent");
-            Object d = dialogNew.invokeWithArguments(CAColonyDialog.W, CAColonyDialog.H, new CAColonyDialog(s.market), dialogParent, s.grid);
+            Object d = dialogNew.invokeWithArguments(CAColonyDialog.w(), CAColonyDialog.h(), new CAColonyDialog(s.market), dialogParent, s.grid);
             dialogShow.invokeWithArguments(d, 0.3f, 0.2f);
         } catch (Throwable t) {
             CADiagnostics.LOG.warn(CADiagnostics.TAG + "colony screen button couldn't open the panel; use the right-click option", t);
