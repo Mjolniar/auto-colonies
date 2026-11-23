@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.15.9 - 2026-11-23
+
+- Capital: The Reverse Engineering Hub is part of the capital build-up, I to III. It is built at any money tier and stability, and its upkeep does not hold back other trade buildings.
+
 ## 0.3.15.8 - 2026-11-23
 
 - Story mode: Removed the Historian hire package. A save that bought it gets its 10 bandwidth back. The Historian core stays.

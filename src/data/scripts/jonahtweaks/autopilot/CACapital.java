@@ -275,12 +275,18 @@ public class CACapital {
         out.add(new String[]{"spaceport", "Spaceport", "traders can dock"});
         out.add(new String[]{"megaport", "Megaport", "+30% accessibility"});
         out.addAll(Arrays.asList(COMMERCE));
-        // 0.3.10.8: Reverse Engineered Private Arsenal's hub, I to III, at the capital only (your refit and home port). It earns
-        // nothing, so like any trade building at a loss it waits for the money ladder (Surplus tier, Economy rung On, upkeep
-        // within 5% of colony net). Its name is the game's (label).
+        // 0.3.10.8: Reverse Engineered Private Arsenal's hub, I to III, at the capital only (your refit and home port). Its name
+        // is the game's (label). 0.3.15.9: it earns nothing on paper, but it's part of the capital's build-up: it never waits
+        // for the money ladder or the trade buildings' stability floor, and its upkeep doesn't count against the others.
         for (int i = 0; i < CAOddisz.HUB.length; i++) out.add(new String[]{CAOddisz.HUB[i], null, null, "only"});
         out.add(new String[]{"waystation", "Waystation", "fuel and supplies stockpiled at home"});
         return out;
+    }
+
+    /** 0.3.15.9: one of the Reverse Engineering Hub's three tiers. */
+    static boolean hub(String id) {
+        for (String h : CAOddisz.HUB) if (h.equals(id)) return true;
+        return false;
     }
 
     /** 0.3.10.8: a step's name: its own, or the game's name for the building. */
@@ -290,13 +296,13 @@ public class CACapital {
     public static List<CAPlan.Step> stepsFor(MarketAPI m) {
         List<CAPlan.Step> out = new ArrayList<CAPlan.Step>();
         if (m == null || !commerce(CAData.settings()) || !is(m)) return out;
-        if (m.getStabilityValue() < COMMERCE_MIN_STABILITY) {   // 0.2.42.2: Commerce and the Bazaars cost stability
+        boolean lowStab = m.getStabilityValue() < COMMERCE_MIN_STABILITY;   // 0.2.42.2: Commerce and the Bazaars cost stability
+        if (lowStab) {
             if (CALog.once("capital:lowstab:" + m.getId()))
                 CALog.think(m.getName() + ": Capital: trade buildings wait while stability is under " + Math.round(COMMERCE_MIN_STABILITY) + ".");
-            return out;
-        }
-        CALog.forget("capital:lowstab:" + m.getId());
+        } else CALog.forget("capital:lowstab:" + m.getId());
         for (String[] w : wanted()) {
+            if (lowStab && !hub(w[0])) continue;   // 0.3.15.9: the Reverse Engineering Hub costs no stability
             if (waits(m, w[0])) continue;   // 0.3.0.0 (C4, F8): costs more than it earns, and the money ladder doesn't allow it yet
             // 0.3.8.8: AotD's Underworld is built and works only with a free port (its own isAvailableToBuild and apply), and Low
             // profile closes every free port: no plan rank or slot held for it then
@@ -342,6 +348,7 @@ public class CACapital {
         for (String[] w : wanted()) {
             String id = w[0];
             if ("commerce".equals(id) || CAPlan.spec(id) == null) continue;   // Commerce earns (+25% income): as before
+            if (hub(id)) continue;   // 0.3.15.9: the Reverse Engineering Hub is part of the capital's build-up, never held for the money ladder
             Industry ind = cap.getIndustry(id);
             if (ind != null) {
                 if (ind.isBuilding() && !ind.isUpgrading()) continue;   // under construction: counted once it runs
