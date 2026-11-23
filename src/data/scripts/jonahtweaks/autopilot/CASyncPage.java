@@ -140,9 +140,57 @@ public class CASyncPage {
             }
             tileGrid(t, list, paused);   // 0.3.13.1: picture tiles for everyone
         }
+        if (CATierFive.open()) tierFive(t);   // 0.3.15.0: hidden until everything below is bought and running
 
         story(t);
         devTools(t);
+    }
+
+    /** 0.3.15.0: Tier V, in red: any three picks, free, with the lock-in and spin-up rules. */
+    static void tierFive(TooltipMakerAPI t) {
+        Color red = Misc.getNegativeHighlightColor(), gray = Misc.getGrayColor(), hl = Misc.getHighlightColor();
+        t.addSectionHeading("Tier V", red, new Color(70, 15, 15), Alignment.MID, 12f);
+        t.addPara("Pick any three for free. A pick stays %s days, and a new one comes online after %s.", 6f, gray, hl,
+                "" + (int) CATierFive.LOCK_DAYS, "" + (int) CATierFive.SPINUP_DAYS);
+        float width = Math.max(400f, (pageWidth > 0f ? pageWidth : 790f) - CALog.SCROLL_ROOM);
+        int cols = columns(width);
+        float tileW = (width - TILE_GAP * (cols - 1)) / cols;
+        int used = CATierFive.picks().size();
+        for (int start = 0; start < CATierFive.IDS.length; start += cols) {
+            List<CustomPanelAPI> panels = new java.util.ArrayList<CustomPanelAPI>();
+            UIComponentAPI first = null, prev = null;
+            float rowH = 0f;
+            for (int i = start; i < Math.min(CATierFive.IDS.length, start + cols); i++) {
+                String id = CATierFive.IDS[i];
+                boolean picked = CATierFive.picked(id), on = CATierFive.online(id), built = CATierFive.built(id);
+                boolean can = picked ? CATierFive.lockLeft(id) == 0 : built && used < CATierFive.MAX;
+                CustomPanelAPI panel = Global.getSettings().createCustom(tileW, 100f, new Tile(sprite(CATierFive.ART[i]), on, !can && !picked));
+                UIComponentAPI c = t.addCustom(panel, first == null ? 8f : 0f);
+                if (prev != null) c.getPosition().rightOfTop(prev, TILE_GAP);
+                if (first == null) first = c;
+                prev = c;
+                panels.add(panel);
+                float inner = tileW - TILE_PAD;
+                LabelAPI name = t.addPara(CATierFive.NAMES[i], on ? hl : picked ? Misc.getTextColor() : gray, 0f);
+                name.autoSizeToWidth(inner - IMG_W - 2f * TILE_PAD);
+                name.getPosition().rightOfTop(c, -(tileW - IMG_W - 2f * TILE_PAD)).setYAlignOffset(-TILE_PAD);
+                String state = !built ? "Later version" : on ? "Online" : picked ? "Online in " + CATierFive.spinupLeft(id) + " days" : "Free";
+                if (picked && CATierFive.lockLeft(id) > 0) state += ", locked " + CATierFive.lockLeft(id) + " days";
+                LabelAPI st = t.addPara(state, gray, 0f);
+                st.autoSizeToWidth(inner - IMG_W - 2f * TILE_PAD);
+                st.getPosition().rightOfTop(c, -(tileW - IMG_W - 2f * TILE_PAD)).setYAlignOffset(-(TILE_PAD + name.getPosition().getHeight() + 2f));
+                LabelAPI desc = t.addPara(CATierFive.DESC[i], on ? Misc.getTextColor() : gray, 0f);
+                desc.autoSizeToWidth(inner - TILE_PAD);
+                float descTop = TILE_PAD + Math.max(IMG_H, name.getPosition().getHeight() + 2f + st.getPosition().getHeight()) + 6f;
+                desc.getPosition().rightOfTop(c, -(tileW - TILE_PAD)).setYAlignOffset(-descTop);
+                float btnTop = descTop + desc.getPosition().getHeight() + 6f;
+                ButtonAPI b = button(t, picked ? "On" : "Off", "t5:" + id, can, TILE_BTN_W, 0f);
+                b.getPosition().rightOfTop(c, -(tileW - TILE_PAD)).setYAlignOffset(-btnTop);
+                rowH = Math.max(rowH, btnTop + TILE_BTN_H + TILE_PAD);
+            }
+            for (CustomPanelAPI panel : panels) panel.getPosition().setSize(tileW, rowH);
+            CALog.endRow(t, first, TILE_GAP);
+        }
     }
 
     // ---------------- picture tiles (0.3.13.1: for everyone) ----------------

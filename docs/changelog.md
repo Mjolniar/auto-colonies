@@ -1,5 +1,14 @@
 # Patch notes
 
+## 0.3.15.0 - 2026-11-23
+
+- Story mode: Added Tier V. It shows in red once every Tier I to IV package is bought and running.
+- Tier V: Pick any three of seven, for free. A pick stays 90 days before it can be dropped, and a new pick comes online after 30 days. Picks pause while a lower tier falls short.
+- Tier V: Instant construction finishes every build and upgrade at a managed colony the next day, for its price a second time.
+- Tier V: Iron stability keeps managed colonies at stability 8 or more, for 10,000 credits a colony each month. Dropping it gives -2 stability for 30 days.
+- Tier V: Core printer makes one Alpha Core every 60 days for 250,000 credits.
+- Tier V: Domain forge, Autarch ascendant, Planet forging and Autarch armada are listed and come in a later version.
+
 ## 0.3.14.1 - 2026-11-23
 
 - Colony tab: Redesigned. The top shows the planet's picture with its name, size, mode and goal, the mode and goal as picture tiles, four numbers (Stability, Net income, Threat, Budget left) and the next build as one card with its button.

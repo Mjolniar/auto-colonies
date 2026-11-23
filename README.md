@@ -23,7 +23,7 @@ With LunaLib, the settings are in its menu (F3) under Auto Colonies, and without
 
 ## Story mode
 
-In Story mode the Autopilot starts dormant. You find its core out in the sector, then feed it AI cores for bandwidth and spend that bandwidth on what it can do, tier by tier. You can take every fed core back on the Story page whenever you want, and you can switch story mode off any time without losing your progress.
+In Story mode the Autopilot starts dormant. You find its core out in the sector, then feed it AI cores for bandwidth and spend that bandwidth on what it can do, tier by tier. You can take every fed core back on the Story page whenever you want, and you can switch story mode off any time without losing your progress. Once everything in Tiers I to IV is bought, a hidden Tier V opens where you pick any three of its upgrades for free.
 
 ## Removing it
 

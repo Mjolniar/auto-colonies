@@ -1326,6 +1326,7 @@ public class CASync {
 
     /** Daily, before the steps: the core's timers, the settings holds and the colony modes. */
     public static void daily() {
+        tierFive();   // 0.3.15.0: Tier V, on or off
         try { CARapidResearch.sync(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "rapid research failed", t); }   // 0.3.9.9: on or off, story mode on or not
         try { CAStoryLimit.sync(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story colony limit failed", t); }   // 0.3.10.3
         CAStoryIntel.ensure();   // 0.3.7.1: the story entry and its search for the core (removed while story mode is off)
@@ -1339,6 +1340,11 @@ public class CASync {
         try { CARapidRepair.daily(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "rapid repairs failed", t); }   // 0.3.11.1
         try { CAStationFit.daily(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station outfitting failed", t); }   // 0.3.11.7
         if (!has("buildout")) stopBuildouts();
+    }
+
+    /** 0.3.15.0: Tier V's daily effects (CATierFive), story mode on or off: they clear themselves while off. Never throws. */
+    static void tierFive() {
+        try { CATierFive.daily(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Tier V failed", t); }
     }
 
     /** 0.3.7.9: the Autarch administrator package (CAAutarchAdmin); never throws. */
@@ -1394,6 +1400,7 @@ public class CASync {
             else if (what.equals("all")) err = feed(h[0], h[1], h[2]);
             if (err == null) notice = total() + " bandwidth.";
         }
+        else if (rest.startsWith("t5:")) err = CATierFive.toggle(rest.substring(3));   // 0.3.15.0: Tier V picks
         else if (rest.equals("refund")) { err = refundCores(); if (err == null) notice = total() + " bandwidth."; }   // 0.3.14.0
         else if (rest.equals("storymode")) setOn(!on());   // the intel Settings page while LunaLib is off (CASetupUI.storyRow)
         else if (rest.equals("none")) { }   // a LOCKED row button
