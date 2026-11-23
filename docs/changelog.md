@@ -1,5 +1,12 @@
 # Patch notes
 
+## 0.3.15.2 - 2026-11-23
+
+- Panel: Settings, Colonies, Log, War and Factions are at the top. The page keeps its scroll when you come back from one of them.
+- Panel: Advisor, Approve and Auto are smaller buttons, each with its icon beside it.
+- Story page: The core and its bandwidth sit in the left column, and managed colonies and the Autarch administrator in the right.
+- Panel: Fixed the scroll area running far past the last row.
+
 ## 0.3.15.1 - 2026-11-23
 
 - Panel: One page with no list on the left. It opens on "How do you want your empire run?" with Advisor, Approve and Auto as picture tiles, then the Story page in story mode, then buttons for Settings, Colonies, Log, and War and Factions with Nexerelin.

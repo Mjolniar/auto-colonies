@@ -326,8 +326,14 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         }
     }
 
+    /** 0.3.15.2: the main page's scroll when a button opened another page; Back puts it back. */
+    float mainScroll = 0f;
+
     void build() {
+        if ("main".equals(lastPage) && !"main".equals(page) && lastTooltip != null && lastTooltip.getExternalScroller() != null)
+            mainScroll = lastTooltip.getExternalScroller().getYOffset();
         float scrollY = savedScroll();
+        if ("main".equals(page) && lastPage != null && !"main".equals(lastPage)) scrollY = mainScroll;
         if (content != null) root.removeComponent(content);
         content = root.createCustomPanel(W, H, plugin);
         CAData data = CAData.get();
@@ -558,24 +564,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     /** The empire run tiles, the Story page in story mode, then buttons for the rest. */
     void renderMain(TooltipMakerAPI t, CASettings s, float cw) {
         boolean dormant = CASync.on() && CASync.dormant();
-        if (!dormant) {
-            t.addSectionHeading("How do you want your empire run?", Alignment.MID, message != null ? 8f : 0f);
-            CAData.Mode[] run = {CAData.Mode.ADVISOR, CAData.Mode.APPROVE, CAData.Mode.AUTO};
-            String[] labels = new String[3], art = new String[3];
-            Object[] ids = new Object[3];
-            int sel = -1;
-            for (int i = 0; i < 3; i++) {
-                labels[i] = run[i].label; art[i] = MODE_ART[run[i].ordinal()]; ids[i] = RUN + run[i].name();
-                if (run[i] == s.empire()) sel = i;
-            }
-            tiles(t, cw, labels, art, ids, sel);
-            t.addPara(MODE_TEXT[s.empire().ordinal()], Misc.getGrayColor(), 4f);
-        }
-        if (CASync.on()) {
-            try { CAIntel.renderEmpire(t, "story", cw); }
-            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story page failed", e); t.addPara(CATheme.NOT_SHOWN, Misc.getGrayColor(), 6f); }
-        }
-        t.addSpacer(10f);
+        // 0.3.15.2: the buttons first, so they're right there after any click
         List<String[]> b = new ArrayList<String[]>();
         b.add(new String[]{"settings", "Settings"});
         if (!dormant) {
@@ -595,6 +584,36 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             if (first == null) first = prev;
         }
         CALog.endRow(t, first, 8f);
+        if (!dormant) {
+            t.addSectionHeading("How do you want your empire run?", Alignment.MID, 4f);
+            CAData.Mode[] run = {CAData.Mode.ADVISOR, CAData.Mode.APPROVE, CAData.Mode.AUTO};
+            float gap = CASyncPage.TILE_GAP, pad = 6f, ic = 40f, w = (cw - 2f * gap) / 3f, h = ic + 2f * pad;
+            UIComponentAPI rfirst = null, rprev = null;
+            float rh0 = t.getHeightSoFar();
+            for (CAData.Mode mo : run) {
+                boolean on = mo == s.empire();
+                CustomPanelAPI p = Global.getSettings().createCustom(w, h, new CASyncPage.Tile(null, on, false));
+                UIComponentAPI comp = t.addCustom(p, rfirst == null ? 6f : 0f);
+                if (rprev != null) comp.getPosition().rightOfTop(rprev, gap);
+                if (rfirst == null) rfirst = comp;
+                rprev = comp;
+                String img = CASyncPage.sprite(MODE_ART[mo.ordinal()]);
+                if (img != null) {
+                    t.addImage(img, ic, ic, 0f);
+                    t.getPrev().getPosition().rightOfTop(comp, -(w - pad)).setYAlignOffset(-pad);
+                }
+                ButtonAPI btn = t.addButton(mo.label, RUN + mo.name(), on ? Misc.getHighlightColor() : Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
+                        Alignment.MID, CutStyle.TL_BR, w - ic - 3f * pad, 26f, 0f);
+                btn.getPosition().rightOfTop(comp, -(w - ic - 2f * pad)).setYAlignOffset(-(pad + (ic - 26f) / 2f));
+            }
+            CALog.endRow(t, rfirst, 2f);
+            t.setHeightSoFar(rh0 + 6f + h + 2f);   // 0.3.15.2
+            t.addPara(MODE_TEXT[s.empire().ordinal()], Misc.getGrayColor(), 2f);
+        }
+        if (CASync.on()) {
+            try { CAIntel.renderEmpire(t, "story", cw); }
+            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story page failed", e); t.addPara(CATheme.NOT_SHOWN, Misc.getGrayColor(), 6f); }
+        }
     }
 
     /** An empire run tile: the empire mode and every colony's mode, with the recommended settings the first time. */
@@ -724,7 +743,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     void tiles(TooltipMakerAPI t, float cw, String[] labels, String[] art, Object[] ids, int sel) {
         int n = labels.length;
         float gap = CASyncPage.TILE_GAP, pad = CASyncPage.TILE_PAD, imgH = CASyncPage.IMG_H, btnH = 22f;
-        float w = (cw - gap * (n - 1)) / n, h = pad + imgH + 4f + btnH + pad;
+        float w = (cw - gap * (n - 1)) / n, h = pad + imgH + 4f + btnH + pad, h0 = t.getHeightSoFar();
         UIComponentAPI first = null, prev = null;
         for (int i = 0; i < n; i++) {
             CustomPanelAPI p = Global.getSettings().createCustom(w, h, new CASyncPage.Tile(CASyncPage.sprite(art[i]), i == sel, false));
@@ -737,6 +756,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             b.getPosition().rightOfTop(comp, -(w - pad)).setYAlignOffset(-(pad + imgH + 4f));
         }
         CALog.endRow(t, first, 4f);
+        t.setHeightSoFar(h0 + 8f + h + 4f);   // 0.3.15.2
     }
 
     /** The next build as one card: its picture, what it is and costs, the plan's next step, and its button. */

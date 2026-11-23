@@ -43,82 +43,96 @@ public class CASyncPage {
     public static void render(TooltipMakerAPI t, float width) {
         pageWidth = width;
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), bad = Misc.getNegativeHighlightColor();
-        t.addSectionHeading("The Autarch AI Core", Alignment.MID, 0f);
-        if (CASync.notice != null) t.addPara(CASync.notice, hl, 6f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
+        // 0.3.15.2: two columns: the core and its bandwidth on the left, managed colonies and the Autarch administrator on the right
+        float colGap = 12f, colW = (width - colGap) / 2f;
+        TooltipMakerAPI L = t.beginSubTooltip(colW);
+        L.addSectionHeading("The Autarch AI Core", Alignment.MID, 0f);
+        if (CASync.notice != null) L.addPara(CASync.notice, hl, 6f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
 
         // the core
         boolean awake = !CASync.dormant();
         String ph = CASync.phase();
-        if (awake) t.addPara("The Autarch AI Core is online, and it runs the abilities you switch on below using its bandwidth.", hl, 6f);
-        else if (CASync.pulled()) t.addPara("The Autarch AI Core is out of its cradle, so the Colony Autopilot is dormant. Once the core's back in, you get every ability and all of its bandwidth again.", bad, 6f);
-        else if ("breaking".equals(ph)) t.addPara("The Colony Autopilot is dormant while Engineering breaks the Autarch AI Core down.", hl, 6f);
-        else if (!ph.isEmpty()) t.addPara("You don't have an Autarch AI Core, so your TriPad's Colony Autopilot is dormant.", gray, 6f);
-        else if (CASync.seen(CATriPad.FOUND)) t.addPara("The Colony Autopilot on your TriPad is dormant. It needs an %s to run, and until then your colonies won't run on their own.", 6f, hl, "Autarch-class AI core");
-        else t.addPara("The Colony Autopilot on your TriPad is dormant.", gray, 6f);
+        if (awake) L.addPara("The Autarch AI Core is online, and it runs the abilities you switch on below using its bandwidth.", hl, 6f);
+        else if (CASync.pulled()) L.addPara("The Autarch AI Core is out of its cradle, so the Colony Autopilot is dormant. Once the core's back in, you get every ability and all of its bandwidth again.", bad, 6f);
+        else if ("breaking".equals(ph)) L.addPara("The Colony Autopilot is dormant while Engineering breaks the Autarch AI Core down.", hl, 6f);
+        else if (!ph.isEmpty()) L.addPara("You don'L have an Autarch AI Core, so your TriPad's Colony Autopilot is dormant.", gray, 6f);
+        else if (CASync.seen(CATriPad.FOUND)) L.addPara("The Colony Autopilot on your TriPad is dormant. It needs an %s to run, and until then your colonies won'L run on their own.", 6f, hl, "Autarch-class AI core");
+        else L.addPara("The Colony Autopilot on your TriPad is dormant.", gray, 6f);
 
         if (CASync.dormant() && CAAutarch.inCargo() > 0)
-            row(t, CASync.pulled() ? "Reseat the core" : "Decide on the core", "core", true, 200f, "Your TriPad asks once you close this screen.", gray);
+            row(L, CASync.pulled() ? "Reseat the core" : "Decide on the core", "core", true, 200f, "Your TriPad asks once you close this screen.", gray);
         else if (CASync.dormant() && CAAutarch.inCargo() == 0 && ph.isEmpty() && !CAAutarch.anywhere()) {   // 0.3.8.9: not while it sits in a storage tab
             String area = CAAutarch.area();
-            t.addPara(area != null && CASync.seen(CATriPad.FOUND) ? "Your TriPad points to a derelict research station somewhere in the " + area + "."
-                    : "You haven't found it yet.", gray, 4f);
+            L.addPara(area != null && CASync.seen(CATriPad.FOUND) ? "Your TriPad points to a derelict research station somewhere in the " + area + "."
+                    : "You haven'L found it yet.", gray, 4f);
         }
-        if (awake && CASync.cradle()) row(t, "Pull the core", "pull", true, 200f, "This takes the cradled core out, so the Colony Autopilot goes dormant.", gray);
+        if (awake && CASync.cradle()) row(L, "Pull the core", "pull", true, 200f, "This takes the cradled core out, so the Colony Autopilot goes dormant.", gray);
 
         // processing power
         if (CASync.installed()) {   // 0.3.8.9: the unused fed() read is removed
-            t.addSectionHeading("Bandwidth", Alignment.MID, 12f);
-            t.addPara("The core has %s bandwidth. Your abilities use %s, and %s are free.", 6f, hl, "" + CASync.total(), "" + CASync.spent(), "" + Math.max(0, CASync.free()));
+            L.addSectionHeading("Bandwidth", Alignment.MID, 12f);
+            L.addPara("The core has %s bandwidth. Your abilities use %s, and %s are free.", 6f, hl, "" + CASync.total(), "" + CASync.spent(), "" + Math.max(0, CASync.free()));
             float mult = CASync.costMult(), share = CASync.falloffNow();   // 0.3.10.4
-            if (mult > 1f) t.addPara("Your mods hand out a lot of AI cores, so new purchases cost %s more.", 3f, hl, Math.round((mult - 1f) * 100f) + "%");
-            if (share < 1f) t.addPara("Cores you feed now give %s of their bandwidth.", 3f, hl, Math.round(share * 100f) + "%");
+            if (mult > 1f) L.addPara("Your mods hand out a lot of AI cores, so new purchases cost %s more.", 3f, hl, Math.round((mult - 1f) * 100f) + "%");
+            if (share < 1f) L.addPara("Cores you feed now give %s of their bandwidth.", 3f, hl, Math.round(share * 100f) + "%");
             int[] h = CASync.onHand();   // 0.3.7.2: the buttons are the core slots; no counts or explanations
             if (awake) {
                 int pa = CASync.gainNow(0, 0, 1), pb = CASync.gainNow(0, 1, 0), pg = CASync.gainNow(1, 0, 0);   // 0.3.10.4: falloff
-                ButtonAPI a = button(t, feedLabel("a1", "1 Alpha (+" + pa + ")", pa), "feed:a1", h[2] > 0, 150f, 6f);
-                ButtonAPI b = button(t, feedLabel("b1", "1 Beta (+" + pb + ")", pb), "feed:b1", h[1] > 0, 150f, 0f);
+                float fw = (colW - 6f) / 2f;   // 0.3.15.2: two to a row, so they fit the column
+                ButtonAPI a = button(L, feedLabel("a1", "1 Alpha (+" + pa + ")", pa), "feed:a1", h[2] > 0, fw, 6f);
+                ButtonAPI b = button(L, feedLabel("b1", "1 Beta (+" + pb + ")", pb), "feed:b1", h[1] > 0, fw, 0f);
                 b.getPosition().rightOfTop(a, 6f);
-                ButtonAPI g = button(t, feedLabel("g1", "1 Gamma (+" + pg + ")", pg), "feed:g1", h[0] > 0, 150f, 0f);
-                g.getPosition().rightOfTop(b, 6f);
+                CALog.endRow(L, a);
+                ButtonAPI g = button(L, feedLabel("g1", "1 Gamma (+" + pg + ")", pg), "feed:g1", h[0] > 0, fw, 4f);
                 int all = CASync.gainNow(h[0], h[1], h[2]);
-                ButtonAPI x = button(t, feedLabel("all", "All of them (+" + all + ")", all), "feed:all", all > 0, 180f, 0f);
+                ButtonAPI x = button(L, feedLabel("all", "All of them (+" + all + ")", all), "feed:all", all > 0, fw, 0f);
                 x.getPosition().rightOfTop(g, 6f);
-                CALog.endRow(t, a);
-                t.addPara("On hand: %s Alpha, %s Beta, %s Gamma.", 4f, gray, hl, "" + h[2], "" + h[1], "" + h[0]);   // 0.3.7.5: cargo and Autopilot Storage
+                CALog.endRow(L, g);
+                L.addPara("On hand: %s Alpha, %s Beta, %s Gamma.", 4f, gray, hl, "" + h[2], "" + h[1], "" + h[0]);   // 0.3.7.5: cargo and Autopilot Storage
                 int[] f = CASync.fed();   // 0.3.14.0: the refund gives back exactly these
                 if (f[0] + f[1] + f[2] > 0) {
-                    t.addPara("It holds %s Alpha, %s Beta and %s Gamma you fed it.", 4f, gray, hl, "" + f[2], "" + f[1], "" + f[0]);
-                    ButtonAPI back = button(t, CASync.isArmed("refund") ? "Click again to take them back" : "Give back fed cores", "refund", true, 240f, 4f);
-                    CALog.endRow(t, back);
+                    L.addPara("It holds %s Alpha, %s Beta and %s Gamma you fed it.", 4f, gray, hl, "" + f[2], "" + f[1], "" + f[0]);
+                    ButtonAPI back = button(L, CASync.isArmed("refund") ? "Click again to take them back" : "Give back fed cores", "refund", true, 240f, 4f);
+                    CALog.endRow(L, back);
                 }
             }
         }
 
-        if (!CALunaSync.active()) settingsRow(t);   // 0.3.6.2: switch back from here while dormant, without LunaLib
-        if (!awake) { story(t); devTools(t); return; }
-
+        if (!CALunaSync.active()) settingsRow(L);   // 0.3.6.2: switch back from here while dormant, without LunaLib
+        t.endSubTooltip();
+        TooltipMakerAPI R = t.beginSubTooltip(colW);
+        if (awake) {
         // managed colonies (0.3.7.2: with Approve mode bought)
         if (CASync.has("approve")) {
-            t.addSectionHeading("Managed colonies", Alignment.MID, 12f);
-            t.addPara("%s colonies can be on Approve or Auto (one, plus %s more). The next costs %s bandwidth.", 6f, hl,
+            R.addSectionHeading("Managed colonies", Alignment.MID, 12f);
+            R.addPara("%s colonies can be on Approve or Auto (one, plus %s more). The next costs %s bandwidth.", 6f, hl,
                     "" + CASync.managedCap(), "" + CASync.extraColonies(), "" + CASync.colonyCost());
-            if (CAStoryLimit.now() > 0) t.addPara("They add %s to your colony limit.", 3f, hl, "" + CAStoryLimit.now());   // 0.3.10.3
-            ButtonAPI plus = button(t, "+1 colony", "col+", CASync.free() >= CASync.colonyCost() && CASync.extraColonies() < CASyncCatalog.MAX_COLONIES, 120f, 4f);
-            ButtonAPI minus = button(t, "-1 colony", "col-", CASync.extraColonies() > 0, 120f, 0f);
+            if (CAStoryLimit.now() > 0) R.addPara("They add %s to your colony limit.", 3f, hl, "" + CAStoryLimit.now());   // 0.3.10.3
+            ButtonAPI plus = button(R, "+1 colony", "col+", CASync.free() >= CASync.colonyCost() && CASync.extraColonies() < CASyncCatalog.MAX_COLONIES, 120f, 4f);
+            ButtonAPI minus = button(R, "-1 colony", "col-", CASync.extraColonies() > 0, 120f, 0f);
             minus.getPosition().rightOfTop(plus, 6f);
-            CALog.endRow(t, plus);
+            CALog.endRow(R, plus);
         }
         // 0.3.8.0: the Autarch administrator's colonies
         if (CASync.has("autarchAdmin")) {
-            t.addSectionHeading("Autarch administrator", Alignment.MID, 12f);
-            t.addPara("It governs %s of up to %s colonies (one, plus %s more). The next costs %s bandwidth.", 6f, hl,
+            R.addSectionHeading("Autarch administrator", Alignment.MID, 12f);
+            R.addPara("It governs %s of up to %s colonies (one, plus %s more). The next costs %s bandwidth.", 6f, hl,
                     "" + CAAutarchAdmin.count(), "" + CASync.seats(), "" + CASync.extraSeats(), "" + CASync.seatCost());
-            ButtonAPI plus = button(t, "+1 colony", "seat+", CASync.free() >= CASync.seatCost() && CASync.seats() < CASync.managedCap()
+            ButtonAPI plus = button(R, "+1 colony", "seat+", CASync.free() >= CASync.seatCost() && CASync.seats() < CASync.managedCap()
                     && CASync.extraSeats() < CASyncCatalog.MAX_SEATS, 120f, 4f);
-            ButtonAPI minus = button(t, "-1 colony", "seat-", CASync.extraSeats() > 0, 120f, 0f);
+            ButtonAPI minus = button(R, "-1 colony", "seat-", CASync.extraSeats() > 0, 120f, 0f);
             minus.getPosition().rightOfTop(plus, 6f);
-            CALog.endRow(t, plus);
+            CALog.endRow(R, plus);
         }
+
+        }
+        t.endSubTooltip();
+        float h0 = t.getHeightSoFar();
+        UIComponentAPI lc = t.addCustom(L, 0f), rc = t.addCustom(R, 0f);
+        rc.getPosition().rightOfTop(lc, colGap);
+        CALog.endRow(t, L.getHeightSoFar() >= R.getHeightSoFar() ? lc : rc, 4f);
+        t.setHeightSoFar(h0 + Math.max(L.getHeightSoFar(), R.getHeightSoFar()) + 4f);   // 0.3.15.2: no empty scroll below the page
+        if (!awake) { story(t); devTools(t); return; }
 
         // abilities
         // 0.3.7.3: by tier. Open tiers list their abilities; the next tier shows what opens it; later tiers don't show
@@ -159,7 +173,7 @@ public class CASyncPage {
         for (int start = 0; start < CATierFive.IDS.length; start += cols) {
             List<CustomPanelAPI> panels = new java.util.ArrayList<CustomPanelAPI>();
             UIComponentAPI first = null, prev = null;
-            float rowH = 0f;
+            float rowH = 0f, h0 = t.getHeightSoFar();   // 0.3.15.2
             for (int i = start; i < Math.min(CATierFive.IDS.length, start + cols); i++) {
                 String id = CATierFive.IDS[i];
                 boolean picked = CATierFive.picked(id), on = CATierFive.online(id), built = CATierFive.built(id);
@@ -190,6 +204,7 @@ public class CASyncPage {
             }
             for (CustomPanelAPI panel : panels) panel.getPosition().setSize(tileW, rowH);
             CALog.endRow(t, first, TILE_GAP);
+            t.setHeightSoFar(h0 + 8f + rowH + TILE_GAP);   // 0.3.15.2: the moved labels don't add empty scroll
         }
     }
 
@@ -236,7 +251,7 @@ public class CASyncPage {
             List<CASyncCatalog.Pack> row = list.subList(start, Math.min(list.size(), start + cols));
             List<CustomPanelAPI> panels = new java.util.ArrayList<CustomPanelAPI>();
             UIComponentAPI first = null, prev = null;
-            float rowH = 0f;
+            float rowH = 0f, h0 = t.getHeightSoFar();   // 0.3.15.2
             for (CASyncCatalog.Pack p : row) {
                 boolean ticked = CASync.ticked(p.id), needs = p.requires != null && !CASync.ticked(p.requires);
                 boolean on = ticked && !paused;   // 0.3.13.1: a paused tier's packages stay bought but don't run
@@ -270,6 +285,7 @@ public class CASyncPage {
             }
             for (CustomPanelAPI panel : panels) panel.getPosition().setSize(tileW, rowH);
             CALog.endRow(t, first, TILE_GAP);
+            t.setHeightSoFar(h0 + 8f + rowH + TILE_GAP);   // 0.3.15.2: the moved labels don't add empty scroll
         }
     }
 
