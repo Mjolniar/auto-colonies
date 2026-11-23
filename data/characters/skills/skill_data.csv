@@ -1,2 +1,2 @@
 id,name,order,tier,reqPoints,reqPointsPerExtraSkill,description,author,combat officer,admiral,admin,tags,icon,
-ca_autarchy,Autarchy,36100,0,,,"One core keeps every ledger, so the colony builds what the plan calls for without anyone signing off.",Report on an AI-governed colony,,,TRUE,"npc_only, ai_core_only",graphics/icons/skills/ca_autarchy.png,
+ca_autarchy,Autarchy,36100,0,,,"The colony gets one more industry slot, pays 20% less upkeep and has 1 more stability, and the Hegemony and the Pathers don't count this core.",Report on an AI-governed colony,,,TRUE,"npc_only, ai_core_only",graphics/icons/skills/ca_autarchy.png,

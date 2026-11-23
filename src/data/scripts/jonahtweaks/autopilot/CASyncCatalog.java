@@ -243,7 +243,8 @@ public class CASyncCatalog {
     static void numberDescs() {
         desc("instant", "Builds take a third of the time, and each one costs " + String.format(java.util.Locale.ROOT, "%,d", Math.round(RAPID_FEE))
                 + " credits more.");
-        desc("autarch", "Governs one managed colony with its own skill, Autarchy. Each colony you add costs " + SEAT_PP + " bandwidth, plus "
+        desc("autarch", "Governs one managed colony with its own skill, Autarchy: one more industry slot, 20% less upkeep and +1 stability, "
+                + "and the Hegemony and the Pathers don't count it. Each colony you add costs " + SEAT_PP + " bandwidth, plus "
                 + SEAT_STEP + " for each one before it.");
     }
 

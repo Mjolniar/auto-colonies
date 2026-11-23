@@ -351,7 +351,10 @@ public class CAScreenButton implements EveryFrameScript {
         float rx = at[0] - cp.getX(), ry = at[1] - cp.getY();
         int waiting = waitingCached(s.market);   // 0.3.3.0: decisions waiting at this colony, on the button
         if (button != null && parent == in && s.sawButton && Math.abs(rx - relX) < 1f && Math.abs(ry - relY) < 1f && waiting == shownWaiting
-                && Math.abs(at[2] - shownW) < 1f) return;   // still in place
+                && Math.abs(at[2] - shownW) < 1f) {   // still in place
+            try { next.update(s, add); } catch (Throwable t) { next.remove(); }   // 0.3.15.3: its pick or slot may change
+            return;
+        }
         remove();
         shownWaiting = waiting;
         shownW = at[2];
@@ -360,6 +363,7 @@ public class CAScreenButton implements EveryFrameScript {
         parent = in;
         relX = rx;
         relY = ry;
+        try { next.update(s, add); } catch (Throwable t) { next.remove(); }   // 0.3.15.3: the next-build card (CANextCard)
         if (placements < 6) {
             placements++;
             float[] g = gridBox(s), b = anchor(s, g);
@@ -407,7 +411,11 @@ public class CAScreenButton implements EveryFrameScript {
         return s.tab;
     }
 
+    /** 0.3.15.3: the next-build card in the grid's first empty slot. */
+    final CANextCard next = new CANextCard();
+
     void remove() {
+        next.remove();
         try { if (button != null && parent != null) parent.removeComponent(button); } catch (Throwable ignored) { }
         button = null;
         parent = null;

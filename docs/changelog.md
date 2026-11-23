@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.15.3 - 2026-11-23
+
+- Colony screen: The building grid's first empty slot shows the Autopilot's next build. Advisor and Approve read Suggested with a Build button, and Auto reads Next to build.
+- Panel: A red line shows when your credits are under the credit reserve, since nothing is built then.
+- Story mode: The Autarchy skill and the Autarch administrator package say what Autarchy gives: one more industry slot, 20% less upkeep, +1 stability, and the Hegemony and the Pathers don't count the core.
+
 ## 0.3.15.2 - 2026-11-23
 
 - Panel: Settings, Colonies, Log, War and Factions are at the top. The page keeps its scroll when you come back from one of them.

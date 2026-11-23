@@ -609,6 +609,9 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
             CALog.endRow(t, rfirst, 2f);
             t.setHeightSoFar(rh0 + 6f + h + 2f);   // 0.3.15.2
             t.addPara(MODE_TEXT[s.empire().ordinal()], Misc.getGrayColor(), 2f);
+            // 0.3.15.3: a reserve above your credits stops every build; say so where it's seen
+            if (CABuild.credits() < s.reserve) t.addPara("Nothing is built while your credits are under the %s credit reserve.", 4f,
+                    Misc.getNegativeHighlightColor(), Misc.getDGSCredits(s.reserve));
         }
         if (CASync.on()) {
             try { CAIntel.renderEmpire(t, "story", cw); }
