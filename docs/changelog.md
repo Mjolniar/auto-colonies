@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.15.8 - 2026-11-23
+
+- Story mode: Removed the Historian hire package. A save that bought it gets its 10 bandwidth back. The Historian core stays.
+- Ruin restoration: Restoration starts at an Auto colony with ruins where Sophia, hired through UAF, is administrator.
+
 ## 0.3.15.7 - 2026-11-23
 
 - Panel: The main page has the credit reserve with buttons for 50,000 and 500,000 up or down.

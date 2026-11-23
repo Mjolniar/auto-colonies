@@ -218,7 +218,7 @@ public class CASyncPage {
             {"economy", "i:commerce"}, {"security", "i:patrolhq"}, {"projects", "i:lightindustry"}, {"growth", "i:farming"},
             {"industry", "i:heavyindustry"}, {"frontier", "i:spaceport"}, {"warfare", "i:militarybase"}, {"megaprojects", "i:orbitalworks"},
             {"dominion", "i:megaport"}, {"warlord", "i:highcommand"}, {"parallel", "i:refining"}, {"instant", "s:pristine_nanoforge"},
-            {"terraforming", "s:soil_nanites"}, {"autarch", "c:alpha_core"}, {"uafHire", "i:cryosanctum"}, {"historian", "i:techmining"},
+            {"terraforming", "s:soil_nanites"}, {"autarch", "c:alpha_core"}, {"historian", "i:techmining"},
             {"fastResearch", "s:synchrotron"}, {"repairs", "s:fullerene_spool"}, {"outfitting", "i:starfortress"}};
 
     /** Pure: the art key for a package, or null. */

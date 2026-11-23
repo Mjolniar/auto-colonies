@@ -138,7 +138,6 @@ public class CASyncCatalog {
         add("autarchAdmin", 6, null, null);   // 0.3.7.9; 0.3.8.0: per colony
         add("rapidTerra", 6, "terra", null);   // 0.3.7.9
         add("rapidResearch", 6, "aotd_vok", null);   // 0.3.9.9: Vaults of Knowledge research in 2/3 of the time (CARapidResearch)
-        add("uafHistorian", 6, "uaf", null);   // 0.3.10.7: hires UAF's Sophia (CARuins.hire)
         add("historianCore", 6, "uaf", "autarchAdmin");   // 0.3.10.7: the Historian core (CAHistorian)
         add("rapidRepair", 6, null, null);   // 0.3.11.1: disruption runs down twice as fast (CARapidRepair)
         add("stationFit", 6, null, null);   // 0.3.11.7: star fortresses and up (CAStationFit). 0.3.13.0: Auto Outfitting optional
@@ -207,7 +206,6 @@ public class CASyncCatalog {
         pack("instant", 3, 20, null, "Rapid construction", "rapidBuild");   // 0.3.7.8: the id stays, so saves that bought it keep it
         pack("terraforming", 3, 12, null, "Rapid terraforming", "rapidTerra");   // 0.3.7.9
         pack("autarch", 3, 10, "staff", "Autarch administrator", "autarchAdmin");
-        pack("uafHire", 2, 10, "staff", "Historian hire", "uafHistorian");   // 0.3.10.7: Tier III, shown only with United Aurora Federation
         pack("historian", 3, 20, "autarch", "Historian core", "historianCore");   // 0.3.10.7: Tier IV, United Aurora Federation
         pack("fastResearch", 3, 20, null, "Rapid research", "rapidResearch");
         pack("outfitting", 3, 25, null, "Station outfitting", "stationFit");   // 0.3.11.7: Tier IV. 0.3.13.0: shown without Auto Outfitting too
@@ -232,7 +230,6 @@ public class CASyncCatalog {
         desc("repairs", "Disrupted buildings at your colonies recover in half the time.");
         desc("outfitting", "Your star fortresses and tier 4 stations get the best weapons you know, fitted by Auto Outfitting if you have it "
                 + "and by the game's own autofit if you don't. You pay for the weapons it adds.");
-        desc("uafHire", "It hires the UAF's Sophia, who has Galactic Historian, once you're Friendly with the UAF and have ruins to restore. She costs the usual hiring price.");
         desc("historian", "One Autarch AI Core variant with Galactic Historian governs an Auto colony with ruins, so they get restored.");
         desc("fastResearch", "It makes Vaults of Knowledge research take half as long, and each project needs about 2/3 of its databanks (at least one). AI cores and colony items cost the same.");
     }

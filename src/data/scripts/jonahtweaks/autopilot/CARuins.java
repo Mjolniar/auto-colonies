@@ -22,15 +22,14 @@ import java.util.*;
  * - Worth (expected): the average of the size's results, each scored by the engine like a building's effects (CAValue.add)
  *   as they are with Fixes 1.0.27 (the upkeep results cut upkeep; the core facilities stop after 6 cores), less the
  *   Tech-Mining it removes. Ranked with every other action: its price and fee from the month's budget, within the horizon.
- * - Administrators: a Galactic Historian (UAF's Sophia, or the Historian core, CAHistorian) adds this worth where they could
- *   restore (CAItems.adminWorth), and they aren't moved while a restoration runs (CAItems.moveAdmin).
- * - Hiring Sophia (story mode, Tier III package): once you're Friendly with the UAF, for an administrator's hiring cost plus
- *   the fee, as UAF's own hire does (level 10, its admin tier 3); she arrives in 30 days.
+ * - Administrators: a Galactic Historian (UAF's Sophia once you hire her through UAF, or the Historian core, CAHistorian)
+ *   adds this worth where they could restore (CAItems.adminWorth), and they aren't moved while a restoration runs
+ *   (CAItems.moveAdmin). 0.3.15.8: the Historian hire package is gone; Auto Colonies no longer hires Sophia itself.
  */
 public final class CARuins {
     private CARuins() { }
 
-    public static final String MOD = "uaf", SKILL = "uaf_galactic_historian", SOPHIA = "uaf_admin_sophia", SOURCE = "ruin restoration";
+    public static final String MOD = "uaf", SKILL = "uaf_galactic_historian", SOURCE = "ruin restoration";
     static final String[] RUINS = {"ruins_widespread", "ruins_extensive", "ruins_vast"};
     static final String[] PROJECT = {"uaf_ruins_restoration_widespread", "uaf_ruins_restoration_extensive", "uaf_ruins_restoration_vast"};
     static final float[] PRICE = {200000f, 500000f, 1000000f};
@@ -39,7 +38,6 @@ public final class CARuins {
     static final float HOLD = 1e6f;
     /** Fixes 1.0.27: the Beta Core Facility and the Black Site stop after this many cores. */
     static final int CORE_CAP = 6;
-    static final float SOPHIA_LEVEL = 10, SOPHIA_TIER = 3;
 
     static boolean modOn() { return Global.getSettings().getModManager().isModEnabled(MOD); }
 
@@ -217,50 +215,5 @@ public final class CARuins {
         CABudget.pay(s, m.getId(), a.cost, a.fee, 0f);
         CALog.did(m.getName() + ": Ruin restoration started for " + Misc.getDGSCredits(a.cost) + ". It takes 150 to 180 days.");
         return null;
-    }
-
-    // ---------------- Sophia (story mode, Tier III) ----------------
-
-    /** Daily: hires UAF's Sophia once you're Friendly with the UAF and an Auto colony has ruins to restore. */
-    static void hire(CAData d, CASettings s) {
-        if (!modOn() || !CASync.has("uafHistorian")) return;
-        PersonAPI p = Global.getSector().getImportantPeople().getPerson(SOPHIA);
-        if (p == null) return;
-        for (com.fs.starfarer.api.characters.AdminData a : Global.getSector().getCharacterData().getAdmins())
-            if (a.getPerson() != null && SOPHIA.equals(a.getPerson().getId())) return;   // already yours
-        FactionAPI uaf = Global.getSector().getFaction(MOD);
-        if (uaf == null || !uaf.getRelToPlayer().isAtWorst(com.fs.starfarer.api.campaign.RepLevel.FRIENDLY)) return;
-        boolean ruins = false;
-        for (MarketAPI m : Misc.getPlayerMarkets(false)) if (restorable(m) && auto(m)) ruins = true;
-        if (!ruins || CAItems.adminsEmployed() >= CAItems.adminMax()) return;
-        float price = 40000f;
-        try { price = Global.getSettings().getInt("adminHireTier1"); } catch (Throwable ignored) { }
-        float fee = CABudget.fee(s, CAItems.HIRE_FEE);
-        if (CABuild.credits() - s.reserve < price + fee) {
-            if (CALog.once("ruins:sophia:money")) CALog.think("Administrators: Sophia waits for " + Misc.getDGSCredits(price + fee) + " above the credit reserve.");
-            return;
-        }
-        try {
-            p.getStats().setLevel((int) SOPHIA_LEVEL);
-            p.getMemoryWithoutUpdate().set("$ome_adminTier", (int) SOPHIA_TIER);
-            Global.getSector().getCharacterData().addAdmin(p);
-            Global.getSector().getMemoryWithoutUpdate().set("$uaf_sophia_init", true);
-            Global.getSector().getMemoryWithoutUpdate().set("$uaf_spoken_with_sophia", true);
-        } catch (Throwable t) {
-            CADiagnostics.LOG.warn(CADiagnostics.TAG + "hiring Sophia failed", t);
-            return;
-        }
-        float salary = Misc.getAdminSalary(p);
-        CABudget.take(price);
-        CABudget.charge(s, 0f, fee, salary);
-        CALog.spent(null, price, 0f, 0f);
-        d.adminTransit().put(p.getId(), Global.getSector().getClock().getTimestamp());
-        CALog.did("Administrators: " + p.getNameString() + " hired from the United Aurora Federation for " + Misc.getDGSCredits(price)
-                + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + ", salary " + Misc.getDGSCredits(salary) + "/month. Arrives in 30 days.");
-    }
-
-    /** Daily (CAAuto): Sophia's hire. The restorations themselves are the planner's (offer). */
-    public static void daily(CAData d, CASettings s) {
-        try { hire(d, s); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Sophia's hire check failed", t); }
     }
 }

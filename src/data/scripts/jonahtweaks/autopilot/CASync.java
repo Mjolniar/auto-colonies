@@ -727,6 +727,14 @@ public class CASync {
         fit();
     }
 
+    /** 0.3.15.8: packages taken out of the catalog (Historian hire). A save that bought one gets its bandwidth back. */
+    static final List<String> REMOVED_PACKS = Arrays.asList("uafHire");
+
+    static void dropRemovedPacks() {
+        if (ticked().removeAll(REMOVED_PACKS)) fit();
+        packPaid().keySet().removeAll(REMOVED_PACKS);
+    }
+
     /** 0.3.12.1: the package Advisor, Approve and Auto mode are in. */
     static final String MODES = "modes";
     /** 0.3.12.1: the three packages it replaced (Advisor, Approve and Auto mode). */
@@ -1476,6 +1484,7 @@ public class CASync {
     /** On every load: costs, placement, the holds, the story intel, the watcher and the core's listener. */
     public static void onLoad() {
         CASyncCatalog.load();
+        try { dropRemovedPacks(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode removed package cleanup failed", t); }   // 0.3.15.8
         try { migrateModesPack(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode Modes migration failed", t); }   // 0.3.12.1: first, so migratePacks keeps it
         try { migratePacks(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode package migration failed", t); }
         try { migrateModes(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story mode ability migration failed", t); }
