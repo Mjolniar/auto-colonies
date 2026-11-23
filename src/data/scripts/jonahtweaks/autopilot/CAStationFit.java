@@ -47,6 +47,8 @@ public final class CAStationFit {
     static final class Fit { String key; ShipVariantAPI variant; }
 
     static final Map<String, Fit> FITS = new HashMap<String, Fit>();
+    /** 0.3.15.5: a fit planned but not adopted yet (waiting for budget, or the same as the game's fit), kept while its key holds. */
+    static final Map<String, Fit> PENDING = new HashMap<String, Fit>();
 
     static boolean on() {
         try { return CASync.has(ABILITY); } catch (Throwable t) { return false; }   // 0.3.13.0: Auto Outfitting is optional (plan)
@@ -128,7 +130,7 @@ public final class CAStationFit {
     // ---------------- daily: plan and pay ----------------
 
     public static void daily() {
-        if (!on()) { FITS.clear(); return; }
+        if (!on()) { FITS.clear(); PENDING.clear(); return; }
         if (!Global.getSector().hasTransientScript(Watch.class)) Global.getSector().addTransientScript(new Watch());
         CAData d = CAData.get();
         CASettings s = CAData.settings();
@@ -152,9 +154,17 @@ public final class CAStationFit {
                     ShipVariantAPI rv = rebuild(fm.getVariant(), saved.substring(key.length() + 1));
                     if (rv != null) { Fit fit = new Fit(); fit.key = key; fit.variant = rv; FITS.put(m.getId(), fit); continue; }
                 }
-                if (planned) continue;
-                planned = true;
-                ShipVariantAPI v = plan(m, fm, f);
+                Fit pend = PENDING.get(m.getId());
+                ShipVariantAPI v;
+                if (pend != null && key.equals(pend.key)) v = pend.variant;   // 0.3.15.5: planned once per key, not every day it waits
+                else {
+                    if (planned) continue;
+                    planned = true;
+                    v = plan(m, fm, f);
+                    Fit p = new Fit();
+                    p.key = key; p.variant = v;
+                    PENDING.put(m.getId(), p);
+                }
                 if (v == null || layout(v).equals(layout(fm.getVariant()))) continue;   // Auto Outfitting fell back to the game's fit: nothing to do
                 Map<String, Integer> now = ordnance(v);
                 // the first fit pays for what it adds over the station's own fit (free in the game), later ones over the last paid fit
@@ -167,6 +177,7 @@ public final class CAStationFit {
                     continue;
                 }
                 if (cost + fee > 0f) CABudget.pay(s, m.getId(), cost, fee, 0f);
+                PENDING.remove(m.getId());
                 d.stationFits().put(m.getId(), code(now));
                 d.stationLayouts().put(m.getId(), key + "\n" + layout(v));
                 Fit fit = new Fit();
@@ -182,6 +193,7 @@ public final class CAStationFit {
             }
         }
         FITS.keySet().retainAll(seen);   // a station that dropped below the tier, or a colony that's gone, keeps the game's fit
+        PENDING.keySet().retainAll(seen);
         d.stationFits().keySet().retainAll(seen);
         d.stationLayouts().keySet().retainAll(seen);
     }
@@ -268,6 +280,7 @@ public final class CAStationFit {
         ShipVariantAPI v = fm.getVariant().clone();
         refit(v);
         ShipVariantAPI target = v.clone();
+        refit(target);   // 0.3.15.5: the target's modules are copies too, never the objects being fitted
         p.doFit(v, target, 0, new Delegate(m, fm, f));
         noSMods(v, target);
         for (String slot : v.getStationModules().keySet())
@@ -285,12 +298,19 @@ public final class CAStationFit {
         }
     }
 
-    /** A variant of its own, saved with the station (core and modules). */
+    /**
+     * A variant of its own, saved with the station (core and modules). 0.3.15.5: every module gets its own copy first. Without
+     * one, getModuleVariant hands out the game's single stock module variant that every station with that module shares;
+     * marking or clearing it emptied the modules of all those stations in battle until a restart.
+     */
     static void refit(ShipVariantAPI v) {
         v.setSource(VariantSource.REFIT);
-        for (String slot : v.getStationModules().keySet()) {
+        for (String slot : new ArrayList<String>(v.getStationModules().keySet())) {
             ShipVariantAPI mv = v.getModuleVariant(slot);
-            if (mv != null) mv.setSource(VariantSource.REFIT);
+            if (mv == null) continue;
+            mv = mv.clone();
+            mv.setSource(VariantSource.REFIT);
+            v.setModuleVariant(slot, mv);
         }
     }
 

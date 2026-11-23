@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.15.5 - 2026-11-23
+
+- Station outfitting: Fixed station modules losing their weapons in battle. Each station's modules are fitted as their own copies. The game's shared module designs stay unchanged. Other stations with the same modules were affected too until a restart.
+- Station outfitting: A fit waiting for budget is planned once. It is planned again when the station or your known weapons, wings or hullmods change.
+
 ## 0.3.15.4 - 2026-11-23
 
 - Credit reserve: Capped at 3,000,000. A save or LunaLib value above it reads as 3,000,000.
