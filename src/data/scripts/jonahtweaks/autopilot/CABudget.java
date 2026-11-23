@@ -14,8 +14,8 @@ import com.fs.starfarer.api.util.Misc;
  * on its own; DECISIONS 14), as the median of the last 3 months. It sets the budget, the caps, hazard pay, the endgame
  * and the money emergency, so one bad month or a ship order no longer moves them all (a -187,821 month switched hazard
  * pay off at every colony and cut the savings by 1.8M). Cash flow (cashFlow, the whole report as before) is only for
- * "can we afford it". The savings no longer throw unspent budget away while the credits are really there: past 6 months'
- * worth they keep what's above your credit reserve, so the planner's one pool can still spend it.
+ * "can we afford it". The savings keep unspent budget up to your credits above the reserve (0.3.15.6: never more, so the
+ * saved-up figure is money you have).
  * 0.3.0.0 (WS-C1, research 03 F3 and section 5.1): the money ladder's inputs. Free cash (freeCash) is credits minus the
  * reserve, what's already promised (committed) and a runway of two months of the colonies' gross upkeep and your fleet's
  * monthly cost (runway). pay() and refund() move credits; charge() takes only the fee where the price was taken with
@@ -32,8 +32,8 @@ public class CABudget {
         boolean first = s.month < 0;
         // what's left of the month's budget is saved up for next month (0.2.39.0): every building that cost more than one
         // month's budget waited until savings had grown enough by themselves, months with credits piling up and nothing built.
-        // 0.3.0.0 (B5, 01 section 1): past CARRY_MONTHS budgets it keeps what the credits above your reserve really cover,
-        // instead of throwing it away (the 6-month cap dropped up to 19.9M of budget room in the author's game)
+        // 0.3.0.0 (B5, 01 section 1): it keeps what the credits above your reserve really cover (the 6-month cap dropped up
+        // to 19.9M of budget room in the author's game); 0.3.15.6: never more than those credits
         java.util.List<Float> hist = null;
         try { hist = CAData.get().colonyNetHistory(); } catch (Throwable ignored) { }
         int had = hist == null ? 0 : hist.size();   // 0.3.0.0 (B5): limit() may seed an empty history from this same report
@@ -66,7 +66,7 @@ public class CABudget {
         // 0.3.1.0: on screen again, one line a month (the money tier change is thinking)
         // 0.3.6.8: starsector.log only while story mode's Autopilot is dormant (it runs nothing, so it has no month to report)
         String monthLine = "Month: net " + Misc.getDGSCredits(netIncome(s)) + ", budget " + Misc.getDGSCredits(limit(s))
-                + (s.budgetCarry > 0f ? " plus " + Misc.getDGSCredits(s.budgetCarry) + " saved up" : "") + ".";
+                + (saved(s) > 0f ? " plus " + Misc.getDGSCredits(saved(s)) + " saved up" : "") + ".";
         if (!first) { if (CASync.dormant()) CALog.quiet(monthLine); else CALog.did(monthLine); }
         // 0.3.0.0 (B5): the numbers behind the Month line, starsector.log only
         if (!first) CALog.quiet("Month detail: colony net " + (Float.isNaN(month) ? "unknown" : Misc.getDGSCredits(month)) + " last month, "
@@ -91,19 +91,19 @@ public class CABudget {
 
     /**
      * 0.3.0.0 (B5, research 01 section 1): what's saved up when the credits above the reserve (spendable) are known: what's
-     * left, never below 0; past CARRY_MONTHS budgets only as much as spendable covers, so unspent budget that's really in
-     * the account stays in the pool and only budget room no credits stand behind is dropped. Pure.
+     * left, never below 0. 0.3.15.6: never above spendable either, so the saved-up figure is money you have over the reserve
+     * (it showed 1.18M saved up with credits under the reserve). Pure.
      */
     static float carried(float limit, float carry, float spent, float spendable) {
         float left = limit + carry - spent;
-        return Math.max(0f, Math.min(left, Math.max(CARRY_MONTHS * limit, spendable)));
+        return Math.max(0f, Math.min(left, spendable));
     }
 
     /** 0.3.0.0 (B5): the hidden switch back to 0.2.45's engine also brings back its 6-month savings cap. */
     static boolean legacy(CASettings s) { return s != null && s.legacyPlanner; }
 
-    /** Budget saved up from earlier months (0.2.39.0). */
-    public static float saved(CASettings s) { return s.budgetCarry; }
+    /** Budget saved up from earlier months (0.2.39.0). 0.3.15.6: shown at most at the credits over the reserve. */
+    public static float saved(CASettings s) { return legacy(s) ? s.budgetCarry : Math.max(0f, Math.min(s.budgetCarry, CABuild.credits() - s.reserve)); }
 
     // ---------------- 0.3.0.0 (WS-B5): colony net (research 03 F4, 01 section 7) ----------------
 
