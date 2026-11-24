@@ -78,7 +78,9 @@ public class CABuild {
         if (time == null || progress == null) return;
         float total = CARefl.getFloat(time, ind), done = CARefl.getFloat(progress, ind);
         if (total <= 0f) return;
-        CARefl.set(progress, ind, Math.max(done, total * (1f - CASyncCatalog.RAPID_TIME)));
+        // 0.3.16.1: through the industry's own setBuildProgress, so a building with tiers of its own (RePA's Reverse Engineering
+        // Hub, MultiTierIndustry) moves them too; before, only its field moved and the hub read finished while its tier still built
+        ((com.fs.starfarer.api.impl.campaign.econ.impl.BaseIndustry) ind).setBuildProgress(Math.max(done, total * (1f - CASyncCatalog.RAPID_TIME)));
     }
 
     /** 0.3.6.7: room for more new buildings here: CASync.buildsAtOnce (1, the game's rule; 2 or 3 with the story perks) less those under way. */

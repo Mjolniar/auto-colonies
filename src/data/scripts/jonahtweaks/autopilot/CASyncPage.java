@@ -177,7 +177,7 @@ public class CASyncPage {
             for (int i = start; i < Math.min(CATierFive.IDS.length, start + cols); i++) {
                 String id = CATierFive.IDS[i];
                 boolean picked = CATierFive.picked(id), on = CATierFive.online(id), built = CATierFive.built(id);
-                boolean can = picked ? CATierFive.lockLeft(id) == 0 : built && used < CATierFive.MAX;
+                boolean can = picked ? CATierFive.canDrop(id) : built && used < CATierFive.MAX;   // 0.3.16.1: cancel while spinning up
                 CustomPanelAPI panel = Global.getSettings().createCustom(tileW, 100f, new Tile(sprite(CATierFive.ART[i]), on, !can && !picked));
                 UIComponentAPI c = t.addCustom(panel, first == null ? 8f : 0f);
                 if (prev != null) c.getPosition().rightOfTop(prev, TILE_GAP);
@@ -189,7 +189,7 @@ public class CASyncPage {
                 name.autoSizeToWidth(inner - IMG_W - 2f * TILE_PAD);
                 name.getPosition().rightOfTop(c, -(tileW - IMG_W - 2f * TILE_PAD)).setYAlignOffset(-TILE_PAD);
                 String state = !built ? "Later version" : on ? "Online" : picked ? "Online in " + CATierFive.spinupLeft(id) + " days" : "Free";
-                if (picked && CATierFive.lockLeft(id) > 0) state += ", locked " + CATierFive.lockLeft(id) + " days";
+                if (picked && !CATierFive.spinning(id) && CATierFive.lockLeft(id) > 0) state += ", locked " + CATierFive.lockLeft(id) + " days";
                 LabelAPI st = t.addPara(state, gray, 0f);
                 st.autoSizeToWidth(inner - IMG_W - 2f * TILE_PAD);
                 st.getPosition().rightOfTop(c, -(tileW - IMG_W - 2f * TILE_PAD)).setYAlignOffset(-(TILE_PAD + name.getPosition().getHeight() + 2f));

@@ -27,8 +27,8 @@ import java.util.List;
  * LOCK_DAYS before it can be dropped, and a new pick comes online SPINUP_DAYS after it's picked. Every pick pauses while
  * Tier V isn't open (a lower tier falls short). State in the story state: "t5:<id>" = when it was picked (0 = not picked),
  * "t5drop:<id>" = when it was dropped (for the penalties), "t5print" = the Core printer's last core. Vanilla only.
- * Built so far: Instant construction, Iron stability, Core printer; 0.3.16.0 Domain forge and Autarch armada. Autarch
- * ascendant and Planet forging show as coming later and can't be picked.
+ * Built: Instant construction, Iron stability, Core printer; 0.3.16.0 Domain forge and Autarch armada; 0.3.16.1 Autarch
+ * ascendant and Planet forging.
  */
 public final class CATierFive {
     private CATierFive() { }
@@ -41,16 +41,16 @@ public final class CATierFive {
     /** One sentence each, for the tiles. */
     public static final String[] DESC = {
             "Every build and upgrade at a managed colony finishes the next day, and each one costs its price a second time.",
-            "Managed colonies with Heavy Industry or Orbital Works work as if they had a Pristine Nanoforge, for 25,000 credits a colony each month.",
-            "The Autarch governs every managed colony, each with two more industry slots and less upkeep.",
+            "Managed colonies with Heavy Industry or Orbital Works get a Pristine Nanoforge's effect for 25,000 credits a month each.",
+            "The Autarch governs every managed colony, each with two more industry slots and 40% less upkeep.",
             "The Autarch makes one Alpha Core every 60 days, and you pay 250,000 credits for its materials.",
-            "Once a year each managed colony loses one bad condition or gains a richer resource.",
-            "A permanent 600-point fleet patrols your systems and answers any siege, for 200,000 credits a month.",
+            "Once a year each managed colony loses a bad condition or gains a richer resource for 1,500,000 credits.",
+            "A permanent 600-point fleet patrols your systems and answers sieges for 200,000 credits a month.",
             "Managed colonies never drop below stability 8, for 10,000 credits a colony each month."};
     static final String[] ART = {"i:orbitalworks", "s:pristine_nanoforge", "c:alpha_core", "c:alpha_core", "s:soil_nanites",
             "i:highcommand", "i:patrolhq"};
     /** The picks built so far; the rest show as coming later. */
-    static final String[] BUILT = {INSTANT, PRINTER, IRON, FORGE, ARMADA};
+    static final String[] BUILT = {INSTANT, PRINTER, IRON, FORGE, ARMADA, ASCENDANT, FORGING};
     public static final int MAX = 3;
     public static final float LOCK_DAYS = 90f, SPINUP_DAYS = 30f;
     static final float PRINT_DAYS = 60f, PRINT_COST = 250000f, IRON_FLOOR = 8f, IRON_UPKEEP = 10000f, IRON_DROP = 2f, IRON_DROP_DAYS = 30f;
@@ -61,6 +61,11 @@ public final class CATierFive {
     /** 0.3.16.0: Autarch armada: its size, monthly price, days before a lost one is raised again, and each duty's length. */
     static final float ARMADA_FP = 600f, ARMADA_UPKEEP = 200000f, ARMADA_REBUILD_DAYS = 30f, ARMADA_DUTY_DAYS = 30f;
     static final String ARMADA_MEM = "$ca_t5armada", ARMADA_NAME = "Autarch Armada";
+    /** 0.3.16.1: Autarch ascendant: industry slots, upkeep multiplier, and the stability drop after it's dropped. */
+    static final float ASC_SLOTS = 2f, ASC_UPKEEP = 0.6f, ASC_DROP = 3f, ASC_DROP_DAYS = 60f;
+    static final String ASC_MOD = "ca_t5_ascendant", ASC_DROP_MOD = "ca_t5_ascendant_drop", ASC_DESC = "Autarch ascendant (Autarch AI Core)";
+    /** 0.3.16.1: Planet forging: days between rounds and the price of each change. */
+    static final float FORGING_DAYS = 365f, FORGING_COST = 1500000f;
 
     static int index(String id) {
         for (int i = 0; i < IDS.length; i++) if (IDS[i].equals(id)) return i;
@@ -103,6 +108,12 @@ public final class CATierFive {
         return picked(id) ? (int) Math.ceil(Math.max(0f, SPINUP_DAYS - CASync.daysSince(pickedAt(id)))) : 0;
     }
 
+    /** 0.3.16.1: picked and not online yet: it can be cancelled at once, with no penalty; picking it again starts the spin-up over. */
+    public static boolean spinning(String id) { return spinupLeft(id) > 0; }
+
+    /** 0.3.16.1: a picked pick can be dropped: still spinning up, or past its lock-in. */
+    public static boolean canDrop(String id) { return picked(id) && (spinning(id) || lockLeft(id) == 0); }
+
     /** Days a picked pick is still locked in (0 when it can be dropped). */
     public static int lockLeft(String id) {
         return picked(id) ? (int) Math.ceil(Math.max(0f, LOCK_DAYS - CASync.daysSince(pickedAt(id)))) : 0;
@@ -114,12 +125,13 @@ public final class CATierFive {
         if (i < 0) return "That isn't a Tier V pick.";
         if (!open()) return "Tier V isn't open.";
         if (picked(id)) {
+            boolean early = spinning(id);   // 0.3.16.1: cancelled before it came online: no lock-in, no drop penalties
             int left = lockLeft(id);
-            if (left > 0) return NAMES[i] + " is locked in for " + left + " more days.";
+            if (!early && left > 0) return NAMES[i] + " is locked in for " + left + " more days.";
             CASync.stamp("t5:" + id, 0L);
-            CASync.stamp("t5drop:" + id, CASync.now());
+            if (!early) CASync.stamp("t5drop:" + id, CASync.now());
             if (PRINTER.equals(id)) CASync.stamp("t5print", 0L);
-            CALog.did("Autopilot: " + NAMES[i] + " is off.", true);
+            CALog.did("Autopilot: " + NAMES[i] + (early ? " cancelled before it came online." : " is off."), true);
             return null;
         }
         if (!built(id)) return NAMES[i] + " comes in a later version.";
@@ -161,6 +173,15 @@ public final class CATierFive {
         if (forgeOn && newMonth && forged > 0) CABudget.pay(s, null, forged * FORGE_UPKEEP, 0f, 0f);
         try { armada(s, newMonth); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "autarch armada failed", t); }
+        // 0.3.16.1: Autarch ascendant at every managed colony; -ASC_DROP stability for ASC_DROP_DAYS after a drop
+        boolean asc = online(ASCENDANT), ascDropped = dropAge(ASCENDANT) < ASC_DROP_DAYS;
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            boolean managed = CASync.on() && CASync.manages(m);
+            try { ascendant(m, asc && managed, ascDropped && managed); }
+            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "autarch ascendant failed at " + m.getName(), t); }
+        }
+        try { forging(s); }
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "planet forging failed", t); }
         try { if (online(PRINTER)) printer(s); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "core printer failed", t); }
     }
@@ -372,9 +393,106 @@ public final class CATierFive {
         order(f, stops.get(next), "patrolling ");
     }
 
-    /** Prepare for removal: the forge's bonuses off and the armada gone. */
+    // ---------------- 0.3.16.1: Autarch ascendant ----------------
+
+    /** Seats for the Autarch administrator: every managed colony while Autarch ascendant is online, else the bought ones. */
+    public static int seats(int bought) { return bought > 0 && online(ASCENDANT) ? Math.max(bought, 10000) : bought; }
+
+    /** Two more industry slots and 40% less upkeep while on; the stability drop after a drop. Clears both otherwise. */
+    static void ascendant(MarketAPI m, boolean on, boolean dropped) {
+        StatBonus slots = m.getStats().getDynamic().getMod(Stats.MAX_INDUSTRIES);
+        if (on) {
+            slots.modifyFlat(ASC_MOD, ASC_SLOTS, ASC_DESC);
+            m.getUpkeepMult().modifyMult(ASC_MOD, ASC_UPKEEP, ASC_DESC);
+        } else {
+            slots.unmodifyFlat(ASC_MOD);
+            m.getUpkeepMult().unmodifyMult(ASC_MOD);
+        }
+        if (dropped && !on) m.getStability().modifyFlat(ASC_DROP_MOD, -ASC_DROP, "Autarch ascendant withdrawn");
+        else m.getStability().unmodifyFlat(ASC_DROP_MOD);
+    }
+
+    // ---------------- 0.3.16.1: Planet forging ----------------
+
+    /** Bad conditions, worst first, each to what it becomes (null: gone). */
+    static final String[][] BAD = {
+            {"very_hot", "hot"}, {"very_cold", "cold"}, {"extreme_tectonic_activity", "tectonic_activity"}, {"toxic_atmosphere", null},
+            {"irradiated", null}, {"dense_atmosphere", null}, {"high_gravity", null}, {"meteor_impacts", null}, {"no_atmosphere", null},
+            {"extreme_weather", null}, {"inimical_biosphere", null}, {"hot", null}, {"cold", null}, {"tectonic_activity", null},
+            {"thin_atmosphere", null}, {"low_gravity", null}, {"pollution", null}, {"dark", "poor_light"}, {"poor_light", null}};
+    /** Resource tiers, poorest first; the industry that uses each. */
+    static final String[][] RICHER = {
+            {"farmland_poor", "farmland_adequate", "farmland_rich", "farmland_bountiful"},
+            {"ore_sparse", "ore_moderate", "ore_abundant", "ore_rich", "ore_ultrarich"},
+            {"rare_ore_sparse", "rare_ore_moderate", "rare_ore_abundant", "rare_ore_rich", "rare_ore_ultrarich"},
+            {"volatiles_trace", "volatiles_diffuse", "volatiles_abundant", "volatiles_plentiful"},
+            {"organics_trace", "organics_common", "organics_abundant", "organics_plentiful"}};
+    static final String[] RICHER_USER = {Industries.FARMING, Industries.MINING, Industries.MINING, Industries.MINING, Industries.MINING};
+
+    /** Pure: the change for these conditions, {from, to} (to null: removed), or null. A bad condition first, then a resource a working industry uses, then any. */
+    static String[] forgingStep(java.util.Collection<String> has, java.util.Collection<String> industries) {
+        for (String[] b : BAD) if (has.contains(b[0])) return new String[]{b[0], b[1]};
+        for (int pass = 0; pass < 2; pass++) {
+            for (int r = 0; r < RICHER.length; r++) {
+                if (pass == 0 && !industries.contains(RICHER_USER[r])) continue;
+                String[] tiers = RICHER[r];
+                for (int i = 0; i < tiers.length - 1; i++) if (has.contains(tiers[i])) return new String[]{tiers[i], tiers[i + 1]};
+            }
+        }
+        return null;
+    }
+
+    /** Makes the change at a colony. Its text, or null when there's nothing to change. */
+    static String forgePlanet(MarketAPI m) {
+        List<String> has = new ArrayList<String>(), inds = new ArrayList<String>();
+        for (com.fs.starfarer.api.campaign.econ.MarketConditionAPI c : m.getConditions()) if (c.getId() != null) has.add(c.getId());
+        for (Industry i : m.getIndustries()) if (i.isFunctional()) inds.add(i.getId());
+        String[] step = forgingStep(has, inds);
+        if (step == null) return null;
+        String from = Global.getSettings().getMarketConditionSpec(step[0]).getName();
+        m.removeCondition(step[0]);
+        if (step[1] == null) return from + " removed";
+        m.addCondition(step[1]);
+        return from + " became " + Global.getSettings().getMarketConditionSpec(step[1]).getName();
+    }
+
+    /**
+     * Daily: FORGING_DAYS after it comes online, a round starts: every managed colony in turn, one a day, each change paid
+     * above the credit reserve (a colony waits for the money). Offline, the timer resets.
+     */
+    static void forging(CASettings s) {
+        if (!online(FORGING)) { CASync.stamp("t5forgingAt", 0L); CASync.text("t5forgingQueue", null); return; }
+        long at = CASync.stamp("t5forgingAt");
+        if (at == 0L) { CASync.stamp("t5forgingAt", CASync.now()); return; }
+        String q = CASync.text("t5forgingQueue");
+        if (q == null) {
+            if (CASync.daysSince(at) < FORGING_DAYS) return;
+            StringBuilder sb = new StringBuilder();
+            for (MarketAPI m : Misc.getPlayerMarkets(false)) if (CASync.manages(m)) sb.append(m.getId()).append(',');
+            CASync.stamp("t5forgingAt", CASync.now());
+            if (sb.length() == 0) return;
+            q = sb.toString();
+        }
+        int comma = q.indexOf(',');
+        String id = comma < 0 ? q : q.substring(0, comma), rest = comma < 0 ? "" : q.substring(comma + 1);
+        MarketAPI m = Global.getSector().getEconomy().getMarket(id);
+        if (m != null && m.isPlayerOwned() && CASync.manages(m)) {
+            if (CABuild.credits() - FORGING_COST < s.reserve) { CASync.text("t5forgingQueue", q); return; }   // waits for the money
+            String did = forgePlanet(m);
+            if (did != null) {
+                CABudget.pay(s, m.getId(), FORGING_COST, 0f, 0f);
+                CALog.did(m.getName() + ": Planet forging: " + did + ", for " + Misc.getDGSCredits(FORGING_COST) + ".", true);
+            }
+        }
+        CASync.text("t5forgingQueue", rest.isEmpty() ? null : rest);
+    }
+
+    /** Prepare for removal: the forge's and ascendant's bonuses off and the armada gone. */
     static void removeAll() {
         for (MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) {
+            m.getStats().getDynamic().getMod(Stats.MAX_INDUSTRIES).unmodifyFlat(ASC_MOD);
+            m.getUpkeepMult().unmodifyMult(ASC_MOD);
+            m.getStability().unmodifyFlat(ASC_DROP_MOD);
             m.getStats().getDynamic().getMod(Stats.PRODUCTION_QUALITY_MOD).unmodifyFlat(FORGE_MOD);
             for (Industry i : m.getIndustries()) i.getSupplyBonusFromOther().unmodifyFlat(FORGE_MOD);
         }

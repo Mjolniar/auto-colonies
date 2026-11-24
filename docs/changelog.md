@@ -1,5 +1,12 @@
 # Patch notes
 
+## 0.3.16.1 - 2026-11-23
+
+- Tier V: Added Autarch ascendant. The Autarch governs every managed colony, and each gets 2 more industry slots and 40% less upkeep. After it is dropped, the extra slots go and managed colonies get -3 stability for 60 days.
+- Tier V: Added Planet forging. A year after it comes online, each managed colony in turn loses one bad condition or gets a richer resource, for 1,500,000 credits each. Rounds repeat yearly. Dropping it resets the timer.
+- Tier V: A pick can be cancelled before it comes online. There is no lock-in or penalty, and picking it again starts the 30 days over.
+- Rapid construction: Fixed the Reverse Engineering Hub reading finished while its tier was still under construction.
+
 ## 0.3.16.0 - 2026-11-23
 
 - Tier V: Added Domain forge. Managed colonies with Heavy Industry or Orbital Works get a Pristine Nanoforge's output and ship quality, less what an installed nanoforge gives. 25,000 credits a colony each month. It fades over 30 days after it is dropped.

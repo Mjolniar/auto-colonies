@@ -68,7 +68,7 @@ public final class CAAutarchAdmin {
     /** Daily, from CASync.daily (story mode on or off): its seats are checked, one is left if it must, and new ones are taken. */
     public static void daily() {
         boolean on = CASync.has("autarchAdmin");   // false with story mode off, while dormant, or not bought
-        int seats = CASync.seats();
+        int seats = CATierFive.seats(CASync.seats());   // 0.3.16.1: Autarch ascendant: every managed colony
         boolean left = false;
         int governing = 0;   // 0.3.8.9: every colony it governs and does not leave today, managed or not (a seat it cannot leave stays taken)
         List<MarketAPI> held = new ArrayList<MarketAPI>();
@@ -189,7 +189,7 @@ public final class CAAutarchAdmin {
         if (!CASync.has("autarchAdmin")) return "The Autarch AI Core needs its Autarch administrator package.";
         if (governs(m)) return "It already governs here.";
         if (!CASync.manages(m) || CARogue.noCores(m) || CARogue.adminLocked(m)) return "It can't govern this colony.";
-        if (count() >= CASync.seats()) return "It has no free seat. The next costs " + CASync.seatCost() + " bandwidth on the Story page.";
+        if (count() >= CATierFive.seats(CASync.seats())) return "It has no free seat. The next costs " + CASync.seatCost() + " bandwidth on the Story page.";
         PersonAPI p = person();
         if (!CAStability.canLose(m, arrives(m, p), "seating the Autarch AI Core")) return "That would put the colony under the stability floor.";
         seat(m, p);
