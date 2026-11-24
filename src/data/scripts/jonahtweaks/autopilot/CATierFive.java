@@ -246,9 +246,13 @@ public final class CATierFive {
         if (CASync.daysSince(last) < PRINT_DAYS) return;
         if (CABuild.credits() - PRINT_COST < s.reserve) return;   // waits for the money
         CABudget.pay(s, null, PRINT_COST, 0f, 0f);
-        Global.getSector().getPlayerFleet().getCargo().addCommodity(CASyncCatalog.ALPHA, 1);
+        // 0.3.17.0: into the capital's Autopilot Storage (your fleet's cargo without a capital), where the core placement finds it
+        MarketAPI cap = CACapital.capital();
+        String where;
+        if (cap != null && CAStores.holds(cap)) { CAStores.of(cap).addCommodity(CASyncCatalog.ALPHA, 1); where = cap.getName() + "'s Autopilot Storage"; }
+        else { Global.getSector().getPlayerFleet().getCargo().addCommodity(CASyncCatalog.ALPHA, 1); where = "your fleet's cargo"; }
         CASync.stamp("t5print", CASync.now());
-        CALog.did("Autopilot: the Core printer made an Alpha Core for " + Misc.getDGSCredits(PRINT_COST) + ".", true);
+        CALog.did("Autopilot: the Core printer made an Alpha Core for " + Misc.getDGSCredits(PRINT_COST) + ". It's in " + where + ".", true);
     }
 
     // ---------------- 0.3.16.0: Domain forge ----------------

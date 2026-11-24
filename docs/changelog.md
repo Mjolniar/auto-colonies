@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.17.0 - 2026-11-24
+
+- Storage logistics: The log names each good in a load ("1,000 Crew, 500 Marines"). It called every commodity "supplies, fuel and crew".
+- War: A raid on a market waits 120 days after the last raid sent there. A failed raid was sent again the next day.
+- Tier V: The Core printer puts its Alpha Core in the capital's Autopilot Storage, or your fleet's cargo without a capital. The log line says where.
+
 ## 0.3.16.9 - 2026-11-24
 
 - Settings page: With LunaLib, the Autopilot panel's Settings page shows the main settings on one screen, three buttons to a row: empire mode, Balance, Spending, AI cores, Profile, New colonies, War, credit reserve, Stations, Take down buildings, Colony policies, Administrators, Capital, Fleet limit per system, Gather everything at the capital, Tech-Mining finds, Refit hub, Sell hub, On-screen log and Faction stances. A click changes the value and LunaLib's menu (F3) shows the change. Hover text on each button.

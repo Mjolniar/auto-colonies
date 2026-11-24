@@ -230,6 +230,8 @@ public final class CATuning {
     public static final float WAR_BASE_LY = 15f;
     /** Markets that attacked you in the last this-many days are struck back; one relief fleet per colony every this-many days (CAWar). */
     public static final float WAR_ATTACK_DAYS = 120f, WAR_RELIEF_DAYS = 60f;
+    /** 0.3.17.0: days from a raid's launch before CAWar sends another at the same market. */
+    public static final float WAR_RAID_RETRY_DAYS = 120f;
     /** CADefense's emergency fleets: smallest, in fleet points, and days between two at a colony. */
     public static final float DEFENSE_MIN_FP = 100f, DEFENSE_COOLDOWN_DAYS = 30f;
     /** 0.3.16.5: fleets a system with your colony holds before small fleets are sent home (CAFleetLimit), and how close to you none is. */

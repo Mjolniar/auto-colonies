@@ -354,22 +354,48 @@ public class CALogistics {
     }
 
     static String describe(Load l) {
-        int ships = l.cargo.getMothballedShips().getNumMembers(), weapons = 0, wings = 0, bps = 0, goods = 0, dparts = 0;
+        int ships = l.cargo.getMothballedShips().getNumMembers(), weapons = 0, wings = 0, bps = 0;
+        Map<String, Integer> goods = new LinkedHashMap<String, Integer>();   // 0.3.17.0: each commodity by its own name
         for (CargoStackAPI x : l.cargo.getStacksCopy()) {
             if (x.isWeaponStack()) weapons += (int) x.getSize();
             else if (x.isFighterWingStack()) wings += (int) x.getSize();
             else if (x.isSpecialStack()) bps += (int) x.getSize();
-            else if (x.isCommodityStack() && "parts".equals(x.getCommodityId())) dparts += (int) x.getSize();   // 0.3.2.0
-            else if (x.isCommodityStack()) goods += (int) x.getSize();
+            else if (x.isCommodityStack()) {
+                Integer n = goods.get(x.getCommodityId());
+                goods.put(x.getCommodityId(), (n == null ? 0 : n) + (int) x.getSize());
+            }
         }
         List<String> parts = new ArrayList<String>();
-        if (dparts > 0) parts.add(dparts + " Domain-grade Parts");
         if (ships > 0) parts.add(ships + (ships == 1 ? " ship" : " ships"));
         if (weapons > 0) parts.add(weapons + " weapons");
         if (wings > 0) parts.add(wings + " fighter wings");
         if (bps > 0) parts.add(bps + " blueprints and specs");
-        if (goods > 0) parts.add(goods + " supplies, fuel and crew");
+        parts.addAll(goodsText(goods, GOODS_SHOWN));
         return parts.isEmpty() ? "a load" : String.join(", ", parts);
+    }
+
+    /** 0.3.17.0: how many commodities a load's line names; the rest are counted as other goods. */
+    static final int GOODS_SHOWN = 4;
+
+    /** Pure: the biggest commodities by name ("1,000 Crew", "500 Marines"), then "N other goods". */
+    static List<String> goodsText(Map<String, Integer> goods, int shown) {
+        List<Map.Entry<String, Integer>> es = new ArrayList<Map.Entry<String, Integer>>(goods.entrySet());
+        Collections.sort(es, new Comparator<Map.Entry<String, Integer>>() {
+            public int compare(Map.Entry<String, Integer> a, Map.Entry<String, Integer> b) { return b.getValue() - a.getValue(); }
+        });
+        List<String> out = new ArrayList<String>();
+        int rest = 0;
+        for (int i = 0; i < es.size(); i++) {
+            if (es.get(i).getValue() <= 0) continue;
+            if (out.size() < shown) out.add(String.format(java.util.Locale.US, "%,d", es.get(i).getValue()) + " " + commodityName(es.get(i).getKey()));
+            else rest += es.get(i).getValue();
+        }
+        if (rest > 0) out.add(String.format(java.util.Locale.US, "%,d", rest) + " other goods");
+        return out;
+    }
+
+    static String commodityName(String id) {
+        try { return Global.getSettings().getCommoditySpec(id).getName(); } catch (Throwable t) { return id; }
     }
 
     /** Daily: loads that have arrived go into the hub's Storage (your biggest colony's if that Storage is gone). */

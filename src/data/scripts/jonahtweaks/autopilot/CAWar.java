@@ -71,6 +71,8 @@ public class CAWar {
     // 0.3.0.0 (A3): the numbers live in CATuning
     static final float RESERVE = CATuning.WAR_RESERVE, RICH_RESERVE = CATuning.WAR_RICH_RESERVE, RICH_SIZE = CATuning.WAR_RICH_SIZE, MIN_FP = CATuning.WAR_MIN_FP;
     static final float BASE_LY = CATuning.WAR_BASE_LY, ATTACK_DAYS = CATuning.WAR_ATTACK_DAYS, RELIEF_DAYS = CATuning.WAR_RELIEF_DAYS;
+    /** 0.3.17.0: days after a raid is sent before another goes at the same market (a failed one was sent again the next day). */
+    static final float RAID_RETRY_DAYS = CATuning.WAR_RAID_RETRY_DAYS;
     static final int RICH_PER_DAY = CATuning.WAR_RICH_PER_DAY;
     /**
      * 0.3.0.0: circuit breaker keys for the offensive parts, so one failing part doesn't stop the others. CONQUEST_KEY is retake
@@ -768,6 +770,7 @@ public class CAWar {
             // 0.3.9.0: a market no operation may go at (hidden, out of the economy, story-critical, cut off) keeps its record
             if (!p.allows(CAWarPolicy.RAID, t.getFaction()) || !targetable(t) || underWay(NexRaidIntel.class, t)) continue;
             if (!raidFits(p, CAWarPolicy.RAID, t)) continue;   // 0.3.9.6 (E1, E2)
+            if (daysSince(p.d, CAWarPolicy.RAID + ":" + t.getId()) < RAID_RETRY_DAYS) continue;   // 0.3.17.0: a failed raid isn't sent again the next day
             String w = send(p.d, p.s, p.mgr, CAWarPolicy.RAID, CAWarPolicy.RAID, t, Math.max(200f, 1.5f * CAItems.defenseFP(t)), p.rich, "it attacked you", CAWarPolicy.RAID + ":" + t.getId());
             if (w == null) p.went();
             else p.waiting.add("raid on " + t.getName() + " (" + waitText(w) + ")");
@@ -853,6 +856,7 @@ public class CAWar {
                 if (oursAt(t) || daysSince(p.d, CAWarPolicy.BLOCKADE + ":" + t.getId()) < CAWarPolicy.BLOCKADE_DAYS) continue;
                 if (daysSince(p.d, NO_ROUTE + t.getId()) < NO_ROUTE_DAYS) continue;   // 0.3.9.7 (E9)
                 boolean raid = military(t) && raidFits(p, CAWarPolicy.HOLD_RAID, t);   // 0.3.9.6 (E1, E2): else a blockade, which has one target
+                if (raid && daysSince(p.d, CAWarPolicy.HOLD_RAID + ":" + t.getId()) < RAID_RETRY_DAYS) continue;   // 0.3.17.0: the next market of this faction
                 String kind = raid ? CAWarPolicy.HOLD_RAID : CAWarPolicy.BLOCKADE;
                 float want = raid ? Math.max(200f, 1.5f * CAItems.defenseFP(t)) : blockadeFP(t);
                 String w = send(p.d, p.s, p.mgr, kind, kind, t, want, p.rich, CAStance.name(p.stance(e.getKey())) + ": " + e.getKey().getDisplayName(), kind + ":" + t.getId());
