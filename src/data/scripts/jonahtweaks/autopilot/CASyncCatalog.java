@@ -48,6 +48,8 @@ public class CASyncCatalog {
     /** 0.3.10.4: a fed core gives FALLOFF_SHARE[i] of its bandwidth once FALLOFF_AT[i] bandwidth is fed ("falloff"). */
     public static int[] FALLOFF_AT = {100, 250};
     public static float[] FALLOFF_SHARE = {0.75f, 0.5f};
+    /** 0.3.16.3: the least a fed core gives after the falloff: a Gamma 1, a Beta 2, an Alpha 6. */
+    public static final int GAMMA_MIN = 1, BETA_MIN = 2, ALPHA_MIN = 6;
     /** 0.3.10.4: the convenience fee in story mode ("feeMult"). */
     public static float STORY_FEE_MULT = 1.1f;
 

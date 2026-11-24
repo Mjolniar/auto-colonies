@@ -277,28 +277,36 @@ public class CASync {
     }
 
     /**
-     * Pure: feeding a Alphas, b Betas and g Gammas (Alphas first) after `fed` bandwidth and `rem` hundredths: {whole
-     * bandwidth gained, hundredths left over}. Each core gives its value times the falloff share at the time it's fed.
+     * Pure: one core's bandwidth: its value times the falloff share and the Balance multiplier, rounded, never below its
+     * floor (CASyncCatalog.GAMMA_MIN/BETA_MIN/ALPHA_MIN) and the floor never above the core's full value.
      */
-    static int[] gain(int fed, int rem, int g, int b, int a, int[] at, float[] share) {
+    static int coreGain(int val, int min, float share, float mult) {
+        int full = Math.round(val * mult);
+        return Math.max(Math.min(min, full), Math.round(val * share * mult));
+    }
+
+    /**
+     * Pure: the bandwidth feeding a Alphas, b Betas and g Gammas (Alphas first) gives after `fed` bandwidth. 0.3.16.3: each
+     * core is rounded on its own (no shared remainder), so one kind's value never moves another's.
+     */
+    static int gain(int fed, int g, int b, int a, int[] at, float[] share, float mult) {
         int[] counts = {a, b, g};
         int[] vals = {CASyncCatalog.ALPHA_PP, CASyncCatalog.BETA_PP, CASyncCatalog.GAMMA_PP};
-        int total = fed, r = Math.max(0, rem), got = 0;
+        int[] mins = {CASyncCatalog.ALPHA_MIN, CASyncCatalog.BETA_MIN, CASyncCatalog.GAMMA_MIN};
+        int total = fed, got = 0;
         for (int k = 0; k < 3; k++) {
             for (int n = 0; n < counts[k]; n++) {
-                r += Math.round(vals[k] * 100f * falloff(total, at, share));
-                int whole = r / 100;
-                r %= 100;
-                total += whole;
-                got += whole;
+                int one = coreGain(vals[k], mins[k], falloff(total, at, share), mult);
+                total += one;
+                got += one;
             }
         }
-        return new int[]{got, r};
+        return got;
     }
 
     /** The bandwidth these cores would give now. */
     public static int gainNow(int g, int b, int a) {
-        return Math.round(gain(fedPoints(), num("fedRem"), g, b, a, CASyncCatalog.FALLOFF_AT, CASyncCatalog.FALLOFF_SHARE)[0] * CABalance.feed());   // 0.3.14.0: Balance
+        return gain(fedPoints(), g, b, a, CASyncCatalog.FALLOFF_AT, CASyncCatalog.FALLOFF_SHARE, CABalance.feed());   // 0.3.14.0: Balance
     }
 
     /** The share of its bandwidth the next core fed gives. */
@@ -543,10 +551,9 @@ public class CASync {
                 if (s > 0) { st.cargo.removeCommodity(CORES[k], s); left -= s; }
             }
         }
-        int[] gr = gain(fedPoints(), num("fedRem"), g, b, a, CASyncCatalog.FALLOFF_AT, CASyncCatalog.FALLOFF_SHARE);   // 0.3.10.4: falloff
-        int pts = Math.round(gr[0] * CABalance.feed());   // 0.3.14.0: Balance
+        int pts = gainNow(g, b, a);   // 0.3.10.4: falloff; 0.3.14.0: Balance; 0.3.16.3: each core on its own, with floors
         num("fedPP", fedPoints() + pts);
-        num("fedRem", gr[1]);
+        num("fedRem", 0);   // 0.3.16.3: no shared remainder
         num("fedG", num("fedG") + g); num("fedB", num("fedB") + b); num("fedA", num("fedA") + a);
         CALog.quiet("Autopilot: integrated " + CASyncCatalog.cores(g, b, a) + ", +" + pts + " bandwidth (" + total() + " in all).");   // 0.3.7.4: no thank-you beat (0.3.8.9: the Story page shows the bandwidth)
         return null;

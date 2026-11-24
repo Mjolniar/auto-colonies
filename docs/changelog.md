@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.16.3 - 2026-11-23
+
+- Story mode: Each fed core's bandwidth is rounded on its own. Feeding one kind of core does not change what the others give.
+- Story mode: After the falloff, a fed Gamma gives at least 1 bandwidth, a Beta at least 2 and an Alpha at least 6.
+
 ## 0.3.16.2 - 2026-11-23
 
 - Instant construction: Fixed Population & Infrastructure finishing at once for 0 credits every day with a message each time. The population building is skipped.
