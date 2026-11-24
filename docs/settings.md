@@ -133,6 +133,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | Hegemony inspections | Advise, Resist where defended, Off | Advise | Resist where defended turns the Hegemony hostile. |
 | Alphas in research buildings | First, By value | First | Alpha cores cut research buildings' costs in half. Needs Vaults of Knowledge. |
 | Research uses colony items | Off, From storage, From storage and buildings | Off | This only happens while credits are over the surplus line. Needs Vaults of Knowledge. |
+| Tech-Mining finds to Autopilot Storage | On, Off | On | Colony items your Tech-Mining digs up go to Autopilot Storage, where they get installed. Turn it off to keep them in Storage for yourself. Blueprints, weapons and cores stay in Storage either way. |
 
 ### Colony policies
 

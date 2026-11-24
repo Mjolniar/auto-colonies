@@ -275,6 +275,8 @@ public final class CALunaSync {
         r.opts = new String[]{"First", "By value"};
         flag(r, "researchCoresByValue");
         radio("resitems", "Research uses colony items", "researchItemMode", CASettings.RESEARCH_ITEM_NAMES, "Active only while credits exceed the surplus line. Requires Vaults of Knowledge.");
+        bool("techfinds", "Tech-Mining finds to Autopilot Storage", "techFindsKeep", true, "Colony items your Tech-Mining digs up go to Autopilot Storage, "
+                + "where they get installed. Turn it off to keep them in Storage for yourself. Blueprints, weapons and cores stay in Storage either way.");
 
         header("adv_policy", "Colony policies");
         radio("hazard", "Hazard pay", "hazardPayMode", CASettings.POLICY_NAMES, "Under Auto, hazard pay is enabled wherever the growth gained justifies it.");

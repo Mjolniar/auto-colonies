@@ -91,6 +91,7 @@ ca_corerisk,Inspection risk,Radio,Never inspected,"More where defended, Never in
 ca_inspect,Hegemony inspections,Radio,Advise,"Advise, Resist where defended, Off",Resist where defended will turn the Hegemony hostile.,,,Advanced
 ca_researchcores,Alphas in research buildings,Radio,First,"First, By value",Alpha cores halve research buildings' costs. Requires Vaults of Knowledge.,,,Advanced
 ca_resitems,Research uses colony items,Radio,Off,"Off, From storage, From storage and buildings",Active only while credits exceed the surplus line. Requires Vaults of Knowledge.,,,Advanced
+ca_techfinds,Tech-Mining finds to Autopilot Storage,Boolean,true,,"Colony items your Tech-Mining digs up go to Autopilot Storage, where they get installed. Turn it off to keep them in Storage for yourself. Blueprints, weapons and cores stay in Storage either way.",,,Advanced
 ,,,,,,,,
 ca_h_adv_policy,Colony policies,Header,Colony policies,,,,,Advanced
 ca_hazard,Hazard pay,Radio,Auto,"Auto, Don't touch","Under Auto, hazard pay is enabled wherever the growth gained justifies it.",,,Advanced

@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.16.7 - 2026-11-24
+
+- Tech-Mining: Added Tech-Mining finds to Autopilot Storage, on by default. Each month the colony items in Tech-Mining's finds move from the gathering point's Storage to its Autopilot Storage, where they get installed. Off keeps them in Storage. Blueprints, weapons and cores stay in Storage.
+
 ## 0.3.16.6 - 2026-11-24
 
 - Slightly Better Tech-Mining: Tech-Mining is a plan step at the Auto colony with the best ruins (ruins size times what is left of them). The endgame, pruning and the over-limit cleanup leave it in place, and an earlier takedown there does not block the rebuild.
