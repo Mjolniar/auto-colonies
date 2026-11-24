@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.16.0 - 2026-11-23
+
+- Tier V: Added Domain forge. Managed colonies with Heavy Industry or Orbital Works get a Pristine Nanoforge's output and ship quality, less what an installed nanoforge gives. 25,000 credits a colony each month. It fades over 30 days after it is dropped.
+- Tier V: Added Autarch armada. A 600-point fleet is raised at your largest managed colony with a spaceport. It answers sieges and raids at managed colonies and patrols each of their systems in turn. 200,000 credits a month. A lost armada is raised again after 30 days. It leaves when dropped.
+
 ## 0.3.15.9 - 2026-11-23
 
 - Capital: The Reverse Engineering Hub is part of the capital build-up, I to III. It is built at any money tier and stability, and its upkeep does not hold back other trade buildings.

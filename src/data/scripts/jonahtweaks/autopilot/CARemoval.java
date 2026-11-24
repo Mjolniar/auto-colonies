@@ -413,6 +413,7 @@ public final class CARemoval {
 
     /** admin:autarch, skill:ca_autarchy, portrait:autarch_core, memory:autarch_admin. */
     static void admins(Report r) {
+        try { CATierFive.removeAll(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Tier V cleanup failed", t); }   // 0.3.16.0: Domain forge and Autarch armada
         for (MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) {
             MemoryAPI mem = m.getMemoryWithoutUpdate();
             m.getStability().unmodifyFlat(CATierFive.IRON_MOD);   // 0.3.15.0: Tier V Iron stability's floor and its drop penalty
