@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.17.1 - 2026-11-24
+
+- Station augments: Autopilot does not add Economy Conversion. Stations that have it keep it.
+
 ## 0.3.17.0 - 2026-11-24
 
 - Storage logistics: The log names each good in a load ("1,000 Crew, 500 Marines"). It called every commodity "supplies, fuel and crew".

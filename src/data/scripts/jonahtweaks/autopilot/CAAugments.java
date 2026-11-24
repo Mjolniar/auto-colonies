@@ -25,7 +25,8 @@ import java.util.*;
  * points (AP), scored with the same profile weights as buildings. Installing costs nothing and can be undone, so Auto
  * colonies get the loadout applied and the rest see it with an Apply button. Augments you installed are never touched,
  * and one you remove isn't added back to that colony. Augments that use up an item, and ones that give AP back for a
- * drawback, are left to you. Economy Conversion is never removed once added: its extra industry slot may be in use.
+ * drawback, are left to you. 0.3.17.1: Economy Conversion is player-only: Autopilot never adds it, since it cuts the
+ * station's hull and flux for good. One already on a station is never removed: its extra industry slot may be in use.
  * Output augments (Hydroponics Basins: +2 food, +1 organics on the station) count only what they add above the colony's
  * own largest source of each, since a market's supply is its largest single source. Combat is valued from what each
  * augment really does on this station (CAAugmentModel, from Station Augments' source), read from the station's own ships
@@ -95,8 +96,7 @@ public class CAAugments {
     /**
      * The profile to plan with: Security while the threat is high, as buildings do, for Approve and Auto colonies. A station
      * in a system with heavy military presence of its own (protected) stays on its colony's goal anyway (0.2.40.1): other
-     * stations and military bases there take the fight, so this one can go economic (Mining Station, Hydroponics, Economy
-     * Conversion). Only the augments: buildings and fleets still go by the colony's threat. A raid or blockade on its way
+     * stations and military bases there take the fight, so this one can go economic (Mining Station, Hydroponics). Only the augments: buildings and fleets still go by the colony's threat. A raid or blockade on its way
      * still puts the combat loadout on (CASiege, in run).
      */
     static CAData.Profile profileFor(MarketAPI m, CAData.Colony c) {
@@ -156,20 +156,7 @@ public class CAAugments {
     }
 
     // 0.3.9.2 (J L16, L17): the most of a commodity any other building here makes is CAMods.otherSupply
-
-    /** Value of one more industry slot: the best supported industry that's waiting for one. Computed once per plan. */
-    static class Slot {
-        boolean done; float value; String name;
-
-        void compute(MarketAPI m, CAData.Profile profile) {
-            if (done) return;
-            done = true;
-            if (CABuild.freeSlots(m) > 0) return;   // a slot is already free
-            CAEngine.Result r = CAEngine.cached(m, profile, CAData.settings().minStability, false);   // 0.3.0.0 (A4): the day's kept evaluation
-            if (r.bestNoSlot == null || r.bestNoSlot.score <= 0f) return;
-            value = r.bestNoSlot.score; name = r.bestNoSlot.name;
-        }
-    }
+    // 0.3.17.1: Slot (the value of Economy Conversion's extra industry slot) is gone with Autopilot's picks of it
 
     /** What a plan knows about the station once: its loadout, its AI core, whether patrols fight beside it, the Dustkeepers' mood. */
     static class Ctx {
@@ -192,8 +179,9 @@ public class CAAugments {
     }
 
     /** One augment's effects in the engine's units, weighted by the profile. Null when it's never worth having here. 0.3.9.2 (J L13): the overload without ctx is gone. */
-    static Opt value(MarketAPI m, Industry station, stationAttachment a, CAData.Profile profile, Map<String, Integer> deficit, float upkeep, Slot slot, Ctx ctx) {
+    static Opt value(MarketAPI m, Industry station, stationAttachment a, CAData.Profile profile, Map<String, Integer> deficit, float upkeep, Ctx ctx) {
         String id = a.getId();
+        if (PLAYER_ONLY.contains(id)) return null;   // 0.3.17.1
         CAEngine.Pick p = new CAEngine.Pick();
         float extra = 0f;
         int combat = rating(a, "combatgood") - rating(a, "combatbad");
@@ -204,7 +192,7 @@ public class CAAugments {
         float tm = CAAugmentModel.threatMult(threatened, capital);
         String counts = ". Combat counts x" + Math.round(tm) + " while the colony is threatened";
         // combat from what the augment really does on this station (CAAugmentModel); the mod's own rating only for augments it doesn't know
-        CAAugmentModel.Gain g = OWN_LOGIC.contains(id) ? null : CAAugmentModel.gain(id, ctx.kit, ctx.core, ctx.patrols, ctx.dustkeepersHostile);
+        CAAugmentModel.Gain g = CAAugmentModel.gain(id, ctx.kit, ctx.core, ctx.patrols, ctx.dustkeepersHostile);
         if (g != null) {
             if (g.share < 0f) return null;
             combat = 0;
@@ -247,16 +235,6 @@ public class CAAugments {
             p.fx[0] += 0.4f * upkeep; p.fx[4] += 0.3f * tm;
             p.lines.add("Luddic majority: station upkeep -40% (about " + Misc.getDGSCredits(0.4f * upkeep) + " per month), defense flotillas");
         }
-        else if (id.equals(CONVERSION)) {
-            if (profile == CAData.Profile.SECURITY) return null;   // it weakens the station for good; not while defense comes first
-            slot.compute(m, profile);
-            if (slot.value <= 0f) return null;
-            extra += slot.value;
-            p.lines.add("One more industry slot: " + slot.name + " is waiting for one (" + CAEngine.valueText(slot.value) + ")");
-            combat = 0;
-            p.fx[4] -= 0.1f;
-            p.lines.add("Station hull -30%, flux capacity -30%, dissipation -20%");
-        }
         if (combat != 0) {
             p.fx[4] += combat * COMBAT * (combat > 0 ? tm : 1f);
             p.lines.add(combat > 0 ? "Stronger station in combat (Station Augments rates it " + combat + ")"
@@ -275,8 +253,11 @@ public class CAAugments {
         return o;
     }
 
-    /** Augments with their own logic below, which the combat model leaves alone. */
-    static final Set<String> OWN_LOGIC = new HashSet<String>(Collections.singletonList(CONVERSION));
+    /**
+     * 0.3.17.1: augments Autopilot never adds. Economy Conversion: station hull -30%, flux capacity -30%, dissipation -20%
+     * for an extra industry slot, which weakens the station in the fights it is there for. Was OWN_LOGIC.
+     */
+    static final Set<String> PLAYER_ONLY = new HashSet<String>(Collections.singletonList(CONVERSION));
 
     static float total(List<Opt> l) { float t = 0f; for (Opt o : l) t += o.score; return t; }
 
@@ -351,7 +332,6 @@ public class CAAugments {
 
         Map<String, Integer> deficit = CAEngine.empireDeficits();
         float upkeep = baseUpkeep(ind);
-        Slot slot = new Slot();
         Ctx ctx = Ctx.of(m, ind);
         float avail = pl.budget, currentScore = 0f;
         List<Opt> current = new ArrayList<Opt>();   // Autopilot's augments still worth keeping
@@ -363,7 +343,7 @@ public class CAAugments {
                 continue;
             }
             try {
-                Opt o = value(m, ind, a, profile, deficit, upkeep, slot, ctx);
+                Opt o = value(m, ind, a, profile, deficit, upkeep, ctx);
                 if (o == null && MINING.equals(a.getId())) unknown.add(a.getId());   // 0.3.9.2 (J M4): Station Augments could not say what it mines
                 if (o != null) currentScore += o.score;
                 if (o != null && o.score > 0f) current.add(o);
@@ -376,7 +356,7 @@ public class CAAugments {
         List<Opt> fresh = new ArrayList<Opt>();
         Set<String> skip = c.augSkip();
         for (String id : known()) {
-            if (installed.containsKey(id) || skip.contains(id)) continue;
+            if (installed.containsKey(id) || skip.contains(id) || PLAYER_ONLY.contains(id)) continue;   // 0.3.17.1: PLAYER_ONLY
             stationAugmentSpec spec = specs().get(id);
             if (spec == null || spec.getRequiredItemId() != null || spec.getApCost() <= 0f) continue;
             try {
@@ -384,7 +364,7 @@ public class CAAugments {
                 inst.setConsiderAP(false);
                 inst.setConsiderEngagement(false);
                 if (inst.getUnavailableReason() != null || inst.getAugmentCost() <= 0f) continue;
-                Opt o = value(m, ind, inst, profile, deficit, upkeep, slot, ctx);
+                Opt o = value(m, ind, inst, profile, deficit, upkeep, ctx);
                 if (o != null && o.score > 0f) fresh.add(o);
             } catch (Throwable t) {
                 CAStep.warn(STEP, "station augment " + id + " could not be scored at " + m.getName(), t);   // 0.3.9.2 (J L3)
