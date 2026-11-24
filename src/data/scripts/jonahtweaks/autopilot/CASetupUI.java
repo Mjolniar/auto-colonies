@@ -191,6 +191,10 @@ public class CASetupUI {
         DESC.put("amb", "Ally and Friendly factions served first.");
         DESC.put("stances", "One stance per faction, followed by agents, ambassadors, ceasefires and war fleets.");
         DESC.put("screenlog", "Short-form notices displayed on screen.");
+        // 0.3.16.9: the quick Settings page's own rows (CAQuickSettings)
+        DESC.put("fleetlimit", "Over 30 fleets in a system, small neutral fleets go home.");
+        DESC.put("logiall", "Every Storage ships everything to the capital weekly, for a fee.");
+        DESC.put("techfinds", "Tech-Mining's colony items go to Autopilot Storage.");
 
         HOVER.put("empire", new String[]{"Off takes no action, Advisor recommends, Approve awaits consent and Auto executes."});
         HOVER.put("profile", new String[]{"Low profile founds no colonies, Normal expands into held systems and High profile expands everywhere it can."});
@@ -409,15 +413,7 @@ public class CASetupUI {
      * faction stances.
      */
     static void renderLuna(TooltipMakerAPI t, CASettings s) {
-        marked.clear();
-        t.addPara(CALunaSync.WHERE, Misc.getGrayColor(), 6f);   // 0.3.8.6: shown as is
-        if (CACapital.on(s)) row(t, "Capital", CACapital.name(s), "Autopilot picks", "capid", true);
-        else row(t, "Capital", "None", "Autopilot picks", "capid", true);
-        desc(t, "capid");
-        row(t, "Refit hub", CALogistics.hubName(s.logisticsHub, true), null, "logihub", true);
-        row(t, "Sell hub", CALogistics.hubName(s.logisticsSellHub, false), null, "logisell", true);
-        if (nex() && s.spyMode == 2) row(t, "Offense target", spyTargetName(s.spyTarget), spyTargetName(null), "spytarget", true);
-        stancesLink(t, s);
+        CAQuickSettings.render(t, s, pageWidth);   // 0.3.16.9: the quick settings on one screen, this save's picks among them
     }
 
     /**
@@ -1009,6 +1005,9 @@ public class CASetupUI {
         else if (k.equals("logisell")) s.logisticsSellHub = CALogistics.next(s.logisticsSellHub);
         else if (k.equals("logiships")) s.logisticsShips = !s.logisticsShips;
         else if (k.equals("logigoods")) s.logisticsSupplies = !s.logisticsSupplies;
+        else if (k.equals("logiall")) s.logisticsAll = !s.logisticsAll;   // 0.3.16.9: the quick page's rows
+        else if (k.equals("techfinds")) s.techFindsKeep = !s.techFindsKeep;
+        else if (k.equals("fleetlimit")) s.noFleetLimit = !s.noFleetLimit;
         else if (k.equals("capid")) {   // 0.3.0.0 (WS-F1): Autopilot picks, each colony, then None (capitalMode 2), then Autopilot picks
             // 0.3.0.0 (WS-F1 fix): leaving None restores the Capital does in effect before it (an older save's None: Deliveries and commerce)
             if (s.capitalMode == 2) { s.capitalMode = s.capitalModeBeforeNone == 1 ? 1 : 0; s.capitalId = null; }

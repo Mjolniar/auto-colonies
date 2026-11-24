@@ -1157,6 +1157,7 @@ public class CASync {
         ROWS.put("capid", new String[]{"capitalMode"});
         ROWS.put("capmode", new String[]{"capitalMode"});
         ROWS.put("logi", new String[]{"logisticsMode"});
+        ROWS.put("logiall", new String[]{"logisticsAll"});   // 0.3.16.9: Gather everything at the capital (Supply and items)
         ROWS.put("objectives", new String[]{"objectiveMode"});
         ROWS.put("surplus", new String[]{"surplusLine"});
         ROWS.put("surplusrich", new String[]{"surplusFocusOnly"});

@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.16.9 - 2026-11-24
+
+- Settings page: With LunaLib, the Autopilot panel's Settings page shows the main settings on one screen, three buttons to a row: empire mode, Balance, Spending, AI cores, Profile, New colonies, War, credit reserve, Stations, Take down buildings, Colony policies, Administrators, Capital, Fleet limit per system, Gather everything at the capital, Tech-Mining finds, Refit hub, Sell hub, On-screen log and Faction stances. A click changes the value and LunaLib's menu (F3) shows the change. Hover text on each button.
+
 ## 0.3.16.8 - 2026-11-24
 
 - Storage logistics: Added Gather everything at the capital, off by default. Once a week every Storage you can reach sends everything to the capital's Storage: ships, weapons, wings, commodities, crew, marines, cores, colony items and blueprints. Each load costs 2,000 plus 300 a light-year and 1,000 a ship, times the fee level. Story mode: part of Supply and items.

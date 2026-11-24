@@ -45,6 +45,8 @@ public final class CALunaSync {
     public static final String CUSTOM = CAPresets.CUSTOM_NAME;
     /** The line the intel Settings page shows while LunaLib holds the settings. */
     static final String WHERE = "Settings: in LunaLib's menu (F3). This save's picks:";
+    /** 0.3.16.9: under the quick Settings page (CAQuickSettings). */
+    static final String MORE = "Hover for details. Every setting is in LunaLib's menu (F3).";
 
     interface Getter { Object get(CASettings s); }
     /** batch: the row keys changed in this LunaLib save; null when the value is read on load (no rounding, no extra writes). */

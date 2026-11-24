@@ -17,6 +17,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 - Story mode follows LunaLib's value in every save, but LunaLib keeps your value for a setting that story mode is holding at off.
 - When LunaLib holds settings from a save you've set up, a new save's first Approve or Auto colony keeps them and doesn't change the empire mode.
 - Faction stances and this save's picks (Capital, Refit hub, Sell hub and Offense target) are on the Autopilot panel's Settings page.
+- With LunaLib, the Autopilot panel's Settings page also has the settings you'd change most, on one screen: empire mode, Balance, Spending, AI cores, Profile, New colonies, War, the credit reserve, Stations, Take down buildings, Colony policies, Administrators, Capital, Fleet limit per system, Gather everything at the capital, Tech-Mining finds, the hubs and the on-screen log. Click a button to change it, hover it to see what it does. Changes there show up in LunaLib's menu too.
 
 ## General tab
 
