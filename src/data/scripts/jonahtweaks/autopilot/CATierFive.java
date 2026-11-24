@@ -206,6 +206,8 @@ public final class CATierFive {
     static void instant(MarketAPI m, CASettings s) {
         for (Industry ind : new ArrayList<Industry>(m.getIndustries())) {
             if (!ind.isBuilding() || ind.isDisrupted()) continue;
+            // 0.3.16.2: the population building can read as building (mods); finishing it did nothing and repeated every day
+            if (ind.getSpec() != null && ind.getSpec().hasTag(Industries.TAG_POPULATION)) continue;
             float cost = ind.getBuildCost();
             if (CABuild.credits() - cost < s.reserve) continue;
             CABudget.pay(s, m.getId(), cost, 0f, 0f);

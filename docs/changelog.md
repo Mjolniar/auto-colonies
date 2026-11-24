@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.16.2 - 2026-11-23
+
+- Instant construction: Fixed Population & Infrastructure finishing at once for 0 credits every day with a message each time. The population building is skipped.
+
 ## 0.3.16.1 - 2026-11-23
 
 - Tier V: Added Autarch ascendant. The Autarch governs every managed colony, and each gets 2 more industry slots and 40% less upkeep. After it is dropped, the extra slots go and managed colonies get -3 stability for 60 days.
