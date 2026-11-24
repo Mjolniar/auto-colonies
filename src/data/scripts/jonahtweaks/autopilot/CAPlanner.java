@@ -1098,7 +1098,7 @@ public class CAPlanner {
         a.upkeepCap = CASurplus.upkeepCap(m, s);
         a.approveOnly = approveOnly;
         if (!approveOnly) a.approval = approval(m, p, s);
-        a.tombstone = tombstoneDays(m.getId(), p.id);
+        a.tombstone = CATechMining.isStep(m, p.id) ? 0f : tombstoneDays(m.getId(), p.id);   // 0.3.16.6: the best-ruins Tech-Mining comes back
         a.rejected = CAAuto.rejectedDays(m.getId(), p.id, CATime.now());   // 0.3.0.0 (B3 fix): you rejected it here within 180 days
         a.payload = new PickRef(c, p, remove);
         a.starter = PICK_START;

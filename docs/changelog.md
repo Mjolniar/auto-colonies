@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.16.6 - 2026-11-24
+
+- Slightly Better Tech-Mining: Tech-Mining is a plan step at the Auto colony with the best ruins (ruins size times what is left of them). The endgame, pruning and the over-limit cleanup leave it in place, and an earlier takedown there does not block the rebuild.
+
 ## 0.3.16.5 - 2026-11-23
 
 - Fleet limit: Added Fleet limit per system, on by default. Systems with your colonies hold 30 fleets. Past that, Roider nomads and miners, traders, scavengers, pilgrims, mercenaries and other factions' patrols are sent home daily, farthest from you first. Your fleets, hostiles, war and mission fleets stay.

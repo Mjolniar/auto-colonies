@@ -296,6 +296,7 @@ public class CAPlan {
         extra.addAll(CAFloors.stepsFor(m));     // 0.3.2.0: production floor producers (none with production Off)
         extra.addAll(CASurplus.richSteps(m));   // spending freely: every station and defense maxed
         extra.addAll(CAWonders.stepsFor(m));    // and the Bifrost Control Center at one colony
+        extra.addAll(CATechMining.stepsFor(m));   // 0.3.16.6: Tech-Mining at the best ruins with Slightly Better Tech-Mining
         if (extra.isEmpty()) { p.steps = CARogue.planFilter(m, p.steps); return p; }   // 0.3.2.1: Rogue Planets' forbidden steps out
         List<Step> steps = new ArrayList<Step>();
         java.util.Set<String> ids = new java.util.HashSet<String>();

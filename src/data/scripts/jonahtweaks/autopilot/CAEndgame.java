@@ -351,6 +351,7 @@ public class CAEndgame {
         if (id.startsWith("tme_") || CAPlan.WORLD_STEPS.contains(id) || (plan != null && plan.exact.contains(id))) return true;
         if (CAProjects.isStep(m, id) || CASurplus.isRichStep(m, id) || CAResearch.isFacilityStep(m, id)) return true;
         if (CACapital.isStep(m, id) || CAStations.isStep(m, id)) return true;   // the capital's trade buildings and every colony's station (0.2.42.0)
+        if (CATechMining.isStep(m, id)) return true;   // 0.3.16.6: Tech-Mining at the best ruins (Slightly Better Tech-Mining)
         return CAWonders.BFC.equals(id);
     }
 
