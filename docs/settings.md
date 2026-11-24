@@ -192,6 +192,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | Storage logistics | Off, On | Empire mode | It moves goods to the refit hub weekly (Storage logistics). |
 | Ships to the refit hub | On, Off | On | It's part of Storage logistics. |
 | Supplies, fuel, crew, marines too | On, Off | On | It's part of Storage logistics. |
+| Gather everything at the capital | On, Off | Off | Every Storage you can reach ships everything to the capital's Storage once a week: ships, weapons, wings, commodities, crew, marines, cores, colony items and blueprints. A load costs what a Storage logistics load does. In story mode it comes with Supply and items. |
 
 ### Extras
 

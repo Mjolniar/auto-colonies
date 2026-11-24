@@ -54,7 +54,7 @@ public class CALogistics {
     static MarketAPI market(String id) { return id == null ? null : Global.getSector().getEconomy().getMarket(id); }
 
     /** Runs weekly when you switched it on, or for the capital (0.2.42.0: its Storage gathering, on with it by default). */
-    static boolean active(CASettings s) { return s.logisticsMode == 1 || CACapital.gathers(s); }
+    static boolean active(CASettings s) { return s.logisticsMode == 1 || CACapital.gathers(s) || s.logisticsAll; }
 
     /**
      * The refit hub. With Storage logistics on: the market you picked, else the capital, else your production gathering
@@ -143,6 +143,19 @@ public class CALogistics {
         try { partsMove(d, s, now); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "parts move failed", t); }
         if (!active(s) || !CATime.due(lastRun, now, 7f)) return;   // 0.3.0.0 (A1 fix): on the game's own (negative) clock
         lastRun = now;
+        if (s.logisticsAll) {   // 0.3.16.8: everything from every Storage to the capital's
+            MarketAPI cap = CACapital.capital();
+            if (cap == null || !access(cap)) {
+                if (CALog.once("logi:nocapital")) CALog.advise("Gather everything at the capital: pick a capital. There's no capital Storage to send to.");
+                return;
+            }
+            for (MarketAPI m : choices()) {
+                if (m == cap) continue;
+                try { gatherAll(d, s, m, cap); }
+                catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "gathering everything failed at " + m.getName(), t); }
+            }
+            return;
+        }
         MarketAPI refit = refitHub(s), sell = sellHub(s);
         if (refit == null && sell == null) {
             // 0.3.0.9: advice, so it stays on screen
@@ -267,6 +280,31 @@ public class CALogistics {
             for (Map.Entry<CargoStackAPI, Integer> e : splitKeep.entrySet()) move(st, l.cargo, e.getKey(), e.getValue());
             if (!l.cargo.isEmpty()) send(d, s, l, st);
         }
+    }
+
+    /**
+     * 0.3.16.8 (Gather everything at the capital): one load from this Storage to the capital's with everything in it: every
+     * stack and every ship. Kept: the Afterlight (Rogue Planets' story ship) and hulls the Shipyard keeps at the gathering
+     * point. Paid and timed like any load (send), so it waits when the fee doesn't fit.
+     */
+    static void gatherAll(CAData d, CASettings s, MarketAPI m, MarketAPI cap) {
+        CargoAPI st = Misc.getStorageCargo(m);
+        if (st == null) return;
+        Map<String, Integer> shipyard = new HashMap<String, Integer>();
+        try {
+            if (d.shipyardOrders != null && Global.getSector().getPlayerFaction().getProduction().getGatheringPoint() == m) shipyard = CAShipyard.ordered(d.shipyardOrders());
+        } catch (Throwable ignored) { }
+        Load l = load(m, cap, "capital");
+        for (CargoStackAPI x : st.getStacksCopy()) move(st, l.cargo, x, (int) x.getSize());
+        if (st.getMothballedShips() != null)
+            for (FleetMemberAPI fm : st.getMothballedShips().getMembersListCopy()) {
+                if (CARogue.storyShip(fm)) continue;
+                Integer k = shipyard.get(fm.getHullId());
+                if (k != null && k > 0) { shipyard.put(fm.getHullId(), k - 1); continue; }
+                st.getMothballedShips().removeFleetMember(fm);
+                l.cargo.getMothballedShips().addFleetMember(fm);
+            }
+        send(d, s, l, st);
     }
 
     static Load load(MarketAPI from, MarketAPI to, String why) {

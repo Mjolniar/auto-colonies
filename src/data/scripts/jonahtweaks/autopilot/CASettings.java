@@ -41,6 +41,7 @@ public class CASettings {
     public static final String[] VOICE_NAMES = {"Machine", "Plain"};
     public int screenLog = 0;          // log entries on screen: 0 every entry (default, also older saves), 1 important only, 2 off
     public boolean noFleetLimit = false;   // 0.3.16.5: Fleet limit per system (CAFleetLimit) is on by default, also in older saves
+    public boolean logisticsAll = false;   // 0.3.16.8: Gather everything at the capital (CALogistics.gatherAll), off by default
     public boolean techFindsKeep = false;   // 0.3.16.7: Tech-Mining's colony items go to Autopilot Storage (CATechMining.Finds) by default, also in older saves
     public boolean surplusChecked = true;
     public String focusId;        // the focus world you picked (null: Autopilot picks)

@@ -351,6 +351,9 @@ public final class CALunaSync {
         radio("logi", "Storage logistics", "logisticsMode", new String[]{"Off", "On"}, "Goods are transferred to the refit hub weekly. Hubs are selected on the Autopilot panel's Settings page.");
         bool("logiships", "Ships to the refit hub", "logisticsShips", false, "Part of Storage logistics.");
         bool("logigoods", "Supplies, fuel, crew, marines too", "logisticsSupplies", false, "Part of Storage logistics.");
+        bool("logiall", "Gather everything at the capital", "logisticsAll", false, "Every Storage you can reach ships everything to the capital's "
+                + "Storage once a week: ships, weapons, wings, commodities, crew, marines, cores, colony items and blueprints. A load costs what a Storage "
+                + "logistics load does. In story mode it comes with Supply and items.");
 
         header("adv_extras", "Extras");
         radio("objectives", "Stable locations", "objectiveMode", CASettings.OBJECTIVE_NAMES, "Comm relays, nav buoys and sensor arrays are built at stable locations.");

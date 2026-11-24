@@ -876,6 +876,7 @@ public class CASync {
             new Rule("storyPointRule", "storyPoints", v(1, 2), 0),
             new Rule("capitalMode", "capital", v(0, 1), 2),
             new Rule("logisticsMode", "logistics", v(1), 0),
+            new Rule("logisticsAll", "logistics", v(1), 0),   // 0.3.16.8: Gather everything at the capital comes with Supply and items
             new Rule("objectiveMode", "objectives", v(0), 1),
             new Rule("surplusLine", "surplus", v(1, 2, 3, 4), 0),
             new Rule("surplusFocusOnly", "surplus", v(0), 1),

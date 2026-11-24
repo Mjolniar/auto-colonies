@@ -143,6 +143,7 @@ ca_capgather,Gather Storage at the capital,Boolean,true,,Autopilot Storage is co
 ca_logi,Storage logistics,Radio,Off,"Off, On",Goods are transferred to the refit hub weekly. Hubs are selected on the Autopilot panel's Settings page.,,,Advanced
 ca_logiships,Ships to the refit hub,Boolean,true,,Part of Storage logistics.,,,Advanced
 ca_logigoods,"Supplies, fuel, crew, marines too",Boolean,true,,Part of Storage logistics.,,,Advanced
+ca_logiall,Gather everything at the capital,Boolean,false,,"Every Storage you can reach ships everything to the capital's Storage once a week: ships, weapons, wings, commodities, crew, marines, cores, colony items and blueprints. A load costs what a Storage logistics load does. In story mode it comes with Supply and items.",,,Advanced
 ,,,,,,,,
 ca_h_adv_extras,Extras,Header,Extras,,,,,Advanced
 ca_objectives,Stable locations,Radio,Recommend only,"Auto, Recommend only, Off","Comm relays, nav buoys and sensor arrays are built at stable locations.",,,Advanced

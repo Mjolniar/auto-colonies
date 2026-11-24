@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.16.8 - 2026-11-24
+
+- Storage logistics: Added Gather everything at the capital, off by default. Once a week every Storage you can reach sends everything to the capital's Storage: ships, weapons, wings, commodities, crew, marines, cores, colony items and blueprints. Each load costs 2,000 plus 300 a light-year and 1,000 a ship, times the fee level. Story mode: part of Supply and items.
+
 ## 0.3.16.7 - 2026-11-24
 
 - Tech-Mining: Added Tech-Mining finds to Autopilot Storage, on by default. Each month the colony items in Tech-Mining's finds move from the gathering point's Storage to its Autopilot Storage, where they get installed. Off keeps them in Storage. Blueprints, weapons and cores stay in Storage.
