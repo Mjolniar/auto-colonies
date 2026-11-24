@@ -16,6 +16,7 @@ import com.fs.starfarer.api.impl.campaign.ids.FleetTypes;
 import com.fs.starfarer.api.impl.campaign.ids.Industries;
 import com.fs.starfarer.api.impl.campaign.ids.Items;
 import com.fs.starfarer.api.impl.campaign.ids.Stats;
+import com.fs.starfarer.api.impl.campaign.intel.events.HostileActivityEventIntel;
 import com.fs.starfarer.api.util.Misc;
 
 import java.util.ArrayList;
@@ -40,13 +41,13 @@ public final class CATierFive {
             "Autarch armada", "Iron stability"};
     /** One sentence each, for the tiles. */
     public static final String[] DESC = {
-            "Every build and upgrade at a managed colony finishes the next day, and each one costs its price a second time.",
+            "Builds and upgrades at managed colonies finish the next day at double the price.",
             "Managed colonies with Heavy Industry or Orbital Works get a Pristine Nanoforge's effect for 25,000 credits a month each.",
             "The Autarch governs every managed colony, each with two more industry slots and 40% less upkeep.",
             "The Autarch makes one Alpha Core every 60 days, and you pay 250,000 credits for its materials.",
             "Once a year each managed colony loses a bad condition or gains a richer resource for 1,500,000 credits.",
             "A permanent 600-point fleet patrols your systems and answers sieges for 200,000 credits a month.",
-            "Managed colonies never drop below stability 8, for 10,000 credits a colony each month."};
+            "Managed colonies never drop below stability 8 and colony crises build at half speed, for 10,000 credits a colony each month."};
     static final String[] ART = {"i:orbitalworks", "s:pristine_nanoforge", "c:alpha_core", "c:alpha_core", "s:soil_nanites",
             "i:highcommand", "i:patrolhq"};
     /** The picks built so far; the rest show as coming later. */
@@ -156,6 +157,8 @@ public final class CATierFive {
             try { ironStability(m, iron && managed, dropAge < IRON_DROP_DAYS); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "iron stability failed at " + m.getName(), t); }
         }
+        try { ironCrisis(iron); }   // 0.3.16.4: colony crises at half speed
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "iron stability crisis factor failed", t); }
         if (iron && newMonth) {
             int n = 0;
             for (MarketAPI m : Misc.getPlayerMarkets(false)) if (CASync.manages(m)) n++;
@@ -225,6 +228,15 @@ public final class CATierFive {
         }
         if (dropped && !on) m.getStability().modifyFlat(IRON_DROP_MOD, -IRON_DROP, "Iron stability withdrawn");
         else m.getStability().unmodifyFlat(IRON_DROP_MOD);
+    }
+
+    /** 0.3.16.4: Iron stability's factor on the game's crisis meter (CAIronCrisisFactor): on while online, off otherwise. */
+    static void ironCrisis(boolean on) {
+        HostileActivityEventIntel ha = CACrisis.event();
+        if (ha == null) return;
+        boolean has = ha.getFactorOfClass(CAIronCrisisFactor.class) != null;
+        if (on && !has) ha.addFactor(new CAIronCrisisFactor());
+        else if (!on && has) ha.removeFactorOfClass(CAIronCrisisFactor.class);
     }
 
     /** Core printer: one Alpha Core every PRINT_DAYS, paid above the credit reserve. */
@@ -500,5 +512,7 @@ public final class CATierFive {
         }
         for (LocationAPI l : Global.getSector().getAllLocations())
             for (CampaignFleetAPI f : new ArrayList<CampaignFleetAPI>(l.getFleets())) if (f.getMemoryWithoutUpdate().getBoolean(ARMADA_MEM)) f.despawn();
+        HostileActivityEventIntel ha = CACrisis.event();   // 0.3.16.4: Iron stability's crisis factor
+        if (ha != null) ha.removeFactorOfClass(CAIronCrisisFactor.class);
     }
 }

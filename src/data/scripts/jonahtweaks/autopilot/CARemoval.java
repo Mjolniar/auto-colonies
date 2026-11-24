@@ -90,6 +90,7 @@ public final class CARemoval {
             "memory:rapid_terra",               // $ca_rapidTerra:* on markets (strings)
             "intel:mod",                        // CAIntel, CAStoryIntel, CAAutarchIntel
             "scripts:mod", "listeners:mod",
+            "factor:iron_crisis",               // 0.3.16.4: CAIronCrisisFactor on the crisis intel (CATierFive.removeAll)
     };
 
     /** This session: the save was prepared for removal. Every entry point stops; CAData.get and CASync.state use scratch(). */

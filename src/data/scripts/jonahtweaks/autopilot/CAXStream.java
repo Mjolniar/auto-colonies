@@ -41,6 +41,7 @@ public final class CAXStream {
         alias(x, "JCM-Intel", () -> CAIntel.class);
         alias(x, "JCM-StoragePlugin", () -> CAStoragePlugin.class);
         alias(x, "JCM-StoryIntel", () -> CAStoryIntel.class);   // 0.3.6.2: story mode's intel (0.3.6.0/0.3.6.1 saves hold the class name, which still loads)
+        alias(x, "JCM-IronCrisis", () -> CAIronCrisisFactor.class);   // 0.3.16.4: Tier V Iron stability's factor in the game's crisis intel
 
         // retired fields: new saves drop them, and older saves still have them. 0.3.0.0 (A3) deleted them from CASettings, so
         // these lines are what lets an older save load (XStream throws on a saved field the class doesn't have unless it's

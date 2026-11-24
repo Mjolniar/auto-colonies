@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.16.4 - 2026-11-23
+
+- Tier V: Iron stability makes colony crises build at half speed while it is online. The crisis intel shows it as Iron stability x0.5.
+
 ## 0.3.16.3 - 2026-11-23
 
 - Story mode: Each fed core's bandwidth is rounded on its own. Feeding one kind of core does not change what the others give.
