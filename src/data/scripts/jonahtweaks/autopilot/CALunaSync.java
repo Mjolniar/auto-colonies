@@ -297,6 +297,9 @@ public final class CALunaSync {
         header("adv_war", "War");
         bool("defense", "Emergency defense fleets", "disableDefenseFleets", true, "When a raid is detected or local defenses are outmatched, a defense fleet is dispatched and funded from "
                 + "credits above the reserve. Without Nexerelin, the autopilot function raises the fleet directly.");
+        bool("fleetlimit", "Fleet limit per system", "noFleetLimit", true, "Systems with your colonies hold 30 fleets. Past that, traders, nomads, "
+                + "miners, pilgrims, mercenaries and other factions' patrols are sent home, farthest from you first. Your fleets, hostiles and "
+                + "mission fleets stay.");
         bool("warretake", "Retake your lost colonies", "noWarRetake", true, "Active at Retaliate and up. Requires Nexerelin.");
         bool("warrivals", "Top hostile threat as Rival", "warAutoRivals", false, "The highest hostile threat is treated as a Rival. Requires Nexerelin.");
         radio("warconq", "Conquered colonies start in", "conqueredMode", CASettings.CONQUERED_NAMES, "Conquered colonies begin in this mode. Requires Nexerelin.");

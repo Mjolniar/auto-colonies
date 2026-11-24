@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.16.5 - 2026-11-23
+
+- Fleet limit: Added Fleet limit per system, on by default. Systems with your colonies hold 30 fleets. Past that, Roider nomads and miners, traders, scavengers, pilgrims, mercenaries and other factions' patrols are sent home daily, farthest from you first. Your fleets, hostiles, war and mission fleets stay.
+- Defense fleets: A system at the fleet limit gets no standing guard or threat-high defense fleet. Emergency defense still goes.
+
 ## 0.3.16.4 - 2026-11-23
 
 - Tier V: Iron stability makes colony crises build at half speed while it is online. The crisis intel shows it as Iron stability x0.5.

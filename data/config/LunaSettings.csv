@@ -110,6 +110,7 @@ ca_autonomy,Autonomy,Radio,Recommend,"Off, Recommend, Auto","Recommend names the
 ,,,,,,,,
 ca_h_adv_war,War,Header,War,,,,,Advanced
 ca_defense,Emergency defense fleets,Boolean,true,,"When a raid is detected or local defenses are outmatched, a defense fleet is dispatched and funded from credits above the reserve. Without Nexerelin, the autopilot function raises the fleet directly.",,,Advanced
+ca_fleetlimit,Fleet limit per system,Boolean,true,,"Systems with your colonies hold 30 fleets. Past that, traders, nomads, miners, pilgrims, mercenaries and other factions' patrols are sent home, farthest from you first. Your fleets, hostiles and mission fleets stay.",,,Advanced
 ca_warretake,Retake your lost colonies,Boolean,true,,Active at Retaliate and up. Requires Nexerelin.,,,Advanced
 ca_warrivals,Top hostile threat as Rival,Boolean,false,,The highest hostile threat is treated as a Rival. Requires Nexerelin.,,,Advanced
 ca_warconq,Conquered colonies start in,Radio,Advisor,"Auto, Approve, Advisor",Conquered colonies begin in this mode. Requires Nexerelin.,,,Advanced

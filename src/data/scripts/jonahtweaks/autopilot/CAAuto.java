@@ -185,6 +185,7 @@ public class CAAuto {
             CAStep.run("Industrial Evolution automation", () -> { if (!auto.isEmpty() && mods.isModEnabled("IndEvo") && CACompat.linked("CAIndEvo")) CAIndEvo.run(auto); });
             CAStep.run("Courier Port shipping", () -> { if (!auto.isEmpty() && mods.isModEnabled("IndEvo") && CACompat.linked("CACourier")) CACourier.run(auto); });
         }
+        CAStep.guard("fleet limit", () -> CAFleetLimit.daily());   // 0.3.16.5: small fleets past the limit go home, every day
         if (mods.isModEnabled("nexerelin")) {
             // 0.3.0.0 (A0 fix): emergencies keep trying every day (guarded, never stopped for the session)
             CAStep.guard("emergency defense step", () -> { if (mods.isModEnabled("nexerelin") && CACompat.linked("CADefense")) CADefense.run(managed); });

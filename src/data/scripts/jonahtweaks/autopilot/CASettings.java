@@ -40,6 +40,7 @@ public class CASettings {
     public int voice = 0;
     public static final String[] VOICE_NAMES = {"Machine", "Plain"};
     public int screenLog = 0;          // log entries on screen: 0 every entry (default, also older saves), 1 important only, 2 off
+    public boolean noFleetLimit = false;   // 0.3.16.5: Fleet limit per system (CAFleetLimit) is on by default, also in older saves
     public boolean surplusChecked = true;
     public String focusId;        // the focus world you picked (null: Autopilot picks)
     public String focusAuto;      // the one Autopilot picked last, kept unless another beats it clearly

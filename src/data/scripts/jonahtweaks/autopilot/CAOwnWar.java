@@ -350,6 +350,7 @@ public final class CAOwnWar {
             boolean real = realThreat(m);
             String key = CAWarPolicy.GUARD + ":" + sys.getId();
             if (!real && daysSince(d, key) < CAWarPolicy.DEFENSE_COOLDOWN_DAYS) continue;
+            if (!real && CAFleetLimit.full(sys)) continue;   // 0.3.16.5: a full system gets only emergencies
             String why = real ? "hostiles at the system" : crisis.contains(m) ? "crisis coming" : "threat high";
             String w = send(d, s, o, CAWarPolicy.DEFENSE, real ? CAWarPolicy.EMERGENCY : CAWarPolicy.GUARD, m, want, rich, why, key);
             if (w == null) left[0]--;
@@ -367,6 +368,7 @@ public final class CAOwnWar {
         for (MarketAPI m : byBig) {
             if (left[0] <= 0) break;
             if (m.getStarSystem() == null || underWay(o, m)) continue;
+            if (CAFleetLimit.full(m.getStarSystem())) continue;   // 0.3.16.5: no standing guard in a full system
             String key = CAWarPolicy.GUARD + ":" + m.getStarSystem().getId();
             if (daysSince(d, key) < CAWarPolicy.DEFENSE_COOLDOWN_DAYS) continue;
             String w = send(d, s, o, CAWarPolicy.GUARD, CAWarPolicy.GUARD, m, want, true, "standing guard", key);

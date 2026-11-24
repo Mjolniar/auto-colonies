@@ -161,6 +161,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | Setting | Options | Default | What it does |
 |---|---|---|---|
 | Emergency defense fleets | On, Off | On | When a raid is coming or hostiles outweigh a colony's defenses, it sends a defense fleet, paid from credits above the reserve. Without Nexerelin, Auto Colonies raises the fleet itself. |
+| Fleet limit per system | On, Off | On | A system with your colonies holds 30 fleets. Past that, traders, nomads, miners, pilgrims, mercenaries and other factions' patrols get sent home, farthest from you first. Your fleets, hostiles and mission fleets stay. A full system gets no standing guard or threat-high defense fleet, only emergencies. |
 | Retake your lost colonies | On, Off | On | It works at Retaliate and up. Needs Nexerelin. |
 | Top hostile threat as Rival | On, Off | Off | The hostile faction on Auto stance with the highest threat counts as Rival. Needs Nexerelin. |
 | Conquered colonies start in | Auto, Approve, Advisor | Empire mode | A conquered colony starts in this mode. Needs Nexerelin. |
