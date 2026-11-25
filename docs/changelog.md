@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.17.3 - 2026-11-24
+
+- Station augments: A colony whose station has Economy Conversion keeps its industries while the station is disrupted. The extra slot still counts for the industry limit fix until the station is repaired.
+
 ## 0.3.17.2 - 2026-11-24
 
 - Colony screen: The next-build card has a Build button in every mode, Auto included. The button shows the full price with the construction fee.

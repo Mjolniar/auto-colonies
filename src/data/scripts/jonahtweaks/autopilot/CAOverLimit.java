@@ -28,6 +28,8 @@ import java.util.*;
  * a plan's special step, a capital trade building, a contract feeder, or one with defense, fleet, ship quality or ship output
  * only when nothing else can go, and one that adds stability last. Its AI core and item go to the colony's Autopilot
  * Storage. Setting: Fix colonies over the industry limit (Building and planning).
+ * 0.3.17.3: a station with Station Augments' Economy Conversion loses its extra slot while disrupted; that slot still counts
+ * here, so a colony built on it keeps its industries while the station is repaired (conversionPaused).
  *
  * 0.3.0.0: slots are counted one way everywhere (CABuild.usedSlots, research 07 M12: upgrades into industries under way count,
  * the way the build gate counts them), never one the colony can't lose (CAStability: taking it down would leave the colony
@@ -290,9 +292,24 @@ public class CAOverLimit {
     }
 
     /** Returns true when it took an industry down. */
+    /** 0.3.17.3: Economy Conversion's industry slot while its station is disrupted (CAAugments.pausedSlots); 0 without Station Augments. */
+    static int conversionPaused(MarketAPI m) {
+        try { return Global.getSettings().getModManager().isModEnabled(CAAugments.MOD) ? CAAugments.pausedSlots(m) : 0; }
+        catch (Throwable t) { return 0; }
+    }
+
     static boolean check(CAData d, CASettings s, MarketAPI m) {
         int used = CABuild.usedSlots(m), max = Misc.getMaxIndustries(m);   // 0.3.0.0: the build gate's count (07 M12)
         String key = "overlimit:" + m.getId();
+        // 0.3.17.3: a disrupted station's Economy Conversion slot still counts here, so nothing is taken down while it is repaired
+        int paused = conversionPaused(m);
+        if (paused > 0 && used > max && used <= max + paused) {
+            if (CALog.once(key + ":conversion")) CALog.quiet(m.getName() + ": over the industry limit while its station is disrupted. "
+                    + "Economy Conversion's slot counts until the station is repaired; nothing is taken down.");
+            return false;
+        }
+        CALog.forget(key + ":conversion");
+        max += paused;
         if (used <= max) {
             CALog.forget(key + ":keep"); CALog.forget(key + ":grow"); CALog.forget(key + ":none"); CALog.forget(key + ":off"); CALog.forget(key + ":cause");
             return false;

@@ -259,6 +259,20 @@ public class CAAugments {
      */
     static final Set<String> PLAYER_ONLY = new HashSet<String>(Collections.singletonList(CONVERSION));
 
+    /**
+     * 0.3.17.3: 1 while this colony's station has Economy Conversion but its extra industry slot is off, else 0. Station
+     * Augments re-applies every augment each economy tick, and Economy Conversion adds its slot (MAX_INDUSTRIES, source
+     * SA_economyConversion) only while the station is functional, so a disrupted station drops it until repaired.
+     * Check CAAugments.MOD is enabled first.
+     */
+    public static int pausedSlots(MarketAPI m) {
+        try {
+            if (m == null || !MarketUtils.hasStationAugment(m, CONVERSION)) return 0;
+            com.fs.starfarer.api.combat.StatBonus b = m.getStats().getDynamic().getMod(com.fs.starfarer.api.impl.campaign.ids.Stats.MAX_INDUSTRIES);
+            return b != null && b.getFlatBonuses().containsKey(CONVERSION) ? 0 : 1;
+        } catch (Throwable t) { return 0; }
+    }
+
     static float total(List<Opt> l) { float t = 0f; for (Opt o : l) t += o.score; return t; }
 
     static float totalAp(List<Opt> l) { float t = 0f; for (Opt o : l) t += o.ap; return t; }
