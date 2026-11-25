@@ -25,6 +25,8 @@ import java.util.Map;
  * daily look (NEAR_DAYS). 13 of 47 sieges in the author's game ended within seconds: a pirate passing through the gravity
  * well put the colony on defenses only and swapped its station augments back and forth. Blockades and raids, invasions
  * and blockades on their way still count at once.
+ * 0.3.18.8: a station defense mission at the colony (More Military Missions' DefenseMission, from the bar) counts at once
+ * while any of its attack fleets is alive: they wait 5,500 to 6,000 units out, past NEAR, until you are in the system.
  */
 public class CASiege {
     static final float NEAR = 2000f;   // about a planet's gravity well; a fleet this close is at the colony
@@ -57,6 +59,7 @@ public class CASiege {
 
     static String compute(MarketAPI m) {
         if (m.hasCondition(Conditions.BLOCKADED)) return "blockaded";
+        if (defenseMissionFP(m) > 0f) return "a station defense mission's attack fleets";   // 0.3.18.8
         StarSystemAPI sys = m.getStarSystem();
         if (sys == null || m.getPrimaryEntity() == null) return null;
         float near = 0f, all = 0f;
@@ -96,6 +99,29 @@ public class CASiege {
     static boolean nearSiege(float near, float defense, float daysThere) {
         if (near <= 0f) return false;
         return near >= NEAR_SHARE * Math.max(0f, defense) || daysThere >= NEAR_DAYS;
+    }
+
+    /** 0.3.18.8: More Military Missions keeps a colony's defense mission in its memory under this key (DefenseMission.MISSION_DATA_KEY). */
+    static final String DEFENSE_MISSION = "$mmm_dm_mission_data";
+
+    /**
+     * 0.3.18.8: the fleet points of the attack fleets of a station defense mission at this colony that are still alive
+     * (DefenseMission.MissionData.fleets, read by name), or 0: none, or More Military Missions isn't there.
+     */
+    static float defenseMissionFP(MarketAPI m) {
+        try {
+            Object data = m.getMemoryWithoutUpdate() == null ? null : m.getMemoryWithoutUpdate().get(DEFENSE_MISSION);
+            if (data == null) return 0f;
+            Object fleets = CARefl.get(CARefl.field(data.getClass(), "fleets"), data);
+            if (!(fleets instanceof java.util.List)) return 0f;
+            float fp = 0f;
+            for (Object o : (java.util.List<?>) fleets) {
+                if (!(o instanceof CampaignFleetAPI)) continue;
+                CampaignFleetAPI f = (CampaignFleetAPI) o;
+                if (f.isAlive() && !f.isDespawning()) fp += f.getFleetPoints();
+            }
+            return fp;
+        } catch (Throwable t) { return 0f; }
     }
 
     /** 0.3.9.3: CAEnforcers.threat, as CADefense.hostileFP: a hostile faction's fleet, one made hostile to your faction, or a Sindrian Diktat raider. */

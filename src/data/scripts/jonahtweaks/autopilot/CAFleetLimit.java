@@ -197,8 +197,11 @@ public final class CAFleetLimit {
         if (g != null) fp = Math.max(fp, CAOwnWar.groupFP(g));
         if (CAOwnWar.raidIntel(sys)) fp = Math.max(fp, RAID_FP);
         CAData d = CAData.get();
-        for (MarketAPI m : Misc.getPlayerMarkets(false))
-            if (m.getStarSystem() == sys && (d.colony(m.getId()).threatHigh || CASiege.held(m))) fp = Math.max(fp, CRISIS_FP);
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            if (m.getStarSystem() != sys) continue;
+            if (d.colony(m.getId()).threatHigh || CASiege.held(m)) fp = Math.max(fp, CRISIS_FP);
+            fp = Math.max(fp, CASiege.defenseMissionFP(m));   // 0.3.18.8: a station defense mission's attack fleets
+        }
         return fp;
     }
 

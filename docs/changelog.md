@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.18.8 - 2026-11-25
+
+- More Military Missions: A station defense mission at your colony puts it under siege while any of its attack fleets is alive, as a raid or invasion on its way does. The station gets its defense augments, building is defenses only, and the system's patrols are sized to the attack fleets.
+
 ## 0.3.18.7 - 2026-11-25
 
 - Compatibility: Starsector 0.98.5a-RC9.
