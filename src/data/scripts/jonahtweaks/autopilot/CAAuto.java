@@ -170,6 +170,7 @@ public class CAAuto {
         // step that's never stopped for the session; the storage tabs are their own step, so a failure there can't skip it
         CAStep.run("Autopilot Storage tabs", () -> CAItems.ensureStorageTabs());
         CAStep.guard("item, core or administrator placement", () -> CAItems.run(auto));
+        CAStep.run("exomatter step", () -> CAExomatter.run(auto));   // 0.3.18.5: Shrouded Substrate from Autopilot Storage into Exomatter Processing
         CAStep.run("Autopilot Storage clean-up", () -> CAStoragePlugin.evict());   // campaign consumables and blueprints don't belong in Autopilot Storage
         // 0.3.6.9: the colony lists fill when their step runs, a frame or more after this queues: `auto` is checked inside the steps
         if (mods.isModEnabled("terraformingmadeeasy")) {

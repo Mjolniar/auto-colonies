@@ -1,5 +1,13 @@
 # Patch notes
 
+## 0.3.18.5 - 2026-11-25
+
+- Exomatter Processing: Auto Colonies builds one while at least 12 Shrouded Substrate (6 once improved) are in Autopilot Storage. Needs Vaults of Knowledge and the Stabilizing Exotic Matter project. One facility at a time.
+- Exomatter Processing: The facility at an Auto colony gets one batch of Shrouded Substrate a day from Autopilot Storage when its tab runs low. Substrate in another colony's Autopilot Storage is shipped there.
+- Exomatter Processing: Tenebrium Cells go to your production gathering point's storage. With no gathering point set, Auto Colonies moves them to the capital's storage.
+- Exomatter Processing: Beta and Alpha cores count for the faster batches while substrate is left.
+- Autopilot Storage: Fixed Fragment Fabricators and Threat Processing Units being refused and moved out. They go in with Station Augments. Shrouded Substrate goes in with Vaults of Knowledge.
+
 ## 0.3.18.4 - 2026-11-25
 
 - Station augments: Combat picks follow the station's design line. Low tech: K-Type Shield Shunt and Bubble Shield. Midline: Axial Overclocking, Deep Shield Dissipators and Tactical Link. High tech: Bubble Shield and Tactical Link.

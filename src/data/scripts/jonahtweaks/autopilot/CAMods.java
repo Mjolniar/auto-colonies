@@ -441,7 +441,7 @@ public class CAMods {
 
     // ---------------- engine hooks ----------------
 
-    public static boolean has(String id) { return vicHas(id) || roiderHas(id) || yunruHas(id) || CAOddisz.has(id) || CARatHub.has(id) || aegisHas(id); }
+    public static boolean has(String id) { return vicHas(id) || roiderHas(id) || yunruHas(id) || CAOddisz.has(id) || CARatHub.has(id) || aegisHas(id) || CAExomatter.has(id); }   // 0.3.18.5: Exomatter Processing
 
     // ---------------- 0.3.11.0: What We Left Behind's Aegis Missile System ----------------
 
@@ -473,6 +473,7 @@ public class CAMods {
         if (roiderHas(id)) return roiderApply(m, id, p, deficit);
         if (id.equals(DRYDOCK)) return drydockApply(m, p, deficit);
         if (aegisHas(id)) return aegisApply(m, p, deficit);   // 0.3.11.0
+        if (CAExomatter.has(id)) return CAExomatter.apply(m, p, deficit);   // 0.3.18.5: Vaults of Knowledge's Exomatter Processing
         return false;
     }
 

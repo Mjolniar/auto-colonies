@@ -943,6 +943,7 @@ public class CAItems {
             fx[0] += researchSaving(researchUpkeep(ind), tier(ind.getAICoreId()), k);
             if (k == 0 && m.hasCondition("pre_collapse_facility")) fx[0] += CAResearch.DATABANK_VALUE;
         }
+        if (CAExomatter.is(ind)) fx[0] += CAExomatter.coreGain(ind, k);   // 0.3.18.5: Exomatter Processing: Beta or Alpha batches in 15 days, an Alpha makes 2 cells
         if (k <= 1 && !rs) {   // Alpha and Beta: upkeep x0.75
             float up = ind.getUpkeep().getModifiedValue();
             if (tier(ind.getAICoreId()) == 0 || tier(ind.getAICoreId()) == 1) up /= BaseIndustry.UPKEEP_MULT;

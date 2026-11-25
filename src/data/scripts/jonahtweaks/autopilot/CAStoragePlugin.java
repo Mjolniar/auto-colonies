@@ -60,7 +60,7 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
         if (stack.isSpecialStack() && stack.getSpecialDataIfSpecial() != null && "IndEvo_amb".equals(stack.getSpecialDataIfSpecial().getId()))
             return "Keep ambassadors in a colony's normal Storage; Autopilot installs them from there";
         if (stack.isSpecialStack())
-            return "Autopilot has no use for this, so it stays out of Autopilot Storage: only colony items it can install, VPC chips, recipes and Forge-Assisted BPs go in. "
+            return "Autopilot has no use for this, so it stays out of Autopilot Storage: only colony items it can install, VPC chips, recipes, Forge-Assisted BPs, fragment items and Shrouded Substrate go in. "
                     + "Keep blueprints, key cards and the like in your cargo or a colony's normal Storage";
         return "Only colony items, AI cores and research databanks can go in Autopilot Storage";
     }
@@ -90,8 +90,27 @@ public class CAStoragePlugin extends BaseSubmarketPlugin {
             // moved them to normal Storage after Autopilot took them out of a building, out of rotation
             boolean installable = com.fs.starfarer.api.impl.campaign.econ.impl.ItemEffectsRepo.ITEM_EFFECTS.containsKey(data.getId())
                     || installsIn(stack.getSpecialItemSpecIfSpecial());
-            return usable(data.getId(), installable) && !consumable(stack);
+            return (usable(data.getId(), installable) || usedHere(data.getId())) && !consumable(stack);
         } catch (Throwable t) { return false; }
+    }
+
+    /**
+     * 0.3.18.5: items Autopilot uses from here outside buildings: Fragment Fabricators and Threat Processing Units for fragment
+     * station augments (with Station Augments, CAAugments), Shrouded Substrate for Exomatter Processing (with Vaults of
+     * Knowledge, CAExomatter). They were refused, and the daily evict moved them to normal Storage.
+     */
+    static boolean usedHere(String id) {
+        try {
+            com.fs.starfarer.api.ModManagerAPI mods = com.fs.starfarer.api.Global.getSettings().getModManager();
+            return usedHere(id, mods.isModEnabled(CAAugments.MOD), mods.isModEnabled(CAExomatter.MOD));
+        } catch (Throwable t) { return false; }
+    }
+
+    /** Pure (0.3.18.5): as above, with whether Station Augments and Vaults of Knowledge are on. */
+    static boolean usedHere(String id, boolean augments, boolean vok) {
+        if (id == null) return false;
+        if (augments && (id.equals("fragment_fabricator") || id.equals("threat_processing_unit"))) return true;
+        return vok && id.equals(CAExomatter.SUBSTRATE);
     }
 
     /** 0.3.10.9: the item's plugin params name a building the game has (where it can be installed). */
