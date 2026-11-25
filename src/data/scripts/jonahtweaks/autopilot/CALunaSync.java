@@ -365,6 +365,8 @@ public final class CALunaSync {
         radio("projsupply", "Special project supply", "projectSupplyMode", CASettings.PROJECT_SUPPLY_NAMES, "A producer is constructed for any special project good no colony makes. Requires Vaults of Knowledge.");
         radio("hs", "Megastructures", "hypershuntMode", CASettings.AUGMENT_NAMES, "Coronal Hypershunt range and restoration are governed here. Requires Vaults of Knowledge.");
         radio("aug", "Station augments", "augmentMode", CASettings.AUGMENT_NAMES, "Requires Station Augments.");
+        radio("srefit", "Station refits", "stationRefit", CASettings.STATION_REFIT_NAMES, "How often a station's weapons and augments can get changed "
+                + "after its first fit. A new or upgraded station always gets fitted, and Off leaves them alone after that.");
         radio("settle", "RAT settlement", "settlementMode", CASettings.SETTLE_NAMES, "Requires Random Assortment of Things.");
         credits("settleinc", "Found when a site earns", "settlementMinIncome", 5000, 10000000, 5000, "A settlement is founded once a site earns this much. Requires Random Assortment of Things.");
         bool("spec", "IndEvo specialties", "disableSpecialties", true, "Requires Industrial Evolution.");

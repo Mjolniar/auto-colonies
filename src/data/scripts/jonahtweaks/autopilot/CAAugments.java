@@ -121,10 +121,40 @@ public class CAAugments {
      * still puts the combat loadout on (CASiege, in run).
      */
     static CAData.Profile profileFor(MarketAPI m, CAData.Colony c) {
-        if (c.mode != CAData.Mode.APPROVE && c.mode != CAData.Mode.AUTO) return c.profile;
-        CAData.Profile p = CAThreat.effective(m, c.profile);
-        if (p == CAData.Profile.SECURITY && c.profile != CAData.Profile.SECURITY && protection(m) >= PROTECTED) return c.profile;
-        return p;
+        return c.profile;   // 0.3.20.3: the colony's goal; no switch to a defense loadout when the threat goes up and back
+    }
+
+    // ---------------- 0.3.20.3: how often a station's augments change ----------------
+
+    /** CAMark key prefix: when Autopilot last changed a station's augments, per colony and station building ("augat:" + id + ":" + station). */
+    static final String CHANGED = "augat:";
+
+    /**
+     * Pure (0.3.20.3): whether Autopilot may change a station's augments. since: days since it last changed them on this station
+     * building (null: never); anyMark: it changed them on any station of this colony; autoHas: augments of Autopilot's are on;
+     * interval: Station refits days (0 Off). A station never changed is its first fit, unless Autopilot fitted it before
+     * 0.3.20.3 (no mark at all, augments of its own on), which counts as the first fit.
+     */
+    static boolean changeAllowed(Float since, boolean anyMark, boolean autoHas, int interval) {
+        if (since == null) return anyMark || !autoHas;
+        return interval > 0 && since >= interval;
+    }
+
+    static boolean changeAllowed(MarketAPI m, CAData.Colony c, CASettings s) {
+        Industry st = Misc.getStationIndustry(m);
+        String key = CHANGED + m.getId() + ":" + (st == null ? "-" : st.getId());
+        Long at = CAMark.at(key);
+        boolean any = !CAMark.keys(CHANGED + m.getId() + ":").isEmpty();
+        boolean ok = changeAllowed(at == null ? null : CAMark.days(at, CAMark.now()), any, !c.augAuto().isEmpty(), s.stationRefitDays());
+        if (at == null && !any && !c.augAuto().isEmpty()) CAMark.set(key, CAMark.now());   // fitted before 0.3.20.3: its year starts now
+        return ok;
+    }
+
+    /** After a change: this station's mark is now, any other station building's mark here goes. */
+    static void changed(MarketAPI m) {
+        Industry st = Misc.getStationIndustry(m);
+        for (String k : CAMark.keys(CHANGED + m.getId() + ":")) CAMark.clear(k);
+        CAMark.set(CHANGED + m.getId() + ":" + (st == null ? "-" : st.getId()), CAMark.now());
     }
 
     static final float PROTECTED = CAThreat.PROTECTED;
@@ -715,9 +745,8 @@ public class CAAugments {
             try {
                 sync(m, c);
                 if (!(hasStation(m))) continue;
-                // a raid or blockade on the way: the defense loadout goes on now, while the station can still be refitted
-                boolean siege = CASiege.held(m);
-                CAData.Profile profile = siege ? CAData.Profile.SECURITY : profileFor(m, c);
+                // 0.3.20.3: the colony's goal; a raid, blockade or high threat no longer switches the loadout
+                CAData.Profile profile = profileFor(m, c);
                 String sig = signature(m, profile);   // the threat state is in it, so a colony that turns to defense re-plans at once
                 Float next = nextRun.get(m.getId());
                 if (sig.equals(lastSig.get(m.getId())) && next != null && now < next) continue;
@@ -728,12 +757,16 @@ public class CAAugments {
                     if (CAMark.at(REFIT_OK + m.getId()) == null) d.augRefit().remove(m.getId());   // 0.3.9.2 (J L2): a crew booked for a change no longer planned is let go
                     continue;
                 }
-                boolean defense = profile == CAData.Profile.SECURITY && c.profile != CAData.Profile.SECURITY;
+                boolean defense = false;   // 0.3.20.3: no defense loadout
+                if (!changeAllowed(m, c, s)) {   // 0.3.20.3: first fit, then Station refits days apart (Off: never)
+                    if (CAMark.at(REFIT_OK + m.getId()) == null) d.augRefit().remove(m.getId());
+                    continue;
+                }
                 if (c.mode == CAData.Mode.AUTO) {
                     if (inBattle(m)) { lastSig.remove(m.getId()); continue; }   // 0.3.9.2 (J L1): the booked crew waits out the battle
                     if (!refitReady(m)) { lastSig.remove(m.getId()); continue; }   // the refit crew isn't there yet: look again tomorrow
-                    String done = apply(m, c, pl, siege || defense ? "defense" : c.augDefense ? "calm" : "");
-                    if (done == null) c.augDefense = defense;
+                    String done = apply(m, c, pl, "");
+                    if (done == null) { c.augDefense = false; changed(m); }
                     else lastSig.remove(m.getId());   // try again tomorrow (the station was fighting)
                 }
                 else {

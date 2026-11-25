@@ -362,9 +362,47 @@ public class CADiagnostics {
         return out;
     }
 
-    public static void writeReport() {
+    /** 0.3.20.2: the report being written in parts (reportParts). */
+    static final class Report { JSONObject root; final JSONArray colonies = new JSONArray(); boolean failed; }
+
+    /** The whole report at once (its parts in order). */
+    public static void writeReport() { for (Runnable r : reportParts()) r.run(); }
+
+    /**
+     * 0.3.20.2: the report as tasks for the daily pass: the head (everything but the market and the colonies), the market,
+     * one task a colony (its reads kept, CAMemo), and the write.
+     */
+    static java.util.List<Runnable> reportParts() {
+        final Report r = new Report();
+        java.util.List<Runnable> parts = new java.util.ArrayList<Runnable>();
+        parts.add(() -> {
+            try { r.root = head(); } catch (Throwable t) { r.failed = true; LOG.warn(TAG + "could not write diagnostics report", t); }
+        });
+        parts.add(() -> {
+            if (r.failed) return;
+            try { if (Global.getSector() != null && CAMarket.on()) r.root.put("market", CAMarket.json()); } catch (Throwable t) { LOG.warn(TAG + "market report failed", t); }
+        });
+        if (Global.getSector() != null) {
+            for (final MarketAPI m : Misc.getPlayerMarkets(false)) parts.add(() -> {
+                if (r.failed) return;
+                try { CAMemo.scope(() -> { try { r.colonies.put(colony(m, CAData.get())); } catch (Exception e) { throw new RuntimeException(e); } }); }
+                catch (Throwable t) { LOG.warn(TAG + "colony report failed", t); }
+            });
+        }
+        parts.add(() -> {
+            if (r.failed) return;
+            try {
+                if (Global.getSector() != null) r.root.put("colonies", r.colonies);
+                Global.getSettings().writeTextFileToCommon(REPORT, r.root.toString(2));
+            } catch (Throwable t) { LOG.warn(TAG + "could not write diagnostics report", t); }
+        });
+        return parts;
+    }
+
+    /** The report's head: everything but the market and the colonies. */
+    static JSONObject head() throws Exception {
         dirty = false;
-        try {
+        {
             JSONObject root = new JSONObject();
             root.put("scan", lastScan);
             JSONArray mods = new JSONArray();
@@ -390,11 +428,7 @@ public class CADiagnostics {
             try { root.put("screenButton", CAScreenButton.linkText()); } catch (Throwable t) { LOG.warn(TAG + "screen button report failed", t); }
             try { Map<String, Float> st = CAStep.timings(); if (st != null && !st.isEmpty()) root.put("stepMs", new JSONObject(st)); } catch (Throwable t) { LOG.warn(TAG + "step timing report failed", t); }
             try { root.put("modWatch", CAModWatch.json()); } catch (Throwable t) { LOG.warn(TAG + "mod watch report failed", t); }
-            try { if (Global.getSector() != null && CAMarket.on()) root.put("market", CAMarket.json()); } catch (Throwable t) { LOG.warn(TAG + "market report failed", t); }
-            try { if (Global.getSector() != null) root.put("colonies", colonies()); } catch (Throwable t) { LOG.warn(TAG + "colony report failed", t); }
-            Global.getSettings().writeTextFileToCommon(REPORT, root.toString(2));
-        } catch (Throwable t) {
-            LOG.warn(TAG + "could not write diagnostics report", t);
+            return root;
         }
     }
 
@@ -407,61 +441,64 @@ public class CADiagnostics {
     static JSONArray colonies() throws Exception {
         JSONArray out = new JSONArray();
         CAData d = CAData.get();
-        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
-            JSONObject o = new JSONObject();
-            CAData.Colony c = d.colonies == null ? null : d.colonies.get(m.getId());
-            o.put("name", m.getName()); o.put("id", m.getId()); o.put("size", m.getSize());
-            o.put("mode", c == null || c.mode == null ? "none" : c.mode.name());
-            if (c != null && c.profile != null) o.put("goal", c.profile.name());
-            o.put("stability", Math.round(m.getStability().getModifiedValue()));
-            o.put("netIncome", Math.round(m.getNetIncome()));
-            // 0.3.0.0 (07 M12): CABuild.usedSlots is the one slot count (upgrades under way count as what they become); the game's own when it differs
-            int used = Misc.getNumIndustries(m);
-            try { used = CABuild.usedSlots(m); } catch (Throwable ignored) { }
-            o.put("industrySlots", used + " of " + Misc.getMaxIndustries(m) + (used != Misc.getNumIndustries(m) ? " (the game counts " + Misc.getNumIndustries(m) + ")" : ""));
-            JSONArray inds = new JSONArray();
-            for (Industry ind : m.getIndustries()) {
-                if (ind.isHidden()) continue;
-                StringBuilder sb = new StringBuilder(ind.getId());
-                if (ind.isBuilding()) sb.append(ind.isUpgrading() ? " [upgrading]" : " [building]");
-                else if (!ind.isFunctional()) sb.append(" [not working]");
-                if (ind.getSpecialItem() != null) sb.append(" item=").append(ind.getSpecialItem().getId());
-                if (ind.getAICoreId() != null) sb.append(" core=").append(ind.getAICoreId());
-                if (ind.isImproved()) sb.append(" improved");
-                inds.put(sb.toString());
-            }
-            o.put("industries", inds);
-            try {
-                JSONArray q = new JSONArray();
-                for (com.fs.starfarer.api.impl.campaign.econ.impl.ConstructionQueue.ConstructionQueueItem it : m.getConstructionQueue().getItems()) q.put(it.id);
-                if (q.length() > 0) o.put("queue", q);
-            } catch (Throwable ignored) { }
-            if (c != null && c.profile != null) {
-                try {
-                    CAPlan.Plan plan = CAPlan.build(m, c.profile);
-                    o.put("plan", plan.name);
-                    if (plan.world != null) o.put("world", plan.world);
-                    JSONArray steps = new JSONArray();
-                    for (CAPlan.Step s : plan.steps) {
-                        String at = s.done(m) ? "done" : CAPlan.BLOCKED.contains(m.getId() + ":" + s.id) ? "waits on research"
-                                : CAPlan.dead(m, s.id) ? "out of reach" : CAPlan.held(m, plan, s) ? "waits for the rest of the plan" : "open";
-                        steps.put(s.kind + " " + s.id + ": " + at + " (" + s.label + ")");
-                    }
-                    o.put("steps", steps);
-                } catch (Throwable t) { o.put("plan", "failed: " + t); }
-            }
-            com.fs.starfarer.api.campaign.CargoAPI store = d.stores().get(m.getId());
-            if (store != null) {
-                JSONObject held = new JSONObject();
-                for (com.fs.starfarer.api.campaign.CargoStackAPI st : store.getStacksCopy()) {
-                    String id = st.isSpecialStack() && st.getSpecialDataIfSpecial() != null ? st.getSpecialDataIfSpecial().getId()
-                            : st.isCommodityStack() ? st.getCommodityId() : st.isWeaponStack() ? "weapon " + st.getWeaponSpecIfWeapon().getWeaponId() : "other";
-                    held.put(id, held.optInt(id, 0) + Math.round(st.getSize()));
-                }
-                o.put("autopilotStorage", held);
-            }
-            out.put(o);
-        }
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) out.put(colony(m, d));
         return out;
+    }
+
+    /** 0.3.20.2: one colony as the report shows it. */
+    static JSONObject colony(MarketAPI m, CAData d) throws Exception {
+        JSONObject o = new JSONObject();
+        CAData.Colony c = d.colonies == null ? null : d.colonies.get(m.getId());
+        o.put("name", m.getName()); o.put("id", m.getId()); o.put("size", m.getSize());
+        o.put("mode", c == null || c.mode == null ? "none" : c.mode.name());
+        if (c != null && c.profile != null) o.put("goal", c.profile.name());
+        o.put("stability", Math.round(m.getStability().getModifiedValue()));
+        o.put("netIncome", Math.round(m.getNetIncome()));
+        // 0.3.0.0 (07 M12): CABuild.usedSlots is the one slot count (upgrades under way count as what they become); the game's own when it differs
+        int used = Misc.getNumIndustries(m);
+        try { used = CABuild.usedSlots(m); } catch (Throwable ignored) { }
+        o.put("industrySlots", used + " of " + Misc.getMaxIndustries(m) + (used != Misc.getNumIndustries(m) ? " (the game counts " + Misc.getNumIndustries(m) + ")" : ""));
+        JSONArray inds = new JSONArray();
+        for (Industry ind : m.getIndustries()) {
+            if (ind.isHidden()) continue;
+            StringBuilder sb = new StringBuilder(ind.getId());
+            if (ind.isBuilding()) sb.append(ind.isUpgrading() ? " [upgrading]" : " [building]");
+            else if (!ind.isFunctional()) sb.append(" [not working]");
+            if (ind.getSpecialItem() != null) sb.append(" item=").append(ind.getSpecialItem().getId());
+            if (ind.getAICoreId() != null) sb.append(" core=").append(ind.getAICoreId());
+            if (ind.isImproved()) sb.append(" improved");
+            inds.put(sb.toString());
+        }
+        o.put("industries", inds);
+        try {
+            JSONArray q = new JSONArray();
+            for (com.fs.starfarer.api.impl.campaign.econ.impl.ConstructionQueue.ConstructionQueueItem it : m.getConstructionQueue().getItems()) q.put(it.id);
+            if (q.length() > 0) o.put("queue", q);
+        } catch (Throwable ignored) { }
+        if (c != null && c.profile != null) {
+            try {
+                CAPlan.Plan plan = CAPlan.build(m, c.profile);
+                o.put("plan", plan.name);
+                if (plan.world != null) o.put("world", plan.world);
+                JSONArray steps = new JSONArray();
+                for (CAPlan.Step s : plan.steps) {
+                    String at = s.done(m) ? "done" : CAPlan.BLOCKED.contains(m.getId() + ":" + s.id) ? "waits on research"
+                            : CAPlan.dead(m, s.id) ? "out of reach" : CAPlan.held(m, plan, s) ? "waits for the rest of the plan" : "open";
+                    steps.put(s.kind + " " + s.id + ": " + at + " (" + s.label + ")");
+                }
+                o.put("steps", steps);
+            } catch (Throwable t) { o.put("plan", "failed: " + t); }
+        }
+        com.fs.starfarer.api.campaign.CargoAPI store = d.stores().get(m.getId());
+        if (store != null) {
+            JSONObject held = new JSONObject();
+            for (com.fs.starfarer.api.campaign.CargoStackAPI st : store.getStacksCopy()) {
+                String id = st.isSpecialStack() && st.getSpecialDataIfSpecial() != null ? st.getSpecialDataIfSpecial().getId()
+                        : st.isCommodityStack() ? st.getCommodityId() : st.isWeaponStack() ? "weapon " + st.getWeaponSpecIfWeapon().getWeaponId() : "other";
+                held.put(id, held.optInt(id, 0) + Math.round(st.getSize()));
+            }
+            o.put("autopilotStorage", held);
+        }
+        return o;
     }
 }

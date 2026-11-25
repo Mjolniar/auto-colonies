@@ -46,6 +46,10 @@ import java.util.*;
  *   loadouts switch often. A fit is kept for each augment set (BY_AUGMENTS, saved in CAData.stationLayouts as
  *   "marketId#augments") and used again when the augments switch back, without a new plan. More known alone plans a station
  *   again at most every KNOWN_DAYS (PLANNED_AT), and new plans are PLAN_GAP_DAYS apart.
+ * - 0.3.20.3: one fit per station. A fit is planned for a station with none, or for another station building or hull; after
+ *   that only when more weapons, wings or hullmods are known and the last plan is Station refits days old
+ *   (CASettings.stationRefitDays, 365 by default; Off never). The augments go to Auto Outfitting at the plan but a change in
+ *   them plans nothing, and no fit is kept per augment set (BY_AUGMENTS stays empty; refit()).
  * - 0.3.19.1: with Auto Outfitting 0.5.93 or later a plan runs in slices (its startFit, stepFit, fitError and cancelFit, by
  *   name through method handles): Watch gives it STEP_MS a frame, paused too, so the game keeps drawing. The finished fit
  *   goes to PENDING and the next daily pass adopts it as before. One job at a time (job, session only); a job whose station
@@ -151,6 +155,30 @@ public final class CAStationFit {
             for (int i = 2; i < 5; i++) if (Integer.parseInt(a[i]) > Integer.parseInt(b[i])) return true;
         } catch (NumberFormatException e) { return !now.equals(was); }
         return false;
+    }
+
+    /**
+     * Pure (0.3.20.3): whether a station with a fit planned for key `was` is planned again for `now`: no fit yet, or another
+     * station building or hull; else only when more is known (needsPlan's counts) and the last plan is `interval` days old
+     * (`since`). Interval 0 (Off): never. Augments don't count.
+     */
+    static boolean refit(String now, String was, float since, int interval) {
+        if (was == null) return true;
+        String[] a = now.split("\\|"), b = was.split("\\|");
+        if (a.length < 5 || b.length < 5) return !now.equals(was);
+        if (!a[0].equals(b[0]) || !a[1].equals(b[1])) return true;
+        if (interval <= 0 || since < interval) return false;
+        try {
+            for (int i = 2; i < 5; i++) if (Integer.parseInt(a[i]) > Integer.parseInt(b[i])) return true;
+        } catch (NumberFormatException e) { return false; }
+        return false;
+    }
+
+    /** Pure (0.3.20.3): the same station building and hull. */
+    static boolean sameStation(String now, String was) {
+        if (now == null || was == null) return false;
+        String[] a = now.split("\\|"), b = was.split("\\|");
+        return a.length >= 2 && b.length >= 2 && a[0].equals(b[0]) && a[1].equals(b[1]);
     }
 
     /** Pure (0.3.18.9): the augment part of a key; "-" for none or a key from before 0.3.18.6. */
@@ -270,6 +298,7 @@ public final class CAStationFit {
         CASettings s = CAData.settings();
         FactionAPI f = Global.getSector().getPlayerFaction();
         Set<String> seen = new HashSet<String>();
+        int every = s.stationRefitDays();   // 0.3.20.3
         boolean planned = false;   // Auto Outfitting can take a few seconds on a station: one new plan a day at most
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             try {
@@ -282,28 +311,23 @@ public final class CAStationFit {
                 if (fm == null) continue;
                 String key = key(st, fm, f, m);
                 Fit have = FITS.get(m.getId());
-                if (have != null && !needsPlan(key, have.key)) continue;   // 0.3.17.5: only a new station or more known than at the last plan
+                if (have != null && !refit(key, have.key, sincePlanned(m), every)) continue;   // 0.3.20.3: a new station, or a refit that's due
                 String saved = d.stationLayouts().get(m.getId());
                 int nl = saved == null ? -1 : saved.indexOf('\n');
                 String savedKey = nl > 0 ? saved.substring(0, nl) : null;
                 ShipVariantAPI savedFit = have == null && nl > 0 ? rebuild(fm.getVariant(), saved.substring(nl + 1)) : null;
-                if (savedFit != null && !needsPlan(key, savedKey)) {   // after a load: the saved fit, no planning
+                if (savedFit != null && !refit(key, savedKey, sincePlanned(m), every)) {   // after a load: the saved fit, no planning
                     Fit fit = new Fit(); fit.key = savedKey; fit.variant = savedFit; FITS.put(m.getId(), fit); continue;
                 }
                 Fit pend = PENDING.get(m.getId());
                 ShipVariantAPI v;
-                if (pend != null && key.equals(pend.key)) v = pend.variant;   // 0.3.15.5: planned once per key, not every day it waits
+                if (pend != null && sameStation(key, pend.key)) v = pend.variant;   // 0.3.15.5: planned once, not every day it waits (0.3.20.3: augments aside)
                 else {
-                    // 0.3.18.9: the fit kept for this augment set is used again; more known alone plans again at most every KNOWN_DAYS
-                    Fit kept = byAugments(d, m, fm, key);
-                    boolean recent = sincePlanned(m) < KNOWN_DAYS;
-                    String base = have != null ? have.key : savedKey;
-                    if (kept != null && (!needsPlan(key, kept.key) || recent)) v = kept.variant;
-                    else if (kept == null && recent && onlyKnownGrew(key, base)) continue;   // the station keeps its fit for now
-                    else {
+                    // 0.3.20.3: no fit per augment set; refit() above already decided this station is planned
+                    {
                         float today = CADay.now();
-                        if (job != null) {   // 0.3.19.1: one plan at a time; a plan for this station's old state is dropped
-                            if (job.marketId.equals(m.getId()) && !job.key.equals(key)) cancelJob();
+                        if (job != null) {   // 0.3.19.1: one plan at a time; a plan for another station or hull here is dropped
+                            if (job.marketId.equals(m.getId()) && !sameStation(job.key, key)) cancelJob();
                             continue;
                         }
                         if (planned || (today - lastPlanDay < PLAN_GAP_DAYS && today >= lastPlanDay)) continue;
@@ -328,7 +352,6 @@ public final class CAStationFit {
                     PENDING.remove(m.getId());
                     d.stationLayouts().put(m.getId(), key + "\n" + layout(cur));
                     Fit fit = new Fit(); fit.key = key; fit.variant = cur; FITS.put(m.getId(), fit);
-                    remember(d, m, key, cur);   // 0.3.18.9
                     continue;
                 }
                 if (cur == null && now.equals(ordnance(fm.getVariant()))) continue;   // Auto Outfitting fell back to the game's fit: nothing to do
@@ -350,7 +373,6 @@ public final class CAStationFit {
                 Fit fit = new Fit();
                 fit.key = key; fit.variant = v;
                 FITS.put(m.getId(), fit);
-                remember(d, m, key, v);   // 0.3.18.9
                 int n = 0;
                 for (int c : more.values()) n += c;
                 // 0.3.17.5: every refit here changes weapons or wings, so every one is on screen, in a shorter line

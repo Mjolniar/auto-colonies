@@ -52,8 +52,15 @@ public class CAModWatch {
         float day = CADay.now();
         if (day - lastRun < 7f && day >= lastRun) { CADiagnostics.flushReport(); return; }
         lastRun = day;
-        run();
-        CADiagnostics.writeReport();
+        // 0.3.20.2: each mod's watch and each part of the report is its own task right after this step (CAPass.parts), in order
+        List<Runnable> parts = new ArrayList<Runnable>();
+        last.clear();
+        if (Global.getSector() != null) {
+            final List<MarketAPI> mine = Misc.getPlayerMarkets(false);
+            for (final String[] mod : MODS) if (Global.getSettings().getModManager().isModEnabled(mod[0])) parts.add(() -> watchOne(mod, mine));
+        }
+        parts.addAll(CADiagnostics.reportParts());
+        CAPass.parts("mod watch (part)", parts);
     }
 
     /** 0.3.0.0 (07 H6): last week's results and log lines from another save, cleared on load (CAReset.onLoad). */
@@ -63,25 +70,27 @@ public class CAModWatch {
         last.clear();
         if (Global.getSector() == null) return;
         List<MarketAPI> mine = Misc.getPlayerMarkets(false);
-        for (String[] mod : MODS) {
-            if (!Global.getSettings().getModManager().isModEnabled(mod[0])) continue;
-            try {
-                JSONObject o = watch(mod[0], mod[1], mine);
-                last.add(o);
-                String line = CADiagnostics.TAG + "mod watch " + mod[1] + ": " + o.optString("verdict") + " - " + o.optString("summary");
-                // a line when it changes (and the first time each session), not ten identical lines a week (0.2.39.0)
-                // 0.3.18.3: each line once a session, its counts aside: a warning count going 1, 2, 1 logged the same line again
-                // every week (Omega Core Everywhere 71 times across four logs)
-                String once = mod[0] + "|" + (line + problems(o)).replaceAll("[0-9]+", "#");
-                if (line.equals(logged.get(mod[0])) || logged.containsKey(once)) continue;
-                logged.put(mod[0], line);
-                logged.put(once, line);
-                // a warning says what it is (0.2.43.1): the report holds only the latest week, so a line that said "1 warnings"
-                // and nothing else was gone by the time anyone looked
-                if ("OK".equals(o.optString("verdict"))) CADiagnostics.LOG.info(line); else CADiagnostics.LOG.warn(line + problems(o));
-            } catch (Throwable t) {
-                CADiagnostics.LOG.warn(CADiagnostics.TAG + "mod watch for " + mod[1] + " failed", t);
-            }
+        for (String[] mod : MODS) if (Global.getSettings().getModManager().isModEnabled(mod[0])) watchOne(mod, mine);
+    }
+
+    /** 0.3.20.2: one mod's watch, into last and the log. */
+    static void watchOne(String[] mod, List<MarketAPI> mine) {
+        try {
+            JSONObject o = watch(mod[0], mod[1], mine);
+            last.add(o);
+            String line = CADiagnostics.TAG + "mod watch " + mod[1] + ": " + o.optString("verdict") + " - " + o.optString("summary");
+            // a line when it changes (and the first time each session), not ten identical lines a week (0.2.39.0)
+            // 0.3.18.3: each line once a session, its counts aside: a warning count going 1, 2, 1 logged the same line again
+            // every week (Omega Core Everywhere 71 times across four logs)
+            String once = mod[0] + "|" + (line + problems(o)).replaceAll("[0-9]+", "#");
+            if (line.equals(logged.get(mod[0])) || logged.containsKey(once)) return;
+            logged.put(mod[0], line);
+            logged.put(once, line);
+            // a warning says what it is (0.2.43.1): the report holds only the latest week, so a line that said "1 warnings"
+            // and nothing else was gone by the time anyone looked
+            if ("OK".equals(o.optString("verdict"))) CADiagnostics.LOG.info(line); else CADiagnostics.LOG.warn(line + problems(o));
+        } catch (Throwable t) {
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "mod watch for " + mod[1] + " failed", t);
         }
     }
 

@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.20.2 - 2026-11-25
+
+- Performance: The terraforming planner runs one colony per task in the daily pass, with income reads kept for each colony. The starts run last, in the same order.
+- Performance: The weekly mod watch runs one mod per task. The diagnostics report is written in parts: the head, the market, one colony per task, then the write.
+- Performance: Panel scores' plan tracking keeps Building Menu Overhaul reads for each colony.
+
 ## 0.3.20.1 - 2026-11-25
 
 - Performance: Colony income reads and Building Menu Overhaul's hidden-building list are kept during one colony's evaluation, the special project supply step, the focus world pick and each surplus terraforming plan. They are read again when the colony changes.

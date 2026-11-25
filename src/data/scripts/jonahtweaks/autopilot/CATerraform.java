@@ -99,88 +99,108 @@ public class CATerraform {
         return m.getPrimaryEntity() instanceof com.fs.starfarer.api.campaign.PlanetAPI && ((com.fs.starfarer.api.campaign.PlanetAPI) m.getPrimaryEntity()).isGasGiant();
     }
 
+    /** 0.3.20.2: what the colony tasks of one run gather for the last task; failed: a colony's look threw, so nothing starts (as before). */
+    static final class Sweep { final List<Cand> cands = new ArrayList<Cand>(); boolean failed; }
+
     /**
      * Every idle TME structure in an Auto colony works its part of the colony plan: the earliest unfinished plan step
      * it can run comes first; otherwise its best-value project. Candidates are funded in priority order within the budget.
+     * Daily. 0.3.20.2: each colony's look is its own task right after this step (CAPass.parts), in the same order, with its
+     * income reads kept (CAMemo); the starts are the last task. A look that throws stops the starts, as when it stopped the
+     * whole step. Outside a pass it all runs at once.
      */
     public static void run(List<MarketAPI> markets) {
-        CAData d = CAData.get();
-        CASettings s = d.settings;
-        List<Cand> cands = new ArrayList<Cand>();
-        for (MarketAPI m : markets) {
-            CAData.Colony c = d.colony(m.getId());
-            CAData.Profile prof = CAThreat.effective(m, c.profile);
-            CAPlan.Plan plan = CAPlan.build(m, c.profile);
-            Set<String> conds = conditions(m);
-            Set<String>[] ka = keepAvoid(m, plan, conds);
-            boolean gas = gasGiant(m), pollutionBack = CAConditions.pollutionReturns(m);
-            Set<String> moving = moving(m, conds, gas);   // 0.3.9.2 (I M1)
-            if (pollutionBack && m.hasCondition("pollution") && CALog.once("tfpollution:" + m.getId()))
-                CALog.think(m.getName() + ": Terraforming: pollution removal waits for the nanoforge upgrade. The new building adds pollution back.");
-            for (Industry raw : m.getIndustries()) {
-                if (!(CATme.isTerraforming(raw))) continue;
-                Industry ind = raw;
-                if (ind.isBuilding() || ind.isUpgrading() || CATme.ongoing(ind) || c.locks.contains(ind.getId())) continue;
-                if ("tme_stellar_manufactory".equals(ind.getId())) continue;   // needs mirror and shade choices
-                List<CATme.Proj> projects;
-                try { projects = CATme.projects(ind); } catch (Throwable t) { CADiagnostics.quarantine(ind.getId(), "reading terraforming projects", t); continue; }
-                if (projects == null) continue;
-                Cand pick = null;
-                // 1) the earliest unfinished plan step this structure can run
-                int order = 0;
-                for (CAPlan.Step st : plan.steps) {
-                    order++;
-                    if (st.done(m) || st.kind == CAPlan.Kind.BUILD) continue;
-                    if (!ind.getId().equals(CAWorldPlanner.structureFor(st.id)) && st.kind == CAPlan.Kind.COND) continue;
-                    for (CATme.Proj pd : projects) {
-                        if (!pd.id.equals(st.id)) continue;
-                        if (moving.contains(pd.id)) continue;   // 0.3.9.2 (I M1): a running project changes it first
-                        boolean adding = !m.hasCondition(pd.id);
-                        if ((st.kind == CAPlan.Kind.COND) != adding) continue;
-                        if (!adding && pd.id.equals("pollution") && pollutionBack) continue;
-                        try { if (!CATme.canRun(ind, pd)) continue; } catch (Throwable t) { continue; }
-                        pick = new Cand(); pick.m = m; pick.ind = ind; pick.pd = pd; pick.cost = projectCost(m, pd);
-                        pick.score = 1000000f - order * 1000f; pick.planned = true;
-                        pick.world = plan.world;
-                        pick.why = (adding ? "add " : "remove ") + pd.name + " (" + plan.name + " plan, step " + order + ")";
-                        break;
-                    }
-                    if (pick != null) break;
+        final CAData d = CAData.get();
+        final CASettings s = d.settings;
+        final Sweep w = new Sweep();
+        List<Runnable> parts = new ArrayList<Runnable>();
+        for (final MarketAPI m : markets) parts.add(() -> {
+            if (w.failed) return;
+            try { CAMemo.scope(() -> look(m, d, s, w.cands)); }
+            catch (Throwable t) { w.failed = true; CAStep.warn("terraforming planner", "terraforming planner failed at " + m.getName(), t); }
+        });
+        parts.add(() -> { if (!w.failed) start(w.cands, s); });
+        CAPass.parts("terraforming planner (colony)", parts);
+    }
+
+    /** One colony's terraforming candidates, into cands. */
+    static void look(MarketAPI m, CAData d, CASettings s, List<Cand> cands) {
+        CAData.Colony c = d.colony(m.getId());
+        CAData.Profile prof = CAThreat.effective(m, c.profile);
+        CAPlan.Plan plan = CAPlan.build(m, c.profile);
+        Set<String> conds = conditions(m);
+        Set<String>[] ka = keepAvoid(m, plan, conds);
+        boolean gas = gasGiant(m), pollutionBack = CAConditions.pollutionReturns(m);
+        Set<String> moving = moving(m, conds, gas);   // 0.3.9.2 (I M1)
+        if (pollutionBack && m.hasCondition("pollution") && CALog.once("tfpollution:" + m.getId()))
+            CALog.think(m.getName() + ": Terraforming: pollution removal waits for the nanoforge upgrade. The new building adds pollution back.");
+        for (Industry raw : m.getIndustries()) {
+            if (!(CATme.isTerraforming(raw))) continue;
+            Industry ind = raw;
+            if (ind.isBuilding() || ind.isUpgrading() || CATme.ongoing(ind) || c.locks.contains(ind.getId())) continue;
+            if ("tme_stellar_manufactory".equals(ind.getId())) continue;   // needs mirror and shade choices
+            List<CATme.Proj> projects;
+            try { projects = CATme.projects(ind); } catch (Throwable t) { CADiagnostics.quarantine(ind.getId(), "reading terraforming projects", t); continue; }
+            if (projects == null) continue;
+            Cand pick = null;
+            // 1) the earliest unfinished plan step this structure can run
+            int order = 0;
+            for (CAPlan.Step st : plan.steps) {
+                order++;
+                if (st.done(m) || st.kind == CAPlan.Kind.BUILD) continue;
+                if (!ind.getId().equals(CAWorldPlanner.structureFor(st.id)) && st.kind == CAPlan.Kind.COND) continue;
+                for (CATme.Proj pd : projects) {
+                    if (!pd.id.equals(st.id)) continue;
+                    if (moving.contains(pd.id)) continue;   // 0.3.9.2 (I M1): a running project changes it first
+                    boolean adding = !m.hasCondition(pd.id);
+                    if ((st.kind == CAPlan.Kind.COND) != adding) continue;
+                    if (!adding && pd.id.equals("pollution") && pollutionBack) continue;
+                    try { if (!CATme.canRun(ind, pd)) continue; } catch (Throwable t) { continue; }
+                    pick = new Cand(); pick.m = m; pick.ind = ind; pick.pd = pd; pick.cost = projectCost(m, pd);
+                    pick.score = 1000000f - order * 1000f; pick.planned = true;
+                    pick.world = plan.world;
+                    pick.why = (adding ? "add " : "remove ") + pd.name + " (" + plan.name + " plan, step " + order + ")";
+                    break;
                 }
-                // 2) otherwise the structure's best-value project, valued on what the colony is after it: TME removes what the
-                // added condition hates (sparse transplutonics deletes abundant ones) and settles farmland, organics and habitability
-                if (pick == null) {
-                    for (CATme.Proj pd : projects) {
-                        try {
-                            if (moving.contains(pd.id)) continue;   // 0.3.9.2 (I M1): a running project changes it first
-                            if (!CATme.canRun(ind, pd)) continue;
-                            boolean adding = !m.hasCondition(pd.id);
-                            if (!adding && pd.id.equals("pollution") && pollutionBack) continue;
-                            CATerraSim.Move mv = new CATerraSim.Move();
-                            mv.structure = ind.getId(); mv.condition = pd.id; mv.add = adding;
-                            CAWorldPlanner.Row row = CAWorldPlanner.rows().get(pd.id);
-                            Set<String> after;
-                            if (row != null) after = CATerraSim.apply(conds, mv, row, gas);
-                            else { after = new HashSet<String>(conds); if (adding) after.add(pd.id); else after.remove(pd.id); }
-                            if (!CATerraSim.valid(conds, after, ka[0], ka[1])) continue;   // never undoes what the plan needs, never adds what it clears
-                            float value = CAConditions.change(m, after, prof, null) + CAEconomy.hazardPaySaved(m, after) + CAPlan.bonusForCondition(m, plan, pd.id, adding);   // 0.3.0.0 (C4, research 03 F9): plus the hazard pay the colony's growth no longer needs, for the months to its max size (CAEconomy.hazardPaySaved)
-                            float cost = projectCost(m, pd);
-                            // 0.3.0.0 (B2): the price over the payback horizon (CAHorizon), the same at every colony; legacyPlanner: 0.2.45's
-                            // quarter at the focus world and 30 credits a construction day. 0.3.0.9: the price, the fee and the worth
-                            // lost while it runs, over the horizon (CAHorizon.npvMonthly, as CAEngine scores builds)
-                            float score = CAPlan.legacy() ? value - cost / 36f * CASurplus.costWeight(m) - pd.buildTime * 30f
-                                    : CAHorizon.npvMonthly(value, cost, CABudget.fee(s, STANDARD_FEE), pd.buildTime, CAHorizon.months());
-                            if (score > 0f && (pick == null || score > pick.score)) {
-                                pick = new Cand(); pick.m = m; pick.ind = ind; pick.pd = pd; pick.cost = cost; pick.score = score;
-                                pick.why = (adding ? "add " : "remove ") + pd.name;
-                            }
-                        } catch (Throwable t) { CADiagnostics.quarantine(ind.getId(), "scoring terraforming project " + pd.id, t); }
-                    }
-                }
-                if (pick != null) cands.add(pick);
-                else if (plan.world != null) worldNote(m, ind, plan, projects, moving);   // 0.3.17.7
+                if (pick != null) break;
             }
+            // 2) otherwise the structure's best-value project, valued on what the colony is after it: TME removes what the
+            // added condition hates (sparse transplutonics deletes abundant ones) and settles farmland, organics and habitability
+            if (pick == null) {
+                for (CATme.Proj pd : projects) {
+                    try {
+                        if (moving.contains(pd.id)) continue;   // 0.3.9.2 (I M1): a running project changes it first
+                        if (!CATme.canRun(ind, pd)) continue;
+                        boolean adding = !m.hasCondition(pd.id);
+                        if (!adding && pd.id.equals("pollution") && pollutionBack) continue;
+                        CATerraSim.Move mv = new CATerraSim.Move();
+                        mv.structure = ind.getId(); mv.condition = pd.id; mv.add = adding;
+                        CAWorldPlanner.Row row = CAWorldPlanner.rows().get(pd.id);
+                        Set<String> after;
+                        if (row != null) after = CATerraSim.apply(conds, mv, row, gas);
+                        else { after = new HashSet<String>(conds); if (adding) after.add(pd.id); else after.remove(pd.id); }
+                        if (!CATerraSim.valid(conds, after, ka[0], ka[1])) continue;   // never undoes what the plan needs, never adds what it clears
+                        float value = CAConditions.change(m, after, prof, null) + CAEconomy.hazardPaySaved(m, after) + CAPlan.bonusForCondition(m, plan, pd.id, adding);   // 0.3.0.0 (C4, research 03 F9): plus the hazard pay the colony's growth no longer needs, for the months to its max size (CAEconomy.hazardPaySaved)
+                        float cost = projectCost(m, pd);
+                        // 0.3.0.0 (B2): the price over the payback horizon (CAHorizon), the same at every colony; legacyPlanner: 0.2.45's
+                        // quarter at the focus world and 30 credits a construction day. 0.3.0.9: the price, the fee and the worth
+                        // lost while it runs, over the horizon (CAHorizon.npvMonthly, as CAEngine scores builds)
+                        float score = CAPlan.legacy() ? value - cost / 36f * CASurplus.costWeight(m) - pd.buildTime * 30f
+                                : CAHorizon.npvMonthly(value, cost, CABudget.fee(s, STANDARD_FEE), pd.buildTime, CAHorizon.months());
+                        if (score > 0f && (pick == null || score > pick.score)) {
+                            pick = new Cand(); pick.m = m; pick.ind = ind; pick.pd = pd; pick.cost = cost; pick.score = score;
+                            pick.why = (adding ? "add " : "remove ") + pd.name;
+                        }
+                    } catch (Throwable t) { CADiagnostics.quarantine(ind.getId(), "scoring terraforming project " + pd.id, t); }
+                }
+            }
+            if (pick != null) cands.add(pick);
+            else if (plan.world != null) worldNote(m, ind, plan, projects, moving);   // 0.3.17.7
         }
+    }
+
+    /** The candidates of every colony, best first: the starts. */
+    static void start(List<Cand> cands, CASettings s) {
         Collections.sort(cands, new Comparator<Cand>() { public int compare(Cand a, Cand b) { return Float.compare(b.score, a.score); } });
         for (Cand k : cands) {
             float fee = CABudget.fee(s, STANDARD_FEE);

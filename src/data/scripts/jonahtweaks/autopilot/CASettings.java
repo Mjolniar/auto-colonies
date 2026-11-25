@@ -116,6 +116,13 @@ public class CASettings {
     // Station Augments: 0 follow each colony's mode (Auto applies, Approve logs a recommendation), 1 recommend only, 2 off
     public int augmentMode = 0;
     public static final String[] AUGMENT_NAMES = {"Follow colony mode", "Recommend only", "Off"};
+    /** 0.3.20.3: Station refits (STATION_REFIT_NAMES): how often Autopilot may change a station's weapons and augments after its first fit. 0 Once a year in every save. */
+    public int stationRefit = 0;
+    public static final String[] STATION_REFIT_NAMES = {"Once a year", "Every 2 years", "Every 180 days", "Off"};
+    /** Days for each choice; 0 is Off. */
+    public static final int[] STATION_REFIT_DAYS = {365, 730, 180, 0};
+    /** 0.3.20.3: days between refits of one station after its first fit; 0 Off. */
+    public int stationRefitDays() { return STATION_REFIT_DAYS[Math.max(0, Math.min(STATION_REFIT_DAYS.length - 1, stationRefit))]; }
     // Ashes of the Domain trade contracts: 0 Advisor (default), 1 Auto, 2 Off
     public int contractMode = 0;
     public static final String[] CONTRACT_NAMES = {"Advisor", "Auto", "Off"};

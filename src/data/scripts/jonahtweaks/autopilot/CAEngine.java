@@ -1587,8 +1587,9 @@ public class CAEngine {
         // kept results out of date, which the loop below then sees)
         if (daily && day != trackedDay) {
             trackedDay = day;
-            for (MarketAPI m : toTrack(shown, d)) {
-                try { CAPlan.track(m, CAPlan.build(m, d.colony(m.getId()).profile)); }   // the plan evaluate tracked in 0.2.45 (the colony's own goal)
+            for (final MarketAPI m : toTrack(shown, d)) {
+                // 0.3.20.2: its BMO reads kept for the colony (CAMemo)
+                try { CAMemo.scope(() -> CAPlan.track(m, CAPlan.build(m, d.colony(m.getId()).profile))); }   // the plan evaluate tracked in 0.2.45 (the colony's own goal)
                 catch (Throwable t) { CAStep.warn("panel scores", "plan step check failed at " + m.getName(), t); }
             }
         }
