@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.18.7 - 2026-11-25
+
+- Compatibility: Starsector 0.98.5a-RC9.
+- Colony screen: Fixed the Colony Autopilot button not opening its panel on 0.98.5a-RC9.
+- Carter's Freetraders: Integration listed for 3.3.3.
+
 ## 0.3.18.6 - 2026-11-25
 
 - Station outfitting: Orbital stations and battlestations are fitted too. It was star fortresses and up.

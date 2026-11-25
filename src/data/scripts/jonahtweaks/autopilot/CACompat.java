@@ -134,7 +134,7 @@ public class CACompat {
         ENTRIES.add(new Entry("niko_scavengableindustries", "Niko's Scavengable Industries", "1.0.0",
                 a("NSI_blastCoreMining", "NSI_SpyBureau", "NSI_SpyOutpost", "NSI_cryosanctum", "NSI_outpostDefense", "NSI_ASBUplink", "NSI_expertDockworks"), NONE, NONE, NONE, null));
         ENTRIES.add(new Entry("JYD", "Junk Yard Dogs", "3.7.0", a("JYD_forge", "JYD_scrap"), NONE, NONE, NONE, null));
-        ENTRIES.add(new Entry("CFT", "Carter's Freetraders", "3.3.1", a("CFT_biolab", "CFT_greyindustry"), NONE, NONE, NONE, null));
+        ENTRIES.add(new Entry("CFT", "Carter's Freetraders", "3.3.3", a("CFT_biolab", "CFT_greyindustry"), NONE, NONE, NONE, null));
         ENTRIES.add(new Entry("vulpoids", "Vulpoids", "0.10.3", a("organfarms", "biofacility", "vulpoidagency"), NONE,
                 a("vulpoid_biofactory", "lobster_bioforge", "midas_nanoforge", "air_filter_core"), a("vulpoids"), null));
         ENTRIES.add(new Entry("yunruindustries", "Yunru Industries", "2025-03-30", a(CAMods.DRYDOCK, CAMods.BAZAAR, "yunru_advent"), NONE, NONE, NONE, null));
