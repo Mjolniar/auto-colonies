@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.18.2 - 2026-11-24
+
+- Fleet limit: Your colonies' patrol counts follow the system's threat. A calm system keeps 3 patrols. A threat adds enough patrols to beat its fleet points by a quarter: hostiles in the system, a raid group or raid on its way, or a colony at high threat.
+- Fleet limit: Your patrols past that number are sent home, during a threat too.
+- Fleet limit: A fleet sent home near you flies back to its colony and despawns there.
+
 ## 0.3.18.1 - 2026-11-24
 
 - Colony screen: Fixed the next-build card's picture drawing as a flat gray box. The picture keeps its shape between the text and the button.

@@ -14,9 +14,11 @@ import com.fs.starfarer.api.util.Misc;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -30,6 +32,8 @@ import java.util.Set;
  * 0.3.17.9: in a calm system (no siege, no colony at high threat, no threatening fleet there) the limit is CALM_LIMIT, and
  * your own patrols on a route and Auto Colonies' defense fleets go home last, after filler and other factions' patrols.
  * The Autarch armada, stations and important, war, busy or fighting fleets stay.
+ * 0.3.18.2: your colonies' patrol counts follow the system's threat (patrolsNeeded, capPatrols), and your patrols past it
+ * go home in any state. Near you a fleet sent home flies back to its colony instead of vanishing.
  * While a system is at the limit, Auto Colonies sends it no standing guard and no threat-high defense fleet; an emergency
  * (hostiles really there) still goes (CAWar, CAOwnWar). Setting: Fleet limit per system (CASettings.noFleetLimit).
  * Vanilla only.
@@ -91,7 +95,7 @@ public final class CAFleetLimit {
     /** Fleets that count: every fleet in the system but yours (the player's own fleet) and stations. */
     static int count(LocationAPI l) {
         int n = 0;
-        for (CampaignFleetAPI f : l.getFleets()) if (!f.isPlayerFleet() && !f.isStationMode()) n++;
+        for (CampaignFleetAPI f : l.getFleets()) if (!f.isPlayerFleet() && !f.isStationMode() && !sentHome(f)) n++;   // 0.3.18.2: not one flying home
         return n;
     }
 
@@ -112,7 +116,7 @@ public final class CAFleetLimit {
 
     /** Daily: each system with one of your colonies, down to the limit. */
     public static void daily() {
-        if (!on(CAData.settings())) return;
+        if (!on(CAData.settings())) { uncapAll(); return; }   // 0.3.18.2: the setting off gives the patrols back
         Set<StarSystemAPI> systems = new LinkedHashSet<StarSystemAPI>();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) if (m.getStarSystem() != null) systems.add(m.getStarSystem());
         CampaignFleetAPI player = Global.getSector().getPlayerFleet();
@@ -122,22 +126,127 @@ public final class CAFleetLimit {
         }
     }
 
+    // ---------------- 0.3.18.2: patrols sized to the threat ----------------
+    // Your colonies' military buildings keep their full patrol counts whatever is coming: three colonies with High Command
+    // in Mia's Star kept about 28 patrols around the capital with nothing inbound. Now each system's patrols follow its
+    // threat: CALM_PATROLS, plus enough to beat the threat's fleet points by a quarter. The game's own patrol counts
+    // (PATROL_NUM_*_MOD) are lowered at its colonies by PATROL_MOD, and patrols over the count go home.
+
+    static final String PATROL_MOD = "ca_fleetlimit_patrols";
+    /** Patrols a calm system keeps, a patrol's fleet points about (light 20 to 40, medium 50 to 70, heavy 90 to 120). */
+    static final int CALM_PATROLS = 3;
+    static final float PATROL_FP = 50f, RAID_FP = 300f, CRISIS_FP = 200f;
+    /** Fleet memory key: a fleet sent home that is flying back (it doesn't count, and isn't sent twice). */
+    static final String SENT = "$ca_fleetLimitHome";
+    static final String[] PATROL_STATS = {com.fs.starfarer.api.impl.campaign.ids.Stats.PATROL_NUM_LIGHT_MOD,
+            com.fs.starfarer.api.impl.campaign.ids.Stats.PATROL_NUM_MEDIUM_MOD, com.fs.starfarer.api.impl.campaign.ids.Stats.PATROL_NUM_HEAVY_MOD};
+
+    /** Pure: patrols a system needs for a threat of this many fleet points (0: calm). */
+    static int patrolsNeeded(float threatFP) {
+        return CALM_PATROLS + (threatFP > 0f ? (int) Math.ceil(threatFP * 1.25f / PATROL_FP) : 0);
+    }
+
+    /**
+     * Pure: `allowed` patrols split over the colonies' own maxima {light, medium, heavy} (biggest colony first): in rounds,
+     * each colony takes one heavy, one medium and one light while it has room. Returns each colony's {light, medium, heavy}.
+     */
+    static int[][] split(int[][] max, int allowed) {
+        int[][] out = new int[max.length][3];
+        int left = Math.max(0, allowed);
+        boolean any = true;
+        while (left > 0 && any) {
+            any = false;
+            for (int i = 0; i < max.length && left > 0; i++)
+                for (int t = 2; t >= 0 && left > 0; t--)
+                    if (out[i][t] < max[i][t]) { out[i][t]++; left--; any = true; }
+        }
+        return out;
+    }
+
+    /**
+     * The threat to a system in fleet points: the hostiles there, a raid group on its way, a hostile raid or invasion aimed at
+     * it (RAID_FP), a colony there at high threat or under siege (CRISIS_FP: a crisis or raid coming). 0 when calm.
+     */
+    static float threatFP(StarSystemAPI sys) {
+        float fp = CAOwnWar.hostileFP(sys);
+        com.fs.starfarer.api.impl.campaign.intel.group.GenericRaidFGI g = CAOwnWar.raidGroup(sys);
+        if (g != null) fp = Math.max(fp, CAOwnWar.groupFP(g));
+        if (CAOwnWar.raidIntel(sys)) fp = Math.max(fp, RAID_FP);
+        CAData d = CAData.get();
+        for (MarketAPI m : Misc.getPlayerMarkets(false))
+            if (m.getStarSystem() == sys && (d.colony(m.getId()).threatHigh || CASiege.held(m))) fp = Math.max(fp, CRISIS_FP);
+        return fp;
+    }
+
+    /** Lowers the game's patrol counts at the system's colonies to `allowed` patrols in all; returns the counts the game had. */
+    static int capPatrols(StarSystemAPI sys, int allowed) {
+        List<MarketAPI> ms = new ArrayList<MarketAPI>();
+        CAData d = CAData.get();
+        for (MarketAPI m : Misc.getPlayerMarkets(false))
+            if (m.getStarSystem() == sys && m.isPlayerOwned() && d.colony(m.getId()).mode != CAData.Mode.OFF) ms.add(m);
+        Collections.sort(ms, new Comparator<MarketAPI>() { public int compare(MarketAPI a, MarketAPI b) { return b.getSize() - a.getSize(); } });
+        int[][] max = new int[ms.size()][3];
+        int total = 0;
+        for (int i = 0; i < ms.size(); i++) for (int t = 0; t < 3; t++) {
+            com.fs.starfarer.api.combat.StatBonus b = ms.get(i).getStats().getDynamic().getMod(PATROL_STATS[t]);
+            b.unmodifyFlat(PATROL_MOD);
+            max[i][t] = Math.max(0, (int) b.computeEffective(0f));
+            total += max[i][t];
+        }
+        int[][] allow = split(max, allowed);
+        for (int i = 0; i < ms.size(); i++) for (int t = 0; t < 3; t++) {
+            int cut = allow[i][t] - max[i][t];
+            if (cut < 0) ms.get(i).getStats().getDynamic().getMod(PATROL_STATS[t]).modifyFlat(PATROL_MOD, cut, "Fleet limit (Auto Colonies)");
+        }
+        return total;
+    }
+
+    /** The patrol caps off at every colony (the setting turned off). */
+    static void uncapAll() {
+        for (MarketAPI m : Global.getSector().getEconomy().getMarketsCopy())
+            for (String st : PATROL_STATS) m.getStats().getDynamic().getMod(st).unmodifyFlat(PATROL_MOD);
+    }
+
+    static boolean sentHome(CampaignFleetAPI f) { return f.getMemoryWithoutUpdate().getBoolean(SENT); }
+
+    /**
+     * Sends a fleet home: out of your sight it despawns as arrived; near you it flies back to its colony and despawns there,
+     * so nothing vanishes in front of you. Returns true when it despawned now.
+     */
+    static boolean home(CampaignFleetAPI f, MarketAPI source, boolean nearYou) {
+        if (!nearYou || source == null || source.getPrimaryEntity() == null) { f.despawn(FleetDespawnReason.REACHED_DESTINATION, null); return true; }
+        f.clearAssignments();
+        f.addAssignment(com.fs.starfarer.api.campaign.FleetAssignment.GO_TO_LOCATION_AND_DESPAWN, source.getPrimaryEntity(), 30f, "returning to " + source.getName());
+        f.getMemoryWithoutUpdate().set(SENT, true, 30f);
+        return false;
+    }
+
+    /** The colony a fleet flies back to: its route's market, else your biggest colony in the system. */
+    static MarketAPI sourceOf(CampaignFleetAPI f, Map<CampaignFleetAPI, MarketAPI> routed, StarSystemAPI sys) {
+        MarketAPI m = routed.get(f);
+        if (m != null && m.getStarSystem() == sys) return m;
+        MarketAPI best = null;
+        for (MarketAPI x : Misc.getPlayerMarkets(false)) if (x.getStarSystem() == sys && (best == null || x.getSize() > best.getSize())) best = x;
+        return best;
+    }
+
     static void trim(StarSystemAPI sys, final CampaignFleetAPI player) {
         boolean calm = calm(sys);   // 0.3.17.9
+        float threat = threatFP(sys);   // 0.3.18.2
+        int allowed = patrolsNeeded(threat), had = capPatrols(sys, allowed);
         int lim = limit(calm);
-        int extra = over(count(sys), lim);
-        if (extra <= 0) return;
-        Set<CampaignFleetAPI> routed = new HashSet<CampaignFleetAPI>();
+        Map<CampaignFleetAPI, MarketAPI> routed = new HashMap<CampaignFleetAPI, MarketAPI>();
         for (RouteManager.RouteData r : RouteManager.getInstance().getRoutesInLocation(sys))
-            if (r.getActiveFleet() != null) routed.add(r.getActiveFleet());
+            if (r.getActiveFleet() != null) routed.put(r.getActiveFleet(), r.getMarket());
         final boolean here = player != null && player.getContainingLocation() == sys;
-        List<CampaignFleetAPI> first = new ArrayList<CampaignFleetAPI>(), second = new ArrayList<CampaignFleetAPI>(), third = new ArrayList<CampaignFleetAPI>();
+        List<CampaignFleetAPI> first = new ArrayList<CampaignFleetAPI>(), second = new ArrayList<CampaignFleetAPI>(), third = new ArrayList<CampaignFleetAPI>(),
+                patrols = new ArrayList<CampaignFleetAPI>();
         for (CampaignFleetAPI f : sys.getFleets()) {
-            if (f.isPlayerFleet()) continue;
-            if (here && Misc.getDistance(f, player) < NEAR) continue;
-            int r = rank(f, routed);
+            if (f.isPlayerFleet() || sentHome(f)) continue;
+            int r = rank(f, routed.keySet());
             if (r == 1) first.add(f); else if (r == 2) second.add(f);
-            else if (ownRank(f, routed, calm) == 3) third.add(f);   // 0.3.17.9: your patrols and spent defense fleets, last
+            else if (ownRank(f, routed.keySet(), true) == 3 && f.getMemoryWithoutUpdate().getBoolean("$isPatrol") && routed.containsKey(f)) patrols.add(f);   // 0.3.18.2
+            else if (ownRank(f, routed.keySet(), calm) == 3) third.add(f);   // 0.3.17.9: your spent defense fleets, last
         }
         Comparator<CampaignFleetAPI> far = new Comparator<CampaignFleetAPI>() {
             public int compare(CampaignFleetAPI a, CampaignFleetAPI b) {
@@ -147,16 +256,30 @@ public final class CAFleetLimit {
         Collections.sort(first, far);
         Collections.sort(second, far);
         Collections.sort(third, far);
+        Collections.sort(patrols, far);
+        int gone = 0, back = 0;
+        // 0.3.18.2: your patrols past what the threat needs go home, whatever the system's count
+        int extraPatrols = Math.max(0, patrols.size() - allowed);
+        for (int i = 0; i < extraPatrols; i++) {
+            CampaignFleetAPI f = patrols.get(i);
+            if (home(f, sourceOf(f, routed, sys), here && Misc.getDistance(f, player) < NEAR)) gone++; else back++;
+        }
+        List<CampaignFleetAPI> rest = new ArrayList<CampaignFleetAPI>(patrols.subList(extraPatrols, patrols.size()));
+        int extra = over(count(sys), lim);
         List<CampaignFleetAPI> go = new ArrayList<CampaignFleetAPI>(first);
         go.addAll(second);
         go.addAll(third);
+        if (calm) go.addAll(rest);   // a calm system's remaining patrols count down to the limit last
         int sent = 0;
         for (CampaignFleetAPI f : go) {
             if (sent >= extra) break;
-            f.despawn(FleetDespawnReason.REACHED_DESTINATION, null);
+            if (home(f, sourceOf(f, routed, sys), here && Misc.getDistance(f, player) < NEAR)) gone++; else back++;
             sent++;
         }
-        if (sent > 0) CALog.quiet(sys.getName() + ": Fleet limit: sent " + sent + " fleets home (" + lim + " a system" + (calm ? " while calm" : "") + ").");
+        if (CALog.once("fleetcap:" + sys.getId() + ":" + allowed + ":" + had))
+            CALog.quiet(sys.getName() + ": Fleet limit: " + allowed + " patrols for a threat of " + Math.round(threat) + " fleet points (the colonies' buildings allow " + had + ").");
+        if (gone + back > 0) CALog.quiet(sys.getName() + ": Fleet limit: " + gone + " fleets sent home" + (back > 0 ? ", " + back + " flying back to their colony" : "")
+                + " (" + lim + " a system" + (calm ? " while calm" : "") + ").");
     }
 
     /** 0.3.17.9: ownRank() for one fleet. */

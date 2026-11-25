@@ -419,6 +419,7 @@ public final class CARemoval {
             MemoryAPI mem = m.getMemoryWithoutUpdate();
             m.getStability().unmodifyFlat(CATierFive.IRON_MOD);   // 0.3.15.0: Tier V Iron stability's floor and its drop penalty
             m.getStability().unmodifyFlat(CATierFive.IRON_DROP_MOD);
+            for (String st : CAFleetLimit.PATROL_STATS) m.getStats().getDynamic().getMod(st).unmodifyFlat(CAFleetLimit.PATROL_MOD);   // 0.3.18.2: the fleet limit's patrol caps
             if (mem.contains(CAAutarchAdmin.DECLINED)) { declined.put(m.getId(), mem.get(CAAutarchAdmin.DECLINED)); mem.unset(CAAutarchAdmin.DECLINED); }
             if (mem.getBoolean(CAAutarchAdmin.SEATED)) { seated.add(m.getId()); mem.unset(CAAutarchAdmin.SEATED); }
             PersonAPI p = m.getAdmin();
