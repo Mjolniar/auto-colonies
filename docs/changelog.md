@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.19.4 - 2026-11-25
+
+- Story page: Managed colonies shows how many colonies it manages now out of the total.
+- Story page: Managed colonies shows the colonies you hold and your whole colony limit (colonies you govern, administrators and the Autarch administrator's colonies).
+- Story page: Autarch administrator shows how many colonies it governs now out of the total.
+
 ## 0.3.19.3 - 2026-11-25
 
 - Build card: Fixed the picture showing as a gray box for a building no colony has yet, such as the Megaport.

@@ -48,6 +48,23 @@ public final class CAStoryLimit {
         else s.unmodify(KEY);
     }
 
+    /** Pure (0.3.19.4): the colony limit: the colonies you govern yourself (the managed colonies' share in), one per administrator you may employ, and the Autarch administrator's colonies. */
+    static int total(int own, int admins, int seats) { return Math.max(0, own) + Math.max(0, admins) + Math.max(0, seats); }
+
+    /** 0.3.19.4: your colony limit now, for the Story page. */
+    public static int total() {
+        MutableStat s = stat();
+        return total(s == null ? 0 : Math.round(s.getModifiedValue()), admins(), CASync.seats());
+    }
+
+    /** 0.3.19.4: your colonies on Approve or Auto now (CASync.manages). */
+    public static int managed() {
+        int n = 0;
+        try { for (com.fs.starfarer.api.campaign.econ.MarketAPI m : com.fs.starfarer.api.util.Misc.getPlayerMarkets(false)) if (CASync.manages(m)) n++; }
+        catch (Throwable ignored) { }
+        return n;
+    }
+
     public static void remove() {
         MutableStat s = stat();
         if (s != null) s.unmodify(KEY);

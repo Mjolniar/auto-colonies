@@ -105,9 +105,10 @@ public class CASyncPage {
         // managed colonies (0.3.7.2: with Approve mode bought)
         if (CASync.has("approve")) {
             R.addSectionHeading("Managed colonies", Alignment.MID, 12f);
-            R.addPara("%s colonies can be on Approve or Auto (one, plus %s more). The next costs %s bandwidth.", 6f, hl,
-                    "" + CASync.managedCap(), "" + CASync.extraColonies(), "" + CASync.colonyCost());
-            if (CAStoryLimit.now() > 0) R.addPara("They add %s to your colony limit.", 3f, hl, "" + CAStoryLimit.now());   // 0.3.10.3
+            // 0.3.19.4: what it manages now and the whole colony limit (it said only what the managed colonies added)
+            R.addPara("It's managing %s of %s colonies, and the next one costs %s bandwidth.", 6f, hl,
+                    "" + CAStoryLimit.managed(), "" + CASync.managedCap(), "" + CASync.colonyCost());
+            R.addPara("You hold %s colonies, and your colony limit is %s.", 3f, hl, "" + CAExpansion.colonies().size(), "" + CAStoryLimit.total());
             ButtonAPI plus = button(R, "+1 colony", "col+", CASync.free() >= CASync.colonyCost() && CASync.extraColonies() < CASyncCatalog.MAX_COLONIES, 120f, 4f);
             ButtonAPI minus = button(R, "-1 colony", "col-", CASync.extraColonies() > 0, 120f, 0f);
             minus.getPosition().rightOfTop(plus, 6f);
@@ -116,8 +117,8 @@ public class CASyncPage {
         // 0.3.8.0: the Autarch administrator's colonies
         if (CASync.has("autarchAdmin")) {
             R.addSectionHeading("Autarch administrator", Alignment.MID, 12f);
-            R.addPara("It governs %s of up to %s colonies (one, plus %s more). The next costs %s bandwidth.", 6f, hl,
-                    "" + CAAutarchAdmin.count(), "" + CASync.seats(), "" + CASync.extraSeats(), "" + CASync.seatCost());
+            R.addPara("It's governing %s of %s colonies, and the next one costs %s bandwidth.", 6f, hl,   // 0.3.19.4: current of total
+                    "" + CAAutarchAdmin.count(), "" + CASync.seats(), "" + CASync.seatCost());
             ButtonAPI plus = button(R, "+1 colony", "seat+", CASync.free() >= CASync.seatCost() && CASync.seats() < CASync.managedCap()
                     && CASync.extraSeats() < CASyncCatalog.MAX_SEATS, 120f, 4f);
             ButtonAPI minus = button(R, "-1 colony", "seat-", CASync.extraSeats() > 0, 120f, 0f);
