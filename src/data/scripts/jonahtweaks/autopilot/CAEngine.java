@@ -90,7 +90,8 @@ public class CAEngine {
             /* SECURITY */ {0.5f, 4000f, 8000f, 9000f, 9000f, 4000f, 500f},
             /* WAR      */ {0.8f, 2500f, 10000f, 4000f, 10000f, 30000f, 500f},
             /* GROWTH   */ {0.6f, 3500f, 30000f, 1500f, 1000f, 1000f, 6000f},
-            /* SELF     */ {1.0f, 3000f, 20000f, 3000f, 4000f, 10000f, 1500f}};
+            /* SELF     */ {1.0f, 3000f, 20000f, 3000f, 4000f, 10000f, 1500f},
+            /* MATERIALS*/ {0.4f, 3000f, 10000f, 2500f, 3000f, 10000f, 800f}};   // 0.3.20.0
     static final float[][] WEIGHTS_030 = WEIGHTS;   // 0.3.8.8: the same table under its 0.3.0 name; only JTValueCheck reads it (goalWeights reads WEIGHTS)
     /** 0.3.2.0 (M4): the 0.3.2 table. Balanced, Self-sufficiency and War production count fleets and ship quality more; Money, Security and Rapid growth are unchanged. */
     static final float[][] WEIGHTS_NEW = {
@@ -100,7 +101,8 @@ public class CAEngine {
             /* SECURITY */ {0.5f, 4000f, 8000f, 9000f, 9000f, 4000f, 500f},
             /* WAR      */ {0.8f, 2500f, 10000f, 4000f, 15000f, 40000f, 500f},
             /* GROWTH   */ {0.6f, 3500f, 30000f, 1500f, 1000f, 1000f, 6000f},
-            /* SELF     */ {0.9f, 3000f, 15000f, 3000f, 4000f, 10000f, 1500f}};
+            /* SELF     */ {0.9f, 3000f, 15000f, 3000f, 4000f, 10000f, 1500f},
+            /* MATERIALS*/ {0.4f, 3000f, 10000f, 2500f, 3000f, 10000f, 800f}};   // 0.3.20.0: money counts least, floors x4 (CAFloors.goalMult)
 
     /** 0.3.2.0: a goal's weights in use: the 0.3.2 table while production is on with it, else the 0.3.0 table (production Off: exactly 0.3.1.0). */
     public static float[] goalWeights(CAData.Profile profile) {

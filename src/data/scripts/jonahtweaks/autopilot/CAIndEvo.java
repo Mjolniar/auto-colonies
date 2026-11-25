@@ -237,7 +237,7 @@ public class CAIndEvo {
         if (CAThreat.isHigh(m)) return "IndEvo_edict_lockdown";
         if (prof == CAData.Profile.WAR) return "IndEvo_edict_deadlines";
         if (prof == CAData.Profile.GROWTH && m.getSize() < 5) return "IndEvo_edict_forced_reloc";
-        if (prof == CAData.Profile.INCOME || prof == CAData.Profile.BALANCED || prof == CAData.Profile.SELF) return "IndEvo_edict_ind_incent";
+        if (prof == CAData.Profile.INCOME || prof == CAData.Profile.BALANCED || prof == CAData.Profile.SELF || prof == CAData.Profile.MATERIALS) return "IndEvo_edict_ind_incent";
         return null;
     }
 

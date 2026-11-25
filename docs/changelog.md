@@ -1,5 +1,13 @@
 # Patch notes
 
+## 0.3.20.0 - 2026-11-25
+
+- Goals: Added the Materials goal. Money counts less, production floors count four times, and every good your production orders take is valued while your colonies make too little of it.
+- Goals: A Materials colony's plan mines and refines (Forge on ore or transplutonic ore, habitable worlds too). Without deposits it is an Industrial Hub: Refining, Heavy Industry, Fuel Production, Light Industry, Orbital Works.
+- Materials colonies: Added the setting under Production (Off, Ask first, Auto). Off by default. Requires Vaults of Knowledge.
+- Materials colonies: While production orders are short of goods, the best-fitting Auto colony on Balanced switches to Materials, one per five colonies at most. The capital is not switched. A goal you set is not changed.
+- Materials colonies: Colonies it switched go back to Balanced after 120 days with nothing short.
+
 ## 0.3.19.4 - 2026-11-25
 
 - Story page: Managed colonies shows how many colonies it manages now out of the total.

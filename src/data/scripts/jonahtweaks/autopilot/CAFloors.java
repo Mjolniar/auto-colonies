@@ -84,6 +84,8 @@ public class CAFloors {
         // floor 3
         public boolean ordersOn;
         public final Map<String, Float> orderNeed = new LinkedHashMap<String, Float>(), orderMade = new LinkedHashMap<String, Float>();
+        /** 0.3.20.0: every other good production orders take (a month) and what your colonies make of it, for the Materials goal. */
+        public final Map<String, Float> otherNeed = new LinkedHashMap<String, Float>(), otherMade = new LinkedHashMap<String, Float>();
         // floor 4
         public float qualityWant, bestQ = Float.NaN, secondQ = Float.NaN, qualityOffset;
         public String bestId;
@@ -223,7 +225,10 @@ public class CAFloors {
     }
 
     /** Pure: what a goal multiplies floor values by (Self-sufficiency counts them double). */
-    static float goalMult(CAData.Profile p) { return p == CAData.Profile.SELF ? CATuning.FLOOR_SELF_MULT : 1f; }
+    static float goalMult(CAData.Profile p) {
+        if (p == CAData.Profile.MATERIALS) return CATuning.FLOOR_MATERIALS_MULT;   // 0.3.20.0
+        return p == CAData.Profile.SELF ? CATuning.FLOOR_SELF_MULT : 1f;
+    }
 
     /** Pure: the diversity multiplier for the next copy of a family with `existing` copies: share per copy past `copies`; 1 when copies is 0 (off). */
     static float diversity(int existing, int copies, float share) {
@@ -307,7 +312,10 @@ public class CAFloors {
      * Pure: what a pick adds to the open floors a month, each floor's share in parts (null: not wanted). The goal gate and the
      * goal multiplier are the caller's (value()).
      */
-    static float valueOf(State st, Input in, List<Part> parts) {
+    static float valueOf(State st, Input in, List<Part> parts) { return valueOf(st, in, parts, false); }
+
+    /** 0.3.20.0: materials: the Materials goal, which also counts every other good production orders take (otherNeed). */
+    static float valueOf(State st, Input in, List<Part> parts, boolean materials) {
         if (st == null || !st.on() || in == null || !in.managed) return 0f;
         float v = 0f;
         String id = in.id;
@@ -331,6 +339,15 @@ public class CAFloors {
                 if (gap > 0f && u > 0) {
                     float x = goodsValue(u, gap, in.base(g), st.unitValue, st.valOrders);
                     if (x != 0f) { v += x; add(parts, ORDERS, x, g, null); }
+                }
+            }
+            if (materials) for (Map.Entry<String, Float> e : st.otherNeed.entrySet()) {   // 0.3.20.0
+                Float made = st.otherMade.get(e.getKey());
+                float gap = e.getValue() - (made == null ? 0f : made);
+                int u = units(in.added, e.getKey());
+                if (gap > 0f && u > 0) {
+                    float x = goodsValue(u, gap, in.base(e.getKey()), st.unitValue, st.valOrders);
+                    if (x != 0f) { v += x; add(parts, ORDERS, x, e.getKey(), null); }
                 }
             }
             Integer eats = id == null ? null : SHIP_CONSUMERS.get(id);
@@ -414,7 +431,7 @@ public class CAFloors {
         Input in = input(m, p);
         if (in == null) return 0f;
         List<Part> parts = explain ? new ArrayList<Part>() : null;
-        float v = valueOf(st, in, parts) * goalMult(profile);
+        float v = valueOf(st, in, parts, profile == CAData.Profile.MATERIALS) * goalMult(profile);
         if (!(Math.abs(v) >= 1f) || Float.isNaN(v)) return 0f;
         p.floorValue = v;
         if (parts != null) for (Part x : parts) if (Math.abs(x.value) >= 1f) p.lines.add(line(x));
@@ -612,6 +629,11 @@ public class CAFloors {
                     Integer need = CAProjects.orders.get(g);
                     st.orderNeed.put(g, monthly(need == null ? 0 : need, s.floorOrderMonths));
                     st.orderMade.put(g, (float) Math.max(0, CAProjects.yours(g)));
+                }
+                for (Map.Entry<String, Integer> e : CAProjects.orders.entrySet()) {   // 0.3.20.0: the rest, for the Materials goal
+                    if (Arrays.asList(ORDER_GOODS).contains(e.getKey())) continue;
+                    st.otherNeed.put(e.getKey(), monthly(e.getValue() == null ? 0 : e.getValue(), s.floorOrderMonths));
+                    st.otherMade.put(e.getKey(), (float) Math.max(0, CAProjects.yours(e.getKey())));
                 }
             } catch (Throwable t) { st.ordersOn = false; }
         }

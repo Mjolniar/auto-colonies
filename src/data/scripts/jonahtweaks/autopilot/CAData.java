@@ -14,7 +14,9 @@ public class CAData {
 
     public enum Profile {
         BALANCED("Balanced"), INCOME("Money"), SECURITY("Security"), WAR("War production"),
-        GROWTH("Rapid growth"), SELF("Self-sufficiency");
+        GROWTH("Rapid growth"), SELF("Self-sufficiency"),
+        /** 0.3.20.0: goods for your faction's production orders and floors over money (CAMaterials). */
+        MATERIALS("Materials");
         public final String label;
         Profile(String label) { this.label = label; }
     }

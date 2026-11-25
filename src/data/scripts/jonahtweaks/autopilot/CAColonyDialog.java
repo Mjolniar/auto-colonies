@@ -692,6 +692,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         if (l.startsWith("War")) return "i:orbitalworks";
         if (l.startsWith("Rapid")) return "i:farming";
         if (l.startsWith("Self")) return "i:lightindustry";
+        if (l.startsWith("Materials")) return "i:refining";   // 0.3.20.0
         return "i:population";
     }
 

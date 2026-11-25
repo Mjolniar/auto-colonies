@@ -165,7 +165,7 @@ ca_repa,Reverse engineering,Boolean,true,,Weapons and fighters in Storage are ro
 ca_h_adv_expand,New colonies,Header,New colonies,,,,,Advanced
 ca_expline,Money for new colonies,Radio,Money ladder (Idle money and up),"Money ladder (Idle money and up), Over 5M, Over 25M, Over 50M",New colonies are funded from this line under Ask first or Auto.,,,Advanced
 ca_expscope,Where,Radio,Systems you hold,"Systems you hold, Those first then nearby systems, Within 15 ly of the capital","Under Low profile, only systems already held are used.",,,Advanced
-ca_expgoal,Goal of a new colony,Radio,Fits its plan,"Fits its plan, Balanced, Money, Security, War production, Rapid growth, Self-sufficiency",New colonies begin with this goal.,,,Advanced
+ca_expgoal,Goal of a new colony,Radio,Fits its plan,"Fits its plan, Balanced, Money, Security, War production, Rapid growth, Self-sufficiency, Materials",New colonies begin with this goal.,,,Advanced
 ca_expmethod,Method,Radio,Nexerelin colony fleet when possible,"Nexerelin colony fleet when possible, Autopilot crew only",The colony fleet method requires Nexerelin.,,,Advanced
 ca_expmax,Most colonies,Radio,Colony limit and administrators,"Colony limit and administrators, 5 colonies, 10 colonies, 15 colonies, 20 colonies",Founding halts at this colony count.,,,Advanced
 ca_abandon,Relocate weak colonies,Radio,Off,"Off, Ask first, Auto","Once you're Rich and at the colony limit, a weak colony (size 4 or smaller) is abandoned so a much better planet can be settled, one a year at most. Its items, cores and storage are shipped to the capital.",,,Advanced
@@ -178,6 +178,7 @@ ca_p_prod,Production,Radio,Light,"Off, Light, Full, Mode default, Custom","Off k
 ca_fhulls,Hull sources,Int,1,,Target number of ship producers. Accepted range is 0 to 3.,0,3,Advanced
 ca_fcap,Hull capacity a month,Int,100000,,"Target ship production capacity, in credits per month. Accepted range is 0 to 1,000,000, in steps of 50,000.",0,1000000,Advanced
 ca_fmonths,Order goods within (months),Int,6,,Ashes of the Domain order goods are spread over this many months. Accepted range is 3 to 24.,3,24,Advanced
+ca_materials,Materials colonies,Radio,Off,"Off, Ask first, Auto","When production orders run short of goods, a Balanced Auto colony gets switched to the Materials goal so it mines and refines for your faction instead of for money (one in five colonies at most). It goes back to Balanced once the orders have what they need. Requires Vaults of Knowledge.",,,Advanced
 ca_fqual,Production quality,Double,0.8,,"Target ship production quality. Accepted range is 0.5 to 1.2, in steps of 0.1.",0.5,1.2,Advanced
 ca_fparts,Parts reserve,Int,100,,"This many Domain-grade Parts are kept beyond the fleet's repair need. Accepted range is 0 to 1,000, in steps of 50.",0,1000,Advanced
 ca_fsup,Supplies floor,Radio,No shortage,"Off, No shortage, Fleet use",Target supplies production.,,,Advanced

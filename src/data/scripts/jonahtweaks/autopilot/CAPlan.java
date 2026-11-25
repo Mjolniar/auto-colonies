@@ -471,11 +471,11 @@ public class CAPlan {
         if (vol && CARogue.volatilesAsOrganics(m)) { vol = false; org = true; }   // 0.3.2.1: Rogue Planets' Hydrocarbon Fractionation: Mining makes organics
         boolean cold = m.hasCondition("cold") || m.hasCondition("very_cold");
         boolean war = prof == CAData.Profile.WAR, sec = prof == CAData.Profile.SECURITY, inc = prof == CAData.Profile.INCOME,
-                grow = prof == CAData.Profile.GROWTH, self = prof == CAData.Profile.SELF;
+                grow = prof == CAData.Profile.GROWTH, self = prof == CAData.Profile.SELF, mat = prof == CAData.Profile.MATERIALS;
         boolean tme = Global.getSettings().getModManager().isModEnabled("terraformingmadeeasy");
 
         b(p, "spaceport", "Spaceport"); b(p, "megaport", "Megaport");
-        if ((war || self || (ore && rare)) && !hab && (ore || rare)) {
+        if (((war || self || (ore && rare)) && !hab || mat) && (ore || rare)) {   // 0.3.20.0: a Materials colony mines and refines, habitable too
             p.name = "Forge";
             b(p, "mining", "Mining"); b(p, "refining", "Refining"); b(p, "heavyindustry", "Heavy Industry"); b(p, "orbitalworks", "Orbital Works");
             b(p, "tme_mineral_replicator", "Mineral Replicator"); b(p, "tme_element_synthesizer", "Element Synthesizer");
@@ -513,6 +513,10 @@ public class CAPlan {
             b(p, "mining", "Mining"); b(p, "refining", "Refining"); b(p, "tme_mineral_replicator", "Mineral Replicator");
             if (ore) c(p, "ore_ultrarich", "Ultrarich ore");
             b(p, "commerce", "Commerce");
+        } else if (mat) {   // 0.3.20.0: no deposits: it works what the others mine
+            p.name = "Industrial Hub";
+            b(p, "refining", "Refining"); b(p, "heavyindustry", "Heavy Industry"); b(p, "fuelprod", "Fuel Production");
+            b(p, "lightindustry", "Light Industry"); b(p, "orbitalworks", "Orbital Works");
         } else {
             p.name = inc ? "Trade Hub" : "General Colony";
             b(p, "commerce", "Commerce"); b(p, "waystation", "Waystation"); b(p, "lightindustry", "Light Industry");

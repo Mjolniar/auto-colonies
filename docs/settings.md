@@ -221,7 +221,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 |---|---|---|---|
 | Money for new colonies | Money ladder (Idle money and up), Over 5M, Over 25M, Over 50M | Money ladder | New colonies uses this on Ask first or Auto. |
 | Where | Systems you hold, Those first then nearby systems, Within 15 ly of the capital | Systems you hold | Low profile means only systems you hold. |
-| Goal of a new colony | Fits its plan, Balanced, Money, Security, War production, Rapid growth, Self-sufficiency | Fits its plan | A new colony starts with this goal. |
+| Goal of a new colony | Fits its plan, Balanced, Money, Security, War production, Rapid growth, Self-sufficiency, Materials | Fits its plan | A new colony starts with this goal. |
 | Method | Nexerelin colony fleet when possible, Autopilot crew only | Nexerelin colony fleet when possible | The colony fleet needs Nexerelin. |
 | Most colonies | Colony limit and administrators, 5, 10, 15, 20 | Colony limit and administrators | It stops founding colonies at this count. |
 | Relocate weak colonies | Off, Ask first, Auto | Off | Once you're at the Rich tier and the colony limit is the only thing stopping new colonies, it abandons a weak colony (size 4 or smaller) so a much better planet can be settled, one a year at most. The colony's AI cores, items and storage get shipped to the capital, and Ask first puts it up for your approval. |
@@ -237,6 +237,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | Hull sources | 0 to 3 | 1 | It wants this many ship producers. |
 | Hull capacity a month | 0 to 1,000,000 | 100,000 | It wants this much ship production capacity, in credits a month. |
 | Order goods within | 3 to 24 months | 6 | It spreads Ashes of the Domain order goods over this many months. |
+| Materials colonies | Off, Ask first, Auto | Off | When production orders run short of goods, a Balanced Auto colony gets switched to the Materials goal so it mines and refines for your faction instead of for money (one in five colonies at most). It goes back to Balanced once the orders have what they need. Requires Vaults of Knowledge. |
 | Production quality | 0.5 to 1.2 | 0.8 | It wants this ship production quality. |
 | Parts reserve | 0 to 1,000 | 100 | It keeps this many Domain-grade Parts beyond the fleet's repair need. |
 | Supplies floor | Off, No shortage, Fleet use | No shortage | It wants this much supplies production. |

@@ -396,6 +396,9 @@ public final class CALunaSync {
         integer("fhulls", "Hull sources", "floorHullSources", 0, 3, 1, "Target number of ship producers.");
         credits("fcap", "Hull capacity a month", "floorCapacity", 0, 1000000, 50000, "Target ship production capacity, in credits per month.");
         integer("fmonths", "Order goods within (months)", "floorOrderMonths", 3, 24, 1, "Ashes of the Domain order goods are spread over this many months.");
+        radio("materials", "Materials colonies", "materialsMode", CASettings.MATERIALS_NAMES, "When production orders run short of goods, a Balanced "
+                + "Auto colony gets switched to the Materials goal so it mines and refines for your faction instead of for money (one in five colonies at most). "
+                + "It goes back to Balanced once the orders have what they need. Requires Vaults of Knowledge.");
         dbl("fqual", "Production quality", "floorQuality", 0.5, 1.2, 0.1, "Target ship production quality.");
         integer("fparts", "Parts reserve", "floorPartsReserve", 0, 1000, 50, "This many Domain-grade Parts are kept beyond the fleet's repair need.");
         radio("fsup", "Supplies floor", "floorSupplies", CASettings.FLOOR_GOODS_NAMES, "Target supplies production.");

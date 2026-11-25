@@ -220,6 +220,9 @@ public class CASettings {
     /** 0.3.19.2: Relocate weak colonies (CARelocate.NAMES), 0 Off for every save. */
     public int abandonMode = 0;
     public static final String[] ABANDON_NAMES = CARelocate.NAMES;
+    /** 0.3.20.0: Materials colonies (CAMaterials.NAMES), 0 Off for every save. */
+    public int materialsMode = 0;
+    public static final String[] MATERIALS_NAMES = CAMaterials.NAMES;
     /** D: indices into the names below; 0 is the recommended choice for each. */
     public int expandLine = 0, expandScope = 0, expandGoal = 0, expandMethod = 0, expandMax = 0;
     public static final String[] EXPAND_LINE_NAMES = {"Money ladder (Idle money and up)", "Over 5,000,000", "Over 25,000,000", "Over 50,000,000"};

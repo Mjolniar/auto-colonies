@@ -286,6 +286,8 @@ public final class CATuning {
             FLOOR_VAL_ORDERS = 3f, FLOOR_VAL_GOODS = 2f;
     /** Self-sufficiency counts floor values this many times. */
     public static final float FLOOR_SELF_MULT = 2f;
+    /** 0.3.20.0: the Materials goal counts floor values this many times, every good production orders take included. */
+    public static final float FLOOR_MATERIALS_MULT = 4f;
     /** Capacity per Ships and Weapons unit when no producer can be read yet (settings.json productionCapacityPerSWUnit). */
     public static final float FLOOR_CAPACITY_PER_UNIT = 25_000f;
     /** Days the fleet's d-mod repair need is kept before it is read again. */
