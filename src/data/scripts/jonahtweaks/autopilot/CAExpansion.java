@@ -188,7 +188,12 @@ public class CAExpansion {
             if (d.expandPendingId != null) { status("Waiting for your approval: " + d.expandPendingName + ".", d.expandPendingCost); return; }
         }
         Money money = money(s);
-        String why = gate(d, s, auto, money);
+        String why = gateFirst(d, s, auto, money);
+        if (why == null) {
+            why = gateRoom(d, s);
+            // 0.3.19.2: only the colony limit or Most colonies stops it: a weak colony may make room (Relocate weak colonies)
+            if (why != null) CAStep.run("relocation", () -> CARelocate.look(d, s, auto, money));
+        }
         if (why != null) { status(why, 0f); return; }
         Prospect best = best(d, s, false);
         if (best == null) { status(nothingReason(s), 0f); return; }
@@ -349,6 +354,19 @@ public class CAExpansion {
 
     /** Null when an expedition may start today (money for a given expedition is checked against it later), else why not. */
     static String gate(CAData d, CASettings s, List<MarketAPI> auto, Money money) {
+        String why = gateFirst(d, s, auto, money);
+        return why != null ? why : gateRoom(d, s);
+    }
+
+    /** 0.3.19.2: the colony maximum and the colony limit, the last part of the gate (CARelocate may make room). */
+    static String gateRoom(CAData d, CASettings s) {
+        int max = CASettings.EXPAND_MAX[Math.max(0, Math.min(CASettings.EXPAND_MAX.length - 1, s.expandMax))];
+        if (max > 0 && colonies().size() + d.expandOrders().size() >= max) return "At the colony maximum (" + max + ").";
+        return room(d, s).why;
+    }
+
+    /** 0.3.19.2: the gate before the colony maximum and the colony limit. */
+    static String gateFirst(CAData d, CASettings s, List<MarketAPI> auto, Money money) {
         if (auto != null && auto.isEmpty()) return "No colony is on Auto.";
         if (CABudget.paused(s)) return "Spending is paused while net income is below 0.";
         for (MarketAPI m : colonies()) if (CASiege.held(m)) return m.getName() + " is under siege.";
@@ -358,8 +376,6 @@ public class CAExpansion {
             catch (Throwable t) { CAStep.warn("expansion", "Nexerelin invasion check failed", t); }
         }
         if (money.why != null) return money.why;
-        int max = CASettings.EXPAND_MAX[Math.max(0, Math.min(CASettings.EXPAND_MAX.length - 1, s.expandMax))];
-        if (max > 0 && colonies().size() + d.expandOrders().size() >= max) return "At the colony maximum (" + max + ").";
         int under = d.expandOrders().size();
         float since = sinceLast(d);
         int free = freeManaged(d), extra = storyUnderWay(free);   // 0.3.10.3: story mode with managed colonies free
@@ -370,9 +386,7 @@ public class CAExpansion {
                     + Math.round(days) + " days, " + Math.round(days / 2f) + " at the Rich tier).";
         }
         String busy = free >= 2 ? null : newestBusy(d);
-        if (busy != null) return busy;
-        Room r = room(d, s);
-        return r.why;
+        return busy;
     }
 
     /** Pure: pacing. Under way: expeditions now; one at a time, two at the top tier; pace days between them, half while rich. */
@@ -505,11 +519,14 @@ public class CAExpansion {
         try { return CAWar.invasionsUnderWay().size(); } catch (Throwable t) { return 0; }
     }
 
-    static ExpansionCost costFor(CAData d, CASettings s, Prospect p) {
+    static ExpansionCost costFor(CAData d, CASettings s, Prospect p) { return costFor(d, s, p, true); }
+
+    /** 0.3.19.2: withRoom false: the price without the colony limit's checks or hire (CARelocate, before a colony makes room). */
+    static ExpansionCost costFor(CAData d, CASettings s, Prospect p, boolean withRoom) {
         ExpansionCost c = new ExpansionCost();
         PlanetAPI planet = planet(p.planetId);
         if (planet == null) { c.why = "That planet is gone."; return c; }
-        Room r = room(d, s);
+        Room r = withRoom ? room(d, s) : new Room();
         if (r.why != null) { c.why = r.why; return c; }
         if (r.hire) {
             c.hire = CAItems.expansionHire(s);

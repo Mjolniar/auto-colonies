@@ -65,7 +65,7 @@ public final class CAModeTable {
             "inspectionMode", "allowRemovals", "storyPointRule", "storyPointMonthlyCap", "ambassadorFocus", "ambassadorStopAt",
             "hazardPayColonyShare", "hazardPayEmpireShare", "settlementMinIncome", "researchItemMode", "spyNoHiring", "spyKeep",
             "noScreenButton", "voice", "screenLog", "showThinking", "logisticsShips", "logisticsSupplies", "partsToCapital", "capitalStart",
-            "capitalNoGather", "noMarketModel", "noOverLimitFix", "noFleetLimit", "techFindsKeep", "logisticsAll", "expandLine", "expandScope", "expandGoal", "expandMethod", "expandMax",
+            "capitalNoGather", "noMarketModel", "noOverLimitFix", "noFleetLimit", "techFindsKeep", "logisticsAll", "expandLine", "expandScope", "expandGoal", "expandMethod", "expandMax", "abandonMode",
             "noExpandBuildout", "noExpandAdmins", "noWarRetake", "warAutoRivals", "warCoalitionOK", "warScorchedOK", "scorchedTargets",
             "enfOn", "enfInvestigators", "enfInspections", "enfLeague", "enfProtectors", "enfRaiders", "enfPolice", "enfCost",
             "enfCommissionOK", "enfAlliesOK", "enfCeasefireOK", "enfLowProfileOK", "enfNearYouOK", "enfAllColonies", "enfIntercept",

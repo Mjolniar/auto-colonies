@@ -217,6 +217,9 @@ public class CASettings {
     /** F (WS-F1 fix): Capital does (0 or 1) in effect before the Capital row went to None; leaving None restores it. Older saves load 0 (Deliveries and commerce, as 0.2.45.1 left Off). */
     public int capitalModeBeforeNone = 0;
     public static final String[] EXPAND_NAMES = {"Off", "Ask first", "Auto"};
+    /** 0.3.19.2: Relocate weak colonies (CARelocate.NAMES), 0 Off for every save. */
+    public int abandonMode = 0;
+    public static final String[] ABANDON_NAMES = CARelocate.NAMES;
     /** D: indices into the names below; 0 is the recommended choice for each. */
     public int expandLine = 0, expandScope = 0, expandGoal = 0, expandMethod = 0, expandMax = 0;
     public static final String[] EXPAND_LINE_NAMES = {"Money ladder (Idle money and up)", "Over 5,000,000", "Over 25,000,000", "Over 50,000,000"};

@@ -23,7 +23,7 @@ public final class CAApprovals {
     static final float HOLD_DAYS = CATuning.ASK_HOLD_DAYS;
 
     /** Pure (0.3.5.1): days a rejected live ask of this kind is held: autonomy CATuning.AUTONOMY_HOLD_DAYS, the rest HOLD_DAYS. */
-    static float holdDays(String kind) { return "autonomy".equals(kind) ? CATuning.AUTONOMY_HOLD_DAYS : HOLD_DAYS; }
+    static float holdDays(String kind) { return "autonomy".equals(kind) || "abandon".equals(kind) ? CATuning.AUTONOMY_HOLD_DAYS : HOLD_DAYS; }   // 0.3.19.2: abandoning a colony, a year too
 
     /** Pure (0.3.5.1): whether a rejection this many days old still holds an ask of this kind. */
     static boolean holds(String kind, float days) { return days < holdDays(kind); }

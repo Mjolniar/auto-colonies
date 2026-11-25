@@ -384,6 +384,8 @@ public final class CALunaSync {
         radio("expgoal", "Goal of a new colony", "expandGoal", goalNames, "New colonies begin with this goal.");
         radio("expmethod", "Method", "expandMethod", CASettings.EXPAND_METHOD_NAMES, "The colony fleet method requires Nexerelin.");
         radio("expmax", "Most colonies", "expandMax", CASettings.EXPAND_MAX_NAMES, "Founding halts at this colony count.");
+        radio("abandon", "Relocate weak colonies", "abandonMode", CASettings.ABANDON_NAMES, "Once you're Rich and at the colony limit, a weak colony "
+                + "(size 4 or smaller) is abandoned so a much better planet can be settled, one a year at most. Its items, cores and storage are shipped to the capital.");
         bool("expbuildout", "Fast buildout", "noExpandBuildout", true, "New colonies are built up immediately.");
         bool("expadmins", "Administrator past the limit", "noExpandAdmins", true, "An administrator is hired for each new colony past the limit.");
         radio("tascst", "TASC stations", "stationMode", CASettings.TASC_STATION_NAMES, "With New colonies on Auto, Auto stations only recommend while the Expansion rung asks first. Requires "

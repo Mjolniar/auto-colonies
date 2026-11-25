@@ -224,6 +224,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | Goal of a new colony | Fits its plan, Balanced, Money, Security, War production, Rapid growth, Self-sufficiency | Fits its plan | A new colony starts with this goal. |
 | Method | Nexerelin colony fleet when possible, Autopilot crew only | Nexerelin colony fleet when possible | The colony fleet needs Nexerelin. |
 | Most colonies | Colony limit and administrators, 5, 10, 15, 20 | Colony limit and administrators | It stops founding colonies at this count. |
+| Relocate weak colonies | Off, Ask first, Auto | Off | Once you're at the Rich tier and the colony limit is the only thing stopping new colonies, it abandons a weak colony (size 4 or smaller) so a much better planet can be settled, one a year at most. The colony's AI cores, items and storage get shipped to the capital, and Ask first puts it up for your approval. |
 | Fast buildout | On, Off | On | It builds up a new colony right away. |
 | Administrator past the limit | On, Off | On | It hires an administrator for a new colony past the limit. |
 | TASC stations | Recommend only, Auto, Off | Empire mode | With New colonies on Auto, Auto stations only recommend while the Expansion rung asks first. Needs Terraforming & Station Construction. |

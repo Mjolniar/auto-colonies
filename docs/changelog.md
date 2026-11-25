@@ -1,5 +1,13 @@
 # Patch notes
 
+## 0.3.19.2 - 2026-11-25
+
+- Relocation: Added "Relocate weak colonies" under Settings, New colonies (Off, Ask first, Auto). Off by default.
+- Relocation: At the Rich money tier, when the colony limit or Most colonies stops the next expedition, an Auto colony of size 4 or smaller can be abandoned for a planet worth at least twice as much and 20,000 more a month. The cost must pay back within 36 months. One colony a year.
+- Relocation: The capital is kept, and so are colonies under a year old, colonies with a locked building or a wonder or megastructure building, and colonies that are your top source of a good another colony needs.
+- Relocation: AI cores, colony items, storage and stored ships go to the capital's Storage after the shipping time. The game's abandon cost and refund apply.
+- Relocation: Under Ask first, the abandonment is on the approval list. A rejected colony is not offered again for a year.
+
 ## 0.3.19.1 - 2026-11-25
 
 - Station outfitting: With Auto Outfitting 0.5.93 or later, a station fit runs in small slices each frame, so the game keeps running while it plans. Older versions plan in one go as before.

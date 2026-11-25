@@ -213,6 +213,9 @@ public class CAData {
     // shared `storage` field stays so older saves load; CAStores.migrate empties it into the biggest colony's store once.
     public Map<String, com.fs.starfarer.api.campaign.CargoAPI> stores;
     public List<CAStores.Shipment> shipments;
+    /** 0.3.19.2: storage from abandoned colonies on its way to the capital's Storage (CARelocate). */
+    public List<CARelocate.Evac> evacs;
+    public List<CARelocate.Evac> evacs() { if (evacs == null) evacs = new ArrayList<CARelocate.Evac>(); return evacs; }
     public Map<String, com.fs.starfarer.api.campaign.CargoAPI> stores() { if (stores == null) stores = new HashMap<String, com.fs.starfarer.api.campaign.CargoAPI>(); return stores; }
     public List<CAStores.Shipment> shipments() { if (shipments == null) shipments = new ArrayList<CAStores.Shipment>(); return shipments; }
 

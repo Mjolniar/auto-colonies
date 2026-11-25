@@ -165,6 +165,7 @@ public class CAAuto {
         CAStep.run("build pass", () -> { if (!CAPlanner.inCharge()) buildPass(d, s, now); });
         CAStep.run("money tiers", () -> CARich.run(d, s));
         CAStep.run("expansion", () -> CAExpansion.run(d, s, auto));
+        CAStep.run("evacuations", () -> CARelocate.daily());   // 0.3.19.2: storage from an abandoned colony reaching the capital
         CAStep.run("prune step", () -> CAPrune.run(auto));   // industries that stopped paying for 30 days, not under siege (0.2.44.1)
         CAStep.run("low profile step", () -> CALowProfile.run(d, s, auto));   // Low profile: items and AI administrators over its lines (0.2.43.0)
         // 0.3.0.0 (A0 fix): administrators for colonies past the governed limit (a stability penalty without one), so a guarded

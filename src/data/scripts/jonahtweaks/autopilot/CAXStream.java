@@ -37,6 +37,7 @@ public final class CAXStream {
         alias(x, "JCM-ShipOrder", () -> CAShipyard.Order.class);
         alias(x, "JCM-StockpileBuy", () -> CAStockpile.Buy.class);
         alias(x, "JCM-ExpandOrder", () -> CAExpansion.Order.class);
+        alias(x, "JCM-Evacuation", () -> CARelocate.Evac.class);   // 0.3.19.2
         // saved by the game itself: the empire panel (persistent intel) and the Autopilot Storage submarket on every colony
         alias(x, "JCM-Intel", () -> CAIntel.class);
         alias(x, "JCM-StoragePlugin", () -> CAStoragePlugin.class);

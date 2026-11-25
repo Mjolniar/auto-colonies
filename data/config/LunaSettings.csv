@@ -168,6 +168,7 @@ ca_expscope,Where,Radio,Systems you hold,"Systems you hold, Those first then nea
 ca_expgoal,Goal of a new colony,Radio,Fits its plan,"Fits its plan, Balanced, Money, Security, War production, Rapid growth, Self-sufficiency",New colonies begin with this goal.,,,Advanced
 ca_expmethod,Method,Radio,Nexerelin colony fleet when possible,"Nexerelin colony fleet when possible, Autopilot crew only",The colony fleet method requires Nexerelin.,,,Advanced
 ca_expmax,Most colonies,Radio,Colony limit and administrators,"Colony limit and administrators, 5 colonies, 10 colonies, 15 colonies, 20 colonies",Founding halts at this colony count.,,,Advanced
+ca_abandon,Relocate weak colonies,Radio,Off,"Off, Ask first, Auto","Once you're Rich and at the colony limit, a weak colony (size 4 or smaller) is abandoned so a much better planet can be settled, one a year at most. Its items, cores and storage are shipped to the capital.",,,Advanced
 ca_expbuildout,Fast buildout,Boolean,true,,New colonies are built up immediately.,,,Advanced
 ca_expadmins,Administrator past the limit,Boolean,true,,An administrator is hired for each new colony past the limit.,,,Advanced
 ca_tascst,TASC stations,Radio,Recommend only,"Recommend only, Auto, Off","With New colonies on Auto, Auto stations only recommend while the Expansion rung asks first. Requires Terraforming and Station Construction.",,,Advanced
