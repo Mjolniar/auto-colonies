@@ -225,6 +225,7 @@ public class CABuild {
             CADiagnostics.LOG.info(CADiagnostics.TAG + (p.upgrade ? "upgrade to " : "build ") + p.id + " at " + m.getName()
                     + " for " + Misc.getDGSCredits(p.cost));
             // 0.3.0.0 (B4, 03 F12): sunk-cost memory: what it cost, when and under which valuation (CATombstone: removal log, teardown loss)
+            CAManual.started(m, p.id);   // 0.3.19.0: Autopilot's, not yours
             try { CATombstone.paid(m, p.id, p.upgrade && p.existing != null ? p.existing.getId() : null, p.cost); }
             catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "build record failed for " + p.id, t); }
             // 0.3.6.2: guarded on its own, so a throw here can't remove a building that's already paid for

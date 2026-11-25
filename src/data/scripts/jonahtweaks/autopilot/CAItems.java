@@ -679,6 +679,8 @@ public class CAItems {
             fuel.setAICoreId(null);
             fuel.setSpecialItem(null);
             best.removeIndustry("fuelprod", null, false);
+            CAManual.started(best, "ix_fuel_production");   // 0.3.19.0: Autopilot's replacement, not yours
+            CAManual.removed(best, "fuelprod");
             st.removeCommodity("ix_antimatter_stabilizer", 1f);
             CABudget.charge(s, 0f, fee, 0f);
             CALog.did(best.getName() + ": Fuel Production upgraded to Advanced Fuel Production. 1 Antimatter Stabilizer used"

@@ -232,7 +232,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 
 | Setting | Options | Default | What it does |
 |---|---|---|---|
-| Production | Off, Light, Full | Light | Off uses the 0.3.1.0 picks, and Light and Full set the floors below. |
+| Production | Off, Light, Full | Light | Off uses the 0.3.1.0 picks, and Light and Full set the floors below. Light and Full also order colony items through Ashes of the Domain's production. |
 | Hull sources | 0 to 3 | 1 | It wants this many ship producers. |
 | Hull capacity a month | 0 to 1,000,000 | 100,000 | It wants this much ship production capacity, in credits a month. |
 | Order goods within | 3 to 24 months | 6 | It spreads Ashes of the Domain order goods over this many months. |

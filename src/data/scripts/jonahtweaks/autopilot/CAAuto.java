@@ -160,6 +160,7 @@ public class CAAuto {
         // session after three failed days, the 0.2.45 build pass and the modules' own spending take over again (inCharge).
         // 0.3.0.0 (B3 fix): the plan's own TME projects and the paid core, item and administrator moves below don't offer
         // actions (0.3.8.8: still so); they ask CAPlanner.setAside before they spend, so they keep to what the planner saves up and keeps
+        CAStep.run("manual changes", () -> CAManual.run(d));   // 0.3.19.0: what you built, upgraded or cancelled by hand is locked first
         CAStep.run("planner", () -> CAPlanner.run(d, s, auto));
         CAStep.run("build pass", () -> { if (!CAPlanner.inCharge()) buildPass(d, s, now); });
         CAStep.run("money tiers", () -> CARich.run(d, s));
@@ -171,6 +172,7 @@ public class CAAuto {
         CAStep.run("Autopilot Storage tabs", () -> CAItems.ensureStorageTabs());
         CAStep.guard("item, core or administrator placement", () -> CAItems.run(auto));
         CAStep.run("exomatter step", () -> CAExomatter.run(auto));   // 0.3.18.5: Shrouded Substrate from Autopilot Storage into Exomatter Processing
+        CAStep.run("item orders", () -> CAItemOrders.run(auto));   // 0.3.19.0: colony items from Ashes of the Domain's production
         CAStep.run("Autopilot Storage clean-up", () -> CAStoragePlugin.evict());   // campaign consumables and blueprints don't belong in Autopilot Storage
         // 0.3.6.9: the colony lists fill when their step runs, a frame or more after this queues: `auto` is checked inside the steps
         if (mods.isModEnabled("terraformingmadeeasy")) {

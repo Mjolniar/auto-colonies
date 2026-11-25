@@ -62,6 +62,8 @@ public class CATombstone {
     static final float STAMP_DAYS = Math.max(PROTECT_DAYS, CATuning.HORIZON_MAX * 30f);
 
     /** Why a building came down (Mark.why), short for the panel and log. */
+    /** 0.3.19.0: a building of Autopilot's that you took down (CAManual). */
+    public static final String YOU = "you took it down";
     public static final String PRUNE = "stopped paying", OVERLIMIT = "over the industry limit", SHED = "0 stability",
             ENDGAME = "endgame swap", CAPITAL = "room for the capital's trade", TERRAFORM = "idle terraforming structure",
             RESEARCH = "research done", FLOOR = "room for a production floor producer";

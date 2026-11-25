@@ -1,5 +1,14 @@
 # Patch notes
 
+## 0.3.19.0 - 2026-11-25
+
+- Manual changes: A building you build or upgrade yourself is locked. Auto Colonies doesn't upgrade, replace or take it down, or change its item or AI core. Unlock it in the colony panel.
+- Manual changes: An upgrade Auto Colonies started that you cancel locks the building.
+- Manual changes: A building of Auto Colonies' that you take down isn't built there again for a year.
+- Item production: With Production on Light or Full and Vaults of Knowledge, Auto Colonies orders colony items your faction can produce for Auto colony buildings with no item. One order at a time. An item is ordered when it pays back within 36 months and its cost fits the budget.
+- Item production: A finished item moves from your production gathering point's storage to Autopilot Storage and is installed from there. Orders need a gathering point.
+- Item production: Goods an order needs get a producer when no colony makes them (Special project supply).
+
 ## 0.3.18.9 - 2026-11-25
 
 - Station outfitting: Fixed game freezes of 1 to 8 seconds. Each station fit is kept per set of augments and used again when the defense and calm augments switch, without planning again.

@@ -82,6 +82,12 @@ public class CAData {
     public Map<String, Float> marketPendingSince;
     /** 0.2.44.1: "market|building" -> what a building being upgraded becomes (AotD upgrades have several), for CABuild.usedSlots. */
     public Map<String, String> upgradeTargets;
+    /** 0.3.19.0: each colony's buildings at the last daily look, "day|id,id" (CAManual). */
+    public Map<String, String> industriesSeen;
+    /** 0.3.19.0: Autopilot's open colony item orders in Ashes of the Domain's production: snapshot id -> "itemId|delivered" (CAItemOrders). */
+    public Map<String, String> itemOrders;
+    public Map<String, String> itemOrders() { if (itemOrders == null) itemOrders = new java.util.LinkedHashMap<String, String>(); return itemOrders; }
+    public Map<String, String> industriesSeen() { if (industriesSeen == null) industriesSeen = new HashMap<String, String>(); return industriesSeen; }
     public Map<String, String> upgradeTargets() { if (upgradeTargets == null) upgradeTargets = new HashMap<String, String>(); return upgradeTargets; }
     public Map<String, Map<String, Integer>> marketPending() { if (marketPending == null) marketPending = new HashMap<String, Map<String, Integer>>(); return marketPending; }
     public Map<String, Float> marketPendingSince() { if (marketPendingSince == null) marketPendingSince = new HashMap<String, Float>(); return marketPendingSince; }
