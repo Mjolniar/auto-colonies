@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.18.1 - 2026-11-24
+
+- Colony screen: Fixed the next-build card's picture drawing as a flat gray box. The picture keeps its shape between the text and the button.
+- Colony screen: The card's Build button sits at the bottom of the card.
+
 ## 0.3.18.0 - 2026-11-24
 
 - Colony plans: With Ashes of the Domain, no colony plans toward a Waste World. Colonies committed to one drop it, and their Heavy Industry, Mining and Refining may upgrade.
