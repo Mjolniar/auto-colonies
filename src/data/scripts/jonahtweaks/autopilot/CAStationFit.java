@@ -24,7 +24,7 @@ import java.util.*;
 
 /**
  * 0.3.11.7: the Station outfitting package (story mode, Tier IV): Auto Outfitting's optimizer fits the stations of your
- * colonies at star fortress tier and up (CAPlan.stationTier 3 or more, the tier 4 stations too), core and every module, with
+ * colonies, core and every module, with
  * the weapons, fighter wings and hullmods your faction knows. 0.3.13.0: without Auto Outfitting, the game's own autofit fits
  * them (CoreAutofitPlugin with Upgrade on and no randomness), so the package needs no other mod.
  * - No class of Auto Outfitting is used: its autofit plugin is made by name through the game (getInstanceOfScript), its
@@ -38,6 +38,10 @@ import java.util.*;
  * - 0.3.17.5: planned again only for another station or hull, or when you know more weapons, wings or hullmods than at the
  *   last plan (needsPlan). A plan with the same weapons and wings as the station has is no refit. CAData.stationFits keeps the
  *   most of each weapon and wing ever paid for there, so a fit that goes back to them costs nothing.
+ * - 0.3.18.6: every station tier (CAPlan.stationTier 1 or more: orbital stations, battlestations, star fortresses and the tier
+ *   4 stations); it was star fortresses and up. With Station Augments, the station's augments go to Auto Outfitting as variant
+ *   tags AUG_TAG + id on the root variant for the fit only (Auto Outfitting 0.5.90 reads them; older versions ignore them),
+ *   and a change in the augments it counts (AO_AUGMENTS) plans the station again (key, needsPlan).
  */
 public final class CAStationFit {
     private CAStationFit() { }
@@ -45,6 +49,10 @@ public final class CAStationFit {
     static final String ABILITY = "stationFit", AO_MOD = "jonahs_auto_outfitting", OPTION = "jao_optimal_any_goal";
     static final String PLUGIN = "data.scripts.jonahsautooutfitting.JAOAutofitPlugin";
     static final String TAG = "ca_stationfit";
+    /** 0.3.18.6: Auto Outfitting's augment tag prefix on a station's root variant ("jao_augment:" + augment id). */
+    static final String AUG_TAG = "jao_augment:";
+    /** 0.3.18.6: the augments Auto Outfitting 0.5.90 counts in a fit; a change in these plans the station again. */
+    static final Set<String> AO_AUGMENTS = new HashSet<String>(Arrays.asList("SA_tacticalLink", "SA_shieldShunt", "SA_fluxShunt", "SA_axialOverclocking"));
 
     /** A planned fit for one colony's station (session only: planned again after a load, and paid again only for what changed). */
     static final class Fit { String key; ShipVariantAPI variant; }
@@ -57,10 +65,26 @@ public final class CAStationFit {
         try { return CASync.has(ABILITY); } catch (Throwable t) { return false; }   // 0.3.13.0: Auto Outfitting is optional (plan)
     }
 
-    /** The colony's station at star fortress tier or above (working or not), or null. */
+    /** The colony's station at any tier (working or not), or null. 0.3.18.6: every tier; it was star fortresses and up. */
     static Industry station(MarketAPI m) {
         Industry st = Misc.getStationIndustry(m);
-        return st != null && CAPlan.stationTier(st.getSpec()) >= 3 ? st : null;
+        return st != null && CAPlan.stationTier(st.getSpec()) >= 1 ? st : null;
+    }
+
+    /** 0.3.18.6: the augments on the colony's station, sorted; empty without Station Augments. */
+    static Set<String> augments(MarketAPI m) {
+        Set<String> out = new TreeSet<String>();
+        try {
+            if (Global.getSettings().getModManager().isModEnabled(CAAugments.MOD)) out.addAll(CAAugments.installedIds(m));
+        } catch (Throwable ignored) { }
+        return out;
+    }
+
+    /** Pure (0.3.18.6): the key part for the augments Auto Outfitting counts, sorted ids joined by commas, "-" for none. */
+    static String augmentPart(Set<String> installed) {
+        StringBuilder sb = new StringBuilder();
+        for (String id : new TreeSet<String>(installed)) if (AO_AUGMENTS.contains(id)) { if (sb.length() > 0) sb.append(','); sb.append(id); }
+        return sb.length() == 0 ? "-" : sb.toString();
     }
 
     static FleetMemberAPI member(CampaignFleetAPI f) {
@@ -69,9 +93,13 @@ public final class CAStationFit {
         return f.getFlagship();
     }
 
-    /** What a fit depends on: the station building and hull, and how many weapons, wings and hullmods you know. */
-    static String key(Industry st, FleetMemberAPI fm, FactionAPI f) {
-        return st.getId() + "|" + fm.getHullId() + "|" + f.getKnownWeapons().size() + "|" + f.getKnownFighters().size() + "|" + f.getKnownHullMods().size();
+    /**
+     * What a fit depends on: the station building and hull, how many weapons, wings and hullmods you know, and (0.3.18.6) the
+     * augments Auto Outfitting counts.
+     */
+    static String key(Industry st, FleetMemberAPI fm, FactionAPI f, MarketAPI m) {
+        return st.getId() + "|" + fm.getHullId() + "|" + f.getKnownWeapons().size() + "|" + f.getKnownFighters().size() + "|" + f.getKnownHullMods().size()
+                + "|" + augmentPart(augments(m));
     }
 
     /**
@@ -82,8 +110,10 @@ public final class CAStationFit {
     static boolean needsPlan(String now, String was) {
         if (was == null) return true;
         String[] a = now.split("\\|"), b = was.split("\\|");
-        if (a.length != 5 || b.length != 5) return !now.equals(was);
+        // 0.3.18.6: other augments (the sixth part) plan again too; a key from before 0.3.18.6 (five parts) plans once more
+        if (a.length != b.length || (a.length != 5 && a.length != 6)) return !now.equals(was);
         if (!a[0].equals(b[0]) || !a[1].equals(b[1])) return true;
+        if (a.length == 6 && !a[5].equals(b[5])) return true;
         try {
             for (int i = 2; i < 5; i++) if (Integer.parseInt(a[i]) > Integer.parseInt(b[i])) return true;
         } catch (NumberFormatException e) { return !now.equals(was); }
@@ -172,7 +202,7 @@ public final class CAStationFit {
                 if (!st.isFunctional() || st.isBuilding()) continue;
                 FleetMemberAPI fm = member(Misc.getStationFleet(m));
                 if (fm == null) continue;
-                String key = key(st, fm, f);
+                String key = key(st, fm, f, m);
                 Fit have = FITS.get(m.getId());
                 if (have != null && !needsPlan(key, have.key)) continue;   // 0.3.17.5: only a new station or more known than at the last plan
                 String saved = d.stationLayouts().get(m.getId());
@@ -321,7 +351,13 @@ public final class CAStationFit {
         refit(v);
         ShipVariantAPI target = v.clone();
         refit(target);   // 0.3.15.5: the target's modules are copies too, never the objects being fitted
+        // 0.3.18.6: the station's augments, for Auto Outfitting to count (it passes them to the modules); off again after the fit
+        List<String> tags = new ArrayList<String>();
+        for (String id : augments(m)) tags.add(AUG_TAG + id);
+        for (String t : tags) v.addTag(t);
         p.doFit(v, target, 0, new Delegate(m, fm, f));
+        for (String t : tags) v.removeTag(t);
+        for (String slot : v.getStationModules().keySet()) { ShipVariantAPI mv = v.getModuleVariant(slot); if (mv != null) for (String t : tags) mv.removeTag(t); }
         noSMods(v, target);
         for (String slot : v.getStationModules().keySet())
             if (v.getModuleVariant(slot) != null && target.getModuleVariant(slot) != null) noSMods(v.getModuleVariant(slot), target.getModuleVariant(slot));

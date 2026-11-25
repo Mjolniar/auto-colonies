@@ -92,6 +92,13 @@ public class CAAugments {
 
     static Set<String> known() { return stationAugmentStore.getKnownAugmentsOfFac(Global.getSector().getPlayerFaction()); }
 
+    /** 0.3.18.6: the ids of the augments on this colony's station (check CAAugments.MOD is enabled first). For CAStationFit. */
+    public static Set<String> installedIds(MarketAPI m) {
+        Set<String> out = new HashSet<String>();
+        for (stationAttachment a : MarketUtils.getStationAugments(m)) out.add(a.getId());
+        return out;
+    }
+
     /** Whether you know this augment (check CAAugments.MOD is enabled first). */
     public static boolean knows(String id) {
         try { return known().contains(id); } catch (Throwable t) { return false; }

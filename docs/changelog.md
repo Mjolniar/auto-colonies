@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.18.6 - 2026-11-25
+
+- Station outfitting: Orbital stations and battlestations are fitted too. It was star fortresses and up.
+- Station outfitting: Auto Outfitting 0.5.90 fits around the station's augments: Tactical Link, K-Type Shield Shunt, Deep Shield Dissipators and Axial Overclocking.
+- Station outfitting: A change in those augments refits the station.
+
 ## 0.3.18.5 - 2026-11-25
 
 - Exomatter Processing: Auto Colonies builds one while at least 12 Shrouded Substrate (6 once improved) are in Autopilot Storage. Needs Vaults of Knowledge and the Stabilizing Exotic Matter project. One facility at a time.
