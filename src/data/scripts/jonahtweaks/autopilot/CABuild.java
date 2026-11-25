@@ -133,6 +133,32 @@ public class CABuild {
         return null;
     }
 
+    /**
+     * 0.3.17.2: why your Build click (CAApprovals.startByPlayer) can't start or queue this pick now, read without changing
+     * anything; null when it can. The same gates as start() and queue(), with the credits for the game's price, Rapid
+     * construction's fee and the construction fee (CABudget.buildTotal). The next-build card draws dark when this isn't null.
+     */
+    public static String blocked(MarketAPI m, CAEngine.Pick p) {
+        if (m == null || p == null) return "Not available";
+        float total = CABudget.buildTotal(CAData.settings(), p.cost);
+        if (credits() < total) return "Not enough credits";
+        if (!p.upgrade && (m.hasIndustry(p.id) || queued(m, p.id))) return "Already built or queued";
+        if (!CASync.mayBuild(p.id)) return "Needs " + CASyncCatalog.buy("stations");
+        if (!CADiagnostics.usable(p.id)) return "Not supported";
+        if (p.fx != null && p.fx.length > 1 && p.fx[1] < 0f && !CAStability.canLose(m, p.fx[1] + CAStability.pending(m), null))
+            return "Stability floor";
+        if (takesSlot(m, p) && usedSlots(m) + queuedSlots(m) >= Misc.getMaxIndustries(m)) return "No free industry slot";
+        if (p.upgrade) {
+            Industry ex = p.existing;
+            if (ex == null || ex.isUpgrading() || ex.isBuilding()) return "Can't upgrade now";
+            if (p.id.equals(ex.getSpec().getUpgrade())) { if (!ex.canUpgrade()) return "Can't upgrade now"; }
+            else if (!(CAAotD.enabled() && CAAotD.children(ex.getId()).contains(p.id))) return "Can't upgrade now";
+            else if (!CAAotD.allows(p.id, m)) return "Locked";
+        }
+        else if (CAAotD.enabled() && !CAAotD.allows(p.id, m)) return "Locked";
+        return null;
+    }
+
     /** Returns null on success, or the reason it couldn't start. */
     public static String start(MarketAPI m, CAEngine.Pick p) {
         if (!p.upgrade && queued(m, p.id)) return "Already in the construction queue";   // 0.3.12.1: the game starts it

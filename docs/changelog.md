@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.17.2 - 2026-11-24
+
+- Colony screen: The next-build card has a Build button in every mode, Auto included. The button shows the full price with the construction fee.
+- Colony screen: The card is medium gray when you can build it. It is dark, with the reason and the button off, when you can't.
+
 ## 0.3.17.1 - 2026-11-24
 
 - Station augments: Autopilot does not add Economy Conversion. Stations that have it keep it.

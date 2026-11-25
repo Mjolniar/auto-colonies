@@ -13,15 +13,18 @@ import com.fs.starfarer.api.ui.UIComponentAPI;
 import com.fs.starfarer.api.ui.UIPanelAPI;
 import com.fs.starfarer.api.util.Misc;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * 0.3.15.3: the next-build card on the game's colony screen. It sits in the building grid's first empty slot, sized like a
  * tile, with the Autopilot's top pick (CAEngine.kept, as the colony panel's Build button reads it). On Advisor and Approve it
- * reads "Suggested" with a Build button (CAApprovals.startByPlayer: price plus fee, queued when a build is running); on
- * Auto it reads "Next to build" with no button. Hidden when the colony is Off, an outpost, the grid has no free slot above
+ * reads "Suggested", on Auto "Next to build". Hidden when the colony is Off, an outpost, the grid has no free slot above
  * the Add industry button, or nothing is worth building. CAScreenButton updates it with its button and removes it with it.
+ * 0.3.17.2: a Build button in every mode, with the whole price (CABudget.buildTotal), starts it now (CAApprovals.startByPlayer:
+ * queued when a build is running). Medium gray when the click can start it; dark, with the reason and the button off, when
+ * CABuild.blocked says it can't. Once started, the game's own tile shows it.
  */
 final class CANextCard {
     static final String BUILD = "ca:nextcard:build";
@@ -70,13 +73,20 @@ final class CANextCard {
         return at;
     }
 
+    /** 0.3.17.2: the card's two looks: medium gray when your click can start it, dark when it can't. */
+    static final Color MID_WASH = new Color(110, 110, 110), DARK_TEXT = new Color(90, 90, 90), DARK_BUTTON = new Color(25, 25, 25);
+    static final float MID_SPRITE = 0.8f, MID_WASH_A = 0.5f, DARK_SPRITE = 0.4f, DARK_WASH_A = 0.75f;
+
     void update(CAScreenButton.Screen s, ButtonAPI add) {
         final MarketAPI m = s.market;
         final CAEngine.Pick p = pick(m);
         float[] at = p == null ? null : slot(s, add);
         if (p == null || at == null) { remove(); return; }
         final CAData.Colony c = CAData.get().colony(m.getId());
-        String key = m.getId() + "|" + p.id + "|" + c.mode + "|" + Math.round(at[0]) + "," + Math.round(at[1]);
+        final String why = CABuild.blocked(m, p);   // 0.3.17.2: null when your click can start or queue it
+        final boolean can = why == null;
+        float total = CABudget.buildTotal(CAData.settings(), p.cost);   // 0.3.17.2: what the click takes: price, Rapid construction's fee, construction fee
+        String key = m.getId() + "|" + p.id + "|" + c.mode + "|" + Math.round(at[0]) + "," + Math.round(at[1]) + "|" + Math.round(total) + "|" + why;
         if (card != null && key.equals(shownKey)) return;
         remove();
         UIPanelAPI in = CAScreenButton.container(s, at, add);
@@ -89,12 +99,19 @@ final class CANextCard {
             @Override public void positionChanged(PositionAPI position) { pos = position; }
             @Override public void renderBelow(float alpha) {
                 if (pos == null) return;
-                Misc.renderQuadAlpha(pos.getX(), pos.getY(), pos.getWidth(), pos.getHeight(), Misc.getDarkPlayerColor(), alpha * 0.55f);
+                float x = pos.getX(), y = pos.getY(), pw = pos.getWidth(), ph = pos.getHeight();
+                Misc.renderQuadAlpha(x, y, pw, ph, can ? Misc.getDarkPlayerColor() : Color.BLACK, alpha * (can ? 0.55f : 0.85f));
                 if (sprite != null) try {
+                    // the game's sprites are shared: size and alpha go back as they were after drawing
                     com.fs.starfarer.api.graphics.SpriteAPI sp = Global.getSettings().getSprite(sprite);
-                    sp.setSize(pos.getWidth() - 8f, pos.getHeight() - 30f);
-                    sp.setAlphaMult(alpha * 0.45f);
-                    sp.render(pos.getX() + 4f, pos.getY() + 4f);
+                    float ow = sp.getWidth(), oh = sp.getHeight(), oa = sp.getAlphaMult();
+                    sp.setSize(pw - 8f, ph - 30f);
+                    sp.setAlphaMult(alpha * (can ? MID_SPRITE : DARK_SPRITE));
+                    sp.render(x + 4f, y + 4f);
+                    sp.setSize(ow, oh);
+                    sp.setAlphaMult(oa);
+                    // the wash over the picture: medium gray when it can start, near black when it can't
+                    Misc.renderQuadAlpha(x + 4f, y + 4f, pw - 8f, ph - 30f, can ? MID_WASH : Color.BLACK, alpha * (can ? MID_WASH_A : DARK_WASH_A));
                 } catch (Throwable ignored) { }
             }
             @Override public void buttonPressed(Object id) {
@@ -105,13 +122,14 @@ final class CANextCard {
             }
         });
         TooltipMakerAPI t = panel.createUIElement(w, h, false);
-        t.addPara(auto ? "Next to build" : "Suggested", Misc.getGrayColor(), 2f);
-        t.addPara(p.name, Misc.getHighlightColor(), 0f);
-        if (!auto) {
-            ButtonAPI b = t.addButton(p.verb + " (" + Misc.getDGSCredits(p.cost) + ")", BUILD, Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
-                    Alignment.MID, CutStyle.TL_BR, w - 8f, 22f, 0f);
-            b.getPosition().inBL(4f, 4f);
-        }
+        t.addPara(auto ? "Next to build" : "Suggested", can ? Misc.getGrayColor() : DARK_TEXT, 2f);
+        t.addPara(p.name, can ? Misc.getGrayColor().brighter() : DARK_TEXT, 0f);
+        if (!can) t.addPara(why, DARK_TEXT, 0f);
+        // 0.3.17.2: the Build button in every mode, with the whole price; dark and off when the click can't start it
+        ButtonAPI b = t.addButton(p.verb + " " + Misc.getDGSCredits(total), BUILD, can ? Misc.getBasePlayerColor() : DARK_TEXT,
+                can ? Misc.getDarkPlayerColor() : DARK_BUTTON, Alignment.MID, CutStyle.TL_BR, w - 8f, 22f, 0f);
+        b.getPosition().inBL(4f, 4f);
+        b.setEnabled(can);
         panel.addUIElement(t).inTL(4f, 0f);
         in.addComponent(panel).inBL(at[0] - cp.getX(), at[1] - cp.getY());
         card = panel;
