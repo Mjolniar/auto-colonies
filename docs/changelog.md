@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.17.4 - 2026-11-24
+
+- Station augments: Economy Conversion is removed from every station of yours once, on the first day after loading. Auto colonies over the industry limit then take down their weakest industry, one a day.
+- Station augments: An Economy Conversion you add after that stays. Autopilot counts its AP as used and plans with its extra slot.
+
 ## 0.3.17.3 - 2026-11-24
 
 - Station augments: A colony whose station has Economy Conversion keeps its industries while the station is disrupted. The extra slot still counts for the industry limit fix until the station is repaired.

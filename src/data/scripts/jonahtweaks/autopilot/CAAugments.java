@@ -26,7 +26,8 @@ import java.util.*;
  * colonies get the loadout applied and the rest see it with an Apply button. Augments you installed are never touched,
  * and one you remove isn't added back to that colony. Augments that use up an item, and ones that give AP back for a
  * drawback, are left to you. 0.3.17.1: Economy Conversion is player-only: Autopilot never adds it, since it cuts the
- * station's hull and flux for good. One already on a station is never removed: its extra industry slot may be in use.
+ * station's hull and flux for good. 0.3.17.4: it came off every station of yours once (dropConversionOnce); one you add
+ * after that is never removed, its AP counts as taken, and the planner uses its slot.
  * Output augments (Hydroponics Basins: +2 food, +1 organics on the station) count only what they add above the colony's
  * own largest source of each, since a market's supply is its largest single source. Combat is valued from what each
  * augment really does on this station (CAAugmentModel, from Station Augments' source), read from the station's own ships
@@ -399,6 +400,35 @@ public class CAAugments {
         return pl;
     }
 
+    /** 0.3.17.4: CAMark key: the day Economy Conversion was taken off your stations (dropConversionOnce); set once per save. */
+    static final String CONVERSION_DROPPED = "augconvdrop";
+
+    /**
+     * 0.3.17.4: once per save, Economy Conversion comes off every station of yours, at once and in every augment mode (you
+     * asked for it off everywhere when it became player-only). Colonies built on its slot are then over the industry limit:
+     * CAOverLimit takes the weakest industry down at Auto colonies, as with any other over-limit colony. One you add after this
+     * is yours: Autopilot never removes it, counts its AP as taken, and plans with the slot. Nothing changes under a what-if.
+     */
+    static void dropConversionOnce(CAData d) {
+        if (CAMark.at(CONVERSION_DROPPED) != null || CALog.whatIf()) return;
+        List<String> names = new ArrayList<String>();
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            try {
+                stationAttachment conv = null;
+                for (stationAttachment a : MarketUtils.getStationAugments(m)) if (CONVERSION.equals(a.getId())) conv = a;
+                if (conv == null || !conv.canBeRemoved()) continue;   // none, or built into the station
+                d.colony(m.getId()).augAuto().remove(CONVERSION);   // before removing, so sync() doesn't read it as yours to hold
+                MarketUtils.removeStationAugment(m, conv);
+                lastSig.remove(m.getId());
+                names.add(m.getName());
+            } catch (Throwable t) {
+                CAStep.warn(STEP, "removing Economy Conversion failed at " + m.getName(), t);
+            }
+        }
+        CAMark.set(CONVERSION_DROPPED, CAMark.now());
+        if (!names.isEmpty()) CALog.did("Station augments: Economy Conversion removed at " + join(names) + ".", true);
+    }
+
     /** 0.3.9.3 (J M3): CAMark key prefix of the day you removed an augment ("augskip:<marketId>|<augment id>"), per colony. */
     static final String SKIP_AT = "augskip:";
 
@@ -523,6 +553,7 @@ public class CAAugments {
 
     /** Auto colonies get the best loadout applied; Approve colonies get the recommendation in the log once. */
     public static void run(CAData d, CASettings s, float now) {
+        dropConversionOnce(d);   // 0.3.17.4
         finishRefits(d);   // 0.3.8.5: refits you approved or applied, in every augment mode
         if (s.augmentMode != 0) return;   // 1 recommend only, 2 off
         int tried = 0, failed = 0;   // 0.3.9.2 (J L3)
