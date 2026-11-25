@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.17.6 - 2026-11-24
+
+- Research: When nothing can start, the log names techs held by a requirement that isn't an item. Ashes of the Domain's tier V techs read "need a Hyperdimensional Processor installed in one of your colony buildings".
+
 ## 0.3.17.5 - 2026-11-24
 
 - Station outfitting: A station is fitted again only when it changes or your faction knows more weapons, wings or hullmods than at its last fit.

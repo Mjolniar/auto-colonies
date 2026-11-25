@@ -159,6 +159,8 @@ public class CAResearch {
         public float own, next, value, cost, rank;
         public float plan;   // its share of the plan steps whose research chain it's on
         public String otherText;   // a requirement that isn't an item, not met yet (VoK's text: a Hyperdimensional Processor in a Research Facility)
+        public String otherKey;    // 0.3.17.6: that requirement's sector memory flag (VoK: $aotd_experimental_tier)
+        public boolean otherBlocked;   // 0.3.17.6: every tech before it is researched; only that requirement holds it
         public List<String> planFor = new ArrayList<String>();
         public List<String> lines = new ArrayList<String>();
         Object raw;
@@ -195,8 +197,10 @@ public class CAResearch {
         Object other = CARefl.get(fOther, o);
         boolean flagOk = other == null || CARefl.getBoolean(fOtherMet, o);
         if (!flagOk) try { Object two = CARefl.get(CARefl.field(other.getClass(), "two"), other); if (two != null) t.otherText = String.valueOf(two); } catch (Throwable ignored) { }
+        if (!flagOk) try { Object one = CARefl.get(CARefl.field(other.getClass(), "one"), other); if (one != null) t.otherKey = String.valueOf(one); } catch (Throwable ignored) { }
         t.available = Boolean.TRUE.equals(CARefl.invoke(canResearch, mgr, t.id, false));
         t.needsItems = !t.available && flagOk && Boolean.TRUE.equals(CARefl.invoke(allReq, mgr, t.id)) && !Boolean.TRUE.equals(CARefl.invoke(itemsOk, mgr, t.id));
+        t.otherBlocked = !t.available && !flagOk && Boolean.TRUE.equals(CARefl.invoke(allReq, mgr, t.id));   // 0.3.17.6
         t.unlockedByCommission = forPlayer(t.id);
         return t;
     }
@@ -222,6 +226,20 @@ public class CAResearch {
     static int totalCount;   // 0.3.9.1 (K L4): every tech in VoK's list at the last ranking, done or not
     static boolean rankFull;   // 0.3.9.1 (H P1): the Research page's Refresh: value the buildings also with no facility
     static final List<Tech> itemTechs = new ArrayList<Tech>();   // unresearched techs that take colony items, which Auto leaves to you
+    /** 0.3.17.6: techs whose earlier techs are all researched, held only by a requirement that isn't an item (Tech.otherBlocked). */
+    static final List<Tech> otherTechs = new ArrayList<Tech>();
+
+    /** 0.3.17.6: VoK's flag for its tier V techs: set while a Hyperdimensional Processor is installed in any building of yours. */
+    static final String EXPERIMENTAL = "$aotd_experimental_tier";
+
+    /** Pure (0.3.17.6): what a requirement that isn't an item asks for, for the log: the processor in plain words, else VoK's own text. */
+    static String otherNeed(String key, String text) {
+        if (EXPERIMENTAL.equals(key)) return "a Hyperdimensional Processor installed in one of your colony buildings";
+        if (text == null || text.trim().isEmpty()) return "a requirement that isn't researched or an item";
+        String s = text.trim();
+        if (s.toLowerCase(java.util.Locale.ROOT).startsWith("requires ")) s = s.substring(9);
+        return s.endsWith(".") ? s.substring(0, s.length() - 1) : s;
+    }
 
     /** Items Auto may spend on research while spending freely (CASurplus.rich), from any Storage: AotD's production makes Fullerene Spools. */
     static final Set<String> SPENDABLE = new HashSet<String>(Arrays.asList("fullerene_spool"));
@@ -424,6 +442,8 @@ public class CAResearch {
         totalCount = all.size();   // 0.3.9.1 (K L4)
         itemTechs.clear();
         for (Tech t : open.values()) if (!t.autoOk()) itemTechs.add(t);
+        otherTechs.clear();   // 0.3.17.6
+        for (Tech t : open.values()) if (t.otherBlocked) otherTechs.add(t);
         try { needs = planNeeds(open); } catch (Throwable e) { needs = new ArrayList<Need>(); CADiagnostics.LOG.warn(CADiagnostics.TAG + "research plan needs failed", e); }
         // techs one step past a candidate, for the "leads to" share
         for (Tech t : open.values()) {
@@ -1026,8 +1046,24 @@ public class CAResearch {
         // 0.3.0.0 (B5): fillers held back without idle money
         if (!c.noPay.isEmpty()) why.add(names(c.noPay) + (c.noPay.size() == 1 ? " doesn't" : " don't") + " pay back within a year, and no plan needs "
                 + (c.noPay.size() == 1 ? "it" : "them") + " (Auto starts those only with idle money)");
+        why.addAll(otherReasons(otherTechs));   // 0.3.17.6: before, these read as "needs another researched first"
         if (why.isEmpty()) why.add(anyOpen ? "every remaining tech needs another researched first" : "everything is researched");
         return String.join("; ", why);
+    }
+
+    /** Pure (0.3.17.6): one reason per requirement that isn't an item: "Mega-Assembly Systems, ... need a Hyperdimensional Processor ...". */
+    static List<String> otherReasons(List<Tech> techs) {
+        Map<String, List<Tech>> by = new LinkedHashMap<String, List<Tech>>();
+        for (Tech t : techs) {
+            String need = otherNeed(t.otherKey, t.otherText);
+            List<Tech> l = by.get(need);
+            if (l == null) { l = new ArrayList<Tech>(); by.put(need, l); }
+            l.add(t);
+        }
+        List<String> out = new ArrayList<String>();
+        for (Map.Entry<String, List<Tech>> e : by.entrySet())
+            out.add(names(e.getValue()) + (e.getValue().size() == 1 ? " needs " : " need ") + e.getKey());
+        return out;
     }
 
     static String names(List<Tech> techs) {
