@@ -1,5 +1,12 @@
 # Patch notes
 
+## 0.3.17.5 - 2026-11-24
+
+- Station outfitting: A station is fitted again only when it changes or your faction knows more weapons, wings or hullmods than at its last fit.
+- Station outfitting: A new fit with the same weapons and wings as the station has is not applied and not shown.
+- Station outfitting: Weapons and wings a station has paid for stay paid. A fit that goes back to them costs nothing.
+- Station outfitting: Shorter refit line: "Row: Star Fortress - High Tech refitted, 4 new weapons and wings, 20,750¢."
+
 ## 0.3.17.4 - 2026-11-24
 
 - Station augments: Economy Conversion is removed from every station of yours once, on the first day after loading. Auto colonies over the industry limit then take down their weakest industry, one a day.

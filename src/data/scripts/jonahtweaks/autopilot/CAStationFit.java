@@ -35,6 +35,9 @@ import java.util.*;
  *   (Watch, every frame, also while paused), marked with the variant tag TAG.
  * - A new fit is planned when the station or what you know changes, and paid at base price for the weapons and wings it
  *   adds over the last fit paid for this colony (CAData.stationFits), plus the usual fee, never below the credit reserve.
+ * - 0.3.17.5: planned again only for another station or hull, or when you know more weapons, wings or hullmods than at the
+ *   last plan (needsPlan). A plan with the same weapons and wings as the station has is no refit. CAData.stationFits keeps the
+ *   most of each weapon and wing ever paid for there, so a fit that goes back to them costs nothing.
  */
 public final class CAStationFit {
     private CAStationFit() { }
@@ -69,6 +72,29 @@ public final class CAStationFit {
     /** What a fit depends on: the station building and hull, and how many weapons, wings and hullmods you know. */
     static String key(Industry st, FleetMemberAPI fm, FactionAPI f) {
         return st.getId() + "|" + fm.getHullId() + "|" + f.getKnownWeapons().size() + "|" + f.getKnownFighters().size() + "|" + f.getKnownHullMods().size();
+    }
+
+    /**
+     * Pure (0.3.17.5): whether a fit planned for key `was` must be planned again for `now`: no fit yet, another station
+     * building or hull, or more weapons, wings or hullmods known than at that plan. Fewer known, or as many, keeps the fit:
+     * a known count that went up and back down every few days re-planned all four stations each time.
+     */
+    static boolean needsPlan(String now, String was) {
+        if (was == null) return true;
+        String[] a = now.split("\\|"), b = was.split("\\|");
+        if (a.length != 5 || b.length != 5) return !now.equals(was);
+        if (!a[0].equals(b[0]) || !a[1].equals(b[1])) return true;
+        try {
+            for (int i = 2; i < 5; i++) if (Integer.parseInt(a[i]) > Integer.parseInt(b[i])) return true;
+        } catch (NumberFormatException e) { return !now.equals(was); }
+        return false;
+    }
+
+    /** Pure (0.3.17.5): the larger count of each weapon and wing in either (what a colony has paid for over all its fits). */
+    static Map<String, Integer> most(Map<String, Integer> a, Map<String, Integer> b) {
+        Map<String, Integer> out = new TreeMap<String, Integer>(a);
+        for (Map.Entry<String, Integer> e : b.entrySet()) out.merge(e.getKey(), e.getValue(), Math::max);
+        return out;
     }
 
     /** Pure: weapon and wing ids of a fit with their counts (the station core and every module). */
@@ -148,11 +174,13 @@ public final class CAStationFit {
                 if (fm == null) continue;
                 String key = key(st, fm, f);
                 Fit have = FITS.get(m.getId());
-                if (have != null && key.equals(have.key)) continue;
+                if (have != null && !needsPlan(key, have.key)) continue;   // 0.3.17.5: only a new station or more known than at the last plan
                 String saved = d.stationLayouts().get(m.getId());
-                if (have == null && saved != null && saved.startsWith(key + "\n")) {   // after a load: the saved fit, no planning
-                    ShipVariantAPI rv = rebuild(fm.getVariant(), saved.substring(key.length() + 1));
-                    if (rv != null) { Fit fit = new Fit(); fit.key = key; fit.variant = rv; FITS.put(m.getId(), fit); continue; }
+                int nl = saved == null ? -1 : saved.indexOf('\n');
+                String savedKey = nl > 0 ? saved.substring(0, nl) : null;
+                ShipVariantAPI savedFit = have == null && nl > 0 ? rebuild(fm.getVariant(), saved.substring(nl + 1)) : null;
+                if (savedFit != null && !needsPlan(key, savedKey)) {   // after a load: the saved fit, no planning
+                    Fit fit = new Fit(); fit.key = savedKey; fit.variant = savedFit; FITS.put(m.getId(), fit); continue;
                 }
                 Fit pend = PENDING.get(m.getId());
                 ShipVariantAPI v;
@@ -165,11 +193,23 @@ public final class CAStationFit {
                     p.key = key; p.variant = v;
                     PENDING.put(m.getId(), p);
                 }
-                if (v == null || layout(v).equals(layout(fm.getVariant()))) continue;   // Auto Outfitting fell back to the game's fit: nothing to do
+                if (v == null) continue;
                 Map<String, Integer> now = ordnance(v);
-                // the first fit pays for what it adds over the station's own fit (free in the game), later ones over the last paid fit
+                // 0.3.17.5: the fit the station has now (this session's, or the saved one after a load); the same weapons and wings
+                // there is no refit, only the new key is kept (a different slot order, vents, capacitors or hullmods don't count)
+                ShipVariantAPI cur = have != null ? have.variant : savedFit;
+                if (cur != null && now.equals(ordnance(cur))) {
+                    PENDING.remove(m.getId());
+                    d.stationLayouts().put(m.getId(), key + "\n" + layout(cur));
+                    Fit fit = new Fit(); fit.key = key; fit.variant = cur; FITS.put(m.getId(), fit);
+                    continue;
+                }
+                if (cur == null && now.equals(ordnance(fm.getVariant()))) continue;   // Auto Outfitting fell back to the game's fit: nothing to do
+                // the first fit pays for what it adds over the station's own fit (free in the game), later ones for what no earlier
+                // fit of this colony had (0.3.17.5: every weapon and wing paid for stays paid, so going back to one costs nothing)
                 String paidCode = d.stationFits().get(m.getId());
-                Map<String, Integer> more = added(now, paidCode != null ? decode(paidCode) : ordnance(fm.getVariant()));
+                Map<String, Integer> paid = paidCode != null ? decode(paidCode) : ordnance(fm.getVariant());
+                Map<String, Integer> more = added(now, paid);
                 float cost = price(more), fee = cost > 0f ? CABudget.constructionFee(s, cost) : 0f;
                 if (cost + fee > 0f && (cost + fee > CABudget.available(s) || CABuild.credits() - cost - fee < s.reserve)) {
                     if (CALog.once("stfit:wait:" + m.getId() + ":" + Global.getSector().getClock().getMonth()))
@@ -178,16 +218,16 @@ public final class CAStationFit {
                 }
                 if (cost + fee > 0f) CABudget.pay(s, m.getId(), cost, fee, 0f);
                 PENDING.remove(m.getId());
-                d.stationFits().put(m.getId(), code(now));
+                d.stationFits().put(m.getId(), code(most(paid, now)));
                 d.stationLayouts().put(m.getId(), key + "\n" + layout(v));
                 Fit fit = new Fit();
                 fit.key = key; fit.variant = v;
                 FITS.put(m.getId(), fit);
                 int n = 0;
                 for (int c : more.values()) n += c;
-                if (have != null || n > 0)
-                    CALog.did(m.getName() + ": " + st.getCurrentName() + " refitted by Auto Outfitting's rules" + (n > 0 ? ", " + n + " new weapons and wings, "
-                            + Misc.getDGSCredits(cost + fee) : "") + ".");
+                // 0.3.17.5: every refit here changes weapons or wings, so every one is on screen, in a shorter line
+                CALog.did(m.getName() + ": " + st.getCurrentName() + " refitted" + (n > 0 ? ", " + n + " new weapons and wings, "
+                        + Misc.getDGSCredits(cost + fee) : "") + ".");
             } catch (Throwable t) {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "station outfitting failed at " + m.getName(), t);
             }
