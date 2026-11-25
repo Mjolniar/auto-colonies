@@ -97,6 +97,8 @@ public class CAFloors {
         public boolean partsSource;
         // steps planned (colony id -> producer ids) and their text for the panel and the Shipyard note
         public final Map<String, List<String[]>> steps = new LinkedHashMap<String, List<String[]>>();
+        /** 0.3.17.7: open floors whose producer no colony can host (auto-expansion reads it, CAExpansion.roomNeed). */
+        public final List<String> unhosted = new ArrayList<String>();
 
         public boolean on() { return mode == CATuning.PROD_LIGHT || mode == CATuning.PROD_FULL; }
         public float quality() { return Float.isNaN(bestQ) ? qualityOffset : bestQ + qualityOffset; }
@@ -851,13 +853,14 @@ public class CAFloors {
     /** The producers the open floors want, each at its host: STEPS for CAPlan.build, and the state's list for the panel. */
     static void plan(State st, CASettings s) {
         STEPS.clear();
+        st.unhosted.clear();   // 0.3.17.7
         if (!st.on()) return;
         List<Host> hosts = hosts();
         Set<String> claimed = new HashSet<String>();
         for (String[] w : wanted(st)) {
             if (CAPlan.spec(w[0]) == null) continue;   // a mod building that isn't installed
             Host h = host(w[0], w[1], hosts, s.makeRoom != CATuning.MAKE_ROOM_OFF, claimed);
-            if (h == null) continue;
+            if (h == null) { if (!st.unhosted.contains(w[2])) st.unhosted.add(w[2]); continue; }   // 0.3.17.7
             if (w[1] == null) claimed.add(h.id);   // one new producer per colony
             List<CAPlan.Step> l = STEPS.get(h.id);
             if (l == null) { l = new ArrayList<CAPlan.Step>(); STEPS.put(h.id, l); }
@@ -935,17 +938,41 @@ public class CAFloors {
      */
     static CAEndgame.Weakest makeRoom(MarketAPI m, CAData.Colony col, CAEngine.Pick best, CAData.Profile profile) {
         State st = state();
-        if (st == null || !st.on() || st.makeRoom == CATuning.MAKE_ROOM_OFF || best == null || best.measured || !(best.floorValue > 0f)) return null;
-        // only at the colony the floor planner picked for it: a colony with a free slot goes first (host)
-        if (!isStep(m, best.id) || CAEndgame.rebuildBlocked(m, best.id)) return null;
+        if (best == null || best.measured) return null;
+        // 0.3.17.7: a producer CAProjects plans here (every good made at home) may make room too, by replacing a duplicate
+        boolean project = !(best.floorValue > 0f) && CAProjects.isStep(m, best.id);
+        if (project) {
+            if (CAData.settings().makeRoom == CATuning.MAKE_ROOM_OFF || CAEndgame.rebuildBlocked(m, best.id)) return null;
+        } else {
+            if (st == null || !st.on() || st.makeRoom == CATuning.MAKE_ROOM_OFF || !(best.floorValue > 0f)) return null;
+            // only at the colony the floor planner picked for it: a colony with a free slot goes first (host)
+            if (!isStep(m, best.id) || CAEndgame.rebuildBlocked(m, best.id)) return null;
+        }
         CAPlan.Plan plan = CAPlan.build(m, col.profile);
-        CAEndgame.Weakest wk = CAEndgame.weakest(m, col, plan, profile, best, true);
+        CAEndgame.Weakest wk = CAEndgame.weakest(m, col, plan, profile, best, true, project ? duplicates(m) : null);
         if (wk == null || wk.ind == null) return null;
         String id = wk.ind.getId();
         if (CAEndgame.planStep(plan, id) || CAProjects.isStep(m, id) || CACapital.isStep(m, id) || protects(m, wk.ind)) return null;
         if (wk.built != null && wk.built.ageDays >= 0f && wk.built.ageDays < CATuning.MAKE_ROOM_BUILT_DAYS) return null;
-        if (!CAEndgame.worthIt(best, wk)) return null;
+        // 0.3.17.7: a missing good comes first: a duplicate goes for its producer whether or not the swap earns more
+        if (!project && !CAEndgame.worthIt(best, wk)) return null;
         return wk;
+    }
+
+    /** 0.3.17.7: the open floors no colony can host a producer for, by floor name (none while floors are off or not measured). */
+    public static List<String> unhosted() {
+        State st = current;
+        return st == null || !st.on() ? Collections.<String>emptyList() : st.unhosted;
+    }
+
+    /** 0.3.17.7: ids of the industries at m that another of your colonies also has (what a project producer may replace). */
+    static Set<String> duplicates(MarketAPI m) {
+        Map<String, Integer> copies = new HashMap<String, Integer>();
+        for (MarketAPI o : Misc.getPlayerMarkets(false)) for (Industry ind : o.getIndustries())
+            if (ind.isIndustry() && !ind.isHidden()) copies.merge(ind.getId(), 1, Integer::sum);
+        Set<String> out = new HashSet<String>();
+        for (Industry ind : m.getIndustries()) { Integer n = copies.get(ind.getId()); if (n != null && n >= 2) out.add(ind.getId()); }
+        return out;
     }
 
     /**

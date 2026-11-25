@@ -796,6 +796,35 @@ public class CAResearch {
     /** Set by topUp: some of what the tech needs is on its way to the facility (shipped now or earlier). */
     static boolean topUpPending = false;
 
+    /**
+     * 0.3.17.7: the colony items topUp gathers at the facility's colony for one tech, by id, while some are on their way
+     * (HELD_DAYS after topUp last ran for it). CAItems leaves that many in Autopilot Storage there. Before, a Pristine Nanoforge
+     * pulled out of Gor's Little Lie's Heavy Industry for Domain Blueprint Standardization arrived at Hallowhall Astropolis and
+     * was shipped straight back into that Heavy Industry, every 6 days (7,000 credits a round). Session only.
+     */
+    static final Map<String, Integer> HELD = new HashMap<String, Integer>();
+    static String heldAt;
+    static float heldDay = -99f;
+    static final float HELD_DAYS = 30f;
+
+    /** 0.3.17.7: how many of item id research keeps in Autopilot Storage at m for the tech it gathers for (0: none). */
+    public static int held(MarketAPI m, String id) {
+        if (m == null || id == null || heldAt == null || !heldAt.equals(m.getId()) || now() - heldDay > HELD_DAYS) return 0;
+        Integer n = HELD.get(id);
+        return n == null ? 0 : n;
+    }
+
+    /** 0.3.17.7: research gathers t's colony items at m (held), or nothing (m null). */
+    static void hold(MarketAPI m, Tech t) {
+        HELD.clear();
+        heldAt = null;
+        if (m == null || t == null) return;
+        for (Map.Entry<String, Integer> e : t.items.entrySet()) if (colonyItem(e.getKey())) HELD.put(e.getKey(), e.getValue());
+        if (HELD.isEmpty()) return;
+        heldAt = m.getId();
+        heldDay = now();
+    }
+
     /** 0.3.0.0 fix (C4 review): one planned source of a tech's items: moved straight into the tab, or shipped to the facility's colony. */
     static final class Part {
         String id;
@@ -945,6 +974,7 @@ public class CAResearch {
         List<String> moved = new ArrayList<String>();
         for (Map.Entry<String, Integer> e : movedById.entrySet()) moved.add(e.getValue() + " " + commodityName(e.getKey()));
         topUpPending = shipped + coming > 0;
+        hold(topUpPending ? f : null, t);   // 0.3.17.7: CAItems leaves what's on its way for this tech in Autopilot Storage there
         if (moved.isEmpty() && shipped == 0 && coming == 0) return null;
         String msg = (moved.isEmpty() ? "" : "Moved " + CAContracts.join(moved) + " into " + f.getName() + "'s Research Facility tab"
                 + (pulled.isEmpty() ? "" : " (taken out of " + CAContracts.join(pulled) + ")"))

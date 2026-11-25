@@ -445,12 +445,18 @@ public class CAEndgame {
      * endgame builds up, and the home port keeps them.
      */
     static Weakest weakest(MarketAPI m, CAData.Colony col, CAPlan.Plan plan, CAData.Profile profile, CAEngine.Pick next, boolean capital) {
+        return weakest(m, col, plan, profile, next, capital, null);
+    }
+
+    /** 0.3.17.7: only: the industry ids it may be (null: any); a project producer only replaces a duplicate (CAFloors.duplicates). */
+    static Weakest weakest(MarketAPI m, CAData.Colony col, CAPlan.Plan plan, CAData.Profile profile, CAEngine.Pick next, boolean capital, java.util.Set<String> only) {
         CAData d = CAData.get();
         Map<String, Integer> deficit = CAEngine.empireDeficits();
         float h = CAHorizon.months();
         String val = CATombstone.valuation(m);
         Weakest best = null;
         for (Industry ind : m.getIndustries()) {
+            if (only != null && !only.contains(ind.getId())) continue;   // 0.3.17.7
             if (protectedHere(m, col, plan, ind, d)) continue;
             if (capital && CACapital.isStep(m, ind.getId())) continue;
             // 0.3.0.0 (B4, research 02 section 11): nor one of the capital's own plan steps (or below one in its chain): taking it

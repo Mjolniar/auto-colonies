@@ -264,10 +264,13 @@ public class CAEngine {
         public Pick bestFloorNoSlot = null;
         public List<Pick> floorNoSlot = new ArrayList<Pick>();
 
-        void noSlot(Pick p) {
+        void noSlot(Pick p) { noSlot(p, false); }
+
+        /** 0.3.17.7: project: a producer CAProjects plans at this colony, which may make room as a floor producer does. */
+        void noSlot(Pick p, boolean project) {
             noSlot++;
             if (bestNoSlot == null || p.score > bestNoSlot.score) bestNoSlot = p;
-            if (p.floorValue > 0f) {
+            if (p.floorValue > 0f || project) {
                 floorNoSlot.add(p);
                 if (bestFloorNoSlot == null || p.score > bestFloorNoSlot.score) bestFloorNoSlot = p;
             }
@@ -482,7 +485,7 @@ public class CAEngine {
                 CALowProfile.score(m, inst, null, p);   // Low profile: the Pather line and the attention it draws (0.2.43.0)
                 CAOddisz.score(m, inst, p);   // Sol Renewed: an industry in Sol feeds its crisis meter for good (0.2.45.0)
                 if (!finish(m, p, profile, minStability, plan, deficit)) continue;   // 0.3.8.8: this evaluation's shortages
-                if (inst.isIndustry() && slotsFree <= 0) r.noSlot(p);
+                if (inst.isIndustry() && slotsFree <= 0) r.noSlot(p, CAProjects.isStep(m, p.id));   // 0.3.17.7: a project producer may make room
                 else r.picks.add(p);
             } catch (Throwable t) {
                 CADiagnostics.quarantine(id, "build check at " + m.getName(), t);
@@ -544,7 +547,7 @@ public class CAEngine {
                     CALowProfile.score(m, upInst, ind, p);
                     CAOddisz.score(m, upInst, p);   // an upgrade's cost adds to Sol's meter too (0.2.45.0)
                     if (!finish(m, p, profile, minStability, plan, deficit)) continue;   // 0.3.8.8: this evaluation's shortages
-                    if (needsSlot) r.noSlot(p);
+                    if (needsSlot) r.noSlot(p, CAProjects.isStep(m, p.id));   // 0.3.17.7
                     else r.picks.add(p);
                 } catch (Throwable t) {
                     CADiagnostics.quarantine(up, "upgrade check at " + m.getName(), t);

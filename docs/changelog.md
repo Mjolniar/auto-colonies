@@ -1,5 +1,15 @@
 # Patch notes
 
+## 0.3.17.7 - 2026-11-24
+
+- Research: Items research gathers for a tech stay in Autopilot Storage at the research colony until the tech starts. Fixed a Pristine Nanoforge shipped between research and a Heavy Industry every 6 days.
+- AI cores: One core of each tier is on its way to a colony at a time. Fixed a new core shipped every day to the same building until the first one arrived.
+- Terraforming: A plan's terraforming step that waits for credits above the reserve is saved up for, the Unification Center's world project included. Smaller buys wait for it.
+- Terraforming: The log says once why a Unification Center can't start its world project.
+- Production: With production priorities on, every good your colonies don't make gets a producer, AotD goods and vanilla goods.
+- Make room: A producer for a good your colonies don't make may replace an industry another of your colonies also has. The Make room setting applies (Ask first by default).
+- Auto-expansion: From the Surplus money tier, an expedition can start when no colony has room for a missing good or production floor and every Auto colony's industry slots are full.
+
 ## 0.3.17.6 - 2026-11-24
 
 - Research: When nothing can start, the log names techs held by a requirement that isn't an item. Ashes of the Domain's tier V techs read "need a Hyperdimensional Processor installed in one of your colony buildings".

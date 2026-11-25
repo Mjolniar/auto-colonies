@@ -287,7 +287,14 @@ public class CAExpansion {
             int tier = CARich.tier();
             r.rich = tier >= CARich.T3;
             r.veryRich = tier >= CARich.T4;
-            if (tier < CARich.T2) { r.why = "Money tier: " + CARich.name(tier) + ". Auto-expansion starts at " + CARich.name(CARich.T2) + "."; return r; }
+            if (tier < CARich.T2) {
+                // 0.3.17.7: from Surplus up, a good or production floor no colony has room for is reason enough: a new colony is that room
+                String need = tier >= CARich.T1 ? roomNeed() : null;
+                if (need == null) { r.why = "Money tier: " + CARich.name(tier) + ". Auto-expansion starts at " + CARich.name(CARich.T2) + "."; return r; }
+                if (CALog.once("expand:need:" + need)) CALog.think("Auto-expansion: no colony has room for " + need + ". A new colony is planned at the " + CARich.name(tier) + " tier.");
+                r.available = aboveReserve;
+                return r;
+            }
             // the rung's allowance this month; a rung on Recommend only still has one (Ask first proposes within it)
             float a = 0f;
             try { a = CARich.allowance(RUNG); } catch (Throwable ignored) { }
@@ -303,6 +310,31 @@ public class CAExpansion {
         }
         r.available = Math.min(BUDGET_SHARE * amount, aboveReserve);
         return r;
+    }
+
+    /**
+     * 0.3.17.7: what your colonies have no room to make: goods no colony can host a producer for (CAProjects.unhosted) and
+     * production floors with no host (CAFloors.unhosted: hulls, capacity, fleets' goods), while every Auto colony's industry
+     * slots are full. Null when there's room somewhere or nothing waits for it.
+     */
+    static String roomNeed() {
+        List<String> what = new ArrayList<String>();
+        try { for (String g : CAProjects.unhosted()) what.add(CAProjects.name(g)); } catch (Throwable ignored) { }
+        try { what.addAll(CAFloors.unhosted()); } catch (Throwable ignored) { }
+        if (what.isEmpty()) return null;
+        CAData d = CAData.get();
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            if (d.colony(m.getId()).mode != CAData.Mode.AUTO || CAEngine.isOutpost(m)) continue;
+            if (CABuild.freeSlots(m) > 0) return null;   // room at an Auto colony: the planner uses it first
+        }
+        return roomText(what);
+    }
+
+    /** Pure (0.3.17.7): "Food, Ships and 2 more". */
+    static String roomText(List<String> what) {
+        List<String> l = new ArrayList<String>();
+        for (String w : what) { if (l.size() == 2) { l.add((what.size() - 2) + " more"); break; } if (!l.contains(w)) l.add(w); }
+        return CAContracts.join(l);
     }
 
     /** Null when the money covers this total, else why not. */

@@ -71,6 +71,13 @@ public class CAProjects {
         Set<String> occupied = new HashSet<String>();   // bases already upgraded into something else (Crystalizator for Refining), or kept by id for its plan
         Set<String> unlocked = new HashSet<String>();   // producers research has opened here
         int ships;                                       // ships it makes
+        /** 0.3.17.7: producers the game won't build here whatever research opens (Mining with no deposit, Farming with no farmland). */
+        Set<String> cannot = new HashSet<String>();
+        /**
+         * 0.3.17.7: industries here that another of your colonies also has and Autopilot may take down (make room on): a new
+         * producer may replace one (CAFloors.makeRoom) when no slot is free.
+         */
+        int spare;
     }
 
     /** One producer to add: at which colony, and how far it is from there. */
@@ -142,8 +149,11 @@ public class CAProjects {
                     Set<String> cl = claimed.get(h.id);
                     if (cl != null && (cl.contains(p.base) || (p.root != null && cl.contains(p.root)))) continue;
                     int rt = route(h, p);
-                    if (rt < 0 || (rt == 0 && h.freeSlots <= 0)) continue;
-                    float sc = rt * 100f + (h.unlocked.contains(p.id) ? 50f : 0f) + h.size * 5f + (h.auto ? 30f : 0f) + (ps.size() - i) * 10f;
+                    // 0.3.17.7: a new building needs a free slot, or a duplicate industry to replace (make room), and a place the game builds it
+                    if (rt < 0 || (rt == 0 && h.freeSlots <= 0 && h.spare <= 0)) continue;
+                    if (rt == 0 && h.cannot.contains(p.base != null ? p.base : p.id)) continue;
+                    float sc = rt * 100f + (h.unlocked.contains(p.id) ? 50f : 0f) + h.size * 5f + (h.auto ? 30f : 0f) + (ps.size() - i) * 10f
+                            - (rt == 0 && h.freeSlots <= 0 ? 40f : 0f);   // 0.3.17.7: a free slot before a replacement
                     if (p.id.equals("aotd_civilian_heavy_prod") && h.ships > 0 && empireShips - h.ships <= 0) continue;   // the only ship maker stays one
                     if (sc > best) { best = sc; bestH = h; bestP = p; bestRoute = rt; }
                 }
@@ -157,7 +167,7 @@ public class CAProjects {
             if (cl == null) { cl = new HashSet<String>(); claimed.put(bestH.id, cl); }
             if (bestP.base != null) cl.add(bestP.base);
             if (bestP.root != null) cl.add(bestP.root);
-            if (bestRoute == 0) bestH.freeSlots--;
+            if (bestRoute == 0) { if (bestH.freeSlots > 0) bestH.freeSlots--; else bestH.spare--; }   // 0.3.17.7: or one duplicate replaced
             for (String in : bestP.inputs) if (!madeAny(made, in)) queue.add(in);
         }
         return r;
@@ -357,6 +367,11 @@ public class CAProjects {
     static List<Host> hosts() {
         List<Host> hs = new ArrayList<Host>();
         CAData d = CAData.get();
+        // 0.3.17.7: how many of your colonies have each industry (a duplicate may make room for a producer)
+        Map<String, Integer> copies = new HashMap<String, Integer>();
+        boolean makeRoom = d.settings.makeRoom != CATuning.MAKE_ROOM_OFF;
+        if (makeRoom) for (MarketAPI m : Misc.getPlayerMarkets(false)) for (Industry ind : m.getIndustries())
+            if (ind.isIndustry() && !ind.isHidden()) copies.merge(ind.getId(), 1, Integer::sum);
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             CAData.Colony c = d.colony(m.getId());
             if ((c.mode != CAData.Mode.AUTO && c.mode != CAData.Mode.APPROVE) || CAEngine.isOutpost(m) || CAHypershunt.is(m)
@@ -367,8 +382,18 @@ public class CAProjects {
             h.ships = supply(m, "ships");
             for (Industry ind : m.getIndustries()) h.has.add(ind.getId());
             Set<String> exact = new HashSet<String>();
-            try { exact = CAPlan.build(m, c.profile).exact; } catch (Throwable ignored) { }
+            CAPlan.Plan plan = null;
+            try { plan = CAPlan.build(m, c.profile); exact = plan.exact; } catch (Throwable ignored) { }
+            if (makeRoom && h.freeSlots <= 0) for (Industry ind : m.getIndustries()) {   // 0.3.17.7
+                if (spareHere(ind, copies, c.locks, exact) && !CAEndgame.planStep(plan, ind.getId()) && !isProducerHere(m, ind.getId())) h.spare++;
+            }
             for (Producer p : PRODUCERS) {
+                // 0.3.17.7: the game won't build it here (no deposit, no farmland), research aside
+                String nb = p.base != null ? p.base : p.id;
+                try {
+                    IndustrySpecAPI bs = Global.getSettings().getIndustrySpec(nb);
+                    if (bs != null && !h.has.contains(nb) && !bs.getNewPluginInstance(m).isAvailableToBuild() && (!CAAotD.enabled() || CAAotD.allows(nb, m))) h.cannot.add(nb);
+                } catch (Throwable ignored) { }
                 if (p.base != null) for (Industry ind : m.getIndustries()) {
                     String id = ind.getId();
                     // the base, or what it's upgraded from, already became something else
@@ -383,6 +408,25 @@ public class CAProjects {
             hs.add(h);
         }
         return hs;
+    }
+
+    /**
+     * Pure (0.3.17.7): an industry a producer may replace: another of your colonies has one too, it's a working industry
+     * (not population), not a locked slot, and not one the colony's world plan needs by exact id.
+     */
+    static boolean spareHere(Industry ind, Map<String, Integer> copies, Set<String> locks, Set<String> exact) {
+        if (ind == null || !ind.isIndustry() || ind.isHidden() || ind.isBuilding() || ind.isUpgrading()) return false;
+        String id = ind.getId();
+        if (locks.contains(id) || exact.contains(id)) return false;
+        try { if (ind.getSpec().hasTag(com.fs.starfarer.api.impl.campaign.ids.Industries.TAG_POPULATION)) return false; } catch (Throwable ignored) { }
+        Integer n = copies.get(id);
+        return n != null && n >= 2;
+    }
+
+    /** 0.3.17.7: this colony's industry is a planned producer here (one planned for a good isn't replaced for another). */
+    static boolean isProducerHere(MarketAPI m, String id) {
+        for (Producer p : PRODUCERS) if (p.id.equals(id) && isStep(m, id)) return true;
+        return false;
     }
 
     /** Daily: reads the running project and plans producers for the goods your colonies don't make. */
@@ -407,9 +451,12 @@ public class CAProjects {
             // spending freely (CASurplus.rich): AotD's own goods get producers even with no project running, since Grand Wonders,
             // megastructure restoration, Bifrost gates and AotD production all take them from your colonies' exports
             boolean rich = CASurplus.rich(CAData.settings());
+            // 0.3.17.7: with production priorities on (Settings, Production), every good gets a producer when your colonies make
+            // none: AotD's own goods and the vanilla ones (Domain-grade machinery stayed unmade outside spending freely)
+            boolean every = CAData.settings().productionOn();
             readOrders();   // and the goods open production orders still need (0.2.39.0)
             shunt = CAHypershunt.shortfalls();   // 0.3.10.6: and what your Coronal Hypershunts are short of
-            if (!running && !rich && orders.isEmpty() && shunt.isEmpty()) return;
+            if (!running && !rich && !every && orders.isEmpty() && shunt.isEmpty()) return;
             yours.clear(); sector.clear();
             Set<String> goods = new LinkedHashSet<String>(left.keySet());
             goods.addAll(monthly.keySet());
@@ -427,6 +474,7 @@ public class CAProjects {
             }
             Set<String> wanted = new LinkedHashSet<String>(left.keySet());
             if (rich) wanted.addAll(Arrays.asList(AOTD_GOODS));
+            if (every) for (Producer p : PRODUCERS) wanted.add(p.good);   // 0.3.17.7
             wanted.addAll(orders.keySet());
             wanted.addAll(shunt.keySet());
             List<String> missing = new ArrayList<String>();
@@ -474,7 +522,17 @@ public class CAProjects {
         if (project != null && left.containsKey(good)) return project;
         if (orders.containsKey(good)) return "production orders";
         if (shunt.containsKey(good)) return "the Coronal Hypershunt";   // 0.3.10.6
+        if (!Arrays.asList(AOTD_GOODS).contains(good)) return "every good made at home";   // 0.3.17.7
         return "AotD wonders and gates";
+    }
+
+    /**
+     * 0.3.17.7: goods your colonies make none of that no colony can host a producer for today (no slot, no duplicate to
+     * replace, no base to upgrade, or not buildable there). Auto-expansion reads it: a new colony is room for them.
+     */
+    public static List<String> unhosted() {
+        Result r = last;
+        return r == null ? Collections.<String>emptyList() : r.unresolved;
     }
 
     static String routeText(Plan pl) {

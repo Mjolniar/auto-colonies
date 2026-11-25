@@ -59,7 +59,7 @@ public class CAReset {
         // caches and cooldowns that held the other save's data (07 H6)
         failed += run("research ranking", () -> {
             CAResearch.BUILD_VALUES.clear(); CAResearch.buildValuedAt = -99f; CAResearch.buildValuedFor = null;   // 0.3.11.8
-        CAResearch.cached = null; CAResearch.cachedAt = -99f; CAResearch.openCount = 0; CAResearch.totalCount = 0; CAResearch.rankFull = false; CAResearch.itemTechs.clear(); CAResearch.otherTechs.clear();
+        CAResearch.cached = null; CAResearch.cachedAt = -99f; CAResearch.openCount = 0; CAResearch.totalCount = 0; CAResearch.rankFull = false; CAResearch.itemTechs.clear(); CAResearch.otherTechs.clear(); CAResearch.HELD.clear(); CAResearch.heldAt = null; CAResearch.heldDay = -99f;
             CAResearch.needs = new ArrayList<CAResearch.Need>(); CAResearch.topUpPending = false; CAResearch.spendItems = false; CAResearch.itemMode = 0;
         });
         failed += run("blocked plan steps", () -> { CAPlan.BLOCKED.clear(); CAPlan.lockedCache = 0; CAPlan.lockedDay = -1; });

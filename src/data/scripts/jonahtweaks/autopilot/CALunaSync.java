@@ -400,7 +400,7 @@ public final class CALunaSync {
         radio("ffuel", "Fuel floor", "floorFuel", CASettings.FLOOR_GOODS_NAMES, "Target fuel production.");
         bool("fmoney", "Floors at Money colonies", "floorMoneyGoal", false, "Floors are extended to colonies with the Money goal.");
         bool("fneeds", "Floor builds first", "needsFirst", false, "Floor builds are prioritized over all others.");
-        radio("froom", "Make room", "makeRoom", CASettings.MAKE_ROOM_NAMES, "A floor producer may replace the weakest income industry.");
+        radio("froom", "Make room", "makeRoom", CASettings.MAKE_ROOM_NAMES, "A floor producer may replace the weakest income industry, and a producer for a good you don't make may replace a duplicate.");
         radio("ftaper", "Money taper", "moneyTaper", CASettings.TAPER_NAMES, "Money is weighted less by the planner at high income.");
         r = credits("ftlow", "Taper from", "taperLow", 100000, 9900000, 100000, "Used by Gentle, and held 100,000 below Taper top from.");
         final Setter low = r.set;

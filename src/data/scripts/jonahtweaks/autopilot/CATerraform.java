@@ -24,6 +24,27 @@ public class CATerraform {
 
     static class Cand { MarketAPI m; Industry ind; CATme.Proj pd; float cost, score; String why; boolean planned; String world; }
 
+    /**
+     * 0.3.17.7: why the structure that forms the plan's world (the Unification Center) didn't take the world project, in
+     * starsector.log once per colony and reason. No log since c214 showed a Waste World project starting or waiting.
+     */
+    static void worldNote(MarketAPI m, Industry ind, CAPlan.Plan plan, List<CATme.Proj> projects, Set<String> moving) {
+        try {
+            if (m.hasCondition(plan.world) || !ind.getId().equals(CAWorldPlanner.structureFor(plan.world))) return;
+            for (CAPlan.Step st : plan.steps) if (!st.done(m) && !st.id.equals(plan.world) && st.kind != CAPlan.Kind.BUILD) return;   // an earlier step first
+            String why = "TME doesn't list the project";
+            for (CATme.Proj pd : projects) {
+                if (!pd.id.equals(plan.world)) continue;
+                why = moving.contains(pd.id) ? "another project changes it" : !CATme.canRun(ind, pd) ? "TME's own check fails (conditions or industries)" : null;
+            }
+            if (why != null && CALog.once("worldnote:" + m.getId() + ":" + why))
+                CALog.quiet(m.getName() + ": " + ind.getCurrentName() + " can't start the " + CAWorldPlanner.name(plan.world) + " project: " + why + ".");
+        } catch (Throwable ignored) { }
+    }
+
+    /** Pure (0.3.17.7): a TME project's name without its leading "Add " ("Add Waste World" reads "Waste World"). */
+    static String plainName(String n) { return n != null && n.startsWith("Add ") ? n.substring(4) : n; }
+
     static final String ACTION = "terraforming";
 
     /** Hazards a plain plan clears (CAPlan's clean-up), which no terraforming may bring back; a Forge keeps tectonic activity and gravity. */
@@ -150,6 +171,7 @@ public class CATerraform {
                     }
                 }
                 if (pick != null) cands.add(pick);
+                else if (plan.world != null) worldNote(m, ind, plan, projects, moving);   // 0.3.17.7
             }
         }
         Collections.sort(cands, new Comparator<Cand>() { public int compare(Cand a, Cand b) { return Float.compare(b.score, a.score); } });
@@ -170,6 +192,8 @@ public class CATerraform {
                     if (CALog.once("tfsave:" + k.m.getId() + ":" + k.pd.id))
                         CALog.think(k.m.getName() + ": Terraforming (" + k.why + ") waits for " + Misc.getDGSCredits(k.cost + fee)
                                 + " above the credit reserve.");
+                    // 0.3.17.7: saved up for, so the month's other spending doesn't keep it waiting for good
+                    CAPlanner.saveForWorld(k.m, k.ind.getCurrentName() + " project (" + plainName(k.pd.name) + ")", k.cost + fee);
                     continue;
                 }
             } else if (CASurplus.spends(k.m)) {
@@ -193,7 +217,7 @@ public class CATerraform {
             }
             // 0.3.0.0 (B3 fix): the plan's projects don't offer the planner actions yet (0.3.0.x), so they ask it first: credits it saves
             // up for its earmarked pick aren't spent here (CAPlanner.setAside; null while it isn't in charge or saves up for nothing)
-            String held = CAPlanner.setAside(k.cost + fee, k.cost + fee, 0f, k.m);
+            String held = CAPlanner.setAside(k.cost + fee, k.cost + fee, 0f, k.m, k.planned);   // 0.3.17.7: a plan step isn't held for its own colony's saving
             if (held != null) {
                 if (CALog.once("tfheld:" + k.m.getId() + ":" + k.pd.id)) CALog.quiet(k.m.getName() + ": terraforming (" + k.why + ") waits: " + held);
                 continue;
@@ -213,6 +237,7 @@ public class CATerraform {
                     s.terraSpent += k.cost;
                 }
                 if (k.planned && k.world != null) CAPlan.commitWorld(k.m, k.world, k.pd.id, !k.m.hasCondition(k.pd.id));   // 0.3.0.0 (B5): the condition this project changes is kept for the commitment
+                if (k.planned) CAPlanner.worldStarted(k.m);   // 0.3.17.7
                 CALog.forget("tf:" + k.m.getId() + ":" + k.pd.id);
                 CALog.forget("tfheld:" + k.m.getId() + ":" + k.pd.id);
                 CALog.did(k.m.getName() + ": " + k.ind.getCurrentName() + " started: " + k.why + " for " + Misc.getDGSCredits(k.cost)

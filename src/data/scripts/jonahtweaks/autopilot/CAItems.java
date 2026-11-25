@@ -241,6 +241,7 @@ public class CAItems {
             SpecialItemData data = stack.getSpecialDataIfSpecial();
             if (spec == null || data == null || NEVER.contains(spec.getId())) continue;
             if (CADiagnostics.itemLevel(spec.getId()) == CADiagnostics.Level.QUARANTINED) continue;   // its code failed before
+            if (stack.getSize() <= CAResearch.held(held.market, spec.getId())) continue;   // 0.3.17.7: research gathers it there for a tech
             InstallableItemEffect effect = ItemEffectsRepo.ITEM_EFFECTS.get(spec.getId());   // any mod's item, if it registers an effect
             String params = spec.getParams();
             if (effect == null || params == null) continue;
@@ -1074,7 +1075,8 @@ public class CAItems {
         int bestK = -1;
         float bestGain = 0f;
         Set<String> incoming = new HashSet<String>();   // colonies a core is already on its way to: one at a time
-        for (CAStores.Shipment sh : d.shipments()) if (sh.commodity != null && tier(sh.commodity) >= 0) incoming.add(sh.to);
+        Set<String> comingTier = new HashSet<String>();   // 0.3.17.7: "marketId|tier" of each core on its way
+        for (CAStores.Shipment sh : d.shipments()) if (sh.commodity != null && tier(sh.commodity) >= 0) { incoming.add(sh.to); comingTier.add(sh.to + "|" + tier(sh.commodity)); }
         for (CoreSlot to : slots) {
             if (to.threat && !defensive(to.ind)) continue;   // a threatened colony only gets cores in its defenses
             if (incoming.contains(to.m.getId()) && CAStores.of(to.m).getCommodityQuantity(CORES[0]) + CAStores.of(to.m).getCommodityQuantity(CORES[1])
@@ -1084,6 +1086,9 @@ public class CAItems {
                 if (k == 0 && (s.alphaMode == 2 || (s.alphaMode == 0 && !alphaRemovable(to.ind)))) continue;
                 if (to.cur >= 0 && k >= to.cur) continue;   // into an empty building, or replacing a lesser core
                 if (to.net[k] <= 0f) continue;
+                // 0.3.17.7: a core of this tier on its way and none here yet: it goes in when it arrives. Holding another tier
+                // let one more be shipped every day: 8 Alpha Cores went to Bristol for one Refining
+                if (comingSkip(comingTier.contains(to.m.getId() + "|" + k), CAStores.of(to.m).getCommodityQuantity(CORES[k]))) continue;
                 int extra = points(k) - (to.cur >= 0 ? points(to.cur) : 0);
                 float gain = to.rank(k) - (to.cur >= 0 ? to.rank(to.cur) : 0f);
                 if (have[k] > 0) {
@@ -1139,6 +1144,9 @@ public class CAItems {
         CALog.quiet(where + aiPoints(bestTo.m) + " inspection points" + (lim == Integer.MAX_VALUE ? "" : " of " + lim));   // 0.3.0.9: no ping, the move line is on screen
         return true;
     }
+
+    /** Pure (0.3.17.7): a slot waits for the core of its tier on its way when none is at the colony yet. */
+    static boolean comingSkip(boolean onItsWay, float atColony) { return onItsWay && atColony < 1f; }
 
     /**
      * Alpha cores: research buildings first. A research building waiting for an Alpha its colony has no inspection points

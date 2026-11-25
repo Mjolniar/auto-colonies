@@ -121,6 +121,66 @@ public class CAPlanner {
     static void reset() {
         offers.clear(); sigs.clear(); slotsSeen.clear(); threatSeen.clear(); wakes.clear(); waiting.clear(); idle.clear(); regen.clear();
         lastMonth = -1; lastTier = null; earmark = null; hold = null; lastPass = Float.NaN; lastStarted = 0; floorPass = false;
+        worldSave = null;   // 0.3.17.7
+    }
+
+    // ---------------- 0.3.17.7: saving up for a colony plan's terraforming step ----------------
+
+    /**
+     * 0.3.17.7: a plan's terraforming step (CATerraform: a condition project, or the Unification Center's world project at the
+     * end) that waits for credits above the reserve. It's saved up for as the earmark is for a build: a start that would leave
+     * the credits above the reserve, plus the budget still to come by its date, short of its price waits (keepsWorld). Set
+     * again each day it waits; it lapses WORLD_SEEN_DAYS after the last. The Waste World plans' 6,000,000 world projects never
+     * started: the month's spending kept the credits under the reserve plus the price, so Heavy Industry stayed held for them.
+     */
+    static final class WorldSave {
+        String market, name;
+        float total, due, seen;
+    }
+
+    static WorldSave worldSave = null;
+    static final float WORLD_SEEN_DAYS = 3f;
+
+    /** 0.3.17.7: the plan step saved up for today, or null. */
+    static WorldSave worldNow(float now) {
+        WorldSave w = worldSave;
+        return w != null && now >= w.seen - 0.5f && now - w.seen <= WORLD_SEEN_DAYS ? w : null;
+    }
+
+    /** 0.3.17.7 (CATerraform): a plan step at m waits for `total` above the reserve; saved up for unless another one is. */
+    static void saveForWorld(MarketAPI m, String name, float total) {
+        try {
+            if (!inCharge() || m == null || total <= 0f) return;
+            float now = CATime.now();
+            WorldSave cur = worldNow(now);
+            if (cur != null && !cur.market.equals(m.getId())) return;   // one at a time: the first that waits keeps it
+            Pool p = moneyPool(CAData.settings(), now);
+            float room = p.spendable();
+            if (monthsToAfford(total, room, p.monthly) > EARMARK_MAX_MONTHS) { if (cur != null) worldSave = null; return; }   // no date: as an earmark
+            WorldSave w = cur != null && name.equals(cur.name) ? cur : new WorldSave();
+            if (w != cur || now >= w.due) w.due = now + readyIn(total, room, p.monthly, p.daysLeft);
+            w.market = m.getId(); w.name = name; w.total = total; w.seen = now;
+            worldSave = w;
+            if (CALog.once("worldsave:" + m.getId() + ":" + name))
+                CALog.think(m.getName() + ": Saving up for " + name + " (" + Misc.getDGSCredits(total) + "). Smaller buys wait.");
+        } catch (Throwable t) { CAStep.warn("planner", "plan step saving failed", t); }
+    }
+
+    /** 0.3.17.7 (CATerraform): the step saved up for at m started. */
+    static void worldStarted(MarketAPI m) {
+        WorldSave w = worldSave;
+        if (w != null && m != null && w.market.equals(m.getId())) worldSave = null;
+    }
+
+    /**
+     * Pure (0.3.17.7): spending `total` keeps the saved-up-for plan step's date: the credits left above the reserve, plus the
+     * budget still to come by its date, still cover its price. True with nothing saved up for, or for spending nothing.
+     */
+    static boolean keepsWorld(Pool p, float total) {
+        WorldSave w = p.world;
+        if (w == null || total <= 0f) return true;
+        float left = Math.max(0f, p.credits - total - p.reserve);
+        return left + arrivals(w.due, p.now, p.daysLeft) * Math.max(0f, p.monthly) >= w.total;
     }
 
     /** Money saved up for one pick: its key and price, the day it should be affordable by, when it was set, and whether it may also draw on the surplus. */
@@ -229,6 +289,8 @@ public class CAPlanner {
         final Map<String, Integer> buildRoom = new HashMap<String, Integer>();
         Earmark earmark;
         Hold hold;
+        /** 0.3.17.7: the plan step saved up for (keepsWorld), or null. */
+        WorldSave world;
 
         float surplus() { return surplusLine >= Float.MAX_VALUE / 2f ? 0f : Math.max(0f, credits - surplusLine); }
 
@@ -354,9 +416,9 @@ public class CAPlanner {
      */
     static boolean keepsDate(Pool p, CAAction a) {
         Earmark e = p.earmark;
-        if (e == null || e.key.equals(a.key())) return true;
+        if (e != null && e.key.equals(a.key())) return true;
         float total = a.total();
-        return keepsDate(p, total, a.chargeAll ? total : Math.max(0f, a.fee));
+        return keepsDate(p, total, a.chargeAll ? total : Math.max(0f, a.fee));   // 0.3.17.7: and the plan step saved up for (keepsWorld)
     }
 
     /**
@@ -365,6 +427,7 @@ public class CAPlanner {
      * to the date rounded up, which counted one roll-over too many all month long after an earmark set mid-month.
      */
     static boolean keepsDate(Pool p, float total, float charge) {
+        if (!keepsWorld(p, total)) return false;   // 0.3.17.7
         Earmark e = p.earmark;
         if (e == null || total <= 0f) return true;
         float credits = p.credits - total, budget = p.budget - Math.max(0f, charge);
@@ -1296,6 +1359,7 @@ public class CAPlanner {
     static Pool moneyPool(CASettings s, float now) {
         Pool p = new Pool();
         p.now = now;
+        p.world = worldNow(now);   // 0.3.17.7
         p.credits = CABuild.credits();
         p.reserve = s.reserve;
         p.month = s.month;   // 0.3.0.0 (B3 fix): for the upkeep hold (holdApplies); CABudget.rollMonth runs first in the day
@@ -1318,14 +1382,22 @@ public class CAPlanner {
      * don't ask. total: credits it pays now; charge: what counts against the month's budget; upkeep: new upkeep a month
      * (net); m: the colony, for its new-upkeep cap (null: the empire's).
      */
-    public static String setAside(float total, float charge, float upkeep, MarketAPI m) {
+    public static String setAside(float total, float charge, float upkeep, MarketAPI m) { return setAside(total, charge, upkeep, m, false); }
+
+    /** 0.3.17.7: ownStep: a plan step of m's own (CATerraform), which the step saved up for at m doesn't hold back. */
+    static String setAside(float total, float charge, float upkeep, MarketAPI m, boolean ownStep) {
         try {
             if (!inCharge()) return null;
             Earmark e = earmark;
             Hold k = hold;
-            if (e == null && k == null) return null;
+            WorldSave w = worldNow(CATime.now());
+            if (w != null && ownStep && m != null && w.market.equals(m.getId())) w = null;
+            if (e == null && k == null && w == null) return null;
             CASettings s = CAData.settings();
             Pool p = moneyPool(s, CATime.now());
+            p.world = w;
+            if (!keepsWorld(p, total)) return "credits are saved up for " + w.name;
+            p.world = null;   // checked; keepsDate below is the earmark's
             // 0.3.0.0 (B3 fix): the earmark until it lapses (a month after its date); the hold from the roll-over after it was
             // set until it lapses (holdApplies), as in the pass
             if (e != null && p.now >= e.set && p.now <= e.lapse) {
