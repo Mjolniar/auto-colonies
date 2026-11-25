@@ -42,6 +42,10 @@ import java.util.*;
  *   4 stations); it was star fortresses and up. With Station Augments, the station's augments go to Auto Outfitting as variant
  *   tags AUG_TAG + id on the root variant for the fit only (Auto Outfitting 0.5.90 reads them; older versions ignore them),
  *   and a change in the augments it counts (AO_AUGMENTS) plans the station again (key, needsPlan).
+ * - 0.3.18.9: a plan runs Auto Outfitting on the game's thread, 1 to 8 seconds a station, and the calm and defense augment
+ *   loadouts switch often. A fit is kept for each augment set (BY_AUGMENTS, saved in CAData.stationLayouts as
+ *   "marketId#augments") and used again when the augments switch back, without a new plan. More known alone plans a station
+ *   again at most every KNOWN_DAYS (PLANNED_AT), and new plans are PLAN_GAP_DAYS apart.
  */
 public final class CAStationFit {
     private CAStationFit() { }
@@ -56,6 +60,17 @@ public final class CAStationFit {
 
     /** A planned fit for one colony's station (session only: planned again after a load, and paid again only for what changed). */
     static final class Fit { String key; ShipVariantAPI variant; }
+
+    /** 0.3.18.9: days between plans for a station whose only change is more weapons, wings or hullmods known. */
+    static final float KNOWN_DAYS = 60f;
+    /** 0.3.18.9: days between any two new plans. */
+    static final float PLAN_GAP_DAYS = 2f;
+    /** 0.3.18.9: CAMark key prefix: when a colony's station was last planned. */
+    static final String PLANNED_AT = "stfitplan:";
+    /** 0.3.18.9: fits by colony and augment set ("marketId#augments"), this session; saved ones are read on first use. */
+    static final Map<String, Fit> BY_AUGMENTS = new HashMap<String, Fit>();
+    /** 0.3.18.9: the game day of the last new plan this session; -99 none. */
+    static float lastPlanDay = -99f;
 
     static final Map<String, Fit> FITS = new HashMap<String, Fit>();
     /** 0.3.15.5: a fit planned but not adopted yet (waiting for budget, or the same as the game's fit), kept while its key holds. */
@@ -118,6 +133,51 @@ public final class CAStationFit {
             for (int i = 2; i < 5; i++) if (Integer.parseInt(a[i]) > Integer.parseInt(b[i])) return true;
         } catch (NumberFormatException e) { return !now.equals(was); }
         return false;
+    }
+
+    /** Pure (0.3.18.9): the augment part of a key; "-" for none or a key from before 0.3.18.6. */
+    static String augPartOf(String key) {
+        String[] a = key.split("\\|");
+        return a.length == 6 ? a[5] : "-";
+    }
+
+    /** Pure (0.3.18.9): the same station, hull and augments, with more weapons, wings or hullmods known. */
+    static boolean onlyKnownGrew(String now, String was) {
+        return sameSet(now, was) && needsPlan(now, was);
+    }
+
+    /** Pure (0.3.18.9): the same station building, hull and augments, whatever is known. */
+    static boolean sameSet(String now, String was) {
+        if (was == null) return false;
+        String[] a = now.split("\\|"), b = was.split("\\|");
+        return a.length == 6 && b.length == 6 && a[0].equals(b[0]) && a[1].equals(b[1]) && a[5].equals(b[5]);
+    }
+
+    /** 0.3.18.9: the fit kept for this station's augment set (this session, or saved), whatever was known then; null when none. */
+    static Fit byAugments(CAData d, MarketAPI m, FleetMemberAPI fm, String key) {
+        String k = m.getId() + "#" + augPartOf(key);
+        Fit f = BY_AUGMENTS.get(k);
+        if (f == null) {
+            String saved = d.stationLayouts().get(k);
+            int nl = saved == null ? -1 : saved.indexOf('\n');
+            ShipVariantAPI v = nl > 0 ? rebuild(fm.getVariant(), saved.substring(nl + 1)) : null;
+            if (v != null) { f = new Fit(); f.key = saved.substring(0, nl); f.variant = v; BY_AUGMENTS.put(k, f); }
+        }
+        return f != null && sameSet(key, f.key) ? f : null;
+    }
+
+    /** 0.3.18.9: keeps the fit adopted for this augment set. */
+    static void remember(CAData d, MarketAPI m, String key, ShipVariantAPI v) {
+        String k = m.getId() + "#" + augPartOf(key);
+        Fit f = new Fit(); f.key = key; f.variant = v;
+        BY_AUGMENTS.put(k, f);
+        d.stationLayouts().put(k, key + "\n" + layout(v));
+    }
+
+    /** 0.3.18.9: days since this colony's station was last planned; a large number when never. */
+    static float sincePlanned(MarketAPI m) {
+        Long at = CAMark.at(PLANNED_AT + m.getId());
+        return at == null ? 1e6f : CAMark.days(at, CAMark.now());
     }
 
     /** Pure (0.3.17.5): the larger count of each weapon and wing in either (what a colony has paid for over all its fits). */
@@ -216,9 +276,20 @@ public final class CAStationFit {
                 ShipVariantAPI v;
                 if (pend != null && key.equals(pend.key)) v = pend.variant;   // 0.3.15.5: planned once per key, not every day it waits
                 else {
-                    if (planned) continue;
-                    planned = true;
-                    v = plan(m, fm, f);
+                    // 0.3.18.9: the fit kept for this augment set is used again; more known alone plans again at most every KNOWN_DAYS
+                    Fit kept = byAugments(d, m, fm, key);
+                    boolean recent = sincePlanned(m) < KNOWN_DAYS;
+                    String base = have != null ? have.key : savedKey;
+                    if (kept != null && (!needsPlan(key, kept.key) || recent)) v = kept.variant;
+                    else if (kept == null && recent && onlyKnownGrew(key, base)) continue;   // the station keeps its fit for now
+                    else {
+                        float today = CADay.now();
+                        if (planned || (today - lastPlanDay < PLAN_GAP_DAYS && today >= lastPlanDay)) continue;
+                        planned = true;
+                        lastPlanDay = today;
+                        CAMark.set(PLANNED_AT + m.getId(), CAMark.now());
+                        v = plan(m, fm, f);
+                    }
                     Fit p = new Fit();
                     p.key = key; p.variant = v;
                     PENDING.put(m.getId(), p);
@@ -232,6 +303,7 @@ public final class CAStationFit {
                     PENDING.remove(m.getId());
                     d.stationLayouts().put(m.getId(), key + "\n" + layout(cur));
                     Fit fit = new Fit(); fit.key = key; fit.variant = cur; FITS.put(m.getId(), fit);
+                    remember(d, m, key, cur);   // 0.3.18.9
                     continue;
                 }
                 if (cur == null && now.equals(ordnance(fm.getVariant()))) continue;   // Auto Outfitting fell back to the game's fit: nothing to do
@@ -253,6 +325,7 @@ public final class CAStationFit {
                 Fit fit = new Fit();
                 fit.key = key; fit.variant = v;
                 FITS.put(m.getId(), fit);
+                remember(d, m, key, v);   // 0.3.18.9
                 int n = 0;
                 for (int c : more.values()) n += c;
                 // 0.3.17.5: every refit here changes weapons or wings, so every one is on screen, in a shorter line
@@ -265,7 +338,9 @@ public final class CAStationFit {
         FITS.keySet().retainAll(seen);   // a station that dropped below the tier, or a colony that's gone, keeps the game's fit
         PENDING.keySet().retainAll(seen);
         d.stationFits().keySet().retainAll(seen);
-        d.stationLayouts().keySet().retainAll(seen);
+        // 0.3.18.9: the per-augment fits ("marketId#augments") go with their colony
+        d.stationLayouts().keySet().removeIf(k -> !seen.contains(k.contains("#") ? k.substring(0, k.indexOf('#')) : k));
+        BY_AUGMENTS.keySet().removeIf(k -> !seen.contains(k.substring(0, k.indexOf('#'))));
     }
 
     // ---------------- the saved fit, slot by slot ----------------

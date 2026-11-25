@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.18.9 - 2026-11-25
+
+- Station outfitting: Fixed game freezes of 1 to 8 seconds. Each station fit is kept per set of augments and used again when the defense and calm augments switch, without planning again.
+- Station outfitting: Knowing more weapons, fighter wings or hullmods plans a station again at most every 60 days.
+- Station outfitting: New plans are at least 2 days apart.
+
 ## 0.3.18.8 - 2026-11-25
 
 - More Military Missions: A station defense mission at your colony puts it under siege while any of its attack fleets is alive, as a raid or invasion on its way does. The station gets its defense augments, building is defenses only, and the system's patrols are sized to the attack fleets.
