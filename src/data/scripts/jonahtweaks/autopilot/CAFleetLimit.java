@@ -27,6 +27,9 @@ import java.util.Set;
  * despawns as arrived, so its route ends and its source sends a new one on its own schedule.
  * Only fleets on a route (RouteManager) are touched. Never your faction's fleets, stations, hostile or threatening fleets,
  * war, raid or invasion fleets, mission fleets, busy fleets or fleets in a battle.
+ * 0.3.17.9: in a calm system (no siege, no colony at high threat, no threatening fleet there) the limit is CALM_LIMIT, and
+ * your own patrols on a route and Auto Colonies' defense fleets go home last, after filler and other factions' patrols.
+ * The Autarch armada, stations and important, war, busy or fighting fleets stay.
  * While a system is at the limit, Auto Colonies sends it no standing guard and no threat-high defense fleet; an emergency
  * (hostiles really there) still goes (CAWar, CAOwnWar). Setting: Fleet limit per system (CASettings.noFleetLimit).
  * Vanilla only.
@@ -50,6 +53,36 @@ public final class CAFleetLimit {
         for (String k : FILLER_TYPES) if (t.contains(k)) return 1;
         if (patrol || t.startsWith("merc")) return 2;
         return 0;
+    }
+
+    /**
+     * Pure (0.3.17.9): 3 when your faction's fleet may be sent home in a calm system (after filler and other factions'
+     * patrols): a patrol on a route, or a defense fleet Auto Colonies raised whose duty outlasted the threat. Never a station,
+     * the Autarch armada, an important, war, busy or fighting fleet, or any while the system isn't calm.
+     */
+    static int ownRank(boolean own, boolean calm, boolean station, boolean armada, boolean important, boolean war, boolean busy,
+                       boolean battle, boolean onRoute, boolean patrol, boolean acDefense) {
+        if (!own || !calm || station || armada || important || war || busy || battle) return 0;
+        return (onRoute && patrol) || acDefense ? 3 : 0;
+    }
+
+    /** Pure (0.3.17.9): the limit in force: CALM_LIMIT while the system is calm, else LIMIT. */
+    static int limit(boolean calm) { return calm ? CALM_LIMIT : LIMIT; }
+
+    static final int CALM_LIMIT = CATuning.FLEET_LIMIT_CALM;
+
+    /**
+     * 0.3.17.9: no colony of yours in the system is under siege or at high threat (a raid, crisis or invasion coming:
+     * CAThreat's saved state), and no fleet there threatens you (CAEnforcers.threat).
+     */
+    static boolean calm(StarSystemAPI sys) {
+        CAData d = CAData.get();
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            if (m.getStarSystem() != sys) continue;
+            if (d.colony(m.getId()).threatHigh || CASiege.held(m)) return false;
+        }
+        for (CampaignFleetAPI f : sys.getFleets()) if (!f.isStationMode() && CAEnforcers.threat(f)) return false;
+        return true;
     }
 
     /** Pure: how many to send home from `count` fleets at `limit` (0 under it). */
@@ -90,18 +123,21 @@ public final class CAFleetLimit {
     }
 
     static void trim(StarSystemAPI sys, final CampaignFleetAPI player) {
-        int extra = over(count(sys), LIMIT);
+        boolean calm = calm(sys);   // 0.3.17.9
+        int lim = limit(calm);
+        int extra = over(count(sys), lim);
         if (extra <= 0) return;
         Set<CampaignFleetAPI> routed = new HashSet<CampaignFleetAPI>();
         for (RouteManager.RouteData r : RouteManager.getInstance().getRoutesInLocation(sys))
             if (r.getActiveFleet() != null) routed.add(r.getActiveFleet());
         final boolean here = player != null && player.getContainingLocation() == sys;
-        List<CampaignFleetAPI> first = new ArrayList<CampaignFleetAPI>(), second = new ArrayList<CampaignFleetAPI>();
+        List<CampaignFleetAPI> first = new ArrayList<CampaignFleetAPI>(), second = new ArrayList<CampaignFleetAPI>(), third = new ArrayList<CampaignFleetAPI>();
         for (CampaignFleetAPI f : sys.getFleets()) {
             if (f.isPlayerFleet()) continue;
             if (here && Misc.getDistance(f, player) < NEAR) continue;
             int r = rank(f, routed);
             if (r == 1) first.add(f); else if (r == 2) second.add(f);
+            else if (ownRank(f, routed, calm) == 3) third.add(f);   // 0.3.17.9: your patrols and spent defense fleets, last
         }
         Comparator<CampaignFleetAPI> far = new Comparator<CampaignFleetAPI>() {
             public int compare(CampaignFleetAPI a, CampaignFleetAPI b) {
@@ -110,14 +146,26 @@ public final class CAFleetLimit {
         };
         Collections.sort(first, far);
         Collections.sort(second, far);
+        Collections.sort(third, far);
         List<CampaignFleetAPI> go = new ArrayList<CampaignFleetAPI>(first);
         go.addAll(second);
+        go.addAll(third);
         int sent = 0;
         for (CampaignFleetAPI f : go) {
             if (sent >= extra) break;
             f.despawn(FleetDespawnReason.REACHED_DESTINATION, null);
             sent++;
         }
-        if (sent > 0) CALog.quiet(sys.getName() + ": Fleet limit: sent " + sent + " small fleets home (" + LIMIT + " a system).");
+        if (sent > 0) CALog.quiet(sys.getName() + ": Fleet limit: sent " + sent + " fleets home (" + lim + " a system" + (calm ? " while calm" : "") + ").");
+    }
+
+    /** 0.3.17.9: ownRank() for one fleet. */
+    static int ownRank(CampaignFleetAPI f, Set<CampaignFleetAPI> routed, boolean calm) {
+        MemoryAPI mem = f.getMemoryWithoutUpdate();
+        boolean own = f.getFaction() != null && Factions.PLAYER.equals(f.getFaction().getId());
+        boolean important = mem.getBoolean("$missionImportant") || mem.contains("$sotf_seraphFleet");
+        boolean war = mem.getBoolean("$isWarFleet") || mem.getBoolean("$isRaider");
+        return ownRank(own, calm, f.isStationMode(), mem.getBoolean(CATierFive.ARMADA_MEM), important, war, mem.getBoolean("$core_fleetBusy"),
+                f.getBattle() != null, routed.contains(f), mem.getBoolean("$isPatrol"), mem.contains(CAOwnWar.MEM));
     }
 }

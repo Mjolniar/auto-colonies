@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.17.9 - 2026-11-24
+
+- Fleet limit: A calm system (no siege, no colony at high threat, no hostile fleet there) is kept to 20 fleets. Your own patrols and Auto Colonies' defense fleets are sent home there after filler and other factions' patrols.
+- Fleet limit: During a threat the limit stays 30 and your fleets stay.
+
 ## 0.3.17.8 - 2026-11-24
 
 - Terraforming: The Unification Center's log line names the conditions or industries TME finds missing, or the error its check gave.

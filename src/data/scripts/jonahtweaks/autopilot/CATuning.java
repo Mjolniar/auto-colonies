@@ -236,6 +236,8 @@ public final class CATuning {
     public static final float DEFENSE_MIN_FP = 100f, DEFENSE_COOLDOWN_DAYS = 30f;
     /** 0.3.16.5: fleets a system with your colony holds before small fleets are sent home (CAFleetLimit), and how close to you none is. */
     public static final int FLEET_LIMIT = 30;
+    /** 0.3.17.9: the fleet limit in a calm system (CAFleetLimit.calm): your own patrols and spent defense fleets count down to it too. */
+    public static final int FLEET_LIMIT_CALM = 20;
     public static final float FLEET_LIMIT_NEAR = 1500f;
     /** 0.3.15.4: the most the Credit reserve can be (a 5,000,000 reserve over a player's credits stopped every build). */
     public static final float RESERVE_MAX = 3000000f;
