@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.17.8 - 2026-11-24
+
+- Terraforming: The Unification Center's log line names the conditions or industries TME finds missing, or the error its check gave.
+
 ## 0.3.17.7 - 2026-11-24
 
 - Research: Items research gathers for a tech stay in Autopilot Storage at the research colony until the tech starts. Fixed a Pristine Nanoforge shipped between research and a Heavy Industry every 6 days.

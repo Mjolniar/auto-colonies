@@ -1,5 +1,6 @@
 package data.scripts.jonahtweaks.autopilot;
 
+import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
@@ -171,7 +172,7 @@ public final class CATme {
      */
     public static boolean canRun(Industry ind, Proj p) {
         look();
-        if (canRun == null || p == null || p.raw == null) return false;
+        if (canRun == null || p == null || p.raw == null) { lastError = canRun == null ? "TME's check wasn't found" : "no project"; return false; }
         try {
             if (v210) {
                 if (projCls != null && projCls.isInstance(p.raw) && ind.getMarket().hasCondition(p.id)) return true;   // 0.3.9.2 (I L1)
@@ -179,8 +180,62 @@ public final class CATme {
             }
             return Boolean.TRUE.equals(CARefl.invoke(canRun, null, ind, p.raw));
         } catch (Throwable t) {
+            lastError = String.valueOf(t.getCause() != null ? t.getCause() : t);   // 0.3.17.8
             return false;
         }
+    }
+
+    /** 0.3.17.8: the last error TME's check threw (for CATerraform.worldNote), or null. */
+    static String lastError;
+
+    /**
+     * 0.3.17.8: the required conditions and industries of a project (TME 2.10: likedConditions, likedIndustries) the market
+     * doesn't have, as "Irradiated, Heavy Industry"; "" when it has them all; null when they can't be read.
+     */
+    static String missing(MarketAPI m, Proj p) {
+        look();
+        if (!v210 || p == null || p.raw == null || m == null) return null;
+        try {
+            List<String> out = new ArrayList<String>();
+            for (String[] g : groups(String.valueOf(CARefl.call(p.raw, "getLikedConditions")))) {
+                boolean any = false, all = true;
+                for (String id : g[1].split("\\|")) { boolean has = m.hasCondition(id); any |= has; all &= has; if (!has && g[0].equals("all")) out.add(condName(id)); }
+                if (g[0].equals("one") && !any) out.add(String.join(" or ", names(g[1], true)));
+            }
+            for (String[] g : groups(String.valueOf(CARefl.call(p.raw, "getLikedIndustries")))) {
+                boolean any = false;
+                for (String id : g[1].split("\\|")) { boolean has = m.hasIndustry(id); any |= has; if (!has && g[0].equals("all")) out.add(indName(id)); }
+                if (g[0].equals("one") && !any) out.add(String.join(" or ", names(g[1], false)));
+            }
+            return String.join(", ", out);
+        } catch (Throwable t) { return null; }
+    }
+
+    /** Pure (0.3.17.8): TME's "needAll:a|b,needOne:c|d" as {"all", "a|b"}, {"one", "c|d"}. A blank or "null" text has none. */
+    static List<String[]> groups(String text) {
+        List<String[]> out = new ArrayList<String[]>();
+        if (text == null || text.trim().isEmpty() || text.equals("null")) return out;
+        for (String e : text.split(",")) {
+            String s = e.trim();
+            if (s.startsWith("needAll:")) out.add(new String[]{"all", s.substring(8)});
+            else if (s.startsWith("needOne:")) out.add(new String[]{"one", s.substring(8)});
+            else if (!s.isEmpty()) out.add(new String[]{"all", s});
+        }
+        return out;
+    }
+
+    static List<String> names(String ids, boolean cond) {
+        List<String> l = new ArrayList<String>();
+        for (String id : ids.split("\\|")) l.add(cond ? condName(id) : indName(id));
+        return l;
+    }
+
+    static String condName(String id) {
+        try { return Global.getSettings().getMarketConditionSpec(id).getName(); } catch (Throwable t) { return id; }
+    }
+
+    static String indName(String id) {
+        try { return Global.getSettings().getIndustrySpec(id).getName(); } catch (Throwable t) { return id; }
     }
 
     /** Sets the project TME starts on the structure's next startUpgrading(), as its dialog does. */

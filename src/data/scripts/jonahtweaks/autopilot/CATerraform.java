@@ -35,7 +35,14 @@ public class CATerraform {
             String why = "TME doesn't list the project";
             for (CATme.Proj pd : projects) {
                 if (!pd.id.equals(plan.world)) continue;
-                why = moving.contains(pd.id) ? "another project changes it" : !CATme.canRun(ind, pd) ? "TME's own check fails (conditions or industries)" : null;
+                if (moving.contains(pd.id)) { why = "another project changes it"; continue; }
+                CATme.lastError = null;
+                if (CATme.canRun(ind, pd)) { why = null; continue; }
+                // 0.3.17.8: what TME's check finds missing, or the error it threw
+                String miss = CATme.missing(m, pd);
+                why = miss != null && !miss.isEmpty() ? "it needs " + miss
+                        : CATme.lastError != null ? "TME's check failed (" + CATme.lastError + ")"
+                        : "TME's check says no with every listed condition and industry in place";
             }
             if (why != null && CALog.once("worldnote:" + m.getId() + ":" + why))
                 CALog.quiet(m.getName() + ": " + ind.getCurrentName() + " can't start the " + CAWorldPlanner.name(plan.world) + " project: " + why + ".");
