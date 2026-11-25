@@ -206,6 +206,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | Special project supply | Auto, Warn only, Off | Empire mode | It builds a producer for special project goods that no colony makes. Needs Vaults of Knowledge. |
 | Megastructures | Follow colony mode, Recommend only, Off | Follow colony mode | It covers Coronal Hypershunt range and restoration. Needs Vaults of Knowledge. |
 | Station augments | Follow colony mode, Recommend only, Off | Follow colony mode | Needs Station Augments. |
+| Station refits | Once a year, Every 2 years, Every 180 days, Off | Once a year | How often a station's weapons and augments can get changed after its first fit. A new or upgraded station always gets fitted, and Off leaves them alone after that. |
 | RAT settlement | Advisor, Approve, Auto, Off | Empire mode | Needs Random Assortment of Things. |
 | Found when a site earns | 5,000 to 10,000,000 | 20,000 | It founds a settlement where a site earns at least this much a month. Needs Random Assortment of Things. |
 | IndEvo specialties | On, Off | On | Needs Industrial Evolution. |

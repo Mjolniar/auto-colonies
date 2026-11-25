@@ -1,7 +1,14 @@
 # Patch notes
 
+## 0.3.20.3 - 2026-11-25
+
+- Station refits: Added the Station refits setting under Extras (Once a year, Every 2 years, Every 180 days, Off). Once a year by default. Off leaves a station's weapons and augments alone after its first fit.
+- Station refits: A new or upgraded station always gets its first fit.
+
 ## 0.3.20.2 - 2026-11-25
 
+- Station refits: A station's weapons are fitted once, then again only for another station building or hull, or for more known weapons, wings or hullmods once a year. A change in augments does not refit the weapons.
+- Station augments: Planned with the colony's goal. A raid, blockade or high threat no longer switches the station to a defense loadout. Changed at most once a year after the first fit.
 - Performance: The terraforming planner runs one colony per task in the daily pass, with income reads kept for each colony. The starts run last, in the same order.
 - Performance: The weekly mod watch runs one mod per task. The diagnostics report is written in parts: the head, the market, one colony per task, then the write.
 - Performance: Panel scores' plan tracking keeps Building Menu Overhaul reads for each colony.

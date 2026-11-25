@@ -153,6 +153,7 @@ ca_research,Research,Radio,Advisor,"Advisor, Auto, Off",Requires Vaults of Knowl
 ca_projsupply,Special project supply,Radio,Warn only,"Auto, Warn only, Off",A producer is constructed for any special project good no colony makes. Requires Vaults of Knowledge.,,,Advanced
 ca_hs,Megastructures,Radio,Follow colony mode,"Follow colony mode, Recommend only, Off",Coronal Hypershunt range and restoration are governed here. Requires Vaults of Knowledge.,,,Advanced
 ca_aug,Station augments,Radio,Follow colony mode,"Follow colony mode, Recommend only, Off",Requires Station Augments.,,,Advanced
+ca_srefit,Station refits,Radio,Once a year,"Once a year, Every 2 years, Every 180 days, Off","How often a station's weapons and augments can get changed after its first fit. A new or upgraded station always gets fitted, and Off leaves them alone after that.",,,Advanced
 ca_settle,RAT settlement,Radio,Advisor,"Advisor, Approve, Auto, Off",Requires Random Assortment of Things.,,,Advanced
 ca_settleinc,Found when a site earns,Int,20000,,"A settlement is founded once a site earns this much. Requires Random Assortment of Things. Accepted range is 5,000 to 10,000,000, in steps of 5,000.",5000,10000000,Advanced
 ca_spec,IndEvo specialties,Boolean,true,,Requires Industrial Evolution.,,,Advanced
