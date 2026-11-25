@@ -166,7 +166,9 @@ public class CASurplus {
     }
 
     /** Works out today's focus world: yours if you picked one that's still an Auto colony, else Autopilot's. */
-    static void compute(CASettings s) {
+    static void compute(final CASettings s) { CAMemo.scope(() -> computeNow(s)); }   // 0.3.20.1: BMO reads kept for the look
+
+    static void computeNow(CASettings s) {
         computedAt = now();
         scores.clear(); whys.clear();
         List<MarketAPI> cands = candidates();

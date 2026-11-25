@@ -35,8 +35,14 @@ public class CAAutarchIntel extends BaseIntelPlugin {
     /** The search is on: story mode on, no core yet, a station and its hint. Pure inputs in active(...). */
     static boolean active() {
         try {
-            return active(CASync.on(), CASync.phase(), CASync.installed(), CASync.pulled(), CAAutarch.area() != null,
-                    CASync.generation(), CASync.seen(CATriPad.FOUND), CAAutarch.siteExists(), CAAutarch.anywhere());
+            // 0.3.20.1: as active(...) below, with the sector-wide reads (the site by id, the core in every storage and space)
+            // only when the cheap parts haven't decided it: the story step paid for both every day
+            boolean on = CASync.on(), installed = CASync.installed(), pulled = CASync.pulled();
+            String phase = CASync.phase();
+            if (!on || !phase.isEmpty() || (installed && !pulled)) return false;
+            boolean early = CASync.generation() > 0 || CASync.seen(CATriPad.FOUND);
+            if (!early || CAAutarch.area() == null) return false;
+            return active(on, phase, installed, pulled, true, CASync.generation(), CASync.seen(CATriPad.FOUND), CAAutarch.siteExists(), CAAutarch.anywhere());
         } catch (Throwable t) { return false; }
     }
 

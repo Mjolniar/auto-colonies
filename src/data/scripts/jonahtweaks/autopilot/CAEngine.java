@@ -332,11 +332,13 @@ public class CAEngine {
         long empire = day >= 0 ? empireSig() : 0L;
         long sig = day >= 0 && !noProbe ? resultSig(m) : 0L;   // 0.3.0.0 (A4 fix): read before scoring, as the epoch is
         boolean focus = CAPlan.focus(m);
+        CAMemo.begin();   // 0.3.20.1: income and BMO reads kept for this evaluation
         try {
             Result r = score(m, profile, minStability, day, ep, empire);
             if (day >= 0 && !noProbe) keep(resultKey(m, profile, minStability, profitOnly), day, ep, sig, r);
             return r;
         } finally {
+            CAMemo.end();
             if (focus) CAPlan.focus(null);
             CAPerf.record(drawn ? "evaluate (while a page draws)" : noProbe ? "evaluate (research what-if)" : forDisplay ? "evaluate (panel scores)"
                     : profitOnly ? "evaluate (fast buildout)" : "evaluate", System.nanoTime() - t0);
@@ -1604,7 +1606,21 @@ public class CAEngine {
             current.add(s != null && view(s, day, CACache.epoch(), sig != null ? sig : resultSig(m), now).current);
         }
         int n = 0;
-        for (int i : fillOrder(at, current, maxStale)) {
+        List<Integer> order = fillOrder(at, current, maxStale);
+        if (daily && CAPass.draining()) {   // 0.3.20.1: one colony a task, in the same order, right after this step
+            List<Runnable> parts = new ArrayList<Runnable>();
+            for (int i : order) {
+                final MarketAPI m = ms.get(i);
+                parts.add(() -> {
+                    CAData.Colony c = d.colony(m.getId());
+                    try { refresh(m, c.profile, minStability, buildoutRanking(c)); }
+                    catch (Throwable t) { CAStep.warn("panel scores", "panel score failed at " + m.getName(), t); }
+                });
+            }
+            CAPass.parts("panel scores (colony)", parts);
+            return order.size();
+        }
+        for (int i : order) {
             MarketAPI m = ms.get(i);
             CAData.Colony c = d.colony(m.getId());
             try { refresh(m, c.profile, minStability, buildoutRanking(c)); n++; }

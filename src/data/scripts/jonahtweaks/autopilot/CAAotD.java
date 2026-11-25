@@ -56,8 +56,14 @@ public class CAAotD {
 
     /** Buildings BMO hides from this colony's build menu right now (AotD hides some until researched). */
     @SuppressWarnings("unchecked")
-    public static Set<String> hidden(MarketAPI m) {
+    public static Set<String> hidden(final MarketAPI m) {
         if (!enabled() || !link()) return Collections.emptySet();
+        Set<String> k = CAMemo.kept("bmo-hidden", m, () -> hiddenNow(m));   // 0.3.20.1: every BMO listener runs on each read
+        return k == UNREADABLE ? k : new HashSet<String>(k);
+    }
+
+    @SuppressWarnings("unchecked")
+    static Set<String> hiddenNow(MarketAPI m) {
         try {
             Object s = CARefl.invoke(hiddenSet, null, m);
             return s == null ? Collections.<String>emptySet() : new HashSet<String>((Collection<String>) s);

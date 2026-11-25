@@ -57,6 +57,16 @@ public final class CAPass {
         for (int i = l.size() - 1; i >= 0; i--) queue.addFirst(l.get(i));
     }
 
+    /** 0.3.20.1: a step's parts as their own tasks right after the running step, in order, each timed under name (CAPerf). At once outside a pass. */
+    public static void parts(final String name, List<Runnable> parts) {
+        List<Runnable> timed = new java.util.ArrayList<Runnable>();
+        for (final Runnable r : parts) timed.add(() -> {
+            long t0 = System.nanoTime();
+            try { r.run(); } finally { try { CAPerf.record(name, System.nanoTime() - t0); } catch (Throwable ignored) { } }
+        });
+        next(timed);
+    }
+
     /** Drops the rest of the pass (story mode's Autopilot went dormant). */
     public static void stop() { queue.clear(); }
 
@@ -80,6 +90,7 @@ public final class CAPass {
         long used = System.nanoTime() - start;
         total += used;
         frames++;
+        try { CAPerf.frame(used); } catch (Throwable ignored) { }   // 0.3.20.1: the frame histogram
         if (used > longest) longest = used;
         if (!queue.isEmpty()) return false;
         try { CAPerf.pass(total, frames, longest); } catch (Throwable ignored) { }

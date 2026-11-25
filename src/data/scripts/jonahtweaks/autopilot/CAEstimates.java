@@ -57,7 +57,7 @@ public class CAEstimates {
     // 0.3.8.8: count(MarketAPI, String) removed: nothing called it
 
     public static void apply(MarketAPI m, String id, CAEngine.Pick p, java.util.Map<String, Integer> deficit) {
-        float gross = Math.max(0f, m.getGrossIncome());
+        float gross = Math.max(0f, CAMemo.gross(m));   // 0.3.20.1: kept inside a look
         int s = m.getSize();
         if (id.startsWith("aotd_")) { aotd(m, id, p, deficit, gross, s); return; }
         if (id.equals("commerce")) {

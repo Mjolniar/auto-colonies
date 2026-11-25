@@ -107,6 +107,11 @@ public class CATerraformSurplus {
      * remove what they hate, so the order they finish in would matter): several can then run at once.
      */
     static CATerraSim.Result plan(MarketAPI m, CAData.Colony c, CASettings s) {
+        CAMemo.begin();   // 0.3.20.1: income reads kept for the plan
+        try { return planNow(m, c, s); } finally { CAMemo.end(); }
+    }
+
+    static CATerraSim.Result planNow(MarketAPI m, CAData.Colony c, CASettings s) {
         Set<String> conds = CATerraform.conditions(m);   // 0.3.9.2 (I C4): the one helper
         Map<String, CATme.Proj> busy = busy(m);
         Set<String> key = new HashSet<String>(conds);
@@ -164,34 +169,52 @@ public class CATerraformSurplus {
     /** While spending freely (CASurplus.rich), up to this many surplus projects start at a colony a day, on different structures. */
     static final int PARALLEL = 3;
 
-    public static void run(List<MarketAPI> auto) {
-        CAData d = CAData.get();
-        CASettings s = d.settings;
+    /** 0.3.20.1: what the colony tasks of one run gather for its last task. */
+    static final class Sweep { final List<Cand> cands = new ArrayList<Cand>(); String lockedText; float lockedBest; }
+
+    /**
+     * Daily. 0.3.20.1: each colony's plan is its own task right after this step (CAPass.parts), in the same order, and the
+     * summary and the starts (finish) are the last one; outside a pass it all runs at once as before.
+     */
+    public static void run(final List<MarketAPI> auto) {
+        final CAData d = CAData.get();
+        final CASettings s = d.settings;
         CATerraSim.lockedValue.clear();
         // marks first: with surplus terraforming off they never expired, and a marked hazard stayed protected for good (0.2.38.0)
         if (s.surplusTerraform >= 2) { d.enablers().clear(); d.enablerAt().clear(); }
         expireEnablers(d);
         if (s.surplusTerraform >= 2 || CASurplus.line(s) <= 0f) { CATerraSim.summary = null; return; }
-        List<Cand> cands = new ArrayList<Cand>();
-        String lockedText = null; float lockedBest = 0f;
-        for (MarketAPI m : auto) {
+        final Sweep w = new Sweep();
+        List<Runnable> parts = new ArrayList<Runnable>();
+        for (final MarketAPI m : auto) {
             if (CAHypershunt.is(m) || CAEngine.isOutpost(m) || m.getPlanetEntity() == null) continue;
-            CATerraSim.Result r;
-            try { r = plan(m, d.colony(m.getId()), s); }
-            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus terraforming plan failed at " + m.getName(), t); continue; }
-            for (Map.Entry<String, CATerraSim.Seq> e : r.locked.entrySet()) {
-                Float cur = CATerraSim.lockedValue.get(e.getKey());
-                CATerraSim.lockedValue.put(e.getKey(), (cur == null ? 0f : cur) + e.getValue().gain);
-                if (e.getValue().gain > lockedBest) {
-                    lockedBest = e.getValue().gain;
-                    lockedText = CAWorldPlanner.industryName(e.getKey()) + " (research still locks it) would let " + m.getName() + " "
-                            + e.getValue().text() + ": " + CAEngine.valueText(e.getValue().gain);
-                }
-            }
-            if (r.best != null) cands.add(new Cand(m, r.best));
-            try { takeDown(m, r, d.colony(m.getId())); }
-            catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus terraforming clean-up failed at " + m.getName(), t); }
+            parts.add(() -> colony(w, m, d, s));
         }
+        parts.add(() -> finish(w, auto, d, s));
+        CAPass.parts("surplus terraforming (colony)", parts);
+    }
+
+    static void colony(Sweep w, MarketAPI m, CAData d, CASettings s) {
+        CATerraSim.Result r;
+        try { r = plan(m, d.colony(m.getId()), s); }
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus terraforming plan failed at " + m.getName(), t); return; }
+        for (Map.Entry<String, CATerraSim.Seq> e : r.locked.entrySet()) {
+            Float cur = CATerraSim.lockedValue.get(e.getKey());
+            CATerraSim.lockedValue.put(e.getKey(), (cur == null ? 0f : cur) + e.getValue().gain);
+            if (e.getValue().gain > w.lockedBest) {
+                w.lockedBest = e.getValue().gain;
+                w.lockedText = CAWorldPlanner.industryName(e.getKey()) + " (research still locks it) would let " + m.getName() + " "
+                        + e.getValue().text() + ": " + CAEngine.valueText(e.getValue().gain);
+            }
+        }
+        if (r.best != null) w.cands.add(new Cand(m, r.best));
+        try { takeDown(m, r, d.colony(m.getId())); }
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "surplus terraforming clean-up failed at " + m.getName(), t); }
+    }
+
+    static void finish(Sweep w, List<MarketAPI> auto, CAData d, CASettings s) {
+        List<Cand> cands = w.cands;
+        String lockedText = w.lockedText;
         Collections.sort(cands, new Comparator<Cand>() { public int compare(Cand a, Cand b) { return Float.compare(b.q.ratio(), a.q.ratio()); } });
         String mode = CASettings.SURPLUS_TF_NAMES[Math.max(0, Math.min(2, s.surplusTerraform))];
         if (cands.isEmpty()) CATerraSim.summary = "Surplus terraforming (" + mode + "): nothing worth doing with what's built and researched"

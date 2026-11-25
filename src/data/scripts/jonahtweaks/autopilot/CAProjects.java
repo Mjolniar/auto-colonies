@@ -430,7 +430,9 @@ public class CAProjects {
     }
 
     /** Daily: reads the running project and plans producers for the goods your colonies don't make. */
-    public static void update() {
+    public static void update() { CAMemo.scope(() -> updateNow()); }   // 0.3.20.1: BMO and income reads kept for the look
+
+    static void updateNow() {
         if (!on()) { STEPS.clear(); project = null; shortBy.clear(); return; }
         float now = CADay.now();
         if (CATime.fresh(computedAt, now, 1f)) return;   // 0.3.0.0 (A1 fix): the game's day is negative, so now - (-99) < 1 held every day and this never ran

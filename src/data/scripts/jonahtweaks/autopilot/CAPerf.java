@@ -65,8 +65,10 @@ public final class CAPerf {
         float ms = nanos / 1000000f, frame = longestNanos / 1000000f;
         recordMs(PASS, ms);
         recordMs(FRAME, frame);
+        monthly();   // 0.3.20.1
         int day = CAEngine.today();
-        if (!slow(ms) || !logDue(day, slowLoggedDay)) return;
+        // 0.3.20.1: a line when a frame went over FRAME_LOG_MS (a visible hitch), once a day at most; before, a slow total, weekly
+        if (frame <= FRAME_LOG_MS || day == slowLoggedDay) return;
         slowLoggedDay = day;
         try {
             CADiagnostics.LOG.info(CADiagnostics.TAG + "daily pass took " + Math.round(ms) + " ms over " + frames + " frames, longest frame "
@@ -104,6 +106,46 @@ public final class CAPerf {
         return v < 10f ? String.format(Locale.ROOT, "%.1f", v) : String.valueOf(Math.round(v));
     }
 
+    // ---------------- 0.3.20.1: daily pass frames ----------------
+
+    /** Frame lines (ms): FRAMES counts frames up to each, and over the last. */
+    static final float[] FRAME_LINES = {4f, 8f, 16f, 50f};
+    /** Daily pass frames since the last monthly summary: up to 4, 8, 16, 50 ms, and over 50. */
+    static final int[] FRAMES = new int[5];
+    /** A pass whose longest frame is over this gets a log line. */
+    public static final float FRAME_LOG_MS = 8f;
+    /** The month of the last summary line; -1 none this session. */
+    static int summaryMonth = -1;
+
+    /** Pure: the histogram slot for a frame of this many ms. */
+    static int slot(float ms) {
+        for (int i = 0; i < FRAME_LINES.length; i++) if (ms <= FRAME_LINES[i]) return i;
+        return FRAME_LINES.length;
+    }
+
+    /** One daily pass frame (CAPass.drain). */
+    static void frame(long nanos) { FRAMES[slot(nanos / 1000000f)]++; }
+
+    /** "120 up to 4 ms, 3 up to 8 ms, ..." */
+    static String frames() {
+        String[] n = {"up to 4 ms", "up to 8 ms", "up to 16 ms", "up to 50 ms", "over 50 ms"};
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < FRAMES.length; i++) { if (b.length() > 0) b.append(", "); b.append(FRAMES[i]).append(' ').append(n[i]); }
+        return b.toString();
+    }
+
+    /** Once a month: the frame histogram and the slowest steps, then the histogram starts again. */
+    static void monthly() {
+        int month;
+        try { month = com.fs.starfarer.api.Global.getSector().getClock().getMonth(); } catch (Throwable t) { return; }
+        if (summaryMonth == month) return;
+        if (summaryMonth >= 0) {
+            try { CADiagnostics.LOG.info(CADiagnostics.TAG + "daily pass frames this month: " + frames() + "; slowest steps: " + summary(5)); } catch (Throwable ignored) { }
+        }
+        summaryMonth = month;
+        java.util.Arrays.fill(FRAMES, 0);
+    }
+
     /** Called on every load (CAReset). */
-    public static void reset() { STATS.clear(); slowLoggedDay = Integer.MIN_VALUE; }
+    public static void reset() { STATS.clear(); slowLoggedDay = Integer.MIN_VALUE; java.util.Arrays.fill(FRAMES, 0); summaryMonth = -1; }
 }

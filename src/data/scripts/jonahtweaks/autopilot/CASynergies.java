@@ -179,7 +179,7 @@ public class CASynergies {
         } else if (id.equals("darkhellthepro_syndicate_line")) {
             if (have.contains("cryosanctum")) supply(m, p, "organs", 3, deficit);
             float pct = have.contains("aotd_druglight") ? 0.6f * eff : have.contains("lightindustry") ? 0.1f * eff : 0f;
-            p.fx[0] += pct * Math.max(0f, m.getGrossIncome());
+            p.fx[0] += pct * Math.max(0f, CAMemo.gross(m));   // 0.3.20.1
             p.lines.add((have.contains("cryosanctum") ? "+3 organs, " : "") + "colony income +" + Math.round(pct * 100f) + "%");
         } else if (id.equals("aotd_lockheed_martin")) {
             p.lines.add("Black site projects up to 10% faster");

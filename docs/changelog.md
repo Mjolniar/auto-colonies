@@ -1,5 +1,12 @@
 # Patch notes
 
+## 0.3.20.1 - 2026-11-25
+
+- Performance: Colony income reads and Building Menu Overhaul's hidden-building list are kept during one colony's evaluation, the special project supply step, the focus world pick and each surplus terraforming plan. They are read again when the colony changes.
+- Performance: Surplus terraforming and panel scores run one colony per task in the daily pass.
+- Performance: The story step reads the Autarch core's site and the sector's storage only when its other conditions leave the answer open.
+- Diagnostics: The daily pass log line is written when a frame takes over 8 ms, once a day at most. A monthly line lists the pass frames by length and the slowest steps.
+
 ## 0.3.20.0 - 2026-11-25
 
 - Goals: Added the Materials goal. Money counts less, production floors count four times, and every good your production orders take is valued while your colonies make too little of it.

@@ -89,7 +89,7 @@ public class CAConditions {
         float v = 0f;
         Float hz = HAZARD.get(cond);
         if (hz != null) {
-            float upkeep = Math.max(0f, m.getGrossIncome() - m.getNetIncome());
+            float upkeep = Math.max(0f, CAMemo.gross(m) - CAMemo.net(m));   // 0.3.20.1: kept inside a look
             v -= hz * upkeep;                         // upkeep scales with hazard
             v -= hz * 10f * w[6] / 2f;                // growth penalty
         }
