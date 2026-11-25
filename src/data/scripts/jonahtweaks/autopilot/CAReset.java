@@ -35,6 +35,7 @@ public class CAReset {
         failed += run("integration health", () -> CACompat.brokenClasses.clear());   // CACompat.check fills it again in runScan
         failed += run("saved data tidy-up", () -> CATidy.reset());
         failed += run("industry limit", () -> CAOverLimit.reset());
+        failed += run("fleet limit", () -> { CAFleetLimit.PEAKS.clear(); CAFleetLimit.WEEK.clear(); });   // 0.3.18.3: held patrol counts, weekly tallies
         failed += run("expansion scan", () -> CAExpansion.reset());   // 0.3.0.9: the candidate list and status line held the last save's
         // the weekly timers 0.2.45 ran on the session's own clock (0.2.45.1 reset these in CAAuto.reset). 0.3.0.0 (A1 fix): back to
         // NaN, "never fired", not -99. The pass now hands them the game's own day, and the game clock counts from 1970, so a

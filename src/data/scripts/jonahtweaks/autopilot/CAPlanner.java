@@ -173,6 +173,15 @@ public class CAPlanner {
     }
 
     /**
+     * Pure (0.3.18.3): what a held start waits for: the plan step saved up for when spending `total` breaks its date, else the
+     * earmarked pick. 0.3.17.7's saving held starts with no earmark, and the line read the earmark's name (a crash).
+     */
+    static String heldFor(Pool p, float total) {
+        if (p.world != null && !keepsWorld(p, total)) return p.world.name;
+        return p.earmark != null ? p.earmark.name : "a pick saved up for";
+    }
+
+    /**
      * Pure (0.3.17.7): spending `total` keeps the saved-up-for plan step's date: the credits left above the reserve, plus the
      * budget still to come by its date, still cover its price. True with nothing saved up for, or for spending nothing.
      */
@@ -703,7 +712,7 @@ public class CAPlanner {
                 return MOVED;
             }
             if (!a.emergency && !keepsDate(pool, a)) {   // 0.3.0.0 (B3 fix): a siege's defenses go as in 0.2.45.1
-                mark(a, false, CAAction.HELD, "credits are set aside for " + pool.earmark.name);
+                mark(a, false, CAAction.HELD, "credits are set aside for " + heldFor(pool, total));   // 0.3.18.3: the plan step saved up for, with no earmark
                 if (a.usesQueue) narrow(gate, m, LONG_BUILD_DAYS);   // it goes once the saved-up-for pick has: no long build takes its queue meanwhile
                 return MOVED;
             }

@@ -55,6 +55,9 @@ public class CACompat {
      */
     static final Map<String, List<String>> brokenClasses = new LinkedHashMap<String, List<String>>();
 
+    /** 0.3.18.3: integration lines written this game start (the installed mods don't change between loads). */
+    static final java.util.Set<String> loggedLines = new java.util.HashSet<String>();
+
     /**
      * 0.3.0.0 (fix): what's missing for one CM class, and whether every call it makes into the mod is gone (off: skipped for the
      * session). Kept in brokenClasses itself, so CAReset's clear on load un-skips it too.
@@ -124,8 +127,10 @@ public class CACompat {
         ENTRIES.add(new Entry("roider", "Roider Union", "2.3.1", a("roider_dives", "roider_union_hq"), NONE, a(CAMods.CHARTER), NONE, null));
         // 0.2.38.0
         ENTRIES.add(new Entry("omega_core_everywhere", "Omega Core Everywhere", "1.2.5", NONE, NONE, NONE, a(CAOmega.CORE), () -> CAOmega.linkOce()));
-        ENTRIES.add(new Entry("astral_ascension_renewed", "Astral Ascension Renewed", "1.0.4", NONE,
-                a("population_11", "aar_arcology_world", "aar_ecumenopolis", "aar_crowned_world"), NONE, a(CAOmega.CORE), () -> CAOmega.adminPlugin() != null));
+        // 0.3.18.3: renamed Colonial Hypergrowth (same id and package). It registers its Omega admin plugin in its own onGameLoad,
+        // which runs after Auto Colonies' under the new name, so the link is its plugin class (or the plugin once registered)
+        ENTRIES.add(new Entry("astral_ascension_renewed", "Colonial Hypergrowth", "1.2.1", NONE,
+                a("population_11", "aar_arcology_world", "aar_ecumenopolis", "aar_crowned_world"), NONE, a(CAOmega.CORE), () -> CAOmega.adminPlugin() != null || CAOmega.aarLoaded()));
         ENTRIES.add(new Entry("niko_scavengableindustries", "Niko's Scavengable Industries", "1.0.0",
                 a("NSI_blastCoreMining", "NSI_SpyBureau", "NSI_SpyOutpost", "NSI_cryosanctum", "NSI_outpostDefense", "NSI_ASBUplink", "NSI_expertDockworks"), NONE, NONE, NONE, null));
         ENTRIES.add(new Entry("JYD", "Junk Yard Dogs", "3.7.0", a("JYD_forge", "JYD_scrap"), NONE, NONE, NONE, null));
@@ -198,6 +203,7 @@ public class CACompat {
             for (String id : e.commodities) if (spec(() -> Global.getSettings().getCommoditySpec(id)) == null) e.missing.add("commodity " + id);
             e.status = status(linked, e.missing.isEmpty(), sameVersion(e.version, e.tested));
             String line = e.name + " " + e.version + ": " + describe(e) + (e.linkChecked > 0 ? " (" + e.linkChecked + " linked names checked)" : "");
+            if (!loggedLines.add(line)) continue;   // 0.3.18.3: each line once a game start (every load wrote them all again)
             if (e.status == Status.OK) CADiagnostics.LOG.info(CADiagnostics.TAG + "integration " + line);
             else CADiagnostics.LOG.warn(CADiagnostics.TAG + "integration " + line);
         }

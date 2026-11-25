@@ -1,5 +1,13 @@
 # Patch notes
 
+## 0.3.18.3 - 2026-11-24
+
+- Planner: Fixed a crash when a start waited for a plan step's savings with no build saved up for. The planner's actions for that day were lost.
+- Fleet limit: A system's patrol count holds 30 days after a threat before stepping down.
+- Fleet limit: One summary line a week per system with the fleets sent home by kind, in place of a line each day.
+- Colonial Hypergrowth: The integration finds the renamed Astral Ascension Renewed (1.2.1) and its Omega core administrator again.
+- Diagnostics: The colony screen button report, the mod watch lines and the integration lines are each logged once a session.
+
 ## 0.3.18.2 - 2026-11-24
 
 - Fleet limit: Your colonies' patrol counts follow the system's threat. A calm system keeps 3 patrols. A threat adds enough patrols to beat its fleet points by a quarter: hostiles in the system, a raid group or raid on its way, or a colony at high threat.

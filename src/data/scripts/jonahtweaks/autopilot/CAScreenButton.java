@@ -118,7 +118,7 @@ public class CAScreenButton implements EveryFrameScript {
 
     /** 0.3.0.0 (07 section 3): the session's diagnostics counters and the dialog lookup, cleared on load (CAReset.onLoad). */
     public static void reset() {
-        noSpotLogged = false; placements = 0; reports = 0; lastReport = null;
+        noSpotLogged = false; placements = 0; reports = 0; lastReport = null; reported.clear();
         linkState = null; dialogNew = dialogShow = null;
     }
 
@@ -316,6 +316,8 @@ public class CAScreenButton implements EveryFrameScript {
     /** Diagnostics while the button isn't showing, logged when the screen changes, a few times a session. */
     static String lastReport;
     static int reports = 0;
+    /** 0.3.18.3: each report once a session, its numbers aside (tabs alternate, so the same line came back 7 to 17 times). */
+    static final java.util.Set<String> reported = new java.util.HashSet<String>();
 
     void report(CampaignUIAPI ui, InteractionDialogAPI dialog, Screen s) {
         if (reports >= 8 || (s != null && button != null && s.sawButton)) return;
@@ -328,7 +330,7 @@ public class CAScreenButton implements EveryFrameScript {
                 .append(": building grid ").append(s.grid != null ? "found with " + s.tiles.size() + " tiles" : "not found")
                 .append(", colony ").append(s.market == null ? "not found" : s.market.getName() + (s.market.isPlayerOwned() ? "" : " (not yours)"));
         String r = b.toString();
-        if (r.equals(lastReport)) return;
+        if (r.equals(lastReport) || !reported.add(r.replaceAll("[0-9]+", "#"))) return;   // 0.3.18.3: once a session
         lastReport = r;
         reports++;
         CADiagnostics.LOG.info(CADiagnostics.TAG + r);

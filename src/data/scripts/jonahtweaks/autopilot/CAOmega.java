@@ -66,6 +66,15 @@ public class CAOmega {
         try { return Misc.getAICoreAdminPlugin(CORE); } catch (Throwable t) { return null; }
     }
 
+    /** 0.3.18.3: Colonial Hypergrowth's (Astral Ascension Renewed's) Omega administrator class is loaded. */
+    static boolean aarLoaded() {
+        if (!on(AAR)) return false;
+        for (String c : new String[]{"astralascensionrenewed.campaign.OmegaAdminPlugin", "astralascensionrenewed.campaign.AarCampaignPlugin"}) {
+            try { Class.forName(c, false, Global.getSettings().getScriptClassLoader()); return true; } catch (Throwable ignored) { }
+        }
+        return false;
+    }
+
     /** AAR: an Omega core governs this colony. */
     public static boolean governs(MarketAPI m) { return m.getAdmin() != null && CORE.equals(m.getAdmin().getAICoreId()); }
 
@@ -221,7 +230,7 @@ public class CAOmega {
                     // 0.3.8.9: never where it takes the colony under the stability floor (a colony you govern loses its management bonus)
                     if ((best == null || v > best.value) && CAStability.canLose(m, adminArrives(m), null)) { best = new Spot(); best.m = m; best.value = v; best.why = "governs it"; }
                 } else if (v > 0f && CALog.once("omega:admin:limit:" + m.getId() + ":" + lim))
-                    CALog.advise(m.getName() + ": an Omega core could govern it (Astral Ascension Renewed). As an administrator it counts "
+                    CALog.advise(m.getName() + ": an Omega core could govern it (Colonial Hypergrowth). As an administrator it counts "
                             + adminPoints() + " inspection points (" + CAItems.limitWhy(s, m, none, lim) + "). Assign it as administrator.");   // 0.3.8.6: advice
             }
             if (!effects || CARogue.noCores(m)) continue;   // 0.3.2.1: Pilgrim World
@@ -306,7 +315,7 @@ public class CAOmega {
             if (!coming.contains(m) || !governs(m)) continue;
             if (CALog.once("omega:inspect:" + m.getId() + ":" + Global.getSector().getClock().getCycle()))
                 CALog.advise(m.getName() + ": Hegemony inspection coming for its Omega core administrator. Complying, or losing a resistance, "
-                        + "takes the administrator." + (ascended(m) ? " Past size 10 that starts Astral Ascension Renewed's Great Civil War (size 8, lasting stability loss)." : "")
+                        + "takes the administrator." + (ascended(m) ? " Past size 10 that starts Colonial Hypergrowth's Great Civil War (size 8, lasting stability loss)." : "")
                         + " Set the inspection orders.");   // 0.3.8.6: advice
         }
     }

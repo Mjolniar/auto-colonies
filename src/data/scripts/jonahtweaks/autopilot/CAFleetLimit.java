@@ -141,6 +141,30 @@ public final class CAFleetLimit {
     static final String[] PATROL_STATS = {com.fs.starfarer.api.impl.campaign.ids.Stats.PATROL_NUM_LIGHT_MOD,
             com.fs.starfarer.api.impl.campaign.ids.Stats.PATROL_NUM_MEDIUM_MOD, com.fs.starfarer.api.impl.campaign.ids.Stats.PATROL_NUM_HEAVY_MOD};
 
+    /**
+     * 0.3.18.3: per system id, the patrol count held {count, day it was set}: a threat raises it at once and it holds HOLD_DAYS
+     * before stepping down, so hostiles coming and going don't send patrols home one day and spawn new ones the next
+     * (Mia's Star went 3, 10, 21, 9 patrols within weeks). Session only (CAReset).
+     */
+    static final Map<String, float[]> PEAKS = new HashMap<String, float[]>();
+    /** 0.3.18.3: per system id, fleets sent home since the last summary {filler, other factions' patrols, your patrols, your defense fleets, flying back, first day}. */
+    static final Map<String, float[]> WEEK = new HashMap<String, float[]>();
+    static final float HOLD_DAYS = 30f, SUMMARY_DAYS = 7f;
+
+    /** Pure (0.3.18.3): the patrol count kept {count, day} from today's need and the held one (null: none). */
+    static float[] held(int need, float[] peak, float now) {
+        if (peak == null || need >= peak[0] || now < peak[1] || now - peak[1] > HOLD_DAYS) return new float[]{need, now};
+        return new float[]{peak[0], peak[1]};
+    }
+
+    /** Pure (0.3.18.3): the summary line's list: "15 traders and other filler, 2 of your patrols"; null when nothing went. */
+    static String summary(float[] w) {
+        List<String> l = new ArrayList<String>();
+        String[] what = {"traders and other filler", "other factions' patrols", "of your patrols", "of your defense fleets"};
+        for (int i = 0; i < 4; i++) if (w[i] > 0f) l.add(Math.round(w[i]) + " " + what[i]);
+        return l.isEmpty() ? null : CAContracts.join(l);
+    }
+
     /** Pure: patrols a system needs for a threat of this many fleet points (0: calm). */
     static int patrolsNeeded(float threatFP) {
         return CALM_PATROLS + (threatFP > 0f ? (int) Math.ceil(threatFP * 1.25f / PATROL_FP) : 0);
@@ -233,7 +257,10 @@ public final class CAFleetLimit {
     static void trim(StarSystemAPI sys, final CampaignFleetAPI player) {
         boolean calm = calm(sys);   // 0.3.17.9
         float threat = threatFP(sys);   // 0.3.18.2
-        int allowed = patrolsNeeded(threat), had = capPatrols(sys, allowed);
+        float now = CADay.now();
+        float[] keep = held(patrolsNeeded(threat), PEAKS.get(sys.getId()), now);   // 0.3.18.3: held HOLD_DAYS before stepping down
+        PEAKS.put(sys.getId(), keep);
+        int allowed = Math.round(keep[0]), had = capPatrols(sys, allowed);
         int lim = limit(calm);
         Map<CampaignFleetAPI, MarketAPI> routed = new HashMap<CampaignFleetAPI, MarketAPI>();
         for (RouteManager.RouteData r : RouteManager.getInstance().getRoutesInLocation(sys))
@@ -257,12 +284,14 @@ public final class CAFleetLimit {
         Collections.sort(second, far);
         Collections.sort(third, far);
         Collections.sort(patrols, far);
-        int gone = 0, back = 0;
+        float[] w = WEEK.get(sys.getId());
+        if (w == null) { w = new float[]{0f, 0f, 0f, 0f, 0f, now}; WEEK.put(sys.getId(), w); }
         // 0.3.18.2: your patrols past what the threat needs go home, whatever the system's count
         int extraPatrols = Math.max(0, patrols.size() - allowed);
         for (int i = 0; i < extraPatrols; i++) {
             CampaignFleetAPI f = patrols.get(i);
-            if (home(f, sourceOf(f, routed, sys), here && Misc.getDistance(f, player) < NEAR)) gone++; else back++;
+            if (!home(f, sourceOf(f, routed, sys), here && Misc.getDistance(f, player) < NEAR)) w[4]++;
+            w[2]++;
         }
         List<CampaignFleetAPI> rest = new ArrayList<CampaignFleetAPI>(patrols.subList(extraPatrols, patrols.size()));
         int extra = over(count(sys), lim);
@@ -273,13 +302,20 @@ public final class CAFleetLimit {
         int sent = 0;
         for (CampaignFleetAPI f : go) {
             if (sent >= extra) break;
-            if (home(f, sourceOf(f, routed, sys), here && Misc.getDistance(f, player) < NEAR)) gone++; else back++;
+            int kind = first.contains(f) ? 0 : second.contains(f) ? 1 : third.contains(f) ? 3 : 2;
+            if (!home(f, sourceOf(f, routed, sys), here && Misc.getDistance(f, player) < NEAR)) w[4]++;
+            w[kind]++;
             sent++;
         }
         if (CALog.once("fleetcap:" + sys.getId() + ":" + allowed + ":" + had))
             CALog.quiet(sys.getName() + ": Fleet limit: " + allowed + " patrols for a threat of " + Math.round(threat) + " fleet points (the colonies' buildings allow " + had + ").");
-        if (gone + back > 0) CALog.quiet(sys.getName() + ": Fleet limit: " + gone + " fleets sent home" + (back > 0 ? ", " + back + " flying back to their colony" : "")
-                + " (" + lim + " a system" + (calm ? " while calm" : "") + ").");
+        // 0.3.18.3: one line a week per system with what went, not one a day (128 lines in 8 minutes of play)
+        if (now - w[5] >= SUMMARY_DAYS || now < w[5]) {
+            String list = summary(w);
+            if (list != null) CALog.quiet(sys.getName() + ": Fleet limit: sent home in " + Math.round(Math.max(1f, now - w[5])) + " days: " + list + "."
+                    + (w[4] > 0f ? " " + Math.round(w[4]) + " flew back to their colony." : "") + " Limit " + lim + (calm ? " while calm." : "."));
+            WEEK.put(sys.getId(), new float[]{0f, 0f, 0f, 0f, 0f, now});
+        }
     }
 
     /** 0.3.17.9: ownRank() for one fleet. */

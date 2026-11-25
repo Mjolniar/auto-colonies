@@ -30,7 +30,7 @@ import java.util.*;
 public class CAModWatch {
     /** Mod ids watched, with names. */
     static final String[][] MODS = {
-            {"omega_core_everywhere", "Omega Core Everywhere"}, {"astral_ascension_renewed", "Astral Ascension Renewed"},
+            {"omega_core_everywhere", "Omega Core Everywhere"}, {"astral_ascension_renewed", "Colonial Hypergrowth"},
             {"niko_scavengableindustries", "Niko's Scavengable Industries"}, {"roider", "Roider Union"},
             {"JYD", "Junk Yard Dogs"}, {"CFT", "Carter's Freetraders"}, {"vulpoids", "Vulpoids"},
             {"yunruindustries", "Yunru Industries"}, {"SBTM", "Slightly Better Tech-Mining"}, {"yunruworlds", "Yunru's Worlds"},
@@ -70,8 +70,12 @@ public class CAModWatch {
                 last.add(o);
                 String line = CADiagnostics.TAG + "mod watch " + mod[1] + ": " + o.optString("verdict") + " - " + o.optString("summary");
                 // a line when it changes (and the first time each session), not ten identical lines a week (0.2.39.0)
-                if (line.equals(logged.get(mod[0]))) continue;
+                // 0.3.18.3: each line once a session, its counts aside: a warning count going 1, 2, 1 logged the same line again
+                // every week (Omega Core Everywhere 71 times across four logs)
+                String once = mod[0] + "|" + (line + problems(o)).replaceAll("[0-9]+", "#");
+                if (line.equals(logged.get(mod[0])) || logged.containsKey(once)) continue;
                 logged.put(mod[0], line);
+                logged.put(once, line);
                 // a warning says what it is (0.2.43.1): the report holds only the latest week, so a line that said "1 warnings"
                 // and nothing else was gone by the time anyone looked
                 if ("OK".equals(o.optString("verdict"))) CADiagnostics.LOG.info(line); else CADiagnostics.LOG.warn(line + problems(o));
@@ -246,11 +250,11 @@ public class CAModWatch {
                 if (!CAOmega.governs(m)) continue;
                 int max = Misc.getMaxMarketSize(m);
                 ch.add(max >= 15 || m.hasCondition("aotd_archeo_site") ? "PASS" : "WARN", m.getName() + " (size " + m.getSize() + "): Omega core administrator. "
-                        + "Size limit " + max + (max >= 15 ? "" : ". Astral Ascension Renewed promises 15"));
+                        + "Size limit " + max + (max >= 15 ? "" : ". Colonial Hypergrowth promises 15"));
                 if (CAItems.inspected().contains(m)) ch.add("WARN", "a Hegemony inspection is coming for " + m.getName() + "'s Omega administrator");
             }
             if (Global.getSettings().getModManager().isModEnabled("Planetace_AstralAscension"))
-                ch.add("FAIL", "the original Astral Ascension is enabled too; Astral Ascension Renewed refuses to run with it");
+                ch.add("FAIL", "the original Astral Ascension is enabled too; Colonial Hypergrowth refuses to run with it");
         }
     }
 
