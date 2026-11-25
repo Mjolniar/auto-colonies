@@ -748,6 +748,12 @@ public class CAPlan {
         seedPaidOnce(m);   // 0.3.0.0 (B5 fix 2): a save from before 0.3.0 first commits what 0.2.45 paid for
         String world = committedWorld(id);
         if (world != null) for (String w : CAWorldPlanner.WORLDS) if (m.hasCondition(w)) { endCommit(id); world = null; break; }   // formed: TME keeps it
+        if (world != null && CAWorldPlanner.dropped(world)) {   // 0.3.18.0: a dropped world's commitment ends at once
+            endCommit(id);
+            if (CALog.once("worlddrop:" + id + ":" + world))
+                CALog.think(m.getName() + ": the " + CAWorldPlanner.name(world) + " plan is dropped. Its buildings may upgrade.");
+            world = null;
+        }
         long now = CAMark.now();
         if (world != null) {
             Commit k = kept(id, world);
@@ -805,7 +811,7 @@ public class CAPlan {
             done.steps.add(new Step(Kind.COND, w, done.name));
             return done;
         }
-        if (CAWorldPlanner.fit(w, prof) <= 0f || worldDead(m, w)) return null;
+        if (CAWorldPlanner.fit(w, prof) <= 0f || CAWorldPlanner.dropped(w) || worldDead(m, w)) return null;   // 0.3.18.0: dropped()
         CAWorldPlanner.Row r = CAWorldPlanner.rows().get(w);
         if (r == null) return null;
         CAWorldPlanner.Sim sim = new CAWorldPlanner.Sim();

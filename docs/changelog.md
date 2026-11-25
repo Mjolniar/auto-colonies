@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.18.0 - 2026-11-24
+
+- Colony plans: With Ashes of the Domain, no colony plans toward a Waste World. Colonies committed to one drop it, and their Heavy Industry, Mining and Refining may upgrade.
+
 ## 0.3.17.9 - 2026-11-24
 
 - Fleet limit: A calm system (no siege, no colony at high threat, no hostile fleet there) is kept to 20 fleets. Your own patrols and Auto Colonies' defense fleets are sent home there after filler and other factions' patrols.

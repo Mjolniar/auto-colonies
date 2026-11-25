@@ -135,6 +135,25 @@ public class CAWorldPlanner {
 
     static final String[] WORLDS = {"tme_forge_world", "tme_fortress_world", "tme_paradise_world", "tme_hive_world", "tme_death_world", "tme_waste_world"};
 
+    /** 0.3.18.0: the Waste World's id. */
+    static final String WASTE = "tme_waste_world";
+
+    /**
+     * Pure (0.3.18.0): a world no plan works toward. With Ashes of the Domain, the Waste World: TME's Unification Center
+     * needs Heavy Industry by its exact id until the world forms, which holds back Orbital Works, the Skunkworks and the
+     * Fleetworks, and the world adds +1 output to Population, Mining and Refining at a hazard of +125% with its conditions.
+     */
+    static boolean dropped(String world, boolean aotd) { return aotd && WASTE.equals(world); }
+
+    /** 0.3.18.0: dropped() with Ashes of the Domain's mods as loaded (Vaults of Knowledge or Building Menu Overhaul). */
+    static boolean dropped(String world) {
+        if (!WASTE.equals(world)) return false;
+        try {
+            com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
+            return dropped(world, mm.isModEnabled(CAResearch.MOD) || mm.isModEnabled("bmo"));
+        } catch (Throwable t) { return false; }
+    }
+
     static float fit(String world, CAData.Profile p) {
         switch (p) {
             case WAR: return world.equals("tme_forge_world") ? 3f : world.equals("tme_fortress_world") ? 2f : 0f;
@@ -158,7 +177,7 @@ public class CAWorldPlanner {
         CAPlan.Plan best = null; float bestScore = -1e30f;
         for (String w : WORLDS) {
             float f = fit(w, prof);
-            if (f <= 0f) continue;
+            if (f <= 0f || dropped(w)) continue;   // 0.3.18.0: dropped()
             if (CAPlan.worldDead(m, w)) continue;   // its own steps were out of reach: the plain plan for a year (0.2.38.0)
             Row r = rows().get(w);
             if (r == null) continue;
