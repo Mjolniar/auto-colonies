@@ -123,7 +123,8 @@ final class CANextCard {
                         // the game's sprites are shared: size, alpha and color go back as they were after drawing
                         com.fs.starfarer.api.graphics.SpriteAPI sp = Global.getSettings().getSprite(sprite);
                         float ow = sp.getWidth(), oh = sp.getHeight(), oa = sp.getAlphaMult();
-                        float[] r = picture(x, y, pw, ph, ow, oh, can ? TEXT_H : TEXT_H_DARK);
+                        // 0.3.19.3: no picture and no wash when the texture isn't loaded (it was a gray box)
+                        float[] r = sp.getTextureId() == 0 ? null : picture(x, y, pw, ph, ow, oh, can ? TEXT_H : TEXT_H_DARK);
                         if (r != null) {
                             GL11.glEnable(GL11.GL_TEXTURE_2D);   // 0.3.18.1: Misc.renderQuadAlpha left it off, so the picture drew as a flat box
                             sp.setSize(r[2], r[3]);

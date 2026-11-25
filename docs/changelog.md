@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.19.3 - 2026-11-25
+
+- Build card: Fixed the picture showing as a gray box for a building no colony has yet, such as the Megaport.
+- Sync page and colony panel: Pictures that weren't loaded yet are loaded before they're drawn.
+
 ## 0.3.19.2 - 2026-11-25
 
 - Relocation: Added "Relocate weak colonies" under Settings, New colonies (Off, Ask first, Auto). Off by default.

@@ -231,12 +231,25 @@ public class CASyncPage {
     static String sprite(String key) {
         if (key == null || key.length() < 3) return null;
         String id = key.substring(2);
+        String path = null;
         try {
-            if (key.startsWith("i:")) return Global.getSettings().getIndustrySpec(id).getImageName();
-            if (key.startsWith("c:")) return Global.getSettings().getCommoditySpec(id).getIconName();
-            if (key.startsWith("s:")) return Global.getSettings().getSpecialItemSpec(id).getIconName();
+            if (key.startsWith("i:")) path = Global.getSettings().getIndustrySpec(id).getImageName();
+            else if (key.startsWith("c:")) path = Global.getSettings().getCommoditySpec(id).getIconName();
+            else if (key.startsWith("s:")) path = Global.getSettings().getSpecialItemSpec(id).getIconName();
         } catch (Throwable ignored) { }
-        return null;
+        return loaded(path);
+    }
+
+    /**
+     * 0.3.19.3: the game loads some pictures only when it first shows them (a building no colony of yours has, such as the
+     * Megaport), and an unloaded one drew as a gray box. Loads it first; null when it can't be loaded.
+     */
+    static String loaded(String path) {
+        if (path == null) return null;
+        try {
+            if (Global.getSettings().getSprite(path).getTextureId() == 0) Global.getSettings().loadTexture(path);
+            return Global.getSettings().getSprite(path).getTextureId() == 0 ? null : path;
+        } catch (Throwable t) { return null; }
     }
 
     /** Pure: tiles to a row on a page this wide: three from 760 px, else two. */
