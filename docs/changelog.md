@@ -1,5 +1,15 @@
 # Patch notes
 
+## 0.3.18.4 - 2026-11-25
+
+- Station augments: Combat picks follow the station's design line. Low tech: K-Type Shield Shunt and Bubble Shield. Midline: Axial Overclocking, Deep Shield Dissipators and Tactical Link. High tech: Bubble Shield and Tactical Link.
+- Station augments: Fixed K-Type Shield Shunt's armor bonus counting only on shielded sections. It applies to every section.
+- Station augments: Tactical Link counts its +35% range for the station's own ballistic and energy guns.
+- Station augments: Aftermarket Defense Platforms count for less on battlestations and star fortresses.
+- Station augments: Deep Shield Dissipators are considered for midline stations only.
+- Station augments: Fragment augments are picked when their items are in Autopilot Storage. The Fragment Swarm goes on only together with fragment augments that use it. Each one takes a Fragment Fabricator or Threat Processing Unit from the nearest Autopilot Storage. The item goes back to the colony's Autopilot Storage when the augment comes off.
+- Station augments: Shrouded augments stay yours to install.
+
 ## 0.3.18.3 - 2026-11-24
 
 - Planner: Fixed a crash when a start waited for a plan step's savings with no build saved up for. The planner's actions for that day were lost.

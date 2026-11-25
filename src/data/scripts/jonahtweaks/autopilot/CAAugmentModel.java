@@ -8,6 +8,10 @@ import java.util.*;
  * CAAugments turns the share into the engine's fleet effect, scaled by the station's tier and, while the colony is
  * threatened, by THREAT. Augments whose effect works against an AI-run station are never picked (NEVER), and Command
  * Center's command points count for nothing: a station defends itself without orders.
+ * 0.3.18.4: values by the station's design line (CAStationKit.tech). Low tech (armored, few shields): K-Type Shield Shunt
+ * (armor +40% on every section) and Bubble Shield. Midline: Axial Overclocking and Deep Shield Dissipators (midline only).
+ * High tech and any gun station: Tactical Link, which reaches the station's own guns (+35% ballistic and energy range).
+ * Fragment augments (FRAGMENT) count once the station has the Fragment Swarm (CAAugments.pick).
  */
 public class CAAugmentModel {
     /** The station's own fleet effect by tier (CAPlan.stationTier): orbital station, battlestation, star fortress, a tier above. */
@@ -18,8 +22,8 @@ public class CAAugmentModel {
     static final float[] UPLINK = {0.35f, 0.2f, 0.1f};
     /** Warmind Refit: the station's own AI core as a Dustkeeper warmind on every section, alpha / beta / gamma. */
     static final float[] WARMIND = {0.2f, 0.12f, 0.06f};
-    /** Four SotF weapon platforms with beta cores, as a fleet effect whatever the station. */
-    static final float PLATFORMS_FX = 0.3f;
+    /** Four SotF weapon platforms with beta cores, as a fleet effect whatever the station. 0.3.18.4: 0.2 (was 0.3, a third of a star fortress). */
+    static final float PLATFORMS_FX = 0.2f;
 
     /** Never picked, with why: they work against a station the AI fights. */
     static final Map<String, String> NEVER = new LinkedHashMap<String, String>();
@@ -29,6 +33,17 @@ public class CAAugmentModel {
         NEVER.put("SA_safetyOverrides", "Safety Shunt starts the station's combat readiness falling at once, so long fights end in malfunctions");
         NEVER.put("SA_supportOutfit", "Support Outfit cuts point defense range to almost nothing and the rate of fire by a fifth");
     }
+
+    /** 0.3.18.4: the Fragment Swarm: the other fragment augments need it on the station. */
+    static final String SWARM = "SA_fragmentSwarm";
+
+    /**
+     * 0.3.18.4: the fragment augments Autopilot installs with an item from Autopilot Storage (Fragment Fabricator for the swarm
+     * and Secondary Fabricator, Threat Processing Unit for the rest). Other augments that use an item (the Shrouded ones,
+     * which the Luddic Path reacts to) are left to you.
+     */
+    static final Set<String> FRAGMENT = new HashSet<String>(Arrays.asList(SWARM, "SA_secondaryFabricator", "SA_fragmentCoordinator",
+            "SA_kineticFragments", "SA_seekerFragments", "SA_attackSwarms", "SA_constructionSwarms", "SA_defabSwarms"));
 
     static int core(String coreId) {
         if ("alpha_core".equals(coreId)) return 0;
@@ -54,14 +69,20 @@ public class CAAugmentModel {
         int c = core(coreId);
         float f = k.fighterShare();
         if (NEVER.containsKey(id)) return new Gain(-1f, NEVER.get(id));
-        if (id.equals("SA_bubbleShield")) return new Gain(k.shielded > 0 ? 0.3f : 0.4f,
-                "A 100,000-flux shield around the whole station stops shots before they reach it" + (k.shielded > 0 ? "" : " (this station has no shields of its own)"));
+        // 0.3.18.4: Bubble Shield counts most on an armored low-tech station, which has few shields of its own
+        boolean bare = k.shielded == 0 || k.armored();
+        if (id.equals("SA_bubbleShield")) return new Gain(bare ? 0.4f : 0.3f,
+                "A 100,000-flux shield around the whole station stops shots before they reach it" + (k.shielded == 0 ? " (this station has no shields of its own)" : bare ? " (an armored station with few shields of its own)" : ""));
         if (id.equals("SA_defensePlatforms")) { Gain g = new Gain(0f, "Four weapon platforms with beta cores deploy around the station"); g.fx = PLATFORMS_FX; return g; }
         if (id.equals("SA_shieldShunt")) {
-            if (k.shielded == 0) return new Gain(0.04f, "Armor +40% and hull +10% only on its bare sections (it has no shields to swap)");
-            return new Gain(0.05f + 0.15f * k.shielded / Math.max(1, k.modules), "Shields become damper fields, armor +40%, hull +10% on " + k.shielded + " shielded sections");
+            // 0.3.18.4: armor +40% on every section, shielded or not (Station Augments' shieldShunt); shields become damper fields
+            if (k.armored()) return new Gain(0.35f, "Armor +40% on every section, its few shields become damper fields: suits an armored low-tech station");
+            if (k.midline()) return new Gain(0.08f, "Armor +40% on every section, but the shields a midline station keeps up become damper fields");
+            return new Gain(0.12f, "Armor +40% on every section, its shields become damper fields");
         }
-        if (id.equals("SA_fluxShunt")) return new Gain(k.midline() ? 0.2f : 0.05f, "Shields dissipate hard flux at half rate, for a midline station whose shields never drop");
+        // 0.3.18.4: Station Augments allows Deep Shield Dissipators on midline stations only
+        if (id.equals("SA_fluxShunt")) return k.midline() ? new Gain(0.25f, "Shields dissipate hard flux at half rate, for a midline station whose shields never drop")
+                : new Gain(-1f, "Midline stations only");
         // 0.3.11.6: only where its guns turn faster too; elsewhere the hull outruns the guns and beams lose their targets
         if (id.equals("SA_axialOverclocking")) return k.axialGuns() ? new Gain(0.3f,"Midline guns turn three times as fast, so they can track targets. The station turns four times as fast")
                 : new Gain(-1f, "The station would spin four times as fast while its guns don't, so they'd lose their targets");
@@ -78,8 +99,21 @@ public class CAAugmentModel {
         }
         if (id.equals("SA_regenerativeDrones")) return k.drones ? new Gain(0.08f, "Drones launch at once and come back faster") : new Gain(-1f, "No drone system");
         if (id.equals("SA_droneAAF")) return k.drones ? new Gain(0.05f, "Drones get a weapon overdrive") : new Gain(-1f, "No drone system");
-        if (id.equals("SA_tacticalLink")) return new Gain(patrols ? 0.1f : 0.03f, "Friendly ships near the station: +35% range, faster and nimbler"
-                + (patrols ? " (patrols fight beside it here)" : " (few friendly ships fight beside it here)"));
+        // 0.3.18.4: Tactical Link reaches the station's own sections too (Station Augments' supportPackage skips no ship of its side)
+        if (id.equals("SA_tacticalLink")) {
+            float g = k.gunShare();
+            return new Gain(0.35f * g + (patrols ? 0.05f : 0.01f), "+35% range for the station's ballistic and energy guns, " + Math.round(g * 100f)
+                    + "% of its damage" + (patrols ? ", and for the patrols that fight beside it" : ""));
+        }
+        // 0.3.18.4: fragment augments (FRAGMENT). Each uses a Fragment Fabricator or Threat Processing Unit from Autopilot Storage
+        if (id.equals(SWARM)) return new Gain(0f, "A swarm of 225 Threat fragments around the station, for the fragment augments");
+        if (id.equals("SA_kineticFragments")) return new Gain(0.25f, "Fragment volleys that break shields, at 6,000 range");
+        if (id.equals("SA_seekerFragments")) return new Gain(0.25f, "Fragment strike groups that break heavy armor, at 6,000 range");
+        if (id.equals("SA_attackSwarms")) return new Gain(0.2f, "Fragment attack formations that reach hostile ships at any distance");
+        if (id.equals("SA_defabSwarms")) return new Gain(0.1f, "Fragment swarms that tear apart ships with their shields down, at 9,000 range");
+        if (id.equals("SA_constructionSwarms")) return new Gain(0.12f, "A small garrison of Threat ships built during battle. Raises the colony's hazard rating");
+        if (id.equals("SA_fragmentCoordinator")) return new Gain(0.05f, "Fragment swarm 40% larger");
+        if (id.equals("SA_secondaryFabricator")) return new Gain(0.05f, "Fragments replaced 60% faster");
         if (id.equals("SA_ecmPackage")) return new Gain(0.05f, "+15 ECM in battle: enemy weapons reach less far");
         if (id.equals("SA_navRelay")) return new Gain(0.02f, "+20 nav rating for friendly ships in battle");
         if (id.equals("SA_highExplosive")) return new Gain(0.03f, "Only matters once the station dies: a far bigger explosion");

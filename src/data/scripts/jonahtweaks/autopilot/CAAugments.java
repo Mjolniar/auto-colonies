@@ -1,6 +1,7 @@
 package data.scripts.jonahtweaks.autopilot;
 
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.SpecialItemData;
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.combat.MutableStat;
@@ -16,6 +17,7 @@ import niko_SA.augments.core.BuiltInMode;
 import niko_SA.augments.core.stationAttachment;
 import niko_SA.augments.core.stationAugmentSpec;
 import niko_SA.augments.core.stationAugmentStore;
+import niko_SA.augments.threat.ThreatAugment;
 
 import java.awt.Color;
 import java.util.*;
@@ -38,6 +40,11 @@ import java.util.*;
  * THREAT_AWAY times elsewhere (0.3.11.4: augments only decide fights you are in), so the combat loadout
  * takes the AP from output augments before the station is engaged; when the threat drops, the output ones come back.
  * Nothing changes while the station is in a battle. A change of plan profile re-plans at once.
+ * 0.3.18.4: the combat values follow the station's design line (CAStationKit.tech): K-Type Shield Shunt and Bubble Shield on
+ * an armored low-tech station, Axial Overclocking and Deep Shield Dissipators on a midline one, and Tactical Link by the share
+ * of the station's damage its ballistic and energy guns do. Fragment augments (CAAugmentModel.FRAGMENT) are picked with an
+ * item from Autopilot Storage: the Fragment Swarm only together with the augments that draw on it (pick). The item comes
+ * from the nearest Autopilot Storage when the augment goes on and goes back to the colony's Autopilot Storage when it comes off.
  * Only called when Station Augments is enabled (check CAAugments.MOD first; the constant is inlined, so it doesn't load this class).
  */
 public class CAAugments {
@@ -53,6 +60,12 @@ public class CAAugments {
         public float ap, score;
         public List<String> lines = new ArrayList<String>();
         Set<String> incompatible = new HashSet<String>();
+        /** 0.3.18.4: the augment this one needs on the station (the Fragment Swarm), or null. */
+        String needs;
+        /** 0.3.18.4: worth nothing alone, only with the augments that need it (the Fragment Swarm). */
+        boolean enabler;
+        /** 0.3.18.4: the item it uses from Autopilot Storage, or null. */
+        String item;
     }
 
     /** A station's loadout now and the changes Autopilot recommends. */
@@ -246,6 +259,11 @@ public class CAAugments {
         for (int i = 0; i < 7; i++) v += w[i] * p.fx[i];
         Opt o = new Opt();
         o.id = id; o.name = a.getName(); o.ap = a.getAugmentCost(); o.score = v; o.lines = p.lines;
+        // 0.3.18.4: fragment augments: the swarm enables the rest; each uses an item from Autopilot Storage
+        o.enabler = CAAugmentModel.SWARM.equals(id);
+        if (a instanceof ThreatAugment) o.needs = CAAugmentModel.SWARM;
+        o.item = CAAugmentModel.FRAGMENT.contains(id) ? a.getRequiredItemId() : null;
+        if (o.item != null) o.lines.add("Uses " + itemName(o.item) + " from Autopilot Storage");
         Set<String> inc = a.getIncompatibleAugments();
         if (inc != null) o.incompatible.addAll(inc);
         // K-Type Shield Shunt takes the shields away that Deep Shield Dissipators would help; Station Augments doesn't forbid both
@@ -275,6 +293,61 @@ public class CAAugments {
     }
 
     static float total(List<Opt> l) { float t = 0f; for (Opt o : l) t += o.score; return t; }
+
+    static String itemName(String item) {
+        try { String n = Global.getSettings().getSpecialItemSpec(item).getName(); return Misc.getAOrAnFor(n) + " " + n; }
+        catch (Throwable t) { return item; }
+    }
+
+    /**
+     * 0.3.18.4: the best set like best(), with dependencies: an augment that needs another (Opt.needs) counts only once that
+     * one is in `have` (on the station and kept) or is picked with it. An enabler (the Fragment Swarm) is picked only together
+     * with at least one augment that needs it, and only when the set with it beats the best set without it.
+     */
+    static List<Opt> pick(List<Opt> opts, float ap, Set<String> have) {
+        List<Opt> base = new ArrayList<Opt>();
+        List<Opt> enablers = new ArrayList<Opt>();
+        for (Opt o : opts) {
+            if (o.enabler) { if (!have.contains(o.id)) enablers.add(o); }
+            else if (o.needs == null || have.contains(o.needs)) base.add(o);
+        }
+        List<Opt> out = best(base, ap);
+        for (Opt e : enablers) {
+            List<Opt> with = new ArrayList<Opt>(base);
+            for (Opt o : opts) if (!o.enabler && e.id.equals(o.needs) && !have.contains(o.needs)) with.add(o);
+            if (with.size() == base.size() || ap - e.ap < 0f) continue;
+            List<Opt> b = best(with, ap - e.ap);
+            boolean uses = false;
+            for (Opt o : b) if (e.id.equals(o.needs)) uses = true;
+            if (!uses) continue;
+            b.add(0, e);
+            if (total(b) > total(out)) out = b;
+        }
+        return out;
+    }
+
+    /**
+     * 0.3.18.4: keeps at most as many augments per item as Autopilot Storage holds of it: enablers first, then by score.
+     * `held`: how many of each item there are.
+     */
+    static List<Opt> limitItems(List<Opt> fresh, Map<String, Integer> held) {
+        List<Opt> sorted = new ArrayList<Opt>(fresh);
+        Collections.sort(sorted, new Comparator<Opt>() { public int compare(Opt a, Opt b) {
+            if (a.enabler != b.enabler) return a.enabler ? -1 : 1;
+            return Float.compare(b.score, a.score); } });
+        Map<String, Integer> used = new HashMap<String, Integer>();
+        List<Opt> out = new ArrayList<Opt>();
+        for (Opt o : sorted) {
+            if (o.item != null) {
+                int u = used.containsKey(o.item) ? used.get(o.item) : 0;
+                Integer h = held.get(o.item);
+                if (h == null || u >= h) continue;
+                used.put(o.item, u + 1);
+            }
+            out.add(o);
+        }
+        return out;
+    }
 
     static float totalAp(List<Opt> l) { float t = 0f; for (Opt o : l) t += o.ap; return t; }
 
@@ -307,7 +380,10 @@ public class CAAugments {
      * augments (K-Type Shield Shunt and Deep Shield Dissipators) only the better one is considered, and none that clashes
      * with one Autopilot keeps.
      */
-    static List<Opt> choose(List<Opt> current, List<Opt> fresh, float avail) {
+    static List<Opt> choose(List<Opt> current, List<Opt> fresh, float avail) { return choose(current, fresh, avail, new HashSet<String>()); }
+
+    /** 0.3.18.4: as above; `have`: augments on the station that stay whatever Autopilot picks (yours), for Opt.needs. */
+    static List<Opt> choose(List<Opt> current, List<Opt> fresh, float avail, Set<String> have) {
         fresh = new ArrayList<Opt>(fresh);
         for (Iterator<Opt> it = fresh.iterator(); it.hasNext(); ) {
             Opt f = it.next();
@@ -322,11 +398,13 @@ public class CAAugments {
         }
         List<Opt> all = new ArrayList<Opt>(current);
         all.addAll(fresh);
-        List<Opt> a = best(all, avail);
+        List<Opt> a = pick(all, avail, have);   // 0.3.18.4: pick (dependencies) in place of best
         float keptAp = totalAp(current);
         if (keptAp > avail + 0.01f) return a;   // the budget shrank below what's installed
         List<Opt> b = new ArrayList<Opt>(current);
-        b.addAll(best(fresh, avail - keptAp));
+        Set<String> haveB = new HashSet<String>(have);
+        for (Opt o : current) haveB.add(o.id);
+        b.addAll(pick(fresh, avail - keptAp, haveB));
         return total(a) >= total(b) * SWAP_MARGIN + SWAP_MIN ? a : b;
     }
 
@@ -349,53 +427,84 @@ public class CAAugments {
         float upkeep = baseUpkeep(ind);
         Ctx ctx = Ctx.of(m, ind);
         float avail = pl.budget, currentScore = 0f;
+        Set<String> have = new HashSet<String>();   // 0.3.18.4: augments that stay whatever Autopilot picks (yours, and ones it can't score now)
         List<Opt> current = new ArrayList<Opt>();   // Autopilot's augments still worth keeping
         Set<String> unknown = new HashSet<String>();   // 0.3.9.2 (J M4): Autopilot's augments that could not be scored now: kept as they are
         for (stationAttachment a : installed.values()) {
             boolean mine = managed.contains(a.getId());
             if (!mine || CONVERSION.equals(a.getId())) {
                 if (a.getBuiltInMode() == BuiltInMode.NOT) avail -= a.getAugmentCost();
+                have.add(a.getId());   // 0.3.18.4
                 continue;
             }
             try {
                 Opt o = value(m, ind, a, profile, deficit, upkeep, ctx);
                 if (o == null && MINING.equals(a.getId())) unknown.add(a.getId());   // 0.3.9.2 (J M4): Station Augments could not say what it mines
                 if (o != null) currentScore += o.score;
-                if (o != null && o.score > 0f) current.add(o);
+                if (o != null && (o.score > 0f || o.enabler)) current.add(o);   // 0.3.18.4: enabler
             } catch (Throwable t) {
                 unknown.add(a.getId());   // 0.3.9.2 (J M4)
                 CAStep.warn(STEP, "station augment " + a.getId() + " could not be scored at " + m.getName(), t);   // 0.3.9.2 (J L3)
             }
             if (unknown.contains(a.getId()) && a.getBuiltInMode() == BuiltInMode.NOT) avail -= a.getAugmentCost();   // 0.3.9.2 (J M4): its AP stays taken
+            if (unknown.contains(a.getId())) have.add(a.getId());   // 0.3.18.4
         }
         List<Opt> fresh = new ArrayList<Opt>();
+        // 0.3.18.4: an enabler Autopilot put on (the Fragment Swarm) is kept only beside an augment that needs it; otherwise
+        // it is weighed again with the new ones, so it comes off unless they are picked
+        for (Iterator<Opt> it = current.iterator(); it.hasNext(); ) {
+            Opt e = it.next();
+            if (!e.enabler) continue;
+            boolean used = false;
+            for (Opt o : current) if (e.id.equals(o.needs)) used = true;
+            if (!used) { it.remove(); e.item = null; fresh.add(e); }   // on the station already: it needs no item from storage
+        }
+        Map<String, Integer> held = new HashMap<String, Integer>();   // 0.3.18.4: items in Autopilot Storage
         Set<String> skip = c.augSkip();
         for (String id : known()) {
             if (installed.containsKey(id) || skip.contains(id) || PLAYER_ONLY.contains(id)) continue;   // 0.3.17.1: PLAYER_ONLY
             stationAugmentSpec spec = specs().get(id);
-            if (spec == null || spec.getRequiredItemId() != null || spec.getApCost() <= 0f) continue;
+            if (spec == null || spec.getApCost() <= 0f) continue;
+            // 0.3.18.4: of the augments that use an item, only fragment augments, with the item in Autopilot Storage
+            String item = spec.getRequiredItemId();
+            if (item != null) {
+                if (!CAAugmentModel.FRAGMENT.contains(id)) continue;
+                if (!held.containsKey(item)) held.put(item, (int) CAStores.count(item));
+                if (held.get(item) <= 0) continue;
+            }
             try {
                 stationAttachment inst = spec.getNewPluginInstance(m);
                 inst.setConsiderAP(false);
                 inst.setConsiderEngagement(false);
-                if (inst.getUnavailableReason() != null || inst.getAugmentCost() <= 0f) continue;
+                if (item != null) inst.setConsiderReqItem(false);   // 0.3.18.4: Autopilot brings the item from Autopilot Storage
+                String why = inst.getUnavailableReason();
+                // 0.3.18.4: a fragment augment waits on the swarm, which may be picked with it (pick)
+                if (why != null && inst instanceof ThreatAugment && !MarketUtils.hasFragmentSwarm(m)) why = null;
+                if (why != null || inst.getAugmentCost() <= 0f) continue;
                 Opt o = value(m, ind, inst, profile, deficit, upkeep, ctx);
-                if (o != null && o.score > 0f) fresh.add(o);
+                if (o != null && (o.score > 0f || o.enabler)) fresh.add(o);   // 0.3.18.4: enabler
             } catch (Throwable t) {
                 CAStep.warn(STEP, "station augment " + id + " could not be scored at " + m.getName(), t);   // 0.3.9.2 (J L3)
             }
         }
-        List<Opt> pick = choose(current, fresh, avail);
+        fresh = limitItems(fresh, held);   // 0.3.18.4
+        List<Opt> pick = choose(current, fresh, avail, have);
         Set<String> keep = new HashSet<String>();
         for (Opt o : pick) keep.add(o.id);
         for (Opt o : pick) if (!installed.containsKey(o.id)) pl.add.add(o);
-        Collections.sort(pl.add, new Comparator<Opt>() { public int compare(Opt x, Opt y) { return Float.compare(y.score, x.score); } });
+        // 0.3.18.4: an enabler goes on before the augments that need it
+        Collections.sort(pl.add, new Comparator<Opt>() { public int compare(Opt x, Opt y) {
+            if (x.enabler != y.enabler) return x.enabler ? -1 : 1;
+            return Float.compare(y.score, x.score); } });
         for (String id : managed) {
             stationAttachment inst = installed.get(id);
             if (inst == null || CONVERSION.equals(id) || keep.contains(id) || unknown.contains(id) || !inst.canBeRemoved()) continue;   // 0.3.9.2 (J M4): unknown
             pl.remove.add(id);
             pl.removeNames.add(inst.getName());
         }
+        // 0.3.18.4: the Fragment Swarm comes off after the augments that need it
+        int sw = pl.remove.indexOf(CAAugmentModel.SWARM);
+        if (sw >= 0) { pl.remove.add(pl.remove.remove(sw)); pl.removeNames.add(pl.removeNames.remove(sw)); }
         pl.gain = total(pick) - currentScore;
         return pl;
     }
@@ -460,10 +569,14 @@ public class CAAugments {
             if (MarketUtils.hasStationAugment(m, id)) continue;
             mine.remove(id);
             stationAugmentSpec spec = specs().get(id);
+            // 0.3.18.4: a fragment augment of Autopilot's that is gone: its item goes back to the colony's Autopilot Storage
+            // (Autopilot put it on without Station Augments' item handling, so nothing else gives the item back)
+            if (spec != null && spec.getRequiredItemId() != null && CAAugmentModel.FRAGMENT.contains(id)) returnItem(m, spec.getRequiredItemId(), spec.getName());
             if (!station || spec == null) continue;
             stationAttachment inst = spec.getNewPluginInstance(m);
             inst.setConsiderAP(false);
             inst.setConsiderEngagement(false);
+            inst.setConsiderReqItem(false);   // 0.3.18.4
             if (inst.getUnavailableReason() != null) continue;   // the game took it off (station changed or disrupted), not you
             c.augSkip().add(id);
             CAMark.set(SKIP_AT + m.getId() + "|" + id, CAMark.now());   // 0.3.9.3 (J M3): the hold starts today
@@ -516,17 +629,28 @@ public class CAAugments {
         for (String id : pl.remove) {
             stationAttachment a = installed.get(id);
             if (a == null || !a.canBeRemoved()) continue;
+            // 0.3.18.4: a fragment augment's item goes back to this colony's Autopilot Storage, not your fleet's cargo
+            String item = CAAugmentModel.FRAGMENT.contains(id) ? a.getRequiredItemId() : null;
+            if (item != null) a.setConsiderReqItem(false);
             MarketUtils.removeStationAugment(m, a);
             c.augAuto().remove(id);
+            if (item != null) returnItem(m, item, null);
             done.add("removed " + a.getName());
         }
         for (Opt o : pl.add) {
             stationAugmentSpec spec = specs().get(o.id);
             if (spec == null) continue;
             stationAttachment inst = spec.getNewPluginInstance(m);
+            String item = CAAugmentModel.FRAGMENT.contains(o.id) ? spec.getRequiredItemId() : null;
+            if (item != null) inst.setConsiderReqItem(false);   // 0.3.18.4: the item comes from Autopilot Storage (takeItem)
             String why = inst.getUnavailableReason();
             if (why != null) { failed.add(o.name + " (" + why.toLowerCase() + ")"); continue; }
-            if (MarketUtils.addStationAugment(m, inst, true) == null) { failed.add(o.name); continue; }
+            CAStores.Store from = null;
+            if (item != null && (from = takeItem(m, item)) == null) { failed.add(o.name + " (none of its item in Autopilot Storage)"); continue; }
+            if (MarketUtils.addStationAugment(m, inst, true) == null) {
+                if (from != null) from.cargo.addSpecial(new SpecialItemData(item, null), 1f);
+                failed.add(o.name); continue;
+            }
             c.augAuto().add(o.id);
             done.add("added " + o.name);
         }
@@ -541,10 +665,29 @@ public class CAAugments {
         return null;
     }
 
+    /** 0.3.18.4: takes one of the item from the nearest Autopilot Storage; the store it came from, or null when none holds one. */
+    static CAStores.Store takeItem(MarketAPI m, String item) {
+        SpecialItemData d = new SpecialItemData(item, null);
+        for (CAStores.Store s : CAStores.nearest(m)) {
+            if (s.cargo.getQuantity(com.fs.starfarer.api.campaign.CargoAPI.CargoItemType.SPECIAL, d) < 1f) continue;
+            s.cargo.removeItems(com.fs.starfarer.api.campaign.CargoAPI.CargoItemType.SPECIAL, d, 1f);
+            return s;
+        }
+        return null;
+    }
+
+    /** 0.3.18.4: one of the item into this colony's Autopilot Storage; `name`: the augment, logged (starsector.log) when given. */
+    static void returnItem(MarketAPI m, String item, String name) {
+        CAStores.of(m).addSpecial(new SpecialItemData(item, null), 1f);
+        if (name != null) CALog.quiet(m.getName() + ": " + name + " is off the station; its item is back in Autopilot Storage");
+    }
+
     /** What decides whether a colony needs re-planning before its weekly turn: station, AP and what's installed or known. */
     static String signature(MarketAPI m, CAData.Profile profile) {
         Industry ind = Misc.getStationIndustry(m);
         StringBuilder sb = new StringBuilder(profile.name()).append('|').append(ind == null ? "-" : ind.getId()).append('|').append(MarketUtils.getRemainingAugmentBudget(m)).append('|').append(known().size());
+        // 0.3.18.4: fragment items in Autopilot Storage: new ones re-plan at once
+        sb.append('|').append((int) CAStores.count("fragment_fabricator")).append('|').append((int) CAStores.count("threat_processing_unit"));
         for (stationAttachment a : MarketUtils.getStationAugments(m)) sb.append('|').append(a.getId());
         return sb.toString();
     }

@@ -25,11 +25,36 @@ public class CAStationKit {
     public String industryId;
     public int tier, modules, wings, small, medium, large, pd, missiles, shielded;
     public boolean drones, read;
+    /** 0.3.18.4: guns by weapon type, weighted by size as in fighterShare (small 0.25, medium 0.5, large 1). */
+    public float ballistic, energy, missile;
+
+    /** 0.3.18.4: the station's design line. */
+    public enum Tech { LOW, MID, HIGH }
+
+    /**
+     * 0.3.18.4: midline and high tech by the vanilla ids (_mid, _high); any other station is high tech when energy guns do
+     * most of its damage, else low tech (armored, ballistic).
+     */
+    public Tech tech() {
+        if (industryId != null && industryId.endsWith("_mid")) return Tech.MID;
+        if (industryId != null && industryId.endsWith("_high")) return Tech.HIGH;
+        return energy > ballistic + missile ? Tech.HIGH : Tech.LOW;
+    }
+
+    /** 0.3.18.4: an armored station: low tech, shields on half its sections or fewer. */
+    public boolean armored() { return tech() == Tech.LOW && shielded * 2 <= Math.max(1, modules); }
 
     /** Fighters' share of the station's damage, 0-1: a wing counts like a large gun, PD doesn't count. */
     public float fighterShare() {
         float guns = small * 0.25f + medium * 0.5f + large;
         return wings + guns <= 0f ? 0f : wings / (wings + guns);
+    }
+
+    /** 0.3.18.4: ballistic and energy guns' share of the station's damage, 0-1 (fighters and missiles are the rest); 0.6 when unread. */
+    public float gunShare() {
+        if (!read) return 0.6f;
+        float all = wings + ballistic + energy + missile;
+        return all <= 0f ? 0f : (ballistic + energy) / all;
     }
 
     /** Midline stations: shields always up, guns that can't track without help (Station Augments' own notes). */
@@ -46,7 +71,7 @@ public class CAStationKit {
 
     public String describe() {
         if (!read) return "station loadout not readable; counted by its tier";
-        return modules + " sections, " + wings + " fighter wings, " + large + " large / " + medium + " medium / " + small + " small guns, "
+        return tech().name().toLowerCase() + " tech, " + modules + " sections, " + wings + " fighter wings, " + large + " large / " + medium + " medium / " + small + " small guns, "
                 + pd + " point defense" + (shielded > 0 ? ", shields on " + shielded : ", no shields") + (drones ? ", drones" : "");
     }
 
@@ -94,9 +119,13 @@ public class CAStationKit {
             if (w == null || w.getType() == WeaponAPI.WeaponType.DECORATIVE || w.getType() == WeaponAPI.WeaponType.SYSTEM) continue;
             if (w.getAIHints().contains(WeaponAPI.AIHints.PD) || w.getAIHints().contains(WeaponAPI.AIHints.PD_ONLY)) { pd++; continue; }
             if (w.getType() == WeaponAPI.WeaponType.MISSILE) missiles++;
-            if (w.getSize() == WeaponAPI.WeaponSize.LARGE) large++;
-            else if (w.getSize() == WeaponAPI.WeaponSize.MEDIUM) medium++;
-            else small++;
+            float wt;
+            if (w.getSize() == WeaponAPI.WeaponSize.LARGE) { large++; wt = 1f; }
+            else if (w.getSize() == WeaponAPI.WeaponSize.MEDIUM) { medium++; wt = 0.5f; }
+            else { small++; wt = 0.25f; }
+            if (w.getType() == WeaponAPI.WeaponType.BALLISTIC) ballistic += wt;
+            else if (w.getType() == WeaponAPI.WeaponType.ENERGY) energy += wt;
+            else if (w.getType() == WeaponAPI.WeaponType.MISSILE) missile += wt;
         }
     }
 }
