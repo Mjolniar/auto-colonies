@@ -46,6 +46,10 @@ import java.util.*;
  *   loadouts switch often. A fit is kept for each augment set (BY_AUGMENTS, saved in CAData.stationLayouts as
  *   "marketId#augments") and used again when the augments switch back, without a new plan. More known alone plans a station
  *   again at most every KNOWN_DAYS (PLANNED_AT), and new plans are PLAN_GAP_DAYS apart.
+ * - 0.3.19.1: with Auto Outfitting 0.5.93 or later a plan runs in slices (its startFit, stepFit, fitError and cancelFit, by
+ *   name through method handles): Watch gives it STEP_MS a frame, paused too, so the game keeps drawing. The finished fit
+ *   goes to PENDING and the next daily pass adopts it as before. One job at a time (job, session only); a job whose station
+ *   changed is cancelled. Older Auto Outfitting, or the game's own autofit, plans in place as before.
  */
 public final class CAStationFit {
     private CAStationFit() { }
@@ -71,6 +75,20 @@ public final class CAStationFit {
     static final Map<String, Fit> BY_AUGMENTS = new HashMap<String, Fit>();
     /** 0.3.18.9: the game day of the last new plan this session; -99 none. */
     static float lastPlanDay = -99f;
+    /** 0.3.19.1: milliseconds of Auto Outfitting's planning per frame. */
+    static final long STEP_MS = 8L;
+
+    /** 0.3.19.1: what a plan needs: the plugin, the copy being fitted, the target, the augment tags and the delegate. */
+    static final class Prep { AutofitPlugin p; ShipVariantAPI v, target; List<String> tags = new ArrayList<String>(); Delegate delegate; }
+
+    /** 0.3.19.1: a plan running in slices in Auto Outfitting. Session only: its handle holds a thread. */
+    static final class Job {
+        String marketId, key; Prep prep; Object handle;
+        java.lang.invoke.MethodHandle step, error, cancel;
+    }
+
+    /** 0.3.19.1: the plan running now, or null. */
+    static Job job;
 
     static final Map<String, Fit> FITS = new HashMap<String, Fit>();
     /** 0.3.15.5: a fit planned but not adopted yet (waiting for budget, or the same as the game's fit), kept while its key holds. */
@@ -284,11 +302,18 @@ public final class CAStationFit {
                     else if (kept == null && recent && onlyKnownGrew(key, base)) continue;   // the station keeps its fit for now
                     else {
                         float today = CADay.now();
+                        if (job != null) {   // 0.3.19.1: one plan at a time; a plan for this station's old state is dropped
+                            if (job.marketId.equals(m.getId()) && !job.key.equals(key)) cancelJob();
+                            continue;
+                        }
                         if (planned || (today - lastPlanDay < PLAN_GAP_DAYS && today >= lastPlanDay)) continue;
                         planned = true;
                         lastPlanDay = today;
                         CAMark.set(PLANNED_AT + m.getId(), CAMark.now());
-                        v = plan(m, fm, f);
+                        Prep pr = prepare(m, fm, f);
+                        if (start(pr, m.getId(), key)) continue;   // 0.3.19.1: planned in slices; the fit lands in PENDING
+                        pr.p.doFit(pr.v, pr.target, 0, pr.delegate);
+                        v = finish(pr);
                     }
                     Fit p = new Fit();
                     p.key = key; p.variant = v;
@@ -335,6 +360,7 @@ public final class CAStationFit {
                 CADiagnostics.LOG.warn(CADiagnostics.TAG + "station outfitting failed at " + m.getName(), t);
             }
         }
+        if (job != null && !seen.contains(job.marketId)) cancelJob();   // 0.3.19.1: the colony is gone or Off
         FITS.keySet().retainAll(seen);   // a station that dropped below the tier, or a colony that's gone, keeps the game's fit
         PENDING.keySet().retainAll(seen);
         d.stationFits().keySet().retainAll(seen);
@@ -406,6 +432,13 @@ public final class CAStationFit {
      * autofit plugin, so it's made by name (SettingsAPI.getInstanceOfScript: Auto Outfitting's no-argument constructor).
      */
     static ShipVariantAPI plan(MarketAPI m, FleetMemberAPI fm, FactionAPI f) {
+        Prep pr = prepare(m, fm, f);
+        pr.p.doFit(pr.v, pr.target, 0, pr.delegate);
+        return finish(pr);
+    }
+
+    /** 0.3.19.1: the plugin, the copies and the delegate for a plan of this station, with the augment tags on. */
+    static Prep prepare(MarketAPI m, FleetMemberAPI fm, FactionAPI f) {
         AutofitPlugin p = null;
         if (Global.getSettings().getModManager().isModEnabled(AO_MOD)) {
             Object o = null;
@@ -427,10 +460,17 @@ public final class CAStationFit {
         ShipVariantAPI target = v.clone();
         refit(target);   // 0.3.15.5: the target's modules are copies too, never the objects being fitted
         // 0.3.18.6: the station's augments, for Auto Outfitting to count (it passes them to the modules); off again after the fit
-        List<String> tags = new ArrayList<String>();
-        for (String id : augments(m)) tags.add(AUG_TAG + id);
-        for (String t : tags) v.addTag(t);
-        p.doFit(v, target, 0, new Delegate(m, fm, f));
+        Prep pr = new Prep();
+        pr.p = p; pr.v = v; pr.target = target; pr.delegate = new Delegate(m, fm, f);
+        for (String id : augments(m)) pr.tags.add(AUG_TAG + id);
+        for (String t : pr.tags) v.addTag(t);
+        return pr;
+    }
+
+    /** 0.3.19.1: the fitted copy with the augment tags and any s-mods off again. */
+    static ShipVariantAPI finish(Prep pr) {
+        ShipVariantAPI v = pr.v, target = pr.target;
+        List<String> tags = pr.tags;
         for (String t : tags) v.removeTag(t);
         for (String slot : v.getStationModules().keySet()) { ShipVariantAPI mv = v.getModuleVariant(slot); if (mv != null) for (String t : tags) mv.removeTag(t); }
         noSMods(v, target);
@@ -465,6 +505,63 @@ public final class CAStationFit {
         }
     }
 
+    // ---------------- 0.3.19.1: plans in slices (Auto Outfitting 0.5.93) ----------------
+
+    static Object call(java.lang.invoke.MethodHandle h, Object... args) throws Exception {
+        try { return h.invokeWithArguments(args); }
+        catch (Exception e) { throw e; }
+        catch (Throwable t) { throw new Exception(t); }
+    }
+
+    /** Starts the plan as a sliced job; false when Auto Outfitting has no sliced entry (older version, or the game's autofit). */
+    static boolean start(Prep pr, String marketId, String key) {
+        if (pr.p instanceof CoreAutofitPlugin && pr.p.getClass() == CoreAutofitPlugin.class) return false;   // the game's own: quick
+        java.lang.invoke.MethodHandles.Lookup l = java.lang.invoke.MethodHandles.publicLookup();
+        Class<?> c = pr.p.getClass();
+        Job j = new Job();
+        java.lang.invoke.MethodHandle begin;
+        try {
+            begin = l.findVirtual(c, "startFit", java.lang.invoke.MethodType.methodType(Object.class, ShipVariantAPI.class, ShipVariantAPI.class, AutofitPlugin.AutofitPluginDelegate.class));
+            j.step = l.findVirtual(c, "stepFit", java.lang.invoke.MethodType.methodType(boolean.class, Object.class, long.class));
+            j.error = l.findVirtual(c, "fitError", java.lang.invoke.MethodType.methodType(Throwable.class, Object.class));
+            j.cancel = l.findVirtual(c, "cancelFit", java.lang.invoke.MethodType.methodType(void.class, Object.class));
+        } catch (Throwable t) { return false; }   // Auto Outfitting before 0.5.93
+        try { j.handle = call(begin, pr.p, pr.v, pr.target, pr.delegate); }
+        catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station outfitting could not start a sliced plan; planning in place", t); return false; }
+        j.marketId = marketId; j.key = key; j.prep = pr;
+        job = j;
+        return true;
+    }
+
+    /** Every frame (Watch): one slice of the running plan; a finished fit goes to PENDING. */
+    static void stepJob() {
+        Job j = job;
+        if (j == null) return;
+        try {
+            if (!Boolean.TRUE.equals(call(j.step, j.prep.p, j.handle, STEP_MS))) return;
+            Throwable err = (Throwable) call(j.error, j.prep.p, j.handle);
+            job = null;
+            if (err != null) {   // a timeout (a battle stops campaign scripts) or a failure: planned again on a later day
+                CADiagnostics.LOG.warn(CADiagnostics.TAG + "station outfitting plan ended without a fit at " + j.marketId + ": " + err);
+                return;
+            }
+            Fit p = new Fit();
+            p.key = j.key; p.variant = finish(j.prep);
+            PENDING.put(j.marketId, p);
+        } catch (Throwable t) {
+            job = null;
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "station outfitting plan failed at " + j.marketId, t);
+        }
+    }
+
+    /** Stops the running plan, if any (CAReset on load, or its station changed). */
+    public static void cancelJob() {
+        Job j = job;
+        job = null;
+        if (j == null) return;
+        try { call(j.cancel, j.prep.p, j.handle); } catch (Throwable ignored) { }
+    }
+
     // ---------------- every frame: put the fit back on an inflated station ----------------
 
     /** Puts a colony's planned fit on its station once the game has fitted it (the station fleet inflated without our tag). */
@@ -486,6 +583,7 @@ public final class CAStationFit {
         public boolean isDone() { return false; }
         public boolean runWhilePaused() { return true; }   // the fleet inflates when an encounter opens, before the fight
         public void advance(float amount) {
+            stepJob();   // 0.3.19.1: every frame, paused too (Auto Outfitting ends a job after 30 s without a slice)
             wait -= Global.getSector().isPaused() ? 0.05f : amount;
             if (wait > 0f) return;
             wait = 0.25f;

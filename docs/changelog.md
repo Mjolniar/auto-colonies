@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.19.1 - 2026-11-25
+
+- Station outfitting: With Auto Outfitting 0.5.93 or later, a station fit runs in small slices each frame, so the game keeps running while it plans. Older versions plan in one go as before.
+- Station outfitting: A fit in progress for a station that changed is dropped and planned again.
+
 ## 0.3.19.0 - 2026-11-25
 
 - Manual changes: A building you build or upgrade yourself is locked. Auto Colonies doesn't upgrade, replace or take it down, or change its item or AI core. Unlock it in the colony panel.

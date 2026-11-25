@@ -45,7 +45,7 @@ public class CAReset {
         failed += run("storage logistics", () -> { CALogistics.lastRun = Float.NaN; CALogistics.partsRun = Float.NaN; });   // 0.3.2.0: the weekly parts move too
         failed += run("reverse engineering feed", () -> CARepa.lastRun = Float.NaN);   // 0.3.11.5
         failed += run("station outfitting", () -> { CAStationFit.FITS.clear(); CAStationFit.PENDING.clear();
-            CAStationFit.BY_AUGMENTS.clear(); CAStationFit.lastPlanDay = -99f; });   // 0.3.18.9: fits per augment set, plan pacing   // 0.3.11.7, 0.3.15.5 pending plans
+            CAStationFit.BY_AUGMENTS.clear(); CAStationFit.lastPlanDay = -99f; CAStationFit.cancelJob(); });   // 0.3.19.1: the sliced plan   // 0.3.18.9: fits per augment set, plan pacing   // 0.3.11.7, 0.3.15.5 pending plans
         failed += run("survival corruption share", () -> { CASurvival.shareReport = null; CASurvival.share = 1f; });   // 0.3.0.4
         failed += run("market model", () -> { CAMarket.invalidate(); CAMarket.cacheDay = -99f; CAMarket.lastWeek = Float.NaN;
             CAMarket.SUPPLY.clear(); CAMarket.supplyAt = Long.MIN_VALUE; CAMarket.supplyEpoch = Integer.MIN_VALUE; });   // 0.3.11.8
