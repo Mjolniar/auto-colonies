@@ -1091,9 +1091,11 @@ public class CAPlanner {
                 }
             }
         }
-        // 0.3.2.0 (Batch E): make room: a floor producer with no slot may replace the weakest income-only industry; Ask first proposes it
+        // 0.3.2.0 (Batch E): make room: a floor producer with no slot may replace the weakest income-only industry; Ask first proposes it.
+        // 0.3.21.0: a producer CAProjects plans (a good your colonies make none of) also when it scores 0 or less (CAFloors.makeRoom)
+        boolean projectRoom = projectProducer(m, r.bestFloorNoSlot);
         if (!replaced && (c.mode == CAData.Mode.AUTO || c.mode == CAData.Mode.APPROVE) && !building && !siege && r.blocked == null
-                && CAEngine.worthwhile(r.bestFloorNoSlot)) {
+                && (CAEngine.worthwhile(r.bestFloorNoSlot) || projectRoom)) {
             CAEndgame.Weakest wk = null;
             try { wk = CAFloors.makeRoom(m, c, r.bestFloorNoSlot, used); }
             catch (Throwable t) { CAStep.warn("planner", "make room check failed at " + m.getName(), t); }
@@ -1101,6 +1103,7 @@ public class CAPlanner {
                 boolean approve = c.mode == CAData.Mode.APPROVE;
                 CAAction k = fromPick(m, c, r.bestFloorNoSlot, s, approve, wk);
                 ((PickRef) k.payload).why = PickRef.FLOOR;
+                if (projectRoom && !k.worthwhile()) k.byRule = true;   // 0.3.21.0: ranked after the actions that pay, as other rule actions
                 if (!approve && s.makeRoom != CATuning.MAKE_ROOM_AUTO) k.approval = makeRoomApproval(wk.ind.getCurrentName());
                 o.list.add(k);
             }
@@ -1137,6 +1140,11 @@ public class CAPlanner {
         String why;
         static final String FLOOR = "production floor";
         PickRef(CAData.Colony c, CAEngine.Pick p, CAEndgame.Weakest remove) { this.c = c; this.p = p; this.remove = remove; }
+    }
+
+    /** 0.3.21.0: a producer CAProjects plans at this colony (not a floor pick): it may make room by a duplicate whatever it scores. */
+    static boolean projectProducer(MarketAPI m, CAEngine.Pick p) {
+        try { return p != null && !(p.floorValue > 0f) && CAProjects.isStep(m, p.id); } catch (Throwable t) { return false; }
     }
 
     /** 0.3.2.0: the approval reason of a make-room swap under Ask first. */

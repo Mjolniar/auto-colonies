@@ -2,6 +2,7 @@ package data.scripts.jonahtweaks.autopilot;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketConditionAPI;
 import com.fs.starfarer.api.impl.campaign.econ.ResourceDepositsCondition;
 
@@ -117,6 +118,40 @@ public class CAConditions {
         for (String c : after) if (!now.contains(c)) { float x = value(m, c, p); v += x; if (lines != null && Math.abs(x) >= 1f) lines.add("Adds " + name(c) + ": " + CAEngine.valueText(x)); }
         for (String c : now) if (!after.contains(c)) { float x = -value(m, c, p); v += x; if (lines != null && Math.abs(x) >= 1f) lines.add("Removes " + name(c) + ": " + CAEngine.valueText(x)); }
         return v;
+    }
+
+    /**
+     * 0.3.21.0: change() with a deposit no building uses (depositUsed) counted at 0, added or removed. For surplus terraforming:
+     * farmland at a colony with no farm adds nothing.
+     */
+    public static float changeUsed(MarketAPI m, Collection<String> after, CAData.Profile p, CAPlan.Plan plan) {
+        Set<String> now = new HashSet<String>();
+        for (MarketConditionAPI c : m.getConditions()) now.add(c.getId());
+        float v = 0f;
+        for (String c : after) if (!now.contains(c) && depositUsed(m, c, plan)) v += value(m, c, p);
+        for (String c : now) if (!after.contains(c) && depositUsed(m, c, plan)) v -= value(m, c, p);
+        return v;
+    }
+
+    /**
+     * 0.3.21.0: a deposit condition is used when a building at the colony makes its good, when the colony has Farming or
+     * Mining (or an upgrade of one, Aquaculture for food), or when its plan builds one. Any other condition: true.
+     */
+    static boolean depositUsed(MarketAPI m, String cond, CAPlan.Plan plan) {
+        String good = depositCommodity(cond);
+        if (good == null) return true;
+        String user = "food".equals(good) ? "farming" : "mining";
+        for (Industry ind : m.getIndustries()) {
+            String id = ind.getId();
+            if (user.equals(id) || CAPlan.leadsTo(user, id) || ("farming".equals(user) && ("aquaculture".equals(id) || CAPlan.leadsTo("aquaculture", id)))) return true;
+            try {
+                for (com.fs.starfarer.api.campaign.econ.MutableCommodityQuantity q : ind.getAllSupply())
+                    if (good.equals(q.getCommodityId()) && q.getQuantity().getModifiedInt() > 0 && !"population".equals(id)) return true;
+            } catch (Throwable ignored) { }
+        }
+        if (plan != null) for (CAPlan.Step st : plan.steps)
+            if (st.kind == CAPlan.Kind.BUILD && st.id != null && (user.equals(st.id) || CAPlan.leadsTo(user, st.id))) return true;
+        return false;
     }
 
     static String name(String cond) {

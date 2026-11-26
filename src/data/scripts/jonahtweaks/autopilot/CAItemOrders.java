@@ -168,7 +168,7 @@ public class CAItemOrders {
             }
         }
         if (bestSpec == null) return;
-        if (bestCost > CABudget.available(s) || CABuild.credits() - bestCost < s.reserve) {
+        if (!CAItems.canMove(s, bestCost) || CABuild.credits() - bestCost < s.reserve) {   // 0.3.21.0: and what the planner saves up for its pick
             if (CALog.once("itemorders:budget:" + bestItem + ":" + Global.getSector().getClock().getMonth()))
                 CALog.think(bestM.getName() + ": " + CAItems.name(bestItem) + " for " + bestInd.getCurrentName() + " waits for budget ("
                         + Misc.getDGSCredits(bestCost) + ").");
@@ -181,6 +181,7 @@ public class CAItemOrders {
         ((List<Object>) CARefl.get(CARefl.field(snapCls, "productionData"), snap)).add(line);
         CARefl.invoke(CARefl.method(snapCls, "initSnapshotConsumption"), snap);
         d.itemOrders().put((String) CARefl.call(snap, "getId"), entry(bestItem, 0));
+        CABudget.charge(s, bestM.getId(), bestCost, 0f, 0f);   // 0.3.21.0: counted against the month's budget; AotD bills the credits as the unit finishes
         StringBuilder goods = new StringBuilder();
         Map<String, Integer> need = (Map<String, Integer>) CARefl.call(bestSpec, "getMapOfResourcesNeeded");
         if (need != null) for (Map.Entry<String, Integer> g : need.entrySet()) {

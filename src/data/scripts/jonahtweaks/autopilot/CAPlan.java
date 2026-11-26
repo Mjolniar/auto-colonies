@@ -1286,7 +1286,7 @@ public class CAPlan {
         if (m == null || s == null || s.extra || s.kind != Kind.BUILD || WORTH.isEmpty()) return false;
         Worth w = WORTH.get(worthKey(m, s.id, false));
         if (w == null || !worthlessFor(w.since, CATime.now(), CAHorizon.WORTHLESS_DAYS)) return false;
-        if (worldStep(plan, s.id) || legacy()) return false;
+        if (worldStep(plan, s.id) || plainWorldNeeds(plan, s.id) || legacy()) return false;
         boolean enabler;
         try { enabler = enabler(m, s.id); } catch (Throwable t) { enabler = true; }   // can't tell: keep it as 0.2.45 did
         if (enabler) return false;
@@ -1315,6 +1315,28 @@ public class CAPlan {
     /** A building the plan's special world needs by exact id (the Unification Center checks it): ranked as in 0.2.45 whatever it earns. */
     static boolean worldStep(Plan plan, String id) {
         return plan != null && plan.world != null && id != null && (WORLD_STEPS.contains(id) || plan.exact.contains(id));
+    }
+
+    /**
+     * 0.3.21.0: a plain plan that ends in a TME world (its condition step, as the Forge plan's tme_forge_world) keeps the
+     * industries that world's Unification Center needs (TME's likedIndustries), or an upgrade of one.
+     */
+    static boolean plainWorldNeeds(Plan plan, String id) {
+        if (plan == null || id == null) return false;
+        for (Step st : plan.steps) {
+            if (st.kind != Kind.COND || st.id == null || !st.id.startsWith("tme_") || !st.id.endsWith("_world")) continue;
+            CAWorldPlanner.Row r;
+            try { r = CAWorldPlanner.rows().get(st.id); } catch (Throwable t) { r = null; }
+            if (r == null || r.likedInd == null) continue;
+            if (needsIndustry(CAWorldPlanner.groups(r.likedInd, new ArrayList<Boolean>()), id)) return true;
+        }
+        return false;
+    }
+
+    /** 0.3.21.0: Pure: id is one of the groups' industries, or an upgrade of one. */
+    static boolean needsIndustry(List<String[]> groups, String id) {
+        for (String[] g : groups) for (String ind : g) if (ind.equals(id) || leadsTo(ind, id)) return true;
+        return false;
     }
 
     /** 0.3.0.0 (B2): what a new off-plan industry must beat to take one of the slots the plan's industries need. */

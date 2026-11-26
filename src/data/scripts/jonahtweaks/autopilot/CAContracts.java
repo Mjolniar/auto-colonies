@@ -141,6 +141,26 @@ public class CAContracts {
         catch (Throwable t) { return null; }
     }
 
+    /**
+     * 0.3.21.0: your colonies use more of the commodity than they make (ToT's net exports summed over them), or one of them is
+     * short of it. Food contracts were taken on ToT's faction figure while the colonies ran short.
+     */
+    static boolean shortHome(String good) {
+        int net = 0;
+        boolean read = false;
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            try {
+                com.fs.starfarer.api.campaign.econ.CommodityOnMarketAPI c = m.getCommodityData(good);
+                if (c != null && c.getDeficitQuantity() > 0) return true;
+            } catch (Throwable ignored) { }
+            try {
+                Object on = CARefl.invoke(comOn, null, m, good);
+                if (on != null) { net += ((Number) CARefl.invoke(sdNet, CARefl.invoke(sdData, on))).intValue(); read = true; }
+            } catch (Throwable ignored) { }
+        }
+        return read && net < 0;
+    }
+
     /** ToT delivers from a colony only with a spaceport and accessibility above 0; one under siege may lose it any day. */
     static boolean delivers(MarketAPI m) {
         return m.hasSpaceport() && m.getAccessibilityMod().computeEffective(0f) > 0f && !CASiege.held(m);
@@ -394,6 +414,9 @@ public class CAContracts {
             if (CAFloors.keeps(com)) {
                 o.feasible = false;
                 o.why = "production floor: " + CAResearch.commodityName(com) + " stays for your own production";
+            } else if (shortHome(com)) {   // 0.3.21.0
+                o.feasible = false;
+                o.why = "your colonies use more " + CAResearch.commodityName(com) + " than they make";
             } else if (!fits(spare, 0, need)) {
                 o.feasible = false;
                 o.why = "not enough spare " + CAResearch.commodityName(com) + " (" + Math.max(0, spare) + " of " + (int) Math.ceil(need * (1f + MARGIN)) + " needed"

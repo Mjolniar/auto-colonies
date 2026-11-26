@@ -303,6 +303,7 @@ public final class CAStationFit {
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             try {
                 if (d.colony(m.getId()).mode == CAData.Mode.OFF) continue;
+                if (CAHypershunt.is(m)) continue;   // 0.3.21.0: its star fortress comes with the Hypershunt, and the colony has no income
                 Industry st = station(m);
                 if (st == null) continue;
                 seen.add(m.getId());   // kept while it's disrupted or rebuilt, so the fit isn't paid twice

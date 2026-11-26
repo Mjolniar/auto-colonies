@@ -1,5 +1,14 @@
 # Patch notes
 
+## 0.3.21.0 - 2026-11-25
+
+- Make room: A producer for a good your colonies make none of may replace a duplicate industry when it earns less than it costs. It starts after the actions that pay.
+- Colony plans: Fixed the Forge World project waiting for a refining building. A plan step that the colony's Terraforming Made Easy world needs keeps its rank when it scores 0 or less.
+- Station refits: The Coronal Hypershunt colony's station is not refitted.
+- Surplus terraforming: A deposit counts only at a colony with Farming or Mining (or an upgrade of one), or with one in its plan.
+- Trade contracts: No new sales contract for a good your colonies use more of than they make, or that one of them is short of.
+- Item orders: An order counts against the month's budget and waits for what the planner saves up for its next pick.
+
 ## 0.3.20.7 - 2026-11-25
 
 - Surplus terraforming: Fixed a colony adding Poor Farmland and then Rich Farmland again every month, for 1,000,000¢ and 3,000,000¢ each time. A planet holds one level of farmland, organics, ore, rare ore and volatiles in the plan. Terraforming Made Easy 2.10.6's Rich Farmland project does not list Poor Farmland as replaced.

@@ -72,10 +72,16 @@ public class CATerraformSurplus {
      * for every end state the plan values.
      */
     static CATerraSim.Colony colony(final MarketAPI m, final CAData.Profile prof, final float base, final Set<String> conds, final float hpScale) {
+        return colony(m, prof, base, conds, hpScale, null);
+    }
+
+    /** 0.3.21.0: plan: the colony's plan, so a deposit counts only where a building uses it (CAConditions.changeUsed). */
+    static CATerraSim.Colony colony(final MarketAPI m, final CAData.Profile prof, final float base, final Set<String> conds, final float hpScale,
+                                    final CAPlan.Plan plan) {
         final Map<String, Boolean> can = new HashMap<String, Boolean>();
         return new CATerraSim.Colony() {
             // 0.3.0.0 (C4, research 03 F9): plus the hazard pay its growth no longer needs, for the months it still grows
-            public float value(Set<String> after) { return CAConditions.change(m, after, prof, null) + CAEconomy.hazardPaySaved(m, conds, after, hpScale) - base; }
+            public float value(Set<String> after) { return CAConditions.changeUsed(m, after, prof, plan) + CAEconomy.hazardPaySaved(m, conds, after, hpScale) - base; }
             public boolean has(String s) { return m.hasIndustry(s); }
             public boolean ours(String s) { return CAData.get().surplusBuilt().contains(m.getId() + ":" + s); }
             public float buildDays(String s) { IndustrySpecAPI sp = spec(s); return sp == null ? 0f : sp.getBuildTime(); }
@@ -167,9 +173,9 @@ public class CATerraformSurplus {
         }
         CAData.Profile prof = CAThreat.effective(m, c.profile);
         float hp = CAEconomy.hazardPayScale(m);   // 0.3.0.0 fix (C4 review): once per plan
-        float base = start == conds ? 0f : CAConditions.change(m, start, prof, null) + CAEconomy.hazardPaySaved(m, conds, start, hp);   // 0.3.0.0 (C4): as value() counts it
+        float base = start == conds ? 0f : CAConditions.changeUsed(m, start, prof, plan) + CAEconomy.hazardPaySaved(m, conds, start, hp);   // 0.3.0.0 (C4): as value() counts it
         CATerraSim.Result r = CATerraSim.plan(start, gas, rows, keep, avoid, CATme.buildCostMult(),
-                CATme.removalCostMult(), s.surplusTerraform, colony(m, prof, base, conds, hp), rich);
+                CATme.removalCostMult(), s.surplusTerraform, colony(m, prof, base, conds, hp, plan), rich);
         plans.put(m.getId(), r);
         planConds.put(m.getId(), key);   // 0.3.9.2 (I L3): stored with the plan, so a plan that failed leaves no key for the old one
         planAt.put(m.getId(), now());
