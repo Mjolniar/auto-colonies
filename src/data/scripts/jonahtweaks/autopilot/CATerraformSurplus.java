@@ -86,7 +86,20 @@ public class CATerraformSurplus {
             }
             public float buildCost(String s) { IndustrySpecAPI sp = spec(s); return sp == null ? 1e12f : sp.getCost(); }
             public float upkeep(String s) { IndustrySpecAPI sp = spec(s); return sp == null ? 0f : CAEngine.baseUpkeep(m, sp); }
+            public boolean held(String cond, boolean add) { return CATerraformSurplus.held(m, cond, add); }
         };
+    }
+
+    /** 0.3.20.7: days a surplus terraforming move (a condition added, or removed) isn't started again at the same colony. */
+    static final float REPEAT_DAYS = 365f;
+
+    /** 0.3.20.7: CAData.swapAt key of a surplus terraforming move ("marketId:tf:+condition", "-" for a removal). Pure. */
+    static String repeatKey(String marketId, String cond, boolean add) { return marketId + ":tf:" + (add ? "+" : "-") + cond; }
+
+    /** 0.3.20.7: this move started at the colony less than REPEAT_DAYS ago. */
+    static boolean held(MarketAPI m, String cond, boolean add) {
+        Long at = CAData.get().swapAt().get(repeatKey(m.getId(), cond, add));
+        return at != null && Global.getSector().getClock().getElapsedDaysSince(at) < REPEAT_DAYS;
     }
 
     /** TME structures at the colony that are being built, upgraded or running a project, with the project each runs (null while building). */
@@ -350,6 +363,7 @@ public class CATerraformSurplus {
         if (!CABreaker.check(ACTION, ti.isUpgrading() || CATme.ongoing(ti), m.getName())) return "it didn't take effect, so nothing was charged";
         CABudget.take(cost);   // 0.3.0.0 (C4): through CABudget's one line that takes credits (C1)
         paid(s, m, cost, fee, 0f, budget);
+        CAData.get().swapAt().put(repeatKey(m.getId(), mv.condition, mv.add), Global.getSector().getClock().getTimestamp());   // 0.3.20.7
         CAMark.clear(unusedKey(m.getId(), mv.structure));   // 0.3.0.0 fix (C4 review): its first project ran
         if (mv.add && CATerraSim.ENABLERS.contains(mv.condition) && q.moves.size() > 1) {   // the plan leaves it until the deposit is in
             CAData.get().enablers().put(m.getId() + ":" + mv.condition, q.moves.get(1).condition);

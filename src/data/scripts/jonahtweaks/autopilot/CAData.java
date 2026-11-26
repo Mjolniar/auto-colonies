@@ -274,7 +274,9 @@ public class CAData {
      * A (0.3.0.0 fix, 07 L7): endgameBuilt's other users get their own maps. An older save's keys move over by suffix the first
      * time each getter runs (CATidy.split), so no reader sees an empty map first. overLimitAt: CAOverLimit's ":zerostab",
      * ":zerosince", ":shed", ":shed:<id>", ":overlimit"; pruneAt: CAPrune's ":useless:<id>", ":pruned"; swapAt: ":replaced" (the
-     * last make-room swap or forced takedown at a colony; CAEndgame, CACapital, CAOverLimit). endgameBuilt keeps CAEndgame's own.
+     * last make-room swap or forced takedown at a colony; CAEndgame, CACapital, CAOverLimit); 0.3.20.6 ":item:<industry>:<item>"
+     * (an item swapped out of a building, CAItems.swapHeld); 0.3.20.7 ":tf:+<condition>" and ":tf:-<condition>" (a surplus
+     * terraforming move, CATerraformSurplus.held). endgameBuilt keeps CAEndgame's own.
      */
     public Map<String, Long> overLimitAt, pruneAt, swapAt;
     /** A (0.3.0.0, research 01 section 5): this month's Auto Colonies spending per colony, "marketId|spent", "|fees", "|upkeep" (CALog.spent); the monthly colony lines clear it. */

@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.20.7 - 2026-11-25
+
+- Surplus terraforming: Fixed a colony adding Poor Farmland and then Rich Farmland again every month, for 1,000,000¢ and 3,000,000¢ each time. A planet holds one level of farmland, organics, ore, rare ore and volatiles in the plan. Terraforming Made Easy 2.10.6's Rich Farmland project does not list Poor Farmland as replaced.
+- Surplus terraforming: A project that adds or removes a condition does not run again at the same colony for a year.
+
 ## 0.3.20.6 - 2026-11-25
 
 - Colony items: Fixed the Turing Engine and the Auroran Dimensional Nanoforge swapping places in a Macro-Industrial Complex every day, with a 5,000¢ fee each time. A swap where either item adds no output Autopilot can count compares the two items' flat values.

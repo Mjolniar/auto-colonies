@@ -17,6 +17,23 @@ public class CATerraSim {
             "irradiated", "dark", "extreme_tectonic_activity"};
     static final String[] FARMLAND = {"farmland_poor", "farmland_adequate", "farmland_rich", "farmland_bountiful"};
     static final String[] ORGANICS = {"organics_trace", "organics_common", "organics_abundant", "organics_plentiful"};
+    static final String[] ORE = {"ore_sparse", "ore_moderate", "ore_abundant", "ore_rich", "ore_ultrarich"};
+    static final String[] RARE_ORE = {"rare_ore_sparse", "rare_ore_moderate", "rare_ore_abundant", "rare_ore_rich", "rare_ore_ultrarich"};
+    static final String[] VOLATILES = {"volatiles_trace", "volatiles_diffuse", "volatiles_abundant", "volatiles_plentiful"};
+    /**
+     * 0.3.20.7: a planet holds one rung of each ladder, so adding a rung takes the others off whatever the project's hated list
+     * says. TME 2.10.6's Rich Farmland row hates Adequate twice and not Poor; the game still ends with one farmland.
+     */
+    static final String[][] LADDERS = {FARMLAND, ORGANICS, ORE, RARE_ORE, VOLATILES};
+
+    /** 0.3.20.7: takes every other rung of the added condition's ladder off c. */
+    static void oneRung(Set<String> c, String added) {
+        for (String[] l : LADDERS) {
+            if (!Arrays.asList(l).contains(added)) continue;
+            for (String x : l) if (!x.equals(added)) c.remove(x);
+            return;
+        }
+    }
     /** Structures surplus terraforming leaves alone: the Unification Center's worlds are the colony plan's, and the Stellar
      *  Manufactory needs mirror and shade choices. */
     static final Set<String> SKIP = new HashSet<String>(Arrays.asList("tme_unification_center", "tme_stellar_manufactory"));
@@ -70,6 +87,8 @@ public class CATerraSim {
         float buildCost(String structure);
         float buildDays(String structure);
         float upkeep(String structure);
+        /** 0.3.20.7: this move (the condition, added or removed) started at the colony within the last year: not planned again. */
+        default boolean held(String condition, boolean add) { return false; }
     }
 
     static boolean meets(Set<String> conds, String liked) {
@@ -102,7 +121,7 @@ public class CATerraSim {
     /** The conditions once a project finishes. */
     static Set<String> apply(Set<String> conds, Move m, CAWorldPlanner.Row r, boolean gasGiant) {
         Set<String> c = new HashSet<String>(conds);
-        if (m.add) { c.add(m.condition); c.removeAll(CAWorldPlanner.idsOf(r.hated)); }
+        if (m.add) { c.add(m.condition); c.removeAll(CAWorldPlanner.idsOf(r.hated)); oneRung(c, m.condition); }
         else c.remove(m.condition);
         settle(c, gasGiant);
         return c;
@@ -142,12 +161,13 @@ public class CATerraSim {
                                float costMult, float removalMult, Colony col) {
         List<Seq> out = new ArrayList<Seq>();
         for (Move a : moves(conds, gasGiant, rows.values(), keep, costMult, removalMult)) {
+            if (col.held(a.condition, a.add)) continue;   // 0.3.20.7
             Set<String> s1 = apply(conds, a, rows.get(a.condition), gasGiant);
             if (!valid(conds, s1, keep, avoid)) continue;
             out.add(seq(col, s1, a));
             if (DEPTH < 2) continue;
             for (Move b : moves(s1, gasGiant, rows.values(), keep, costMult, removalMult)) {
-                if (b.condition.equals(a.condition)) continue;
+                if (b.condition.equals(a.condition) || col.held(b.condition, b.add)) continue;
                 Set<String> s2 = apply(s1, b, rows.get(b.condition), gasGiant);
                 if (!valid(conds, s2, keep, avoid)) continue;
                 out.add(seq(col, s2, a, b));
