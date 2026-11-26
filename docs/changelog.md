@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.20.4 - 2026-11-25
+
+- Build card: Fixed the building picture showing as a gray box with Fast Rendering. The picture draws the same way as the Story page pictures.
+- Build card: With 12 buildings the card shows as a strip right of the Add industry or structure button, with the picture, the suggestion and the Build button.
+
 ## 0.3.20.3 - 2026-11-25
 
 - Station refits: Added the Station refits setting under Extras (Once a year, Every 2 years, Every 180 days, Off). Once a year by default. Off leaves a station's weapons and augments alone after its first fit.
