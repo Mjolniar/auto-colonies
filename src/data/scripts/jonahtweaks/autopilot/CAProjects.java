@@ -32,9 +32,18 @@ public class CAProjects {
         final String good, id, base, root;
         final int minSize;
         final String[] inputs;
+        /** 0.3.30.0: the mod the building comes from (null: vanilla or Ashes of the Domain); its rows count only while it's on. */
+        String mod;
         Producer(String good, String id, String base, String root, int minSize, String... inputs) {
             this.good = good; this.id = id; this.base = base; this.root = root; this.minSize = minSize; this.inputs = inputs;
         }
+        Producer from(String mod) { this.mod = mod; return this; }
+    }
+
+    /** 0.3.30.0: a row counts: vanilla and Ashes of the Domain always, another mod's while it's on (never in the offline checks). */
+    static boolean on(Producer p) {
+        if (p.mod == null) return true;
+        try { return Global.getSettings().getModManager().isModEnabled(p.mod); } catch (Throwable t) { return false; }
     }
 
     /** In order of preference for each good. */
@@ -60,6 +69,12 @@ public class CAProjects {
             new Producer("volatiles", "mining", null, null, 3),
             new Producer("organics", "mining", null, null, 3),
             new Producer("food", "farming", null, null, 3),
+            // 0.3.30.0 (plan 2026-11-25, batch 7): other mods' producers, planned where the game builds them; no research gates them
+            new Producer("ships", "yunru_heavyindustry", null, null, 3).from("yunruindustries"),
+            new Producer("hand_weapons", "yunru_heavyindustry", null, null, 3).from("yunruindustries"),
+            new Producer("heavy_machinery", "yunru_heavyindustry", null, null, 3).from("yunruindustries"),
+            new Producer("supplies", "yunru_heavyindustry", null, null, 3).from("yunruindustries"),
+            new Producer("volatiles", "NSI_nebulaSiphoner", null, null, 3).from("niko_scavengableindustries"),
     };
 
     /** A colony as the planner sees it. */
@@ -95,7 +110,7 @@ public class CAProjects {
 
     static List<Producer> producersOf(String good) {
         List<Producer> out = new ArrayList<Producer>();
-        for (Producer p : PRODUCERS) if (p.good.equals(good)) out.add(p);
+        for (Producer p : PRODUCERS) if (p.good.equals(good) && on(p)) out.add(p);   // 0.3.30.0: on()
         return out;
     }
 

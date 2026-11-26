@@ -140,6 +140,27 @@ public final class CANeeds {
 
     static final Set<String> TOO_BIG = new HashSet<String>();
 
+    /** 0.3.30.0 (plan 2026-11-25, batch 7): units of shortage a ledger-short good counts as in core placement. */
+    static final int GAP_UNITS = 10;
+
+    /**
+     * 0.3.30.0: the empire's shortages plus the goods the ledger has short after your colonies and commitments (restorations,
+     * projects, wonder sites, orders), for AI core and Omega core placement: a core that adds to one of those counts as relief.
+     */
+    public static Map<String, Integer> withGaps(Map<String, Integer> deficit) { return withGaps(deficit, last == null ? null : last.values()); }
+
+    /** Pure: withGaps on these goods. */
+    static Map<String, Integer> withGaps(Map<String, Integer> deficit, Collection<Good> goods) {
+        Map<String, Integer> out = new HashMap<String, Integer>();
+        if (deficit != null) out.putAll(deficit);
+        if (goods != null) for (Good g : goods) {
+            if (g == null || g.id == null || g.gap() <= 0) continue;
+            Integer cur = out.get(g.id);
+            out.put(g.id, Math.max(cur == null ? 0 : cur, GAP_UNITS));
+        }
+        return out;
+    }
+
     /** 0.3.25.0 (batch 4): a new sale of need a month would leave this good's commitments short (CAContracts' offer check). */
     public static boolean reserved(String good, int need) {
         Good g = last == null ? null : last.get(good);

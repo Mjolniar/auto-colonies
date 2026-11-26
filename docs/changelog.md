@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.30.0 - 2026-11-26
+
+- AI cores: Core placement counts goods that are short after restorations, special projects, wonder sites and orders. A core that adds to one of them counts as shortage relief. Omega core placement does the same.
+- Item orders: When Ashes of the Domain's production can make Alpha Cores, one is ordered while none is in Autopilot Storage and the best spot for one pays back its cost within 36 months.
+- Producers: Yunru Industries' Secondary Drydocks count as a producer of ships, weapons, heavy machinery and supplies. Niko's Scavengable Industries' Nebula Skimming counts as a producer of volatiles. Both are planned only where the game lets them be built.
+
 ## 0.3.29.0 - 2026-11-26
 
 - World plans: Terraforming Made Easy's Unification Center rules are read as TME loads them with Vaults of Knowledge. A Mining Megaplex, Crystalizator, Fishing Harbour or other building TME accepts counts for its step.

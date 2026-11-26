@@ -210,7 +210,7 @@ public class CAOmega {
         if (CAStores.count(CORE) < 1f) return false;
         String none = CAItems.noInspections();
         Set<MarketAPI> frozen = CAItems.inspected();
-        Map<String, Integer> deficit = CAEngine.empireDeficits();
+        Map<String, Integer> deficit = CANeeds.withGaps(CAEngine.empireDeficits());   // 0.3.30.0: goods the ledger has short count as relief
         Set<String> incoming = new HashSet<String>();
         for (CAStores.Shipment sh : d.shipments()) if (CORE.equals(sh.commodity)) incoming.add(sh.to);
         AICoreAdminPlugin admins = adminPlugin();

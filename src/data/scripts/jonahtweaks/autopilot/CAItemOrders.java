@@ -108,17 +108,18 @@ public class CAItemOrders {
             int delivered = deliveredOf(e.getValue());
             Object snap = snapshot(e.getKey());
             int done = snap == null ? 1 : rewarded(snap);
+            boolean core = CAItems.tier(item) >= 0;   // 0.3.30.0: an AI core is a commodity
             if (done > delivered && gp != null) {
                 CargoAPI from = Misc.getStorageCargo(gp);
                 SpecialItemData data = new SpecialItemData(item, null);
-                int n = from == null ? 0 : (int) Math.min(done - delivered, from.getQuantity(CargoAPI.CargoItemType.SPECIAL, data));
+                int n = from == null ? 0 : (int) Math.min(done - delivered, core ? from.getCommodityQuantity(item) : from.getQuantity(CargoAPI.CargoItemType.SPECIAL, data));
                 if (n > 0) {
                     CargoAPI to = CAStores.holds(gp) ? CAStores.of(gp) : CAStores.nearest(gp).isEmpty() ? null : CAStores.nearest(gp).get(0).cargo;
                     if (to != null) {
-                        from.removeItems(CargoAPI.CargoItemType.SPECIAL, data, n);
-                        to.addSpecial(data, n);
+                        if (core) { from.removeCommodity(item, n); to.addCommodity(item, n); }
+                        else { from.removeItems(CargoAPI.CargoItemType.SPECIAL, data, n); to.addSpecial(data, n); }
                         delivered += n;
-                        CALog.did(gp.getName() + ": " + CAItems.name(item) + " produced. Moved to Autopilot Storage.");
+                        CALog.did(gp.getName() + ": " + (core ? CAItems.coreName(CAItems.tier(item)) : CAItems.name(item)) + " produced. Moved to Autopilot Storage.");
                     }
                 }
             }
@@ -139,8 +140,10 @@ public class CAItemOrders {
         MarketAPI bestM = null;
         Industry bestInd = null;
         float bestPay = Float.POSITIVE_INFINITY, bestValue = 0f, bestCost = 0f;
+        Object alphaSpec = null;
         for (Object spec : (List<Object>) learned) {
             String id = (String) CARefl.call(spec, "getId");
+            if (CAItems.CORES[0].equals(id)) { alphaSpec = spec; continue; }   // 0.3.30.0: AI cores (the Turing Engine), below
             SpecialItemSpecAPI ss = Global.getSettings().getSpecialItemSpec(id);
             if (ss == null || ss.getParams() == null || CAItems.NEVER.contains(id) || CAItems.LAMP.equals(id) || id.startsWith("IndEvo_vpc_")) continue;
             CAItems.Idle it = new CAItems.Idle();
@@ -173,10 +176,25 @@ public class CAItemOrders {
                 bestPay = pay; bestSpec = spec; bestItem = id; bestM = m; bestInd = ind; bestValue = value; bestCost = cost;
             }
         }
-        if (bestSpec == null) return;
+        // 0.3.30.0 (plan 2026-11-25, batch 7): an Alpha Core when core placement has room for one that pays back sooner
+        if (alphaSpec != null && CAItems.alphaWant > 0f && CAStores.count(CAItems.CORES[0]) < 1f) {
+            float cost = ((Number) CARefl.call(alphaSpec, "getProductionCost")).floatValue();
+            float pay = payback(cost, CAItems.alphaWant);
+            Map<String, Integer> need = (Map<String, Integer>) CARefl.call(alphaSpec, "getMapOfResourcesNeeded");
+            boolean ok = true;
+            if (need != null) for (Map.Entry<String, Integer> g : need.entrySet())
+                if (Global.getSettings().getCommoditySpec(g.getKey()) == null || (g.getValue() != null && CANeeds.reserved(g.getKey(), g.getValue()))) ok = false;
+            if (ok && pay <= PAYBACK_MONTHS && pay < bestPay) {
+                bestPay = pay; bestSpec = alphaSpec; bestItem = CAItems.CORES[0]; bestInd = null; bestValue = CAItems.alphaWant; bestCost = cost;
+                bestM = Global.getSector().getPlayerFaction().getProduction().getGatheringPoint();
+            }
+        }
+        if (bestSpec == null || bestM == null) return;
+        String forWhat = bestInd != null ? bestInd.getCurrentName() : CAItems.alphaWantAt;
+        String itemName = CAItems.tier(bestItem) >= 0 ? CAItems.coreName(CAItems.tier(bestItem)) : CAItems.name(bestItem);
         if (!CAItems.canMove(s, bestCost) || CABuild.credits() - bestCost < s.reserve) {   // 0.3.21.0: and what the planner saves up for its pick
             if (CALog.once("itemorders:budget:" + bestItem + ":" + Global.getSector().getClock().getMonth()))
-                CALog.think(bestM.getName() + ": " + CAItems.name(bestItem) + " for " + bestInd.getCurrentName() + " waits for budget ("
+                CALog.think(bestM.getName() + ": " + itemName + " for " + forWhat + " waits for budget ("
                         + Misc.getDGSCredits(bestCost) + ").");
             return;
         }
@@ -195,7 +213,7 @@ public class CAItemOrders {
             if (goods.length() > 0) goods.append(", ");
             goods.append(g.getValue()).append(' ').append(Global.getSettings().getCommoditySpec(g.getKey()).getName());
         }
-        CALog.did(bestM.getName() + ": " + CAItems.name(bestItem) + " ordered from production for " + bestInd.getCurrentName() + ". "
+        CALog.did(bestM.getName() + ": " + itemName + " ordered from production for " + forWhat + ". "
                 + Misc.getDGSCredits(bestCost) + (goods.length() > 0 ? " and " + goods : "") + "; about " + Misc.getDGSCredits(bestValue) + " a month in value.");
     }
 }

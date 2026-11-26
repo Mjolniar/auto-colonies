@@ -774,6 +774,13 @@ public class CAItems {
         try { return Math.round(Global.getSettings().getFloat(POINT_KEYS[k])); } catch (Throwable t) { return DEFAULT_POINTS[k]; }
     }
 
+    /**
+     * 0.3.30.0 (plan 2026-11-25, batch 7): what an Alpha Core would add a month at the best colony with room for one while
+     * none is in Autopilot Storage, and where (placeCore). CAItemOrders orders one from AotD production when it pays back.
+     */
+    static float alphaWant = 0f;
+    static String alphaWantAt = null;
+
     static int tier(String coreId) {
         for (int k = 0; k < CORES.length; k++) if (CORES[k].equals(coreId)) return k;
         return -1;
@@ -1082,7 +1089,7 @@ public class CAItems {
     static boolean placeCore(CAData d, CASettings s, List<MarketAPI> markets) {
         String none = noInspections();
         Set<MarketAPI> frozen = inspected();
-        Map<String, Integer> deficit = CAEngine.empireDeficits();
+        Map<String, Integer> deficit = CANeeds.withGaps(CAEngine.empireDeficits());   // 0.3.30.0: goods the ledger has short count as relief
         CACrisis.Base crisis = CACrisis.base();
         List<CoreSlot> slots = new ArrayList<CoreSlot>();
         Map<MarketAPI, Integer> points = new HashMap<MarketAPI, Integer>(), limit = new HashMap<MarketAPI, Integer>();
@@ -1140,6 +1147,8 @@ public class CAItems {
         Set<String> incoming = new HashSet<String>();   // colonies a core is already on its way to: one at a time
         Set<String> comingTier = new HashSet<String>();   // 0.3.17.7: "marketId|tier" of each core on its way
         for (CAStores.Shipment sh : d.shipments()) if (sh.commodity != null && tier(sh.commodity) >= 0) { incoming.add(sh.to); comingTier.add(sh.to + "|" + tier(sh.commodity)); }
+        float want = 0f;   // 0.3.30.0: the best room for an Alpha while none is stored (CAItemOrders' core orders)
+        String wantAt = null;
         for (CoreSlot to : slots) {
             if (to.threat && !defensive(to.ind)) continue;   // a threatened colony only gets cores in its defenses
             if (incoming.contains(to.m.getId()) && CAStores.of(to.m).getCommodityQuantity(CORES[0]) + CAStores.of(to.m).getCommodityQuantity(CORES[1])
@@ -1154,6 +1163,7 @@ public class CAItems {
                 if (comingSkip(comingTier.contains(to.m.getId() + "|" + k), CAStores.of(to.m).getCommodityQuantity(CORES[k]))) continue;
                 int extra = points(k) - (to.cur >= 0 ? points(to.cur) : 0);
                 float gain = to.rank(k) - (to.cur >= 0 ? to.rank(to.cur) : 0f);
+                if (k == 0 && have[0] == 0 && extra <= room && gain > want) { want = gain; wantAt = to.m.getName() + "'s " + to.ind.getCurrentName(); }
                 if (have[k] > 0) {
                     if (extra <= room && gain > bestGain) { bestGain = gain; bestTo = to; bestFrom = null; bestK = k; }
                     continue;
@@ -1166,6 +1176,7 @@ public class CAItems {
                 }
             }
         }
+        alphaWant = want; alphaWantAt = wantAt;
         if (bestTo == null) return false;
         String coreId = CORES[bestK];
         CargoAPI here = CAStores.of(bestTo.m);
