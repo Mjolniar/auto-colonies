@@ -38,6 +38,27 @@ public class CAWonders {
     /** 0.3.9.7 (G5): upkeep each Bifrost gate adds (VoK BifrostControlCenter.costUpkeepForEachGate). */
     static final float BIFROST_UPKEEP = 20000f;
     static String summary;
+    /** 0.3.28.0 (plan 2026-11-25, batch 5): CAMark key of your approval of the Daedalus Array, and its ask's key. */
+    static final String OK_MARK = "wonderok:" + DAEDALUS;
+
+    /**
+     * 0.3.28.0: the Daedalus Array's site waits for your approval (Approvals, kind "wonder"). The ask is offered again each
+     * day it could start; a rejection holds it 180 days.
+     */
+    static boolean approved(MarketAPI m, float cost, Map<?, ?> goods, List<String> lines) {
+        if (CAMark.at(OK_MARK) != null) return true;
+        List<String> names = new ArrayList<String>();
+        if (goods != null) for (Object k : goods.keySet()) names.add(CAProjects.name(String.valueOf(k)));
+        Industry port = m.getIndustry("megaport") != null ? m.getIndustry("megaport") : m.getIndustry("spaceport");
+        CAApprovals.offer(OK_MARK, "wonder", m, "Build the " + name(DAEDALUS), cost, CABudget.constructionFee(CAData.settings(), cost), null,
+                () -> { CAMark.set(OK_MARK, CAMark.now()); return null; },
+                "A Grand Wonder site will be built at " + m.getName() + ", and then the " + name(DAEDALUS) + " goes up on it.",
+                names.isEmpty() ? null : "While it's being built, it takes " + CAContracts.join(names) + " from your exports, and you pay 10% of their price.",
+                "When it's done, it replaces the " + (port == null ? "port" : port.getCurrentName()) + " and keeps its AI core and improvement.",
+                "If you reject it, it won't be offered again for " + CAApprovals.holdText("wonder") + ".");
+        lines.add(name(DAEDALUS) + " at " + m.getName() + " waits for your approval");
+        return false;
+    }
 
     static boolean on(CASettings s) {
         return !broken && !s.noWonders && Global.getSettings().getModManager().isModEnabled(CAResearch.MOD) && CASurplus.rich(s)
@@ -176,6 +197,7 @@ public class CAWonders {
                 IndustrySpecAPI sp = Global.getSettings().getIndustrySpec(SITE);
                 Industry probe = sp.getNewPluginInstance(m);
                 if (!probe.isAvailableToBuild()) continue;
+                if (!approved(m, probe.getBuildCost(), (Map<?, ?>) CARefl.invoke(demand, w), lines)) return;   // 0.3.28.0: ask first
                 if (offers != null) {   // 0.3.0.0 (B3): the planner's action for the site
                     CAAction a = new CAAction();
                     a.kind = CAAction.Kind.BUILD; a.source = SOURCE; a.market = m; a.marketId = m.getId();

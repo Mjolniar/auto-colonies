@@ -1,5 +1,12 @@
 # Patch notes
 
+## 0.3.28.0 - 2026-11-26
+
+- Special projects: Added the Special projects setting (Ask first, Off). With a working Black Site, no project running and colony net at the Production line, a discovered project is proposed in Approvals. After approval, each stage starts when the last one is done. Shroud projects are not proposed. A project or stage you pause is left to you.
+- Wonders: The Daedalus Array's Grand Wonder site waits for your approval.
+- Item orders: A new order waits while its goods are short for restorations, projects or wonder sites.
+- Stalled restorations: The pause proposal shows how long the restoration has stalled and what it asks a month.
+
 ## 0.3.27.1 - 2026-11-26
 
 - Production line: Fixed a producer being planned at a colony that already has an upgrade of it, such as Farming at a colony with Subsidised Farming. The game never offered it there, so no swap was made.

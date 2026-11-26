@@ -242,8 +242,10 @@ public final class CALunaSync {
                 + "only the focus world.");
         r.opts = new String[]{"Every colony", "Focus world only"};
         flag(r, "surplusFocusOnly");
-        bool("wonders", "Wonders and gates", "noWonders", true, "The Daedalus Array and Bifrost gates are constructed once their goods are in production. Requires Vaults of "
-                + "Knowledge.");
+        bool("wonders", "Wonders and gates", "noWonders", true, "Bifrost gates and the Daedalus Array (after you approve it) are built once their goods are in production. "
+                + "Requires Vaults of Knowledge.");
+        radio("projects", "Special projects", "projectAsks", CASettings.PROJECT_ASK_NAMES, "A Black Site project is proposed once your colonies can supply it, and after you "
+                + "approve it, each stage starts when the last one is done. Shroud projects are left to you. Requires Vaults of Knowledge.");
         radio("surplustf", "Surplus terraforming", "surplusTerraform", CASettings.SURPLUS_TF_NAMES, "Surplus remaining after the focus world is directed into terraforming. Requires Terraforming Made Easy.");
         bool("surplusres", "Surplus research", "noSurplusResearch", true, "Additional Research Facilities are funded from surplus while the speed gained justifies the cost. Requires "
                 + "Vaults of Knowledge.");

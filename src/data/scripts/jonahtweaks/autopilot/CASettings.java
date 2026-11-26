@@ -134,6 +134,12 @@ public class CASettings {
      * and one line each at the month's end, CALog.digest), 1 Every move. 0 in every save.
      */
     public int moveLines = 0;
+    /**
+     * 0.3.28.0 (plan 2026-11-25, batch 5): Special projects (PROJECT_ASK_NAMES): 0 Ask first (CABlackSite proposes a Black Site
+     * project and starts its stages once you approve it), 1 Off. 0 in every save.
+     */
+    public int projectAsks = 0;
+    public static final String[] PROJECT_ASK_NAMES = {"Ask first", "Off"};
     public static final String[] MOVE_LINE_NAMES = {"Monthly summary", "Every move"};
     public boolean moveLinesEach() { return moveLines == 1; }
     /** 0.3.24.0: the Production line's colony net a month; 0 Off. */

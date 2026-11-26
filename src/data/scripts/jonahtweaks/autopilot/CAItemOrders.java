@@ -154,6 +154,12 @@ public class CAItemOrders {
             boolean takesItems = false;
             if (need != null) for (String r : need.keySet()) if (Global.getSettings().getCommoditySpec(r) == null) takesItems = true;
             if (takesItems) continue;   // production that uses up other special items is left to you
+            boolean reserved = false;   // 0.3.28.0 (batch 5): no new order while its goods are short for restorations, projects or wonders
+            if (need != null) for (Map.Entry<String, Integer> g : need.entrySet()) if (g.getValue() != null && CANeeds.reserved(g.getKey(), g.getValue())) reserved = true;
+            if (reserved) {
+                if (CALog.once("itemorders:reserved:" + id)) CADiagnostics.LOG.info(CADiagnostics.TAG + "item order for " + id + " waits: its goods are short for commitments");
+                continue;
+            }
             for (String p : ss.getParams().split(",")) it.targets.add(p.trim());
             float cost = ((Number) CARefl.call(spec, "getProductionCost")).floatValue();
             for (MarketAPI m : auto) {

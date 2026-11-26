@@ -135,11 +135,13 @@ public final class CACommit {
         final String marketId = key.substring(0, key.indexOf('|')), sectionId = key.substring(key.indexOf('|') + 1);
         MarketAPI m = Global.getSector().getEconomy().getMarket(marketId);
         if (m == null) return;
-        CAApprovals.offer("stall:" + key, "stall", m, "Pause the " + w[2] + " restoration", 0f, 0f,
-                "The " + w[1] + "'s " + w[2] + " hasn't moved in " + w[3] + " months, and it asks for " + w[4] + " a month, more than your colonies have spare.",
+        String why = "The " + w[1] + "'s " + w[2] + " hasn't moved in " + w[3] + " months, and it asks for " + w[4] + " a month, more than your colonies have spare.";
+        CAApprovals.offer("stall:" + key, "stall", m, "Pause the " + w[2] + " restoration", 0f, 0f, why,
                 () -> pause(marketId, sectionId),
+                why,   // 0.3.28.0: an ask with its own lines shows only those, so the reason goes first
                 "Pausing it stops its contract, so those goods go back to your exports and other uses.",
-                "You can start it again from the megastructure's screen any time.");
+                "You can start it again from the megastructure's screen any time.",
+                "If you reject it, it won't be offered again for " + CAApprovals.holdText("stall") + ".");
     }
 
     /** The approval: the section's own stopRestoration. */
