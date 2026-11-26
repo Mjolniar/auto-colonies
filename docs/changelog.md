@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.24.0 - 2026-11-25
+
+- Production line: Added the Production line setting next to Make room (From 500,000/month by default; 250,000, 1,000,000, 2,000,000 or Off). While colony net is at the line, a good your colonies use more of than they make, or that one colony is short of, gets a producer planned even when it doesn't pay for itself. Make room may swap out an industry another colony also has for it.
+- Production line: A good that commitments ask more of than your colonies make gets no producer. starsector.log names it once a session.
+- Make room: At most one swap a month per colony and one a day across your colonies.
+
 ## 0.3.23.0 - 2026-11-25
 
 - Needs: Added a Needs section to the Budget panel. For each short good it shows what your colonies make and use, what restorations, wonder sites, special projects and production orders ask each month, and what sales contracts take. With Theory of Toolbox the numbers are its cargo units.

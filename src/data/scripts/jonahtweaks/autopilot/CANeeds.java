@@ -49,7 +49,7 @@ public final class CANeeds {
     static boolean rawLinked = false, rawBroken = false;
 
     /** On load (CAReset). */
-    static void reset() { last = null; lastDay = Integer.MIN_VALUE; loggedMonth = Integer.MIN_VALUE; rawLinked = false; rawBroken = false; sdSup = null; sdDem = null; }
+    static void reset() { last = null; lastDay = Integer.MIN_VALUE; loggedMonth = Integer.MIN_VALUE; rawLinked = false; rawBroken = false; sdSup = null; sdDem = null; TOO_BIG.clear(); }
 
     // ---------------- pure ----------------
 
@@ -109,6 +109,36 @@ public final class CANeeds {
             CADiagnostics.LOG.info(CADiagnostics.TAG + "needs: " + (top.isEmpty() ? "nothing short" : CAContracts.join(top)));
         }
     }
+
+    /** 0.3.24.0 (batch 3): colony net is at the Production line, so short goods get producers (CAProjects.updateNow). */
+    public static boolean lineMet(CASettings s) {
+        float l = s.productionLineNet();
+        return l > 0f && CABudget.netIncome(s) >= l;
+    }
+
+    /**
+     * Pure (0.3.24.0): a good gets a producer when your colonies use more than they make or one of them is short of it, or when
+     * commitments make it short and ask no more than your colonies make (a bigger ask waits for the commitments' stall rule).
+     */
+    static boolean plannable(int supply, int demand, int deficits, int commitments) {
+        if (demand > supply || deficits > 0) return true;
+        return commitments > 0 && shortWith(supply, demand, commitments) > 0 && commitments <= supply;
+    }
+
+    /** 0.3.24.0: the goods to plan producers for today, and one starsector.log line a session for a commitment too big to plan for. */
+    public static List<String> shortGoods() {
+        List<String> out = new ArrayList<String>();
+        if (last == null) return out;
+        for (Good g : last.values()) {
+            if (plannable(g.supply, g.demand, g.deficits, g.commitments())) out.add(g.id);
+            else if (g.commitments() > g.supply && shortWith(g.supply, g.demand, g.commitments()) > 0 && TOO_BIG.add(g.id))
+                CADiagnostics.LOG.info(CADiagnostics.TAG + "needs: " + askers(g.asks) + " ask " + n(g.commitments()) + " " + g.id + " a month, more than your colonies make ("
+                        + n(g.supply) + "); no producer is planned for it");
+        }
+        return out;
+    }
+
+    static final Set<String> TOO_BIG = new HashSet<String>();
 
     /** The ledger now (null before the first daily pass). */
     public static Map<String, Good> get() { return last; }

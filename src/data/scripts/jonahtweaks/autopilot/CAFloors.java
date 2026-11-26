@@ -961,6 +961,7 @@ public class CAFloors {
     static CAEndgame.Weakest makeRoom(MarketAPI m, CAData.Colony col, CAEngine.Pick best, CAData.Profile profile) {
         State st = state();
         if (best == null || best.measured) return null;
+        if (!roomRate(m)) return null;   // 0.3.24.0 (plan 2026-11-25, batch 3)
         // 0.3.17.7: a producer CAProjects plans here (every good made at home) may make room too, by replacing a duplicate
         boolean project = !(best.floorValue > 0f) && CAProjects.isStep(m, best.id);
         if (project) {
@@ -979,6 +980,27 @@ public class CAFloors {
         // 0.3.17.7: a missing good comes first: a duplicate goes for its producer whether or not the swap earns more
         if (!project && !CAEndgame.worthIt(best, wk)) return null;
         return wk;
+    }
+
+    /** 0.3.24.0: days a colony waits after a take-down or swap there, and the whole empire after any. */
+    static final float ROOM_COLONY_DAYS = 30f, ROOM_EMPIRE_DAYS = 1f;
+
+    /** Pure (0.3.24.0): a make-room swap may happen this many days after the last one here and the last one anywhere. */
+    static boolean roomOk(float daysHere, float daysAny) { return daysHere >= ROOM_COLONY_DAYS && daysAny >= ROOM_EMPIRE_DAYS; }
+
+    /** 0.3.24.0: roomOk on the ":replaced" stamps (CAData.swapAt) that take-downs and swaps leave. */
+    static boolean roomRate(MarketAPI m) {
+        float here = Float.MAX_VALUE, any = Float.MAX_VALUE;
+        try {
+            for (Map.Entry<String, Long> e : CAData.get().swapAt().entrySet()) {
+                if (e.getValue() == null || !e.getKey().endsWith(":replaced")) continue;
+                float days = Global.getSector().getClock().getElapsedDaysSince(e.getValue());
+                if (days < 0f) continue;   // a stamp from a later date (an earlier save)
+                any = Math.min(any, days);
+                if (e.getKey().equals(m.getId() + ":replaced")) here = Math.min(here, days);
+            }
+        } catch (Throwable t) { return true; }
+        return roomOk(here, any);
     }
 
     /** 0.3.17.7: the open floors no colony can host a producer for, by floor name (none while floors are off or not measured). */

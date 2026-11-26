@@ -121,6 +121,16 @@ public class CASettings {
     public static final String[] STATION_REFIT_NAMES = {"Once a year", "Every 2 years", "Every 180 days", "Off"};
     /** Days for each choice; 0 is Off. */
     public static final int[] STATION_REFIT_DAYS = {365, 730, 180, 0};
+    /**
+     * 0.3.24.0 (plan 2026-11-25, batch 3): Production line (PRODUCTION_LINE_NAMES): colony net a month from which goods your
+     * colonies are short of get producers (CANeeds into CAProjects), even ones that don't pay for themselves, and Make room may
+     * replace a duplicate industry for them. 0 is From 500,000/month in every save.
+     */
+    public int productionLine = 0;
+    public static final String[] PRODUCTION_LINE_NAMES = {"From 500,000/month", "From 1,000,000/month", "From 2,000,000/month", "From 250,000/month", "Off"};
+    public static final float[] PRODUCTION_LINE_NET = {500000f, 1000000f, 2000000f, 250000f, 0f};
+    /** 0.3.24.0: the Production line's colony net a month; 0 Off. */
+    public float productionLineNet() { return PRODUCTION_LINE_NET[Math.max(0, Math.min(PRODUCTION_LINE_NET.length - 1, productionLine))]; }
     /** 0.3.20.3: days between refits of one station after its first fit; 0 Off. */
     public int stationRefitDays() { return STATION_REFIT_DAYS[Math.max(0, Math.min(STATION_REFIT_DAYS.length - 1, stationRefit))]; }
     // Ashes of the Domain trade contracts: 0 Advisor (default), 1 Auto, 2 Off

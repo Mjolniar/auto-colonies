@@ -188,7 +188,10 @@ public class CAProjects {
     static Result last;
     static boolean broken = false;
 
-    public static void reset() { STEPS.clear(); computedAt = -99f; project = null; last = null; monthly.clear(); left.clear(); other.clear(); orders.clear(); shunt = new LinkedHashMap<String, Integer>(); shortBy.clear(); broken = false; }   // 0.3.9.6 (D6): broken too
+    /** 0.3.24.0: goods planned today because your colonies are short of them (CANeeds), for forWhat. */
+    static final Set<String> NEEDS = new HashSet<String>();
+
+    public static void reset() { NEEDS.clear(); STEPS.clear(); computedAt = -99f; project = null; last = null; monthly.clear(); left.clear(); other.clear(); orders.clear(); shunt = new LinkedHashMap<String, Integer>(); shortBy.clear(); broken = false; }   // 0.3.9.6 (D6): broken too
 
     /**
      * 0.3.11.9: goods the running project takes this month that your colonies make but have none left over for (Theory of
@@ -456,9 +459,11 @@ public class CAProjects {
             // 0.3.17.7: with production priorities on (Settings, Production), every good gets a producer when your colonies make
             // none: AotD's own goods and the vanilla ones (Domain-grade machinery stayed unmade outside spending freely)
             boolean every = CAData.settings().productionOn();
+            // 0.3.24.0 (plan 2026-11-25, batch 3): past the Production line, goods your colonies are short of (CANeeds) get producers
+            boolean line = CANeeds.lineMet(CAData.settings());
             readOrders();   // and the goods open production orders still need (0.2.39.0)
             shunt = CAHypershunt.shortfalls();   // 0.3.10.6: and what your Coronal Hypershunts are short of
-            if (!running && !rich && !every && orders.isEmpty() && shunt.isEmpty()) return;
+            if (!running && !rich && !every && !line && orders.isEmpty() && shunt.isEmpty()) return;
             yours.clear(); sector.clear();
             Set<String> goods = new LinkedHashSet<String>(left.keySet());
             goods.addAll(monthly.keySet());
@@ -483,6 +488,13 @@ public class CAProjects {
             for (String g : wanted) if (!madeAny(made, g)) missing.add(g);
             List<String> shortGoods = new ArrayList<String>();
             for (String g : shortBy.keySet()) if (madeAny(made, g) && !underWay(g)) shortGoods.add(g);   // 0.3.11.9: made, none left over, none on the way
+            NEEDS.clear();
+            if (line) for (String g : CANeeds.shortGoods()) {   // 0.3.24.0
+                if (producersOf(g).isEmpty() || underWay(g)) continue;
+                NEEDS.add(g);
+                if (!madeAny(made, g)) { if (!missing.contains(g)) missing.add(g); }
+                else if (!shortGoods.contains(g)) shortGoods.add(g);
+            }
             int ships = Math.max(0, yours.get("ships") == null ? 0 : yours.get("ships"));
             Set<String> built = new HashSet<String>();
             for (MarketAPI m : Misc.getPlayerMarkets(false)) for (Industry ind : m.getIndustries()) built.add(ind.getId());
@@ -524,6 +536,7 @@ public class CAProjects {
         if (project != null && left.containsKey(good)) return project;
         if (orders.containsKey(good)) return "production orders";
         if (shunt.containsKey(good)) return "the Coronal Hypershunt";   // 0.3.10.6
+        if (NEEDS.contains(good)) return "short at your colonies";   // 0.3.24.0
         if (!Arrays.asList(AOTD_GOODS).contains(good)) return "every good made at home";   // 0.3.17.7
         return "AotD wonders and gates";
     }
