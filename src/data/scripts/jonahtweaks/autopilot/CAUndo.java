@@ -49,6 +49,14 @@ final class CAUndo {
     /** The opposite change was made here within DAYS: doing this now puts back what Autopilot took out, or the reverse. */
     static boolean undoes(MarketAPI m, String kind, boolean in, String target) { return holds(since(m, kind, !in, target)); }
 
+    /**
+     * 0.3.25.1: a terraforming change is held when it repeats one made here within DAYS, or undoes one (the plan removing
+     * what surplus terraforming added, or the reverse). An enabler (tectonic activity) may still be taken off once its deposit is in.
+     */
+    static boolean tfHeld(MarketAPI m, String cond, boolean add) {
+        return repeats(m, "tf", add, cond) || (!CATerraSim.ENABLERS.contains(cond) && undoes(m, "tf", add, cond));
+    }
+
     /** One starsector.log line a session for a held change. */
     static void held(MarketAPI m, String kind, boolean in, String target, String what) {
         if (LOGGED.add(key(m.getId(), kind, in, target)))
@@ -75,8 +83,12 @@ final class CAUndo {
     }
 
     /** Counts an action line (CALog.did); one warning a session for a pattern seen WATCH_TIMES times within WATCH_DAYS. */
+    /** 0.3.25.1: action lines that repeat by design (weekly deliveries, fleet limits), left out of the watch. */
+    static final String[] WATCH_SKIP = {"Storage logistics", "Fleet limit", "Hazard pay"};
+
     static void watch(String line) {
         if (line == null || CALog.whatIf()) return;
+        for (String k : WATCH_SKIP) if (line.contains(k)) return;
         float now = CADay.now();
         String p = pattern(line);
         List<Float> l = SEEN.get(p);

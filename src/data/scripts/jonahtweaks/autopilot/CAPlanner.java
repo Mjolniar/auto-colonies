@@ -1099,6 +1099,7 @@ public class CAPlanner {
             CAEndgame.Weakest wk = null;
             try { wk = CAFloors.makeRoom(m, c, r.bestFloorNoSlot, used); }
             catch (Throwable t) { CAStep.warn("planner", "make room check failed at " + m.getName(), t); }
+            if (wk == null) noRoomLine(m, r.bestFloorNoSlot.name, CAFloors.noRoom);   // 0.3.25.1
             if (wk != null) {
                 boolean approve = c.mode == CAData.Mode.APPROVE;
                 CAAction k = fromPick(m, c, r.bestFloorNoSlot, s, approve, wk);
@@ -1107,6 +1108,11 @@ public class CAPlanner {
                 if (!approve && s.makeRoom != CATuning.MAKE_ROOM_AUTO) k.approval = makeRoomApproval(wk.ind.getCurrentName());
                 o.list.add(k);
             }
+        }
+        // 0.3.25.1: a producer CAProjects plans here that the evaluation didn't offer at all (not buildable here today)
+        if (r.bestFloorNoSlot == null && !building) {
+            List<CAPlan.Step> ps = CAProjects.stepsFor(m);
+            if (!ps.isEmpty() && CABuild.freeSlots(m) <= 0) noRoomLine(m, ps.get(0).label, "the evaluation offered no build for it here");
         }
         idle.put(m.getId(), o.list.isEmpty());
         if (o.list.isEmpty()) CAAuto.trace(m, r, building, now);
@@ -1140,6 +1146,15 @@ public class CAPlanner {
         String why;
         static final String FLOOR = "production floor";
         PickRef(CAData.Colony c, CAEngine.Pick p, CAEndgame.Weakest remove) { this.c = c; this.p = p; this.remove = remove; }
+    }
+
+    /** 0.3.25.1: make room's reasons already logged this session ("marketId|pick|reason"). */
+    static final Set<String> NO_ROOM_LOGGED = new HashSet<String>();
+
+    /** 0.3.25.1: one starsector.log line a session per colony, pick and reason when make room finds no swap. */
+    static void noRoomLine(MarketAPI m, String pick, String why) {
+        if (why == null || CAEngine.forDisplay || !NO_ROOM_LOGGED.add(m.getId() + "|" + pick + "|" + why)) return;
+        CADiagnostics.LOG.info(CADiagnostics.TAG + m.getName() + ": no room made for " + pick + ": " + why);
     }
 
     /** 0.3.21.0: a producer CAProjects plans at this colony (not a floor pick): it may make room by a duplicate whatever it scores. */

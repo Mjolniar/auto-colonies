@@ -959,28 +959,37 @@ public class CAFloors {
      * producer, one built within a year, or a swap that breaks the stability floor (CAEndgame.weakest and CAStability).
      */
     static CAEndgame.Weakest makeRoom(MarketAPI m, CAData.Colony col, CAEngine.Pick best, CAData.Profile profile) {
+        noRoom = null;
         State st = state();
-        if (best == null || best.measured) return null;
-        if (!roomRate(m)) return null;   // 0.3.24.0 (plan 2026-11-25, batch 3)
+        if (best == null || best.measured) return no("no pick to make room for");
+        if (!roomRate(m)) return no("a swap was made here within 30 days, or at a colony within a day");   // 0.3.24.0 (plan 2026-11-25, batch 3)
         // 0.3.17.7: a producer CAProjects plans here (every good made at home) may make room too, by replacing a duplicate
         boolean project = !(best.floorValue > 0f) && CAProjects.isStep(m, best.id);
         if (project) {
-            if (CAData.settings().makeRoom == CATuning.MAKE_ROOM_OFF || CAEndgame.rebuildBlocked(m, best.id)) return null;
+            if (CAData.settings().makeRoom == CATuning.MAKE_ROOM_OFF) return no("Make room is Off");
+            if (CAEndgame.rebuildBlocked(m, best.id)) return no("it was taken down here within the year");
         } else {
-            if (st == null || !st.on() || st.makeRoom == CATuning.MAKE_ROOM_OFF || !(best.floorValue > 0f)) return null;
+            if (st == null || !st.on() || st.makeRoom == CATuning.MAKE_ROOM_OFF || !(best.floorValue > 0f)) return no("no open floor needs it, or Make room is Off");
             // only at the colony the floor planner picked for it: a colony with a free slot goes first (host)
-            if (!isStep(m, best.id) || CAEndgame.rebuildBlocked(m, best.id)) return null;
+            if (!isStep(m, best.id)) return no("the floor planner picked another colony for it");
+            if (CAEndgame.rebuildBlocked(m, best.id)) return no("it was taken down here within the year");
         }
         CAPlan.Plan plan = CAPlan.build(m, col.profile);
         CAEndgame.Weakest wk = CAEndgame.weakest(m, col, plan, profile, best, true, project ? duplicates(m) : null);
-        if (wk == null || wk.ind == null) return null;
+        if (wk == null || wk.ind == null) return no("no industry here may go (each is military, in a plan, locked, the last maker of a short good, or needed for stability)"
+                + (project ? ", or no other colony has one" : ""));
         String id = wk.ind.getId();
-        if (CAEndgame.planStep(plan, id) || CAProjects.isStep(m, id) || CACapital.isStep(m, id) || protects(m, wk.ind)) return null;
-        if (wk.built != null && wk.built.ageDays >= 0f && wk.built.ageDays < CATuning.MAKE_ROOM_BUILT_DAYS) return null;
+        if (CAEndgame.planStep(plan, id) || CAProjects.isStep(m, id) || CACapital.isStep(m, id) || protects(m, wk.ind)) return no("the weakest, " + wk.ind.getCurrentName() + ", is in a plan or makes a floor good");
+        if (wk.built != null && wk.built.ageDays >= 0f && wk.built.ageDays < CATuning.MAKE_ROOM_BUILT_DAYS) return no("the weakest, " + wk.ind.getCurrentName() + ", was built within the year");
         // 0.3.17.7: a missing good comes first: a duplicate goes for its producer whether or not the swap earns more
-        if (!project && !CAEndgame.worthIt(best, wk)) return null;
+        if (!project && !CAEndgame.worthIt(best, wk)) return no("the swap for " + wk.ind.getCurrentName() + " doesn't earn more");
         return wk;
     }
+
+    /** 0.3.25.1: why the last makeRoom found no swap (CAPlanner logs it once a session per colony and reason). */
+    static String noRoom;
+
+    static CAEndgame.Weakest no(String why) { noRoom = why; return null; }
 
     /** 0.3.24.0: days a colony waits after a take-down or swap there, and the whole empire after any. */
     static final float ROOM_COLONY_DAYS = 30f, ROOM_EMPIRE_DAYS = 1f;

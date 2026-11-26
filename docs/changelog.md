@@ -1,5 +1,12 @@
 # Patch notes
 
+## 0.3.25.1 - 2026-11-25
+
+- Loop guard: A terraforming change that undoes one Autopilot made at the colony within a year is held too, such as the plan removing water that surplus terraforming added. Tectonic activity added for a richer deposit can still be removed.
+- Stations: Fixed a Stella Castellum that Autopilot upgraded getting locked as built by you.
+- Make room: starsector.log says once a session why a planned producer got no swap.
+- Loop guard: The repeat watch leaves out storage logistics, fleet limit and hazard pay lines.
+
 ## 0.3.25.0 - 2026-11-25
 
 - Trade contracts: No new sales contract for a good that restorations, wonder sites, special projects or production orders would then run short of.

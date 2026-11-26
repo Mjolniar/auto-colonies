@@ -130,6 +130,7 @@ public final class CAStationTier4 {
             return "The game refused the upgrade";
         }
         if (!st.isUpgrading()) return "The game refused the upgrade";
+        CAManual.started(m, a.id);   // 0.3.25.1: Autopilot's upgrade; CAManual locked it as yours once it finished
         CABudget.pay(s, m.getId(), CABudget.buildTotal(s, a.cost) - a.fee, a.fee, 0f);
         CALog.did(m.getName() + ": " + st.getCurrentName() + " upgrading to the " + a.name + ". " + Misc.getDGSCredits(a.cost) + ".");
         return null;

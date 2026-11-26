@@ -103,7 +103,7 @@ public class CATerraformSurplus {
     static String repeatKey(String marketId, String cond, boolean add) { return CAUndo.key(marketId, "tf", add, cond); }
 
     /** 0.3.20.7: this move started at the colony less than REPEAT_DAYS ago. 0.3.22.0: the loop guard (CAUndo), plan projects included. */
-    static boolean held(MarketAPI m, String cond, boolean add) { return CAUndo.repeats(m, "tf", add, cond); }
+    static boolean held(MarketAPI m, String cond, boolean add) { return CAUndo.tfHeld(m, cond, add); }   // 0.3.25.1: the opposite change too
 
     /** TME structures at the colony that are being built, upgraded or running a project, with the project each runs (null while building). */
     static Map<String, CATme.Proj> busy(MarketAPI m) {

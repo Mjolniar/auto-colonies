@@ -252,7 +252,7 @@ public class CATerraform {
             // 0.3.22.0: the loop guard: the same change made here within the year isn't paid for again (Pollution added again
             // and again for a Hive World plan while something took it away)
             boolean adds = !k.m.hasCondition(k.pd.id);
-            if (CAUndo.repeats(k.m, "tf", adds, k.pd.id)) { CAUndo.held(k.m, "tf", adds, k.pd.id, "Terraforming (" + k.why + ")"); continue; }
+            if (CAUndo.tfHeld(k.m, k.pd.id, adds)) { CAUndo.held(k.m, "tf", adds, k.pd.id, "Terraforming (" + k.why + ")"); continue; }   // 0.3.25.1: the opposite change too
             try {
                 if (!CABreaker.allowed(ACTION)) continue;
                 CATme.setProject(k.ind, k.pd);
