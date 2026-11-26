@@ -249,6 +249,10 @@ public class CATerraform {
                 if (CALog.once("tfheld:" + k.m.getId() + ":" + k.pd.id)) CALog.quiet(k.m.getName() + ": terraforming (" + k.why + ") waits: " + held);
                 continue;
             }
+            // 0.3.22.0: the loop guard: the same change made here within the year isn't paid for again (Pollution added again
+            // and again for a Hive World plan while something took it away)
+            boolean adds = !k.m.hasCondition(k.pd.id);
+            if (CAUndo.repeats(k.m, "tf", adds, k.pd.id)) { CAUndo.held(k.m, "tf", adds, k.pd.id, "Terraforming (" + k.why + ")"); continue; }
             try {
                 if (!CABreaker.allowed(ACTION)) continue;
                 CATme.setProject(k.ind, k.pd);
@@ -267,6 +271,7 @@ public class CATerraform {
                 if (k.planned) CAPlanner.worldStarted(k.m);   // 0.3.17.7
                 CALog.forget("tf:" + k.m.getId() + ":" + k.pd.id);
                 CALog.forget("tfheld:" + k.m.getId() + ":" + k.pd.id);
+                CAUndo.did(k.m, "tf", adds, k.pd.id);   // 0.3.22.0
                 CALog.did(k.m.getName() + ": " + k.ind.getCurrentName() + " started: " + k.why + " for " + Misc.getDGSCredits(k.cost)
                         + (fee > 0 ? " + " + Misc.getDGSCredits(fee) + " fee" : "") + ".");
             } catch (Throwable t) {

@@ -48,6 +48,7 @@
 - It doesn't create goods, credits, story points, items, cores or ships.
 - It doesn't touch buildings, items or augments you locked or installed, your research queue, or agents you didn't hand over.
 - It doesn't open network connections, start threads or processes, or write any file except its Diagnostics report (`saves/common/colony_autopilot_diagnostics.json.data`).
+- With Console Commands installed it adds `ac_report`, `ac_why <colony>` and `ac_undo`, and all they do is read your colonies or write that same report.
 - It doesn't attack Ally, Friendly or Neutral factions, allies, your commissioner, or a faction with a ceasefire. Offensives only go against hostile factions that the War level and stance allow, and agents only use sabotage, rebellion and lower relations on hostile factions.
 - It doesn't start a war without the War page's Declare war confirmation, bombard without Authorize bombardment, or invade while you hold a commission.
 - It doesn't raise the War level, set a stance, turn on Auto-expansion or authorize bombardment by itself.

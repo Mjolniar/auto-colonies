@@ -189,8 +189,11 @@ public class CALog {
     public static void add(String text) { add(text, false); }
 
     /** 0.3.1.0: something Autopilot did. The panel log, starsector.log and on screen. */
-    public static void did(String text) { entry(text, false); }
-    public static void did(String text, boolean important) { entry(text, important); }
+    public static void did(String text) { entry(text, false); watch(text); }
+    public static void did(String text, boolean important) { entry(text, important); watch(text); }
+
+    /** 0.3.22.0: action lines to the loop guard's repeat watch (CAUndo.watch). */
+    static void watch(String text) { try { CAUndo.watch(text); } catch (Throwable ignored) { } }
 
     /** 0.3.1.0: advice or a decision for you. The panel log, starsector.log and on screen. */
     public static void advise(String text) { entry(text, false); }

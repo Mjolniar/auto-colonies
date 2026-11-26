@@ -30,7 +30,7 @@ public class CAAuto {
      * with every other static, before this runs; the augment timers only when Station Augments is on.
      */
     public static void reset() {
-        wasBuilding.clear(); nextPass.clear(); lastTrace.clear();   // 0.3.8.8: lastNow is gone (nothing read it)
+        wasBuilding.clear(); nextPass.clear(); lastTrace.clear(); lastWhy.clear();   // 0.3.8.8: lastNow is gone (nothing read it)
         rejectedId.clear(); rejectedUntil.clear();
         CAPlanner.reset();   // 0.3.0.0 (B3): the planner's offers, events, earmark and upkeep hold
         CAFloors.reset();    // 0.3.2.0: the production floors are measured again on the first pass after a load
@@ -414,6 +414,8 @@ public class CAAuto {
     }
 
     static final Map<String, Float> lastTrace = new HashMap<String, Float>();
+    /** 0.3.22.0: the last "nothing worth starting" line per colony, for the report and ac_why. */
+    static final Map<String, String> lastWhy = new HashMap<String, String>();
     static final float TRACE_DAYS = CATuning.TRACE_DAYS;
 
     /**
@@ -434,6 +436,7 @@ public class CAAuto {
         if (r.bestNoSlot != null) b.append("; with a free industry slot: ").append(scoreText(r.bestNoSlot)).append(" (").append(r.noSlot).append(" need a slot)");
         if (r.locked > 0) b.append("; ").append(r.locked).append(" locked by research");
         CADiagnostics.LOG.info(CADiagnostics.TAG + b);
+        lastWhy.put(m.getId(), CALog.stamp() + b);
         CALog.think(m.getName() + ": Scan: " + r.picks.size() + " options, holding." + (building ? " A build is under way." : "")
                 + (r.picks.isEmpty() ? "" : " Best: " + r.picks.get(0).verb + " " + r.picks.get(0).name + "."));
     }

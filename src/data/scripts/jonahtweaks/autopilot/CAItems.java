@@ -349,6 +349,7 @@ public class CAItems {
         Map<String, Integer> deficit = CAEngine.empireDeficits();   // 0.3.0.0 (B1 fix): read once a run
         List<CAStores.Held> unplaced = new ArrayList<CAStores.Held>();
         for (Placement p : assign(placements(d, markets, unplaced, deficit))) {
+            if (CAUndo.undoes(p.m, "item", true, target(p.ind.getId(), p.spec.getId()))) continue;   // 0.3.22.0: taken out of there within the year
             if (!p.local()) {   // somewhere else: shipped there first, unless one is already on its way
                 if (CAStores.inTransit(p.spec.getId(), p.m.getId()) > 0) continue;
                 if (CAStores.ship(p.held.market, p.m, null, p.data, 1, "for " + p.ind.getCurrentName())) return true;
@@ -365,6 +366,7 @@ public class CAItems {
                 p.m.reapplyIndustries();   // the item's effect otherwise waits for the next economy update
                 CABudget.charge(s, 0f, fee, 0f);
                 idleAt = -99f;
+                CAUndo.did(p.m, "item", true, target(p.ind.getId(), p.spec.getId()));   // 0.3.22.0
                 CALog.did(p.m.getName() + ": " + p.spec.getName() + " installed in " + p.ind.getCurrentName()
                         + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : "") + CAStores.from(p.m, p.data.getId()) + ".");
                 return true;
@@ -389,12 +391,16 @@ public class CAItems {
     /** 0.3.20.6: days an item swapped out of a building stays out of that building. */
     static final float SWAP_HOLD_DAYS = 365f;
 
-    /** 0.3.20.6: CAData.swapAt key of an item swapped out of a building ("marketId:item:industryId:itemId"). Pure. */
-    static String holdKey(String marketId, String indId, String itemId) { return marketId + ":item:" + indId + ":" + itemId; }
+    /** 0.3.20.6: CAData.swapAt key of an item taken out of a building. Pure. 0.3.22.0: CAUndo's key, "marketId:item:-industryId/itemId". */
+    static String holdKey(String marketId, String indId, String itemId) { return CAUndo.key(marketId, "item", false, target(indId, itemId)); }
 
-    /** 0.3.20.6: this item came out of this building by a swap less than SWAP_HOLD_DAYS ago. */
+    /** 0.3.22.0: the loop guard's target for an item in a building. Pure. */
+    static String target(String indId, String itemId) { return indId + "/" + itemId; }
+
+    /** 0.3.20.6: this item came out of this building less than SWAP_HOLD_DAYS ago. 0.3.22.0: the loop guard (CAUndo), installs and pulls included. */
     static boolean swapHeld(CAData d, MarketAPI m, Industry ind, String itemId) {
-        Long at = d.swapAt().get(holdKey(m.getId(), ind.getId(), itemId));
+        if (CAUndo.undoes(m, "item", true, target(ind.getId(), itemId))) return true;
+        Long at = d.swapAt().get(m.getId() + ":item:" + ind.getId() + ":" + itemId);   // a 0.3.20.6 stamp
         return at != null && Global.getSector().getClock().getElapsedDaysSince(at) < SWAP_HOLD_DAYS;
     }
 
@@ -447,7 +453,8 @@ public class CAItems {
             bestM.reapplyIndustries();
             CABudget.charge(s, 0f, fee, 0f);
             idleAt = -99f;
-            d.swapAt().put(holdKey(bestM.getId(), best.getId(), old.getId()), Global.getSector().getClock().getTimestamp());   // 0.3.20.6
+            CAUndo.did(bestM, "item", false, target(best.getId(), old.getId()));   // 0.3.20.6; 0.3.22.0: through the loop guard
+            CAUndo.did(bestM, "item", true, target(best.getId(), spec.getId()));
             CALog.did(bestM.getName() + ": Swapped " + spec.getName() + " into " + best.getCurrentName() + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : "")
                     + CAStores.from(bestM, data.getId()) + ". " + oldName + " moved to Autopilot Storage.");
             return true;
@@ -601,6 +608,7 @@ public class CAItems {
                     CAStores.of(m).addSpecial(item, 1f);
                     m.reapplyIndustries();
                     idleAt = -99f;
+                    CAUndo.did(m, "item", false, target(ind.getId(), item.getId()));   // 0.3.22.0
                     CALog.did(m.getName() + ": " + name(item.getId()) + " moved from " + ind.getCurrentName() + " to Autopilot Storage. Pollution permanent in "
                             + left + " days. Lock the building to keep it there.", true);
                     return true;
@@ -672,6 +680,7 @@ public class CAItems {
                     CAStores.of(m).addSpecial(item, 1f);
                     m.reapplyConditions();
                     m.reapplyIndustries();
+                    CAUndo.did(m, "item", false, target(ind.getId(), LAMP));   // 0.3.22.0
                     CALog.did(m.getName() + ": Orbital Fusion Lamp moved from " + ind.getCurrentName() + " to Autopilot Storage.");   // 0.3.1.0: the reason is gone
                     return true;
                 } catch (Throwable t) {

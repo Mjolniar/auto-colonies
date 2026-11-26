@@ -428,6 +428,12 @@ public class CADiagnostics {
             try { root.put("screenButton", CAScreenButton.linkText()); } catch (Throwable t) { LOG.warn(TAG + "screen button report failed", t); }
             try { Map<String, Float> st = CAStep.timings(); if (st != null && !st.isEmpty()) root.put("stepMs", new JSONObject(st)); } catch (Throwable t) { LOG.warn(TAG + "step timing report failed", t); }
             try { root.put("modWatch", CAModWatch.json()); } catch (Throwable t) { LOG.warn(TAG + "mod watch report failed", t); }
+            // 0.3.22.0 (plan 2026-11-25, batch 1): the snapshot for offline checks
+            if (Global.getSector() != null) {
+                try { root.put("economy", economy()); } catch (Throwable t) { LOG.warn(TAG + "economy report failed", t); }
+                try { root.put("duplicates", duplicates()); } catch (Throwable t) { LOG.warn(TAG + "duplicates report failed", t); }
+                try { root.put("loopGuard", CAUndo.json()); } catch (Throwable t) { LOG.warn(TAG + "loop guard report failed", t); }
+            }
             return root;
         }
     }
@@ -443,6 +449,44 @@ public class CADiagnostics {
         CAData d = CAData.get();
         for (MarketAPI m : Misc.getPlayerMarkets(false)) out.put(colony(m, d));
         return out;
+    }
+
+    /** 0.3.22.0: the money tier and the numbers behind it. */
+    static JSONObject economy() throws Exception {
+        JSONObject o = new JSONObject();
+        int t = CARich.tier();
+        o.put("moneyTier", CARich.name(t));
+        o.put("freeCash", Math.round(CARich.lastFree));
+        o.put("colonyNet", Math.round(CARich.lastNet));
+        float[] l = CARich.lines(CARich.lastNet);
+        o.put("surplusLine", Math.round(l[1])); o.put("idleLine", Math.round(l[2])); o.put("richLine", Math.round(l[3]));
+        o.put("idleMonths", CAData.get().idleMonths);
+        return o;
+    }
+
+    /** 0.3.22.0: industries two or more of your colonies have, with how many. */
+    static JSONObject duplicates() throws Exception {
+        Map<String, Integer> n = new java.util.TreeMap<String, Integer>();
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) for (Industry ind : m.getIndustries())
+            if (ind.isIndustry() && !ind.isHidden()) n.merge(ind.getId(), 1, Integer::sum);
+        JSONObject o = new JSONObject();
+        for (Map.Entry<String, Integer> e : n.entrySet()) if (e.getValue() >= 2) o.put(e.getKey(), e.getValue());
+        return o;
+    }
+
+    /** 0.3.22.0: what the colony makes and uses, by commodity: the game's supply, demand and shortage, and ToT's net export. */
+    static JSONObject goods(MarketAPI m) throws Exception {
+        JSONObject o = new JSONObject();
+        for (com.fs.starfarer.api.campaign.econ.CommodityOnMarketAPI c : m.getCommoditiesCopy()) {
+            int sup = c.getMaxSupply(), dem = c.getMaxDemand(), sh = c.getDeficitQuantity();
+            if (sup <= 0 && dem <= 0) continue;
+            StringBuilder b = new StringBuilder("supply ").append(sup).append(", demand ").append(dem);
+            if (sh > 0) b.append(", short ").append(sh);
+            Integer raw = CAContracts.rawNet(m, c.getId());
+            if (raw != null) b.append(", ToT net ").append(raw);
+            o.put(c.getId(), b.toString());
+        }
+        return o;
     }
 
     /** 0.3.20.2: one colony as the report shows it. */
@@ -470,6 +514,15 @@ public class CADiagnostics {
             inds.put(sb.toString());
         }
         o.put("industries", inds);
+        // 0.3.22.0: conditions, goods and the planner's last look
+        try {
+            JSONArray conds = new JSONArray();
+            for (com.fs.starfarer.api.campaign.econ.MarketConditionAPI mc : m.getConditions()) conds.put(mc.getId());
+            o.put("conditions", conds);
+        } catch (Throwable ignored) { }
+        try { o.put("goods", goods(m)); } catch (Throwable ignored) { }
+        String why = CAAuto.lastWhy.get(m.getId());
+        if (why != null) o.put("lastLook", why);
         try {
             JSONArray q = new JSONArray();
             for (com.fs.starfarer.api.impl.campaign.econ.impl.ConstructionQueue.ConstructionQueueItem it : m.getConstructionQueue().getItems()) q.put(it.id);

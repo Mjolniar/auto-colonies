@@ -1,0 +1,4 @@
+command,class,tags,syntax,help
+ac_report,data.scripts.jonahtweaks.autopilot.CACmdReport,"campaign,autocolonies",ac_report,"Writes the Auto Colonies report to saves/common right now, so you don't have to wait for the weekly one."
+ac_why,data.scripts.jonahtweaks.autopilot.CACmdWhy,"campaign,autocolonies",ac_why <colony>,"Shows a colony's plan, where each step is at, and what the planner saw the last time it looked."
+ac_undo,data.scripts.jonahtweaks.autopilot.CACmdUndo,"campaign,autocolonies",ac_undo,"Lists what the loop guard is holding, so you can see what Autopilot won't redo for a year."

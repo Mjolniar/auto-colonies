@@ -114,6 +114,7 @@ public class CAReset {
         failed += run("TASC", () -> { CATasc.availCache.clear(); CATasc.availDay = -1; CATasc.cache.clear(); CATasc.cacheDay.clear(); });
         failed += run("next-build card", () -> CANextCard.noStripLogged = false);   // 0.3.20.4: the no-room line, once a session
         failed += run("placement parts line", () -> CAItems.partLoggedDay = Integer.MIN_VALUE);   // 0.3.20.5: once a day
+        failed += run("loop guard", CAUndo::reset);   // 0.3.22.0: the repeat watch and its log lines, per session
         failed += run("wonders", () -> { CAWonders.summary = null; CAWonders.broken = false; });   // 0.3.9.7 (G11): broken too
         if (on("IndEvo")) failed += run("courier port", () -> CACourier.refused.clear());
         if (on("IndEvo")) failed += run("edicts held for stability", () -> CAIndEvo.edictHeld.clear());   // WS-A2: retried after a load

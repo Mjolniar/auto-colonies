@@ -161,6 +161,15 @@ public class CAContracts {
         return read && net < 0;
     }
 
+    /** 0.3.22.0: ToT's raw net export of the commodity at a colony (supply less demand, cargo units), or null without ToT. */
+    public static Integer rawNet(MarketAPI m, String good) {
+        if (!active()) return null;
+        try {
+            Object on = CARefl.invoke(comOn, null, m, good);
+            return on == null ? null : ((Number) CARefl.invoke(sdNet, CARefl.invoke(sdData, on))).intValue();
+        } catch (Throwable t) { return null; }
+    }
+
     /** ToT delivers from a colony only with a spaceport and accessibility above 0; one under siege may lose it any day. */
     static boolean delivers(MarketAPI m) {
         return m.hasSpaceport() && m.getAccessibilityMod().computeEffective(0f) > 0f && !CASiege.held(m);

@@ -1,5 +1,12 @@
 # Patch notes
 
+## 0.3.22.0 - 2026-11-25
+
+- Loop guard: Added a guard against repeated changes. A terraforming project, from the plan or from surplus terraforming, does not make the same change at a colony twice within a year. An item Autopilot took out of a building does not go back into that building within a year.
+- Loop guard: An action repeated 3 times within 90 days writes one warning to starsector.log.
+- Diagnostics report: Added the money tier and its lines, industries two or more colonies have, the loop guard's records, and per colony its conditions, goods (supply, demand, shortage, Theory of Toolbox net) and the planner's last look.
+- Console: Added ac_report, ac_why <colony> and ac_undo for Console Commands.
+
 ## 0.3.21.0 - 2026-11-25
 
 - Make room: A producer for a good your colonies make none of may replace a duplicate industry when it earns less than it costs. It starts after the actions that pay.
