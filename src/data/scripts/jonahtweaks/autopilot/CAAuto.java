@@ -245,6 +245,7 @@ public class CAAuto {
         if (mods.isModEnabled(CAHypershunt.MOD)) {
             CAStep.run("hypershunt step", () -> CAHypershunt.run(d, s));
             CAStep.run("megastructure step", () -> CAMegastructures.run(d, s));
+            CAStep.run("stalled restorations step", () -> CACommit.run());   // 0.3.26.0 (plan 2026-11-25, batch 5)
             CAStep.run("Floating City check", () -> CADevelopment.run(managed));
             CAStep.run("research step", () -> CAResearch.run(d, s));
         }

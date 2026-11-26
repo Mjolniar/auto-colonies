@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.26.0 - 2026-11-26
+
+- Megastructures: A restoration that hasn't moved in 12 months, or has nothing done on a contract 12 or more months old, is proposed for pausing in Approvals. Approving it stops that section's restoration and its contract, so its goods go back to your exports. It can be started again from the megastructure's screen.
+- Megastructures: The proposal comes at every colony, Advisor ones too. Nothing is paused without your approval.
+
 ## 0.3.25.1 - 2026-11-25
 
 - Loop guard: A terraforming change that undoes one Autopilot made at the colony within a year is held too, such as the plan removing water that surplus terraforming added. Tectonic activity added for a richer deposit can still be removed.
