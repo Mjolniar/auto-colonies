@@ -1,5 +1,13 @@
 # Patch notes
 
+## 0.3.29.0 - 2026-11-26
+
+- World plans: Terraforming Made Easy's Unification Center rules are read as TME loads them with Vaults of Knowledge. A Mining Megaplex, Crystalizator, Fishing Harbour or other building TME accepts counts for its step.
+- World plans: The Waste World is planned again with Vaults of Knowledge. It needs Orbital Works or one of its upgrades.
+- World plans: Buildings that get a world's +1 output are not upgraded while that world is planned or formed. The Hive World upgrades freely.
+- Plain plans: With Vaults of Knowledge, Forge and Mining Colony plans name the Crystalizator (ore) or the Enrichment Facility (transplutonic ore only) for refining.
+- Plain plans: Gas giants and stations with only volatiles plan the Plasma Harvester. Paradise plans with Nutritious Wildlife plan Artisanal Farming.
+
 ## 0.3.28.0 - 2026-11-26
 
 - Special projects: Added the Special projects setting (Ask first, Off). With a working Black Site, no project running and colony net at the Production line, a discovered project is proposed in Approvals. After approval, each stage starts when the last one is done. Shroud projects are not proposed. A project or stage you pause is left to you.

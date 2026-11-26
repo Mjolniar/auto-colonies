@@ -32,10 +32,13 @@ public class CAPlan {
         public Kind kind; public String id, label;
         public boolean exact;   // the Unification Center checks this building by id, so upgraded versions don't count
         public boolean extra;   // put in front of the colony's own plan (research, projects, spending freely, wonders): not the world's
+        /** 0.3.29.0: a needOne group of TME's rule (CAWorldPlanner.addIndustrySteps): any of these buildings does the step. */
+        public java.util.Set<String> anyOf;
         public Step(Kind k, String id, String label) { this.kind = k; this.id = id; this.label = label; }
         public boolean done(MarketAPI m) {
             if (kind == Kind.COND) return m.hasCondition(id);
             if (kind == Kind.NOCOND) return !m.hasCondition(id);
+            if (exact && anyOf != null) { for (String a : anyOf) if (m.hasIndustry(a)) return true; return false; }   // TME checks each id itself
             return exact ? inChain(m, id) : hasOrBetter(m, id);
         }
     }
@@ -44,6 +47,8 @@ public class CAPlan {
         public String name;
         public String world;                                              // TME world condition this plan ends in, if any
         public java.util.Set<String> exact = new java.util.HashSet<String>();   // buildings the Unification Center checks by exact id
+        /** 0.3.29.0: buildings not upgraded: exact ids TME checks, and the world's +1 buildings (CAWorldPlanner.keeps). */
+        public java.util.Set<String> keep = new java.util.HashSet<String>();
         public List<Step> steps = new ArrayList<Step>();
         public int doneCount(MarketAPI m) { int n = 0; for (Step s : steps) if (s.done(m)) n++; return n; }
     }
@@ -250,6 +255,7 @@ public class CAPlan {
         Plan c = new Plan();
         c.name = p.name; c.world = p.world;
         c.exact = new java.util.HashSet<String>(p.exact);
+        c.keep = new java.util.HashSet<String>(p.keep);   // 0.3.29.0
         c.steps = new ArrayList<Step>(p.steps);
         return c;
     }
@@ -282,6 +288,26 @@ public class CAPlan {
     }
 
     static void b(Plan p, String id, String label) { p.steps.add(new Step(Kind.BUILD, id, label)); }
+
+    // ---------------- 0.3.29.0 (plan 2026-11-25, batch 6): AotD buildings in plain plans ----------------
+
+    static final String CRYSTALIZATOR = "aotd_crystalizator", ENRICHMENT = "aotd_enrichment_facility", PLASMA = "aotd_plasma_harvester",
+            ARTISANAL = "aotd_artisanal_farming", WILDLIFE = "aotd_nutritious_wildlife";
+
+    /** Pure: the refinery a plain plan names: with AotD the Crystalizator with ore, the Enrichment Facility with transplutonic ore only. */
+    static String refiner(boolean aotd, boolean ore, boolean rare) { return !aotd ? "refining" : ore ? CRYSTALIZATOR : rare ? ENRICHMENT : "refining"; }
+
+    /**
+     * Pure: the mine a plain plan names: with AotD the Plasma Harvester on a gas giant or station with volatiles and nothing
+     * else to mine. The Mining Megaplex is left to the engine: it out-mines Mining only with a Mantle Bore.
+     */
+    static String miner(boolean aotd, boolean gasOrStation, boolean vol, boolean other) { return aotd && gasOrStation && vol && !other ? PLASMA : "mining"; }
+
+    /** Pure: the farm a plain plan names: with AotD and Nutritious Wildlife, Artisanal Farming. */
+    static String farm(boolean aotd, boolean wildlife) { return aotd && wildlife ? ARTISANAL : "farming"; }
+
+    /** The building when this game has it, else the vanilla one. */
+    static String orVanilla(String id, String vanilla) { return id.equals(vanilla) || spec(id) != null ? id : vanilla; }
     static void c(Plan p, String id, String label) { p.steps.add(new Step(Kind.COND, id, label)); }
     static void n(Plan p, String id, String label) { p.steps.add(new Step(Kind.NOCOND, id, label)); }
 
@@ -455,7 +481,7 @@ public class CAPlan {
         } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "world plan stability failed at " + m.getName(), t); }
         if (wp != null) {
             Plan p = new Plan();
-            p.name = wp.name; p.world = wp.world; p.exact = wp.exact;
+            p.name = wp.name; p.world = wp.world; p.exact = wp.exact; p.keep = wp.keep;
             if (wp.exact.contains("megaport") || !m.hasCondition(wp.world)) b(p, "spaceport", "Spaceport");
             p.steps.addAll(wp.steps);
             b(p, "grounddefenses", "Ground Defenses");
@@ -473,11 +499,16 @@ public class CAPlan {
         boolean war = prof == CAData.Profile.WAR, sec = prof == CAData.Profile.SECURITY, inc = prof == CAData.Profile.INCOME,
                 grow = prof == CAData.Profile.GROWTH, self = prof == CAData.Profile.SELF, mat = prof == CAData.Profile.MATERIALS;
         boolean tme = Global.getSettings().getModManager().isModEnabled("terraformingmadeeasy");
+        // 0.3.29.0 (plan 2026-11-25, batch 6): with Vaults of Knowledge, the AotD building the colony ends in
+        boolean aotd = Global.getSettings().getModManager().isModEnabled(CAResearch.MOD);
+        boolean gasOrStation = CATerraform.gasGiant(m) || (m.getPrimaryEntity() != null && m.getPrimaryEntity().hasTag("station"));
+        String refine = orVanilla(refiner(aotd, ore, rare), "refining"), mine = orVanilla(miner(aotd, gasOrStation, vol, ore || rare || org), "mining");
+        String farmId = orVanilla(farm(aotd, m.hasCondition(WILDLIFE)), "farming");
 
         b(p, "spaceport", "Spaceport"); b(p, "megaport", "Megaport");
         if (((war || self || (ore && rare)) && !hab || mat) && (ore || rare)) {   // 0.3.20.0: a Materials colony mines and refines, habitable too
             p.name = "Forge";
-            b(p, "mining", "Mining"); b(p, "refining", "Refining"); b(p, "heavyindustry", "Heavy Industry"); b(p, "orbitalworks", "Orbital Works");
+            b(p, mine, CAWorldPlanner.industryName(mine)); b(p, refine, CAWorldPlanner.industryName(refine)); b(p, "heavyindustry", "Heavy Industry"); b(p, "orbitalworks", "Orbital Works");
             b(p, "tme_mineral_replicator", "Mineral Replicator"); b(p, "tme_element_synthesizer", "Element Synthesizer");
             // only there to add the tectonic activity below, which is a world step: without a reachable world it'd sit idle
             if (!tme) b(p, "tme_terrestrial_engine", "Terrestrial Engine");
@@ -493,7 +524,7 @@ public class CAPlan {
             b(p, "tme_unification_center", "Unification Center"); c(p, "tme_fortress_world", "Fortress World");
         } else if (hab && (inc || grow || prof == CAData.Profile.BALANCED)) {
             p.name = "Paradise";
-            if (farm) b(p, "farming", "Farming");   // Farming needs farmland; without it the step could never be done and held the plan's first rank
+            if (farm) b(p, farmId, CAWorldPlanner.industryName(farmId));   // Farming needs farmland; without it the step could never be done and held the plan's first rank
             // (0.2.38.0: these three had slipped into the comment above in 0.2.30.0, so a Paradise plan was nearly empty)
             b(p, "lightindustry", "Light Industry"); b(p, "commerce", "Commerce"); b(p, "waystation", "Waystation");
             b(p, "tme_agricultural_laboratory", "Agricultural Laboratory"); c(p, farm ? "farmland_bountiful" : "farmland_adequate", "Better farmland");
@@ -506,11 +537,11 @@ public class CAPlan {
             b(p, "planetaryshield", "Planetary Shield");
         } else if (vol && cold) {
             p.name = "Fuel Depot";
-            b(p, "mining", "Mining"); b(p, "fuelprod", "Fuel Production"); b(p, "waystation", "Waystation");
+            b(p, mine, CAWorldPlanner.industryName(mine)); b(p, "fuelprod", "Fuel Production"); b(p, "waystation", "Waystation");
             b(p, "tme_element_synthesizer", "Element Synthesizer"); c(p, "volatiles_plentiful", "Plentiful volatiles");
         } else if (ore || rare || org || vol) {
             p.name = "Mining Colony";
-            b(p, "mining", "Mining"); b(p, "refining", "Refining"); b(p, "tme_mineral_replicator", "Mineral Replicator");
+            b(p, mine, CAWorldPlanner.industryName(mine)); b(p, refine, CAWorldPlanner.industryName(refine)); b(p, "tme_mineral_replicator", "Mineral Replicator");
             if (ore) c(p, "ore_ultrarich", "Ultrarich ore");
             b(p, "commerce", "Commerce");
         } else if (mat) {   // 0.3.20.0: no deposits: it works what the others mine
@@ -813,6 +844,7 @@ public class CAPlan {
             Plan done = new Plan();
             done.name = CAWorldPlanner.name(w); done.world = w;
             done.steps.add(new Step(Kind.COND, w, done.name));
+            done.keep.addAll(CAWorldPlanner.formedKeep(w));   // 0.3.29.0: the buildings that get its +1 aren't upgraded
             return done;
         }
         if (CAWorldPlanner.fit(w, prof) <= 0f || CAWorldPlanner.dropped(w) || worldDead(m, w)) return null;   // 0.3.18.0: dropped()
@@ -838,32 +870,13 @@ public class CAPlan {
             if (good && (done == null || trial.cost < done.cost)) done = trial;
         }
         if (done == null) return null;
-        for (String[] g : CAWorldPlanner.groups(r.likedInd, new ArrayList<Boolean>())) for (String ind : g) {
-            if (ind.equals("mining") && !m.hasIndustry("mining") && !CAWorldPlanner.anyPrefix(done.conds, "ore_", "rare_ore_", "volatiles_", "organics_")) return null;
-            if (ind.equals("farming") && !m.hasIndustry("farming") && !m.hasIndustry("aquaculture") && !CAWorldPlanner.anyPrefix(done.conds, "farmland_")) return null;
-        }
         Plan p = new Plan();
         p.name = CAWorldPlanner.name(w); p.world = w;
-        for (String[] g : CAWorldPlanner.groups(r.likedInd, new ArrayList<Boolean>())) for (String ind : g) {
-            p.exact.add(ind);
-            String label = CAWorldPlanner.industryName(ind) + (ind.equals("mining") && m.hasIndustry("IndEvo_SwitchableMining") ? " (vanilla Mining only)" :
-                    ind.equals("fuelprod") && m.hasIndustry("ix_fuel_production") ? " (vanilla Fuel Production only)" : "");
-            Step st = new Step(Kind.BUILD, ind, label);
-            st.exact = true;
-            p.steps.add(st);
-        }
+        if (!CAWorldPlanner.addIndustrySteps(m, w, r, done.conds, p)) return null;   // 0.3.29.0: kept in step with CAWorldPlanner.plan
         p.steps.addAll(done.steps);
         p.steps.add(new Step(Kind.BUILD, UNIFICATION, CAWorldPlanner.industryName(UNIFICATION)));
         p.steps.add(new Step(Kind.COND, w, CAWorldPlanner.name(w)));
-        int slots = 0;
-        for (String ind : p.exact) if (CAWorldPlanner.isIndustry(ind)) slots++;
-        for (Industry i : m.getIndustries()) {
-            if (i.isHidden() || !i.isIndustry()) continue;
-            boolean covers = false;
-            for (String ind : p.exact) if (i.getId().equals(ind) || leadsTo(i.getId(), ind) || leadsTo(ind, i.getId())) covers = true;
-            if (!covers) slots++;
-        }
-        if (slots > CAWorldPlanner.slotsAt(m, com.fs.starfarer.api.util.Misc.getMaxMarketSize(m))) return null;
+        if (CAWorldPlanner.slotsNeeded(m, p) > CAWorldPlanner.slotsAt(m, com.fs.starfarer.api.util.Misc.getMaxMarketSize(m))) return null;
         if (stepDropped(m, p)) return null;   // a structure it needs is out of reach here (0.3.0.0 test fix)
         return p;
     }
@@ -1327,8 +1340,8 @@ public class CAPlan {
             if (st.kind != Kind.COND || st.id == null || !st.id.startsWith("tme_") || !st.id.endsWith("_world")) continue;
             CAWorldPlanner.Row r;
             try { r = CAWorldPlanner.rows().get(st.id); } catch (Throwable t) { r = null; }
-            if (r == null || r.likedInd == null) continue;
-            if (needsIndustry(CAWorldPlanner.groups(r.likedInd, new ArrayList<Boolean>()), id)) return true;
+            if (r == null) continue;
+            if (needsIndustry(CAWorldPlanner.groups(CAWorldPlanner.likedIndustries(r), new ArrayList<Boolean>()), id)) return true;   // 0.3.29.0: as the game checks it
         }
         return false;
     }

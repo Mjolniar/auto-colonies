@@ -389,9 +389,9 @@ public class CAProjects {
             for (Producer p : PRODUCERS) for (Industry ind : m.getIndustries()) {
                 try { if (!ind.getId().equals(p.id) && CAPlan.leadsTo(p.id, ind.getId())) h.has.add(p.id); } catch (Throwable ignored) { }
             }
-            Set<String> exact = new HashSet<String>();
+            Set<String> exact = new HashSet<String>(), keep = new HashSet<String>();
             CAPlan.Plan plan = null;
-            try { plan = CAPlan.build(m, c.profile); exact = plan.exact; } catch (Throwable ignored) { }
+            try { plan = CAPlan.build(m, c.profile); exact = plan.exact; keep = plan.keep; } catch (Throwable ignored) { }
             if (makeRoom && h.freeSlots <= 0) for (Industry ind : m.getIndustries()) {   // 0.3.17.7
                 if (spareHere(ind, copies, c.locks, exact) && !CAEndgame.planStep(plan, ind.getId()) && !isProducerHere(m, ind.getId())) h.spare++;
             }
@@ -407,7 +407,7 @@ public class CAProjects {
                     // the base, or what it's upgraded from, already became something else
                     if (!id.equals(p.base) && !id.equals(p.id) && CAPlan.leadsTo(p.base, id)) h.occupied.add(p.base);
                 }
-                if (exact.contains(p.base) || c.locks.contains(p.base) || (p.root != null && c.locks.contains(p.root))) h.occupied.add(p.base);
+                if (keep.contains(p.base) || c.locks.contains(p.base) || (p.root != null && c.locks.contains(p.root))) h.occupied.add(p.base);   // 0.3.29.0: keep
                 try {
                     IndustrySpecAPI sp = Global.getSettings().getIndustrySpec(p.id);
                     if (sp != null && sp.getNewPluginInstance(m).isAvailableToBuild() && (!CAAotD.enabled() || CAAotD.allows(p.id, m))) h.unlocked.add(p.id);

@@ -502,7 +502,7 @@ public class CAEngine {
             String vanillaUp = ind.getSpec().getUpgrade();
             Set<String> ups = new LinkedHashSet<String>();
             if (vanillaUp != null) ups.add(vanillaUp);
-            if (bmo && !plan.exact.contains(ind.getId())) ups.addAll(CAAotD.children(ind.getId()));
+            if (bmo && !plan.keep.contains(ind.getId())) ups.addAll(CAAotD.children(ind.getId()));   // 0.3.29.0: keep (exact ids, a world's +1 buildings)
             for (String up : ups) {
                 if (!CASync.mayBuild(up)) continue;   // 0.3.6.0 story mode: stations need Stations
                 // 0.3.8.8: not under research's what-if (noProbe), as the build loop: probe results made there are never kept

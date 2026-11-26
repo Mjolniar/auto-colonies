@@ -145,13 +145,157 @@ public class CAWorldPlanner {
      */
     static boolean dropped(String world, boolean aotd) { return aotd && WASTE.equals(world); }
 
+    /**
+     * Pure (0.3.29.0): with TME's rules as loaded (live), the Waste World stays: TME's Vaults of Knowledge rule takes Orbital
+     * Works or its upgrades in place of Heavy Industry. It's dropped only with Ashes of the Domain when that rule can't be read.
+     */
+    static boolean dropped(String world, boolean aotd, boolean live) { return aotd && !live && WASTE.equals(world); }
+
     /** 0.3.18.0: dropped() with Ashes of the Domain's mods as loaded (Vaults of Knowledge or Building Menu Overhaul). */
     static boolean dropped(String world) {
         if (!WASTE.equals(world)) return false;
         try {
             com.fs.starfarer.api.ModManagerAPI mm = Global.getSettings().getModManager();
-            return dropped(world, mm.isModEnabled(CAResearch.MOD) || mm.isModEnabled("bmo"));
+            String rule = liveRules().get(WASTE);
+            return dropped(world, mm.isModEnabled(CAResearch.MOD) || mm.isModEnabled("bmo"), rule != null && !rule.contains("heavyindustry"));   // 0.3.29.0
         } catch (Throwable t) { return false; }
+    }
+
+    // ---------------- 0.3.29.0 (plan 2026-11-25, batch 6): TME's rules as the game checks them ----------------
+
+    static final String HIVE = "tme_hive_world", FISHING = "aotd_fishing_harbour";
+
+    /**
+     * The industries each world gives +1 output (TME 2.10.6's world conditions, the ids that exist with Vaults of Knowledge
+     * 5.0.7). An upgrade out of one loses it, so these aren't upgraded at a world that's planned or formed. The Hive World
+     * gives it to every industry, so it keeps nothing.
+     */
+    static final Map<String, Set<String>> BONUS = new HashMap<String, Set<String>>();
+    static {
+        BONUS.put("tme_forge_world", new HashSet<String>(Arrays.asList("orbitalworks", "mining", "refining", "fuelprod", "triheavy", "hegeheavy", "nidavelir_complex", "pluto_station")));
+        BONUS.put("tme_fortress_world", new HashSet<String>(Arrays.asList("population", "orbitalworks", "highcommand", "fuelprod", "triheavy", "hegeheavy", "nidavelir_complex")));
+        BONUS.put("tme_paradise_world", new HashSet<String>(Arrays.asList("population", "farming", "aquaculture", "lightindustry")));
+        BONUS.put("tme_death_world", new HashSet<String>(Arrays.asList("population", "orbitalworks", "highcommand", "mining", "triheavy", "hegeheavy", "nidavelir_complex", "pluto_station")));
+        BONUS.put(WASTE, new HashSet<String>(Arrays.asList("population", "mining", "refining", "pluto_station")));
+    }
+
+    /** Pure: a world's industry that isn't upgraded while the world is planned or formed. */
+    static boolean keeps(String world, String id) { Set<String> b = BONUS.get(world); return b != null && b.contains(id); }
+
+    /** Pure: what a formed world keeps (the Hive World nothing). */
+    static Set<String> formedKeep(String world) { Set<String> b = BONUS.get(world); return b == null ? new HashSet<String>() : new HashSet<String>(b); }
+
+    /** The Unification Center's industry rule per world as TME converted it at load (Vaults of Knowledge's ids); empty when unreadable. */
+    static Map<String, String> liveRules = null;
+
+    static Map<String, String> liveRules() {
+        if (liveRules != null) return liveRules;
+        liveRules = new HashMap<String, String>();
+        try {
+            Class<?> c = Class.forName("terraformingmadeeasy.loading.specs.TerraformingProjectSpec", true, Global.getSettings().getScriptClassLoader());
+            Collection<?> all = Global.getSettings().getAllSpecs(c);
+            if (all != null) for (Object sp : all) {
+                if (!"tme_unification_center".equals(String.valueOf(CARefl.call(sp, "getStructureId")))) continue;
+                Object rule = CARefl.call(sp, "getLikedIndustries");
+                if (rule != null) liveRules.put(String.valueOf(CARefl.call(sp, "getConditionId")), String.valueOf(rule).replaceAll("\\s", ""));
+            }
+        } catch (Throwable t) {
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "can't read Terraforming Made Easy's rules as loaded; world plans use its table", t);
+        }
+        return liveRules;
+    }
+
+    /** The industries a world's Unification Center needs, as the game checks them (TME's table when they can't be read). */
+    static String likedIndustries(Row r) {
+        if (r == null) return "";
+        String live = liveRules().get(r.condition);
+        return live != null && !live.isEmpty() ? live : r.likedInd;
+    }
+
+    /**
+     * Pure: the building a needOne group's step builds: one the colony has; on a water world the Fishing Harbour for the
+     * farming group; else the first one this game has (known).
+     */
+    static String pick(String[] group, Set<String> have, boolean water, Set<String> known) {
+        for (String id : group) if (have.contains(id)) return id;
+        List<String> g = Arrays.asList(group);
+        if (water && g.contains(FISHING) && known.contains(FISHING)) return FISHING;
+        for (String id : group) if (known.contains(id)) return id;
+        return null;
+    }
+
+    /**
+     * Pure: whether a group (or a needAll id as a group of one) can be had once the world's projects are done: Mining needs a
+     * deposit and Farming farmland, Aquaculture or a water world with the Fishing Harbour in the group.
+     */
+    static boolean possible(String[] group, Set<String> have, boolean deposit, boolean farmland, boolean water) {
+        List<String> g = Arrays.asList(group);
+        for (String id : group) if (have.contains(id)) return true;
+        if (g.contains("mining") && !deposit) return false;
+        if (g.contains("farming") && !have.contains("aquaculture") && !farmland && !(water && g.contains(FISHING))) return false;
+        return true;
+    }
+
+    static String label(MarketAPI m, String ind) {
+        return industryName(ind) + (ind.equals("mining") && m.hasIndustry("IndEvo_SwitchableMining") ? " (vanilla Mining; Specialized Mining doesn't count)" :
+                ind.equals("fuelprod") && m.hasIndustry("ix_fuel_production") ? " (vanilla Fuel Production; Advanced doesn't count)" : "");
+    }
+
+    /**
+     * Adds a world's industry steps to p the way the game checks them: a needAll id is an exact step, and a needOne group
+     * (with Vaults of Knowledge, "Mining or Plasma Harvester or Mining Megaplex or Pluto Mining Station") is one exact step
+     * that any building of the group does. Fills p.exact and p.keep (needAll ids, and group steps that get the world's +1).
+     * False when one can't be had here after the world's projects (condsAfter).
+     */
+    static boolean addIndustrySteps(MarketAPI m, String world, Row r, Set<String> condsAfter, CAPlan.Plan p) {
+        Set<String> have = new HashSet<String>();
+        for (Industry i : m.getIndustries()) have.add(i.getId());
+        boolean water = condsAfter.contains("water_surface") || m.hasCondition("water_surface");
+        boolean deposit = anyPrefix(condsAfter, "ore_", "rare_ore_", "volatiles_", "organics_"), farmland = anyPrefix(condsAfter, "farmland_");
+        List<Boolean> all = new ArrayList<Boolean>();
+        List<String[]> gs = groups(likedIndustries(r), all);
+        List<CAPlan.Step> steps = new ArrayList<CAPlan.Step>();
+        Set<String> seen = new HashSet<String>();
+        for (int gi = 0; gi < gs.size(); gi++) {
+            String[] g = gs.get(gi);
+            if (all.get(gi)) {
+                for (String ind : g) {
+                    if (!possible(new String[]{ind}, have, deposit, farmland, water)) return false;
+                    if (!seen.add(ind)) continue;
+                    CAPlan.Step st = new CAPlan.Step(CAPlan.Kind.BUILD, ind, label(m, ind));
+                    st.exact = true;
+                    steps.add(st); p.exact.add(ind); p.keep.add(ind);   // TME checks this id itself
+                }
+                continue;
+            }
+            if (!possible(g, have, deposit, farmland, water)) return false;
+            Set<String> known = new HashSet<String>();
+            for (String id : g) if (CAPlan.spec(id) != null) known.add(id);
+            String id = pick(g, have, water, known);
+            if (id == null) return false;
+            if (!seen.add(id)) continue;   // TME lists Heavy Industry and Orbital Works as the same group
+            CAPlan.Step st = new CAPlan.Step(CAPlan.Kind.BUILD, id, label(m, id));
+            st.exact = true;
+            st.anyOf = new LinkedHashSet<String>(Arrays.asList(g));
+            steps.add(st); p.exact.add(id);
+            if (keeps(world, id)) p.keep.add(id);
+        }
+        p.steps.addAll(steps);
+        return true;
+    }
+
+    /** Industry slots the plan's world industries plus the colony's other industries take (a group's building covers its step). */
+    static int slotsNeeded(MarketAPI m, CAPlan.Plan p) {
+        int slots = 0;
+        for (String ind : p.exact) if (isIndustry(ind)) slots++;
+        for (Industry i : m.getIndustries()) {
+            if (i.isHidden() || !i.isIndustry()) continue;
+            boolean covers = false;
+            for (String ind : p.exact) if (i.getId().equals(ind) || CAPlan.leadsTo(i.getId(), ind) || CAPlan.leadsTo(ind, i.getId())) covers = true;
+            for (CAPlan.Step st : p.steps) if (st.anyOf != null && st.anyOf.contains(i.getId())) covers = true;
+            if (!covers) slots++;
+        }
+        return slots;
     }
 
     static float fit(String world, CAData.Profile p) {
@@ -172,6 +316,7 @@ public class CAWorldPlanner {
             CAPlan.Plan done = new CAPlan.Plan();
             done.name = name(w); done.world = w;
             done.steps.add(new CAPlan.Step(CAPlan.Kind.COND, w, name(w)));
+            done.keep.addAll(formedKeep(w));   // 0.3.29.0: the buildings that get its +1 aren't upgraded
             return done;
         }
         CAPlan.Plan best = null; float bestScore = -1e30f;
@@ -206,37 +351,15 @@ public class CAWorldPlanner {
             if (done == null) continue;
             CAPlan.Plan p = new CAPlan.Plan();
             p.name = name(w); p.world = w;
-            List<Boolean> ia = new ArrayList<Boolean>();
-            // the world's industries must be possible once its projects are done: Mining needs a deposit and Farming farmland
-            // (a water world's Aquaculture counts), which Hive, Death and Waste worlds' projects never add (0.2.38.0)
-            boolean possible = true;
-            for (String[] g : groups(r.likedInd, new ArrayList<Boolean>())) for (String ind : g) {
-                if (ind.equals("mining") && !m.hasIndustry("mining") && !anyPrefix(done.conds, "ore_", "rare_ore_", "volatiles_", "organics_")) possible = false;
-                if (ind.equals("farming") && !m.hasIndustry("farming") && !m.hasIndustry("aquaculture") && !anyPrefix(done.conds, "farmland_")) possible = false;
-            }
-            if (!possible) continue;
-            for (String[] g : groups(r.likedInd, ia)) for (String ind : g) {
-                p.exact.add(ind);
-                String label = industryName(ind) + (ind.equals("mining") && m.hasIndustry("IndEvo_SwitchableMining") ? " (vanilla Mining; Specialized Mining doesn't count)" :
-                        ind.equals("fuelprod") && m.hasIndustry("ix_fuel_production") ? " (vanilla Fuel Production; Advanced doesn't count)" : "");
-                CAPlan.Step st = new CAPlan.Step(CAPlan.Kind.BUILD, ind, label);
-                st.exact = true;
-                p.steps.add(st);
-            }
+            // the world's industries must be possible once its projects are done (0.2.38.0), checked the way the game checks
+            // them (0.3.29.0: TME's rules as loaded, one step per needOne group)
+            if (!addIndustrySteps(m, w, r, done.conds, p)) continue;
             p.steps.addAll(done.steps);
             p.steps.add(new CAPlan.Step(CAPlan.Kind.BUILD, "tme_unification_center", industryName("tme_unification_center")));
             p.steps.add(new CAPlan.Step(CAPlan.Kind.COND, w, name(w)));
             if (CAPlan.stepDropped(m, p)) continue;   // a structure it needs is out of reach here: dropped with the world that found it (0.3.0.0 test fix)
             // the world's industries, plus the colony's other industries, must fit the slots it can have at its max size
-            int slots = 0;
-            for (String ind : p.exact) if (isIndustry(ind)) slots++;
-            for (Industry i : m.getIndustries()) {
-                if (i.isHidden() || !i.isIndustry()) continue;
-                boolean covers = false;
-                for (String ind : p.exact) if (i.getId().equals(ind) || CAPlan.leadsTo(i.getId(), ind) || CAPlan.leadsTo(ind, i.getId())) covers = true;
-                if (!covers) slots++;
-            }
-            if (slots > slotsAt(m, Misc.getMaxMarketSize(m))) continue;
+            if (slotsNeeded(m, p) > slotsAt(m, Misc.getMaxMarketSize(m))) continue;
             int open = 0;
             for (CAPlan.Step st : p.steps) if (!st.done(m)) open++;
             // a year of what the end conditions change (hazard on upkeep and growth, deposits), so a world that keeps or adds
