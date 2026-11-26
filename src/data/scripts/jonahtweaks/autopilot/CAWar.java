@@ -998,6 +998,26 @@ public class CAWar {
             CAStance.markSetByYou(fid);   // 0.3.0.0 (fix): a stance you set acts fully in diplomacy (CAStance.fromOldPriority)
             FactionAPI f = Global.getSector().getFaction(fid);
             CALog.think("War: " + (f != null ? f.getDisplayName() : fid) + " stance " + CAStance.name(st) + ".");   // 0.3.8.6: the row shows it; Thinking list
+        } else if ("goal".equals(action) && arg != null) {   // 0.3.27.0: the War page's goal buttons
+            int c = arg.lastIndexOf(':');
+            if (c <= 0) return;
+            String fid = arg.substring(0, c);
+            int g;
+            try { g = Integer.parseInt(arg.substring(c + 1)); } catch (NumberFormatException e) { return; }
+            g = Math.max(0, Math.min(CAWarPage.GOALS.length - 1, g));
+            int st = CAWarPage.GOAL_STANCE[g];
+            if (st == CAStance.AUTO) s.factionStance().remove(fid); else s.factionStance().put(fid, st);
+            CAStance.markSetByYou(fid);
+            s.warLevel = CAWarPage.levelAfter(s.warLevel, g);
+            FactionAPI f = Global.getSector().getFaction(fid);
+            CALog.think("War: " + (f != null ? f.getDisplayName() : fid) + ": " + CAWarPage.GOALS[g] + ". War level " + CAWarPolicy.levelName(s.warLevel) + ".");
+        } else if ("level".equals(action) && arg != null) {   // 0.3.27.0
+            try { s.warLevel = CAWarPolicy.clamp(Integer.parseInt(arg)); } catch (NumberFormatException ignored) { }
+        } else if ("toggle".equals(action)) {   // 0.3.27.0
+            if ("retake".equals(arg)) s.noWarRetake = !s.noWarRetake;
+            else if ("rivals".equals(arg)) s.warAutoRivals = !s.warAutoRivals;
+            else if ("coalition".equals(arg)) s.warCoalitionOK = !s.warCoalitionOK;
+            else if ("unbomb".equals(arg)) s.warScorchedOK = false;
         } else if ("declare".equals(action)) {
             FactionAPI f = Global.getSector().getFaction(arg);
             String why = f == null ? "no such faction" : CADiplomacy.declareWar(f);

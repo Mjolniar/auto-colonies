@@ -164,8 +164,8 @@ public class CADiplomacy {
         String why = declareWhy(d, s, f);
         if (why != null) out.add("Blocked: " + why + ".");
         int st = s.stanceOf(f.getId());
-        int eff = Math.min(CAWarPolicy.clamp(s.warLevel), CAStance.cap(st));
-        out.add("Then at War level " + CAWarPolicy.levelName(s.warLevel) + " (" + CAStance.name(st) + " allows " + CAWarPolicy.levelName(eff) + "): "
+        int cap = CAStance.cap(st), eff = Math.min(CAWarPolicy.clamp(s.warLevel), cap);
+        out.add("Then at War level " + CAWarPolicy.levelName(s.warLevel) + " (" + limitText(CAStance.name(st), eff, cap) + "): "
                 + (eff >= CAWarPolicy.CONQUER ? "invasions, raids and blockades" : eff >= CAWarPolicy.HOLD ? "raids and blockades" : "strikes back only")
                 + ", each at Nexerelin's price plus the fee, above your credit reserve.");   // 0.3.8.6: plain wording
         int markets = 0; MarketAPI near = null; float nearLY = Float.MAX_VALUE;
@@ -182,6 +182,15 @@ public class CADiplomacy {
             out.add("Infamy now " + Math.round(CAWarPolicy.infamy(badboy, dom)) + " of " + Math.round(CAWarPolicy.INFAMY_LINE) + "; each capture adds size squared x 2.");
         } catch (Throwable ignored) { }
         return out;
+    }
+
+    /**
+     * 0.3.26.1: which setting holds a faction's war level, for the Diplomacy line: the War level holds the stance below its
+     * own cap ("your War level holds Destroy there, and Destroy allows up to Scorched"), or the stance is the limit. Pure.
+     */
+    static String limitText(String stance, int eff, int cap) {
+        if (eff < cap) return "your War level holds " + stance + " there, and " + stance + " allows up to " + CAWarPolicy.levelName(cap);
+        return stance + " allows up to " + CAWarPolicy.levelName(eff);
     }
 
     static String names(Alliance a) {

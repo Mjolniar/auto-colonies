@@ -368,7 +368,7 @@ public class CAIntel extends BaseIntelPlugin {
         } else if (page.equals(CAExpansionPage.PAGE)) {   // 0.3.0.0 (WS-F2)
             CAExpansionPage.render(t, data, s);
         } else if (page.equals("war")) {   // 0.3.0.0 (WS-F2): Nexerelin's classes load only with it on
-            if (Global.getSettings().getModManager().isModEnabled(CAWar.MOD)) CAWarPage.render(t, data, s);
+            if (Global.getSettings().getModManager().isModEnabled(CAWar.MOD)) CAWarPage.render(t, data, s, width);   // 0.3.27.0: two columns
         } else if (page.equals(CAFactionsPage.PAGE)) {   // 0.3.0.0 (WS-F2)
             CAFactionsPage.render(t, data, s);
         } else if (page.equals("mods")) {

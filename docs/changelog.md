@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.26.1 - 2026-11-26
+
+- Diplomacy: The war line says which setting holds a faction back. With War level Retaliate and the stance Destroy it reads "your War level holds Destroy there, and Destroy allows up to Scorched".
+
 ## 0.3.26.0 - 2026-11-26
 
 - Megastructures: A restoration that hasn't moved in 12 months, or has nothing done on a contract 12 or more months old, is proposed for pausing in Approvals. Approving it stops that section's restoration and its contract, so its goods go back to your exports. It can be started again from the megastructure's screen.

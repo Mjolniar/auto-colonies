@@ -56,19 +56,68 @@ public final class CAWarPage {
         }
     }
 
-    /** The page. Each part catches its own failure, so one part failing leaves the rest on the page. */
-    static void render(TooltipMakerAPI t, CAData d, CASettings s) {
-        Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor();
-        CATheme.heading(t, "War (Nexerelin)", 0f);
-        int level = CAWarPolicy.clamp(s.warLevel);
-        t.addPara("War level: %s. " + CALog.esc(levelWhat(level, s.warRetake())), 6f, hl, CAWarPolicy.levelName(level));
-        // 0.3.0.0 (WS-F3 fix pass 2): where the level is set and that stances cap it is the Settings row's line
-        try { header(t, d, s, level); }
-        catch (Throwable e) { failed(t, "war page header", e); }
-        try { buttons(t, s, level); }
-        catch (Throwable e) { failed(t, "war page buttons", e); }
-        try { factions(t, d, s); }
-        catch (Throwable e) { failed(t, "war page factions", e); }
+    // ---------------- 0.3.27.0: goals (one per faction) ----------------
+
+    /** What you want done to a faction; each is a stance (CAStance) and the War level it needs. */
+    static final String[] GOALS = {"Leave alone", "Strike back", "Hold down", "Conquer", "Obliterate"};
+    static final int[] GOAL_STANCE = {CAStance.NEUTRAL, CAStance.AUTO, CAStance.RIVAL, CAStance.ENEMY, CAStance.DESTROY};
+    static final int[] GOAL_LEVEL = {CAWarPolicy.DEFEND, CAWarPolicy.RETALIATE, CAWarPolicy.HOLD, CAWarPolicy.CONQUER, CAWarPolicy.SCORCHED};
+    /** One line each: what the goal does. */
+    static final String[] GOAL_WHAT = {"No attacks; your fleets only defend.", "Raids back at whoever attacks you.",
+            "Raids and blockades to keep them weak.", "Invades their colonies to take them.", "Invades, then bombards their capital once you authorize it."};
+
+    /** Pure: the goal a stance stands for (Ally, Friendly and Neutral are Leave alone). */
+    static int goalOf(int stance) {
+        int st = CAStance.clamp(stance);
+        if (st <= CAStance.NEUTRAL) return 0;
+        if (st == CAStance.AUTO) return 1;
+        if (st == CAStance.RIVAL) return 2;
+        if (st == CAStance.ENEMY) return 3;
+        return 4;
+    }
+
+    /** Pure: the War level after picking a goal: raised to what the goal needs, never lowered. */
+    static int levelAfter(int level, int goal) {
+        int g = Math.max(0, Math.min(GOALS.length - 1, goal));
+        return g == 0 ? CAWarPolicy.clamp(level) : Math.max(CAWarPolicy.clamp(level), GOAL_LEVEL[g]);
+    }
+
+    // ---------------- the page ----------------
+
+    static ButtonAPI btn(TooltipMakerAPI t, String label, String[] id, boolean on, float w, float pad) {
+        return t.addButton(label, id, on ? Misc.getBasePlayerColor() : Misc.getGrayColor(), Misc.getDarkPlayerColor(), Alignment.MID, CutStyle.TL_BR, w, 22f, pad);
+    }
+
+    /** Buttons in rows of perRow, the one at index on lit. */
+    static void choices(TooltipMakerAPI t, String[] labels, String action, String argPrefix, int on, float colW, int perRow, float pad) {
+        float w = (colW - 4f * (perRow - 1)) / perRow;
+        ButtonAPI first = null, prev = null;
+        for (int i = 0; i < labels.length; i++) {
+            boolean row = i % perRow == 0;
+            ButtonAPI b = btn(t, labels[i], new String[]{"war", action, argPrefix + i}, i == on, w, row ? (i == 0 ? pad : 4f) : 0f);
+            if (!row) b.getPosition().rightOfTop(prev, 4f);
+            else { if (first != null) CALog.endRow(t, first); first = b; }
+            prev = b;
+        }
+        if (first != null) CALog.endRow(t, first);
+    }
+
+    /** The page: your war on the left, every faction with its goal on the right. Each part catches its own failure. */
+    static void render(TooltipMakerAPI t, CAData d, CASettings s, float width) {
+        float gap = 12f, colW = (width - gap) / 2f;
+        TooltipMakerAPI L = t.beginSubTooltip(colW);
+        try { left(L, d, s, colW); }
+        catch (Throwable e) { failed(L, "war page settings", e); }
+        t.endSubTooltip();
+        TooltipMakerAPI R = t.beginSubTooltip(colW);
+        try { right(R, d, s, colW); }
+        catch (Throwable e) { failed(R, "war page factions", e); }
+        t.endSubTooltip();
+        float h0 = t.getHeightSoFar();
+        com.fs.starfarer.api.ui.UIComponentAPI lc = t.addCustom(L, 0f), rc = t.addCustom(R, 0f);
+        rc.getPosition().rightOfTop(lc, gap);
+        CALog.endRow(t, L.getHeightSoFar() >= R.getHeightSoFar() ? lc : rc, 4f);
+        t.setHeightSoFar(h0 + Math.max(L.getHeightSoFar(), R.getHeightSoFar()) + 4f);
         try { CAConquest.render(t, d, s); }
         catch (Throwable e) { failed(t, "war page conquered colonies", e); }
         try { attackers(t, d); }
@@ -80,63 +129,102 @@ public final class CAWarPage {
         t.addPara(CATheme.NOT_SHOWN, Misc.getGrayColor(), 4f);
     }
 
-    /** Caps, fleet request points, infamy, money, today's pass. */
-    static void header(TooltipMakerAPI t, CAData d, CASettings s, int level) {
+    /** Your war: the most you allow, the switches, the buttons, then points, infamy and money. */
+    static void left(TooltipMakerAPI t, CAData d, CASettings s, float colW) {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), bad = Misc.getNegativeHighlightColor();
-        boolean rich = CASurplus.rich(s);
-        if (CALowProfile.on() && level > CAWarPolicy.DEFEND)
-            t.addPara("Low profile caps every faction at Defend.", bad, 4f);
+        int level = CAWarPolicy.clamp(s.warLevel);
+        t.addSectionHeading("Your war", Alignment.MID, 0f);
+        t.addPara("The most you allow. Picking a goal on the right raises it when the goal needs more.", gray, 6f);
+        choices(t, CAWarPolicy.LEVEL_NAMES, "level", "", level, colW, 3, 4f);
+        t.addPara(levelWhat(level, s.warRetake()), hl, 4f);   // plain text: shown as is
+        if (CALowProfile.on() && level > CAWarPolicy.DEFEND) t.addPara("Low profile holds everyone at Defend.", bad, 4f);
         FactionAPI comm = Misc.getCommissionFaction();
-        if (comm != null && level > CAWarPolicy.DEFEND)
-            t.addPara("Commission from %s: capped at Hold them down.",
-                    4f, bad, comm.getDisplayName());
+        if (comm != null && level > CAWarPolicy.DEFEND) t.addPara("Your commission from %s holds you at Hold them down.", 4f, bad, comm.getDisplayName());
 
+        ButtonAPI a = btn(t, "Retake lost colonies: " + onOff(s.warRetake()), new String[]{"war", "toggle", "retake"}, s.warRetake(), (colW - 4f) / 2f, 10f);
+        ButtonAPI b = btn(t, "Pick a rival for me: " + onOff(s.warAutoRivals), new String[]{"war", "toggle", "rivals"}, s.warAutoRivals, (colW - 4f) / 2f, 0f);
+        b.getPosition().rightOfTop(a, 4f);
+        CALog.endRow(t, a);
+        ButtonAPI c = btn(t, "Past the coalition line: " + onOff(s.warCoalitionOK), new String[]{"war", "toggle", "coalition"}, s.warCoalitionOK, (colW - 4f) / 2f, 4f);
+        ButtonAPI bomb = s.warScorchedOK ? btn(t, "Bombardment: Allowed", new String[]{"war", "toggle", "unbomb"}, true, (colW - 4f) / 2f, 0f)
+                : btn(t, "Allow bombardment", new String[]{"war", "scorched", ""}, false, (colW - 4f) / 2f, 0f);
+        bomb.getPosition().rightOfTop(c, 4f);
+        CALog.endRow(t, c);
+        ButtonAPI stop = btn(t, "Stand down", new String[]{"war", "standdown", ""}, true, (colW - 4f) / 2f, 4f);
+        ButtonAPI rec = btn(t, "Recall all", new String[]{"war", "recall", ""}, true, (colW - 4f) / 2f, 0f);
+        rec.getPosition().rightOfTop(stop, 4f);
+        CALog.endRow(t, stop);
+
+        t.addSectionHeading("Where it stands", Alignment.MID, 12f);
         InvasionFleetManager mgr = InvasionFleetManager.getManager();
+        boolean rich = CASurplus.rich(s);
         if (mgr != null) {
             int cap = mgr.getFleetRequestCapacity();
             float share = rich ? CAWar.RICH_RESERVE : CAWar.RESERVE;
-            t.addPara("Fleet request points: %s of %s. %s kept (%s percent" + (rich ? ", rich" : "") + ").", 4f, hl,
-                    String.valueOf((int) mgr.getFleetRequestStock()), String.valueOf(cap), String.valueOf(Math.round(share * cap)),
-                    String.valueOf(Math.round(share * 100f)));
-            float exp = CAExpansion.reservedFP();
-            if (exp > 0f) t.addPara("Held for a colony fleet: %s points.", 2f, hl, String.valueOf(Math.round(exp)));
+            t.addPara("Fleet points: %s of %s, and %s are kept back for emergencies.", 6f, hl,
+                    String.valueOf((int) mgr.getFleetRequestStock()), String.valueOf(cap), String.valueOf(Math.round(share * cap)));
         }
-
         float badboy = CAConquest.badboy(), dom = CAConquest.dominance();
         float pend = CAConquest.pendingInfamy() + CAScorched.pendingInfamy();
         float now = CAWarPolicy.infamy(badboy, dom), after = CAWarPolicy.infamy(badboy + pend, dom);
-        Color ic = after >= CAWarPolicy.INFAMY_NEAR ? bad : hl;
-        if (pend > 0f) t.addPara("Infamy: %s of %s (coalition line). %s after operations under way.", 4f, ic,
+        t.addPara("Infamy: %s of %s" + (pend > 0f ? ", %s once what's under way lands." : "."), 4f, after >= CAWarPolicy.INFAMY_NEAR ? bad : hl,
                 String.valueOf(Math.round(now)), String.valueOf(Math.round(CAWarPolicy.INFAMY_LINE)), String.valueOf(Math.round(after)));
-        else t.addPara("Infamy: %s of %s (coalition line).", 4f, ic, String.valueOf(Math.round(now)), String.valueOf(Math.round(CAWarPolicy.INFAMY_LINE)));
-        t.addTooltipToPrevious(CAFactionsPage.tip(new String[]{
-                "Coalition at 100 infamy, ends under 75. Base infamy drops 3 a month."}),
+        t.addTooltipToPrevious(CAFactionsPage.tip(new String[]{"A coalition forms against you at 100 infamy and ends under 75. Infamy drops 3 a month."}),
                 TooltipMakerAPI.TooltipLocation.BELOW);
-        t.addPara(s.warCoalitionOK ? "Infamy past the line: allowed." : "Offensives stop at the line.", gray, 2f);
-
-        float rung = 0f;
-        try { rung = CARich.allowance(CAWar.militaryRung()); } catch (Throwable ignored) { }
-        t.addPara("Money: %s budget left, %s surplus, %s Military rung, reserve %s.", 4f, hl,
-                Misc.getDGSCredits(CABudget.available(s)), Misc.getDGSCredits(CASurplus.amount(s)), Misc.getDGSCredits(rung), Misc.getDGSCredits(s.reserve));
-        t.addPara("Raids and retakes: budget. Invasions and bombardment: surplus. Fee applies.", gray, 2f);
-        if (CAWar.summary != null) t.addPara("Today: " + CAWar.summary, gray, 4f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
+        t.addPara("Money: %s left in the budget and %s surplus. Raids and retakes come out of the budget, invasions and bombardment out of the surplus.",
+                4f, hl, Misc.getDGSCredits(CABudget.available(s)), Misc.getDGSCredits(CASurplus.amount(s)));
+        if (CAWar.summary != null) t.addPara("Today: " + CAWar.summary, gray, 4f);   // shown as is
     }
 
-    /** Stand down, Recall all, Authorize bombardment (at Scorched), then the War settings at a glance. */
-    static void buttons(TooltipMakerAPI t, CASettings s, int level) {
-        Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), base = Misc.getBasePlayerColor(), dark = Misc.getDarkPlayerColor();
-        // 0.3.0.0 (WS-F3 fix pass 3): no hover on these two; each opens a confirmation that says what it does (CAWar.confirmPrompt)
-        ButtonAPI stop = t.addButton("Stand down", new String[]{"war", "standdown", ""}, base, dark, Alignment.MID, CutStyle.TL_BR, 160f, 22f, 8f);
-        ButtonAPI rec = t.addButton("Recall all", new String[]{"war", "recall", ""}, base, dark, Alignment.MID, CutStyle.TL_BR, 160f, 22f, 0f);
-        rec.getPosition().rightOfTop(stop, 6f);
-        if (level >= CAWarPolicy.SCORCHED && !s.warScorchedOK) {
-            ButtonAPI sb = t.addButton("Authorize bombardment", new String[]{"war", "scorched", ""}, base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 0f);
-            sb.getPosition().rightOfTop(rec, 6f);
+    /** Every faction with markets you can see, the ones you're fighting first, each with its goal buttons and plans. */
+    static void right(TooltipMakerAPI t, CAData d, CASettings s, float colW) {
+        Color gray = Misc.getGrayColor(), hl = Misc.getHighlightColor();
+        final String rival = CAWar.autoRival(d, s);
+        t.addSectionHeading("Factions", Alignment.MID, 0f);
+        t.addPara("Pick what you want done to each faction.", gray, 6f);
+        List<FactionAPI> list = new ArrayList<FactionAPI>(CAWar.factions());
+        Set<String> ids = new HashSet<String>();
+        for (FactionAPI f : list) ids.add(f.getId());
+        for (FactionAPI f : shown(d, s, rival)) if (ids.add(f.getId())) list.add(f);
+        Collections.sort(list, new Comparator<FactionAPI>() {
+            public int compare(FactionAPI x, FactionAPI y) {
+                int c = Integer.compare(CAWar.stance(s, y.getId(), rival), CAWar.stance(s, x.getId(), rival));
+                if (c != 0) return c;
+                c = Boolean.compare(y.isHostileTo(Factions.PLAYER), x.isHostileTo(Factions.PLAYER));
+                return c != 0 ? c : x.getDisplayName().compareTo(y.getDisplayName());
+            }
+        });
+        InvasionFleetManager mgr = InvasionFleetManager.getManager();
+        CAWar.Pass p = mgr == null ? null : new CAWar.Pass(d, s, mgr, CASurplus.rich(s));
+        for (FactionAPI f : list) {
+            try { faction(t, d, s, f, rival, p, colW); }
+            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "war page faction failed for " + f.getId(), e); }
         }
-        CALog.endRow(t, stop);
-        if (level >= CAWarPolicy.SCORCHED)
-            t.addPara("Saturation bombardment: %s.", 4f, s.warScorchedOK ? Misc.getNegativeHighlightColor() : hl, s.warScorchedOK ? "authorized" : "not authorized");
-        t.addPara("Retake: " + onOff(s.warRetake()) + ". Auto rivals: " + onOff(s.warAutoRivals) + ".", gray, 4f);   // the rest: Settings, Advanced, War. 0.3.9.0: the unused cm and sc locals are gone
+    }
+
+    static void faction(TooltipMakerAPI t, CAData d, CASettings s, FactionAPI f, String rival, CAWar.Pass p, float colW) {
+        Color gray = Misc.getGrayColor(), hl = Misc.getHighlightColor(), bad = Misc.getNegativeHighlightColor();
+        String fid = f.getId();
+        int st = CAWar.stance(s, fid, rival), goal = goalOf(st);
+        boolean hostile = f.isHostileTo(Factions.PLAYER);
+        int markets = 0;
+        for (MarketAPI m : Misc.getFactionMarkets(f)) if (!m.isHidden() && m.isInEconomy()) markets++;
+        String state = (hostile ? "at war with you" : f.getRelationshipLevel(Factions.PLAYER).getDisplayName().toLowerCase(java.util.Locale.ROOT))
+                + ", " + markets + (markets == 1 ? " colony" : " colonies") + (st != s.stanceOf(fid) ? ", picked as your rival" : "");
+        t.addPara("%s, " + CALog.esc(state) + ".", 10f, new Color[]{f.getBaseUIColor(), gray}, f.getDisplayName());
+        choices(t, GOALS, "goal", fid + ":", goal, colW, GOALS.length, 4f);
+        int eff = CAWar.effective(d, s, f, rival), cap = CAStance.cap(st);
+        if (goal > 0 && eff < cap) t.addPara("Held at " + CAWarPolicy.levelName(eff) + ": " + limitWhy(s, f, st) + ".", bad, 2f);   // shown as is
+        if (CAStance.wantsWar(st) && !hostile) {
+            String why = CADiplomacy.declareWhy(d, s, f);
+            if (why == null) t.addButton("Declare war on " + f.getDisplayName(), new String[]{"war", "declare", fid}, Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),
+                    Alignment.MID, CutStyle.TL_BR, colW, 20f, 2f);
+            else t.addPara("Not at war yet: " + why + ".", gray, 2f);   // shown as is
+        }
+        if (p != null && goal > 0 && hostile) {
+            int n = 0;
+            for (String line : planned(p, f)) { if (n++ >= 2) break; t.addPara(line, gray, 2f); }   // shown as is
+        }
     }
 
     static String onOff(boolean on) { return on ? "On" : "Off"; }
