@@ -216,6 +216,15 @@ public class CASettings {
     /** C: "Surplus: what to buy" preset (index into RICH_PRESET_NAMES), 0 Balanced. */
     public int richPreset = 0;
     public static final String[] RICH_PRESET_NAMES = {"Balanced", "Fleet", "Expansion", "Economy", "Save"};
+    /**
+     * 0.3.25.0 (plan 2026-11-25, batch 4): Rich cap (RICH_CAP_NAMES): the free cash the money tier Rich needs is 15 months of
+     * colony net, at most this (never under the Idle money line). 0 is 30,000,000 in every save.
+     */
+    public int richCap = 0;
+    public static final String[] RICH_CAP_NAMES = {"30,000,000", "50,000,000", "20,000,000", "None"};
+    public static final float[] RICH_CAP = {30000000f, 50000000f, 20000000f, Float.MAX_VALUE};
+    /** 0.3.25.0: the Rich cap in credits; Float.MAX_VALUE for None. */
+    public float richCapCredits() { return RICH_CAP[Math.max(0, Math.min(RICH_CAP.length - 1, richCap))]; }
     /** C: per rung (CARich.RUNGS order): 0 Off, 1 On, 2 Recommend only. Shipyard and Expansion start on Recommend only. */
     public int[] rungMode = defaultRungs();
     public static final String[] RUNG_MODE_NAMES = {"Off", "On", "Recommend only"};

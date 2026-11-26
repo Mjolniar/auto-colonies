@@ -62,6 +62,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | New colonies | Off, Ask first, Auto | Empire mode | It founds new colonies with idle money, and on Ask first you approve each one (New colonies). |
 | Surplus investment | Off, Over 1M, Over 3M, Over 5M, Over 10M | Empire mode | Anything you've got over this goes into one focus world (Money). |
 | What to buy | Balanced, Fleet, Expansion, Economy, Save | Balanced | It's what idle money buys first (Money ladder). |
+| Rich cap | 30,000,000, 50,000,000, 20,000,000, None | 30,000,000 | Rich needs 15 months of your colony net in free cash, but never more than this, so a big income can still get there. |
 | Endgame | From 1M/month, From 2M/month, From 500k/month, Off | Empire mode | At this income, it starts building for production and defense. |
 | Story points | Yours only, One per colony, 2 a month, 5 a month | Yours only | It caps the story points Autopilot spends on improvements. |
 

@@ -147,6 +147,8 @@ public final class CALunaSync {
         r.set = (s, v, b) -> { surplus.set(s, v, b); s.surplusChecked = true; };
         radio("richpreset", "What to buy", "richPreset", CASettings.RICH_PRESET_NAMES, "Idle capital is spent in this order of priority. Rung controls are found under Advanced, in Surplus and money "
                 + "ladder.");
+        radio("richcap", "Rich cap", "richCap", CASettings.RICH_CAP_NAMES, "Rich needs 15 months of your colony net in free cash, but never more than this, "
+                + "so a big income can still get there.");
         radio("endgame", "Endgame", "endgameMode", CAEndgame.NAMES, "Endgame directives begin at this income, prioritizing production and defense.");
         preset("p_story", "Story points", CAPresets.STORY, "Story point expenditure on improvements is capped by this setting.");
 

@@ -189,9 +189,21 @@ public class CARich {
     }
 
     /** Pure: the free cash lines of T1, T2 and T3 at this colony net (index = tier; [0] is 0). */
-    static float[] lines(float net) {
+    static float[] lines(float net) { return lines(net, richCap()); }
+
+    /**
+     * Pure: the lines with the Rich cap (0.3.25.0, CASettings.richCap): Rich at most cap, never under Idle money's line or
+     * CATuning.T3_MIN.
+     */
+    static float[] lines(float net, float cap) {
         float n = Math.max(0f, net);
-        return new float[]{0f, Math.max(CATuning.T1_MIN, T1_NET * n), Math.max(CATuning.T2_MIN, T2_NET * n), Math.max(CATuning.T3_MIN, T3_NET * n)};
+        float l2 = Math.max(CATuning.T2_MIN, T2_NET * n);
+        return new float[]{0f, Math.max(CATuning.T1_MIN, T1_NET * n), l2, Math.max(CATuning.T3_MIN, Math.min(T3_NET * n, Math.max(cap, l2)))};
+    }
+
+    /** 0.3.25.0: the Rich cap setting; its default when there's no save (offline checks). */
+    static float richCap() {
+        try { return CAData.settings().richCapCredits(); } catch (Throwable t) { return CASettings.RICH_CAP[0]; }
     }
 
     /** Pure: the tier rule as the A0 stub named it: a tier reached by free cash, no endgame line. */
@@ -266,7 +278,7 @@ public class CARich {
         CAData d = CAData.get();
         boolean counted = CAPlanner.inCharge() && !CAPlanner.idle.isEmpty() && !CASync.dormant();   // 0.3.6.8: a dormant month isn't counted
         float share = counted ? CAPlanner.idleShare() : 0f;
-        float all = Math.max(0f, spent) + total(d.rungSpent());
+        float all = idleSpend(spent, d.rungSpent());   // 0.3.25.0: the Economy rung's buyers don't count
         boolean idle = idleMonth(share, all, budget);
         int was = d.idleMonths;
         d.idleMonths = idleAfter(was, counted, idle);
@@ -276,6 +288,17 @@ public class CARich {
         CALog.quiet("Money tiers: last month " + (counted ? (idle ? "idle" : "not idle") + " (" + Math.round(share * 100f)
                 + "% of colonies with nothing worth starting; Auto Colonies spent " + Misc.getDGSCredits(all) + " of a "
                 + Misc.getDGSCredits(budget) + " budget)" : CASync.dormant() ? "not counted (the Autopilot is dormant)" : "not counted (no planner look this session)") + "; idle months " + was + " -> " + d.idleMonths);
+    }
+
+    /**
+     * Pure (0.3.25.0, plan 2026-11-25, batch 4): what a month spent for the idle-month test: the month's budget spending and the
+     * rungs', less the Economy rung (surplus terraforming and research, the capital's trade buildings), which spends surplus
+     * credits outside the budget. A terraforming repeat kept every month from being idle.
+     */
+    static float idleSpend(float spent, Map<String, Float> rungs) {
+        float t = Math.max(0f, spent) + total(rungs);
+        Float e = rungs == null ? null : rungs.get("Economy");
+        return e != null && e > 0f ? t - e : t;
     }
 
     static float total(Map<String, Float> m) {

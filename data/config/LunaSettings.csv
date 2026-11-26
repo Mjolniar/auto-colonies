@@ -24,6 +24,7 @@ ca_reserve,Credit reserve,Int,50000,,"Self-explanatory. Anything above this is a
 ,,,,,,,,
 ca_surplus,Surplus investment,Radio,Off,"Off, Over 1M, Over 3M, Over 5M, Over 10M",Credits above this line are directed into a single focus world.,,,Advanced
 ca_richpreset,What to buy,Radio,Balanced,"Balanced, Fleet, Expansion, Economy, Save","Idle capital is spent in this order of priority. Rung controls are found under Advanced, in Surplus and money ladder.",,,Advanced
+ca_richcap,Rich cap,Radio,30M,"30M, 50M, 20M, None","Rich needs 15 months of your colony net in free cash, but never more than this, so a big income can still get there.",,,Advanced
 ca_endgame,Endgame,Radio,Off,"From 1M/month, From 2M/month, From 500k/month, Off","Endgame directives begin at this income, prioritizing production and defense.",,,Advanced
 ca_p_story,Story points,Radio,Yours only,"Yours only, One per colony, 2 a month, 5 a month, Mode default, Custom",Story point expenditure on improvements is capped by this setting.,,,Advanced
 ,,,,,,,,

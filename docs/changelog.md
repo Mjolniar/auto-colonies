@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.25.0 - 2026-11-25
+
+- Trade contracts: No new sales contract for a good that restorations, wonder sites, special projects or production orders would then run short of.
+- Money tiers: Added the Rich cap setting next to What to buy (30,000,000 by default; 50,000,000, 20,000,000 or None). Rich needs 15 months of colony net in free cash, at most the cap and never less than the Idle money line. At 4,000,000 a month that is 30,000,000 (was 60,000,000).
+- Money tiers: Spending by the Economy rung (surplus terraforming, surplus research, the capital's trade buildings) no longer keeps a month from counting as idle.
+
 ## 0.3.24.0 - 2026-11-25
 
 - Production line: Added the Production line setting next to Make room (From 500,000/month by default; 250,000, 1,000,000, 2,000,000 or Off). While colony net is at the line, a good your colonies use more of than they make, or that one colony is short of, gets a producer planned even when it doesn't pay for itself. Make room may swap out an industry another colony also has for it.

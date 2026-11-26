@@ -140,6 +140,18 @@ public final class CANeeds {
 
     static final Set<String> TOO_BIG = new HashSet<String>();
 
+    /** 0.3.25.0 (batch 4): a new sale of need a month would leave this good's commitments short (CAContracts' offer check). */
+    public static boolean reserved(String good, int need) {
+        Good g = last == null ? null : last.get(good);
+        return g != null && g.commitments() > 0 && shortWith(g.supply, g.demand, g.commitments() + g.trade() + Math.max(0, need)) > 0;
+    }
+
+    /** 0.3.25.0: what asks for a good, in words ("restorations"). */
+    public static String askersOf(String good) {
+        Good g = last == null ? null : last.get(good);
+        return g == null ? "" : askers(g.asks);
+    }
+
     /** The ledger now (null before the first daily pass). */
     public static Map<String, Good> get() { return last; }
 

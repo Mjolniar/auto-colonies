@@ -426,6 +426,9 @@ public class CAContracts {
             } else if (shortHome(com)) {   // 0.3.21.0
                 o.feasible = false;
                 o.why = "your colonies use more " + CAResearch.commodityName(com) + " than they make";
+            } else if (CANeeds.reserved(com, need)) {   // 0.3.25.0
+                o.feasible = false;
+                o.why = "your " + CANeeds.askersOf(com) + " need that " + CAResearch.commodityName(com);
             } else if (!fits(spare, 0, need)) {
                 o.feasible = false;
                 o.why = "not enough spare " + CAResearch.commodityName(com) + " (" + Math.max(0, spare) + " of " + (int) Math.ceil(need * (1f + MARGIN)) + " needed"
