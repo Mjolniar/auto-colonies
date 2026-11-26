@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.27.1 - 2026-11-26
+
+- Production line: Fixed a producer being planned at a colony that already has an upgrade of it, such as Farming at a colony with Subsidised Farming. The game never offered it there, so no swap was made.
+- Loop guard: The repeat watch leaves out the monthly report lines.
+
 ## 0.3.27.0 - 2026-11-26
 
 - War page: Rebuilt in two columns. Your war on the left: the War level as buttons, switches for retaking lost colonies, picking a rival, going past the coalition line and bombardment, Stand down and Recall all, then fleet points, infamy and money. Factions on the right: every faction with markets, each with five goal buttons: Leave alone, Strike back, Hold down, Conquer, Obliterate.

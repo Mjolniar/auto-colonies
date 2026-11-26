@@ -84,7 +84,7 @@ final class CAUndo {
 
     /** Counts an action line (CALog.did); one warning a session for a pattern seen WATCH_TIMES times within WATCH_DAYS. */
     /** 0.3.25.1: action lines that repeat by design (weekly deliveries, fleet limits), left out of the watch. */
-    static final String[] WATCH_SKIP = {"Storage logistics", "Fleet limit", "Hazard pay"};
+    static final String[] WATCH_SKIP = {"Storage logistics", "Fleet limit", "Hazard pay", "Month:", "Month at", "Money tier"};   // 0.3.27.1: monthly lines
 
     static void watch(String line) {
         if (line == null || CALog.whatIf()) return;

@@ -384,6 +384,11 @@ public class CAProjects {
             h.freeSlots = Math.max(0, CABuild.freeSlots(m));
             h.ships = supply(m, "ships");
             for (Industry ind : m.getIndustries()) h.has.add(ind.getId());
+            // 0.3.27.1: an upgrade of a producer counts as that producer (Row's Subsidised Farming is its Farming), so one more
+            // isn't planned where the game won't offer it
+            for (Producer p : PRODUCERS) for (Industry ind : m.getIndustries()) {
+                try { if (!ind.getId().equals(p.id) && CAPlan.leadsTo(p.id, ind.getId())) h.has.add(p.id); } catch (Throwable ignored) { }
+            }
             Set<String> exact = new HashSet<String>();
             CAPlan.Plan plan = null;
             try { plan = CAPlan.build(m, c.profile); exact = plan.exact; } catch (Throwable ignored) { }
