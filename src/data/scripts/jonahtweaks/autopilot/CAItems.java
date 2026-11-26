@@ -386,6 +386,18 @@ public class CAItems {
         return false;
     }
 
+    /** 0.3.20.6: days an item swapped out of a building stays out of that building. */
+    static final float SWAP_HOLD_DAYS = 365f;
+
+    /** 0.3.20.6: CAData.swapAt key of an item swapped out of a building ("marketId:item:industryId:itemId"). Pure. */
+    static String holdKey(String marketId, String indId, String itemId) { return marketId + ":item:" + indId + ":" + itemId; }
+
+    /** 0.3.20.6: this item came out of this building by a swap less than SWAP_HOLD_DAYS ago. */
+    static boolean swapHeld(CAData d, MarketAPI m, Industry ind, String itemId) {
+        Long at = d.swapAt().get(holdKey(m.getId(), ind.getId(), itemId));
+        return at != null && Global.getSector().getClock().getElapsedDaysSince(at) < SWAP_HOLD_DAYS;
+    }
+
     /** Worth swapping: the waiting item scores at least a quarter more than the known item installed. */
     static boolean better(float waiting, float installed) { return installed > 0f && waiting >= installed * 1.25f; }
 
@@ -405,13 +417,14 @@ public class CAItems {
                 if (old == null || !targets.contains(ind.getId()) || old.getId().equals(spec.getId()) || LAMP.equals(old.getId())) continue;
                 if (!ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId()) || ind.getSpec().hasTag("consumes")) continue;
                 if (CAMods.leftToYou(ind.getId()) != null) continue;   // left to you: its item stays (0.2.45.0)
+                if (swapHeld(d, m, ind, spec.getId())) continue;   // 0.3.20.6: swapped out of here within the year
                 try { if (!effect.getUnmetRequirements(ind).isEmpty()) continue; } catch (Throwable t) { continue; }
                 if (CALowProfile.pathBlocked(m, CALowProfile.itemInterest(spec) - CALowProfile.itemInterest(old.getId()))) continue;
                 float flatNow = itemScore(old.getId(), m, c.profile, ind), flatThen = itemScore(spec.getId(), m, c.profile, ind);
                 if (flatNow <= 0f || flatThen <= 0f) continue;   // one it can't value stays; one that can't go there never does (as before)
                 InstallableItemEffect oldEffect = ItemEffectsRepo.ITEM_EFFECTS.get(old.getId());
-                float now = CAValue.itemInstalled(m, ind, old.getId(), oldEffect, flatNow, c.profile, deficit);
-                float then = CAValue.itemSwap(m, ind, spec.getId(), effect, flatThen, old.getId(), oldEffect, c.profile, deficit);
+                float[] sc = CAValue.swapScores(m, ind, spec.getId(), effect, flatThen, old.getId(), oldEffect, flatNow, c.profile, deficit);   // 0.3.20.6
+                float now = sc[0], then = sc[1];
                 if ((now > 0f ? better(then, now) : then > 0f) && then - now > bestGain) { bestGain = then - now; best = ind; bestM = m; }
             }
         }
@@ -434,6 +447,7 @@ public class CAItems {
             bestM.reapplyIndustries();
             CABudget.charge(s, 0f, fee, 0f);
             idleAt = -99f;
+            d.swapAt().put(holdKey(bestM.getId(), best.getId(), old.getId()), Global.getSector().getClock().getTimestamp());   // 0.3.20.6
             CALog.did(bestM.getName() + ": Swapped " + spec.getName() + " into " + best.getCurrentName() + (fee > 0 ? " (" + Misc.getDGSCredits(fee) + " fee)" : "")
                     + CAStores.from(bestM, data.getId()) + ". " + oldName + " moved to Autopilot Storage.");
             return true;

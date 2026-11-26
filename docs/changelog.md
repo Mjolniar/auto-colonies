@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.20.6 - 2026-11-25
+
+- Colony items: Fixed the Turing Engine and the Auroran Dimensional Nanoforge swapping places in a Macro-Industrial Complex every day, with a 5,000¢ fee each time. A swap where either item adds no output Autopilot can count compares the two items' flat values.
+- Colony items: An item swapped out of a building does not go back into that building for a year.
+
 ## 0.3.20.5 - 2026-11-25
 
 - Diagnostics: A placement step over 20 ms writes one line with the time of each part (items, cores, Omega, administrators) and the part that acted. Once a day at most.

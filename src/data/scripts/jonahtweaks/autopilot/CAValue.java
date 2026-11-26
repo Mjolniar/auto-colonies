@@ -1081,6 +1081,22 @@ public final class CAValue {
         return itemMoney(m, money, profile) + quality(itemId, flat);
     }
 
+    /**
+     * 0.3.20.6: {now, then} for a swap of itemId in for old in ind. When either item adds no output AC can count (units empty,
+     * such as Ashes of the Domain's Turing Engine, a +0 boost that adds its own Advanced Components line), both are at their flat
+     * score. The output side's worth on the building's live lines depended on which item was in, so each beat the other in turn.
+     */
+    public static float[] swapScores(MarketAPI m, Industry ind, String itemId, InstallableItemEffect effect, float flatThen, String old,
+                                     InstallableItemEffect oldEffect, float flatNow, CAData.Profile profile, Map<String, Integer> deficit) {
+        if (flatSwap(itemUnits(ind, itemId, effect), itemUnits(ind, old, oldEffect)))
+            return new float[] { flatItemCredits(flatNow), flatItemCredits(flatThen) };
+        return new float[] { itemInstalled(m, ind, old, oldEffect, flatNow, profile, deficit),
+                itemSwap(m, ind, itemId, effect, flatThen, old, oldEffect, profile, deficit) };
+    }
+
+    /** 0.3.20.6: a swap is scored flat when either item's units are empty. Pure. */
+    static boolean flatSwap(Map<String, Integer> units, Map<String, Integer> was) { return units.isEmpty() || was.isEmpty(); }
+
     /** Credits a month the building's lines change by when each goes up by plus and down by minus units (lineWorth on its live line). */
     static float lineChange(MarketAPI m, Industry ind, Map<String, Integer> plus, Map<String, Integer> minus, Map<String, Integer> deficit) {
         Set<String> goods = new LinkedHashSet<String>(plus.keySet());
