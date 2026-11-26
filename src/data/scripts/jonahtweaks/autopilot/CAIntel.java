@@ -232,6 +232,9 @@ public class CAIntel extends BaseIntelPlugin {
             // 0.3.2.0 (Batch A): the production floors: each one met or how far off, the producers planned, where the parts are
             try { CAFloors.render(t); }
             catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "production floor lines failed", e); }
+            // 0.3.23.0: the needs ledger: what's short after the colonies, the commitments and the trade contracts
+            try { CANeeds.render(t); }
+            catch (Throwable e) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "needs lines failed", e); }
 
             // 0.3.3.0: every decision waiting, of every kind, grouped by colony (CAApprovals); the summary pop-up shows the same list
             List<CAApprovals.Item> waiting = CAApprovals.collect();

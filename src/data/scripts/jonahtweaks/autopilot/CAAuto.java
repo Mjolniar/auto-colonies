@@ -138,6 +138,7 @@ public class CAAuto {
         CAStep.run("endgame economy step", () -> CAEndgame.daily(s));   // after spending freely is known: the endgame economy starts or ends
         CAStep.run("special project supply step", () -> CAProjects.update());   // before any plan is read: a special project's producers are plan steps
         CAStep.run("production floors step", () -> CAFloors.update());   // 0.3.2.0: before any plan is read: the floors, their producers as plan steps, the parts advice
+        CAStep.run("needs ledger step", () -> CANeeds.update());   // 0.3.23.0 (plan 2026-11-25, batch 2): what's short, read only
         // the same lists as 0.2.45 made after the build pass (nothing in it changes a colony's mode or siege). 0.3.0.0 (A1): in a
         // guarded step, so a throw here can't skip the day; if it does throw, the lists stay empty and nothing is built today
         final List<MarketAPI> allAuto = new ArrayList<MarketAPI>(), auto = new ArrayList<MarketAPI>();

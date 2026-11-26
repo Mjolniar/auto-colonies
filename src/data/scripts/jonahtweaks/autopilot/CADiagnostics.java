@@ -433,6 +433,7 @@ public class CADiagnostics {
                 try { root.put("economy", economy()); } catch (Throwable t) { LOG.warn(TAG + "economy report failed", t); }
                 try { root.put("duplicates", duplicates()); } catch (Throwable t) { LOG.warn(TAG + "duplicates report failed", t); }
                 try { root.put("loopGuard", CAUndo.json()); } catch (Throwable t) { LOG.warn(TAG + "loop guard report failed", t); }
+                try { root.put("needs", CANeeds.json()); } catch (Throwable t) { LOG.warn(TAG + "needs report failed", t); }   // 0.3.23.0
             }
             return root;
         }

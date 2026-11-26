@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.23.0 - 2026-11-25
+
+- Needs: Added a Needs section to the Budget panel. For each short good it shows what your colonies make and use, what restorations, wonder sites, special projects and production orders ask each month, and what sales contracts take. With Theory of Toolbox the numbers are its cargo units.
+- Needs: Autopilot's choices do not use the list yet. It is shown on the panel, in the diagnostics report, and in one starsector.log line a month.
+- Console: Added ac_needs.
+
 ## 0.3.22.0 - 2026-11-25
 
 - Loop guard: Added a guard against repeated changes. A terraforming project, from the plan or from surplus terraforming, does not make the same change at a colony twice within a year. An item Autopilot took out of a building does not go back into that building within a year.
