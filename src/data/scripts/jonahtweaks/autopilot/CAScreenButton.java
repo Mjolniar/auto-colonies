@@ -123,6 +123,7 @@ public class CAScreenButton implements EveryFrameScript {
     /** 0.3.0.0 (07 section 3): the session's diagnostics counters and the dialog lookup, cleared on load (CAReset.onLoad). */
     public static void reset() {
         noSpotLogged = false; placements = 0; reports = 0; lastReport = null; reported.clear();
+        tabTimed = wholeTimed = slowTimed = false;   // 0.3.20.5
         linkState = null; dialogNew = dialogShow = null;
     }
 
@@ -186,11 +187,11 @@ public class CAScreenButton implements EveryFrameScript {
         for (Object core : cores) {
             if (!(core instanceof UIPanelAPI)) continue;
             Object tab = call(core, "getCurrentTab");
-            Screen s = search(core, tab instanceof UIPanelAPI ? (UIPanelAPI) tab : (UIPanelAPI) core);
+            Screen s = timed(core, tab instanceof UIPanelAPI ? (UIPanelAPI) tab : (UIPanelAPI) core, !(tab instanceof UIPanelAPI), coreTab);
             if (!(tab instanceof UIPanelAPI)) s.note = "no current tab, searched the whole core UI";
             else if (s.grid == null && tab != core) {
                 // a colony opened from the colonies list, or while docked, can sit outside the current tab
-                Screen whole = search(core, (UIPanelAPI) core);
+                Screen whole = timed(core, (UIPanelAPI) core, true, coreTab);
                 whole.note = "not in the current tab " + tab.getClass().getName() + ", searched the whole core UI";
                 if (whole.grid != null) s = whole;
             }
@@ -207,6 +208,25 @@ public class CAScreenButton implements EveryFrameScript {
         }
         report(ui, dialog, best);
         return best == null || best.grid == null || best.market == null || !best.market.isPlayerOwned() ? null : best;
+    }
+
+    /** 0.3.20.5: a search over SEARCH_LOG_MS is logged once a session; so are the first search of the current tab and of the whole core UI. */
+    static final float SEARCH_LOG_MS = 4f;
+    static boolean tabTimed, wholeTimed, slowTimed;
+
+    /** search(), timed: the first of each kind and the first slow one go to starsector.log, with what was searched. */
+    Screen timed(Object core, UIPanelAPI root, boolean whole, com.fs.starfarer.api.campaign.CoreUITabId coreTab) throws Exception {
+        long t0 = System.nanoTime();
+        Screen s = search(core, root);
+        float ms = (System.nanoTime() - t0) / 1000000f;
+        boolean first = whole ? !wholeTimed : !tabTimed, slow = ms > SEARCH_LOG_MS && !slowTimed;
+        if (first || slow) {
+            if (whole) wholeTimed = true; else tabTimed = true;
+            if (ms > SEARCH_LOG_MS) slowTimed = true;
+            CADiagnostics.LOG.info(CADiagnostics.TAG + "colony screen search of the " + (whole ? "whole core UI" : "current tab") + " on " + coreTab
+                    + ": " + CAPerf.ms(ms) + " ms, " + s.all.size() + " components, building grid " + (s.grid != null ? "found" : "not found"));
+        }
+        return s;
     }
 
     /** The core tabs a colony's screen can show under: Command's colonies, or the docked market screen. */

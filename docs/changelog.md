@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.20.5 - 2026-11-25
+
+- Diagnostics: A placement step over 20 ms writes one line with the time of each part (items, cores, Omega, administrators) and the part that acted. Once a day at most.
+- Diagnostics: The colony screen search writes its time once a session for the current tab and the whole core UI, and once for the first search over 4 ms.
+
 ## 0.3.20.4 - 2026-11-25
 
 - Build card: Fixed the building picture showing as a gray box with Fast Rendering. The picture draws the same way as the Story page pictures.

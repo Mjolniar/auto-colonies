@@ -185,26 +185,63 @@ public class CAItems {
 
     /** One placement per day at most, so each move is visible in the log. Only among the given Auto colonies (those not under siege). */
     public static void run(List<MarketAPI> markets) {
+        Laps l = new Laps();   // 0.3.20.5
+        try { runParts(markets, l); }
+        finally { try { l.done(); } catch (Throwable ignored) { } }
+    }
+
+    /** 0.3.20.5: the placement step over PART_LOG_MS writes one line with its parts, once a day at most. */
+    static final float PART_LOG_MS = 20f;
+    static int partLoggedDay = Integer.MIN_VALUE;
+
+    /** 0.3.20.5: the time of each part of one placement step, and the part that acted. */
+    static final class Laps {
+        final long t0 = System.nanoTime();
+        long at = t0;
+        final StringBuilder parts = new StringBuilder();
+        String acted;
+
+        /** The time since the last lap goes to name (over 0.5 ms); did passes through. */
+        boolean lap(String name, boolean did) {
+            long now = System.nanoTime();
+            float ms = (now - at) / 1000000f;
+            at = now;
+            if (ms >= 0.5f) parts.append(parts.length() > 0 ? ", " : "").append(name).append(' ').append(CAPerf.ms(ms)).append(" ms");
+            if (did) acted = name;
+            return did;
+        }
+
+        void done() {
+            float ms = (System.nanoTime() - t0) / 1000000f;
+            int day = CAEngine.today();
+            if (ms <= PART_LOG_MS || day == partLoggedDay) return;
+            partLoggedDay = day;
+            CADiagnostics.LOG.info(CADiagnostics.TAG + "placement took " + CAPerf.ms(ms) + " ms: " + (parts.length() > 0 ? parts.toString() : "no part over 0.5 ms")
+                    + (acted != null ? "; acted: " + acted : "; no action"));
+        }
+    }
+
+    static void runParts(List<MarketAPI> markets, Laps l) {
         CAData d = CAData.get();
         CASettings s = d.settings;
         if (markets.isEmpty()) return;
         // 0.3.9.6 (C3): over the colony limit, administrators first (every governed colony loses stability meanwhile)
         if (adminsNeededNow(d) > 0) {
-            if (s.adminOptimal && assignAdmin(d, markets)) return;
-            if (s.adminHiring && hireAdmin(d, s, markets)) return;
+            if (s.adminOptimal && l.lap("administrators", assignAdmin(d, markets))) return;
+            if (s.adminHiring && l.lap("hiring", hireAdmin(d, s, markets))) return;
         }
         boolean items = CASync.has("items");   // 0.3.6.0 story mode: Colony items
-        if (items && pullLamp(d, markets)) return;
-        if (items && pullPollutingForge(d, markets)) return;
-        if (items && placeItem(d, s, markets)) return;
-        if (items && !s.disableStabilizers && s.allowRemovals && convertFuel(d, s, markets)) return;   // replaces a building, so only with Allow removals
-        if (s.useAICores && placeCore(d, s, markets)) return;
+        if (items && l.lap("lamp", pullLamp(d, markets))) return;
+        if (items && l.lap("polluting forge", pullPollutingForge(d, markets))) return;
+        if (items && l.lap("items", placeItem(d, s, markets))) return;
+        if (items && !s.disableStabilizers && s.allowRemovals && l.lap("fuel", convertFuel(d, s, markets))) return;   // replaces a building, so only with Allow removals
+        if (s.useAICores && l.lap("cores", placeCore(d, s, markets))) return;
         boolean quiet = CALowProfile.on();   // Low profile places no Omega or IX cores (0.2.43.0)
         boolean omega = CASync.has("omega");   // 0.3.6.0 story mode: Omega and IX cores
-        if (omega && s.useAICores && !quiet && CAOmega.run(d, s, markets)) return;   // Omega Core Everywhere / Astral Ascension Renewed (0.2.38.0)
-        if (omega && s.useAICores && !quiet && CAPanopticon.run(d, s, markets)) return;   // Emergent Threats: IX Revival's Panopticon cores (0.2.39.3)
-        if (s.adminOptimal && (assignAdmin(d, markets) || moveAdmin(markets))) return;
-        if (s.adminHiring) hireAdmin(d, s, markets);
+        if (omega && s.useAICores && !quiet && l.lap("Omega", CAOmega.run(d, s, markets))) return;   // Omega Core Everywhere / Astral Ascension Renewed (0.2.38.0)
+        if (omega && s.useAICores && !quiet && l.lap("IX", CAPanopticon.run(d, s, markets))) return;   // Emergent Threats: IX Revival's Panopticon cores (0.2.39.3)
+        if (s.adminOptimal && l.lap("administrators", assignAdmin(d, markets) || moveAdmin(markets))) return;
+        if (s.adminHiring) l.lap("hiring", hireAdmin(d, s, markets));
         else if (adminsUncovered(d) > 0 && CALog.once("admin:need:off:" + adminsNeeded(d)))   // 0.3.0.0 (WS-D): not for an expedition's own administrator
             CALog.advise("Administrators: needed for " + limitText(adminsNeeded(d), expansionsComing(d)) + ". Administrator hiring: off. "
                     + "Hire one, or set Administrators to Hire and place.");   // 0.3.8.6: the Settings rows' names
