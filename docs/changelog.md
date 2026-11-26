@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.30.1 - 2026-11-26
+
+- Item orders: An Alpha Core order compares its cost with the credits a month the core adds. A research building's first-in-line bonus no longer counts as income.
+- Production floors: A floor producer is not planned as an upgrade of a building that gets a planned or formed world's +1 output.
+
 ## 0.3.30.0 - 2026-11-26
 
 - AI cores: Core placement counts goods that are short after restorations, special projects, wonder sites and orders. A core that adds to one of them counts as shortage relief. Omega core placement does the same.

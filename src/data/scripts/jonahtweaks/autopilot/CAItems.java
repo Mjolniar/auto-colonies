@@ -1163,7 +1163,8 @@ public class CAItems {
                 if (comingSkip(comingTier.contains(to.m.getId() + "|" + k), CAStores.of(to.m).getCommodityQuantity(CORES[k]))) continue;
                 int extra = points(k) - (to.cur >= 0 ? points(to.cur) : 0);
                 float gain = to.rank(k) - (to.cur >= 0 ? to.rank(to.cur) : 0f);
-                if (k == 0 && have[0] == 0 && extra <= room && gain > want) { want = gain; wantAt = to.m.getName() + "'s " + to.ind.getCurrentName(); }
+                float worth = to.net[k] - (to.cur >= 0 ? to.net[to.cur] : 0f);   // 0.3.30.1: credits a month, without rank's research-first bonus
+                if (k == 0 && have[0] == 0 && extra <= room && worth > want) { want = worth; wantAt = to.m.getName() + "'s " + to.ind.getCurrentName(); }
                 if (have[k] > 0) {
                     if (extra <= room && gain > bestGain) { bestGain = gain; bestTo = to; bestFrom = null; bestK = k; }
                     continue;

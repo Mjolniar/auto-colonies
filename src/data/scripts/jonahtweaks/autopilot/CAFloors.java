@@ -806,6 +806,8 @@ public class CAFloors {
         final Set<String> has = new HashSet<String>();
         /** 0.3.2.1: its Rogue Planets conditions (CARogue.hostForbids, hostBonus); empty without the mod. */
         final Set<String> conds = new HashSet<String>();
+        /** 0.3.30.1: buildings its plan doesn't upgrade (a planned or formed world's +1 buildings, CAPlan.Plan.keep). */
+        final Set<String> kept = new HashSet<String>();
     }
 
     /**
@@ -819,7 +821,7 @@ public class CAFloors {
         for (Host h : hosts) {
             if (h.has.contains(building) || claimed.contains(h.id)) continue;
             boolean upgrade = base != null;
-            if (upgrade && !h.has.contains(base)) continue;
+            if (upgrade && (!h.has.contains(base) || h.kept.contains(base))) continue;   // 0.3.30.1: not a world's +1 building (CAPlan.Plan.keep)
             if (!upgrade && h.size < CATuning.FLOOR_HULL_MIN_SIZE) continue;
             if (!upgrade && h.freeSlots <= 0 && !makeRoom) continue;
             // 0.3.2.1: Rogue Planets: never where a condition forbids it (Fragile Biosphere, the reactor pair); its production conditions rank first
@@ -866,6 +868,7 @@ public class CAFloors {
             h.freeSlots = Math.max(0, CABuild.freeSlots(m));
             for (Industry ind : m.getIndustries()) h.has.add(ind.getId());
             for (String l : c.locks) h.has.add(l);   // a locked slot's building stays: nothing replaces it
+            try { h.kept.addAll(CAPlan.own(m, c.profile).keep); } catch (Throwable ignored) { }   // 0.3.30.1: the colony's own plan, memoized for the day
             if (CARogue.on()) h.conds.addAll(CARogue.conds(m));   // 0.3.2.1
             hs.add(h);
         }
