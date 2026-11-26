@@ -62,9 +62,6 @@ public final class CAWarPage {
     static final String[] GOALS = {"Leave alone", "Strike back", "Hold down", "Conquer", "Obliterate"};
     static final int[] GOAL_STANCE = {CAStance.NEUTRAL, CAStance.AUTO, CAStance.RIVAL, CAStance.ENEMY, CAStance.DESTROY};
     static final int[] GOAL_LEVEL = {CAWarPolicy.DEFEND, CAWarPolicy.RETALIATE, CAWarPolicy.HOLD, CAWarPolicy.CONQUER, CAWarPolicy.SCORCHED};
-    /** One line each: what the goal does. */
-    static final String[] GOAL_WHAT = {"No attacks; your fleets only defend.", "Raids back at whoever attacks you.",
-            "Raids and blockades to keep them weak.", "Invades their colonies to take them.", "Invades, then bombards their capital once you authorize it."};
 
     /** Pure: the goal a stance stands for (Ally, Friendly and Neutral are Leave alone). */
     static int goalOf(int stance) {
@@ -134,7 +131,7 @@ public final class CAWarPage {
         Color hl = Misc.getHighlightColor(), gray = Misc.getGrayColor(), bad = Misc.getNegativeHighlightColor();
         int level = CAWarPolicy.clamp(s.warLevel);
         t.addSectionHeading("Your war", Alignment.MID, 0f);
-        t.addPara("The most you allow. Picking a goal on the right raises it when the goal needs more.", gray, 6f);
+        t.addPara("The most you allow. A goal on the right raises it when needed.", gray, 6f);
         choices(t, CAWarPolicy.LEVEL_NAMES, "level", "", level, colW, 3, 4f);
         t.addPara(levelWhat(level, s.warRetake()), hl, 4f);   // plain text: shown as is
         if (CALowProfile.on() && level > CAWarPolicy.DEFEND) t.addPara("Low profile holds everyone at Defend.", bad, 4f);
@@ -171,7 +168,7 @@ public final class CAWarPage {
                 String.valueOf(Math.round(now)), String.valueOf(Math.round(CAWarPolicy.INFAMY_LINE)), String.valueOf(Math.round(after)));
         t.addTooltipToPrevious(CAFactionsPage.tip(new String[]{"A coalition forms against you at 100 infamy and ends under 75. Infamy drops 3 a month."}),
                 TooltipMakerAPI.TooltipLocation.BELOW);
-        t.addPara("Money: %s left in the budget and %s surplus. Raids and retakes come out of the budget, invasions and bombardment out of the surplus.",
+        t.addPara("Money: %s budget left, %s surplus. Raids use the budget, invasions and bombardment the surplus.",
                 4f, hl, Misc.getDGSCredits(CABudget.available(s)), Misc.getDGSCredits(CASurplus.amount(s)));
         if (CAWar.summary != null) t.addPara("Today: " + CAWar.summary, gray, 4f);   // shown as is
     }

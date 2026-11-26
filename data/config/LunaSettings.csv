@@ -188,6 +188,7 @@ ca_ffuel,Fuel floor,Radio,No shortage,"Off, No shortage, Fleet use",Target fuel 
 ca_fmoney,Floors at Money colonies,Boolean,false,,Floors are extended to colonies with the Money goal.,,,Advanced
 ca_fneeds,Floor builds first,Boolean,true,,Floor builds are prioritized over all others.,,,Advanced
 ca_froom,Make room,Radio,Off,"Off, Ask first, Auto","A floor producer may replace the weakest income industry, and a producer for a good you don't make may replace a duplicate.",,,Advanced
+ca_moves,Moves on screen,Radio,Monthly summary,"Monthly summary, Every move","Storage logistics and AI core moves show as one line each a month, or every move as it happens.",,,Advanced
 ca_pline,Production line,Radio,From 500k/month,"From 500k/month, From 1M/month, From 2M/month, From 250k/month, Off","Once your colonies make this much a month, goods they're short of get a producer even when it doesn't pay for itself, and Make room can swap out an industry another colony also has for it.",,,Advanced
 ca_ftaper,Money taper,Radio,Gentle,"Off, Gentle, Strong",Money is weighted less by the planner at high income.,,,Advanced
 ca_ftlow,Taper from,Int,300000,,"Used by Gentle, and held 100,000 below Taper top from. Accepted range is 100,000 to 9,900,000, in steps of 100,000.",100000,9900000,Advanced

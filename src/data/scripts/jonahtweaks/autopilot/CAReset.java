@@ -117,6 +117,7 @@ public class CAReset {
         failed += run("loop guard", CAUndo::reset);   // 0.3.22.0: the repeat watch and its log lines, per session
         failed += run("needs ledger", CANeeds::reset);   // 0.3.23.0
         failed += run("stalled restorations", CACommit::reset);   // 0.3.26.0
+        failed += run("move summary", () -> CALog.DIGEST.clear());   // 0.3.27.0
         failed += run("make room lines", () -> { CAPlanner.NO_ROOM_LOGGED.clear(); CAFloors.noRoom = null; });   // 0.3.25.1
         failed += run("wonders", () -> { CAWonders.summary = null; CAWonders.broken = false; });   // 0.3.9.7 (G11): broken too
         if (on("IndEvo")) failed += run("courier port", () -> CACourier.refused.clear());

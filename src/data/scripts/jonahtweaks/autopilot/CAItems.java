@@ -1202,8 +1202,8 @@ public class CAItems {
                 : coreName(bestK) + " into " + bestTo.ind.getCurrentName();
         String gainText = first ? " (-" + Misc.getDGSCredits(bestTo.net[0]) + "/month, research buildings first)" : " (+" + Misc.getDGSCredits(real) + "/month)";
         // 0.3.1.0: one line for a core move: where it came from and the shipping are here, the shipping and arrival lines are thinking
-        CALog.did(where + what + gainText + (bestFrom == null ? CAStores.from(bestTo.m, coreId) : "") + "."
-                + (bestFrom == null && old >= 0 ? " " + coreName(old) + " to Autopilot Storage." : ""));
+        CALog.digest("AI cores", CANeeds.name(coreId) + " placed", where + what + gainText + (bestFrom == null ? CAStores.from(bestTo.m, coreId) : "") + "."
+                + (bestFrom == null && old >= 0 ? " " + coreName(old) + " to Autopilot Storage." : ""));   // 0.3.27.0: a monthly summary unless Every move
         CALog.quiet(where + aiPoints(bestTo.m) + " inspection points" + (lim == Integer.MAX_VALUE ? "" : " of " + lim));   // 0.3.0.9: no ping, the move line is on screen
         return true;
     }

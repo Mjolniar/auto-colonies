@@ -246,6 +246,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | Fuel floor | Off, No shortage, Fleet use | No shortage | It wants this much fuel production. |
 | Floors at Money colonies | On, Off | Off | Floors also apply at colonies with the Money goal. |
 | Floor builds first | On, Off | On | Floor builds rank ahead of other builds. |
+| Moves on screen | Monthly summary, Every move | Monthly summary | Storage logistics and AI core moves show as one line each a month, or every move as it happens. starsector.log always has every move. |
 | Production line | From 500,000/month, From 1,000,000/month, From 2,000,000/month, From 250,000/month, Off | From 500,000/month | Once your colonies make this much a month, goods they're short of get a producer even when it doesn't pay for itself, and Make room can swap out an industry another colony also has for it. It's at most one swap a month per colony and one a day overall. |
 | Make room | Off, Ask first, Auto | Empire mode | A floor producer can replace the weakest income industry. |
 | Money taper | Off, Gentle, Strong | Gentle | Money counts for less in the planner at high income. |

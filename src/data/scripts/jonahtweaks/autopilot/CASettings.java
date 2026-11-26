@@ -129,6 +129,13 @@ public class CASettings {
     public int productionLine = 0;
     public static final String[] PRODUCTION_LINE_NAMES = {"From 500,000/month", "From 1,000,000/month", "From 2,000,000/month", "From 250,000/month", "Off"};
     public static final float[] PRODUCTION_LINE_NET = {500000f, 1000000f, 2000000f, 250000f, 0f};
+    /**
+     * 0.3.27.0: Moves on screen (MOVE_LINE_NAMES): 0 Monthly summary (storage logistics and AI core moves go to starsector.log,
+     * and one line each at the month's end, CALog.digest), 1 Every move. 0 in every save.
+     */
+    public int moveLines = 0;
+    public static final String[] MOVE_LINE_NAMES = {"Monthly summary", "Every move"};
+    public boolean moveLinesEach() { return moveLines == 1; }
     /** 0.3.24.0: the Production line's colony net a month; 0 Off. */
     public float productionLineNet() { return PRODUCTION_LINE_NET[Math.max(0, Math.min(PRODUCTION_LINE_NET.length - 1, productionLine))]; }
     /** 0.3.20.3: days between refits of one station after its first fit; 0 Off. */

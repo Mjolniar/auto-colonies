@@ -349,8 +349,8 @@ public class CALogistics {
         l.sent = Global.getSector().getClock().getTimestamp();
         CABudget.charge(s, 0f, fee, 0f);   // takes the fee from your credits
         d.loads().add(l);
-        CALog.did("Storage logistics: " + describe(l) + " from " + l.fromName + "'s Storage to " + l.toName + " (" + l.why + "). "
-                + Math.round(l.days) + " days, " + Misc.getDGSCredits(fee) + ".");
+        CALog.digest("Storage logistics", "loads sent", "Storage logistics: " + describe(l) + " from " + l.fromName + "'s Storage to " + l.toName + " (" + l.why + "). "
+                + Math.round(l.days) + " days, " + Misc.getDGSCredits(fee) + ".");   // 0.3.27.0: a monthly summary unless Every move
     }
 
     static String describe(Load l) {
@@ -416,7 +416,7 @@ public class CALogistics {
                 // 0.3.11.5: a load for RePA research goes into the hub's Reverse Engineering Storage (what it can still research)
                 if (l.sub != null && to.getId().equals(l.to) && CARepa.deliver(to, l)) {
                     it.remove();
-                    CALog.did("Storage logistics: " + what + " delivered to " + to.getName() + "'s Reverse Engineering Storage.");
+                    CALog.digest("Storage logistics", "delivered", "Storage logistics: " + what + " delivered to " + to.getName() + "'s Reverse Engineering Storage.");
                     continue;
                 }
                 if (st.getMothballedShips() == null) st.initMothballedShips(Factions.PLAYER);
@@ -427,7 +427,7 @@ public class CALogistics {
                 }
                 st.addAll(l.cargo);
                 it.remove();
-                CALog.did("Storage logistics: " + what + " delivered to " + to.getName() + "'s Storage" + (to.getId().equals(l.to) ? "" : " (" + l.toName + "'s Storage was gone)") + ".");
+                CALog.digest("Storage logistics", "delivered", "Storage logistics: " + what + " delivered to " + to.getName() + "'s Storage" + (to.getId().equals(l.to) ? "" : " (" + l.toName + "'s Storage was gone)") + ".");
             } catch (Throwable t) {
                 if (CALog.once("logifail:" + (l == null ? "?" : l.from + ":" + l.to + ":" + l.sent))) CADiagnostics.LOG.warn(CADiagnostics.TAG + "storage logistics: a load failed to arrive; skipped", t);
             }

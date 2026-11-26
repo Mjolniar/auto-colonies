@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.27.0 - 2026-11-26
+
+- War page: Rebuilt in two columns. Your war on the left: the War level as buttons, switches for retaking lost colonies, picking a rival, going past the coalition line and bombardment, Stand down and Recall all, then fleet points, infamy and money. Factions on the right: every faction with markets, each with five goal buttons: Leave alone, Strike back, Hold down, Conquer, Obliterate.
+- War page: Picking a goal sets that faction's stance and raises the War level to what the goal needs. A faction held lower says what holds it.
+- Moves on screen: Added the setting next to Production line (Monthly summary by default, or Every move). With Monthly summary, storage logistics and AI core moves go to starsector.log and show as one line each at the month's end.
+
 ## 0.3.26.1 - 2026-11-26
 
 - Diplomacy: The war line says which setting holds a faction back. With War level Retaliate and the stance Destroy it reads "your War level holds Destroy there, and Destroy allows up to Scorched".

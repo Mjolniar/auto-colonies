@@ -3,7 +3,9 @@ package data.scripts.jonahtweaks.autopilot;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.util.Misc;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -336,8 +338,37 @@ public class CALog {
      * `spent`, `fees` and `upkeepAdded` are last month's budget totals read before the reset (CABudget.rollMonth); below 0,
      * the ledger's own sums stand in. Clears the ledger for the new month. Log only, never on screen.
      */
+    /** 0.3.27.0: this month's summarized moves, category -> item -> count (CASettings.moveLines). */
+    static final Map<String, Map<String, Integer>> DIGEST = new LinkedHashMap<String, Map<String, Integer>>();
+
+    /** 0.3.27.0: an action line that goes on screen as is with Every move, else to starsector.log and the month's summary. */
+    public static void digest(String category, String item, String text) {
+        if (whatIf()) return;
+        if (CAData.settings().moveLinesEach()) { did(text); return; }
+        quiet(text);
+        Map<String, Integer> m = DIGEST.get(category);
+        if (m == null) { m = new LinkedHashMap<String, Integer>(); DIGEST.put(category, m); }
+        Integer n = m.get(item);
+        m.put(item, n == null ? 1 : n + 1);
+    }
+
+    /** Pure (0.3.27.0): a category's summary line ("AI cores: 6 this month (4 Omega Core placed, 2 Alpha Core placed)."). */
+    static String digestLine(String category, Map<String, Integer> items) {
+        int total = 0;
+        List<String> parts = new ArrayList<String>();
+        for (Map.Entry<String, Integer> e : items.entrySet()) { total += e.getValue(); parts.add(e.getValue() + " " + e.getKey()); }
+        return category + ": " + total + " this month (" + CAContracts.join(parts) + ").";
+    }
+
+    /** 0.3.27.0: the month's summary lines, then a new month. */
+    static void flushDigest() {
+        for (Map.Entry<String, Map<String, Integer>> e : DIGEST.entrySet()) if (!e.getValue().isEmpty()) did(digestLine(e.getKey(), e.getValue()));
+        DIGEST.clear();
+    }
+
     public static void colonyMonth(float spent, float fees, float upkeepAdded) {
         if (whatIf()) return;
+        try { flushDigest(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "monthly move summary failed", t); }
         Map<String, Float> l = null;
         try {
             CAData d = CAData.get();
