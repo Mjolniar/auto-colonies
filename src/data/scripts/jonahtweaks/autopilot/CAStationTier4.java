@@ -92,6 +92,8 @@ public final class CAStationTier4 {
             a.kind = upgrade ? CAAction.Kind.UPGRADE : CAAction.Kind.BUILD; a.source = SOURCE; a.market = m; a.marketId = m.getId();
             a.id = pick; a.name = sp.getName(); a.why = "a tier 4 station";
             a.cost = cost; a.fee = CABudget.constructionFee(s, cost); a.days = days; a.upkeep = 0f;
+            // 0.3.35.0: the Stella Castellum's upkeep (size 9) over the star fortress it replaces, 8,500 a month at no multiplier
+            if (upgrade) try { a.upkeep = Math.max(0f, CAEngine.baseUpkeep(m, sp) - CAEngine.baseUpkeep(m, st.getSpec())); } catch (Throwable ignored) { }
             a.rapid = CABudget.rapidFee(cost);
             a.npv = CAValue.npv(0f, CAHorizon.months(), days, cost, a.fee);
             a.byRule = true;

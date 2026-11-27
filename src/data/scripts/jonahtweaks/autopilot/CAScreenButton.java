@@ -120,10 +120,13 @@ public class CAScreenButton implements EveryFrameScript {
     /** For the Diagnostics report: "ok", "not checked yet", or why it's off. */
     static String linkText() { return linkState == null ? "not checked yet" : linkState.isEmpty() ? "ok" : "off: " + linkState; }
 
-    /** 0.3.0.0 (07 section 3): the session's diagnostics counters and the dialog lookup, cleared on load (CAReset.onLoad). */
+    /**
+     * 0.3.0.0 (07 section 3): the dialog lookup, cleared on load (CAReset.onLoad). 0.3.34.2: the log-once counters
+     * (noSpotLogged, placements, reports, reported, the search timings) last the game session, as CADiagnostics' lines do,
+     * so a load doesn't write the same colony screen lines again.
+     */
     public static void reset() {
-        noSpotLogged = false; placements = 0; reports = 0; lastReport = null; reported.clear();
-        tabTimed = wholeTimed = slowTimed = false;   // 0.3.20.5
+        lastReport = null;
         linkState = null; dialogNew = dialogShow = null;
     }
 

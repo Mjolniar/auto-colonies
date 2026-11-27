@@ -1034,9 +1034,11 @@ public final class CAValue {
         else if ("mantle_bore".equals(itemId)) { up = ItemEffectsRepo.MANTLE_BORE_MINING_BONUS; only = ItemEffectsRepo.MANTLE_BORE_COMMODITIES; }
         else if ("plasma_dynamo".equals(itemId)) { up = ItemEffectsRepo.PLASMA_DYNAMO_MINING_BONUS; only = ItemEffectsRepo.PLASMA_DYNAMO_COMMODITIES; }
         if (up <= 0) return out;
+        // 0.3.35.0: Theory of Toolbox multiplies a farm's whole food line (CAModContent.farmFactor), the item's units included
+        float farm = CAModContent.farm(ind, ind.getId()) ? CAModContent.farmFactor(ind.getMarket()) : 1f;
         for (MutableCommodityQuantity q : ind.getAllSupply()) {
             if (q.getQuantity().getModifiedInt() <= 0 || (only != null && !only.contains(q.getCommodityId()))) continue;
-            out.put(q.getCommodityId(), up);
+            out.put(q.getCommodityId(), "food".equals(q.getCommodityId()) && farm > 1f ? Math.round(up * farm) : up);
         }
         return out;
     }

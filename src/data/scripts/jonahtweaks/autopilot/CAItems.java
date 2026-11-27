@@ -56,13 +56,14 @@ public class CAItems {
         ITEM_VALUE.put("uaf_modular_purifier", 35f);      // +2 metals and transplutonics, no requirement
         ITEM_VALUE.put("uaf_garrison_transmitter", 15f);  // spaceport or waystation: +10% accessibility; ground defenses x1.3 (itemScore by building)
         // never worth installing: Rice Cooker's +1 food comes with +5 heavy machinery and transplutonics demand (a shortage cuts
-        // more than it adds); the Dimensional Stove only multiplies bonuses a bakery already has; the Access Router writes a
-        // modifier Tech-Mining never reads, so it does nothing in 0.98a
+        // more than it adds); the Dimensional Stove only multiplies bonuses a bakery already has. 0.3.35.0: the Access Router's
+        // tech_mining_mult is read by Tech-Mining (TechMining.getEffectivenessMult): valued in Tech-Mining only (CAModContent.routerScore)
         ITEM_VALUE.put("uaf_rice_cooker", 0f); ITEM_VALUE.put("uaf_dimen_microwave", 0f); ITEM_VALUE.put("uaf_access_router", 0f);
         // Vulpoids 0.10.3 (VulpoidModPlugin's item effects)
         ITEM_VALUE.put("midas_nanoforge", 90f);    // a pristine nanoforge's +3 output and +50% quality, eating ore instead of metals; pollutes like vanilla's
         ITEM_VALUE.put("lobster_bioforge", 40f);   // lobsters into the colony's storage every month; only in a Biotech Facility (itemScore)
         ITEM_VALUE.put("air_filter_core", 50f);    // Population & Infrastructure: suppresses pollution, extreme weather and toxic air (airFilterFits)
+        ITEM_VALUE.put("vulpoid_biofactory_broken", 35f);   // 0.3.35.0: Mutated Bioforge, +2 organs (15 x 2 + 5), habitable worlds only
     }
 
     /**
@@ -92,11 +93,14 @@ public class CAItems {
     /** itemScore in a given building: UAF's Garrison Transmitter does a third as much in ground defenses as in a port; never a forge it would pollute. */
     static float itemScore(String id, MarketAPI m, CAData.Profile p, Industry ind) {
         if (ind != null && wouldPollute(id, m, ind)) return 0f;
+        if (id.equals(CAModContent.ACCESS_ROUTER)) return CAModContent.routerScore(m, ind);   // 0.3.35.0: +35% Tech-Mining finds
         // Vulpoids: the Lobster Bioforge ends an Organ Farm's organs; a Biotech Facility keeps them (OrganFarm, 0.2.38.0)
         if (id.equals("lobster_bioforge") && (ind == null || !ind.getId().equals("biofacility"))) return 0f;
         float sc = itemScore(id, m, p);
         if (sc <= 0f || ind == null) return sc;
         if (id.equals("uaf_garrison_transmitter") && (ind.getId().equals("grounddefenses") || ind.getId().equals("heavybatteries"))) sc /= 3f;
+        // 0.3.35.0: Industrial Evolution's Transmitter in a Military Base or High Command only unlocks Interstellar Relays
+        if (id.equals("IndEvo_transmitter") && !ind.getId().equals("IndEvo_IntArray")) return 0f;
         return sc;
     }
     /** Items this placer never installs: Ashes of the Domain blanks the Coronal Hypershunt Tap's buildings (it builds receivers),
@@ -105,7 +109,10 @@ public class CAItems {
             "planetkiller", "jdp_lobster_eggs",   // JaydeePiracy: a story item, and +1 lobster for +8 Pather interest
             // Vulpoids' Vulpoid Bioforge starts its acceptance story: sector-wide vulpoid demand, then sanctions on the colony
             // holding it, a Knights of Ludd fleet and a saturation bombardment. Where it goes is your call (0.2.38.0)
-            "vulpoid_biofactory"));
+            "vulpoid_biofactory",
+            // 0.3.35.0: Industrial Evolution's Wormhole Anchor links the colony's Storage into one cargo with every Warphouse;
+            // What We Left Behind's Overgrown Nanoforge cuts ship and fleet quality to a quarter and doubles faction fleet size
+            "wormhole_anchor", "niko_MPC_overgrownNanoforgeItem"));
 
     /** True when Autopilot Storage holds an Industrial Evolution VPC chip. */
     public static boolean storageHasVPC() {
@@ -303,6 +310,7 @@ public class CAItems {
                         if (!effect.getUnmetRequirements(ind).isEmpty()) continue;
                     } catch (Throwable t) { CADiagnostics.quarantine(ind.getId(), "item requirement check", t); continue; }
                     float sc = CAValue.itemPlacement(m, ind, spec.getId(), effect, itemScore(spec.getId(), m, c.profile, ind), c.profile, deficit);   // 0.3.0.0 (B1 fix, 02 section 9): credits a month, what its units really add here
+                    if (sc > 0f) sc -= CAModContent.itemCrisisCost(m, ind);   // 0.3.35.0: Domain Phase Lab's mercenary crisis
                     if (sc <= 0f) continue;
                     out.add(new Placement(held, spec, data, m, ind, sc));
                     any = true;

@@ -481,6 +481,7 @@ public class CAEngine {
                 CAItems.idleBonus(m, inst, p, profile);   // a colony item waiting in Autopilot Storage that would go in it
                 if (!CADevelopment.adjust(m, p, inst, deficit)) continue;   // AotD management style
                 CAKadur.adjust(m, p, inst, deficit);   // 0.3.3.1: Kadur Remnant's Kadur Majority Faith and Virus Bombed on its output lines
+                CAModContent.adjust(m, p, inst, deficit);   // 0.3.35.0: Phase Lab, IX Revival, Yunru's Worlds and Toolbox conditions on its lines
                 CASynergies.score(syn, p);
                 upkeep(m, spec, null, p);
                 CARogue.score(rog, p);   // 0.3.2.1: what it starts, ends or changes in the colony's Rogue Planets conditions
@@ -821,7 +822,9 @@ public class CAEngine {
     static float baseUpkeep(MarketAPI m, IndustrySpecAPI spec) {
         // as BaseIndustry.applyIncomeAndUpkeep: the spec's upkeep (already in credits: the game multiplies the CSV value by 500
         // when it loads) times max(1, size - 2) times the colony's upkeep multiplier
-        float sizeMult = (CATasc.fixedUpkeep(spec.getId()) ? 1 : Math.max(1, upkeepSize(spec.getId(), m.getSize(), ruinsTier(m)) - 2)) * m.getUpkeepMult().getModifiedValue();
+        int us = stationUpkeepSize(spec.getId(), CAPlan.stationTier(spec));   // 0.3.35.0: mod stations (Imperium, Diable, Roider, KoL, ...)
+        if (us <= 0) us = upkeepSize(spec.getId(), m.getSize(), ruinsTier(m));
+        float sizeMult = (CATasc.fixedUpkeep(spec.getId()) ? 1 : Math.max(1, us - 2)) * m.getUpkeepMult().getModifiedValue();
         return spec.getUpkeep() * sizeMult * CADevelopment.upkeepMult(m, spec) * CARogue.upkeepMult(m, spec.getId())   // 0.3.2.1: Rogue Planets' upkeep conditions
                 * CAOddisz.curveUpkeep(m, spec);   // 0.3.10.5: Toolbox Economy Curves' upkeep growth
     }
@@ -835,11 +838,30 @@ public class CAEngine {
     static int upkeepSize(String id, int size, int ruins) {
         if (id == null) return size;
         if (id.startsWith("orbitalstation") || id.equals("patrolhq")) return 3;
+        if (id.equals("ix_surveillance_center") || id.equals("vice_surveillance_center") || id.equals("tw_tributary_port") || id.equals("ix_embassy_player")) return 3;   // 0.3.35.0: applyIncomeAndUpkeep(3)
         if (id.startsWith("battlestation") || id.equals("planetaryshield")) return 5;
         if (id.startsWith("starfortress")) return 7;
         if (id.equals("cryosanctum")) return 6;
         if (id.equals("techmining")) return Math.min(size, Math.max(1, ruins));
         return size;
+    }
+
+    /**
+     * Pure (0.3.35.0): the size a station's upkeep is charged at, by its tier tags, as OrbitalStation.apply does for every
+     * station class built on it (Interstellar Imperium, Diable Avionics, Roider Union, Knights of Ludd and others): 3, 5, 7.
+     * Imperium's Stella Castellum 9 (II_StellaCastellum.stationApplier). 0 for anything else (a star citadel keeps the colony's size).
+     */
+    static int stationUpkeepSize(String id, int tier) {
+        if ("ii_stellacastellum".equals(id)) return 9;
+        return tier == 1 ? 3 : tier == 2 ? 5 : tier == 3 ? 7 : 0;
+    }
+
+    /** A month of Tech-Mining finds at m, in credits (0.3.35.0: shared with UAF's Access Router in CAModContent). */
+    static float techMiningMonthly(MarketAPI m) {
+        int r = m.hasCondition("ruins_vast") ? 4 : m.hasCondition("ruins_extensive") ? 3 : m.hasCondition("ruins_widespread") ? 2 : 1;
+        float left = m.getMemoryWithoutUpdate().contains("$core_techMiningMult") ? m.getMemoryWithoutUpdate().getFloat("$core_techMiningMult") : 1f;   // ruins deplete 5% a month
+        // Slightly Better Tech-Mining: far richer finds, by colony size (0.2.38.0)
+        return (CAMods.sbtm() ? CAMods.sbtmMonthly(m, left) : 4000f * r * left) * CADevelopment.techMiningMult(m);   // x1.7 at an AotD Archeo-Site
     }
 
     /** The ruins' tier: 1 scattered, 2 widespread, 3 extensive, 4 vast. */
@@ -1013,10 +1035,7 @@ public class CAEngine {
             demand(p, "heavy_machinery", s - 3 - cut, deficit);
             demand(p, "drugs", s - cut, deficit);
         } else if (id.equals("techmining")) {
-            int r = m.hasCondition("ruins_vast") ? 4 : m.hasCondition("ruins_extensive") ? 3 : m.hasCondition("ruins_widespread") ? 2 : 1;
-            float left = m.getMemoryWithoutUpdate().contains("$core_techMiningMult") ? m.getMemoryWithoutUpdate().getFloat("$core_techMiningMult") : 1f;   // ruins deplete 5% a month
-            // Slightly Better Tech-Mining: far richer finds, by colony size (0.2.38.0)
-            float v = (CAMods.sbtm() ? CAMods.sbtmMonthly(m, left) : 4000f * r * left) * CADevelopment.techMiningMult(m);   // x1.7 at an AotD Archeo-Site
+            float v = techMiningMonthly(m);
             p.fx[0] += v;
             p.lines.add("Salvage from the ruins: about " + Misc.getDGSCredits(v) + " per month in value");
         } else if (id.equals("refining")) {

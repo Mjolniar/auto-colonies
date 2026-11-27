@@ -18,7 +18,7 @@ public class CAEstimates {
             "IndEvo_Warehouse", "IndEvo_ScrapYard", "IndEvo_SupCom", "IndEvo_pirateHaven", "IndEvo_AdAssem", "IndEvo_AdManuf", "IndEvo_ComForge",
             "IndEvo_LightPalace", "IndEvo_DarkPalace", "IndEvo_Memorial", "IndEvo_LeisureOrbitals", "IndEvo_Megachurch",
             "IndEvo_IcePalace", "IndEvo_LavaFortress", "IndEvo_CloudPainter",
-            "ix_surveillance_center",
+            "ix_surveillance_center", "tw_tributary_port",
             "tme_agricultural_laboratory", "tme_atmosphere_regulator", "tme_element_synthesizer", "tme_geomorphology_station",
             "tme_mineral_replicator", "tme_terrestrial_engine", "tme_unification_center",
             "aotd_monoculture_plots", "aotd_extractive_operation", "aotd_smelting", "aotd_light_production", "aotd_trade_outpost",
@@ -53,6 +53,9 @@ public class CAEstimates {
 
     static void note(CAEngine.Pick p, String text) { p.lines.add(text + " (estimated)"); }
 
+    /** Pure (0.3.35.0): the Tributary Port's income and accessibility bonus at this relation with Trinity Worlds (0 below 0.25). */
+    static float tributeBonus(float rel) { return rel >= 0.75f ? 0.15f : rel >= 0.5f ? 0.10f : rel >= 0.25f ? 0.05f : 0f; }
+
     static boolean anyCond(MarketAPI m, String... ids) { for (String id : ids) if (m.hasCondition(id)) return true; return false; }
     // 0.3.8.8: count(MarketAPI, String) removed: nothing called it
 
@@ -64,11 +67,14 @@ public class CAEstimates {
             p.fx[0] += 0.25f * gross; p.fx[1] -= 3f;   // 0.3.11.2: the game's Commerce costs 3 stability
             note(p, "Income about +25% (" + CAEngine.credits(0.25f * gross) + "), some stability lost");
         } else if (id.equals("ii_orbitalstation")) {
-            p.fx[3] += 0.5f; p.fx[4] += 0.3f; note(p, "Imperium station: ground defense x1.5 and a station fleet");
+            // 0.3.35.0: stability +1 per tier, and each upgrade's ground defense is its step over the last tier, as vanilla's lines
+            p.fx[1] += 1f; p.fx[3] += 0.5f; p.fx[4] += 0.3f; note(p, "Imperium station: stability +1, ground defense x1.5 and a station fleet");
         } else if (id.equals("ii_battlestation")) {
-            p.fx[3] += 1f; p.fx[4] += 0.6f; note(p, "Imperium battlestation: ground defense x2 and a strong station fleet");
-        } else if (id.equals("ii_starfortress") || id.equals("ii_stellacastellum")) {
-            p.fx[3] += 2f; p.fx[4] += 1f; note(p, "Imperium fortress: ground defense x3 and the strongest station fleet");
+            p.fx[1] += 1f; p.fx[3] += 0.5f; p.fx[4] += 0.6f; note(p, "Imperium battlestation: stability +2, ground defense x2 and a strong station fleet");
+        } else if (id.equals("ii_starfortress")) {
+            p.fx[1] += 1f; p.fx[3] += 1f; p.fx[4] += 1f; note(p, "Imperium fortress: stability +3, ground defense x3 and the strongest station fleet");
+        } else if (id.equals("ii_stellacastellum")) {
+            p.fx[1] += 1f; p.fx[3] += 1f; p.fx[4] += 1f; note(p, "Stella Castellum: stability +4, ground defense x4 and a station fleet");
         } else if (id.equals("IndEvo_AdAssem") || id.equals("IndEvo_AdManuf") || id.equals("IndEvo_ComForge")) {
             float per = id.equals("IndEvo_AdAssem") ? 900f : id.equals("IndEvo_AdManuf") ? 1500f : 2200f;
             float share = CAValue.vpcShare(m, s);   // 0.3.0.0 (B1, 02 section 9): only the part above what the colony already makes of the chip's good
@@ -100,7 +106,20 @@ public class CAEstimates {
         } else if (id.startsWith("IndEvo_")) {
             p.fx[0] += 500f; note(p, "Utility building for you, little effect on the colony itself");
         } else if (id.equals("ix_surveillance_center")) {
-            p.fx[3] += 0.3f; p.fx[1] += 1f; note(p, "Surveillance: better defense and stability");
+            // 0.3.35.0 (IXSurveillanceCenter): stability +2 without a core, no ground defense; supplies, crew and marines at the colony's size
+            p.fx[1] += 2f;
+            CAEngine.demand(p, "supplies", s, deficit); CAEngine.demand(p, "crew", s, deficit); CAEngine.demand(p, "marines", s, deficit);
+            note(p, "Surveillance: stability +2, Pather cells removed");
+        } else if (id.equals("tw_tributary_port")) {
+            // 0.3.35.0 (IXMarzannaBase, tribute branch): works from 0.25 relations with Trinity Worlds; income and accessibility
+            // +5%, +10%, +15% and one light, medium or heavy patrol at 0.25, 0.50, 0.75
+            float rel = 0f;
+            try { rel = com.fs.starfarer.api.Global.getSector().getPlayerFaction().getRelationship("ix_trinity"); } catch (Throwable ignored) { }
+            float b = tributeBonus(rel);
+            if (b <= 0f) { note(p, "Works only at Welcoming relations with Trinity Worlds or better"); return; }
+            p.fx[0] += b * gross; p.fx[2] += b; p.fx[4] += b;
+            CAEngine.demand(p, "supplies", s, deficit); CAEngine.demand(p, "fuel", s - 1, deficit);
+            note(p, "Tributary Port: income and accessibility +" + Math.round(b * 100f) + "%, a Trinity Worlds patrol");
         } else if (id.equals("tme_mineral_replicator")) {
             float v = (m.hasIndustry("mining") ? 3000f : 800f) * Math.max(1, s - 2);
             p.fx[0] += v; note(p, "Lets you add or enrich ore and organics deposits here");

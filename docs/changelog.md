@@ -1,5 +1,26 @@
 # Patch notes
 
+## 0.3.35.0 - 2026-11-27
+
+- Theory of Toolbox: New farms are valued with Toolbox's food output for the colony's size (x32 at size 6), or Toolbox Economy Curves' curve when it's on. Farm items and the heavy machinery demand count the same way.
+- Stations: Mod stations (Interstellar Imperium, Diable Avionics, Roider Union and others) are charged upkeep at the station's size, as the game charges it. Before, upkeep was priced at the colony's size.
+- Interstellar Imperium: Each station step counts +1 stability and its own step of ground defense. The Stella Castellum's extra upkeep is counted before it's offered.
+- Emergent Threats IX Revival: The Surveillance Center is valued at +2 stability with its supplies, crew and marines demand, and no ground defense. The Tributary Port is valued by your relation with Trinity Worlds.
+- Emergent Threats IX Revival: Algae Blooms (Light Industry +2 drugs, Aquaculture -2 food, hazard +25%) count in build values. No new colony on a Killsats planet.
+- Domain Phase Lab: Production Union (+1 on every line of a heavy industry) and Unmotivated Cadets (no marines from a Military Base or High Command) count in build values.
+- Domain Phase Lab: An item placed in a heavy industry is charged the mercenary crisis progress it adds, 4 to 24 points a month by colony size.
+- Random Assortment of Things, Unknown Skies, JaydeePiracy: 10 more conditions that change a building's output count in build values.
+- Yunru's Worlds: GAIA and HEPHAESTUS worlds rank as War production and Self-sufficiency sites. A HEPHAESTUS forge counts its marines demand.
+- Theory of Toolbox: Sindria's fuel x1.8 counts in Fuel Production's value.
+- United Aurora Federation: The Access Router goes into Tech-Mining for +35% finds.
+- United Aurora Federation: The terraforming equipment restoration result's hazard -10% counts.
+- Industrial Evolution: The Wormhole Anchor is never installed. The Transmitter goes only into an Interstellar Relay. The artillery stations are left to you.
+- What We Left Behind: The Overgrown Nanoforge item is never installed. No new colony on a Fractured World, Magnetar, Derelict Escort or Overgrown Nanoforge planet. The Astronomical Barrier Projector and Scaffolding Infrastructure are left to you.
+- Vulpoids: The Mutated Bioforge is valued at +2 organs.
+- Left to you: 24 faction buildings the game never lets you build (Nightcross, IX Revival, Arma Armatura, Secrets of the Frontier, United Aurora Federation, Luddic Enhancement, Navarchy of Tania, the Imperium's Starship Bazaar). A colony you take keeps them.
+- Left to you: IX Revival's Embassy, Crab Shack's Wormhole Nexus and Bionic Alteration's unit.
+- Log: Colony screen search lines are written once a game session.
+
 ## 0.3.34.1 - 2026-11-27
 
 - World plans: With Vaults of Knowledge, a world's industry step picks a building the colony can upgrade into. A colony with Civilian Heavy Production gets the Macro Industrial Complex for its heavy industry step, so the step can be finished.

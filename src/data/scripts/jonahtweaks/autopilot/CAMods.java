@@ -501,6 +501,7 @@ public class CAMods {
         for (String h : CAOddisz.HUB) LEFT.put(h, "it reverse-engineers gear you feed it. Built only at your capital, and never taken down: that deletes its markets and their goods. Its core and item stay as you set them");   // 0.3.10.8
         // 0.3.3.2: Mod Index batch 1 (CAIndexMods): JaydeePiracy, Scy Nation, CJY's Toy Box, AI-Retrofits
         LEFT.putAll(CAIndexMods.left());
+        LEFT.putAll(CAModContent.left());   // 0.3.35.0: mod content coverage
     }
 
     /** Why Autopilot leaves this building to you, or null. */

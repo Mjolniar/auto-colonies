@@ -55,6 +55,8 @@ public class CAConditions {
         HAZARD.put("watched", 0.25f);
         HAZARD.put("fragile_biosphere", -0.1f);
         HAZARD.put("hydrocarbon_fractionation", -0.5f);
+        HAZARD.put("ix_algae", 0.25f);           // 0.3.35.0: IX Revival's Algae Blooms (condition_gen_data)
+        HAZARD.put("uaf_terraform_eq", -0.1f);   // 0.3.35.0: UAF's restoration result, set in its code
     }
 
     static final Map<String, CAData.Profile[]> WORLD_FITS = new HashMap<String, CAData.Profile[]>();
@@ -65,6 +67,9 @@ public class CAConditions {
         WORLD_FITS.put("tme_hive_world", new CAData.Profile[]{CAData.Profile.GROWTH});
         WORLD_FITS.put("tme_death_world", new CAData.Profile[]{CAData.Profile.SECURITY});
         WORLD_FITS.put("tme_waste_world", new CAData.Profile[]{CAData.Profile.SELF});
+        // 0.3.35.0: Yunru's Worlds' GAIA and HEPHAESTUS worlds give +0.5 ship quality with no building, a Pristine Nanoforge's worth
+        for (String y : new String[]{"yunru_gaia", "yunru_horizon", "yunru_horizon_g", "yunru_hephaestus", "yunru_horizon_h"})
+            WORLD_FITS.put(y, new CAData.Profile[]{CAData.Profile.WAR, CAData.Profile.SELF});
     }
 
     /** Units a deposit condition gives its industry here, by the game's own deposit tables (mods included); null if it isn't one. */

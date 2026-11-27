@@ -179,7 +179,7 @@ public class CAIndexMods {
     public static String noColony(MarketAPI m) {
         if (has(m, KASSADARI)) return "Kassadari Claim: accessibility -100%, hazard +50%.";
         if (has(m, GULF)) return "The Gulf: sealed by the Gladiator Society.";
-        return null;
+        return CAModContent.noColony(m);   // 0.3.35.0: IX Revival's Killsats
     }
 
     // ---------------- left to you ----------------

@@ -49,7 +49,8 @@ public class CADiagnostics {
      * 0.3.10.5: mod conditions that need nothing beyond the colony's live stats, so they aren't listed as unmapped:
      * Toolbox Economy Curves' hidden Income Guard (on every market) and Adversary's Mutual Tenacity (stability).
      */
-    static final Set<String> KNOWN_CONDITIONS = new HashSet<String>(Arrays.asList("tec_income_guard", "adversary_mutual_tenacity"));
+    static final Set<String> KNOWN_CONDITIONS = new HashSet<String>(Arrays.asList("tec_income_guard", "adversary_mutual_tenacity",
+            "tahlan_kassadariclaim", "tahlan_legiotyranny", "enigma_ii", "enigma_iii"));   // 0.3.35.0: no effect on your colonies, or handled elsewhere
 
     static final Set<String> MAPPED_MODS = new HashSet<String>(Arrays.asList(
             "IndEvo", "terraformingmadeeasy", "GrandColonies", "nexerelin", "jonah_tweaks", "Imperium",
