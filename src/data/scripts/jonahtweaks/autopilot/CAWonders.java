@@ -108,10 +108,12 @@ public class CAWonders {
     public static void run() {
         CASettings s = CAData.settings();
         summary = null;
+        CAGarden.watch();   // 0.3.32.0: a Garden about to finish, whatever the money
         if (!on(s)) return;
         List<String> lines = new ArrayList<String>();
         try { daedalus(s, lines, null, true); }
         catch (Throwable t) { fail(t, "can't read Ashes of the Domain's Grand Wonders; they're left to you"); return; }
+        CAGarden.run(s, lines, null, true);   // 0.3.32.0
         try { bifrost(s, lines); }
         catch (Throwable t) { fail(t, "can't read Ashes of the Domain's Bifrost network; it's left to you"); return; }
         summary = lines.isEmpty() ? null : "Wonders and gates: " + CAContracts.join(lines) + ".";
@@ -135,6 +137,7 @@ public class CAWonders {
         if (!on(s)) return out;
         try { daedalus(s, new ArrayList<String>(), out, false); }
         catch (Throwable t) { out.clear(); }   // run() marks it broken and logs it
+        CAGarden.run(s, new ArrayList<String>(), out, false);   // 0.3.32.0
         return out;
     }
 
@@ -185,6 +188,7 @@ public class CAWonders {
             Industry site = null;
             for (Industry ind : m.getIndustries()) if (siteC.isInstance(ind)) site = ind;
             if (site != null && CARefl.invoke(assigned, site) != null) continue;   // a wonder of yours is going up there already
+            if (site != null && CAMark.at(CAGarden.SITE_MARK + m.getId()) != null) continue;   // 0.3.32.0: the Garden's site
             List<String> missing = unmade((Map<?, ?>) CARefl.invoke(demand, w));
             if (!missing.isEmpty()) {
                 lines.add(name(DAEDALUS) + " at " + m.getName() + " waits for " + CAContracts.join(missing));

@@ -118,6 +118,7 @@ public class CAReset {
         failed += run("needs ledger", CANeeds::reset);   // 0.3.23.0
         failed += run("stalled restorations", CACommit::reset);   // 0.3.26.0
         failed += run("special projects", CABlackSite::reset);   // 0.3.28.0
+        failed += run("garden of elysium", CAGarden::reset);   // 0.3.32.0
         failed += run("core orders", () -> { CAItems.alphaWant = 0f; CAItems.alphaWantAt = null; });   // 0.3.30.0
         failed += run("move summary", () -> CALog.DIGEST.clear());   // 0.3.27.0
         failed += run("make room lines", () -> { CAPlanner.NO_ROOM_LOGGED.clear(); CAFloors.noRoom = null; });   // 0.3.25.1

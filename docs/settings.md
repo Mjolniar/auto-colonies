@@ -108,7 +108,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | Setting | Options | Default | What it does |
 |---|---|---|---|
 | Surplus over 10,000,000 | Every colony, Focus world only | Every colony | Once you're this much over the surplus line, every Approve and Auto colony spends from the surplus, or just the focus world. |
-| Wonders and gates | On, Off | On | It builds Bifrost gates and the Daedalus Array once their goods are made, and it asks you before the Daedalus Array. Needs Vaults of Knowledge. |
+| Wonders and gates | On, Off | On | It builds Bifrost gates, the Daedalus Array and the Garden of Elysium once their goods are made, and it asks you before each wonder. Before the Garden finishes, the AI cores and items in the farms and resorts it replaces go to Autopilot Storage. Needs Vaults of Knowledge. |
 | Development plan | By plan, Off | By plan | A colony an expedition founds starts as a Centralized Urban Core when its plan has no farming or mining, since those lose output there and everything else gains. Other colonies keep the standard plan. Needs Vaults of Knowledge. |
 | Special projects | Ask first, Off | Ask first | It proposes a Black Site project once your colonies can supply it, and after you approve it, it starts each stage when the last one is done. Shroud projects are left to you, and so is a project or stage you pause. Needs Vaults of Knowledge. |
 | Surplus terraforming | Max output, Pays back in 10 years, Off | Max output | Whatever's left after the focus world goes into terraforming (Terraforming). Needs Terraforming Made Easy. |

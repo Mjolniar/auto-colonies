@@ -1,5 +1,10 @@
 # Patch notes
 
+## 0.3.32.0 - 2026-11-26
+
+- Wonders: Added the Garden of Elysium. It is proposed in Approvals at the Auto colony that meets its requirements, a colony with a farm first, then the biggest. After approval its Grand Wonder site goes in the build queue and the Garden is put on it.
+- Wonders: 3 days before a Garden of Elysium finishes, the AI cores and items in the farms and resorts it replaces go to Autopilot Storage. Nothing is put back into them.
+
 ## 0.3.31.0 - 2026-11-26
 
 - Development plan: Added the Development plan setting (By plan, Off). A colony an expedition founds starts as a Centralized Urban Core when its plan has no farming or mining. Other colonies keep the Persean-Standardized plan. Needs Vaults of Knowledge.

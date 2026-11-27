@@ -423,6 +423,7 @@ public class CAItems {
                 if (old == null || !targets.contains(ind.getId()) || old.getId().equals(spec.getId()) || LAMP.equals(old.getId())) continue;
                 if (!ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId()) || ind.getSpec().hasTag("consumes")) continue;
                 if (CAMods.leftToYou(ind.getId()) != null) continue;   // left to you: its item stays (0.2.45.0)
+                if (CAGarden.leaving(m, ind)) continue;   // 0.3.32.0
                 if (swapHeld(d, m, ind, spec.getId())) continue;   // 0.3.20.6: swapped out of here within the year
                 try { if (!effect.getUnmetRequirements(ind).isEmpty()) continue; } catch (Throwable t) { continue; }
                 if (CALowProfile.pathBlocked(m, CALowProfile.itemInterest(spec) - CALowProfile.itemInterest(old.getId()))) continue;
@@ -496,6 +497,7 @@ public class CAItems {
         for (Industry ind : m.getIndustries()) {
             if (!it.targets.contains(ind.getId()) || ind.getSpecialItem() != null || !ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId())) continue;
             if (CAMods.leftToYou(ind.getId()) != null) continue;   // left to you (0.2.45.0)
+            if (CAGarden.leaving(m, ind)) continue;   // 0.3.32.0: the Garden of Elysium replaces it in days
             if (wouldPollute(it.spec.getId(), m, ind)) continue;   // a forge on a habitable world is no home for a polluting item
             try { if (it.effect.getUnmetRequirements(ind).isEmpty()) return ind; } catch (Throwable ignored) { }
         }
@@ -991,6 +993,7 @@ public class CAItems {
     /** A building Autopilot may put a core in or take one out of: working, unlocked, supported and taking cores, with no core or a vanilla one. */
     static boolean coreSlot(CAData.Colony c, Industry ind) {
         if (!ind.isFunctional() || ind.isHidden() || c.locks.contains(ind.getId())) return false;
+        if (CAGarden.leaving(ind.getMarket(), ind)) return false;   // 0.3.32.0: the Garden of Elysium replaces it in days (Omega cores use this too)
         if (CAMods.leftToYou(ind.getId()) != null) return false;   // 0.3.10.8: left to you (the capital's Bazaar and Reverse Engineering Hub): its core stays as you set it
         if (CADiagnostics.industryLevel(ind.getId()) != CADiagnostics.Level.SUPPORTED && !ind.getSpec().hasTag("population") && !research(ind)) return false;
         if (ind.getAICoreId() != null && tier(ind.getAICoreId()) < 0) return false;
