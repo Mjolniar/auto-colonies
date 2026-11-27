@@ -180,7 +180,7 @@ public class CADiagnostics {
             sb.append(buildable.isEmpty() ? "; buildable at none of your colonies" + (bp ? ": " + CARatHub.bpReason(spec.getId()) : "") : "; buildable at " + buildable);
             sb.append("; effects not simulated (mod code isn't run)");
         } catch (Throwable t) {
-            LOG.warn(TAG + "probe failed for " + spec.getId(), t);
+            if (probeWarned.add(spec.getId())) LOG.warn(TAG + "probe failed for " + spec.getId(), t);   // 0.3.33.1: once a game session
             return "ERROR during probe: " + t;
         }
         return sb.toString();
@@ -194,7 +194,11 @@ public class CADiagnostics {
         }
         issueKeys.add(key);
         issues.add(new Issue(kind, id, name, mod, level, detail));
-        if (level == Level.QUARANTINED) LOG.warn(TAG + "QUARANTINED " + kind + " " + id + " (" + mod + "): " + detail);
+        if (level == Level.QUARANTINED) {   // 0.3.33.1: the same quarantine as this session's last scan isn't written again
+            String line = "QUARANTINED " + kind + " " + id + " (" + mod + "): " + detail;
+            if (line.equals(loggedLines.put(key, line))) sameLines++;
+            else LOG.warn(TAG + line);
+        }
         else if (loggedBases.add(kind + ":" + level + ":" + numberedBase(id))) {
             // 0.3.33.0: a line the same as this session's last scan logged isn't repeated (each load scans again)
             String line = level + " " + kind + " " + id + " (" + mod + "): " + detail;
@@ -206,6 +210,8 @@ public class CADiagnostics {
 
     /** 0.3.33.0: the scan lines logged this game session, kind:id -> line. Kept over loads, so a rescan logs only what changed. */
     static final Map<String, String> loggedLines = new HashMap<String, String>();
+    /** 0.3.33.1: buildings whose probe failed with a stack trace this game session. */
+    static final Set<String> probeWarned = new HashSet<String>();
     /** 0.3.33.0: lines this scan left out as the same as before. */
     static int sameLines = 0;
 

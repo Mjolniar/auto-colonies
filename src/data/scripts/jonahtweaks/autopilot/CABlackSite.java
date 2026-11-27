@@ -125,6 +125,37 @@ public final class CABlackSite {
         return n;
     }
 
+    /** 0.3.33.1: what the stages not done or paid take besides credits (Vaults of Knowledge's other costs), as "2 Paragon". */
+    @SuppressWarnings("unchecked")
+    static List<String> otherCosts(Object p) {
+        Map<String, Integer> n = new LinkedHashMap<String, Integer>();
+        try {
+            for (Object st : stages(p)) {
+                if (done(st) || Boolean.TRUE.equals(CARefl.call(st, "isPaidForStage"))) continue;
+                Object l = CARefl.call(CARefl.call(st, "getSpec"), "getOtherCosts");
+                if (!(l instanceof List)) continue;
+                for (Object o : (List<Object>) l) {
+                    String type = String.valueOf(CARefl.call(o, "getCostType")), id = String.valueOf(CARefl.call(o, "getId"));
+                    int amount = ((Number) CARefl.call(o, "getAmount")).intValue();
+                    if (amount <= 0) continue;
+                    String name = id;
+                    try {
+                        if ("SHIP".equals(type)) name = Global.getSettings().getHullSpec(id).getHullName();
+                        else if ("WEAPON".equals(type)) name = Global.getSettings().getWeaponSpec(id).getWeaponName();
+                        else if ("FIGHTER".equals(type)) name = Global.getSettings().getFighterWingSpec(id).getWingName();
+                        else if ("ITEM".equals(type)) name = Global.getSettings().getSpecialItemSpec(id).getName();
+                        else if ("COMMODITY".equals(type)) name = Global.getSettings().getCommoditySpec(id).getName();
+                    } catch (Throwable ignored) { }
+                    Integer was = n.get(name);
+                    n.put(name, was == null ? amount : was + amount);
+                }
+            }
+        } catch (Throwable ignored) { }
+        List<String> out = new ArrayList<String>();
+        for (Map.Entry<String, Integer> e : n.entrySet()) out.add(Misc.getWithDGS(e.getValue()) + " " + e.getKey());
+        return out;
+    }
+
     /** The reward in words: ships, weapons, items and commodities by name. Custom rewards have no name here. */
     @SuppressWarnings("unchecked")
     static List<String> rewards(Object p) {
@@ -176,6 +207,7 @@ public final class CABlackSite {
             Object spec = CARefl.call(p, "getProjectSpec");
             if (spec == null) continue;
             String id = projectId(p);
+            if (CAApprovals.held("project:" + id, "project")) continue;   // 0.3.33.1: a project you rejected doesn't win the pick over the others
             Object tags = CARefl.call(spec, "getTags");
             if (!askable(tags instanceof Collection ? (Collection<String>) tags : null, Boolean.TRUE.equals(CARefl.call(p, "wasEverDiscovered")),
                     Boolean.TRUE.equals(CARefl.call(p, "canDoProject")), ((Number) CARefl.call(p, "getCountOfCompletion")).intValue(), CAMark.at(STARTED + id) != null)) continue;
@@ -215,6 +247,8 @@ public final class CABlackSite {
         d.add("The Black Site at " + site.getName() + " will start " + name + ", which has " + count + (count == 1 ? " stage" : " stages") + ".");
         d.add("Stage " + st.index + " costs " + Misc.getDGSCredits(st.credits) + " now" + (st.goods.isEmpty() ? "." : ", then " + goodsText(st.goods) + " a month from your exports until it's done."));
         if (later > 0f) d.add("The other stages cost " + Misc.getDGSCredits(later) + " in all, paid as each one starts, and each one starts once the last is done.");
+        List<String> other = otherCosts(p);   // 0.3.33.1: Vaults of Knowledge takes these from your colonies' storage as each stage starts
+        if (!other.isEmpty()) d.add("The stages also take " + CAContracts.join(other) + " from your colonies' storage, each part as its stage starts.");
         List<String> r = rewards(p);
         if (!r.isEmpty()) d.add("When it's done you get " + CAContracts.join(r) + ".");
         if (!shortGoods.isEmpty()) d.add(CAContracts.join(shortGoods) + (shortGoods.size() == 1 ? " is" : " are") + " short at your colonies, so it'll go slower until there's more of it.");

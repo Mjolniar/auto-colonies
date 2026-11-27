@@ -55,8 +55,8 @@ public class CASyncPage {
         if (awake) L.addPara("The Autarch AI Core is online, and it runs the abilities you switch on below using its bandwidth.", hl, 6f);
         else if (CASync.pulled()) L.addPara("The Autarch AI Core is out of its cradle, so the Colony Autopilot is dormant. Once the core's back in, you get every ability and all of its bandwidth again.", bad, 6f);
         else if ("breaking".equals(ph)) L.addPara("The Colony Autopilot is dormant while Engineering breaks the Autarch AI Core down.", hl, 6f);
-        else if (!ph.isEmpty()) L.addPara("You don'L have an Autarch AI Core, so your TriPad's Colony Autopilot is dormant.", gray, 6f);
-        else if (CASync.seen(CATriPad.FOUND)) L.addPara("The Colony Autopilot on your TriPad is dormant. It needs an %s to run, and until then your colonies won'L run on their own.", 6f, hl, "Autarch-class AI core");
+        else if (!ph.isEmpty()) L.addPara("You don't have an Autarch AI Core, so your TriPad's Colony Autopilot is dormant.", gray, 6f);
+        else if (CASync.seen(CATriPad.FOUND)) L.addPara("The Colony Autopilot on your TriPad is dormant. It needs an %s to run, and until then your colonies won't run on their own.", 6f, hl, "Autarch-class AI core");
         else L.addPara("The Colony Autopilot on your TriPad is dormant.", gray, 6f);
 
         if (CASync.dormant() && CAAutarch.inCargo() > 0)
@@ -64,7 +64,7 @@ public class CASyncPage {
         else if (CASync.dormant() && CAAutarch.inCargo() == 0 && ph.isEmpty() && !CAAutarch.anywhere()) {   // 0.3.8.9: not while it sits in a storage tab
             String area = CAAutarch.area();
             L.addPara(area != null && CASync.seen(CATriPad.FOUND) ? "Your TriPad points to a derelict research station somewhere in the " + area + "."
-                    : "You haven'L found it yet.", gray, 4f);
+                    : "You haven't found it yet.", gray, 4f);
         }
         if (awake && CASync.cradle()) row(L, "Pull the core", "pull", true, 200f, "This takes the cradled core out, so the Colony Autopilot goes dormant.", gray);
 

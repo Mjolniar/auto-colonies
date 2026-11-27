@@ -148,7 +148,15 @@ public final class CAGarden {
         MarketAPI host = null;
         Industry hostSite = null, hostWonder = null;
         boolean hostFarm = false;
+        // 0.3.33.1: the colony with the site Autopilot built for the Garden is the only host, so a second site is never built
+        MarketAPI marked = null;
+        for (MarketAPI x : Misc.getPlayerMarkets(false)) {
+            if (CAMark.at(SITE_MARK + x.getId()) == null) continue;
+            for (Industry ind : x.getIndustries()) if (siteC.isInstance(ind) || CAWonders.SITE.equals(ind.getId())) marked = x;
+            if (marked != null) break;
+        }
         for (MarketAPI m : CAItems.autoMarkets()) {
+            if (marked != null && m != marked) continue;
             if (!CASurplus.spends(m) || CASiege.held(m) || CAHypershunt.is(m)) continue;
             Industry w = spec.getNewPluginInstance(m);
             if (!apiC.isInstance(w) || !w.isAvailableToBuild() || !Boolean.TRUE.equals(CARefl.invoke(shown, w, m))) continue;   // research done

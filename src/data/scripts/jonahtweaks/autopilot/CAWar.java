@@ -415,6 +415,7 @@ public class CAWar {
         for (Map.Entry<String, int[]> e : counts.entrySet()) {
             FactionAPI f = Global.getSector().getFaction(e.getKey());
             if (f == null || f.isPlayerFaction() || !f.isHostileTo(Factions.PLAYER) || s.stanceOf(e.getKey()) != CAStance.AUTO) continue;
+            if (CAStance.setByYou(e.getKey())) continue;   // 0.3.33.1: Strike back (Auto, set by you) isn't made a Rival
             float t = CAWarPolicy.rivalThreat(e.getValue()[0], e.getValue()[1], e.getValue()[2]);
             if (t > bestT) { bestT = t; best = e.getKey(); }
         }

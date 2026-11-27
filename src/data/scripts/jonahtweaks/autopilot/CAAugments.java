@@ -146,7 +146,10 @@ public class CAAugments {
         Long at = CAMark.at(key);
         boolean any = !CAMark.keys(CHANGED + m.getId() + ":").isEmpty();
         boolean ok = changeAllowed(at == null ? null : CAMark.days(at, CAMark.now()), any, !c.augAuto().isEmpty(), s.stationRefitDays());
-        if (at == null && !any && !c.augAuto().isEmpty()) CAMark.set(key, CAMark.now());   // fitted before 0.3.20.3: its year starts now
+        if (at == null && !any && !c.augAuto().isEmpty()) {
+            if (c.augDefense) return true;   // 0.3.33.1: a siege loadout from before 0.3.20.3 may change back once the siege is over
+            CAMark.set(key, CAMark.now());   // fitted before 0.3.20.3: its year starts now
+        }
         return ok;
     }
 

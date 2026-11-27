@@ -155,6 +155,10 @@ public class CATerraform {
                     boolean adding = !m.hasCondition(pd.id);
                     if ((st.kind == CAPlan.Kind.COND) != adding) continue;
                     if (!adding && pd.id.equals("pollution") && pollutionBack) continue;
+                    if (CAUndo.tfHeld(m, pd.id, adding)) {   // 0.3.33.1: not saved up for while the loop guard holds it
+                        CAUndo.held(m, "tf", adding, pd.id, "Terraforming (" + (adding ? "add " : "remove ") + pd.name + ")");
+                        continue;
+                    }
                     try { if (!CATme.canRun(ind, pd)) continue; } catch (Throwable t) { continue; }
                     pick = new Cand(); pick.m = m; pick.ind = ind; pick.pd = pd; pick.cost = projectCost(m, pd);
                     pick.score = 1000000f - order * 1000f; pick.planned = true;
@@ -173,6 +177,7 @@ public class CATerraform {
                         if (!CATme.canRun(ind, pd)) continue;
                         boolean adding = !m.hasCondition(pd.id);
                         if (!adding && pd.id.equals("pollution") && pollutionBack) continue;
+                        if (CAUndo.tfHeld(m, pd.id, adding)) continue;   // 0.3.33.1: a held project doesn't keep the structure's other projects waiting
                         CATerraSim.Move mv = new CATerraSim.Move();
                         mv.structure = ind.getId(); mv.condition = pd.id; mv.add = adding;
                         CAWorldPlanner.Row row = CAWorldPlanner.rows().get(pd.id);

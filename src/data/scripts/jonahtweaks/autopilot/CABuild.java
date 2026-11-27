@@ -31,7 +31,7 @@ public class CABuild {
         try { rec = CAData.get().upgradeTargets(); } catch (Throwable t) { rec = new java.util.HashMap<String, String>(); }
         for (Industry ind : m.getIndustries()) {
             String key = m.getId() + "|" + ind.getId();
-            if (!ind.isUpgrading()) { rec.remove(key); continue; }
+            if (!ind.isUpgrading()) continue;   // 0.3.33.1: CAManual clears the record, after it locks a building whose upgrade you cancelled
             if (ind.isIndustry()) continue;
             String vanilla = ind.getSpec().getUpgrade(), target = rec.containsKey(key) ? rec.get(key) : vanilla;
             n += slotFix(vanilla != null && CAEngine.isIndustry(vanilla), target != null && CAEngine.isIndustry(target));

@@ -23,6 +23,8 @@ public final class CACommit {
     /** ToT's restoration contracts start at this many months (BaseRestorationContract), so their age is this less what's left. */
     static final int CONTRACT_MONTHS = 9999;
     static final String P = "stallp:", M = "stallm:";
+    /** 0.3.33.1: CAMark: the game month (cycle x 12 + month) the stalled months were last counted, so a load doesn't count one more. */
+    static final String LOOKED = "stallp:look";
 
     static Object sStop;
     static boolean linked = false, broken = false;
@@ -106,13 +108,20 @@ public final class CACommit {
         if (month != lookedMonth) {
             lookedMonth = month;
             ASKS.clear();
+            long stamp = Global.getSector().getClock().getCycle() * 12L + month;
+            Long last = CAMark.at(LOOKED);
+            boolean count = last == null || last.longValue() != stamp;   // 0.3.33.1: once a game month; a load only rebuilds the asks
+            if (count) CAMark.set(LOOKED, stamp);
             for (Restoring r : restoring()) {
                 String key = r.m.getId() + "|" + r.s.id;
                 Long was = CAMark.at(P + key), n = CAMark.at(M + key);
-                float gained = was == null ? 1f : r.s.progress - was / 1000000f;
-                int months = was == null ? 0 : monthsAfter(n == null ? 0 : n.intValue(), gained);
-                CAMark.set(P + key, Math.round(r.s.progress * 1000000f));
-                CAMark.set(M + key, months);
+                int months;
+                if (count || was == null) {
+                    float gained = was == null ? 1f : r.s.progress - was / 1000000f;
+                    months = was == null ? 0 : monthsAfter(n == null ? 0 : n.intValue(), gained);
+                    CAMark.set(P + key, Math.round(r.s.progress * 1000000f));
+                    CAMark.set(M + key, months);
+                } else months = n == null ? 0 : n.intValue();
                 int age = contractMonths(r.s.id);
                 if (!stalled(months, r.s.progress, age)) continue;
                 int stuck = Math.max(months, age);

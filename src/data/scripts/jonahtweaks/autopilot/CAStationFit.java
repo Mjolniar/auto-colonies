@@ -312,17 +312,19 @@ public final class CAStationFit {
                 if (fm == null) continue;
                 String key = key(st, fm, f, m);
                 Fit have = FITS.get(m.getId());
-                if (have != null && !refit(key, have.key, sincePlanned(m), every)) continue;   // 0.3.20.3: a new station, or a refit that's due
+                Fit waiting = PENDING.get(m.getId());   // 0.3.33.1: a finished plan, or one waiting for budget, is used the day it's ready
+                boolean ready = waiting != null && waiting.variant != null && sameStation(key, waiting.key);
+                if (have != null && !ready && !refit(key, have.key, sincePlanned(m), every)) continue;   // 0.3.20.3: a new station, or a refit that's due
                 String saved = d.stationLayouts().get(m.getId());
                 int nl = saved == null ? -1 : saved.indexOf('\n');
                 String savedKey = nl > 0 ? saved.substring(0, nl) : null;
                 ShipVariantAPI savedFit = have == null && nl > 0 ? rebuild(fm.getVariant(), saved.substring(nl + 1)) : null;
-                if (savedFit != null && !refit(key, savedKey, sincePlanned(m), every)) {   // after a load: the saved fit, no planning
+                if (savedFit != null && !ready && !refit(key, savedKey, sincePlanned(m), every)) {   // after a load: the saved fit, no planning
                     Fit fit = new Fit(); fit.key = savedKey; fit.variant = savedFit; FITS.put(m.getId(), fit); continue;
                 }
                 Fit pend = PENDING.get(m.getId());
                 ShipVariantAPI v;
-                if (pend != null && sameStation(key, pend.key)) v = pend.variant;   // 0.3.15.5: planned once, not every day it waits (0.3.20.3: augments aside)
+                if (pend != null && pend.variant != null && sameStation(key, pend.key)) v = pend.variant;   // 0.3.33.1: an empty plan is planned again when due   // 0.3.15.5: planned once, not every day it waits (0.3.20.3: augments aside)
                 else {
                     // 0.3.20.3: no fit per augment set; refit() above already decided this station is planned
                     {

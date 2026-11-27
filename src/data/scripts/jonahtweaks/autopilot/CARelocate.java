@@ -247,6 +247,7 @@ public final class CARelocate {
         String site = Float.isNaN(w.site) ? "" : ", and the planet is worth about " + Misc.getDGSCredits(w.site) + " a month as a site";
         String cost = w.cost > 0f ? "Abandoning it costs " + Misc.getDGSCredits(w.cost) + " after the game's refund for its buildings."
                 : "Abandoning it pays " + Misc.getDGSCredits(-w.cost) + " back from the game's refund for its buildings.";
+        CAApprovals.dropLive(KEY, KEY + id);   // 0.3.33.1: one abandon ask at a time
         CAApprovals.offer(KEY + id, KIND, w.m, "Abandon for a colony at " + planet, Math.max(0f, w.cost), 0f, null, () -> approve(id, planet),
                 w.m.getName() + " makes " + Misc.getDGSCredits(w.net) + " a month" + site + ".",
                 planet + " in " + p.systemName + " is worth about " + Misc.getDGSCredits(p.value) + " a month, and the expedition there costs "
@@ -262,6 +263,8 @@ public final class CARelocate {
         MarketAPI m = Global.getSector().getEconomy().getMarket(marketId);
         String no = blocked(d, m, CACapital.capital());
         if (no != null) return "Not abandoned: " + no;
+        Long last = CAMark.at(LAST);   // 0.3.33.1: one colony a year, approvals too
+        if (last != null && CAMark.days(last, CAMark.now()) < PACE_DAYS) return "Not abandoned: a colony was abandoned less than a year ago";
         return abandon(d, d.settings, m, planet, "your approval");
     }
 

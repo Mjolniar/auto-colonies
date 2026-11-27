@@ -77,7 +77,9 @@ public final class CAPerf {
         slowSkipped = 0;
         try {
             String top = summary(3);
-            String story = top.contains(STORY + " ") && !PARTS.isEmpty() ? "; story parts: " + parts(3) : "";
+            boolean storySlow = false;   // 0.3.33.1: by the step's name ("empire panel: story" is another timer)
+            for (Stat st : top(3)) if (STORY.equals(st.name)) storySlow = true;
+            String story = storySlow && !parts(3).isEmpty() ? "; story parts: " + parts(3) : "";
             CADiagnostics.LOG.info(CADiagnostics.TAG + "daily pass took " + Math.round(ms) + " ms over " + frames + " frames, longest frame "
                     + ms(frame) + " ms; slowest steps: " + top + story + more);
         } catch (Throwable ignored) { }
@@ -103,7 +105,10 @@ public final class CAPerf {
     static long partAt = 0L;
 
     /** The story step starts: its parts are timed from here. */
-    public static void partsStart() { partAt = System.nanoTime(); }
+    public static void partsStart() {
+        partAt = System.nanoTime();
+        for (Stat s : PARTS.values()) s.last = -1f;   // 0.3.33.1: a part that doesn't run this time isn't listed with an old time
+    }
 
     /** The part just done, timed since the last part (or partsStart). */
     public static void part(String name) {
@@ -124,7 +129,11 @@ public final class CAPerf {
         List<Stat> l = new ArrayList<Stat>(PARTS.values());
         Collections.sort(l, new Comparator<Stat>() { public int compare(Stat a, Stat b) { return Float.compare(b.last, a.last); } });
         StringBuilder b = new StringBuilder();
-        for (int i = 0; i < l.size() && i < n; i++) { if (b.length() > 0) b.append(", "); b.append(l.get(i).name).append(' ').append(ms(l.get(i).last)).append(" ms"); }
+        for (int i = 0; i < l.size() && i < n; i++) {
+            if (l.get(i).last < 0f) continue;
+            if (b.length() > 0) b.append(", ");
+            b.append(l.get(i).name).append(' ').append(ms(l.get(i).last)).append(" ms");
+        }
         return b.toString();
     }
 

@@ -1,5 +1,24 @@
 # Patch notes
 
+## 0.3.33.1 - 2026-11-27
+
+- Special projects: A project you rejected is skipped, so the other projects can be proposed during its hold.
+- Special projects: The approval lists the ships, weapons and items the stages take from your colonies' storage.
+- Restorations: Stalled months are counted once a game month. A save load in the same month doesn't add one.
+- Relocation: One abandon ask is open at a time. An approved abandon keeps the one colony a year pace.
+- Relocation: Item, AI core and administrator placement skips a colony abandoned earlier the same day.
+- Wonders: Items are not put back into the farms and resorts the Garden of Elysium replaces in its last 3 days.
+- Wonders: The Garden of Elysium goes only to the colony with the site Autopilot built for it.
+- Item orders: A cancelled order doesn't take a matching item of yours from the gathering point's Storage.
+- Station fits: A finished refit plan is used the day it's ready. A refit waiting for budget is tried every day.
+- Station augments: A siege loadout from before 0.3.20.3 can change back once the siege is over.
+- Terraforming: A project the loop guard holds isn't saved up for and doesn't hold the structure's other projects.
+- Manual changes: Fixed a building not getting locked after you cancel its Autopilot upgrade.
+- War page: The "Held at" line shows only for factions at war with you.
+- War: Strike back works on the automatically picked rival. A faction you set to Strike back isn't picked as the rival.
+- Log: Quarantine lines and probe errors are written once a game session. The slow-pass line lists only the story parts that ran.
+- Story page: Fixed "don't", "won't" and "haven't" showing as "don'L", "won'L" and "haven'L".
+
 ## 0.3.33.0 - 2026-11-27
 
 - Story mode: The search for a lost Autarch AI Core runs only when the core can be lost. While the core is in its derelict station, the story step no longer checks every storage and entity in the sector each day.

@@ -186,7 +186,10 @@ public class CAItems {
     /** One placement per day at most, so each move is visible in the log. Only among the given Auto colonies (those not under siege). */
     public static void run(List<MarketAPI> markets) {
         Laps l = new Laps();   // 0.3.20.5
-        try { runParts(markets, l); }
+        // 0.3.33.1: colonies still yours only (a colony abandoned earlier in the pass is out of the economy)
+        List<MarketAPI> mine = new ArrayList<MarketAPI>();
+        for (MarketAPI m : markets) if (m != null && m.isPlayerOwned() && m.isInEconomy()) mine.add(m);
+        try { runParts(mine, l); }
         finally { try { l.done(); } catch (Throwable ignored) { } }
     }
 
@@ -295,6 +298,7 @@ public class CAItems {
                 for (Industry ind : m.getIndustries()) {
                     if (!targets.contains(ind.getId()) || ind.getSpecialItem() != null || !ind.isFunctional() || ind.isHidden()) continue;
                     if (c.locks.contains(ind.getId()) || CAMods.leftToYou(ind.getId()) != null) continue;   // left to you: never touched (0.2.45.0)
+                    if (CAGarden.leaving(m, ind)) continue;   // 0.3.33.1: the Garden of Elysium replaces it in days
                     try {
                         if (!effect.getUnmetRequirements(ind).isEmpty()) continue;
                     } catch (Throwable t) { CADiagnostics.quarantine(ind.getId(), "item requirement check", t); continue; }

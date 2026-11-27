@@ -51,6 +51,16 @@ public class CAItemOrders {
     /** Pure: "itemId|delivered". */
     static String entry(String item, int delivered) { return item + "|" + delivered; }
 
+    /** 0.3.33.1: CAMark: how many of an order's item the gathering point's Storage held at the last look while the order ran. */
+    static final String SEEN = "ordseen:";
+
+    /** Pure (0.3.33.1): units done. Running: the order's own count. Gone: a unit that came since the last look (a finished order adds one, a cancelled one nothing); no look on record (before 0.3.33.1): 1. */
+    static int done(Integer rewarded, Long seen, int have, int delivered) {
+        if (rewarded != null) return rewarded;
+        if (seen == null) return 1;
+        return have > seen ? delivered + 1 : delivered;
+    }
+
     static String itemOf(String entry) { int b = entry.lastIndexOf('|'); return b < 0 ? entry : entry.substring(0, b); }
 
     static int deliveredOf(String entry) {
@@ -107,24 +117,26 @@ public class CAItemOrders {
             String item = itemOf(e.getValue());
             int delivered = deliveredOf(e.getValue());
             Object snap = snapshot(e.getKey());
-            int done = snap == null ? 1 : rewarded(snap);
             boolean core = CAItems.tier(item) >= 0;   // 0.3.30.0: an AI core is a commodity
+            CargoAPI from = gp == null ? null : Misc.getStorageCargo(gp);
+            SpecialItemData data = new SpecialItemData(item, null);
+            int have = from == null ? 0 : (int) (core ? from.getCommodityQuantity(item) : from.getQuantity(CargoAPI.CargoItemType.SPECIAL, data));
+            int done = done(snap == null ? null : rewarded(snap), CAMark.at(SEEN + e.getKey()), have, delivered);
             if (done > delivered && gp != null) {
-                CargoAPI from = Misc.getStorageCargo(gp);
-                SpecialItemData data = new SpecialItemData(item, null);
-                int n = from == null ? 0 : (int) Math.min(done - delivered, core ? from.getCommodityQuantity(item) : from.getQuantity(CargoAPI.CargoItemType.SPECIAL, data));
+                int n = from == null ? 0 : Math.min(done - delivered, have);
                 if (n > 0) {
                     CargoAPI to = CAStores.holds(gp) ? CAStores.of(gp) : CAStores.nearest(gp).isEmpty() ? null : CAStores.nearest(gp).get(0).cargo;
                     if (to != null) {
                         if (core) { from.removeCommodity(item, n); to.addCommodity(item, n); }
                         else { from.removeItems(CargoAPI.CargoItemType.SPECIAL, data, n); to.addSpecial(data, n); }
                         delivered += n;
+                        have -= n;
                         CALog.did(gp.getName() + ": " + (core ? CAItems.coreName(CAItems.tier(item)) : CAItems.name(item)) + " produced. Moved to Autopilot Storage.");
                     }
                 }
             }
-            if (snap == null || delivered >= 1) it.remove();   // one unit an order; a cancelled order is dropped
-            else e.setValue(entry(item, delivered));
+            if (snap == null || delivered >= 1) { it.remove(); CAMark.clear(SEEN + e.getKey()); }   // one unit an order; a cancelled order is dropped
+            else { e.setValue(entry(item, delivered)); CAMark.set(SEEN + e.getKey(), have); }
         }
     }
 

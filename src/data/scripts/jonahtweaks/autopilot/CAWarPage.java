@@ -211,7 +211,7 @@ public final class CAWarPage {
         t.addPara("%s, " + CALog.esc(state) + ".", 10f, new Color[]{f.getBaseUIColor(), gray}, f.getDisplayName());
         choices(t, GOALS, "goal", fid + ":", goal, colW, GOALS.length, 4f);
         int eff = CAWar.effective(d, s, f, rival), cap = CAStance.cap(st);
-        if (goal > 0 && eff < cap) t.addPara("Held at " + CAWarPolicy.levelName(eff) + ": " + limitWhy(s, f, st) + ".", bad, 2f);   // shown as is
+        if (hostile && goal > 0 && eff < cap) t.addPara("Held at " + CAWarPolicy.levelName(eff) + ": " + limitWhy(s, f, st) + ".", bad, 2f);   // shown as is
         if (CAStance.wantsWar(st) && !hostile) {
             String why = CADiplomacy.declareWhy(d, s, f);
             if (why == null) t.addButton("Declare war on " + f.getDisplayName(), new String[]{"war", "declare", fid}, Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),

@@ -131,8 +131,9 @@ public class CAManual {
             if (!e.getKey().startsWith(prefix)) continue;
             String from = e.getKey().substring(prefix.length());
             Industry ind = m.getIndustry(from);
-            if (ind == null || ind.isUpgrading() || m.hasIndustry(e.getValue())) continue;
-            it.remove();
+            if (ind != null && ind.isUpgrading()) continue;
+            it.remove();   // 0.3.33.1: done or cancelled, the record goes here (CABuild.usedSlots keeps it)
+            if (ind == null || m.hasIndustry(e.getValue())) continue;
             lock(c, m, from, "You cancelled its upgrade.");
         }
         // gone: a lock made here comes off; one of Autopilot's that you took down isn't built again for a year
