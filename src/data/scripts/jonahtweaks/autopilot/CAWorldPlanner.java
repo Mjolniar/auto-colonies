@@ -216,8 +216,16 @@ public class CAWorldPlanner {
      * Pure: the building a needOne group's step builds: one the colony has; on a water world the Fishing Harbour for the
      * farming group; else the first one this game has (known).
      */
-    static String pick(String[] group, Set<String> have, boolean water, Set<String> known) {
+    static String pick(String[] group, Set<String> have, boolean water, Set<String> known) { return pick(group, have, water, known, null); }
+
+    /**
+     * Pure with its leads test (CAPlan.leadsTo in the game): 0.3.34.1: after one the colony has, a member it reaches by
+     * upgrading a building it has. With Vaults of Knowledge, Civilian Heavy Production leads to the Macro Industrial Complex
+     * and not to Orbital Works, and neither it nor Heavy Industry is in TME's heavy group.
+     */
+    static String pick(String[] group, Set<String> have, boolean water, Set<String> known, java.util.function.BiPredicate<String, String> leads) {
         for (String id : group) if (have.contains(id)) return id;
+        if (leads != null) for (String id : group) if (known.contains(id)) for (String h : have) if (leads.test(h, id)) return id;
         List<String> g = Arrays.asList(group);
         if (water && g.contains(FISHING) && known.contains(FISHING)) return FISHING;
         for (String id : group) if (known.contains(id)) return id;
@@ -271,7 +279,7 @@ public class CAWorldPlanner {
             if (!possible(g, have, deposit, farmland, water)) return false;
             Set<String> known = new HashSet<String>();
             for (String id : g) if (CAPlan.spec(id) != null) known.add(id);
-            String id = pick(g, have, water, known);
+            String id = pick(g, have, water, known, CAPlan::leadsTo);
             if (id == null) return false;
             if (!seen.add(id)) continue;   // TME lists Heavy Industry and Orbital Works as the same group
             CAPlan.Step st = new CAPlan.Step(CAPlan.Kind.BUILD, id, label(m, id));

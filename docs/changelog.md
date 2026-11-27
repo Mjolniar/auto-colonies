@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.34.1 - 2026-11-27
+
+- World plans: With Vaults of Knowledge, a world's industry step picks a building the colony can upgrade into. A colony with Civilian Heavy Production gets the Macro Industrial Complex for its heavy industry step, so the step can be finished.
+
 ## 0.3.34.0 - 2026-11-27
 
 - Conquered colonies: Added "Conquered colonies: Take down buildings" and "Conquered colonies: Colony policies" under Settings, War. A conquered colony is one that started the game with another faction. Both default to Main setting, which uses the main setting. Needs Nexerelin. Suggested by Nate700.
