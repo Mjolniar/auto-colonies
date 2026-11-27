@@ -1,5 +1,9 @@
 # Patch notes
 
+## 0.3.31.0 - 2026-11-26
+
+- Development plan: Added the Development plan setting (By plan, Off). A colony an expedition founds starts as a Centralized Urban Core when its plan has no farming or mining. Other colonies keep the Persean-Standardized plan. Needs Vaults of Knowledge.
+
 ## 0.3.30.1 - 2026-11-26
 
 - Item orders: An Alpha Core order compares its cost with the credits a month the core adds. A research building's first-in-line bonus no longer counts as income.

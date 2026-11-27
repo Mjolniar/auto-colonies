@@ -139,6 +139,12 @@ public class CASettings {
      * project and starts its stages once you approve it), 1 Off. 0 in every save.
      */
     public int projectAsks = 0;
+    /**
+     * 0.3.31.0 (plan 2026-11-25, batch 6): Development plan (DEV_PLAN_NAMES): 0 By plan (an expedition's colony with no
+     * farming or mining in its plan starts as a Centralized Urban Core, CADevelopment.atFounding), 1 Off. 0 in every save.
+     */
+    public int devPlan = 0;
+    public static final String[] DEV_PLAN_NAMES = {"By plan", "Off"};
     public static final String[] PROJECT_ASK_NAMES = {"Ask first", "Off"};
     public static final String[] MOVE_LINE_NAMES = {"Monthly summary", "Every move"};
     public boolean moveLinesEach() { return moveLines == 1; }

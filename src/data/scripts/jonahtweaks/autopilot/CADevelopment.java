@@ -68,6 +68,51 @@ public class CADevelopment {
 
     public static String name(String id) { String n = NAMES.get(id); return n == null ? id : n; }
 
+    // ---------------- 0.3.31.0 (plan 2026-11-25, batch 6): a development plan at founding ----------------
+
+    static final String CORE = "core", STANDARD = "standard";
+
+    /**
+     * Pure: the plan an expedition's colony starts with: Centralized Urban Core when its plan's industries include no farming
+     * or mining (they lose output there and everything else gains), else none, so it stays Persean-Standardized.
+     */
+    static String pick(int extractive, int other) { return extractive == 0 && other > 0 ? CORE : null; }
+
+    /**
+     * Right after Auto-expansion founds a colony (CAExpansion.afterFounding), as VoK's founding dialog does it: the
+     * development condition, its plan id, then the plan's own founding step. A colony that has a plan other than
+     * Persean-Standardized keeps it. Settings, Development plan.
+     */
+    static void atFounding(MarketAPI m, CAData.Profile prof) {
+        if (m == null || CAData.settings().devPlan != 0 || !link()) return;
+        try {
+            if (!STANDARD.equals(id(m))) return;
+            CAPlan.Plan p = CAPlan.buildOwn(m, prof);
+            int ex = 0, other = 0;
+            for (CAPlan.Step st : p.steps) {
+                if (st.kind != CAPlan.Kind.BUILD) continue;
+                IndustrySpecAPI sp = CAPlan.spec(st.id);
+                if (sp == null || !sp.hasTag(com.fs.starfarer.api.impl.campaign.ids.Industries.TAG_INDUSTRY)) continue;
+                if (extractive(st.id)) ex++; else other++;
+            }
+            String dev = pick(ex, other);
+            if (dev == null) return;
+            ClassLoader cl = Global.getSettings().getScriptClassLoader();
+            Class<?> base = Class.forName(PKG + "models.BaseColonyDevelopment", true, cl), mgrC = Class.forName(PKG + "models.ColonyDevelopmentManager", true, cl);
+            String cond = String.valueOf(CARefl.get(CARefl.field(base, "condIdApplier"), null));
+            Object script = CARefl.invoke(CARefl.method(mgrC, "getColonyDevelopment", String.class), CARefl.invoke(CARefl.method(mgrC, "getInstance"), null), dev);
+            if (script == null) return;
+            if (!m.hasCondition(cond)) m.addCondition(cond);
+            Object plugin = m.getCondition(cond).getPlugin();
+            CARefl.invoke(CARefl.method(plugin.getClass(), "setIdOfDevelopment", String.class), plugin, dev);
+            CARefl.invoke(CARefl.method(base, "executePlanBeforeColonization", MarketAPI.class), script, m);
+            m.reapplyConditions();
+            CALog.did(m.getName() + ": development plan set to " + name(dev) + ".");
+        } catch (Throwable t) {
+            CADiagnostics.LOG.warn(CADiagnostics.TAG + "setting a development plan failed at " + m.getName(), t);
+        }
+    }
+
     /**
      * 0.3.9.1 (H M5): a Floating City, also when VoK's styles can't be read (dev reads "standard"): VoK's Floating City
      * condition keeps the altitude in the colony's memory.

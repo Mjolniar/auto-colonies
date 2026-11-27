@@ -933,6 +933,7 @@ public class CAExpansion {
         CALog.did(m.getName() + ": Colony expedition founded the colony. " + o.plan + ", goal " + c.profile.label + ". On Auto.", true);
         CALog.quiet(m.getName() + ": founded by " + methodName(o.method) + " after " + Math.round(Global.getSector().getClock().getElapsedDaysSince(o.sent))
                 + " days for " + Misc.getDGSCredits(o.paid) + " + " + Misc.getDGSCredits(o.fee) + " fee (" + o.why + ")");
+        CADevelopment.atFounding(m, c.profile);   // 0.3.31.0: Settings, Development plan
         if (s.expandBuildout()) CABuildout.start(m, buildoutFloor(s));
         else d.setMode(c, CAData.Mode.AUTO);
         if (!seatAt(d, m) && CAItems.overLimit() > 0 && CAItems.idleAdmins() == 0 && s.expandAdmins()) {

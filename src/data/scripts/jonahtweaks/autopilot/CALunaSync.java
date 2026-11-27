@@ -244,6 +244,8 @@ public final class CALunaSync {
         flag(r, "surplusFocusOnly");
         bool("wonders", "Wonders and gates", "noWonders", true, "Bifrost gates and the Daedalus Array (after you approve it) are built once their goods are in production. "
                 + "Requires Vaults of Knowledge.");
+        radio("devplan", "Development plan", "devPlan", CASettings.DEV_PLAN_NAMES, "A colony an expedition founds starts as a Centralized Urban Core when "
+                + "its plan has no farming or mining. Requires Vaults of Knowledge.");
         radio("projects", "Special projects", "projectAsks", CASettings.PROJECT_ASK_NAMES, "A Black Site project is proposed once your colonies can supply it, and after you "
                 + "approve it, each stage starts when the last one is done. Shroud projects are left to you. Requires Vaults of Knowledge.");
         radio("surplustf", "Surplus terraforming", "surplusTerraform", CASettings.SURPLUS_TF_NAMES, "Surplus remaining after the focus world is directed into terraforming. Requires Terraforming Made Easy.");
