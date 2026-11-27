@@ -68,12 +68,71 @@ public final class CAPerf {
         monthly();   // 0.3.20.1
         int day = CAEngine.today();
         // 0.3.20.1: a line when a frame went over FRAME_LOG_MS (a visible hitch), once a day at most; before, a slow total, weekly
-        if (frame <= FRAME_LOG_MS || day == slowLoggedDay) return;
+        // 0.3.33.0: frames up to HITCH_MS once a week, with how many passes went over since the last line
+        if (frame <= FRAME_LOG_MS) return;
+        if (!frameLogDue(frame, day, slowLoggedDay)) { slowSkipped++; return; }
         slowLoggedDay = day;
+        String more = slowSkipped > 0 ? "; " + slowSkipped + " more " + (slowSkipped == 1 ? "pass" : "passes") + " with a frame over "
+                + Math.round(FRAME_LOG_MS) + " ms since the last line" : "";
+        slowSkipped = 0;
         try {
+            String top = summary(3);
+            String story = top.contains(STORY + " ") && !PARTS.isEmpty() ? "; story parts: " + parts(3) : "";
             CADiagnostics.LOG.info(CADiagnostics.TAG + "daily pass took " + Math.round(ms) + " ms over " + frames + " frames, longest frame "
-                    + ms(frame) + " ms; slowest steps: " + summary(3));
+                    + ms(frame) + " ms; slowest steps: " + top + story + more);
         } catch (Throwable ignored) { }
+    }
+
+    /** 0.3.33.0: a frame over this gets its line on the day; shorter ones once every SLOW_LOG_DAYS. */
+    public static final float HITCH_MS = 50f;
+    /** 0.3.33.0: passes with a frame over FRAME_LOG_MS that got no line since the last one. */
+    static int slowSkipped = 0;
+
+    /** 0.3.33.0: whether a pass whose longest frame is over FRAME_LOG_MS gets a line today. Pure. */
+    static boolean frameLogDue(float frame, int day, int last) {
+        if (day == last) return false;
+        return frame > HITCH_MS || logDue(day, last);
+    }
+
+    // ---------------- 0.3.33.0: the story step's parts ----------------
+
+    /** The story step's CAStep name. */
+    static final String STORY = "story";
+    /** The story step's parts by name (not in top(): the step itself is there). */
+    static final Map<String, Stat> PARTS = new LinkedHashMap<String, Stat>();
+    static long partAt = 0L;
+
+    /** The story step starts: its parts are timed from here. */
+    public static void partsStart() { partAt = System.nanoTime(); }
+
+    /** The part just done, timed since the last part (or partsStart). */
+    public static void part(String name) {
+        long now = System.nanoTime();
+        if (partAt != 0L && name != null) {
+            float ms = (now - partAt) / 1000000f;
+            Stat s = PARTS.get(name);
+            if (s == null) { s = new Stat(name); PARTS.put(name, s); }
+            s.runs++; s.last = ms; s.total += ms;
+            s.avg = s.runs == 1 ? ms : s.avg + AVG_WEIGHT * (ms - s.avg);
+            if (ms > s.max) s.max = ms;
+        }
+        partAt = now;
+    }
+
+    /** "core timers 9.1 ms, story entry 1.2 ms": the parts of the last run, slowest first, at most n. */
+    static String parts(int n) {
+        List<Stat> l = new ArrayList<Stat>(PARTS.values());
+        Collections.sort(l, new Comparator<Stat>() { public int compare(Stat a, Stat b) { return Float.compare(b.last, a.last); } });
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < l.size() && i < n; i++) { if (b.length() > 0) b.append(", "); b.append(l.get(i).name).append(' ').append(ms(l.get(i).last)).append(" ms"); }
+        return b.toString();
+    }
+
+    /** The parts' rolling averages, for the report. */
+    public static Map<String, Float> partAverages() {
+        Map<String, Float> out = new LinkedHashMap<String, Float>();
+        for (Stat s : PARTS.values()) out.put(s.name, s.avg);
+        return out;
     }
 
     /** Over the slow-pass line. */
@@ -147,5 +206,8 @@ public final class CAPerf {
     }
 
     /** Called on every load (CAReset). */
-    public static void reset() { STATS.clear(); slowLoggedDay = Integer.MIN_VALUE; java.util.Arrays.fill(FRAMES, 0); summaryMonth = -1; }
+    public static void reset() {
+        STATS.clear(); slowLoggedDay = Integer.MIN_VALUE; java.util.Arrays.fill(FRAMES, 0); summaryMonth = -1;
+        PARTS.clear(); partAt = 0L; slowSkipped = 0;   // 0.3.33.0
+    }
 }

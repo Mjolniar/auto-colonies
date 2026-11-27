@@ -1289,8 +1289,11 @@ public class CASync {
             // lost (jettisoned, left behind, gone with a ship): like a sale without the credits. The core in the TriPad isn't lost.
             // 0.3.6.2: also when its station is gone without the core ever reaching your cargo (left in the loot screen). A core
             // sold at a market while story mode was off counts as sold, and is taken off that market so there's never two
-            boolean missing = (!installed() || pulled()) && CAAutarch.inCargo() == 0 && !CAAutarch.anywhere();
-            if (missing && flag("autarchPlaced") && (flag("hadCore") || !CAAutarch.siteExists())) {
+            // 0.3.33.0: the sector-wide search (every storage, every entity) last, only when the core could be lost: it ran
+            // every day while the core sat in its station
+            boolean missing = (!installed() || pulled()) && CAAutarch.inCargo() == 0 && flag("autarchPlaced")
+                    && (flag("hadCore") || !CAAutarch.siteExists()) && !CAAutarch.anywhere();
+            if (missing) {
                 boolean atMarket = CAAutarch.takeFromMarkets();
                 flag("hadCore", false);
                 flag("coreLost", !atMarket);   // 0.3.9.6 (C1): lost, not sold: it may turn up again
@@ -1343,19 +1346,28 @@ public class CASync {
 
     /** Daily, before the steps: the core's timers, the settings holds and the colony modes. */
     public static void daily() {
+        CAPerf.partsStart();   // 0.3.33.0: the story step's parts, for the slow-pass line and the report
         tierFive();   // 0.3.15.0: Tier V, on or off
+        CAPerf.part("Tier V");
         try { CARapidResearch.sync(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "rapid research failed", t); }   // 0.3.9.9: on or off, story mode on or not
         try { CAStoryLimit.sync(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "story colony limit failed", t); }   // 0.3.10.3
+        CAPerf.part("research and colony limit");
         CAStoryIntel.ensure();   // 0.3.7.1: the story entry and its search for the core (removed while story mode is off)
         if (!on()) { autarchAdmins(); return; }   // 0.3.7.9: with story mode off the core's administrators leave
+        CAPerf.part("story entry");
         try { lifecycle(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "Autarch AI Core timers failed", t); }
+        CAPerf.part("core timers");
         fit();
         enforce(CAData.settings());
         enforceModes();
+        CAPerf.part("packages and modes");
         autarchAdmins();
+        CAPerf.part("administrators");
         try { CARapidTerra.daily(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "rapid terraforming failed", t); }
         try { CARapidRepair.daily(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "rapid repairs failed", t); }   // 0.3.11.1
+        CAPerf.part("rapid terraforming and repairs");
         try { CAStationFit.daily(); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "station outfitting failed", t); }   // 0.3.11.7
+        CAPerf.part("station fits");
         if (!has("buildout")) stopBuildouts();
     }
 

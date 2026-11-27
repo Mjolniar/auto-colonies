@@ -63,8 +63,11 @@ public class CAModWatch {
         CAPass.parts("mod watch (part)", parts);
     }
 
-    /** 0.3.0.0 (07 H6): last week's results and log lines from another save, cleared on load (CAReset.onLoad). */
-    public static void reset() { last.clear(); logged.clear(); lastRun = -99f; }
+    /**
+     * 0.3.0.0 (07 H6): last week's results from another save, cleared on load (CAReset.onLoad). 0.3.33.0: the logged lines
+     * stay for the game session, so a load doesn't write the same lines again.
+     */
+    public static void reset() { last.clear(); lastRun = -99f; }
 
     public static void run() {
         last.clear();

@@ -1,5 +1,13 @@
 # Patch notes
 
+## 0.3.33.0 - 2026-11-27
+
+- Story mode: The search for a lost Autarch AI Core runs only when the core can be lost. While the core is in its derelict station, the story step no longer checks every storage and entity in the sector each day.
+- Log: A save load writes only the scan lines that changed since the last scan this game session. The scan summary line gives how many were left out.
+- Log: Mod watch lines are written once a game session.
+- Log: A daily pass with a frame over 8 ms gets a line once a week, with how many such passes there were since the last line. A frame over 50 ms gets its line on the day.
+- Log: When the story step is among the slowest steps, the slow-pass line names its slowest parts. The diagnostics report lists the story step's part timings.
+
 ## 0.3.32.0 - 2026-11-26
 
 - Wonders: Added the Garden of Elysium. It is proposed in Approvals at the Auto colony that meets its requirements, a colony with a farm first, then the biggest. After approval its Grand Wonder site goes in the build queue and the Garden is put on it.

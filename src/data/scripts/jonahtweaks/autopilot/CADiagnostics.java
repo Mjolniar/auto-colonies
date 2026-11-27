@@ -78,6 +78,7 @@ public class CADiagnostics {
 
     public static void runScan() {
         industries.clear(); conditions.clear(); items.clear(); issues.clear(); issueKeys.clear(); loggedBases.clear();
+        sameLines = 0;   // 0.3.33.0
         CASimulator.reset();
         CAConst.reset();
         CABreaker.reset();   // a reload tries paused actions again
@@ -143,7 +144,8 @@ public class CADiagnostics {
         lastScan = Global.getSector() != null && Global.getSector().getClock() != null
                 ? Global.getSector().getClock().getDateString() : new Date().toString();
         LOG.info(TAG + "scan done: " + industries.size() + " buildings, " + conditions.size() + " conditions, "
-                + items.size() + " items; " + count(Level.MEASURED) + " measured, " + count(Level.ANALYZED) + " analyzed, " + count(Level.QUARANTINED) + " quarantined");
+                + items.size() + " items; " + count(Level.MEASURED) + " measured, " + count(Level.ANALYZED) + " analyzed, " + count(Level.QUARANTINED) + " quarantined"
+                + (sameLines > 0 ? "; " + sameLines + " lines the same as the last scan this session, not repeated" : ""));
         try { CAModWatch.run(); }   // how each colony mod is doing in this game (0.2.38.0)
         catch (Throwable t) { LOG.warn(TAG + "mod watch failed", t); }
         writeReport();
@@ -193,9 +195,19 @@ public class CADiagnostics {
         issueKeys.add(key);
         issues.add(new Issue(kind, id, name, mod, level, detail));
         if (level == Level.QUARANTINED) LOG.warn(TAG + "QUARANTINED " + kind + " " + id + " (" + mod + "): " + detail);
-        else if (loggedBases.add(kind + ":" + level + ":" + numberedBase(id))) LOG.info(TAG + level + " " + kind + " " + id + " (" + mod + "): " + detail);
+        else if (loggedBases.add(kind + ":" + level + ":" + numberedBase(id))) {
+            // 0.3.33.0: a line the same as this session's last scan logged isn't repeated (each load scans again)
+            String line = level + " " + kind + " " + id + " (" + mod + "): " + detail;
+            if (line.equals(loggedLines.put(key, line))) sameLines++;
+            else LOG.info(TAG + line);
+        }
         // 0.3.11.8: numbered copies of one id (a mod's niko_MPC_..._1 to _12) are logged once a scan; Diagnostics lists each
     }
+
+    /** 0.3.33.0: the scan lines logged this game session, kind:id -> line. Kept over loads, so a rescan logs only what changed. */
+    static final Map<String, String> loggedLines = new HashMap<String, String>();
+    /** 0.3.33.0: lines this scan left out as the same as before. */
+    static int sameLines = 0;
 
     /** 0.3.11.8: the id and level of what a scan already logged, by its numbered base (runScan clears it). */
     static final Set<String> loggedBases = new HashSet<String>();
@@ -427,6 +439,7 @@ public class CADiagnostics {
             try { Map<String, String> sb = CAStep.broken(); if (!sb.isEmpty()) root.put("stoppedSteps", new JSONObject(sb)); } catch (Throwable t) { LOG.warn(TAG + "stopped steps report failed", t); }
             try { root.put("screenButton", CAScreenButton.linkText()); } catch (Throwable t) { LOG.warn(TAG + "screen button report failed", t); }
             try { Map<String, Float> st = CAStep.timings(); if (st != null && !st.isEmpty()) root.put("stepMs", new JSONObject(st)); } catch (Throwable t) { LOG.warn(TAG + "step timing report failed", t); }
+            try { Map<String, Float> sp = CAPerf.partAverages(); if (!sp.isEmpty()) root.put("storyPartsMs", new JSONObject(sp)); } catch (Throwable t) { LOG.warn(TAG + "story timing report failed", t); }   // 0.3.33.0
             try { root.put("modWatch", CAModWatch.json()); } catch (Throwable t) { LOG.warn(TAG + "mod watch report failed", t); }
             // 0.3.22.0 (plan 2026-11-25, batch 1): the snapshot for offline checks
             if (Global.getSector() != null) {

@@ -42,7 +42,8 @@ public class CAAutarchIntel extends BaseIntelPlugin {
             if (!on || !phase.isEmpty() || (installed && !pulled)) return false;
             boolean early = CASync.generation() > 0 || CASync.seen(CATriPad.FOUND);
             if (!early || CAAutarch.area() == null) return false;
-            return active(on, phase, installed, pulled, true, CASync.generation(), CASync.seen(CATriPad.FOUND), CAAutarch.siteExists(), CAAutarch.anywhere());
+            if (!CAAutarch.siteExists()) return false;   // 0.3.33.0: the station by id before the sector-wide search
+            return active(on, phase, installed, pulled, true, CASync.generation(), CASync.seen(CATriPad.FOUND), true, CAAutarch.anywhere());
         } catch (Throwable t) { return false; }
     }
 
