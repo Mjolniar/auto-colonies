@@ -505,7 +505,7 @@ public class CAEndgame {
     static boolean replaceAllowed(MarketAPI m, CASettings s) {
         if (!CARich.wondersOpen(s)) return false;   // 0.3.0.0 (C3 fix): replacements are the Wonders and endgame rung's: none while it's Off or Recommend only, or under Fleet, Expansion or Save
         Long lastAny = CAMark.at(LAST_REPLACE);
-        if (s.endgameNoReplace || lastAny != null && CAMark.days(lastAny, CAMark.now()) < 1f) return false;
+        if (CAConquered.endgameNoReplace(s, m) || lastAny != null && CAMark.days(lastAny, CAMark.now()) < 1f) return false;   // 0.3.34.0: per colony
         Long last = CAData.get().swapAt().get(m.getId() + ":replaced");
         return last == null || Global.getSector().getClock().getElapsedDaysSince(last) >= REPLACE_COLONY_DAYS;
     }

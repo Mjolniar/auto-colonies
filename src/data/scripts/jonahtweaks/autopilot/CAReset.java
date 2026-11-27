@@ -37,7 +37,7 @@ public class CAReset {
         failed += run("industry limit", () -> CAOverLimit.reset());
         failed += run("fleet limit", () -> { CAFleetLimit.PEAKS.clear(); CAFleetLimit.WEEK.clear(); });   // 0.3.18.3: held patrol counts, weekly tallies
         failed += run("expansion scan", () -> CAExpansion.reset());
-        failed += run("relocation", () -> CARelocate.lastLook = -99f);   // 0.3.19.2: the weekly look
+        failed += run("relocation", () -> { CARelocate.lastLook = -99f; CARelocate.status = null; });   // 0.3.19.2: the weekly look; 0.3.34.0: its status line
         failed += run("materials colonies", () -> CAMaterials.lastLook = -99f);   // 0.3.20.0: the weekly look
         failed += run("kept reads", () -> CAMemo.reset());   // 0.3.20.1: income and BMO reads of a look   // 0.3.0.9: the candidate list and status line held the last save's
         // the weekly timers 0.2.45 ran on the session's own clock (0.2.45.1 reset these in CAAuto.reset). 0.3.0.0 (A1 fix): back to

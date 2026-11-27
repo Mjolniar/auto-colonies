@@ -313,6 +313,11 @@ public final class CALunaSync {
         bool("warretake", "Retake your lost colonies", "noWarRetake", true, "Active at Retaliate and up. Requires Nexerelin.");
         bool("warrivals", "Top hostile threat as Rival", "warAutoRivals", false, "The highest hostile threat is treated as a Rival. Requires Nexerelin.");
         radio("warconq", "Conquered colonies start in", "conqueredMode", CASettings.CONQUERED_NAMES, "Conquered colonies begin in this mode. Requires Nexerelin.");
+        // 0.3.34.0 (GitHub #2)
+        radio("conqtd", "Conquered colonies: Take down buildings", "conqTakeDown", CAConquered.TAKE_DOWN_NAMES, "Colonies you conquered (they started "
+                + "with another faction) can use their own setting. Requires Nexerelin.");
+        radio("conqpol", "Conquered colonies: Colony policies", "conqPolicies", CAConquered.POLICY_NAMES, "Colonies you conquered can use their own setting. "
+                + "Requires Nexerelin.");
         radio("warscorch", "Bombardment targets", "scorchedTargets", CASettings.SCORCHED_TARGET_NAMES, "Applied at Scorched. Requires Nexerelin.");
         bool("warcoal", "Coalition risk allowed", "warCoalitionOK", false, "When off, offensives are halted before a coalition forms. Requires Nexerelin.");
         // 0.3.8.6: Sindrian Diktat raiders, their own switch (inverted field, on by default)

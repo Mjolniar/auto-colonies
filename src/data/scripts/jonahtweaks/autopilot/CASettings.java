@@ -291,6 +291,8 @@ public class CASettings {
     public boolean warAutoRivals = false, warCoalitionOK = false, warScorchedOK = false;
     /** E: mode a conquered colony gets (CONQUERED_NAMES); what Scorched bombards (SCORCHED_TARGET_NAMES). */
     public int conqueredMode = 0, scorchedTargets = 0;
+    /** 0.3.34.0 (GitHub #2): Take down buildings and Colony policies for conquered colonies (CAConquered); 0 = same as other colonies. */
+    public int conqTakeDown = 0, conqPolicies = 0;
     public static final String[] CONQUERED_NAMES = {"Auto", "Approve", "Advisor"};
     public static final String[] SCORCHED_TARGET_NAMES = {"Capitals only", "Capitals and small colonies"};
     /** E: faction id -> stance (CAStance, -3 Ally .. +3 Destroy). A missing entry is Auto (0). Older saves: CAMigrate from factionPriority. */

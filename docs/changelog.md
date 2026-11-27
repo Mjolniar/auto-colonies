@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.34.0 - 2026-11-27
+
+- Conquered colonies: Added "Conquered colonies: Take down buildings" and "Conquered colonies: Colony policies" under Settings, War. A conquered colony is one that started the game with another faction. Both default to Main setting, which uses the main setting. Needs Nexerelin. Suggested by Nate700.
+- Relocation: Added a Never abandon button on the colony panel of an Auto colony while Relocate weak colonies is on. Relocation skips that colony.
+- Relocation: The Expansion page shows the last relocation look: what it waits for, the colony it asks to abandon, or the one it abandoned.
+
 ## 0.3.33.1 - 2026-11-27
 
 - Special projects: A project you rejected is skipped, so the other projects can be proposed during its hold.

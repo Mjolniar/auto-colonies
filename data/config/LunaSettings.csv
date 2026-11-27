@@ -118,6 +118,8 @@ ca_fleetlimit,Fleet limit per system,Boolean,true,,"Systems with your colonies h
 ca_warretake,Retake your lost colonies,Boolean,true,,Active at Retaliate and up. Requires Nexerelin.,,,Advanced
 ca_warrivals,Top hostile threat as Rival,Boolean,false,,The highest hostile threat is treated as a Rival. Requires Nexerelin.,,,Advanced
 ca_warconq,Conquered colonies start in,Radio,Advisor,"Auto, Approve, Advisor",Conquered colonies begin in this mode. Requires Nexerelin.,,,Advanced
+ca_conqtd,Conquered colonies: Take down buildings,Radio,Main setting,"Main setting, Never, Clean up, Free hand",Colonies you conquered (they started with another faction) can use their own setting. Requires Nexerelin.,,,Advanced
+ca_conqpol,Conquered colonies: Colony policies,Radio,Main setting,"Main setting, Auto, Don't touch",Colonies you conquered can use their own setting. Requires Nexerelin.,,,Advanced
 ca_warscorch,Bombardment targets,Radio,Capitals only,"Capitals only, Capitals and small colonies",Applied at Scorched. Requires Nexerelin.,,,Advanced
 ca_warcoal,Coalition risk allowed,Boolean,false,,"When off, offensives are halted before a coalition forms. Requires Nexerelin.",,,Advanced
 ca_enfdiktat,Sindrian Diktat raiders,Boolean,true,,"Colony patrols engage Sindrian Diktat raiders even with Enforcer patrols off, at no cost and with no change in reputation.",,,Advanced

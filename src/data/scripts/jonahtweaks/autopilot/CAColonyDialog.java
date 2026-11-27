@@ -66,6 +66,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
     final java.util.Set<String> openSec = new java.util.HashSet<String>();
     static final String SEC = "ca:sec:";
     static final String AUTARCH = "ca:autarch";   // 0.3.10.2: Seat Autarch (CAAutarchAdmin.seatByYou)
+    static final String NOABANDON = "ca:noabandon";   // 0.3.34.0: Never abandon (CARelocate)
 
     /** Scroll position of the previous build, kept across rebuilds of the same page. */
     float savedScroll() {
@@ -187,6 +188,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         else if (EMPIRE.equals(id)) { CAModeTable.setEmpire(d.settings, c.mode); message = "Empire mode set to " + c.mode.label; }
         else if (LOWPROF.equals(id)) CALowProfile.set(d.settings, !d.settings.lowProfile, "Colony panel");   // 0.3.7.8
         else if (AUTARCH.equals(id)) { String err = CAAutarchAdmin.seatByYou(market); message = err; }   // 0.3.10.2
+        else if (NOABANDON.equals(id)) c.noAbandon = !c.noAbandon;   // 0.3.34.0: the button is lit while it's on
         else if (REFRESH.equals(id)) {   // 0.3.0.0 (A4 fix, 07 M6): scored on a click, never while the panel draws; no plan tracking
             CAEngine.refresh(market, planWith(c), d.settings.minStability, buildoutRanking(c));
             message = null;
@@ -758,6 +760,7 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         // the next build
         if (!outpost && !shunt && c.mode != CAData.Mode.OFF) nextCard(t, data, c, cw, planWith, buildout);
         empireLine(t, c, s);
+        abandonLine(t, c, s);   // 0.3.34.0
         t.addSpacer(4f);
     }
 
@@ -830,6 +833,14 @@ public class CAColonyDialog extends BaseCustomDialogDelegate {
         LabelAPI el = t.addPara("Empire: " + em.label + ".", Misc.getGrayColor(), 0f);
         el.getPosition().rightOfMid(eb, 10f);
         CALog.endRow(t, eb);
+    }
+
+    /** 0.3.34.0 (relocation phase 2): the colony's Never abandon switch, while Relocate weak colonies is on and it's on Auto. */
+    void abandonLine(TooltipMakerAPI t, CAData.Colony c, CASettings s) {
+        if (s.abandonMode <= 0 || c.mode != CAData.Mode.AUTO) return;
+        ButtonAPI b = t.addButton("Never abandon", NOABANDON, c.noAbandon ? Misc.getHighlightColor() : Misc.getBasePlayerColor(), Misc.getDarkPlayerColor(),   // lit while on
+                Alignment.MID, CutStyle.TL_BR, 220f, 22f, 6f);
+        CALog.endRow(t, b);
     }
 
     /** The Recommended builds list: the top three options with what they're worth and a button each. */

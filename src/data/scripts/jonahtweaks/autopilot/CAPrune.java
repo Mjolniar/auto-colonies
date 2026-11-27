@@ -55,10 +55,11 @@ public class CAPrune {
         try { CATombstone.weekly(d); }
         catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "removal mark tidy failed", t); }
         CASettings s = CAData.settings();
-        if (s.noPrune) return;
+        if (!CAConquered.anyPrune(s)) return;   // 0.3.34.0: conquered colonies may have their own Take down buildings
         float now = CADay.now();
         for (MarketAPI m : auto) {
             if (CAEngine.isOutpost(m) || CAHypershunt.is(m)) continue;
+            if (CAConquered.noPrune(s, m)) continue;
             if (!m.isPlayerOwned() || d.colony(m.getId()).mode != CAData.Mode.AUTO) continue;   // 0.3.8.8: lost or set off Auto since the list was made
             Float last = looked.get(m.getId());
             if (last != null && now - last < EVERY_DAYS && now >= last) continue;

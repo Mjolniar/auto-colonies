@@ -67,6 +67,7 @@ public final class CAModeTable {
             "noScreenButton", "voice", "screenLog", "showThinking", "logisticsShips", "logisticsSupplies", "partsToCapital", "capitalStart",
             "capitalNoGather", "moveLines", "projectAsks", "devPlan", "productionLine", "richCap", "noMarketModel", "noOverLimitFix", "noFleetLimit", "techFindsKeep", "logisticsAll", "expandLine", "expandScope", "expandGoal", "expandMethod", "expandMax", "abandonMode", "materialsMode", "stationRefit",
             "noExpandBuildout", "noExpandAdmins", "noWarRetake", "warAutoRivals", "warCoalitionOK", "warScorchedOK", "scorchedTargets",
+            "conqTakeDown", "conqPolicies",   // 0.3.34.0 (GitHub #2)
             "enfOn", "enfInvestigators", "enfInspections", "enfLeague", "enfProtectors", "enfRaiders", "enfPolice", "enfCost",
             "enfCommissionOK", "enfAlliesOK", "enfCeasefireOK", "enfLowProfileOK", "enfNearYouOK", "enfAllColonies", "enfIntercept",
             "enfDiktatOff",   // 0.3.8.6

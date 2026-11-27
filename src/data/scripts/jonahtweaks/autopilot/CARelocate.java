@@ -71,6 +71,14 @@ public final class CARelocate {
 
     /** The game day of the last look this session; -99 none. CAReset sets it back. */
     static float lastLook = -99f;
+    /** 0.3.34.0: the last look's result for the Expansion page; null before the first look this session. CAReset clears it. */
+    static String status = null;
+
+    /** 0.3.34.0: the Expansion page's relocation line, or null with the setting Off. */
+    static String statusLine(CASettings s) {
+        if (s == null || s.abandonMode <= 0) return null;
+        return status != null ? status : "Relocation: it looks once the colony limit is the only thing stopping the next expedition.";
+    }
 
     /** What an abandoned colony's storage holds on its way to Storage at `to` (CAData.evacs, saved). */
     public static class Evac { public String from, to; public long sent; public float days; public CargoAPI cargo; }
@@ -131,21 +139,34 @@ public final class CARelocate {
 
     /** From CAExpansion.run when only the colony limit or Most colonies stops the next expedition. */
     static void look(CAData d, CASettings s, List<MarketAPI> auto, CAExpansion.Money money) {
-        if (s.abandonMode <= 0 || CALog.whatIf() || auto == null || auto.isEmpty() || money == null || !money.rich) return;
+        if (s.abandonMode <= 0 || CALog.whatIf() || auto == null || auto.isEmpty() || money == null) return;
+        if (!money.rich) { status = "Relocation: it waits for money to reach Rich."; return; }   // 0.3.34.0: the Expansion page's line
         if (!d.expandOrders().isEmpty() || d.expandPendingId != null) return;
         float today = CATime.today();
         if (today - lastLook < LOOK_DAYS && today >= lastLook) return;
         lastLook = today;
         Long last = CAMark.at(LAST);
-        if (last != null && CAMark.days(last, CAMark.now()) < PACE_DAYS) return;
+        if (last != null && CAMark.days(last, CAMark.now()) < PACE_DAYS) {
+            status = "Relocation: the next colony can go " + Math.round(PACE_DAYS - CAMark.days(last, CAMark.now())) + " days from now, a year after the last one.";
+            return;
+        }
         CAExpansion.Prospect p = CAExpansion.best(d, s, false);
-        if (p == null) return;
+        if (p == null) { status = "Relocation: there's no planet worth moving to."; return; }
         CAExpansion.ExpansionCost c = CAExpansion.costFor(d, s, p, false);
-        if (c.why != null || CAExpansion.afford(money, c.total, CAExpansion.lineIndex(s) == 0) != null) return;
+        if (c.why != null || CAExpansion.afford(money, c.total, CAExpansion.lineIndex(s) == 0) != null) {
+            status = "Relocation: it waits until the expedition to " + p.planetName + " is affordable.";
+            return;
+        }
         Weak w = weakest(d, s, auto, p);
-        if (w == null) return;
-        if (s.abandonMode == 1) { offer(w, p); return; }
+        if (w == null) { status = "Relocation: no colony is weak enough to give up for " + p.planetName + "."; return; }
+        if (s.abandonMode == 1) {
+            offer(w, p);
+            status = "Relocation: it asks to abandon " + w.m.getName() + " for a colony at " + p.planetName + ". It's in Approvals.";
+            return;
+        }
         String err = abandon(d, s, w.m, p.planetName, "Auto");
+        status = err == null ? "Relocation: it abandoned " + w.m.getName() + " for a colony at " + p.planetName + "."
+                : "Relocation: " + w.m.getName() + " wasn't abandoned (" + err + ").";
         if (err != null) CALog.quiet("Relocation: " + w.m.getName() + " not abandoned (" + err + ")");
     }
 
@@ -178,6 +199,7 @@ public final class CARelocate {
         if (capital != null && capital.getId().equals(m.getId())) return "it's the capital";
         CAData.Colony c = d.colony(m.getId());
         if (c.mode != CAData.Mode.AUTO) return "it's not on Auto";
+        if (c.noAbandon) return "you set it to Never abandon";   // 0.3.34.0
         if (CASiege.held(m)) return "it's under siege";
         if (m.getDaysInExistence() < MIN_AGE_DAYS) return "it's under a year old";
         if (!c.locks.isEmpty()) return "it has a locked building";

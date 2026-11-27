@@ -550,6 +550,10 @@ public class CASetupUI {
                 row(t, "Top hostile threat as Rival", onOff(s.warAutoRivals), off, "warrivals", true);
                 row(t, "Conquered colonies start in", CASettings.CONQUERED_NAMES[clamp(s.conqueredMode, CASettings.CONQUERED_NAMES.length)],
                         CASettings.CONQUERED_NAMES[0], "warconq", true);
+                row(t, "Conquered: Take down buildings", CAConquered.TAKE_DOWN_NAMES[clamp(s.conqTakeDown, CAConquered.TAKE_DOWN_NAMES.length)],
+                        CAConquered.TAKE_DOWN_NAMES[0], "conqtd", true);   // 0.3.34.0 (GitHub #2)
+                row(t, "Conquered: Policies", CAConquered.POLICY_NAMES[clamp(s.conqPolicies, CAConquered.POLICY_NAMES.length)],
+                        CAConquered.POLICY_NAMES[0], "conqpol", true);
                 row(t, "Bombardment targets", CASettings.SCORCHED_TARGET_NAMES[clamp(s.scorchedTargets, CASettings.SCORCHED_TARGET_NAMES.length)],
                         CASettings.SCORCHED_TARGET_NAMES[0], "warscorch", true);
                 row(t, "Coalition risk allowed", onOff(s.warCoalitionOK), off, "warcoal", true);
@@ -950,6 +954,8 @@ public class CASetupUI {
         else if (k.equals("warretake")) s.noWarRetake = !s.noWarRetake;
         else if (k.equals("warrivals")) s.warAutoRivals = !s.warAutoRivals;
         else if (k.equals("warconq")) s.conqueredMode = (Math.max(0, Math.min(CASettings.CONQUERED_NAMES.length - 1, s.conqueredMode)) + 1) % CASettings.CONQUERED_NAMES.length;
+        else if (k.equals("conqtd")) s.conqTakeDown = (Math.max(0, Math.min(CAConquered.TAKE_DOWN_NAMES.length - 1, s.conqTakeDown)) + 1) % CAConquered.TAKE_DOWN_NAMES.length;   // 0.3.34.0
+        else if (k.equals("conqpol")) s.conqPolicies = (Math.max(0, Math.min(CAConquered.POLICY_NAMES.length - 1, s.conqPolicies)) + 1) % CAConquered.POLICY_NAMES.length;
         else if (k.equals("warscorch")) s.scorchedTargets = (Math.max(0, Math.min(CASettings.SCORCHED_TARGET_NAMES.length - 1, s.scorchedTargets)) + 1) % CASettings.SCORCHED_TARGET_NAMES.length;
         else if (k.equals("warcoal")) s.warCoalitionOK = !s.warCoalitionOK;
         // 0.3.1.0: enforcer patrols (CAEnforcers)

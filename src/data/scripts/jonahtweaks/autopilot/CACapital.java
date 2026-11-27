@@ -490,7 +490,7 @@ public class CACapital {
      */
     static CAEndgame.Weakest replacement(MarketAPI m, CAData.Colony col, CAEngine.Pick best, CAData.Profile profile) {
         CASettings s = CAData.settings();
-        if (best == null || s.capitalNoRoom || !isStep(m, best.id) || col.mode != CAData.Mode.AUTO) return null;
+        if (best == null || CAConquered.capitalNoRoom(s, m) || !isStep(m, best.id) || col.mode != CAData.Mode.AUTO) return null;   // 0.3.34.0: per colony
         if (!CAEconomy.roomSwapAllowed(CAEconomy.tier(s))) return null;   // 0.3.0.0 (C4, research 03 F8): from the money tier Idle money up
         Long last = CAData.get().swapAt().get(m.getId() + ":replaced");
         if (last != null && Global.getSector().getClock().getElapsedDaysSince(last) < ROOM_DAYS) return null;

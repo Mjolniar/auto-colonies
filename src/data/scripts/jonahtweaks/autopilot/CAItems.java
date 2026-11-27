@@ -237,7 +237,7 @@ public class CAItems {
         if (items && l.lap("lamp", pullLamp(d, markets))) return;
         if (items && l.lap("polluting forge", pullPollutingForge(d, markets))) return;
         if (items && l.lap("items", placeItem(d, s, markets))) return;
-        if (items && !s.disableStabilizers && s.allowRemovals && l.lap("fuel", convertFuel(d, s, markets))) return;   // replaces a building, so only with Allow removals
+        if (items && !s.disableStabilizers && l.lap("fuel", convertFuel(d, s, removable(s, markets)))) return;   // replaces a building, so only with Allow removals (0.3.34.0: per colony)
         if (s.useAICores && l.lap("cores", placeCore(d, s, markets))) return;
         boolean quiet = CALowProfile.on();   // Low profile places no Omega or IX cores (0.2.43.0)
         boolean omega = CASync.has("omega");   // 0.3.6.0 story mode: Omega and IX cores
@@ -704,6 +704,13 @@ public class CAItems {
      * Replaces Fuel Production with Advanced Fuel Production using a stabilizer from Autopilot Storage, the same way
      * Emergent Threats' portmaster does it: the AI core, colony item and improvement carry over.
      */
+    /** 0.3.34.0: the colonies whose Take down buildings allows removals (CAConquered). */
+    static List<MarketAPI> removable(CASettings s, List<MarketAPI> markets) {
+        List<MarketAPI> out = new ArrayList<MarketAPI>();
+        for (MarketAPI m : markets) if (CAConquered.allowRemovals(s, m)) out.add(m);
+        return out;
+    }
+
     static boolean convertFuel(CAData d, CASettings s, List<MarketAPI> markets) {
         if (CAStores.count("ix_antimatter_stabilizer") < 1f) return false;
         if (Global.getSettings().getIndustrySpec("ix_fuel_production") == null) return false;

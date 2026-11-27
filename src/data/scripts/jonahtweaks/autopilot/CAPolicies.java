@@ -98,11 +98,12 @@ public class CAPolicies {
      * before the first plan this session); 0 while you set hazard pay by hand (no buyer on the rung then).
      */
     static float growthWant(CASettings s) {
-        if (s == null || s.hazardPayMode != 0) return 0f;
+        if (s == null || (s.hazardPayMode != 0 && s.conqPolicies <= 0)) return 0f;   // 0.3.34.0: or conquered colonies on their own
         if (!Float.isNaN(lastCost)) return Math.max(0f, lastCost);
         float c = 0f;
         try {
-            for (MarketAPI m : CAItems.autoMarkets()) if (m.isImmigrationIncentivesOn()) c += Math.max(0f, m.getImmigrationIncentivesCost());
+            for (MarketAPI m : CAItems.autoMarkets())
+                if (CAConquered.hazardPayMode(s, m) == 0 && m.isImmigrationIncentivesOn()) c += Math.max(0f, m.getImmigrationIncentivesCost());
         } catch (Throwable t) { return 0f; }
         return c;
     }
@@ -157,14 +158,20 @@ public class CAPolicies {
         // 0.3.0.0: a failed hazard pay plan leaves hazard pay as it is today, except the urgent emergency switch-off; the free port
         // checks still run
         Set<MarketAPI> hpWant = new HashSet<MarketAPI>();
-        boolean hpPlanned = s.hazardPayMode != 0;
+        // 0.3.34.0 (GitHub #2): conquered colonies may have their own Colony policies (CAConquered)
+        List<MarketAPI> hpAuto = new ArrayList<MarketAPI>(), fpAuto = new ArrayList<MarketAPI>();
+        for (MarketAPI m : auto) {
+            if (CAConquered.hazardPayMode(s, m) == 0) hpAuto.add(m);
+            if (CAConquered.freePortMode(s, m) == 0) fpAuto.add(m);
+        }
+        boolean hpPlanned = hpAuto.isEmpty();
         try {
-            if (s.hazardPayMode == 0) hpWant = hazardPlan(auto, s, emergency, growth);
+            if (!hpAuto.isEmpty()) hpWant = hazardPlan(hpAuto, s, emergency, growth);
             hpPlanned = true;
         } catch (Throwable t) { CAStep.warn("colony policy step", "hazard pay plan failed", t); }   // 0.3.0.0: a failed plan never skips the free-port checks
         // 0.3.11.4: a coming Nexerelin police raid: the best defended colony that can beat it keeps its free port, the rest close
         MarketAPI bait = null;
-        try { if (s.freePortMode == 0 && !CALowProfile.on()) bait = CACrisis.policeBait(auto); }
+        try { if (!fpAuto.isEmpty() && !CALowProfile.on()) bait = CACrisis.policeBait(fpAuto); }
         catch (Throwable t) { CAStep.warn("colony policy step", "police target pick failed", t); }
         CALog.forgetAll(BAIT, bait == null ? null : BAIT + bait.getId());   // said once per raid and target
         for (MarketAPI m : auto) {
@@ -179,7 +186,7 @@ public class CAPolicies {
 
                 // ---- hazard pay: buys growth with credits (hazardPlan picks the colonies) ----
                 // without a plan only the urgent emergency switch-off runs; hazard pay is never turned off everywhere
-                if (s.hazardPayMode == 0 && (hpPlanned || (emergency && m.isImmigrationIncentivesOn()))) {
+                if (CAConquered.hazardPayMode(s, m) == 0 && (hpPlanned || (emergency && m.isImmigrationIncentivesOn()))) {
                     try {
                         boolean on = m.isImmigrationIncentivesOn();
                         boolean want = hpWant.contains(m);
@@ -205,7 +212,7 @@ public class CAPolicies {
                 }
 
                 // ---- free port: accessibility and growth for stability and punitive-expedition risk ----
-                if (s.freePortMode == 0) {
+                if (CAConquered.freePortMode(s, m) == 0) {
                     boolean on = m.isFreePort();
                     boolean luddic = m.hasCondition("luddic_majority");
                     // 0.3.11.4: the police raid's chosen target: the raid and the threat it brings are why its port stays open, so

@@ -39,7 +39,11 @@ public class CAIndEvo {
         try { if (!s.disableAmbassadors && hireAmbassador(s, markets)) return; } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "ambassador hire failed", t); }
         try { if (!s.disableVPC && installVPC(s, markets)) return; } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "VPC install failed", t); }
         try { if (!s.disableSpecialties && specialize(s, markets)) return; } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "specialty step failed", t); }
-        try { if (!s.disableEdicts) applyEdict(s, markets); } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "edict step failed", t); }
+        try {   // 0.3.34.0: conquered colonies may have their own Colony policies
+            List<MarketAPI> em = new ArrayList<MarketAPI>();
+            for (MarketAPI m : markets) if (!CAConquered.disableEdicts(s, m)) em.add(m);
+            if (!em.isEmpty()) applyEdict(s, em);
+        } catch (Throwable t) { CADiagnostics.LOG.warn(CADiagnostics.TAG + "edict step failed", t); }
     }
 
     static CargoAPI storageOf(MarketAPI m) {

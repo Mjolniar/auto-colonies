@@ -170,6 +170,8 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | Retake your lost colonies | On, Off | On | It works at Retaliate and up. Needs Nexerelin. |
 | Top hostile threat as Rival | On, Off | Off | The hostile faction on Auto stance with the highest threat counts as Rival. Needs Nexerelin. |
 | Conquered colonies start in | Auto, Approve, Advisor | Empire mode | A conquered colony starts in this mode. Needs Nexerelin. |
+| Conquered colonies: Take down buildings | Main setting, Never, Clean up, Free hand | Main setting | Colonies you conquered (they started with another faction) can use their own Take down buildings setting. Needs Nexerelin. |
+| Conquered colonies: Colony policies | Main setting, Auto, Don't touch | Main setting | Colonies you conquered can use their own Colony policies setting. Needs Nexerelin. |
 | Bombardment targets | Capitals only, Capitals and small colonies | Capitals only | It's used at Scorched. Needs Nexerelin. |
 | Coalition risk allowed | On, Off | Off | When it's off, offensives stop before a coalition forms. Needs Nexerelin. |
 | Sindrian Diktat raiders | On, Off | On | Colony patrols attack them even with Enforcer patrols off, and it doesn't cost anything or change reputation. |
@@ -228,7 +230,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | Goal of a new colony | Fits its plan, Balanced, Money, Security, War production, Rapid growth, Self-sufficiency, Materials | Fits its plan | A new colony starts with this goal. |
 | Method | Nexerelin colony fleet when possible, Autopilot crew only | Nexerelin colony fleet when possible | The colony fleet needs Nexerelin. |
 | Most colonies | Colony limit and administrators, 5, 10, 15, 20 | Colony limit and administrators | It stops founding colonies at this count. |
-| Relocate weak colonies | Off, Ask first, Auto | Off | Once you're at the Rich tier and the colony limit is the only thing stopping new colonies, it abandons a weak colony (size 4 or smaller) so a much better planet can be settled, one a year at most. The colony's AI cores, items and storage get shipped to the capital, and Ask first puts it up for your approval. |
+| Relocate weak colonies | Off, Ask first, Auto | Off | Once you're at the Rich tier and the colony limit is the only thing stopping new colonies, it abandons a weak colony (size 4 or smaller) so a much better planet can be settled, one a year at most. The colony's AI cores, items and storage get shipped to the capital, and Ask first puts it up for your approval. The Never abandon button on a colony's panel keeps that colony, and the Expansion page shows what relocation is doing. |
 | Fast buildout | On, Off | On | It builds up a new colony right away. |
 | Administrator past the limit | On, Off | On | It hires an administrator for a new colony past the limit. |
 | TASC stations | Recommend only, Auto, Off | Empire mode | With New colonies on Auto, Auto stations only recommend while the Expansion rung asks first. Needs Terraforming & Station Construction. |

@@ -57,6 +57,8 @@ public class CAData {
         public long megaHold;
         // Fast buildout (CABuildout): running, the credit floor (0 = default), and when net income last turned positive (0 = it isn't)
         public boolean buildout;
+        /** 0.3.34.0 (relocation phase 2): Never abandon, set on the colony panel (CARelocate.blocked). */
+        public boolean noAbandon;
         public float buildoutFloor;
         public long buildoutProfitSince;
         // 0.2.38.0: when it started (0: before 0.2.38.0, set on its next pass) and when it last found nothing that pays (0: it found something)

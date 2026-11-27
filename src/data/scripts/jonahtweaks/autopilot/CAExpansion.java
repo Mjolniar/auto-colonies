@@ -1619,6 +1619,7 @@ public class CAExpansion {
         t.addPara("Auto-expansion: %s.", 6f, hl, modeName(s));   // 0.3.0.0 (WS-F3 fix pass 2): scope, money and method are in Settings, Advanced
         String st = SCAN.status != null && SCAN.statusDay == CATime.today() ? SCAN.status : mode(s) == 0 ? offReason(s) : null;
         if (st != null) t.addPara(st, gray, 4f);   // 0.3.8.6: no CALog.esc: plain addPara text and highlight values show as is
+        try { String rs = CARelocate.statusLine(s); if (rs != null) t.addPara(rs, gray, 2f); } catch (Throwable ignored) { }   // 0.3.34.0
         try {
             Room r = room(d, s);
             t.addPara("Colonies governed: %s of %s. Administrators: %s of %s, %s idle.", 4f, hl,
@@ -1645,7 +1646,7 @@ public class CAExpansion {
         List<Prospect> list = cached();
         ButtonAPI scan = t.addButton(list == null ? "Scan for candidates" : "Scan again", new String[]{"expand", "scan", ""}, base, dark, Alignment.MID, CutStyle.TL_BR, 200f, 22f, 8f);
         CALog.endRow(t, scan);
-        if (list == null) { t.addPara("Not scanned yet.", gray, 4f); }
+        if (list == null) { t.addPara("Not scanned.", gray, 4f); }
         else if (list.isEmpty()) { t.addPara(nothingReason(s), gray, 4f); }   // 0.3.8.6: shown as is
         else {
             t.addPara("Best candidates (value at size %s):", 6f, hl, String.valueOf(VALUE_SIZE));
