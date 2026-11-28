@@ -236,6 +236,35 @@ public class CAIndEvo {
         return false;
     }
 
+    static final String INCENTIVES = "IndEvo_edict_ind_incent", RELOCATION = "IndEvo_edict_forced_reloc";
+    /** Edict_ForcedRelocation: stability at every colony of the faction in the system. */
+    static final float RELOCATION_STABILITY = -3f;
+
+    /** Pure (0.3.37.0): Industrial Incentives' monthly net: the extra output's worth less the upkeep it adds (the industries' upkeep again). */
+    static float incentivesNet(float outputWorth, float upkeep) { return outputWorth - upkeep; }
+
+    /** Industrial Incentives at m: +1 on each industry's output lines at the unit value, against those industries' upkeep. */
+    static float incentivesNet(MarketAPI m) {
+        float worth = 0f, upkeep = 0f;
+        for (Industry ind : m.getIndustries()) {
+            if (!ind.isIndustry() || ind.isHidden()) continue;
+            try { upkeep += ind.getUpkeep().getModifiedValue(); } catch (Throwable ignored) { }
+            for (com.fs.starfarer.api.campaign.econ.MutableCommodityQuantity q : ind.getAllSupply()) {
+                if (q.getQuantity().getModifiedInt() <= 0) continue;
+                try { worth += Global.getSettings().getCommoditySpec(q.getCommodityId()).getBasePrice() * CAEngine.unitValue; } catch (Throwable ignored) { }
+            }
+        }
+        return incentivesNet(worth, upkeep);
+    }
+
+    /** Every other colony of yours in m's system can take the stability change. */
+    static boolean systemCanLose(MarketAPI m, float delta, String why) {
+        if (m.getStarSystem() == null) return true;
+        for (MarketAPI o : Misc.getMarketsInLocation(m.getStarSystem(), m.getFactionId()))
+            if (o != m && !CAStability.canLose(o, delta, why)) return false;
+        return true;
+    }
+
     /** The edict this colony should run, or null. Harsh edicts (forced labour, cleansing, single-child, labour limits) are never automated. */
     static String wantedEdict(MarketAPI m, CAData.Profile prof) {
         if (CAThreat.isHigh(m)) return "IndEvo_edict_lockdown";
@@ -267,6 +296,13 @@ public class CAIndEvo {
                 }
                 Float held = edictHeld.get(key);
                 if (held != null && CADay.now() - held < 30f && CADay.now() >= held) continue;
+                // 0.3.37.0 (Edict_Incentives): +1 on every output line of every industry for twice their upkeep
+                if (INCENTIVES.equals(id) && incentivesNet(m) <= 0f) {
+                    if (CALog.once(key + ":net")) CALog.quiet(m.getName() + ": " + spec.getName() + " not enacted: the doubled upkeep is more than the extra output");
+                    continue;
+                }
+                // 0.3.37.0 (Edict_ForcedRelocation): -3 stability at every colony of yours in the system
+                if (RELOCATION.equals(id) && !systemCanLose(m, RELOCATION_STABILITY, "enacting " + spec.getName())) continue;
                 float before = CAStability.now(m);
                 m.addCondition(id);
                 m.reapplyConditions();

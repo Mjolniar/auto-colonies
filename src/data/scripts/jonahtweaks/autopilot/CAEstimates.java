@@ -99,7 +99,11 @@ public class CAEstimates {
         } else if (id.equals("IndEvo_SupCom")) {
             p.fx[0] += 1000f * s; note(p, "Research output from shackled AI");
         } else if (id.equals("IndEvo_pirateHaven")) {
-            p.fx[0] += 1500f * s; p.fx[1] -= 1f; note(p, "Privateer income; adds a lawless subpopulation");
+            // 0.3.37.0 (PirateSubpopulationCondition): the base cancels its subpopulation's -2; +2 with pirates at Neutral or better
+            boolean friendly = false;
+            try { friendly = com.fs.starfarer.api.Global.getSector().getPlayerFaction().isAtWorst("pirates", com.fs.starfarer.api.campaign.RepLevel.NEUTRAL); } catch (Throwable ignored) { }
+            p.fx[0] += 1500f * s; if (friendly) p.fx[1] += 2f;
+            note(p, "Privateer income; adds a lawless subpopulation" + (friendly ? ", +2 stability while pirates are Neutral" : ""));
         } else if (id.startsWith("IndEvo_") && (id.endsWith("Palace") || id.equals("IndEvo_Memorial") || id.equals("IndEvo_LeisureOrbitals")
                 || id.equals("IndEvo_Megachurch") || id.equals("IndEvo_LavaFortress") || id.equals("IndEvo_CloudPainter"))) {
             p.fx[1] += 1f; p.fx[6] += 0.5f; note(p, "World symbol: stability and prestige");

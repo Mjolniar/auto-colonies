@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.37.0 - 2026-11-27
+
+- Industrial Evolution: Industrial Incentives is enacted only where its extra output is worth more than the upkeep it doubles.
+- Industrial Evolution: Forced Relocation is enacted only when every colony of yours in the system can take its -3 stability.
+- Industrial Evolution: The Privateer Base no longer counts -1 stability. Its subpopulation's -2 is cancelled by the base, and it counts +2 while pirates are Neutral or better with you.
+
 ## 0.3.36.0 - 2026-11-27
 
 - Tech: Added a Tech setting under Settings, Playstyle: Mixed, High tech or Luddic. Mixed picks stations by score. High tech builds the high-tech station line. Luddic builds the low-tech station line, sets AI cores to Off and installs no colony item the Luddic Path targets. Default: Mixed.
