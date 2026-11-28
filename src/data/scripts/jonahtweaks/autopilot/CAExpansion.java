@@ -140,6 +140,9 @@ public class CAExpansion {
     public static class Prospect {
         public String planetId, planetName, systemId, systemName, plan, reason, goal, method, near;
         public float value, location, cost, fee, steps, ly, lyCapital, payback, deposits, crisis, admin, threat, hazard, world;
+        /** 0.3.38.0: a Coronal Hypershunt's extra industry slot; a share of the other good sites in the system. */
+        public float shunt, neighbors;
+        public int sites;
         public boolean sameSystem, pays;
         public int coloniesThere;
         float score() { return value * location; }
@@ -1351,6 +1354,13 @@ public class CAExpansion {
         }
         r.threat = threatCost(h, size);
         r.value = valueOf(r.deposits, hab, r.world, r.hazard, r.crisis, r.admin, r.threat, CASurvival.keptShare());   // 0.3.0.9: survival mode's corruption
+        // 0.3.38.0: a usable Coronal Hypershunt in reach with a Coronal Portal to spare, and the system's other good sites
+        r.shunt = shuntSlot(p);
+        List<Float> others = otherSites(p, sys);
+        r.sites = others.size();
+        r.neighbors = neighborBonus(others);
+        float kept = CASurvival.keptShare();
+        r.value += (r.shunt + r.neighbors) * (kept >= 0f && kept < 1f ? kept : 1f);
         // location
         r.ly = lyToColony(p, x);
         r.lyCapital = lyToCapital(p, x);
@@ -1375,6 +1385,8 @@ public class CAExpansion {
         for (int i = 0; i < Math.min(3, got.size()); i++) why.append(i == 0 ? "" : ", ").append(got.get(i));
         if (hab) why.append(why.length() == 0 ? "" : ", ").append("habitable");
         if (r.world > 0f) why.append(why.length() == 0 ? "" : ", ").append(world.name).append(" in reach");
+        if (r.shunt > 0f) why.append(why.length() == 0 ? "" : ", ").append("Coronal Hypershunt in reach");
+        if (r.neighbors > 0f) why.append(why.length() == 0 ? "" : ", ").append(r.sites).append(r.sites == 1 ? " more site" : " more sites").append(" in the system");
         if (why.length() == 0) why.append("no deposits");
         why.append(r.sameSystem ? "; same system as " + r.near : "; " + Math.round(r.ly) + " ly from " + r.near);
         r.reason = why.toString();
@@ -1483,6 +1495,56 @@ public class CAExpansion {
     /** Pure: nearby hostile markets as a monthly cost, 0.1 each and 0.02 per size, at most THREAT_CAP, times THREAT_REF. */
     static float threatCost(int hostileMarkets, int totalSize) {
         return Math.min(THREAT_CAP, 0.1f * hostileMarkets + 0.02f * totalSize) * THREAT_REF;
+    }
+
+    /** The system's other good sites count this share of their value, the best NEIGHBOR_MAX of them (judgment: colonies in one system share defense and stable locations). */
+    static final float NEIGHBOR_SHARE = 0.1f;
+    static final int NEIGHBOR_MAX = 3;
+
+    /** Pure (0.3.38.0): NEIGHBOR_SHARE of the best NEIGHBOR_MAX sites' values. */
+    static float neighborBonus(List<Float> values) {
+        List<Float> v = new ArrayList<Float>(values);
+        Collections.sort(v, Collections.reverseOrder());
+        float sum = 0f;
+        for (int i = 0; i < Math.min(NEIGHBOR_MAX, v.size()); i++) sum += Math.max(0f, v.get(i));
+        return NEIGHBOR_SHARE * sum;
+    }
+
+    /** The values (deposits and the habitable bonus at VALUE_SIZE) of the system's other surveyed, unsettled planets that have any. */
+    static List<Float> otherSites(PlanetAPI p, StarSystemAPI sys) {
+        List<Float> out = new ArrayList<Float>();
+        if (sys == null) return out;
+        for (PlanetAPI o : sys.getPlanets()) {
+            if (o == p || o.isStar()) continue;
+            MarketAPI om = o.getMarket();
+            if (om == null || om.isInEconomy() || om.getSurveyLevel() != MarketAPI.SurveyLevel.FULL) continue;
+            boolean hab = om.hasCondition(Conditions.HABITABLE);
+            float v = deposits(om, hab, null) + (hab ? HAB_BONUS : 0f);
+            if (v > 0f) out.add(v);
+        }
+        return out;
+    }
+
+    /** Pure (0.3.38.0): what a vanilla Light Industry makes at this size, in base price: domestic goods at the size, luxury goods at size - 2. */
+    static float slotPrice(int size) { return size * 50f + Math.max(0, size - 2) * 100f; }
+
+    /**
+     * 0.3.38.0: a Coronal Portal gives a colony within 10 ly of a usable Coronal Hypershunt one more industry slot
+     * (ItemEffectsRepo.CORONAL_PORTAL). Counted only with a portal in Autopilot Storage or your cargo, at a vanilla Light
+     * Industry's output at VALUE_SIZE, on the deposits' scale.
+     */
+    static float shuntSlot(PlanetAPI p) {
+        try {
+            float spare = CAStores.count(com.fs.starfarer.api.impl.campaign.ids.Items.CORONAL_PORTAL);
+            CampaignFleetAPI pf = Global.getSector().getPlayerFleet();
+            if (pf != null) spare += pf.getCargo().getQuantity(com.fs.starfarer.api.campaign.CargoAPI.CargoItemType.SPECIAL,
+                    new com.fs.starfarer.api.campaign.SpecialItemData(com.fs.starfarer.api.impl.campaign.ids.Items.CORONAL_PORTAL, null));
+            if (spare < 1f) return 0f;
+            com.fs.starfarer.api.util.Pair<SectorEntityToken, Float> tap =
+                    com.fs.starfarer.api.impl.campaign.econ.impl.PopulationAndInfrastructure.getNearestCoronalTap(p.getLocationInHyperspace(), true);
+            if (tap == null || tap.one == null || tap.two == null || tap.two > com.fs.starfarer.api.impl.campaign.econ.impl.ItemEffectsRepo.CORONAL_TAP_LIGHT_YEARS) return 0f;
+            return slotPrice(VALUE_SIZE) * CAEngine.unitValue * DEPOSIT_SHARE;
+        } catch (Throwable t) { return 0f; }
     }
 
     /** Pure: credits a month at VALUE_SIZE. */

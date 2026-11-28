@@ -154,6 +154,8 @@ public class CAResearch {
         public float days, spent;
         public Map<String, Integer> items = new LinkedHashMap<String, Integer>();
         public Set<String> industries = new LinkedHashSet<String>();
+        /** 0.3.38.0: blueprint rewards, id to VoK's reward type (SHIP, WEAPON, FIGHTER, HULLMOD). */
+        public Map<String, String> blueprints = new LinkedHashMap<String, String>();
         public List<String> prereqs = new ArrayList<String>();
         public boolean available, needsItems, unlockedByCommission;
         public float own, next, value, cost, rank;
@@ -192,6 +194,7 @@ public class CAResearch {
         Map<String, Object> rw = (Map<String, Object>) CARefl.get(fRewards, o);
         if (rw != null) for (Map.Entry<String, Object> e : rw.entrySet()) {
             if (e.getValue() instanceof Enum && "INDUSTRY".equals(((Enum<?>) e.getValue()).name()) && Global.getSettings().getIndustrySpec(e.getKey()) != null) t.industries.add(e.getKey());
+            else if (e.getValue() instanceof Enum && BLUEPRINT_TYPES.contains(((Enum<?>) e.getValue()).name())) t.blueprints.put(e.getKey(), ((Enum<?>) e.getValue()).name());
         }
         for (String[] g : GATES) if (g[0].equals(t.id)) t.industries.add(g[1]);
         Object other = CARefl.get(fOther, o);
@@ -608,10 +611,56 @@ public class CAResearch {
         return v;
     }
 
+    static final Set<String> BLUEPRINT_TYPES = new HashSet<String>(Arrays.asList("SHIP", "WEAPON", "FIGHTER", "HULLMOD"));
+    /** Without a colony that makes ships, a blueprint counts this share (it's for later). */
+    static final float NO_PRODUCER_SHARE = 0.5f;
+
+    /** Pure (0.3.38.0): a ship blueprint's price, as ShipBlueprintItemPlugin: a base by hull size plus the hull's value x the setting's multiplier. */
+    static float shipBlueprintPrice(float sizeBase, float hullValue, float hullMult) { return sizeBase + hullValue * hullMult; }
+
+    /** The game's price for the blueprint of this reward (0 when your faction knows it already or it can't be read). */
+    static float blueprintPrice(String id, String type) {
+        try {
+            com.fs.starfarer.api.campaign.FactionAPI f = Global.getSector().getPlayerFaction();
+            com.fs.starfarer.api.SettingsAPI g = Global.getSettings();
+            if ("SHIP".equals(type)) {
+                if (f.knowsShip(id)) return 0f;
+                com.fs.starfarer.api.combat.ShipHullSpecAPI h = g.getHullSpec(id);
+                String key = h.getHullSize() == com.fs.starfarer.api.combat.ShipAPI.HullSize.CAPITAL_SHIP ? "blueprintBasePriceCapital"
+                        : h.getHullSize() == com.fs.starfarer.api.combat.ShipAPI.HullSize.CRUISER ? "blueprintBasePriceCruiser"
+                        : h.getHullSize() == com.fs.starfarer.api.combat.ShipAPI.HullSize.DESTROYER ? "blueprintBasePriceDestroyer" : "blueprintBasePriceFrigate";
+                return shipBlueprintPrice(g.getFloat(key), h.getBaseValue(), g.getFloat("blueprintPriceOriginalShipMult"));
+            }
+            if ("WEAPON".equals(type)) return f.knowsWeapon(id) ? 0f : g.getWeaponSpec(id).getBaseValue() * g.getFloat("blueprintPriceOriginalItemMult");
+            if ("FIGHTER".equals(type)) return f.knowsFighter(id) ? 0f : g.getFighterWingSpec(id).getBaseValue() * g.getFloat("blueprintPriceOriginalItemMult");
+            if ("HULLMOD".equals(type)) return f.knowsHullMod(id) ? 0f : g.getHullModSpec(id).getBaseValue();
+        } catch (Throwable ignored) { }
+        return 0f;
+    }
+
+    /** Pure (0.3.38.0): blueprints' prices as credits a month: spread over the payback horizon, at NO_PRODUCER_SHARE without a ship producer. */
+    static float blueprintMonthly(float prices, float horizonMonths, boolean producer) {
+        return horizonMonths <= 0f ? 0f : prices / horizonMonths * (producer ? 1f : NO_PRODUCER_SHARE);
+    }
+
+    static boolean shipProducer() {
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) for (Industry ind : m.getIndustries())
+            if (ind.isFunctional() && (CAFloors.SHIP_PRODUCERS.contains(ind.getId()) || ind.getSpec().hasTag("uses_blueprints"))) return true;
+        return false;
+    }
+
     /** Monthly value of a tech's effects that aren't buildings, from what VoK's code does (several tooltips claim more). */
     static float effects(Tech t) {
-        float v = 0f;
+        float v = 0f, bp = 0f;
         String what = null;
+        // 0.3.38.0: ship, weapon, wing and hullmod blueprints at the game's blueprint prices
+        if (!t.blueprints.isEmpty()) {
+            float prices = 0f;
+            int n = 0;
+            for (Map.Entry<String, String> e : t.blueprints.entrySet()) { float pr = blueprintPrice(e.getKey(), e.getValue()); if (pr > 0f) { prices += pr; n++; } }
+            float bv = blueprintMonthly(prices, CAHorizon.months(), shipProducer());
+            if (bv > 0f) { bp = bv; t.lines.add(n + " blueprint" + (n == 1 ? "" : "s") + " worth " + CAEngine.credits(prices) + ": " + CAEngine.valueText(bv)); }
+        }
         if (t.id.equals("aotd_tech_streamlined_production")) { v = lineValue(false); what = "+1 to every output line (" + outputLines(false) + " lines)"; }
         else if (t.id.equals("aotd_tech_advanced_mining_equipment")) { v = lineValue(true); what = "+1 to every mining output line (" + outputLines(true) + " lines)"; }
         else if (t.id.equals("aotd_tech_hazmat_equipment")) { v = upkeep(false, 0.1f) + growthValue(false, 0.1f); what = "hazard -10% on every colony: lower upkeep and faster growth"; }
@@ -627,7 +676,7 @@ public class CAResearch {
         float tf = 0f;
         for (String ind : t.industries) { Float x = CATerraSim.lockedValue.get(ind); if (x != null) tf += x; }
         if (tf > 0f) { v += tf; t.lines.add("Opens surplus terraforming: " + CAEngine.valueText(tf)); }
-        return v;
+        return v + bp;
     }
 
     /**

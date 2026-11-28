@@ -1,5 +1,17 @@
 # Patch notes
 
+## 0.3.38.0 - 2026-11-27
+
+- Research: Ship, weapon, wing and hullmod blueprints a tech unlocks count at the game's own blueprint prices, spread over the payback horizon (36 months by default). Half value while none of your colonies makes ships.
+- Research: Special projects, abilities, Grand Wonders and megastructures other than the Coronal Hypershunt add no research value. They stay your call.
+- Bifrost: A gate goes up only where it pays. Worth: a tenth of the gated system's colony accessibility, on every colony, at each colony goal's accessibility weight. Cost: 20,000 a month upkeep and 3 Enriched Transplutonics (4,500 at base price). The first gate starts only when the best two gates pay for both.
+- New colonies: A site within 10 ly of a usable Coronal Hypershunt counts one more industry slot (a vanilla Light Industry's output at size 5) while a Coronal Portal waits in Autopilot Storage or your cargo.
+- New colonies: A site counts 10% of the value of the best 3 other surveyed, unsettled planets in its system.
+- Relocation: A colony over size 4 (when a mod raises the game's abandon limit) is only offered on Ask first. Auto never abandons one.
+- Courier Port: Ships Domain-grade Parts and Industrial Evolution's Ship Components to colonies that are short.
+- United Aurora Federation: The Dimensional Nanoforge's value is a Pristine Nanoforge's (same +50% quality). Its +2 output counts by units.
+- Industrial Evolution: Lockdown is enacted only while the colony is under siege or invasion and the threat is high.
+
 ## 0.3.37.0 - 2026-11-27
 
 - Industrial Evolution: Industrial Incentives is enacted only where its extra output is worth more than the upkeep it doubles.

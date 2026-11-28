@@ -37,6 +37,29 @@ public class CAWonders {
     static final String SITE_MARK = "wondersite:";
     /** 0.3.9.7 (G5): upkeep each Bifrost gate adds (VoK BifrostControlCenter.costUpkeepForEachGate). */
     static final float BIFROST_UPKEEP = 20000f;
+    /** 0.3.38.0: a gate's maintenance outside receiver systems, 3 Enriched Transplutonics a month at their base price (1,500). */
+    static final float BIFROST_UPKEEP_GOODS = 3f * 1500f;
+
+    /** Accessibility above 0 of your colonies in this system, summed. */
+    static float systemAccess(StarSystemAPI sys) {
+        float a = 0f;
+        for (MarketAPI m : Misc.getMarketsInLocation(sys, com.fs.starfarer.api.impl.campaign.ids.Factions.PLAYER))
+            try { a += Math.max(0f, m.getAccessibilityMod().computeEffective(0f)); } catch (Throwable ignored) { }
+        return a;
+    }
+
+    /** Pure (0.3.38.0): credits a month a gate is worth: a tenth of its system's accessibility on every colony, at the goals' accessibility weights summed. */
+    static float gateWorth(float systemAccess, float weights) { return Math.max(0f, systemAccess) / 10f * weights; }
+
+    /**
+     * Pure (0.3.38.0): whether the next gate pays. The network works from 2 gates: the first is started only when the best two
+     * together pay for both; the second also turns on the first gate's worth (haveWorth); after that each pays for itself.
+     */
+    static boolean gatePays(int active, float best, float second, float haveWorth, float cost) {
+        if (active <= 0) return best + second >= 2f * cost;
+        if (active == 1) return best + haveWorth >= cost;
+        return best >= cost;
+    }
     static String summary;
     /** 0.3.28.0 (plan 2026-11-25, batch 5): CAMark key of your approval of the Daedalus Array, and its ask's key. */
     static final String OK_MARK = "wonderok:" + DAEDALUS;
@@ -270,9 +293,29 @@ public class CAWonders {
         Object script = CARefl.call(CARefl.call(mega, "getSectionSpec"), "getScript");
         List<String> missing = unmade((Map<?, ?>) CARefl.call(script, "getMonthlyResNeeded"));
         Object add = CARefl.method(mega.getClass(), "addNewBifrostGate", StarSystemAPI.class);
+        // 0.3.38.0: gates by value. With 2 or more gates, every colony of yours gets accessibility of a tenth of the
+        // accessibility your colonies have in each gated system (BifrostControlCenter.apply); a gate goes up only where that is
+        // worth its upkeep and its Enriched Transplutonics, and the first only when the best pair pays for both
+        float weights = 0f;
+        for (MarketAPI o : Misc.getPlayerMarkets(false)) weights += CAEngine.goalWeights(CAData.get().colony(o.getId()).profile)[2];
+        StarSystemAPI best = null, second = null;
+        float bestW = 0f, secondW = 0f, haveW = 0f;
+        for (StarSystemAPI h : have) haveW += gateWorth(systemAccess(h), weights);
         for (MarketAPI m : Misc.getPlayerMarkets(false)) {
             StarSystemAPI sys = m.getStarSystem();
-            if (sys == null || have.contains(sys) || !sys.getEntitiesWithTag("bifrost").isEmpty()) continue;
+            if (sys == null || have.contains(sys) || !sys.getEntitiesWithTag("bifrost").isEmpty() || sys == best || sys == second) continue;
+            float w = gateWorth(systemAccess(sys), weights);
+            if (w > bestW) { second = best; secondW = bestW; best = sys; bestW = w; }
+            else if (w > secondW) { second = sys; secondW = w; }
+        }
+        float cost = BIFROST_UPKEEP + BIFROST_UPKEEP_GOODS;
+        if (best != null && !gatePays(have.size(), bestW, secondW, haveW, cost)) {
+            lines.add("Bifrost gates: none in your systems would pay its upkeep now");
+            best = null;
+        }
+        for (MarketAPI m : Misc.getPlayerMarkets(false)) {
+            StarSystemAPI sys = m.getStarSystem();
+            if (sys == null || sys != best) continue;
             if (!missing.isEmpty()) {
                 lines.add("Bifrost gates wait for " + CAContracts.join(missing));
                 if (CALog.once("bifrost:wait:" + missing)) CALog.think("Bifrost gates wait for " + CAContracts.join(missing) + " production.");

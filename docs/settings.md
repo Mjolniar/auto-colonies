@@ -109,7 +109,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | Setting | Options | Default | What it does |
 |---|---|---|---|
 | Surplus over 10,000,000 | Every colony, Focus world only | Every colony | Once you're this much over the surplus line, every Approve and Auto colony spends from the surplus, or just the focus world. |
-| Wonders and gates | On, Off | On | It builds Bifrost gates, the Daedalus Array and the Garden of Elysium once their goods are made, and it asks you before each wonder. Before the Garden finishes, the AI cores and items in the farms and resorts it replaces go to Autopilot Storage. Needs Vaults of Knowledge. |
+| Wonders and gates | On, Off | On | It builds Bifrost gates, the Daedalus Array and the Garden of Elysium once their goods are made, and it asks you before each wonder. A Bifrost gate only goes up where the accessibility it adds is worth its 20,000 a month upkeep and its Enriched Transplutonics. Before the Garden finishes, the AI cores and items in the farms and resorts it replaces go to Autopilot Storage. Needs Vaults of Knowledge. |
 | Development plan | By plan, Off | By plan | A colony an expedition founds starts as a Centralized Urban Core when its plan has no farming or mining, since those lose output there and everything else gains. Other colonies keep the standard plan. Needs Vaults of Knowledge. |
 | Special projects | Ask first, Off | Ask first | It proposes a Black Site project once your colonies can supply it, and after you approve it, it starts each stage when the last one is done. Shroud projects are left to you, and so is a project or stage you pause. Needs Vaults of Knowledge. |
 | Surplus terraforming | Max output, Pays back in 10 years, Off | Max output | Whatever's left after the focus world goes into terraforming (Terraforming). Needs Terraforming Made Easy. |
@@ -218,7 +218,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | IndEvo specialties | On, Off | On | Needs Industrial Evolution. |
 | VPC chips | On, Off | On | Needs Industrial Evolution. |
 | Forge may use up chips | On, Off | On | Needs Industrial Evolution. |
-| Courier shipping | On, Off | On | Needs Industrial Evolution. |
+| Courier shipping | On, Off | On | It ships goods to a colony that's short, Domain-grade Parts and Ship Components included. Needs Industrial Evolution. |
 | Antimatter Stabilizers | On, Off | On | Needs Emergent Threats IX Revival. |
 | Reverse engineering | On, Off | On | It sends weapons and fighters from your Storage to the hub's research. Needs Reverse Engineered Private Arsenal. |
 
@@ -231,7 +231,7 @@ With LunaLib, the settings are in its menu (F3 by default) under Auto Colonies. 
 | Goal of a new colony | Fits its plan, Balanced, Money, Security, War production, Rapid growth, Self-sufficiency, Materials | Fits its plan | A new colony starts with this goal. |
 | Method | Nexerelin colony fleet when possible, Autopilot crew only | Nexerelin colony fleet when possible | The colony fleet needs Nexerelin. |
 | Most colonies | Colony limit and administrators, 5, 10, 15, 20 | Colony limit and administrators | It stops founding colonies at this count. |
-| Relocate weak colonies | Off, Ask first, Auto | Off | Once you're at the Rich tier and the colony limit is the only thing stopping new colonies, it abandons a weak colony (size 4 or smaller) so a much better planet can be settled, one a year at most. The colony's AI cores, items and storage get shipped to the capital, and Ask first puts it up for your approval. The Never abandon button on a colony's panel keeps that colony, and the Expansion page shows what relocation is doing. |
+| Relocate weak colonies | Off, Ask first, Auto | Off | Once you're at the Rich tier and the colony limit is the only thing stopping new colonies, it abandons a weak colony (size 4 or smaller) so a much better planet can be settled, one a year at most. If a mod lets you abandon bigger colonies, those only ever come up on Ask first. The colony's AI cores, items and storage get shipped to the capital, and Ask first puts it up for your approval. The Never abandon button on a colony's panel keeps that colony, and the Expansion page shows what relocation is doing. |
 | Fast buildout | On, Off | On | It builds up a new colony right away. |
 | Administrator past the limit | On, Off | On | It hires an administrator for a new colony past the limit. |
 | TASC stations | Recommend only, Auto, Off | Empire mode | With New colonies on Auto, Auto stations only recommend while the Expansion rung asks first. Needs Terraforming & Station Construction. |

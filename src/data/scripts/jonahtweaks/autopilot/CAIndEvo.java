@@ -267,7 +267,8 @@ public class CAIndEvo {
 
     /** The edict this colony should run, or null. Harsh edicts (forced labour, cleansing, single-child, labour limits) are never automated. */
     static String wantedEdict(MarketAPI m, CAData.Profile prof) {
-        if (CAThreat.isHigh(m)) return "IndEvo_edict_lockdown";
+        // 0.3.38.0: Lockdown cuts output to 30% for 93 days, so only while the colony is under siege or invasion
+        if (CAThreat.isHigh(m) && CASiege.held(m)) return "IndEvo_edict_lockdown";
         if (prof == CAData.Profile.WAR) return "IndEvo_edict_deadlines";
         if (prof == CAData.Profile.GROWTH && m.getSize() < 5) return "IndEvo_edict_forced_reloc";
         if (prof == CAData.Profile.INCOME || prof == CAData.Profile.BALANCED || prof == CAData.Profile.SELF || prof == CAData.Profile.MATERIALS) return "IndEvo_edict_ind_incent";

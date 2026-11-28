@@ -22,7 +22,8 @@ public class CACourier {
     static final String LOCAL = "local_resources";
     static final Set<String> COMMODITIES = new HashSet<String>(Arrays.asList(
             "food", "organics", "domestic_goods", "luxury_goods", "drugs", "organs", "metals", "rare_metals",
-            "heavy_machinery", "supplies", "fuel", "volatiles", "ore", "rare_ore", "hand_weapons", "marines", "crew"));
+            "heavy_machinery", "supplies", "fuel", "volatiles", "ore", "rare_ore", "hand_weapons", "marines", "crew",
+            "parts", "IndEvo_parts"));   // 0.3.38.0: Domain-grade Parts (0.98.5a) and Industrial Evolution's Ship Components
     static final Set<String> refused = new HashSet<String>();
 
     static boolean havePort() {

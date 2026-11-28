@@ -250,7 +250,7 @@ public final class CALunaSync {
         r.opts = new String[]{"Every colony", "Focus world only"};
         flag(r, "surplusFocusOnly");
         bool("wonders", "Wonders and gates", "noWonders", true, "Bifrost gates, the Daedalus Array and the Garden of Elysium (each wonder after you approve it) are built once their goods are in production. "
-                + "Requires Vaults of Knowledge.");
+                + "A Bifrost gate only goes where the accessibility it adds pays for its upkeep. Requires Vaults of Knowledge.");
         radio("devplan", "Development plan", "devPlan", CASettings.DEV_PLAN_NAMES, "A colony an expedition founds starts as a Centralized Urban Core when "
                 + "its plan has no farming or mining. Requires Vaults of Knowledge.");
         radio("projects", "Special projects", "projectAsks", CASettings.PROJECT_ASK_NAMES, "A Black Site project is proposed once your colonies can supply it, and after you "

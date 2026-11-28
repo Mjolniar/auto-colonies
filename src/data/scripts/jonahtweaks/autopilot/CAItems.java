@@ -51,7 +51,7 @@ public class CAItems {
         ITEM_VALUE.put("aotd_shrouded_catalytic_core", 50f);   // +3 metals, no atmosphere needed
         ITEM_VALUE.put("turing_engine", 110f);                 // +6 advanced components
         // United Aurora Federation 0.8.4c (uaf_specialItemEffectsRepo); Vaults of Knowledge adds its own buildings to their lists
-        ITEM_VALUE.put("uaf_dimen_nanoforge", 80f);       // +2 every output, +50% ship and weapon quality, clears pollution on every update
+        ITEM_VALUE.put("uaf_dimen_nanoforge", 100f);      // +2 every output, +50% ship and weapon quality, clears pollution on every update (0.3.38.0: a Pristine Nanoforge's quality value; its output counts by units)
         ITEM_VALUE.put("uaf_servosync_pump", 45f);        // +2 fuel, with or without an atmosphere (a Synchrotron's +3 needs none)
         ITEM_VALUE.put("uaf_modular_purifier", 35f);      // +2 metals and transplutonics, no requirement
         ITEM_VALUE.put("uaf_garrison_transmitter", 15f);  // spaceport or waystation: +10% accessibility; ground defenses x1.3 (itemScore by building)

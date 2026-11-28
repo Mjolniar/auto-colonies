@@ -200,6 +200,8 @@ public final class CARelocate {
         CAData.Colony c = d.colony(m.getId());
         if (c.mode != CAData.Mode.AUTO) return "it's not on Auto";
         if (c.noAbandon) return "you set it to Never abandon";   // 0.3.34.0
+        // 0.3.38.0: a colony over the game's own abandon size (a mod raised it) goes only on Ask first, never on Auto
+        if (m.getSize() > AbandonMarketPluginImpl.MAX_SIZE && CAData.settings().abandonMode >= 2) return "it's over size " + AbandonMarketPluginImpl.MAX_SIZE + ", so only Ask first offers it";
         if (CASiege.held(m)) return "it's under siege";
         if (m.getDaysInExistence() < MIN_AGE_DAYS) return "it's under a year old";
         if (!c.locks.isEmpty()) return "it has a locked building";
