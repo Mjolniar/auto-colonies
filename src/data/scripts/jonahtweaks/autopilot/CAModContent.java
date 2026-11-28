@@ -259,6 +259,36 @@ public final class CAModContent {
         return dplPoints(m.getSize()) * CACrisis.pointCost();
     }
 
+    /** Roider Union's Historical Roider Charter: RoiderItems.CHARTER_FLEET_SIZE_BONUS. */
+    static final float CHARTER_FLEET = 0.1f;
+
+    /** Pure (0.3.39.0): units the Charter's longer reach adds to one mined line. */
+    static int reachGain(int now, int more) { return Math.max(0, more - now); }
+
+    /**
+     * 0.3.39.0: what a Historical Roider Charter adds in `ind` (Dives or Union HQ) beyond its +1 per mined line: the deposits
+     * its +6 light-years reach (only while Roider's mining area is read, CAMods.reach), at the flat unit value, and +0.1 fleet
+     * size at the goal's fleet weight. Credits a month, on CAItems' placement scale.
+     */
+    static float charterExtra(MarketAPI m, Industry ind, CAData.Profile prof) {
+        if (m == null || ind == null) return 0f;
+        boolean hq = "roider_union_hq".equals(ind.getId());
+        if (!hq && !"roider_dives".equals(ind.getId())) return 0f;
+        float v = CHARTER_FLEET * CAEngine.goalWeights(prof)[4];
+        try {
+            float base = hq ? CAMods.hqRange() : CAMods.divesRange();
+            float now = CAMods.reach(base), more = CAMods.reach(base + CAMods.charterRange());
+            if (now >= 0f && more >= 0f) {
+                int x = CAMods.extra(m) + (CAMods.charter(m) ? 0 : 1);
+                for (String com : CAMods.MINED) {
+                    int g = reachGain(CAMods.mined(m, com, now, x), CAMods.mined(m, com, more, x));
+                    if (g > 0) v += g * Global.getSettings().getCommoditySpec(com).getBasePrice() * CAEngine.unitValue;
+                }
+            }
+        } catch (Throwable ignored) { }
+        return v;
+    }
+
     /** UAF's Access Router in Tech-Mining: 35% more finds, in CAItems.itemScore points. 0 anywhere else. */
     static float routerScore(MarketAPI m, Industry ind) {
         if (m == null || ind == null || !"techmining".equals(ind.getId())) return 0f;

@@ -79,6 +79,27 @@ public final class CARuins {
     /** Pure: what a core facility's cores are worth a month over the horizon, capped at CORE_CAP cores. */
     static float coresMonthly(float corePrice, int cores, float months) { return months <= 0f ? 0f : corePrice * Math.min(cores, CORE_CAP) / months; }
 
+    /** Pure (0.3.39.0): cores over the horizon with no cap (one-time cores, or a facility without Fixes' cap). */
+    static float coresOver(float corePrice, float cores, float months) { return months <= 0f ? 0f : corePrice * Math.max(0f, cores) / months; }
+
+    /** 0.3.39.0: the restoration results UAF ships differ without the Fixes mod (jonahs_fixes): upkeep up, core facilities uncapped. */
+    static final String FIXES = "jonahs_fixes";
+    static boolean fixes() { return CAMods.on(FIXES); }
+
+    /**
+     * Pure (0.3.39.0): an upkeep result's share of the colony's upkeep saved a month. UAF ships it as modifyFlat on the upkeep
+     * multiplier (x1.95 and x1.8: upkeep up by `shipped`); Fixes makes it the cut it says (`cut`).
+     */
+    static float upkeepShare(boolean fixes, float cut, float shipped) { return fixes ? cut : -shipped; }
+
+    /** Pure (0.3.39.0): an upkeep saving from a hazard cut: hazard multiplies upkeep, so the cut is its share of upkeep before hazard. */
+    static float hazardSaving(float upkeep, float cut, float hazard) { return cut * upkeep / Math.max(0.25f, hazard); }
+
+    static boolean heavy(MarketAPI m) {
+        for (Industry ind : m.getIndustries()) if (ind instanceof com.fs.starfarer.api.impl.campaign.econ.impl.HeavyIndustry) return true;
+        return false;
+    }
+
     static final Map<String, Float> worthCache = new HashMap<String, Float>();
     static float worthDay = -99f;
 
@@ -111,20 +132,26 @@ public final class CARuins {
                 CAEngine.Pick c = pick(); c.fx[2] += 0.05f; res.add(c);
                 CAEngine.Pick d = pick(); d.fx[1] += 1f; res.add(d);
                 CAEngine.Pick e = pick(); e.fx[4] += 0.1f; res.add(e);   // a derelict defense fleet
-                CAEngine.Pick f = pick(); f.fx[0] += 0.1f * upk; res.add(f);   // -10% hazard: upkeep
+                CAEngine.Pick f = pick(); f.fx[0] += hazardSaving(upk, 0.1f, m.getHazardValue()); res.add(f);   // -10% hazard: upkeep (0.3.39.0: before hazard)
                 CAEngine.Pick g = pick(); g.fx[2] += 0.05f; res.add(g);   // Gamma Core Facility: +5% accessibility
             } else if (z == 1) {
                 CAEngine.Pick a = pick(); more(a, m, null, 1, deficit); res.add(a);
-                CAEngine.Pick b = pick(); b.fx[0] += 0.05f * upk; res.add(b);   // Fixes: -5% upkeep
-                CAEngine.Pick c = pick(); c.fx[4] += 0.25f; res.add(c);
-                CAEngine.Pick d = pick(); d.fx[3] += 0.5f; d.fx[0] -= 0.2f * upk; res.add(d);   // a military base: ground defense, +20% hazard
-                CAEngine.Pick e = pick(); e.fx[0] += coresMonthly(price(Commodities.BETA_CORE), CORE_CAP, h); res.add(e);
+                boolean fx = fixes();
+                CAEngine.Pick b = pick(); b.fx[0] += upkeepShare(fx, 0.05f, 0.95f) * upk; res.add(b);   // -5% upkeep with Fixes, x1.95 as shipped
+                CAEngine.Pick c = pick(); if (heavy(m)) c.fx[4] += 0.25f; res.add(c);   // 0.3.39.0: fleet size only with a Heavy Industry
+                // 0.3.39.0: a military base: ground defense +2 flat on the stat's base of 1 (x3 before other multipliers), hazard +20%
+                CAEngine.Pick d = pick(); d.fx[3] += 2f; d.fx[0] -= hazardSaving(upk, 0.2f, m.getHazardValue()); res.add(d);
+                CAEngine.Pick e = pick(); e.fx[0] += fx ? coresMonthly(price(Commodities.BETA_CORE), CORE_CAP, h) : coresOver(price(Commodities.BETA_CORE), h, h); res.add(e);
             } else {
-                CAEngine.Pick a = pick(); a.fx[0] += coresMonthly(price(Commodities.ALPHA_CORE), CORE_CAP, h); res.add(a);   // Black Site
+                boolean fx = fixes();
+                // Black Site (0.3.39.0): 3 Alpha and 5 Beta cores when it opens, then an Alpha every 3 months (6 with Fixes)
+                CAEngine.Pick a = pick();
+                a.fx[0] += coresOver(price(Commodities.ALPHA_CORE), 3f + (fx ? CORE_CAP : h / 3f), h) + coresOver(price(Commodities.BETA_CORE), 5f, h);
+                res.add(a);
                 CAEngine.Pick b = pick(); more(b, m, null, 2, deficit); res.add(b);
                 CAEngine.Pick c = pick(); c.fx[4] += 0.15f; res.add(c);   // a dormant defense fleet
                 CAEngine.Pick d = pick(); CAEngine.supply(d, "organs", 3, deficit); res.add(d);
-                CAEngine.Pick e = pick(); e.fx[0] += 0.2f * upk; res.add(e);   // Fixes: -20% upkeep
+                CAEngine.Pick e = pick(); e.fx[0] += upkeepShare(fx, 0.2f, 0.8f) * upk; res.add(e);   // -20% upkeep with Fixes, x1.8 as shipped
                 res.add(pick());   // Emergency Fabricators: used by hand
             }
         } finally { CAEngine.scoring(null, null); }

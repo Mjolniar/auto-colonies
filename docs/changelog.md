@@ -1,5 +1,11 @@
 # Patch notes
 
+## 0.3.39.0 - 2026-11-27
+
+- United Aurora Federation: Ruin restoration results are valued as UAF ships them when the Fixes mod isn't installed: the two upkeep results raise upkeep by 95% and 80%, and the Beta Core Facility and Black Site keep making cores past 6.
+- United Aurora Federation: The Black Site counts its 3 Alpha and 5 Beta cores on opening. The abandoned military base counts its ground defense +2. The fleet size result counts only with a Heavy Industry. Hazard results count their share of upkeep before hazard.
+- Roider Union: The Historical Roider Charter also counts the deposits its +6 light-years reach and its +10% fleet size when it's placed.
+
 ## 0.3.38.0 - 2026-11-27
 
 - Research: Ship, weapon, wing and hullmod blueprints a tech unlocks count at the game's own blueprint prices, spread over the payback horizon (36 months by default). Half value while none of your colonies makes ships.

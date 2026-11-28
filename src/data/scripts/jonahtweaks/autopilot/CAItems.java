@@ -312,6 +312,7 @@ public class CAItems {
                     } catch (Throwable t) { CADiagnostics.quarantine(ind.getId(), "item requirement check", t); continue; }
                     float sc = CAValue.itemPlacement(m, ind, spec.getId(), effect, itemScore(spec.getId(), m, c.profile, ind), c.profile, deficit);   // 0.3.0.0 (B1 fix, 02 section 9): credits a month, what its units really add here
                     if (sc > 0f) sc -= CAModContent.itemCrisisCost(m, ind);   // 0.3.35.0: Domain Phase Lab's mercenary crisis
+                    if (sc > 0f && "roider_charter".equals(spec.getId())) sc += CAModContent.charterExtra(m, ind, c.profile);   // 0.3.39.0
                     if (sc <= 0f) continue;
                     out.add(new Placement(held, spec, data, m, ind, sc));
                     any = true;
