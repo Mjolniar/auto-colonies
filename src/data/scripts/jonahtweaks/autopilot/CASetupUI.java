@@ -171,6 +171,7 @@ public class CASetupUI {
     static {
         DESC.put("balance", "How expensive the autopilot is.");
         DESC.put("profile", "How the empire grows.");
+        DESC.put("tech", "Stations and AI cores.");   // 0.3.36.0: 4 words, cut from Take down, Stations and Faction stances (UI word budget)
         DESC.put("p_spend", "Normal allocates 50% of net income and 15% of savings.");
         DESC.put("p_extras", "Governs mod buildings and features.");
         DESC.put("p_newcol", "Idle capital converted into new charters.");
@@ -180,8 +181,8 @@ public class CASetupUI {
         DESC.put("richpreset", "Purchase priority for idle capital.");
         DESC.put("endgame", "Endgame directives begin at this income.");
         DESC.put("p_story", "Story point expenditure ceiling for improvements.");
-        DESC.put("p_station", "Stations from size 4, upgraded with growth.");
-        DESC.put("p_takedown", "Inefficient industries destroyed to maintain standard.");
+        DESC.put("p_station", "From size 4, upgraded with growth.");
+        DESC.put("p_takedown", "Unprofitable industries taken down.");
         DESC.put("p_policy", "Hazard pay, free port and edicts where profitable.");
         DESC.put("p_cores", "AI cores drawn from Autopilot Storage.");
         DESC.put("p_admins", "Administrators hired and placed.");
@@ -189,7 +190,7 @@ public class CASetupUI {
         DESC.put("empire", "Empire-wide directives follow this setting.");
         DESC.put("spy", "Security and relations, with sabotage on offense.");
         DESC.put("amb", "Ally and Friendly factions served first.");
-        DESC.put("stances", "One stance per faction, followed by agents, ambassadors, ceasefires and war fleets.");
+        DESC.put("stances", "One stance per faction, then agents, ambassadors, ceasefires and war fleets.");
         DESC.put("screenlog", "Short-form notices displayed on screen.");
         // 0.3.16.9: the quick Settings page's own rows (CAQuickSettings)
         DESC.put("fleetlimit", "Over 30 fleets in a system, small neutral fleets go home.");
@@ -239,8 +240,8 @@ public class CASetupUI {
     }
 
     /** The main rows' keys, in menu order (20 with every supported mod; JTMenuTextCheck). */
-    static final String[] MAIN_KEYS = {"empire", "balance", "profile", "p_spend", "p_extras", "p_newcol", "p_war", "reserve", "surplus", "richpreset", "endgame",
-            "p_story", "p_station", "p_takedown", "p_policy", "p_cores", "p_admins", "capid", "spy", "amb", "screenlog"};
+    static final String[] MAIN_KEYS = {"empire", "balance", "profile", "tech", "p_spend", "p_extras", "p_newcol", "p_war", "reserve", "surplus", "richpreset", "endgame",
+            "p_story", "p_takedown", "p_policy", "p_cores", "p_admins", "capid", "spy", "amb", "screenlog"};
     /** Preset row keys to their CAPresets row. */
     static final Map<String, String> PRESET_KEYS = new LinkedHashMap<String, String>();
     static {
@@ -339,6 +340,8 @@ public class CASetupUI {
             desc(t, "balance");
             row(t, "Profile", CAProfile.name(s), null, "profile", true);
             desc(t, "profile");
+            row(t, "Tech", CATech.label(s), null, "tech", true);   // 0.3.36.0
+            desc(t, "tech");
             preset(t, s, "Spending", "p_spend");
             preset(t, s, "Extras", "p_extras");
             newColonies(t, s);
@@ -356,9 +359,6 @@ public class CASetupUI {
             preset(t, s, "Story points", "p_story");
         }
         if (group(t, "building", "Building", lower(CAPresets.name(s, CAPresets.TAKE_DOWN)) + ", policies " + lower(CAPresets.name(s, CAPresets.POLICIES)))) {
-            String[] st = stationTip(s);
-            row(t, "Stations", CAPresets.name(s, CAPresets.STATIONS), CAPresets.recName(CAPresets.STATIONS), "p_station", true, st);
-            desc(t, "p_station", st);
             preset(t, s, "Take down buildings", "p_takedown");
             preset(t, s, "Colony policies", "p_policy");
         }
@@ -506,6 +506,9 @@ public class CASetupUI {
                         modeName("rungMode[" + r + "]", CASettings.RUNG_MODE_NAMES), "rung_" + r, true, HOVER.get("rung"));
             row(t, "Shipyard stops at", s.shipyardStop + " unclaimed hulls", "6", "shipyardstop", false);
         } else if ("adv_build".equals(id)) {
+            String[] st = stationTip(s);   // 0.3.36.0: Stations moved here; Tech on the main page sets the station line
+            row(t, "Stations", CAPresets.name(s, CAPresets.STATIONS), CAPresets.recName(CAPresets.STATIONS), "p_station", true, st);
+            desc(t, "p_station", st);
             row(t, "Over-limit fix", onOff(!s.noOverLimitFix), on, "overlimit", true);
             row(t, "Exports valued by market share", onOff(!s.noMarketModel), on, "marketmodel", true);
             row(t, "Take down unpaying industries", onOff(!s.noPrune), on, "prune", true);
@@ -1033,6 +1036,7 @@ public class CASetupUI {
         else if (k.equals("lowprofile")) CALowProfile.set(s, !s.lowProfile, "Settings");
         else if (k.equals("balance")) CABalance.cycle(s);   // 0.3.14.0
         else if (k.equals("profile")) CAProfile.cycle(s);
+        else if (k.equals("tech")) CATech.cycle(s);   // 0.3.36.0
         else if (k.equals("capgather")) s.capitalNoGather = !s.capitalNoGather;
         else if (k.equals("settleinc")) s.settlementMinIncome = Math.max(5000f, s.settlementMinIncome + 5000f * dir);
         // 0.3.0.0 (WS-F1): the 0.3.0 settings that had no row yet (money ladder, Auto-expansion)

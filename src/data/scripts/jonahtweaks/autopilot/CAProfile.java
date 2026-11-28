@@ -54,7 +54,7 @@ public final class CAProfile {
         if (s == null || v < 0 || v >= NAMES.length) return;
         CALowProfile.set(s, LOW_PROFILE[v], "Profile");
         CAPresets.apply(s, CAPresets.NEW_COLONIES, NEW_COLONIES[v]);
-        CAPresets.apply(s, CAPresets.AI_CORES, AI_CORES[v]);
+        if (CATech.of(s) != CATech.LUDDIC) CAPresets.apply(s, CAPresets.AI_CORES, AI_CORES[v]);   // 0.3.36.0: Luddic keeps AI cores Off
         CAPresets.apply(s, CAPresets.WAR, WAR[v]);
         s.expandScope = SCOPE[v];
         if (v == HIGH) {
@@ -79,7 +79,8 @@ public final class CAProfile {
         if (s == null) return -1;
         for (int v = 0; v < NAMES.length; v++) {
             if (s.lowProfile != LOW_PROFILE[v] || s.expandScope != SCOPE[v]) continue;
-            if (CAPresets.match(s, CAPresets.NEW_COLONIES) != NEW_COLONIES[v] || CAPresets.match(s, CAPresets.AI_CORES) != AI_CORES[v]) continue;
+            if (CAPresets.match(s, CAPresets.NEW_COLONIES) != NEW_COLONIES[v]) continue;
+            if (CATech.of(s) != CATech.LUDDIC && CAPresets.match(s, CAPresets.AI_CORES) != AI_CORES[v]) continue;   // 0.3.36.0
             if (CAWarPolicy.clamp(s.warLevel) != WAR[v]) continue;
             if (v == HIGH && !expansionOn(s)) continue;
             return v;

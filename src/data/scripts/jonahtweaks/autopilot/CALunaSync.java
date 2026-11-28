@@ -107,6 +107,13 @@ public final class CALunaSync {
         r.fields = CAProfile.fields();
         r.get = s -> CAProfile.name(s);
         r.set = (s, v, b) -> { int i = CAProfile.index(String.valueOf(v)); if (i >= 0) CAProfile.apply(s, i); };
+        // 0.3.36.0: Tech (CATech)
+        r = row(RADIO, "tech", "Tech", "Sets which technology your colonies use. Mixed picks stations by score, High tech builds the high-tech station line, "
+                + "and Luddic builds low-tech stations and uses no AI cores or colony items the Luddic Path targets, so Pather cells have nothing to go after.");
+        r.opts = CATech.NAMES.clone();
+        r.fields = new String[]{"tech", "stationLine", "useAICores", "coreRisk", "inspectionMode"};
+        r.get = s -> CATech.name(s);
+        r.set = (s, v, b) -> { int i = CATech.index(String.valueOf(v)); if (i >= 0) CATech.apply(s, i); };
         r = row(RADIO, "empire", "Empire mode", "Empire-wide directives follow this setting. In Off the autopilot takes no action, in Advisor it only "
                 + "recommends, in Approve it waits for administrator consent, and in Auto it executes immediately. Values set by "
                 + "the administrator are retained when the mode changes.");

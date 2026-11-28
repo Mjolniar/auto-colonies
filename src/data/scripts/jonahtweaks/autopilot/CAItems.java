@@ -167,6 +167,7 @@ public class CAItems {
     }
 
     static float itemScore(String id, MarketAPI m, CAData.Profile p) {
+        if (CATech.blocksItem(id)) return 0f;   // 0.3.36.0: Tech Luddic
         if (id.equals(LAMP)) {
             float lv = lampValue(m, p, false);
             if (lv <= 0f && m.hasCondition("hot") && planNeedsHeat(m, p)) lv = 1000f;   // its Extreme Heat opens a plan step

@@ -58,6 +58,7 @@ public final class CAQuickSettings {
         play.add(preset(s, "p_spend", "Spending"));
         play.add(preset(s, "p_cores", "AI cores"));
         play.add(cell("profile", "Profile", CAProfile.name(s)));
+        play.add(cell("tech", "Tech", CATech.name(s)));   // 0.3.36.0
         play.add(preset(s, "p_newcol", "New colonies"));
         play.add(preset(s, "p_war", "War"));
         grid(t, play, w);

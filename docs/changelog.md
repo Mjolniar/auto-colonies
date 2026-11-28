@@ -1,5 +1,12 @@
 # Patch notes
 
+## 0.3.36.0 - 2026-11-27
+
+- Tech: Added a Tech setting under Settings, Playstyle: Mixed, High tech or Luddic. Mixed picks stations by score. High tech builds the high-tech station line. Luddic builds the low-tech station line, sets AI cores to Off and installs no colony item the Luddic Path targets. Default: Mixed.
+- Tech: Items already installed stay where they are. Leaving Luddic puts AI cores back to your Profile's value.
+- Profile: Leaves AI cores Off while Tech is Luddic.
+- Settings page: The Stations row moved to Advanced, Building. Tech takes its place on the main page.
+
 ## 0.3.35.0 - 2026-11-27
 
 - Theory of Toolbox: New farms are valued with Toolbox's food output for the colony's size (x32 at size 6), or Toolbox Economy Curves' curve when it's on. Farm items and the heavy machinery demand count the same way.

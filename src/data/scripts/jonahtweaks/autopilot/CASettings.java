@@ -67,6 +67,8 @@ public class CASettings {
     public int feeLevel = 2;              // 0 off, 1 low, 2 standard, 3 high
     /** 0.3.14.0: Balance (CABalance): 0 Hard, as every save before it, 1 Normal, 2 Easy. */
     public int balance = 0;
+    /** 0.3.36.0: Tech (CATech): 0 Mixed, as every save before it, 1 High tech, 2 Luddic. */
+    public int tech = 0;
     public String stationLine = "score";  // score, low, mid, high
     public boolean useAICores = false;
     public int alphaMode = 0;             // 0 only where removable (default), 1 anywhere, 2 never
